@@ -70,8 +70,8 @@ export const sgkDavranisiMi = (dav) => dav === DAVRANIS.SGK;
 // değil). Davranış kapısıdır; tutar kapısı tevkifatKurus'tur (sıfırsa hedef doğmaz). İkisi tek ada yüklenmez.
 export const tevkifatliMi = (dav) => dav === DAVRANIS.NORMAL;
 // Spec 0075 R3, R44 (K-23): oran faturadaki kesirdir; liste tek sabit, etiket yalnız kesir (işlem cinsi yazılmaz).
-// Payda veride durur (R32): /10 dışı bir oran eklemek tek satırdır, göç gerekmez.
-export const TEVKIFAT_ORANLARI = [{ pay: 2, payda: 10 }, { pay: 3, payda: 10 }, { pay: 4, payda: 10 }, { pay: 5, payda: 10 }, { pay: 7, payda: 10 }, { pay: 9, payda: 10 }];
+// Spec 0079 R4: sabit constants.js'te (satış tarafı da aynı listeyi kullanır, gelir motorları gider.js'i içe almaz).
+export { TEVKIFAT_ORANLARI } from "./constants";
 export const tevkifatOranEtiketi = (o) => (o && o.pay && o.payda ? `${o.pay}/${o.payda}` : "");
 // Makina bazlı çıktılarda kalemin görünen adı (spec 0020 R8): personel kaleminin açıklaması çoğunlukla çalışanın
 // adıdır (tekrarlayan üretim `t.ad || c.ad`), bu yüzden her zaman sabit etiket basılır.
@@ -1283,7 +1283,9 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
 // Spec 0075 R27, R28 (B-5): üçüncü parametre (dönemin kesilen KDV tevkifatı, TL) yalnız BİLGİ alanı `tevkifatKdv2` üretir;
 // farka, ödeneceğe ve devredene girmez (alıcı KDV'nin tamamını indirir, tevkifat kalemin vergi dairesi hedefinden ödenir).
 // Parametresiz çağrı birebir eski çıktıdır (0047 raporu geçirmez).
-export const kdvKarsilastir = (hesaplananKdvObj = {}, indirilecekTL = 0, tevkifatTL) => {
+// Spec 0079 R22/3, R31: dördüncü parametre tevkifatlı satışta ALICININ beyan edeceği KDV'dir (TL); bilgi satırıdır, farka
+// eklenmez. Verilmezse çıktı birebir eskidir (0075'in üçüncü parametre deseni).
+export const kdvKarsilastir = (hesaplananKdvObj = {}, indirilecekTL = 0, tevkifatTL, satisTevkifatTL) => {
   const hesaplanan = kurus(hesaplananKdvObj?.TRY);
   const ind = kurus(indirilecekTL);
   const fark = hesaplanan - ind;
@@ -1292,6 +1294,7 @@ export const kdvKarsilastir = (hesaplananKdvObj = {}, indirilecekTL = 0, tevkifa
     .map(([cur, v]) => ({ para: cur, tutar: Math.round((Number(v) || 0) * 100) / 100 }));
   const sonuc = { hesaplananTL: tl(hesaplanan), indirilecek: tl(ind), fark: tl(fark), odenecek: tl(Math.max(0, fark)), devreden: tl(Math.max(0, -fark)), haricTutarlar };
   if (tevkifatTL !== undefined) sonuc.tevkifatKdv2 = tl(kurus(tevkifatTL));
+  if (satisTevkifatTL !== undefined) sonuc.satisTevkifatAlici = tl(kurus(satisTevkifatTL));
   return sonuc;
 };
 export const kdvObjTopla = (...objs) => {

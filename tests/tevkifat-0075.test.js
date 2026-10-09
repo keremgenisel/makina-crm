@@ -258,8 +258,9 @@ describe("Spec 0075 F: değişmeyenler", () => {
   });
   it("AC-43, R44: oran listesi tek sabit, altı kesir, etiket yalnız kesir", () => {
     expect(TEVKIFAT_ORANLARI.map(tevkifatOranEtiketi)).toEqual(["2/10", "3/10", "4/10", "5/10", "7/10", "9/10"]);
+    // Spec 0079 R4 ile tanım constants.js'e taşındı (satış tarafı da aynı listeyi kullanır); gider.js yeniden dışa verir.
     const tanim = dosyalar("src").filter(f => /TEVKIFAT_ORANLARI\s*=/.test(kod(f)));
-    expect(tanim).toEqual(["src/lib/gider.js"]);
+    expect(tanim).toEqual(["src/lib/constants.js"]);
   });
 });
 

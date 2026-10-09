@@ -78,6 +78,7 @@ check("security_log: temizlik sonrası boş", dbmod.getSecurityLog({}).total ===
 dbmod.writeBlobToDb({
   customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850, currency: "USD", satisKuru: 41.2345, uretimTarihi: "2026-03-14", partiId: 95,
     faturali: "Faturalı Yurtiçi", faturaBedeli: 600000,
+    tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10, // spec 0079 AC-29
     odemePlani: [{ id: 1, vadeTarihi: "2026-08-30", tutar: 100000, odemeId: null }],
     tipSecimleri: { konveyor: "9", bant: "8", filtre_1: "5" },
     city: "İstanbul", ilce: "Kadıköy",
@@ -91,7 +92,8 @@ dbmod.writeBlobToDb({
     { id: "bant", ad: "Bant", renk: "grn", makinaSecici: true, stokDus: true, raporGoster: true, sistem: true, rol: "bant" },
     { id: "filtre_1", ad: "Filtre", renk: "amb", makinaSecici: true, stokDus: true, raporGoster: true, sistem: false },
   ],
-  services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, hesapId: 97, durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
+  services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, hesapId: 97, tevkifatli: true, tevkifatPay: 7, tevkifatPayda: 10, // spec 0079 AC-29
+    durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
     fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaAdres: "Organize Sanayi 5. Cadde No:12", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
     { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true,
@@ -168,7 +170,8 @@ dbmod.writeBlobToDb({
   uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
     { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki parti
   standartGiderler: [{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: "2026-06" }, { id: 92, grupId: 91, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null }],
-  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, hesapId: 98, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
+  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10, // spec 0079 AC-29
+    hesapId: 98, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
     kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10", fabrikaTeslim: true, teslimSekli: "fabrika",
     teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatTel: "02123334455", teslimatAdres: "Sanayi Mah. 5. Sok No:12", teslimatUlke: "Türkiye", teslimatSehir: "İstanbul", teslimatIlce: "Tuzla",
@@ -180,7 +183,8 @@ dbmod.writeBlobToDb({
   ],
   dealers: [{ id: 3, name: "Bayi X", country: "Türkiye", city: "Kocaeli", ilce: "Gebze" }],
   yedekParcaSatislar: [
-    { id: 650, dealerId: 3, aliciTipi: "bayi", hesapId: 97, teklifId: 103, teklifKalemId: "k-parca-1", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
+    { id: 650, dealerId: 3, aliciTipi: "bayi", hesapId: 97, tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10, // spec 0079 AC-29
+      teklifId: 103, teklifKalemId: "k-parca-1", partId: "7", miktar: 5, birimFiyat: 120, currency: "TRY", tarih: "2026-07-15", odendi: false, faturaTipi: "Faturalı Yurtiçi",
       kargoFirma: "Yurtiçi Kargo", kargoTakipNo: "TK123", kargoTarih: "2026-07-16", kargoDurum: "Kargoya Verildi", kargoSorumlusu: "Ahmet Yılmaz", panoDusmeZamani: "2026-07-28T08:00", olusturmaZamani: "2026-07-15T10:20:30", batchId: 777001,
       teslimatFarkli: true, teslimatAd: "Şantiye Deposu", teslimatTel: "03121112233", teslimatAdres: "Başkent OSB 15. Cad No:8", teslimatUlke: "Türkiye", teslimatSehir: "Ankara", teslimatIlce: "Sincan",
       yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 60.54, netTutar: 539.46, blokajGun: 0, hesabaGecis: "2026-07-15", yansitildi: false },
@@ -323,6 +327,17 @@ check("gider: personel resmi/elden + soft-delete roundtrip", (() => { const p = 
 check("spec 0074 AC-33: SGK türü (davranış sgk) ve SGK kalemi roundtrip eder; kalemde sgkTutar/kdvYonu yazılmaz", (() => {
   const t = (blob.giderTurleri || []).find(x => x.id === 44), k = (blob.giderler || []).find(x => x.id === 87);
   return t?.davranis === "sgk" && k?.turId === 44 && k.tutar === 9333.25 && k.kdvOrani === 0 && k.tedarikciId == null && k.sonOdemeTarihi === "2026-10-31" && !("sgkTutar" in k) && !("kdvYonu" in k);
+})());
+// Spec 0079 AC-29: satış tarafının üç tevkifat alanı dört tabloda roundtrip eder; kapalı kayıtta alan blob'a yazılmaz, bu
+// müşteri bölümünde de geçerlidir (okuma destructuring'e geçti, R33/1).
+check("spec 0079 AC-29: tevkifat üç alanı customers/services/part_sales/yedek_parca_satis'ta roundtrip eder; kapalı kayıtta alan yok (müşteri dahil)", (() => {
+  const T = ["tevkifatli", "tevkifatPay", "tevkifatPayda"];
+  const ac = (x, pay) => x?.tevkifatli === true && x.tevkifatPay === pay && x.tevkifatPayda === 10;
+  const yok = (x) => !!x && T.every(a => !(a in x));
+  const c = (blob.customers || []).find(x => x.id === 500), c2 = (blob.customers || []).find(x => x.id === 501);
+  const sv = (blob.services || []).find(x => x.id === 2), ps = (blob.partSales || []).find(x => x.id === 600);
+  const yp = (blob.yedekParcaSatislar || []).find(x => x.id === 650), yp2 = (blob.yedekParcaSatislar || []).find(x => x.id === 651);
+  return ac(c, 5) && ac(sv, 7) && ac(ps, 2) && ac(yp, 9) && yok(c2) && yok(yp2);
 })());
 check("spec 0075 AC-34, AC-35: tevkifat üç alanı iki tabloda roundtrip eder; 'tevkifat' hedefli satır vadesiyle korunur; kapalı kalem ve tanımda alan yazılmaz", (() => {
   const k = (blob.giderler || []).find(x => x.id === 84), e = (blob.giderler || []).find(x => x.id === 83);

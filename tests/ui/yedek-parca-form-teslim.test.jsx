@@ -42,7 +42,8 @@ describe("YedekParcaSatisForm — teslim şekli panoya düşürmez", () => {
     // fabrikaTeslim:true → Kargo'ya özel teslimatFarkli kutusu yok, tek checkbox = panoya gönder.
     render(<Harness initial={{ fabrikaTeslim: true }} />);
     expect(screen.queryByText("Pano Durumu")).toBeNull();
-    const kutular = screen.getAllByRole("checkbox");
+    // Spec 0079 R1 ile güncellendi: faturalı yurtiçide "Bu fatura tevkifatlı" kutusu da var; geri kalan tek kutu panoya gönder.
+    const kutular = screen.getAllByRole("checkbox").filter(k => k.getAttribute("aria-label") !== "Bu fatura tevkifatlı");
     expect(kutular).toHaveLength(1); // yalnız "Panoya gönder"
     fireEvent.click(kutular[0]);
     expect(screen.getByText("Pano Durumu")).toBeTruthy();

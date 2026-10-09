@@ -91,10 +91,12 @@ export const KartTaksitAlani = ({ ayar, tutar = 0, currency = "TRY", taksit, set
 // Toplam kutusunda gösterilen ÜÇLÜ AYRIM (komisyon müşteriye yansıtıldığında). Ürün/kalem fiyatı
 // hiç değişmez: satış = kalem (ciro), komisyon = banka gideri (KDV matrahına girer ama ciroya girmez),
 // KDV = (kalem+komisyon) üzerinden, çekilecek kart tutarı = üçünün toplamı. netTaban = kalem toplamı (KDV hariç).
-export const KartYansitmaOzeti = ({ netTaban = 0, taksit, ayar, kdvOrani = 0, currency = "TRY", satisLabel = "Satış (ciro)", tarih }) => {
+// Spec 0079 revizyon 2 (R9/2): kdvOrani yasal oran (etiket), tahsilKdvOrani müşterinin ödediği oran (tevkifatlı satışta düşük);
+// kart tutarı tahsil oranıyla hesaplanır. Verilmezse ikisi aynıdır, çıktı değişmez.
+export const KartYansitmaOzeti = ({ netTaban = 0, taksit, ayar, kdvOrani = 0, tahsilKdvOrani = kdvOrani, currency = "TRY", satisLabel = "Satış (ciro)", tarih }) => {
   const secili = taksit != null && taksit !== "" ? parseInt(taksit) : "";
   // Blokaj/hesaba geçiş tarihi SATIŞ tarihinden (eski satış girilirken bugünden değil).
-  const a = secili !== "" && netTaban > 0 ? kartYansitmaAyrim(netTaban, secili, ayar, kdvOrani, tarih || undefined) : null;
+  const a = secili !== "" && netTaban > 0 ? kartYansitmaAyrim(netTaban, secili, ayar, tahsilKdvOrani, tarih || undefined) : null;
   if (!a) return null;
   const sat = (label, val, opt = {}) => (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 13px", fontSize: 13, color: opt.color || "var(--n700, #334155)", ...(opt.style || {}) }}>
@@ -107,7 +109,7 @@ export const KartYansitmaOzeti = ({ netTaban = 0, taksit, ayar, kdvOrani = 0, cu
       {sat(satisLabel, a.satis, { color: "var(--grn800,#065f46)", style: { fontWeight: 600 } })}
       {sat("Kredi kartı komisyonu (bankaya)", a.komisyon, { plus: true, color: "var(--red700,#b91c1c)" })}
       {kdvOrani > 0 && sat(`KDV matrahı (kalem + komisyon)`, a.kdvMatrah, { color: "var(--n500,#64748b)", style: { fontSize: 12 } })}
-      {kdvOrani > 0 && sat(`KDV (%${kdvOrani})`, a.kdv, { plus: true, color: "var(--grn800,#065f46)" })}
+      {kdvOrani > 0 && sat(tahsilKdvOrani === kdvOrani ? `KDV (%${kdvOrani})` : `Tahsil edilen KDV (%${kdvOrani}, tevkifat düşülmüş)`, a.kdv, { plus: true, color: "var(--grn800,#065f46)" })}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 13px", fontSize: 13.5, fontWeight: 800, color: "var(--amb800,#92400e)", background: "var(--ambBg, #fffbeb)", borderTop: "1px solid var(--n200,#e2e8f0)" }}>
         <span>Müşteriden çekilecek kart tutarı</span><b>{fmtCur(a.kartTutari, currency)}</b>
       </div>

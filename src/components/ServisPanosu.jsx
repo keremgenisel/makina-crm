@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { today, fmtTR, uid, bumpId, parseMoney, calcKDV, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
+import { today, fmtTR, uid, bumpId, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim, yansitilanKomisyon } from "../lib/krediKarti";
+import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "../lib/satisTevkifat";
 import { servisSureleri } from "../lib/servisAnaliz";
 import { servisParcaDus, servisParcaGeriAl, servisParcaYenile } from "../lib/servisStok";
 import { yeniBekleyenler, servisPlanlandiMi, yeniKargolar } from "../lib/servisAlarm";
@@ -508,6 +509,10 @@ export const ServisPanosu = ({
 
   const kaydet = (parcaUcretsizMi, dosyaTaslaklari = []) => {
     if (!setServices) return;
+    // Spec 0079 R6/3: CustomerDetailModal.saveService'in birebir kopyası; doğrulama, kart tabanı ve alan yazımı ikisinde birden.
+    const tevkifatHata = satisTevkifatDogrula(form, form.faturaTipi);
+    if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
+    const kartTaban = kartTabanKaydi(form);
     const cust = customers.find(c => c.id === Number(form.customerId));
     // Komisyon yansıtma: servisUcreti + parça fiyatları KDV matrahına ölçeklenir (CustomerDetailModal.saveService
     // ile birebir), komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
@@ -515,7 +520,7 @@ export const ServisPanosu = ({
     const kalemParca = (form.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const kalemBillable = kalemServis + (parcaUcretsizMi ? 0 : kalemParca);
     const kkAyar = appSettings?.krediKartiKomisyonlari;
-    const kkKdvOran = calcKDV(form.faturaTipi, 100, form.date, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+    const kkKdvOran = tahsilKdvOrani(form.faturaTipi, form.date, kdvRates, kartTaban); // uygulanan (tahsil edilen) KDV oranı (Yurtdışı/Faturasız → 0)
     const kkTarih = form.kartTarihi || form.date; // blokaj kart işlem tarihinden (boşsa servis tarihi)
     let factor = 1, yansitSnap = null;
     if (form.yontem === "Kredi Kartı" && form.kkYansit && form.taksitSayisi && kalemBillable > 0) {
@@ -530,13 +535,13 @@ export const ServisPanosu = ({
     const parcaUcreti = degisenParcalarSave.reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const parcaUcretiAltuntastan = degisenParcalarSave.filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const svBillable = servisUcretiSave + (parcaUcretsizMi ? 0 : parcaUcreti);
-    const svKdvDahil = svBillable + calcKDV(form.faturaTipi, svBillable, form.date, kdvRates);
-    const rec = { ...form, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
+    const svKdvDahil = svBillable + tahsilEdilecekKdv(form.faturaTipi, svBillable, form.date, kdvRates, kartTaban);
+    const rec = satisTevkifatUygula({ ...form, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
       customerId: form.customerId ? Number(form.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: form.currency,
       vadeTarihi: form.yontem === "Çek" ? (form.vadeTarihi || "") : "",
       tahsilEdildi: form.yontem === "Çek" ? !!form.tahsilEdildi : false,
       taksitSayisi: form.yontem === "Kredi Kartı" ? (form.taksitSayisi ?? null) : null,
-      kartKomisyonu: form.yontem === "Kredi Kartı" ? (yansitSnap || kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, kkAyar, kkTarih, false)) : null };
+      kartKomisyonu: form.yontem === "Kredi Kartı" ? kartTabanIsaretle(yansitSnap || kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, kkAyar, kkTarih, false), kartTaban) : null }, form, form.faturaTipi);
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();

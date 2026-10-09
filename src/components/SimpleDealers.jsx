@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, calcKDV, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, parcaAdi, aramaNormalize } from "../lib/utils";
+import { uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, parcaAdi, aramaNormalize, tahsilEdilecekKdv } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { kartTahsilEdildiMi } from "../lib/krediKarti";
 import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
@@ -83,7 +83,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       const m = ensure(name);
       const curK = s.parcaCurrency || s.currency || "TRY";
       const tutar = altuntasParcaBedeli(s);
-      const kdv = calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
+      const kdv = tahsilEdilecekKdv(s.faturaTipi, tutar, s.date, kdvRates, s);
       m.byCur[curK] = (m.byCur[curK] || 0) + tutar;
       m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + kdv;
       m.records.push(s);
@@ -96,7 +96,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       const m = ensure(bayi.name);
       const curK = s.currency || "TRY";
       const bedel = yedekParcaBedeli(s);
-      const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+      const kdv = tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s);
       m.byCur[curK] = (m.byCur[curK] || 0) + bedel;
       m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + kdv;
       m.ypRecords.push(s);
@@ -110,7 +110,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       const m = ensure(taraf.ad);
       const curK = p.currency || "TRY";
       const tutar = parseMoney(p.ucret);
-      const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
+      const kdv = p.ucretsizMi ? 0 : tahsilEdilecekKdv(p.faturaTipi, tutar, p.tarih, kdvRates, p);
       m.byCur[curK] = (m.byCur[curK] || 0) + tutar;
       m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + kdv;
       m.kalipRecords.push(p);
@@ -471,7 +471,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 {borcMap[detailView.name].records.map(s => {
                   const cur = s.parcaCurrency || s.currency;
                   const tutar = altuntasParcaBedeli(s);
-                  const kdv = calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
+                  const kdv = tahsilEdilecekKdv(s.faturaTipi, tutar, s.date, kdvRates, s);
                   return (
                     <div key={s.id} style={{ borderTop: "1px solid var(--redBg2, #fee2e2)", padding: "6px 0" }}>
                       <div
@@ -489,7 +489,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 })}
                 {(borcMap[detailView.name].ypRecords || []).map(s => {
                   const bedel = yedekParcaBedeli(s);
-                  const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+                  const kdv = tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s);
                   return (
                     <div key={"yp" + s.id} style={{ borderTop: "1px solid var(--redBg2, #fee2e2)", padding: "6px 0" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
@@ -504,7 +504,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 })}
                 {(borcMap[detailView.name].kalipRecords || []).map(p => {
                   const tutar = parseMoney(p.ucret);
-                  const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
+                  const kdv = p.ucretsizMi ? 0 : tahsilEdilecekKdv(p.faturaTipi, tutar, p.tarih, kdvRates, p);
                   return (
                     <div key={"kl" + p.id} style={{ borderTop: "1px solid var(--redBg2, #fee2e2)", padding: "6px 0" }}>
                       <div
@@ -560,7 +560,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                   const disTedarikUcret = parseMoney(s.parcaUcreti) - parcaUcret;
                   const servisUcret = parseMoney(s.servisUcreti);
                   const parcaBizden = parcaUcret > 0 && !s.parcaUcretsizMi;
-                  const kdvToplam = parcaBizden ? calcKDV(s.faturaTipi, parcaUcret, s.date, kdvRates) : 0;
+                  const kdvToplam = parcaBizden ? tahsilEdilecekKdv(s.faturaTipi, parcaUcret, s.date, kdvRates, s) : 0;
                   return (
                     <div key={s.id}
                       onClick={() => { if (onGoCustomerDetail && s.customerId) { setDetailView(null); onGoCustomerDetail(s.customerId, { servisId: s.id }); } }}
@@ -638,7 +638,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 {ypPaged.map(s => {
                   const part = (parts || []).find(p => String(p.id) === String(s.partId));
                   const bedel = yedekParcaBedeli(s);
-                  const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+                  const kdv = tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s);
                   return (
                     <div key={s.id}
                       onClick={() => { if (onGoYedekParca) { setDetailView(null); onGoYedekParca(s.id); } }}
@@ -676,7 +676,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                 {kalipPaged.map(p => {
                   const cust = customers.find(c => c.id === p.customerId);
                   const tutar = parseMoney(p.ucret);
-                  const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
+                  const kdv = p.ucretsizMi ? 0 : tahsilEdilecekKdv(p.faturaTipi, tutar, p.tarih, kdvRates, p);
                   return (
                     <div key={p.id}
                       onClick={() => { if (onGoCustomerDetail) { setDetailView(null); onGoCustomerDetail(p.customerId, { kalipId: p.id }); } }}

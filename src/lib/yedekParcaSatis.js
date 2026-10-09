@@ -1,6 +1,7 @@
 // Yedek parça (kargo) satışı ortak kayıt mantığı. Stok > Yedek Parça Satışı sekmesi, müşteri detay
 // modalı ve bayi detay modalı aynı doğrulama + kayıt yolunu kullanır (ayrışmasın diye tek kaynak).
-import { uid, today, parseMoney, simdiYerel, totalMiktar, calcKDV } from "./utils";
+import { uid, today, parseMoney, simdiYerel, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "./utils";
+import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "./satisTevkifat";
 import { yedekParcaDus } from "./yedekParcaStok";
 import { yerelServisEkle } from "./yerelServis";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
@@ -31,19 +32,24 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
   const kdvTarih = form.tarih || today();                     // KDV oranı SATIŞ tarihinden
   const kkTarih = form.kartTarihi || form.tarih || today();   // blokaj KART İŞLEM tarihinden (boşsa satış tarihi)
   const kkFatura = form.faturaTipi || "Faturalı Yurtiçi";
+  const tevkifatHata = satisTevkifatDogrula(form, kkFatura); // spec 0079 R6
+  if (tevkifatHata) return { ok: false, hata: tevkifatHata };
+  // Spec 0079 R13 (revizyon 2): kart tutarı tahsil edilen KDV ile; düzenlemede kayıtlı anlık görüntünün tabanı korunur.
+  const taban = kartTabanKaydi(form);
   let birimFiyatSave = netBirim, kartKomisyonu = null;
   if (form.yontem === "Kredi Kartı" && form.taksitSayisi && ayar) {
     if (form.kkYansit && netBedel > 0) {
-      const kdvOran = calcKDV(kkFatura, 100, kdvTarih, kdvRates); // uygulanan oran (Yurtdışı/Faturasız → 0)
+      const kdvOran = tahsilKdvOrani(kkFatura, kdvTarih, kdvRates, taban); // uygulanan (tahsil edilen) oran; Yurtdışı/Faturasız → 0
       const a = kartYansitmaAyrim(netBedel, form.taksitSayisi, ayar, kdvOran, kkTarih);
       if (a) { birimFiyatSave = miktar > 0 ? a.kdvMatrah / miktar : a.kdvMatrah; kartKomisyonu = kartKomisyonuSnapshot(a.kartTutari, form.taksitSayisi, ayar, kkTarih, true); }
     }
     if (!kartKomisyonu) {
-      const kdvDahil = netBedel + calcKDV(kkFatura, netBedel, kdvTarih, kdvRates);
+      const kdvDahil = netBedel + tahsilEdilecekKdv(kkFatura, netBedel, kdvTarih, kdvRates, taban);
       kartKomisyonu = kartKomisyonuSnapshot(kdvDahil, form.taksitSayisi, ayar, kkTarih, false);
     }
+    kartKomisyonu = kartTabanIsaretle(kartKomisyonu, taban);
   }
-  return { ok: true, rec: {
+  return { ok: true, rec: satisTevkifatUygula({
     aliciTipi, dealerId, musteriId, partId, miktar,
     // Anlaşmasız dış firma alıcı bilgileri (yalnız bu kayda; bayi/müşteri kaydı oluşturulmaz).
     disFirma,
@@ -75,8 +81,10 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     teklifId: form.teklifId ?? null, teklifKalemId: form.teklifKalemId ?? null,
     // Spec 0044 R1: tahsilatın girdiği hesap; formda alan hiç yoksa kayda dokunulmaz (düzenleme ...rec ile birleşir).
     ...(form.hesapId !== undefined ? { hesapId: form.hesapId ?? null } : {}),
-  } };
+  }, form, kkFatura) }; // spec 0079 R5, R7: toplu satışta her satıra aynı tevkifat; kapı kapalıysa alanlar yok
 }
+// Düzenleme kolu (spec 0079 R5/1): `{ ...eski, ...rec }` birleştirmesi eski tevkifat alanlarını silmez; buradan geçer.
+export const yedekParcaGuncelle = (eski, rec, form) => satisTevkifatUygula({ ...eski, ...rec }, form, rec.faturaTipi);
 
 // Yedek parça satışı "planlanmış" mı? = panoya düşme zamanı ileride → o zamana kadar panoda gizli.
 // Servisteki servisPlanlandiMi'nin kargo karşılığı. Damgalar yerel duvar-saati string'i (new Date yerel).

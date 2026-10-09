@@ -178,6 +178,9 @@ export const SALE_TYPES = ["Faturalı Yurtiçi", "Faturalı Yurtdışı", "Fatur
 export const DEFAULT_KDV_RATE = 20; // son çare fallback (dizi tamamen boş/geçersizse)
 // KDV oranı zaman içinde değişti (Türkiye: 2023-07-10'a kadar %18, sonrasında %20) — Ayarlar'dan
 // dönem eklenip/düzenlenebilir. Her kayıt kendi tarihine göre doğru dönemin oranını kullanır.
+// KDV tevkifatı oranları (spec 0075 R3 gider tarafı, spec 0079 R4 satış tarafı): faturadaki kesir; tek liste. Payda veride
+// durur, /10 dışı bir oran eklemek tek satırdır, göç gerekmez.
+export const TEVKIFAT_ORANLARI = [{ pay: 2, payda: 10 }, { pay: 3, payda: 10 }, { pay: 4, payda: 10 }, { pay: 5, payda: 10 }, { pay: 7, payda: 10 }, { pay: 9, payda: 10 }];
 export const DEFAULT_KDV_RATES = [
   { from: "2008-01-01", rate: 18 },
   { from: "2023-07-10", rate: 20 },

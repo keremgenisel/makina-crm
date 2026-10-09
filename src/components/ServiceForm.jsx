@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari } from "../lib/utils";
+import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { HataMetni, Ipucu } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
+import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
+import { satisTevkifatDogrula, satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 
@@ -84,7 +86,12 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
     <Modal wide title={title} onClose={onCancel}
       footer={<div style={{ display: "flex", gap: 8 }}>
         <Btn variant="ghost" onClick={onCancel}>İptal</Btn>
-        <Btn onClick={() => onSave(parcaUcretsizMi, dosyaTaslaklari)}><Icon name="check" size={14} /> Kaydet</Btn>
+        <Btn onClick={() => {
+          // Spec 0079 R6/2: servis formunun hata deseni bildirimdir (parça hatası emsali).
+          const tevkifatHata = satisTevkifatDogrula(form, form.faturaTipi);
+          if (tevkifatHata) { showToast([tevkifatHata].join(" · "), "err"); return; }
+          onSave(parcaUcretsizMi, dosyaTaslaklari);
+        }}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>}>
       {draftBar}
       <Field label="Müşteri">
@@ -276,6 +283,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           </Select>
         </Field>
       </div>
+      {/* Spec 0079 R1, R2: tevkifat kutusu (yalnız faturalı yurtiçi); hata kayıtta bildirimle (R6/2). */}
+      <SatisTevkifatAlani form={form} setForm={setForm} saleType={form.faturaTipi} hataGoster={false}
+        kartUyarisi={kartTabaniEskiMi(form, form.faturaTipi)} onYeniTaban={() => setForm(p => ({ ...p, _kartYeniTaban: true }))} />
 
       {/* İşlemi anlaşmalı olmadığımız, müşterinin bulduğu bir servis yaptıysa: firma bilgileri
           YALNIZ bu servise kaydedilir (müşteri/bayi kaydı oluşturulmaz). */}
@@ -534,7 +544,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
               </div>
               {form.yontem === "Kredi Kartı" && (
                 <KartTaksitAlani ayar={krediKartiKomisyonlari}
-                  tutar={svToplam + calcKDV(form.faturaTipi, svToplam, form.date, kdvRates)} currency={form.currency || "TRY"}
+                  tutar={svToplam + tahsilEdilecekKdv(form.faturaTipi, svToplam, form.date, kdvRates, kartTabanKaydi(form))} currency={form.currency || "TRY"}
                   taksit={form.taksitSayisi} setTaksit={v => setForm(p => ({ ...p, taksitSayisi: v }))}
                   yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))}
                   tarih={form.date} kartTarihi={form.kartTarihi} setKartTarihi={v => setForm(p => ({ ...p, kartTarihi: v }))} />
@@ -559,20 +569,24 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             const parcaVar = !parcaUcretsizMi && parcaUcretiToplam > 0;
             const cur = form.currency || "TRY";
             const toplam = parseMoney(form.servisUcreti) + (parcaVar ? parcaUcretiToplam : 0);
-            const kdv = calcKDV(form.faturaTipi, toplam, form.date, kdvRates);
+            const kdv = tahsilEdilecekKdv(form.faturaTipi, toplam, form.date, kdvRates, form);
+            const yansit = form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit;
+            // Spec 0079 R23: tevkifatlı faturada mevcut kutunun içinde beş satır (kart yansıtmalı dalda da).
+            const tevOzet = satisTevkifatFormOzeti(form.faturaTipi, toplam, form.date, kdvRates, form, { kkAyar: krediKartiKomisyonlari, yansit, kartTarihi: form.kartTarihi });
             return (
               <>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>
                   Toplam (Servis + Parça): {fmtCur(toplam, cur)}
                 </span>
-                {kdv > 0 && !(form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit) && (
+                {kdv > 0 && !yansit && !tevOzet.tevkifatli && (
                   <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", marginTop: 6, fontWeight: 600 }}>
                     KDV (%{getKdvRateForDate(form.date, kdvRates)}): {fmtCur(kdv, cur)} · KDV dahil toplam: {fmtCur(toplam + kdv, cur)}
                   </div>
                 )}
+                <SatisTevkifatOzetSatirlari ozet={tevOzet} currency={cur} />
                 {form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit && toplam > 0 && (
                   <KartYansitmaOzeti netTaban={toplam} taksit={form.taksitSayisi} ayar={krediKartiKomisyonlari}
-                    kdvOrani={calcKDV(form.faturaTipi, 100, form.date, kdvRates)} currency={cur} tarih={form.kartTarihi || form.date} />
+                    kdvOrani={calcKDV(form.faturaTipi, 100, form.date, kdvRates)} tahsilKdvOrani={tahsilKdvOrani(form.faturaTipi, form.date, kdvRates, kartTabanKaydi(form))} currency={cur} tarih={form.kartTarihi || form.date} />
                 )}
               </>
             );

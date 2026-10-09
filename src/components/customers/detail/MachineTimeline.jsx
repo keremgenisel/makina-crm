@@ -2,11 +2,12 @@ import { useEffect, useRef } from "react";
 import { CEK_DURUM_AD } from "../../../lib/cek";
 import { SALE_TYPE_STYLE } from "../../../lib/constants";
 import {
-  fmtTR, fmtCur, parseMoney, calcKDV, normalizeSaleType, parcaAdi, parcaGruplari, isAltuntasServisi,
-  disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster, sureBicim, yedekParcaBedeli,
+  fmtTR, fmtCur, parseMoney, normalizeSaleType, parcaAdi, parcaGruplari, isAltuntasServisi,
+  disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster, sureBicim, yedekParcaBedeli, tahsilEdilecekKdv, satisKdvBolumu,
 } from "../../../lib/utils";
 import { servisSureleri } from "../../../lib/servisAnaliz";
 import { yansitilanKomisyon } from "../../../lib/krediKarti";
+import { satisTevkifatRozeti } from "../../../lib/satisTevkifat";
 import { Icon, Btn, AtesRozeti } from "../../ui";
 import { KartBolum, BosDurum } from "../../tasarim";
 
@@ -27,6 +28,18 @@ const PIL = { fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 7px"
 const YAZDIR_BTN = { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", background: "var(--n150, #f1f5f9)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" };
 const SIL_BTN = { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, color: "var(--red600, #dc2626)", background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 6, padding: "2px 8px", cursor: "pointer" };
 
+// Spec 0079 R26: tevkifatlı satışın rozeti (oran ve alıcının beyan edeceği KDV); borç neden fatura toplamından küçük sorusunun
+// cevabı kaydın yanında durur. Tevkifatsız kayıtta hiçbir şey çizilmez.
+const TevkifatRozeti = ({ kayit, tip, bedel, tarih, kdvRates, currency, blok = false }) => {
+  const b = satisKdvBolumu(tip, bedel, tarih, kdvRates, kayit);
+  if (!b.tevkifatli) return null;
+  const rozet = (
+    <span data-testid="satis-tevkifat-rozeti" style={{ fontSize: 10.5, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" }}>
+      {satisTevkifatRozeti(kayit, fmtCur(b.tevkifat, currency))}
+    </span>
+  );
+  return blok ? <div style={{ marginTop: 4 }}>{rozet}</div> : rozet;
+};
 export const MachineTimeline = ({
   detailView,
   odakServisId = null, // genel aramadan gelen: bu servis kaydını vurgula + görünür alana kaydır
@@ -253,18 +266,20 @@ export const MachineTimeline = ({
                 </div>
               )}
               {ev.desc && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 3, lineHeight: 1.5 }}>{ev.desc}</div>}
+              {ev.kind === "sale" && <TevkifatRozeti blok kayit={detailView} tip={detailView?.faturali} bedel={detailView?.faturaBedeli} tarih={detailView?.installDate} kdvRates={kdvRates} currency={detailView?.currency} />}
               {ev.yp && (() => {
                 // Toplu satış → grubun toplam bedeli + KDV (tek satır); tek satışta grup = [yp].
                 const grup = ev.ypGrup && ev.ypGrup.length ? ev.ypGrup : [ev.yp];
                 const bedel = grup.reduce((t, s) => t + yedekParcaBedeli(s), 0);
                 const kom = grup.reduce((t, s) => t + yansitilanKomisyon(s), 0);
-                const kdv = grup.reduce((t, s) => t + calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates), 0);
+                const kdv = grup.reduce((t, s) => t + tahsilEdilecekKdv(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates, s), 0);
                 return (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>
                       {kkUcgenMetin(bedel, kom, kdv, ev.yp.currency, "Yedek parça")
                         || <>Yedek Parça Ücreti: {fmtCur(bedel, ev.yp.currency)}{kdv > 0 && <> · KDV dahil: {fmtCur(bedel + kdv, ev.yp.currency)}</>}</>}
                     </span>
+                    <TevkifatRozeti kayit={ev.yp} tip={ev.yp.faturaTipi} bedel={bedel} tarih={ev.yp.tarih} kdvRates={kdvRates} currency={ev.yp.currency} />
                     {canDo("cust_yedek_parca_payment") && onToggleYedekParcaOdendi && (
                       <button onClick={() => onToggleYedekParcaOdendi(ev.yp)}
                         style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: ev.yp.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: ev.yp.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: ev.yp.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
@@ -295,7 +310,7 @@ export const MachineTimeline = ({
                     </div>
                   )}
                   {psList.map(p => {
-                    const kdv = p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates);
+                    const kdv = p.ucretsizMi ? 0 : tahsilEdilecekKdv(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates, p);
                     return (
                       <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: psList.length > 1 ? 3 : 5, flexWrap: "wrap" }}>
                         {psList.length > 1 && (
@@ -314,6 +329,7 @@ export const MachineTimeline = ({
                             : (kkUcgenMetin(parseMoney(p.ucret), yansitilanKomisyon(p), kdv, p.currency)
                               || (fmtCur(p.ucret, p.currency) + (kdv > 0 ? ` · KDV dahil: ${fmtCur(p.ucret + kdv, p.currency)}` : "")))}
                         </span>
+                        {!p.ucretsizMi && <TevkifatRozeti kayit={p} tip={p.faturaTipi || normalizeSaleType(detailView.faturali)} bedel={p.ucret} tarih={p.tarih} kdvRates={kdvRates} currency={p.currency} />}
                         {canDo("cust_kalip_payment") && (
                           <button onClick={() => onTogglePartSaleOdendi(p)}
                             style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: p.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: p.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
@@ -337,7 +353,7 @@ export const MachineTimeline = ({
                   {psList.length > 1 && (() => {
                     const toplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : parseMoney(p.ucret)), 0);
                     const komToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : yansitilanKomisyon(p)), 0);
-                    const kdvToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : calcKDV(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates)), 0);
+                    const kdvToplam = psList.reduce((s, p) => s + (p.ucretsizMi ? 0 : tahsilEdilecekKdv(p.faturaTipi || normalizeSaleType(detailView.faturali), p.ucret, p.tarih, kdvRates, p)), 0);
                     return (
                       <div style={{ fontSize: 12, fontWeight: 700, color: "var(--blu700, #1d4ed8)", marginTop: 5 }}>
                         {kkUcgenMetin(toplam, komToplam, kdvToplam, psList[0].currency, "Ürün toplam")
@@ -391,13 +407,16 @@ export const MachineTimeline = ({
                     const sameCurrency = !servisVar || !parcaVar || sv.currency === (sv.parcaCurrency || sv.currency);
                     if (sameCurrency) {
                       const toplam = (servisVar ? parseMoney(sv.servisUcreti) : 0) + (parcaVar ? parseMoney(sv.parcaUcreti) : 0);
-                      const kdv = calcKDV(sv.faturaTipi, toplam, sv.date, kdvRates);
+                      const kdv = tahsilEdilecekKdv(sv.faturaTipi, toplam, sv.date, kdvRates, sv);
                       const label = servisVar && parcaVar ? "Servis ve Yedek Parça Ücreti" : servisVar ? "Servis Ücreti" : "Yedek Parça Ücreti";
                       const ucgen = kkUcgenMetin(toplam, yansitilanKomisyon(sv), kdv, sv.currency, label);
                       return (
-                        <span style={{ fontSize: 12, color: "var(--red600, #dc2626)", fontWeight: 700 }}>
-                          {ucgen || <>{label}: {fmtCur(toplam, sv.currency)}{kdv > 0 && <> · KDV dahil: {fmtCur(toplam + kdv, sv.currency)}</>}</>}
-                        </span>
+                        <>
+                          <span style={{ fontSize: 12, color: "var(--red600, #dc2626)", fontWeight: 700 }}>
+                            {ucgen || <>{label}: {fmtCur(toplam, sv.currency)}{kdv > 0 && <> · KDV dahil: {fmtCur(toplam + kdv, sv.currency)}</>}</>}
+                          </span>
+                          <TevkifatRozeti kayit={sv} tip={sv.faturaTipi} bedel={toplam} tarih={sv.date} kdvRates={kdvRates} currency={sv.currency} />
+                        </>
                       );
                     }
                     return (

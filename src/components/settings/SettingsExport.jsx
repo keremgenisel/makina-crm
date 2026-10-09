@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
-import { fmtTR, cekGelirMi, fmtKalipCapi, normalizeSaleType, isFaturali, calcKDV, parseMoney, kalipCount, faturaBedeliOf, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, isAltuntasServisi } from "../../lib/utils";
+import { fmtTR, cekGelirMi, fmtKalipCapi, normalizeSaleType, isFaturali, parseMoney, kalipCount, faturaBedeliOf, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, isAltuntasServisi, tahsilEdilecekKdv } from "../../lib/utils";
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { Icon, Btn } from "../ui";
 import { KartBolum } from "../tasarim";
@@ -10,6 +10,7 @@ import { aliciAd, aliciRozet } from "../stock/TahsisModal";
 import { hareketTipAdi } from "../../lib/stokHareketi";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 import { cekBilgisi, tahsilatHaritasi, yonOf, CEK_DURUM_AD, CEK_TUR_AD } from "../../lib/cek";
+import { SATIS_TEVKIFAT_EXPORT_HEAD, satisTevkifatExportHucreleri } from "../../lib/satisTevkifat";
 
 // Kredi kartı taksit/komisyon export yardımcıları (payments/servis/Extra Kalıp/Yedek Parça'da ortak).
 // taksit 1 = "Tek Çekim"; komisyon = kartKomisyonu.toplamKesinti (banka kesintisi). Kredi kartı değilse boş.
@@ -30,8 +31,9 @@ export const urunBedeliKomisyonHaric = (bedel, rec, matrahTotal = null) => {
 
 // Yedek parça (kargo) satışları dışa aktarım başlığı + satırı (saf; test edilebilir).
 // Alıcı adı/türü ortak yardımcılarla çözülür → bayi / müşteri / anlaşmasız dış firma doğru gösterilir.
-export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Ürün Bedeli (Komisyon Hariç)", "Tarih", "Ödendi", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri"];
-export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [] } = {}) => {
+export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Ürün Bedeli (Komisyon Hariç)", "Tarih", "Ödendi", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri", ...SATIS_TEVKIFAT_EXPORT_HEAD];
+// Spec 0079 R32: tevkifat sütunları satırın sonunda (tevkifatsızda boş).
+export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [], kdvRates = DEFAULT_KDV_RATES } = {}) => {
   const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
   const tur = { "MÜŞTERİ": "Müşteri", "ANLAŞMASIZ SERVİS": "Anlaşmasız Servis", "BAYİ": "Bayi" }[aliciRozet(s).label] || "Bayi";
   const part = parts.find(p => String(p.id) === String(s.partId)) || {};
@@ -45,7 +47,8 @@ export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [
     parseMoney(s.birimFiyat), curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"],
     (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), urunBedeliKomisyonHaric((parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s), s.tarih || "", s.odendi ? "Evet" : "Hayır",
     s.odendi ? (s.yontem || "Nakit") : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s), komisyonYansitildiEtiket(s),
-    teslimSekli, s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", teslimatAdresi, tahsis];
+    teslimSekli, s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", teslimatAdresi, tahsis,
+    ...satisTevkifatExportHucreleri(s.faturaTipi, (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s.tarih, kdvRates, s)];
 };
 
 // Finans Özeti (Dışa Aktar) toplamları — saf; Finance.jsx ile AYNI gelir kuralları:
@@ -62,7 +65,7 @@ export const finansOzetiHesapla = ({ customers = [], services = [], partSales = 
   real.forEach(c => {
     const k = cur(c.currency);
     const tip = normalizeSaleType(c.faturali);
-    const kdvTutar = calcKDV(tip, c.faturaBedeli, c.installDate, kdvRates);
+    const kdvTutar = tahsilEdilecekKdv(tip, c.faturaBedeli, c.installDate, kdvRates, c); // spec 0079 R32: düşülmüş tutar
     gercekCiro[k] += parseMoney(c.fabrikaSatisBedeli) || faturaBedeliOf(c);
     // Komisyon GİDER olarak çıkarılır (eklenmez) — Finance.jsx'teki Toplam Bedel ile tutarlı
     toplamCiro[k] += parseMoney(c.fabrikaSatisBedeli) + kdvTutar - parseMoney(c.komisyon);
@@ -81,12 +84,12 @@ export const finansOzetiHesapla = ({ customers = [], services = [], partSales = 
     if (iscilik > 0) {
       const k = cur(s.currency);
       servisUc[k] += iscilik;
-      kdv[k] += calcKDV(s.faturaTipi, iscilik, s.date, kdvRates);
+      kdv[k] += tahsilEdilecekKdv(s.faturaTipi, iscilik, s.date, kdvRates, s);
     }
     if (parca > 0) {
       const k = cur(s.parcaCurrency || s.currency);
       (isAltuntasServisi(s, factoryName) ? servisParca : anlasmaliParca)[k] += parca;
-      kdv[k] += calcKDV(s.faturaTipi, parca, s.date, kdvRates);
+      kdv[k] += tahsilEdilecekKdv(s.faturaTipi, parca, s.date, kdvRates, s);
     }
   });
   // Toplam Extra Kalıp Satışı — donmuş extraKalipFiyati yerine canlı Extra Kalıp sekmesi verisi
@@ -193,7 +196,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportCustomers = async (mode = "download") => {
-    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon", "Ödeme Planı", "Kaynak Teklif No", "Brüt Kg"];
+    const head = ["Firma", "Telefon", "E-posta", "Ülke", "Şehir", "Adres", "Model", "Makina Kalıp Çapı", "Seri No", "Kalıplar", "Satış Tarihi", "Garanti Bitiş", "Satış Yapan", "Satış Tipi", "Para Birimi", "Fabrika Satış Bedeli", "Fatura Bedeli", "KDV", "Komisyon", "Extra Kalıp", "Kalan Borç", "2. El mi?", "Yetkili1 Ad", "Yetkili1 Telefon", "Yetkili2 Ad", "Yetkili2 Telefon", "Ödeme Planı", "Kaynak Teklif No", "Brüt Kg", ...SATIS_TEVKIFAT_EXPORT_HEAD];
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const kdvRates = appSettings?.kdvRates ?? DEFAULT_KDV_RATES;
     const rows = [head, ...customers.map(c => [
@@ -201,13 +204,14 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
       (c.kaliplar || []).map(k => `${k.ad}${k.olcu ? " (" + k.olcu + ")" : ""}`).join(", "),
       c.installDate, c.warrantyEnd, c.satisYapan, normalizeSaleType(c.faturali),
       curName[CURRENCIES.includes(c.currency) ? c.currency : "TRY"],
-      parseMoney(c.fabrikaSatisBedeli), faturaBedeliOf(c), calcKDV(c.faturali, c.faturaBedeli, c.installDate, kdvRates),
+      parseMoney(c.fabrikaSatisBedeli), faturaBedeliOf(c), tahsilEdilecekKdv(c.faturali, c.faturaBedeli, c.installDate, kdvRates, c),
       parseMoney(c.komisyon), parseMoney(c.extraKalipFiyati), parseMoney(c.kalanBorc),
       c.isResale ? "Evet" : "Hayır",
       c.yetkili1Ad, c.yetkili1Tel, c.yetkili2Ad, c.yetkili2Tel,
       (c.odemePlani || []).map(r => `${r.vadeTarihi || "-"}: ${parseMoney(r.tutar)} (${r.odemeId ? "Ödendi" : "Bekliyor"})`).join("; "),
       c.fromTeklifId ? (teklifler.find(t => t.id === c.fromTeklifId)?.no || c.fromTeklifId) : "",
       c.brutKg ?? "",
+      ...satisTevkifatExportHucreleri(c.faturali, c.faturaBedeli, c.installDate, kdvRates, c), // spec 0079 R32
     ])];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Müşteriler"); openExportMailXLSXBase64(b64, "musteriler.xlsx", "Müşteri Listesi"); return; }
@@ -218,7 +222,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportServices = async (mode = "download") => {
-    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Durum", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Servis Ücreti (Komisyon Hariç)", "Ödendi mi?", "Ödeme Yöntemi", "Çek Vade Tarihi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Yapılan İşler", "Müşteri Talimatı"];
+    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Durum", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Servis Ücreti (Komisyon Hariç)", "Ödendi mi?", "Ödeme Yöntemi", "Çek Vade Tarihi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Yapılan İşler", "Müşteri Talimatı", ...SATIS_TEVKIFAT_EXPORT_HEAD];
+    const kdvRates = appSettings?.kdvRates ?? DEFAULT_KDV_RATES;
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...services.map(s => {
       const c = customers.find(x => x.id === s.customerId) || {};
@@ -229,7 +234,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
         urunBedeliKomisyonHaric(s.servisUcreti, s, parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti))),
         s.odendi ? "Evet" : "Hayır", s.odendi ? (s.yontem || "Nakit") : "",
         (s.yontem === "Çek" && s.vadeTarihi) ? fmtTR(s.vadeTarihi) : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s), komisyonYansitildiEtiket(s),
-        s.yapilanIsler, s.musteriTalimati];
+        s.yapilanIsler, s.musteriTalimati,
+        ...satisTevkifatExportHucreleri(s.faturaTipi, parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti)), s.date, kdvRates, s)]; // spec 0079 R32
     })];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Servis"); openExportMailXLSXBase64(b64, "servis-kayitlari.xlsx", "Servis Kayıtları"); return; }
@@ -262,7 +268,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportPartSales = async (mode = "download") => {
-    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ürün Fiyatı (Komisyon Hariç)", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Kaynak Teklif No", "Üretim Formuna Gönder", "Kargo Durumu", "Kargo Firma", "Kargo Takip No", "Farklı Teslimat Adresi"];
+    const head = ["Müşteri", "Tür", "Kalıp/Parça Adı", "Ölçü", "Tarih", "Satış Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Ücret", "Ürün Fiyatı (Komisyon Hariç)", "Ücretsiz mi?", "Fatura Tipi", "Ödendi mi?", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Kaynak Teklif No", "Üretim Formuna Gönder", "Kargo Durumu", "Kargo Firma", "Kargo Takip No", "Farklı Teslimat Adresi", ...SATIS_TEVKIFAT_EXPORT_HEAD];
+    const kdvRates = appSettings?.kdvRates ?? DEFAULT_KDV_RATES;
     const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
     const rows = [head, ...partSales.map(p => {
       const c = customers.find(x => x.id === p.customerId) || {};
@@ -277,7 +284,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
         (p.odendi && !p.ucretsizMi) ? (p.yontem || "Nakit") : "", cekDurum, kartTaksitEtiket(p), kartKomisyonTutar(p), komisyonYansitildiEtiket(p),
         p.teklifId ? (teklifler.find(t => t.id === p.teklifId)?.no || p.teklifId) : "",
         p.uretimFormGonder ? "Evet" : "Hayır",
-        p.kargoDurum || "", p.kargoFirma || "", p.kargoTakipNo || "", teslimatAdresi];
+        p.kargoDurum || "", p.kargoFirma || "", p.kargoTakipNo || "", teslimatAdresi,
+        ...(p.ucretsizMi ? ["", ""] : satisTevkifatExportHucreleri(p.faturaTipi, p.ucret, p.tarih, kdvRates, p))]; // spec 0079 R32
     })];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Kalıp Satışları"); openExportMailXLSXBase64(b64, "extra-kalip-satislari.xlsx", "Extra Kalıp Satışları"); return; }
@@ -428,7 +436,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportYedekParcaSatislar = async (mode = "download") => {
-    const rows = [YEDEK_PARCA_EXPORT_HEAD, ...yedekParcaSatislar.filter(s => !s.deletedAt).map(s => yedekParcaExportRow(s, { dealers, customers, parts }))];
+    const rows = [YEDEK_PARCA_EXPORT_HEAD, ...yedekParcaSatislar.filter(s => !s.deletedAt).map(s => yedekParcaExportRow(s, { dealers, customers, parts, kdvRates: appSettings?.kdvRates ?? DEFAULT_KDV_RATES }))];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Yedek Parça Satışları"); openExportMailXLSXBase64(b64, "yedek-parca-satislari.xlsx", "Yedek Parça (Kargo) Satışları"); return; }
       await downloadXlsx(rows, "yedek-parca-satislari.xlsx", "Yedek Parça Satışları"); flash("ok", "Yedek parça satışları Excel olarak indirildi.");

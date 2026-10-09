@@ -3,8 +3,8 @@
 // böylece bağımsız birim-test edilebilir. Bileşen bunu useMemo içinde tek satırla çağırır.
 import {
   normalizeSaleType, fmtCur, fmtTR, sumPayments, calcKalanBorc, calcCiro, isServisBorcluMu,
-  isServisUcretliMi, isParcaUcretliMi, parseMoney, calcKDV, partSaleMusteriBorcuMu,
-  sumBekleyenCek, isCekVadesiGecmis, cekBekliyorMu, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu,
+  isServisUcretliMi, isParcaUcretliMi, parseMoney, partSaleMusteriBorcuMu,
+  sumBekleyenCek, isCekVadesiGecmis, cekBekliyorMu, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu, tahsilEdilecekKdv, tahsilKdvOrani,
 } from "../../../lib/utils";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "../../../lib/krediKarti";
 
@@ -127,7 +127,7 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         const km = yansitilanKomisyon(p);
         let tutarTxt;
         if (km > 0) {
-          const oran = calcKDV(normalizeSaleType(detailView.faturali), 100, p.tarih, kdvRates) / 100;
+          const oran = tahsilKdvOrani(normalizeSaleType(detailView.faturali), p.tarih, kdvRates, detailView) / 100; // spec 0079 revizyon 2
           const tutar = parseMoney(p.tutar);
           const mal = oran > 0 ? (tutar - km * oran) / (1 + oran) : tutar;
           const kdv = tutar - mal;
@@ -185,22 +185,22 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
       services.filter(s => s.customerId === detailView.id && isServisBorcluMu(s, factoryName)).forEach(s => {
         if (isServisUcretliMi(s, factoryName)) {
           const tutar = parseMoney(s.servisUcreti);
-          ekle(s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, s.date, kdvRates));
+          ekle(s.currency || "TRY", tutar + tahsilEdilecekKdv(s.faturaTipi, tutar, s.date, kdvRates, s));
         }
         if (isParcaUcretliMi(s)) {
           const tutar = parseMoney(s.parcaUcreti);
-          ekle(s.parcaCurrency || s.currency || "TRY", tutar + calcKDV(s.faturaTipi, tutar, s.date, kdvRates));
+          ekle(s.parcaCurrency || s.currency || "TRY", tutar + tahsilEdilecekKdv(s.faturaTipi, tutar, s.date, kdvRates, s));
         }
       });
       // Spec 0007 (K4): bayinin / dış firmanın sattığı kalıp müşterinin borcu değildir (kalipBorcTarafi).
       (partSales || []).filter(p => p.customerId === detailView.id && partSaleMusteriBorcuMu(p, factoryName)).forEach(p => {
         const tutar = parseMoney(p.ucret);
-        ekle(p.currency || "TRY", tutar + calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates));
+        ekle(p.currency || "TRY", tutar + tahsilEdilecekKdv(p.faturaTipi, tutar, p.tarih, kdvRates, p));
       });
       // Bu müşteriye yapılan ödenmemiş yedek parça (kargo) satışları da borç
       (yedekParcaSatislar || []).filter(s => s.aliciTipi === "musteri" && Number(s.musteriId) === detailView.id && isYedekParcaBorcluMu(s)).forEach(s => {
         const bedel = yedekParcaBedeli(s);
-        ekle(s.currency || "TRY", bedel + calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates));
+        ekle(s.currency || "TRY", bedel + tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s));
       });
     }
     const detailMainCur = detailView?.currency || "TRY";
@@ -226,23 +226,23 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         if (isServisUcretliMi(s, factoryName) && (s.currency || "TRY") === detailMainCur) {
           const tutar = parseMoney(s.servisUcreti);
           detailServisNet += tutar;
-          detailServisKdv += calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
+          detailServisKdv += tahsilEdilecekKdv(s.faturaTipi, tutar, s.date, kdvRates, s);
         }
         if (isParcaUcretliMi(s) && (s.parcaCurrency || s.currency || "TRY") === detailMainCur) {
           const tutar = parseMoney(s.parcaUcreti);
           detailServisNet += tutar;
-          detailServisKdv += calcKDV(s.faturaTipi, tutar, s.date, kdvRates);
+          detailServisKdv += tahsilEdilecekKdv(s.faturaTipi, tutar, s.date, kdvRates, s);
         }
       });
       (partSales || []).filter(p => p.customerId === detailView.id && p.tur === "Kalıp" && !p.ucretsizMi && (p.currency || "TRY") === detailMainCur).forEach(p => {
         const tutar = parseMoney(p.ucret);
         detailExtraKalipNet += tutar;
-        detailExtraKalipKdv += calcKDV(p.faturaTipi, tutar, p.tarih, kdvRates);
+        detailExtraKalipKdv += tahsilEdilecekKdv(p.faturaTipi, tutar, p.tarih, kdvRates, p);
       });
       (yedekParcaSatislar || []).filter(s => !s.deletedAt && s.aliciTipi === "musteri" && Number(s.musteriId) === detailView.id && (s.currency || "TRY") === detailMainCur).forEach(s => {
         const tutar = yedekParcaBedeli(s);
         detailYedekParcaNet += tutar;
-        detailYedekParcaKdv += calcKDV(s.faturaTipi, tutar, s.tarih, kdvRates);
+        detailYedekParcaKdv += tahsilEdilecekKdv(s.faturaTipi, tutar, s.tarih, kdvRates, s);
       });
     }
 

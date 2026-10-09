@@ -58,12 +58,12 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:279`
+**Örnek:** `src/components/Giderler.jsx:280`
 **Örnek:** `src/components/Documents.jsx:1112`
-**Örnek:** `src/components/Customers.jsx:482` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Customers.jsx:491` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:55` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
-**Örnek:** `src/components/PartSaleForm.jsx:321` (form içi, düğme kipi, eşit genişlik)
+**Örnek:** `src/components/PartSaleForm.jsx:332` (form içi, düğme kipi, eşit genişlik)
 
 ### Ne zaman açılır liste? (spec 0042 R10)
 
@@ -122,7 +122,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
-**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:75` (eylem yuvası, alt başlık)
+**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:88` (eylem yuvası, alt başlık)
 
 ## BolumBasligi
 
@@ -166,8 +166,8 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:340`
-**Örnek:** `src/components/Customers.jsx:516` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Giderler.jsx:341`
+**Örnek:** `src/components/Customers.jsx:525` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
@@ -188,7 +188,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
-**Örnek:** `src/components/Giderler.jsx:306`
+**Örnek:** `src/components/Giderler.jsx:307`
 **Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
@@ -222,7 +222,7 @@ Alanın hemen altında kırmızı hata metni. `role="alert"`, boş içerikte hi�
 - Uyarı için başka bir varyant (simgeli, amber) yazılmaz; eski `Warn` spec 0015'te kaldırıldı.
 
 **Örnek:** `src/components/CalisanManager.jsx:219`
-**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:107` (canlı doğrulama, form açılır açılmaz görünür)
+**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:112` (canlı doğrulama, form açılır açılmaz görünür)
 
 ## Ipucu
 
@@ -235,7 +235,7 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 - Uyarı niteliğinde bilgi için: `UyariSeridi`.
 
 **Örnek:** `src/components/CalisanManager.jsx:237`
-**Örnek:** `src/components/PartSaleForm.jsx:368` (seçimin sonucunu anlatan cümle)
+**Örnek:** `src/components/PartSaleForm.jsx:379` (seçimin sonucunu anlatan cümle)
 
 ---
 

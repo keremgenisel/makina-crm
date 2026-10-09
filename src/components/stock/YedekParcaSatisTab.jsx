@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, calcKDV } from "../../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
 import { Segment, BosDurum } from "../tasarim";
@@ -8,7 +8,8 @@ import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
 import { TahsisModal, tahsisToplam, aliciAd, aliciRozet } from "./TahsisModal";
 import { yedekParcaDus, yedekParcaGeriAl } from "../../lib/yedekParcaStok";
 import { netDusum, netDusumAyni } from "../../lib/stokHareketi";
-import { yedekParcaRec, yeniYedekParcaSatisCoklu } from "../../lib/yedekParcaSatis";
+import { yedekParcaRec, yeniYedekParcaSatisCoklu, yedekParcaGuncelle } from "../../lib/yedekParcaSatis";
+import { satisTevkifatRozeti } from "../../lib/satisTevkifat";
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { yedekParcaEtiketYazdir } from "../../lib/printTemplates";
 import { logAction } from "../../lib/audit";
@@ -46,7 +47,7 @@ export const gruplaSatislar = (kayitlar, { dealers = [], customers = [], kdvRate
       if (tahsisToplam(s) < m) eksik++;
       const cur = s.currency || "TRY", bedel = yedekParcaBedeli(s);
       tutarCur[cur] = (tutarCur[cur] || 0) + bedel;
-      if (isYedekParcaBorcluMu(s)) { const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates); borcCur[cur] = (borcCur[cur] || 0) + bedel + kdv; }
+      if (isYedekParcaBorcluMu(s)) { const kdv = tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s); borcCur[cur] = (borcCur[cur] || 0) + bedel + kdv; }
       if (String(s.tarih || "") > sonTarih) sonTarih = String(s.tarih || "");
     }
     g.records.sort((a, b) => String(b.tarih || "").localeCompare(String(a.tarih || "")));
@@ -180,7 +181,7 @@ export const YedekParcaSatisTab = ({
         const dusulen = Math.min(rec.miktar, Math.max(0, kullanilabilir));
         yedekParcaDus(rec.partId, dusulen, eski.id, setPartStock, setPartStockLog);
       }
-      setYedekParcaSatislar(p => p.map(s => s.id === eski.id ? { ...s, ...rec } : s));
+      setYedekParcaSatislar(p => p.map(s => s.id === eski.id ? yedekParcaGuncelle(s, rec, form) : s));
       audit("duzenlendi", eski.id, rec);
       showToast("Satış güncellendi.");
     }
@@ -243,6 +244,11 @@ export const YedekParcaSatisTab = ({
             )}
             <div style={{ fontSize: grupIci ? 13.5 : 12.5, fontWeight: grupIci ? 700 : 400, color: grupIci ? "var(--n900, #0f172a)" : "var(--n600, #475569)", marginTop: grupIci ? 0 : 2 }}>
               {parcaAdi(part) || "(parça yok)"} · <strong>{s.miktar} adet</strong> · {fmtCur(toplam, s.currency || "TRY")}
+              {/* Spec 0079 R26: tevkifatlı satışın rozeti (oran ve alıcının beyan edeceği KDV). */}
+              {(() => { const b = satisKdvBolumu(s.faturaTipi, toplam, s.tarih, kdvRates, s); return b.tevkifatli ? (
+                <span data-testid="satis-tevkifat-rozeti" style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" }}>
+                  {satisTevkifatRozeti(s, fmtCur(b.tevkifat, s.currency || "TRY"))}
+                </span>) : null; })()}
             </div>
             <div style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)", marginTop: 2 }}>
               {fmtTR(s.tarih)}{s.kargoDurum ? ` · 📦 ${s.kargoDurum}` : ""}{s.kargoTakipNo ? ` · ${s.kargoFirma || "Kargo"} ${s.kargoTakipNo}` : ""}

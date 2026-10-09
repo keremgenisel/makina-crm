@@ -210,7 +210,9 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
 // aynı banka ve numaralı kayıtlı çek uyarı verir (engellemez). Her çek ayrı satırdır (bir tahsilat bir çek taşır).
 // Spec 0063 R15, C6: satirEki(satir, i) satırın altına çağıranın verdiği içeriği çizer (tahsilat hesabı). Seçici buraya
 // içe alınmaz: kasa/TahsilatHesap ui.jsx'ten içe alır, döngü olurdu (KartTaksitAlani'ndaki tuzak).
-export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tarih, cekler = null, satirEki = null }) => {
+// Spec 0079 revizyon 2 (R9/2): kdvOrani etikettir ("KDV %20"); kart tutarı ve kırılım müşterinin ödediği tahsilKdvOrani ile
+// (tevkifatlı satışta düşük). Verilmezse ikisi aynıdır.
+export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomisyonlari = null, currency = "TRY", kdvOrani = 0, tahsilKdvOrani = kdvOrani, tarih, cekler = null, satirEki = null }) => {
   const satirlar = rows || [];
   const toplam = satirlar.reduce((s, r) => s + (Number(r.tutar) || 0), 0);
   const satirGuncelle = (i, patch) => onChange(satirlar.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -252,14 +254,14 @@ export const PaymentRowsEditor = ({ rows, onChange, sym = "₺", krediKartiKomis
           })()}
           {r.yontem === "Kredi Kartı" && krediKartiKomisyonlari && (
             <>
-              <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar) * (1 + kdvOrani / 100)} currency={currency}
+              <KartTaksitAlani ayar={krediKartiKomisyonlari} tutar={parseMoney(r.tutar) * (1 + tahsilKdvOrani / 100)} currency={currency}
                 taksit={r.taksitSayisi} setTaksit={v => satirGuncelle(i, { taksitSayisi: v })}
                 yansit={!!r.kkYansit} setYansit={v => satirGuncelle(i, { kkYansit: v })}
                 tarih={tarih} kartTarihi={r.kartTarihi} setKartTarihi={v => satirGuncelle(i, { kartTarihi: v })} />
               {r.kkYansit && parseMoney(r.tutar) > 0 && (
                 // Girilen tutar KDV HARİÇ mal bedeli → faturalıda karta KDV + komisyon eklenir (Extra Kalıp gibi).
                 <KartYansitmaOzeti netTaban={parseMoney(r.tutar)} taksit={r.taksitSayisi} ayar={krediKartiKomisyonlari}
-                  kdvOrani={kdvOrani} currency={currency} satisLabel="Ödeme (mal bedeli)" tarih={r.kartTarihi || tarih} />
+                  kdvOrani={kdvOrani} tahsilKdvOrani={tahsilKdvOrani} currency={currency} satisLabel="Ödeme (mal bedeli)" tarih={r.kartTarihi || tarih} />
               )}
             </>
           )}

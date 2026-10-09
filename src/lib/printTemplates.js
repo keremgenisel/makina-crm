@@ -1,6 +1,6 @@
 import LOGO from "../assets/logo.avif?inline";
 import { sayi, st, gecenAyEki, altBaslik, gun, detayTablo, rozet, rozetSatiri, bolum, belgeAcilis } from "./raporSunumu";
-import { today, todayTR, fmtTR, fmtCur, parseMoney, calcKDV, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster } from "./utils";
+import { today, todayTR, fmtTR, fmtCur, parseMoney, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster, satisKdvBolumu } from "./utils";
 import { COUNTRY_EN } from "./constants";
 
 // TIRNAK da kaçırılır: bu değerler yalnız metin düğümlerinde değil, HTML ÖZNİTELİĞİ içinde
@@ -86,6 +86,10 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     parcaUcretiLabel: "Parça Ücreti",
     toplamLabel: "Toplam",
     kdvDahilLabel: "KDV dahil",
+    // Spec 0079 R28: tevkifatlı serviste üç satır (yalnız tevkifatlı kayıtta basılır).
+    toplamKdvLabel: "Faturadaki Toplam KDV",
+    tevkifatLabel: "KDV Tevkifatı (alıcı beyan eder)",
+    tahsilEdilecekKdvLabel: "Tahsil Edilecek KDV",
     disServisLabel: "İşlemi Yapan Firma (Anlaşmasız)",
     yetkiliLabel: "Yetkili Kişi",
     firmaTelLabel: "Firma Telefonu",
@@ -129,6 +133,9 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     parcaUcretiLabel: "Parts Fee",
     toplamLabel: "Total",
     kdvDahilLabel: "VAT included",
+    toplamKdvLabel: "Total VAT on Invoice",
+    tevkifatLabel: "VAT Withholding (declared by buyer)",
+    tahsilEdilecekKdvLabel: "VAT to be Collected",
     disServisLabel: "Service Firm (Non-contracted)",
     yetkiliLabel: "Contact Person",
     firmaTelLabel: "Firm Phone",
@@ -275,11 +282,16 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   const ucret = servisUcretiVar ? fmtCur(sv.servisUcreti, sv.currency) : "—";
   const parcaUcret = parcaUcretiVar ? fmtCur(sv.parcaUcreti, sv.parcaCurrency) : "—";
   const sameCurrency = (sv.currency || "TRY") === (sv.parcaCurrency || sv.currency || "TRY");
-  let toplam = null;
+  let toplam = null, tevkifatSatirlari = [];
+  // Spec 0079 R28: tevkifatlı serviste toplam KDV, tevkifat ve tahsil edilecek KDV ayrı satırlarda; tevkifatsızda çıktı aynı.
+  const tevkifatSatirlariKur = (b, cur) => (b.tevkifatli ? [[L.toplamKdvLabel, fmtCur(b.toplamKdv, cur)],
+    [`${L.tevkifatLabel} ${b.pay}/${b.payda}`, fmtCur(b.tevkifat, cur)], [L.tahsilEdilecekKdvLabel, fmtCur(b.bizKdv, cur)]] : []);
   if (servisUcretiVar && parcaUcretiVar) {
     if (sameCurrency) {
       const toplamTutar = parseMoney(sv.servisUcreti) + parseMoney(sv.parcaUcreti);
-      const kdv = calcKDV(sv.faturaTipi, toplamTutar, sv.date, kdvRates);
+      const b = satisKdvBolumu(sv.faturaTipi, toplamTutar, sv.date, kdvRates, sv);
+      const kdv = b.bizKdv;
+      tevkifatSatirlari = tevkifatSatirlariKur(b, sv.currency);
       toplam = fmtCur(toplamTutar, sv.currency) + (kdv > 0 ? ` (${L.kdvDahilLabel}: ${fmtCur(toplamTutar + kdv, sv.currency)})` : "");
     } else {
       toplam = `${fmtCur(sv.servisUcreti, sv.currency)} + ${fmtCur(sv.parcaUcreti, sv.parcaCurrency)}`;
@@ -287,7 +299,9 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
   } else if (servisUcretiVar || parcaUcretiVar) {
     const toplamTutar = servisUcretiVar ? parseMoney(sv.servisUcreti) : parseMoney(sv.parcaUcreti);
     const cur = servisUcretiVar ? sv.currency : sv.parcaCurrency;
-    const kdv = calcKDV(sv.faturaTipi, toplamTutar, sv.date, kdvRates);
+    const b = satisKdvBolumu(sv.faturaTipi, toplamTutar, sv.date, kdvRates, sv);
+    const kdv = b.bizKdv;
+    tevkifatSatirlari = tevkifatSatirlariKur(b, cur);
     toplam = kdv > 0 ? `${fmtCur(toplamTutar, cur)} (${L.kdvDahilLabel}: ${fmtCur(toplamTutar + kdv, cur)})` : null;
   }
 
@@ -311,6 +325,7 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
     [L.servisUcretiLabel, ucret],
     ...(sv.degisenParcalar?.length ? [[L.parcaUcretiLabel, parcaUcret]] : []),
     ...(toplam ? [[L.toplamLabel, toplam]] : []),
+    ...tevkifatSatirlari,
   ].map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("");
 
   const html = `<!DOCTYPE html>
@@ -1657,6 +1672,18 @@ export function buildAylikRaporHtml(rapor, factory) {
     (rapor.kkBlokajda || []).map(x => [x.firma, x.kaynak, gun(x.tarih), gun(x.hesabaGecis), paraSatir(x.tutar)]), ["left", "left", "left", "left", "right"]);
 
   // ── Bölüm kabuğu: koyu başlık çubuğu (sol ad + sağ tutar) + rozet satırı + gövde ──
+  // Spec 0079 R29, R30: tevkifatlı satış yoksa kutu ve dipnot hiç basılmaz (tevkifatsız rapor birebir eski, 0059 altını).
+  // Rakamlar motorun tevkifatliSatis nesnesinden; kutu yeniden hesaplamaz.
+  const tev = rapor.tevkifatliSatis;
+  const tevkifatDipnot = tev ? `<div style="font-size:9.5px;color:#64748b;margin-top:4px;">Tevkifatlı satış var: yukarıdaki KDV rakamları bizim beyan edeceğimiz KDV'dir; alıcıların beyan edeceği kısım için "Tevkifatlı Satışlar" kutusuna bakın.</div>` : "";
+  const tevkifatKutusu = tev ? `
+  ${bolum("TEVKİFATLI SATIŞLAR", `${tev.adet} satış`, `<table>
+    ${st("Matrah (KDV hariç)", paraSatir(tev.matrah))}
+    ${st("Faturadaki toplam KDV", paraSatir(tev.toplamKdv))}
+    ${st("Alıcının beyan edeceği KDV (tevkifat)", paraSatir(tev.aliciBeyan))}
+    ${st("Bizim beyan edeceğimiz KDV", paraSatir(tev.bizBeyan))}
+  </table>
+  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Alıcının beyan edeceği KDV bilgi amaçlıdır; KDV özetine ve açık alacağa girmez.</div>`)}` : "";
   const netKdvBaslik = (net, kdv) => `Net <b style="color:#fff;">${paraSatir(net)}</b> · KDV ${paraSatir(kdv)}`;
   const komVar = Object.values(rapor.bankaKomisyonuTutar || {}).some(v => v > 0);
 
@@ -1806,7 +1833,7 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Anlaşmalı servis parçası KDV'si", paraSatir(rapor.kdvKalemleri?.anlasmaliParca))}
     <tr><td style="padding:6px 8px 3px 0;font-size:12px;font-weight:800;border-top:2px solid #1a1a1a;">BU AY DOĞAN TOPLAM KDV</td><td style="padding:6px 0 3px;font-weight:800;font-size:13px;text-align:right;border-top:2px solid #1a1a1a;">${paraSatir(rapor.toplamKdv)}</td></tr>
   </table>
-  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Yalnızca Faturalı Yurtiçi işlemler KDV doğurur; faturasız ve yurtdışı işlemler bu toplama girmez. Beyanname öncesi kontrol amaçlıdır.</div>`)}
+  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Yalnızca Faturalı Yurtiçi işlemler KDV doğurur; faturasız ve yurtdışı işlemler bu toplama girmez. Beyanname öncesi kontrol amaçlıdır.</div>${tevkifatDipnot}`)}${tevkifatKutusu}
 
   ${bolum("VERİLEN TEKLİFLER", "", `
     ${rozetSatiri(rozet(rapor.ayEtiketi, ""))}

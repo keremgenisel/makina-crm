@@ -12,7 +12,7 @@ import {
 } from "../lib/gider";
 import { odemeGirisiHazirla, odemeGirisiYaz } from "../lib/formOdemesi";
 import { hedefAdi as hedefAdiOf, cokHedefliMi } from "./gider/GiderAlanlari";
-import { hesaplananKdvAylar } from "../lib/giderKdv";
+import { satisKdvAylar } from "../lib/giderKdv";
 import { Icon, Btn, ConfirmDialog, Modal, LockConflict } from "./ui";
 import { useLock } from "../hooks/useLock";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
@@ -118,13 +118,14 @@ export const Giderler = ({
     return aylar ? { durum: "tamam", aylar } : { durum: "kismi" };
   }, [aralikGecerli, baslangic, bitis, yururlukAy]);
   const hesaplananKdv = useMemo(() => (kdvAylar?.durum === "tamam"
-    ? hesaplananKdvAylar(satisVerisi, kdvAylar.aylar, { factoryName: factory?.name || "Altuntaş Makina", kdvRates, factory, rates })
+    ? satisKdvAylar(satisVerisi, kdvAylar.aylar, { factoryName: factory?.name || "Altuntaş Makina", kdvRates, factory, rates })
     : null), [kdvAylar, satisVerisi, factory, kdvRates, rates]);
   const kdv = useMemo(() => {
     if (!rapor || !kdvAylar) return null;
     if (kdvAylar.durum !== "tamam") return { durum: kdvAylar.durum };
     // Spec 0075 R28 (S9): KDV2 bilgi satırı; Finans kartıyla aynı kaynak (dönem kalemlerinin kesilen tevkifatı).
-    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplananKdv, rapor.indirilecekKdv, tevkifatOzeti(rapor.kalemler, turMap).kesilenK / 100) };
+    // Spec 0079 R31/2: alıcının beyan edeceği satış KDV'si Finans'taki kartla aynı kaynaktan (bilgi satırı).
+    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplananKdv.kdv, rapor.indirilecekKdv, tevkifatOzeti(rapor.kalemler, turMap).kesilenK / 100, hesaplananKdv.aliciBeyan.TRY || 0) };
   }, [rapor, kdvAylar, hesaplananKdv, turMap]);
 
   const uretimAyi = mod === "ay" ? ay : ayOf(bugun);

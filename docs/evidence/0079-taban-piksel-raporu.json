@@ -1,0 +1,234 @@
+[
+  {
+    "ad": "servis-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-tahsilat-hesap-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-tahsilat-hesap-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-tahsilat-neden-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-tahsilat-neden-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-ilk-odeme-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-ilk-odeme-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-yedek-parca-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-yedek-parca-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-kalip-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-kalip-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0079-kart-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0079-kart-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0079-kart-uyari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Kredi kartı komisyonu tevkifattan önceki tabanla hesaplanmış ve kayıtl"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0079-kart-uyari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Kredi kartı komisyonu tevkifattan önceki tabanla hesaplanmış ve kayıtl"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-yedek-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-yedek-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "finans-0079-kdv-aydinlik.png",
+    "boyut": "2880x3288",
+    "piksel": 0
+  },
+  {
+    "ad": "finans-0079-kdv-karanlik.png",
+    "boyut": "2880x3288",
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0079-kdv-aydinlik.png",
+    "boyut": "2880x4150",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "giderler-0079-kdv-karanlik.png",
+    "boyut": "2880x4150",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "aylik-rapor-0079-aydinlik.png",
+    "boyut": "2880x5576",
+    "piksel": 0
+  },
+  {
+    "ad": "aylik-rapor-0079-karanlik.png",
+    "boyut": "2880x5576",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-yazdir-0079-aydinlik.png",
+    "boyut": "2880x1880",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-yazdir-0079-karanlik.png",
+    "boyut": "2880x1880",
+    "piksel": 0
+  }
+]

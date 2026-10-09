@@ -17,6 +17,7 @@ export const PaymentSection = ({
   detailEnYakinTaksitVade = "",
   detailMainCur,
   detailBorcFromPrevOwner,
+  tevkifatBorcMetni = "", // spec 0079 R27: borç neden fatura toplamından küçük
 }) => {
   if (!detailView) return null;
   if (detailCiro === 0 && detailKalanBorcToplam === 0 && detailEkBorcDigerPB.length === 0 && detailBekleyenCek === 0 && detailBekleyenTaksit === 0) return null;
@@ -46,6 +47,9 @@ export const PaymentSection = ({
             <div style={{ fontSize: 10.5, color: "var(--red800, #991b1b)", marginTop: 5 }}>
               ({fmtCur(Math.max(detailKalanBorc, 0), detailView.currency)} makina + {fmtCur(detailEkBorcAyniPB, detailView.currency)} servis/parça/kalıp)
             </div>
+          )}
+          {tevkifatBorcMetni && (
+            <div data-testid="satis-tevkifat-borc" style={{ fontSize: 10.5, color: "var(--n600, #475569)", marginTop: 5 }}>{tevkifatBorcMetni}</div>
           )}
           {detailView.isResale && detailBorcFromPrevOwner && (
             <div style={{ fontSize: 10.5, color: "var(--red800, #991b1b)", marginTop: 5, fontStyle: "italic" }}>

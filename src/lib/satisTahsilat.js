@@ -1,7 +1,7 @@
 // Spec 0044 (Q2, C2): servis, Extra Kalıp ve yedek parça tahsilatının TEK tanımı. Aylık faaliyet raporunun tahsilat
 // kalemi ve kasa bakiyesi aynı fonksiyonu çağırır; "hangi bedel bizim, ne kadar, hangi gün" ikinci bir yerde yazılmaz.
 // Saf, React'sız. Tutar brüttür: bize ait bedel + KDV'si (R13); tarih tahsilatTarihiOf (R5, Q3).
-import { parseMoney, calcKDV, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, tahsilatTarihiOf, isAltuntasServisi } from "./utils";
+import { parseMoney, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, tahsilatTarihiOf, isAltuntasServisi, tahsilEdilecekKdv } from "./utils";
 
 export const SATIS_KAYNAK = { SERVIS: "servis", KALIP: "kalip", YEDEK: "yedekParca" };
 export const SATIS_KAYNAK_AD = { servis: "Servis tahsilatı", kalip: "Extra Kalıp tahsilatı", yedekParca: "Yedek parça tahsilatı" };
@@ -23,17 +23,17 @@ export const satisTahsilatKalemi = (kaynak, r, { factoryName = "Altuntaş Makina
   if (kaynak === SATIS_KAYNAK.SERVIS) {
     if (!servisKaleme(r, factoryName)) return null;
     const bedel = servisBedeli(r, factoryName);
-    const kdv = calcKDV(r.faturaTipi, bedel, r.date, kdvRates);
+    const kdv = tahsilEdilecekKdv(r.faturaTipi, bedel, r.date, kdvRates, r);
     return { kaynak, kayit: r, bedel, kdv, tutar: bedel + kdv, currency: r.currency, tarih: tahsilatTarihiOf(r, r.date), yontem: r.yontem || "Nakit" };
   }
   if (kaynak === SATIS_KAYNAK.KALIP) {
     if (r.ucretsizMi) return null;
-    const kdv = calcKDV(r.faturaTipi, r.ucret, r.tarih, kdvRates);
+    const kdv = tahsilEdilecekKdv(r.faturaTipi, r.ucret, r.tarih, kdvRates, r);
     return { kaynak, kayit: r, bedel: parseMoney(r.ucret), kdv, tutar: parseMoney(r.ucret) + kdv, currency: r.currency, tarih: tahsilatTarihiOf(r, r.tarih), yontem: r.yontem || "Nakit" };
   }
   const bedel = yedekBedeli(r);
   if (!(bedel > 0)) return null;
-  const kdv = calcKDV(r.faturaTipi, bedel, r.tarih, kdvRates);
+  const kdv = tahsilEdilecekKdv(r.faturaTipi, bedel, r.tarih, kdvRates, r);
   return { kaynak, kayit: r, bedel, kdv, tutar: bedel + kdv, currency: r.currency, tarih: tahsilatTarihiOf(r, r.tarih), yontem: r.yontem || "Nakit" };
 };
 

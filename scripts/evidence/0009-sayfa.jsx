@@ -34,6 +34,8 @@ import { odemeleriUygula, turHaritasi, giderKalemDogrula } from "../../src/lib/g
 import { cekleriUygula } from "../../src/lib/cek";
 import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRaporu";
 import { girdi as RAPOR_0059_GIRDI } from "../../tests/fixtures/0059-veri";
+import { hesaplaAylikRapor } from "../../src/lib/aylikRapor";
+import { buildAylikRaporHtml, buildServiceFormHtml } from "../../src/lib/printTemplates";
 import App from "../../src/App";
 import { KayitPerdesi } from "../../src/components/KayitPerdesi";
 import { SettingsTrash } from "../../src/components/settings/SettingsTrash";
@@ -164,6 +166,18 @@ const TANIMLAR = [{ id: 71, ad: "Fabrika kirası", turId: 1, tutar: 25000, kdvOr
 const STANDART = [{ id: 81, grupId: 81, ad: "Elektrik (tahmini)", tutar: 9000, baslangicAy: "2026-06" }];
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
 const SATIS = { customers: MUSTERILER, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] };
+// Spec 0079: tevkifatlı satış faturası. Kutu Gıda'nın makina satışı 5/10, servisi 7/10, kalıbı 2/10, yedek parçası 9/10 tevkifatlı.
+// Eski kod alanları yok sayar (önce çekimi aynı sayfayla).
+const T79 = (pay) => ({ tevkifatli: true, tevkifatPay: pay, tevkifatPayda: 10 });
+const KK_0079 = { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.15, katkiPayi: 0.1, blokajGun: 0 }] };
+const MUSTERI_0079 = MUSTERILER.map(c => (c.id === 500 ? { ...c, ...T79(5) } : c));
+const SERVIS_0079 = [{ id: 7901, customerId: 500, date: "2026-09-12", type: "Garanti Dışı", repairPlace: "Yerinde Onarım", servisUcreti: 10000, currency: "TRY",
+  islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", odendi: false, durum: "Bekliyor", degisenParcalar: [], ...T79(7) }];
+const KALIP_0079 = [{ id: 7902, customerId: 500, tur: "Kalıp", ad: "Hamburger", olcu: "100", tarih: "2026-09-14", ucret: 8000, currency: "TRY", faturaTipi: "Faturalı Yurtiçi",
+  odendi: false, satisFirma: "Altuntaş Makina", ...T79(2) }];
+const YP_0079 = [{ id: 7903, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 2, birimFiyat: 750, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-09-15",
+  odendi: false, tahsisler: [], ...T79(9) }];
+const SATIS_0079 = { ...SATIS, customers: MUSTERI_0079, services: SERVIS_0079, partSales: KALIP_0079, yedekParcaSatislar: YP_0079 };
 // Spec 0060 R1, R2: taksitli stopajlı kira, taksitsiz stopajlı kira, tek hedefli taksitli kalem, dört hedefli personel.
 let n0060 = 9600;
 const k0060 = (f) => giderKalemDogrula(f, { turMap: turHaritasi(TURLER), tedarikciler: TED, uid: () => ++n0060 }).kayit;
@@ -184,7 +198,7 @@ const H0060 = [
   { id: 4, tur: "odeme", tarih: "2026-09-15", tutar: t0060(603, "ana")[0].tutar, hesapId: 1, giderId: 603, taksitId: t0060(603, "ana")[0].id, yontem: "Havale" },
 ];
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED, satis = SATIS }) {
   const [giderler, setGiderler] = useState(g0);
   // Spec 0024: h0 verilirse ödeme durumu hareketlerden türer (App gibi); verilmezse eski ekranlar saklı durumu okur.
   const [hareketler, setHareketler] = useState(h0);
@@ -197,7 +211,7 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
   return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={tanimlar} setGiderTanimlari={setTanimlar}
     giderTurleri={turler} tedarikciler={ted} setTedarikciler={setTed} standartGiderler={standart} setStandartGiderler={setStandart}
     calisanlar={CAL} standardModels={MODELLER} customModels={[]} appSettings={ayar} serverPermissions={null}
-    satisVerisi={SATIS} makinaMaliyet={makinaMaliyet} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
+    satisVerisi={satis} makinaMaliyet={makinaMaliyet} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
     uretimPartileri={partiler} setUretimPartileri={setPartiler}
     setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})}
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})}
@@ -230,8 +244,8 @@ const ayarlar = (tab, o = {}) => (
     standartGiderler={STANDART} setStandartGiderler={bos} appUpd={{}} onCheckUpdate={bos} onStartUpdate={bos} {...o} />
 );
 
-const FINANS = ({ rapor = null, g = GIDERLER }) => (
-  <Finance customers={MUSTERILER} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }} rates={{}}
+const FINANS = ({ rapor = null, g = GIDERLER, musteriler = MUSTERILER }) => (
+  <Finance customers={musteriler} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }} rates={{}}
     payments={[]} teklifler={[]} serverPermissions={null} giderYetki giderler={g} giderTurleri={TURLER} giderYururlukAy="2026-06"
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})} />
 );
@@ -982,6 +996,30 @@ const EKRANLAR = {
   "maliyet-detay-0076": [maliyetDetayi([KIS_AGU_0076]), []],
   "ayarlar-gidertanim-0076": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0076, ...TANIMLAR] }), []],
   "ayarlar-gidertanim-0076-form": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0076, ...TANIMLAR] }), ["baslik:Düzenle"]],
+  // Spec 0079: tevkifatlı satış faturası. Dört formda kutu açık (oran, üç not, mevcut KDV kutusunda beş satır), kart yansıtmalı
+  // dal, eski tabanlı kart uyarısı, makina formu, müşteri detayında rozet ve borç satırı, Stok rozeti, Finans ve Giderler KDV kartı,
+  // aylık rapor kutusu ve Servis Formu çıktısı. Kutu kapalı hâli bugünkü form ekranlarıdır (servis-formu, kalip-formu, ...).
+  "servis-formu-0079": [<FormEkrani Bilesen={ServiceForm} title="Yeni Servis Talebi"
+    ilk={{ customerId: 500, date: "2026-09-20", type: "Garanti Dışı", repairPlace: "Yerinde Onarım", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", currency: "TRY", servisUcreti: "100000", degisenParcalar: [], ...T79(5) }} />, ["kaydir:Toplam (Servis + Parça)"]],
+  "kalip-formu-0079": [<FormEkrani Bilesen={PartSaleForm} title="Extra Kalıp Satışı"
+    ilk={{ customerId: 500, tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturalı Yurtiçi", satisFirma: "Altuntaş Makina", fabrikaTeslim: false, kaliplar: [{ ad: "Hamburger", olcu: "100", fiyat: 100000 }], ...T79(5) }} />, ["kaydir:Fatura toplamı (tahsil edilecek)"]],
+  "kalip-formu-0079-kart": [<FormEkrani Bilesen={PartSaleForm} title="Extra Kalıp Satışı" krediKartiKomisyonlari={KK_0079}
+    ilk={{ customerId: 500, tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturalı Yurtiçi", satisFirma: "Altuntaş Makina", fabrikaTeslim: false, kaliplar: [{ ad: "Hamburger", olcu: "100", fiyat: 100000 }],
+      odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kkYansit: true, ...T79(5) }} />, ["kaydir:Müşteriden çekilecek kart tutarı"]],
+  "kalip-formu-0079-kart-uyari": [<FormEkrani Bilesen={PartSaleForm} title="Kaydı Düzenle" krediKartiKomisyonlari={KK_0079}
+    ilk={{ id: 7904, customerId: 500, tur: "Kalıp", tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturalı Yurtiçi", satisFirma: "Altuntaş Makina", ad: "Hamburger", ucret: "8000", fabrikaTeslim: false,
+      kaliplar: [], odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.15, toplamKesinti: 312, blokajGun: 0, yansitildi: false }, ...T79(5) }} />, ["kaydir:Bu fatura tevkifatlı"]],
+  "yedek-parca-formu-0079": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı"
+    ilk={{ aliciTipi: "bayi", dealerId: 3, currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, satirlar: [{ partId: 7, miktar: 1, birimFiyat: 100000 }], ...T79(5) }} />, ["kaydir:Fatura toplamı (tahsil edilecek)"]],
+  "musteri-formu-0079": [<Customers customers={MUSTERI_0079} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS} initialDetailId={500} />, ["~Düzenle", "kaydir:Bu fatura tevkifatlı"]],
+  "musteri-detay-0079": [<Customers customers={MUSTERI_0079} setCustomers={bos} partSales={KALIP_0079} services={SERVIS_0079} payments={[]} yedekParcaSatislar={YP_0079} dealers={DEALERS}
+    parts={[{ id: 7, ad: "Rulman" }]} setServices={bos} setPartSales={bos} setYedekParcaSatislar={bos} calisanlar={CAL} initialDetailId={500} />, ["kaydir:Makina Geçmişi"]],
+  "stok-yedek-0079": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERI_0079} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
+    dealers={DEALERS} yedekParcaSatislar={YP_0079} defaultSubTab="yedeksatis" showToast={bos} />, ["~Kutu Gıda"]],
+  "finans-0079-kdv": [<FINANS musteriler={MUSTERI_0079} />, ["Göster", "kaydir:KDV Karşılaştırması"]],
+  "giderler-0079-kdv": [<GiderEkrani satis={SATIS_0079} />, ["kaydir:KDV Karşılaştırması"]],
+  "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],
+  "servis-formu-yazdir-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0079[0], MUSTERI_0079, undefined, {}) }} />, []],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);

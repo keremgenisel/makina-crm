@@ -9,7 +9,8 @@ import { useState } from "react";
 const sayac = vi.hoisted(() => ({ n: 0 }));
 vi.mock("../../src/lib/giderKdv", async (orig) => {
   const gercek = await orig();
-  return { ...gercek, hesaplananKdvAylar: (...a) => { sayac.n++; return gercek.hesaplananKdvAylar(...a); } };
+  // Spec 0079 R31: Giderler satış KDV'sini ve alıcının beyanını tek motor turunda satisKdvAylar'dan alır.
+  return { ...gercek, satisKdvAylar: (...a) => { sayac.n++; return gercek.satisKdvAylar(...a); } };
 });
 import { Giderler } from "../../src/components/Giderler";
 

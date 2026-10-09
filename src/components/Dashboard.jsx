@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, uid, cekBekliyorMu, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, calcKDV, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments } from "../lib/utils";
+import { today, uid, cekBekliyorMu, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
@@ -142,7 +142,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       const m = ensureBayi(s.islemFirma);
       const curK = s.parcaCurrency || s.currency || "TRY";
       m.byCur[curK] = (m.byCur[curK] || 0) + parseMoney(s.parcaUcreti);
-      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + calcKDV(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates);
+      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + tahsilEdilecekKdv(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates, s);
       m.servisler.push(s);
     });
     (yedekParcaSatislar || []).forEach(s => {
@@ -152,7 +152,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       const m = ensureBayi(bayi.name);
       const curK = s.currency || "TRY";
       m.byCur[curK] = (m.byCur[curK] || 0) + yedekParcaBedeli(s);
-      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates);
+      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + tahsilEdilecekKdv(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates, s);
       m.yedekler.push(s);
     });
     partSales.forEach(p => {
@@ -161,7 +161,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       const m = ensureBayi(taraf.ad);
       const curK = p.currency || "TRY";
       m.byCur[curK] = (m.byCur[curK] || 0) + parseMoney(p.ucret);
-      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + calcKDV(p.faturaTipi, parseMoney(p.ucret), p.tarih, kdvRates);
+      m.kdvByCur[curK] = (m.kdvByCur[curK] || 0) + tahsilEdilecekKdv(p.faturaTipi, parseMoney(p.ucret), p.tarih, kdvRates, p);
       m.kaliplar.push(p);
     });
     const borcluBayiCount = Object.keys(dealerBorcMap).length;
@@ -214,7 +214,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   // Kullanıcı isteğiyle gün penceresi kısıtlaması yok — vadesi olan tüm bekleyenler görünür. (F3+F10)
   const beklenenTahsilat = useMemo(() => {
     const items = [];
-    const kdvli = (tutar, faturaTipi, tarih) => parseMoney(tutar) + calcKDV(faturaTipi, tutar, tarih, kdvRates);
+    const kdvli = (tutar, faturaTipi, tarih, kayit) => parseMoney(tutar) + tahsilEdilecekKdv(faturaTipi, tutar, tarih, kdvRates, kayit);
     // Tahsil edilmemiş çekler — makina ödemesi + Extra Kalıp + Yedek Parça (vade tarihi olmasa da göster).
     // Spec 0040 R17: makina tahsilatı çekleri tek kaynaktan (çek kaydına bağlıysa çekin durumu).
     payments.forEach(p => {
@@ -223,19 +223,19 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     });
     partSales.forEach(ps => {
       if (ps.yontem === "Çek" && !ps.tahsilEdildi && !ps.deletedAt)
-        items.push({ key: `cekps-${ps.id}`, tip: "Çek", kaynak: "kalip", recId: ps.id, customerId: ps.customerId, vade: ps.vadeTarihi || "", tutar: kdvli(ps.ucret, ps.faturaTipi, ps.tarih), currency: ps.currency });
+        items.push({ key: `cekps-${ps.id}`, tip: "Çek", kaynak: "kalip", recId: ps.id, customerId: ps.customerId, vade: ps.vadeTarihi || "", tutar: kdvli(ps.ucret, ps.faturaTipi, ps.tarih, ps), currency: ps.currency });
     });
     yedekParcaSatislar.forEach(s => {
       if (!(s.yontem === "Çek" && !s.tahsilEdildi && !s.deletedAt)) return;
       const bedel = (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
-      const base = { key: `cekyp-${s.id}`, tip: "Çek", kaynak: "yedek", recId: s.id, vade: s.vadeTarihi || "", tutar: bedel + calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates), currency: s.currency };
+      const base = { key: `cekyp-${s.id}`, tip: "Çek", kaynak: "yedek", recId: s.id, vade: s.vadeTarihi || "", tutar: bedel + tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s), currency: s.currency };
       if (s.aliciTipi === "musteri") items.push({ ...base, customerId: s.musteriId });
       else items.push({ ...base, customerId: null, firmaAd: s.disFirma ? (s.disFirmaAd || "Dış firma") : (dealers.find(d => d.id === Number(s.dealerId))?.name || "Bayi") });
     });
     services.forEach(s => {
       if (!(s.yontem === "Çek" && !s.tahsilEdildi && !s.deletedAt)) return;
       const bedel = parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti)); // servis + ücretli parça
-      items.push({ key: `ceksv-${s.id}`, tip: "Çek", kaynak: "servis", recId: s.id, customerId: s.customerId, vade: s.vadeTarihi || "", tutar: bedel + calcKDV(s.faturaTipi, bedel, s.date, kdvRates), currency: s.currency });
+      items.push({ key: `ceksv-${s.id}`, tip: "Çek", kaynak: "servis", recId: s.id, customerId: s.customerId, vade: s.vadeTarihi || "", tutar: bedel + tahsilEdilecekKdv(s.faturaTipi, bedel, s.date, kdvRates, s), currency: s.currency });
     });
     customers.forEach(c => (c.odemePlani || []).forEach(r => {
       if (!r.odemeId && r.vadeTarihi)
@@ -292,7 +292,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       .forEach(p => {
         // Makina net + KDV kırılımı (bbbb servisi gibi): p.tutar = borçtan düşen (KDV dahil, yansıtılan
         // komisyon hariç). k=KDV oranı, kom=yansıtılan komisyon → makina=(dahil−kom·k)/(1+k) her iki modda tam.
-        const kdvOran = calcKDV(c.faturali, 100, c.installDate, kdvRates); // faturalı yurtiçi → oran%, değilse 0
+        const kdvOran = tahsilKdvOrani(c.faturali, c.installDate, kdvRates, c); // müşterinin ödediği KDV oranı % (spec 0079 revizyon 2); faturasız/yurtdışı 0
         const dahil = parseMoney(p.tutar);
         const kom = p.kartKomisyonu.yansitildi ? (Number(p.kartKomisyonu.toplamKesinti) || 0) : 0;
         const kk = kdvOran / 100;
@@ -681,7 +681,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                   const stToplam = stServis + (s.parcaUcretsizMi ? 0 : stParca);
                   const netServis = svKomisyon > 0 && stToplam > 0 ? stServis - svKomisyon * stServis / stToplam : stServis;
                   const netParca = svKomisyon > 0 && stToplam > 0 ? stParca - svKomisyon * stParca / stToplam : stParca;
-                  const svKdv = calcKDV(s.faturaTipi, stToplam, s.date, kdvRates); // faturalı yurtiçi → matrah×oran, değilse 0
+                  const svKdv = tahsilEdilecekKdv(s.faturaTipi, stToplam, s.date, kdvRates, s); // faturalı yurtiçi → matrah×oran, değilse 0
                   const svToplam = (servisBorclu ? netServis : 0) + (parcaBorclu ? netParca : 0); // net (komisyonsuz, KDV hariç); sağdaki toplam bunun üzerine komisyon + KDV ekler
                   return (
                     <div key={s.id} onClick={() => goToCustomer(s.customerId, { servisId: s.id })} title="Servisi müşteri detayında aç"
@@ -728,13 +728,13 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                       <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{p.ad}{p.olcu ? ` (${p.olcu})` : ""} · {fmtTR(p.tarih)}</div>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
                         <span style={{ ...PIL_BASE, ...yontemRenk(p.yontem || "") }}>Kalıp: {fmtCur(parseMoney(p.ucret) - yansitilanKomisyon(p), p.currency)}</span>
-                        {calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates), p.currency)}</span>}
+                        {tahsilEdilecekKdv(p.faturaTipi, p.ucret, p.tarih, kdvRates, p) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(tahsilEdilecekKdv(p.faturaTipi, p.ucret, p.tarih, kdvRates, p), p.currency)}</span>}
                         {p.yontem === "Kredi Kartı" && kkDetayPilleri(p.kartKomisyonu, p.currency).map((d, j) => (
                           <span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>
                         ))}
                       </div>
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: "var(--red600, #dc2626)", flexShrink: 0, marginLeft: 10 }}>{fmtCur(parseMoney(p.ucret) + calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates), p.currency)}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "var(--red600, #dc2626)", flexShrink: 0, marginLeft: 10 }}>{fmtCur(parseMoney(p.ucret) + tahsilEdilecekKdv(p.faturaTipi, p.ucret, p.tarih, kdvRates, p), p.currency)}</div>
                   </div>
                 ))}
               </div>
@@ -748,7 +748,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                 {borcluYedekParcalar.map(s => {
                   const bedel = yedekParcaBedeli(s);
                   const komisyon = yansitilanKomisyon(s); // yansıtıldıysa bedel brüt (komisyon dahil) → pilde net göster
-                  const kdv = calcKDV(s.faturaTipi, bedel, s.tarih, kdvRates);
+                  const kdv = tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s);
                   const mid = Number(s.musteriId);
                   return (
                     <div key={s.id} onClick={() => { if (onGoYedekParca) onGoYedekParca(s.id); }} title={onGoYedekParca ? "Yedek parça satışına git" : undefined}
@@ -810,7 +810,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                       <span style={BORC_LINK}>🔧 {custName(s.customerId)} · {fmtTR(s.date)}</span>
                       {s.yontem && <span style={{ ...PIL_BASE, ...yontemRenk(s.yontem, s.yontem === "Çek" && isCekVadesiGecmis(s)) }}>{s.yontem === "Çek" && isCekVadesiGecmis(s) ? "⚠ Çek" : s.yontem}</span>}
                       <span style={{ ...PIL_BASE, background: "var(--ambBg2, #fef3c7)", color: "var(--amb800, #92400e)" }}>Servis parça: {fmtCur(parseMoney(s.parcaUcreti), s.parcaCurrency || s.currency)}</span>
-                      {calcKDV(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(calcKDV(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates), s.parcaCurrency || s.currency)}</span>}
+                      {tahsilEdilecekKdv(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates, s) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(tahsilEdilecekKdv(s.faturaTipi, parseMoney(s.parcaUcreti), s.date, kdvRates, s), s.parcaCurrency || s.currency)}</span>}
                       {s.yontem === "Kredi Kartı" && kkDetayPilleri(s.kartKomisyonu, s.currency).map((d, j) => (<span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>))}
                     </div>
                   ))}
@@ -820,7 +820,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                       <span style={BORC_LINK}>📦 {parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "Yedek parça"} ×{s.miktar} · {fmtTR(s.tarih)}</span>
                       {s.yontem && <span style={{ ...PIL_BASE, ...yontemRenk(s.yontem, s.yontem === "Çek" && isCekVadesiGecmis(s)) }}>{s.yontem === "Çek" && isCekVadesiGecmis(s) ? "⚠ Çek" : s.yontem}</span>}
                       <span style={{ ...PIL_BASE, background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" }}>Yedek parça: {fmtCur(yedekParcaBedeli(s), s.currency)}</span>
-                      {calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(calcKDV(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates), s.currency)}</span>}
+                      {tahsilEdilecekKdv(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates, s) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(tahsilEdilecekKdv(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates, s), s.currency)}</span>}
                       {s.yontem === "Kredi Kartı" && kkDetayPilleri(s.kartKomisyonu, s.currency).map((d, j) => (<span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>))}
                     </div>
                   ))}
@@ -830,7 +830,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                       <span style={BORC_LINK}>{p.ad}{p.olcu ? ` (${p.olcu})` : ""} · {custName(p.customerId)} · {fmtTR(p.tarih)}</span>
                       {p.yontem && <span style={{ ...PIL_BASE, ...yontemRenk(p.yontem, p.yontem === "Çek" && isCekVadesiGecmis(p)) }}>{p.yontem === "Çek" && isCekVadesiGecmis(p) ? "⚠ Çek" : p.yontem}</span>}
                       <span style={{ ...PIL_BASE, background: "var(--redBg2, #fee2e2)", color: "var(--red700, #b91c1c)" }}>Kalıp: {fmtCur(parseMoney(p.ucret) - yansitilanKomisyon(p), p.currency)}</span>
-                      {calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(calcKDV(p.faturaTipi, p.ucret, p.tarih, kdvRates), p.currency)}</span>}
+                      {tahsilEdilecekKdv(p.faturaTipi, p.ucret, p.tarih, kdvRates, p) > 0 && <span style={{ ...PIL_BASE, ...KDV_RENK }}>KDV: {fmtCur(tahsilEdilecekKdv(p.faturaTipi, p.ucret, p.tarih, kdvRates, p), p.currency)}</span>}
                       {p.yontem === "Kredi Kartı" && kkDetayPilleri(p.kartKomisyonu, p.currency).map((d, j) => (<span key={j} style={{ ...PIL_BASE, ...d.renk }}>{d.metin}</span>))}
                     </div>
                   ))}

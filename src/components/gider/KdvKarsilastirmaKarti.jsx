@@ -1,6 +1,7 @@
 import { tl2 } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
 import { KKEG_ETIKETI, KKEG_KISA } from "../../lib/gider";
+import { SATIS_TEVKIFAT_KART_ETIKETI, SATIS_TEVKIFAT_KART_NOTU } from "../../lib/satisTevkifat";
 
 // Spec 0075 R28 (AC-31): KDV2 bilgi satırının açıklaması; farka eklenmediği ve nereden ödendiği yazılı (çift sayım okunmasın).
 export const TEVKIFAT_KDV2_NOTU = "Bilgi: farka eklenmez. Bu tutar tevkifatlı gider kalemlerinin vergi dairesi bölümünden ödenir.";
@@ -57,6 +58,13 @@ export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = 
         <div data-testid="kdv2-bilgi" style={{ marginTop: 10 }}>
           {satir("Tevkifatla beyan edilecek KDV (KDV2)", para(sonuc.tevkifatKdv2))}
           <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{TEVKIFAT_KDV2_NOTU}</div>
+        </div>
+      )}
+      {/* Spec 0079 R31: tevkifatlı SATIŞTA alıcının beyan edeceği KDV; gider tarafının KDV2 satırının tersidir, metni ayrıdır. */}
+      {sonuc.satisTevkifatAlici > 0 && (
+        <div data-testid="satis-tevkifat-bilgi" style={{ marginTop: 10 }}>
+          {satir(SATIS_TEVKIFAT_KART_ETIKETI, para(sonuc.satisTevkifatAlici))}
+          <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{SATIS_TEVKIFAT_KART_NOTU}</div>
         </div>
       )}
       {kisitli && <KisitBilgi kisitli={kisitli} para={para} />}

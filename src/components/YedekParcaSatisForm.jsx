@@ -1,8 +1,10 @@
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar } from "../lib/utils";
+import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { Ipucu, Segment } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
+import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
+import { satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 
@@ -150,6 +152,9 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
           </Select>
         </Field>
       </div>
+      {/* Spec 0079 R1, R2, R7: tevkifat kutusu (yalnız faturalı yurtiçi); toplu satışın bütün satırlarına aynı yazılır. */}
+      <SatisTevkifatAlani form={form} setForm={setForm} saleType={form.faturaTipi || "Faturalı Yurtiçi"}
+        kartUyarisi={kartTabaniEskiMi(form, form.faturaTipi || "Faturalı Yurtiçi")} onYeniTaban={() => setForm(p => ({ ...p, _kartYeniTaban: true }))} />
 
       {isEdit ? (<>
         <Field label="Yedek Parça">
@@ -256,7 +261,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
               </div>
               {form.yontem === "Kredi Kartı" && (
                 <KartTaksitAlani ayar={krediKartiKomisyonlari}
-                  tutar={toplam + calcKDV(form.faturaTipi, toplam, form.tarih, kdvRates)} currency={cur}
+                  tutar={toplam + tahsilEdilecekKdv(form.faturaTipi, toplam, form.tarih, kdvRates, kartTabanKaydi(form))} currency={cur}
                   taksit={form.taksitSayisi} setTaksit={v => setForm(p => ({ ...p, taksitSayisi: v }))}
                   yansit={!!form.kkYansit} setYansit={v => setForm(p => ({ ...p, kkYansit: v }))}
                   tarih={form.tarih} kartTarihi={form.kartTarihi} setKartTarihi={v => setForm(p => ({ ...p, kartTarihi: v }))} />
@@ -278,20 +283,24 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
       {toplam > 0 && (
         <div style={{ background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 8, padding: "10px 12px", marginTop: 12 }}>
           {(() => {
-            const kdv = calcKDV(form.faturaTipi, toplam, form.tarih, kdvRates);
+            const kdv = tahsilEdilecekKdv(form.faturaTipi, toplam, form.tarih, kdvRates, form);
+            const yansit = form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit;
+            // Spec 0079 R23: tevkifatlı faturada mevcut kutunun içinde beş satır (kart yansıtmalı dalda da).
+            const tevOzet = satisTevkifatFormOzeti(form.faturaTipi, toplam, form.tarih, kdvRates, form, { kkAyar: krediKartiKomisyonlari, yansit, kartTarihi: form.kartTarihi });
             return (
               <>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>
                   {isEdit ? `Toplam: ${miktar} × ${fmtCur(birim, cur)} = ${fmtCur(toplam, cur)}` : `Genel Toplam (${satirlar.filter(s => s.partId && (parseInt(s.miktar) || 0) > 0).length} kalem): ${fmtCur(toplam, cur)}`}
                 </span>
-                {kdv > 0 && !(form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit) && (
+                {kdv > 0 && !yansit && !tevOzet.tevkifatli && (
                   <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", marginTop: 6, fontWeight: 600 }}>
                     KDV (%{getKdvRateForDate(form.tarih, kdvRates)}): {fmtCur(kdv, cur)} · KDV dahil toplam: {fmtCur(toplam + kdv, cur)}
                   </div>
                 )}
+                <SatisTevkifatOzetSatirlari ozet={tevOzet} currency={cur} />
                 {form.odendi && form.yontem === "Kredi Kartı" && form.kkYansit && (
                   <KartYansitmaOzeti netTaban={toplam} taksit={form.taksitSayisi} ayar={krediKartiKomisyonlari}
-                    kdvOrani={calcKDV(form.faturaTipi, 100, form.tarih, kdvRates)} currency={cur} tarih={form.kartTarihi || form.tarih} />
+                    kdvOrani={calcKDV(form.faturaTipi, 100, form.tarih, kdvRates)} tahsilKdvOrani={tahsilKdvOrani(form.faturaTipi, form.tarih, kdvRates, kartTabanKaydi(form))} currency={cur} tarih={form.kartTarihi || form.tarih} />
                 )}
               </>
             );

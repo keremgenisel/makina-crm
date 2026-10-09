@@ -4,7 +4,7 @@ import { useMailSender, MailComposeModal } from "../MailCompose";
 import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import { servisParcaDus, servisParcaGeriAl, servisParcaYenile } from "../../lib/servisStok";
 import {
-  today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney,
+  today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, satisKdvBolumu,
   calcKalanBorc, stripAutoPrint, simdiYerel,
   withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi, servisParcaSatirTutari, faturaBedeliOf, getKdvRateForDate,
 } from "../../lib/utils";
@@ -22,6 +22,7 @@ import {
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
 import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi } from "../tasarim";
 import { tahsilatHesapDurumu, paraBirimiUyumluMu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
+import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle, satisTevkifatBorcMetni } from "../../lib/satisTevkifat";
 import { TahsilatHesapPenceresi, TahsilatHesapAlani, OdemeSatiriHesap, makinaTahsilatDurumu, uyumluHesapId } from "../kasa/TahsilatHesap";
 import { cekDogrula, yeniCek, tahsilatSilinebilirMi, CEK_TURLERI, CEK_DURUM_AD } from "../../lib/cek";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
@@ -29,7 +30,7 @@ import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
-import { yeniYedekParcaSatisCoklu, yedekParcaRec, satisPartisi } from "../../lib/yedekParcaSatis";
+import { yeniYedekParcaSatisCoklu, yedekParcaRec, satisPartisi, yedekParcaGuncelle } from "../../lib/yedekParcaSatis";
 import { yedekParcaGeriAl, yedekParcaDus } from "../../lib/yedekParcaStok";
 import { netDusum, netDusumAyni } from "../../lib/stokHareketi";
 import { useLock } from "../../hooks/useLock";
@@ -40,7 +41,7 @@ import { servisPlanlandiMi } from "../../lib/servisAlarm";
 import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
-import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle } from "../../lib/kalipSatisi";
+import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle, kalipGuncelle } from "../../lib/kalipSatisi";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -120,6 +121,8 @@ export const CustomerDetailModal = ({
     () => deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar, dealers, parts, customers }),
     [detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar, dealers, parts, customers]
   );
+  // Spec 0079: makina faturasının KDV bölümü (tahsil edilecek / toplam / alıcının beyanı); tek kapıdan.
+  const makinaKdv = detailView ? satisKdvBolumu(detailView.faturali, detailView.faturaBedeli, detailView.installDate, kdvRates, detailView) : { bizKdv: 0 };
 
   // ── Servis parça stok ──
   // Servis parça düşümü/geri-alması TEK kaynakta (lib/servisStok) — Servis Panosu ile aynı; stok
@@ -168,6 +171,11 @@ export const CustomerDetailModal = ({
   };
   const saveService = (parcaUcretsizMi, dosyaTaslaklari = []) => {
     if (!setServices) return;
+    // Spec 0079 R6/3: servisin ortak kurucusu yok; bu kurucu ile ServisPanosu.kaydet aynı üç adımı yazar (doğrulama, kart
+    // tabanı, alan yazımı). Kaynak taraması ikisini birlikte arar.
+    const tevkifatHata = satisTevkifatDogrula(svForm, svForm.faturaTipi);
+    if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
+    const kartTaban = kartTabanKaydi(svForm);
     // Kalem (yansıtma öncesi) billable = servis + ücretli parça. Komisyon müşteriye yansıtılıyorsa
     // servisUcreti ve parça fiyatları KDV matrahına (kalem+komisyon) ölçeklenerek saklanır (Extra Kalıp deseni,
     // servis tek kayıt olduğu için orantılı); komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
@@ -175,7 +183,7 @@ export const CustomerDetailModal = ({
     const kalemParca = (svForm.degisenParcalar || []).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const kalemBillable = kalemServis + (parcaUcretsizMi ? 0 : kalemParca);
     const kkAyar = appSettings?.krediKartiKomisyonlari;
-    const kkKdvOran = calcKDV(svForm.faturaTipi, 100, svForm.date, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+    const kkKdvOran = tahsilKdvOrani(svForm.faturaTipi, svForm.date, kdvRates, kartTaban); // uygulanan (tahsil edilen) KDV oranı (Yurtdışı/Faturasız → 0)
     const kkTarih = svForm.kartTarihi || svForm.date; // blokaj kart işlem tarihinden (boşsa servis tarihi)
     let factor = 1, yansitSnap = null;
     if (svForm.yontem === "Kredi Kartı" && svForm.kkYansit && svForm.taksitSayisi && kalemBillable > 0) {
@@ -192,13 +200,13 @@ export const CustomerDetailModal = ({
     // Yalnızca Altuntaş'tan alınan parçaların toplamı — dış tedarik parçalar Altuntaş'a gelir/borç olarak yazılmaz
     const parcaUcretiAltuntastan = degisenParcalarSave.filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const svBillable = servisUcretiSave + (parcaUcretsizMi ? 0 : parcaUcreti);
-    const svKdvDahil = svBillable + calcKDV(svForm.faturaTipi, svBillable, svForm.date, kdvRates);
-    const rec = { ...svForm, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
+    const svKdvDahil = svBillable + tahsilEdilecekKdv(svForm.faturaTipi, svBillable, svForm.date, kdvRates, kartTaban);
+    const rec = satisTevkifatUygula({ ...svForm, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
       customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: svForm.currency,
       vadeTarihi: svForm.yontem === "Çek" ? (svForm.vadeTarihi || "") : "",
       tahsilEdildi: svForm.yontem === "Çek" ? !!svForm.tahsilEdildi : false,
       taksitSayisi: svForm.yontem === "Kredi Kartı" ? (svForm.taksitSayisi ?? null) : null,
-      kartKomisyonu: svForm.yontem === "Kredi Kartı" ? (yansitSnap || kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, kkAyar, kkTarih, false)) : null };
+      kartKomisyonu: svForm.yontem === "Kredi Kartı" ? kartTabanIsaretle(yansitSnap || kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, kkAyar, kkTarih, false), kartTaban) : null }, svForm, svForm.faturaTipi);
     if (svModal === "add") {
       bumpId(customers, services);
       const newId = uid();
@@ -338,7 +346,7 @@ export const CustomerDetailModal = ({
         const dusulen = Math.min(rec.miktar, Math.max(0, kullanilabilir));
         yedekParcaDus(rec.partId, dusulen, eskiId, setPartStock, setPartStockLog);
       }
-      setYedekParcaSatislar(p => p.map(s => s.id === eskiId ? { ...s, ...rec } : s));
+      setYedekParcaSatislar(p => p.map(s => s.id === eskiId ? yedekParcaGuncelle(s, rec, ypForm) : s));
       logAction({ serverPermissions, action: "duzenlendi", entity: "yedek_parca_satis", entityId: eskiId, entityName: detailView?.name });
       showToast("Yedek parça satışı güncellendi.");
       setYpForm(null);
@@ -427,6 +435,8 @@ export const CustomerDetailModal = ({
     const selectedCust = customers.find(c => c.id === Number(pkForm.customerId));
     const satirlar = (pkForm.kaliplar || []).filter(k => k.ad);
     if (!selectedCust || satirlar.length === 0) return;
+    const tevkifatHata = satisTevkifatDogrula(pkForm, pkForm.faturaTipi); // spec 0079 R6
+    if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
     // Ortak alanlar tek kaynaktan (spec 0006 C3): Evrak'tan üretilen Extra Kalıp ile aynı kayıt.
     const ortak = kalipSatisOrtak(pkForm, selectedCust.id, today());
     const kalipKart = kalipKartHesabi(pkForm, ortak.tarih, kkAyar, kdvRates);
@@ -435,7 +445,7 @@ export const CustomerDetailModal = ({
     const fields = { ...ortak, ad: k.ad, olcu: k.olcu || "", ucret: kk0.ucret, uretimFormGonder: !!k.uretimFormGonder, kartKomisyonu: kk0.kartKomisyonu };
     // Panoya sonradan gönderilen (veya eski) kalıpta olusturmaZamani olmayabilir; eksikse şimdi damgala
     // ki pano sıralamasında "en son eklenen üstte" doğru çalışsın (yoksa T00:00'a düşüp altta kalır).
-    setPartSales(p => p.map(x => x.id === pkForm.id ? { ...x, ...fields, olusturmaZamani: x.olusturmaZamani || simdiYerel() } : x));
+    setPartSales(p => p.map(x => x.id === pkForm.id ? kalipGuncelle(x, { ...fields, olusturmaZamani: x.olusturmaZamani || simdiYerel() }, pkForm) : x));
     setCustomers(p => p.map(c => c.id === selectedCust.id
       ? { ...c, kaliplar: (c.kaliplar || []).map(b => b.partSaleId === pkForm.id ? { ...b, ad: k.ad, olcu: k.olcu || "" } : b) }
       : c));
@@ -642,13 +652,14 @@ export const CustomerDetailModal = ({
       const ortak = { customerId, tarih: paymentForm.tarih || today(), currency: paymentForm.currency || "TRY", not: paymentForm.not || "" };
       bumpId(customers, services, partSales, payments);
       // Kredi kartı ödemesi: girilen tutar KDV hariç mal → karta KDV + komisyon eklenir, borçtan KDV dahil düşer.
-      const odemeKdvOran = calcKDV(detailView?.faturali, 100, ortak.tarih, kdvRates); // faturalı yurtiçi → oran, değilse 0
+      // Spec 0079 R13 (revizyon 2): müşterinin ödediği (tevkifat düşülmüş) KDV oranı; faturasız/yurtdışı → 0.
+      const odemeKdvOran = tahsilKdvOrani(detailView?.faturali, ortak.tarih, kdvRates, detailView);
       const yeniKayitlar = satirlar.map(r => {
         // Spec 0063 R13, R4: hesap satırın alanıdır; boş satırda alan hiç yazılmaz.
         const base = { id: uid(), ...ortak, yontem: r.yontem || "Nakit", ...(kasaYetki && r.hesapId != null && r.hesapId !== "" ? { hesapId: r.hesapId } : {}) };
         if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
           const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, r.kartTarihi || ortak.tarih, !!r.kkYansit, odemeKdvOran);
-          return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: mk.kartKomisyonu };
+          return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: kartTabanIsaretle(mk.kartKomisyonu, detailView) };
         }
         return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };
       });
@@ -927,6 +938,7 @@ export const CustomerDetailModal = ({
               detailEnYakinTaksitVade={detailEnYakinTaksitVade}
               detailMainCur={detailMainCur}
               detailBorcFromPrevOwner={detailBorcFromPrevOwner}
+              tevkifatBorcMetni={makinaKdv.tevkifatli ? satisTevkifatBorcMetni(detailView, fmtCur(makinaKdv.tevkifat, detailView.currency)) : ""}
             />
 
 
@@ -1016,7 +1028,9 @@ export const CustomerDetailModal = ({
                 ["Fatura Durumu", detailView.faturali ? `${detailView.faturali}${detailView.faturali === "Faturasız" ? " (KDV HARİÇ)" : ""}` : ""],
                 ["Fabrika Satış Bedeli (KDV'siz)", detailView.fabrikaSatisBedeli ? fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""],
                 ["Fatura Bedeli", faturaBedeliOf(detailView) ? fmtCur(faturaBedeliOf(detailView), detailView.currency) : ""],
-                ["KDV Miktarı", calcKDV(detailView.faturali, detailView.faturaBedeli, detailView.installDate, kdvRates) > 0 ? fmtCur(calcKDV(detailView.faturali, detailView.faturaBedeli, detailView.installDate, kdvRates), detailView.currency) : ""],
+                // Spec 0079 R18, R27: tahsil edilecek KDV; tevkifatlı satışta toplam ve alıcının beyan edeceği kısım da yazılır.
+                ["KDV Miktarı", makinaKdv.bizKdv > 0 ? fmtCur(makinaKdv.bizKdv, detailView.currency) : "",
+                  makinaKdv.tevkifatli ? `Toplam ${fmtCur(makinaKdv.toplamKdv, detailView.currency)} · alıcı beyan eder ${fmtCur(makinaKdv.tevkifat, detailView.currency)}` : ""],
                 ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
                 ["Toplam Servis", detailServisNet > 0 ? fmtCur(detailServisNet, detailMainCur) : "", detailServisKdv > 0 ? `KDV: ${fmtCur(detailServisKdv, detailMainCur)}` : ""],
                 ["Extra Kalıp", detailExtraKalipNet > 0 ? fmtCur(detailExtraKalipNet, detailMainCur) : "", detailExtraKalipKdv > 0 ? `KDV: ${fmtCur(detailExtraKalipKdv, detailMainCur)}` : ""],
@@ -1383,7 +1397,7 @@ export const CustomerDetailModal = ({
           ) : (
             <Field label="Ödeme Satırları">
               <PaymentRowsEditor cekler={cekler} rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
-                krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tarih={paymentForm.tarih || today()}
+                krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tahsilKdvOrani={tahsilKdvOrani(detailView?.faturali, paymentForm.tarih || today(), kdvRates, detailView)} tarih={paymentForm.tarih || today()}
                 satirEki={kasaYetki ? (r, i) => <OdemeSatiriHesap satir={r} i={i} currency={paymentForm.currency || "TRY"} hesaplar={kasaHesaplari} varsayilan={tahsilatHesapVarsayilan}
                   onChange={(idx, v) => setPaymentForm(p => ({ ...p, satirlar: (p.satirlar || []).map((x, j) => j === idx ? { ...x, hesapId: v } : x) }))} /> : null} />
             </Field>

@@ -372,6 +372,39 @@ export const calcKDV = (saleType, faturaBedeli, date, kdvRates = DEFAULT_KDV_RAT
   if (!isFaturali(saleType) || !isYurtIci(saleType)) return 0;
   return (parseMoney(faturaBedeli) * getKdvRateForDate(date, kdvRates)) / 100;
 };
+// ── Tevkifatlı satış faturası (spec 0079) ────────────────────────────────────────────────────────────────────────
+// calcKDV faturanın HAM (toplam) KDV'sidir ve öyle kalır (R10): yalnız oran etiketi ("KDV %20") ve yazdırmanın "toplam KDV"
+// satırı onu okur. Gelir, borç, alacak, tahsilat ve KDV toplamı tahsilEdilecekKdv'den geçer (R8, C1): tevkifatlı satışta KDV'nin
+// pay/payda kadarını alıcı kendisi beyan eder, bize kalan "toplam eksi tevkifat"tır. Kapı calcKDV'nin kendisidir (faturalı
+// yurtiçi); kayıt yalnız tevkifatli/tevkifatPay/tevkifatPayda için okunur, satış tipi ayrı parametredir (müşteride faturali,
+// diğerlerinde faturaTipi; R10/3). Tevkifatsız kayıtta sonuç calcKDV ile birebir aynıdır (R14, AC-12).
+export const satisTevkifati = (kayit) => {
+  if (!kayit || !kayit.tevkifatli) return null;
+  const pay = Number(kayit.tevkifatPay), payda = Number(kayit.tevkifatPayda);
+  if (!Number.isInteger(pay) || !Number.isInteger(payda) || pay <= 0 || pay > payda) return null;
+  return { pay, payda };
+};
+// R15, C4: kuruş sınırı yalnız bölmenin içinde. Toplam KDV kuruşa çevrilir, tevkifat (alıcının beyan ettiği) yuvarlanır, bize
+// kalan "toplam eksi tevkifat"tır; iki parça toplam KDV'ye kuruşu kuruşuna eşittir, artık kuruş bizde (0075 ile aynı kural).
+export const satisKdvBolumu = (saleType, bedel, tarih, kdvRates = DEFAULT_KDV_RATES, kayit = null) => {
+  const toplam = calcKDV(saleType, bedel, tarih, kdvRates);
+  const t = satisTevkifati(kayit);
+  if (!t || !toplam) return { toplamKdv: toplam, tevkifat: 0, bizKdv: toplam, tevkifatli: false };
+  const toplamK = Math.round(toplam * 100);
+  const tevK = Math.round(toplamK * t.pay / t.payda);
+  return { toplamKdv: toplamK / 100, tevkifat: tevK / 100, bizKdv: (toplamK - tevK) / 100, tevkifatli: true, pay: t.pay, payda: t.payda };
+};
+// Bizim beyan edip müşteriden tahsil edeceğimiz KDV. İmza calcKDV'nin ilk dört parametresi + kayıt (R10/2).
+export const tahsilEdilecekKdv = (saleType, bedel, tarih, kdvRates = DEFAULT_KDV_RATES, kayit = null) =>
+  satisKdvBolumu(saleType, bedel, tarih, kdvRates, kayit).bizKdv;
+// Spec revizyon 2 (Karar 1, R9/2): kart tutarının hesabı ve ödeme tutarının mal/KDV ayrıştırması müşterinin GERÇEKTEN ödediği
+// KDV oranıyla yapılır (yüzde). Etiket oranı ham calcKDV(tip, 100, …) kalır; ikisi karıştırılırsa kartla ödenen tevkifatlı
+// makinada borçtan düşen tutar borcu aşar. Çarpım sırası (oran × kalan pay / payda) 20 × 3/10 gibi oranlarda float artığı bırakmaz.
+export const tahsilKdvOrani = (saleType, tarih, kdvRates = DEFAULT_KDV_RATES, kayit = null) => {
+  const oran = calcKDV(saleType, 100, tarih, kdvRates);
+  const t = satisTevkifati(kayit);
+  return t && oran ? oran * (t.payda - t.pay) / t.payda : oran;
+};
 // KDV DAHİL bir tutarın içindeki KDV'yi ayrıştır (servis ücretleri için), kaydın kendi tarihindeki orana göre.
 // Örn. 10.000 TL %20 dahil → içindeki KDV = 10.000 − (10.000 / 1.20) = 1.666,67
 export const extractKDV = (kdvDahilTutar, date, kdvRates = DEFAULT_KDV_RATES) => {
@@ -733,13 +766,14 @@ export const customerHasAnyDebt = (customer, services = [], partSales = [], fact
 // payments verilirse, kredi kartıyla müşteriye YANSITILAN komisyonun KDV'si de matraha eklenir (option B: komisyon
 // da vergili → üstteki Fatura Bedeli KDV kutusu ile alttaki kart kutusu aynı olsun; faturalı yurtiçide geçerli).
 export const calcCiro = (customer, kdvRates = DEFAULT_KDV_RATES, payments = []) => {
-  const kdv = calcKDV(customer.faturali, customer.faturaBedeli, customer.installDate, kdvRates);
+  const kdv = tahsilEdilecekKdv(customer.faturali, customer.faturaBedeli, customer.installDate, kdvRates, customer);
   let komisyonKdv = 0;
   if (isFaturali(customer.faturali) && isYurtIci(customer.faturali) && payments && payments.length) {
-    const oran = getKdvRateForDate(customer.installDate, kdvRates);
     const komToplam = payments.reduce((s, p) =>
       s + (p && p.customerId === customer.id && p.yontem === "Kredi Kartı" && p.kartKomisyonu && p.kartKomisyonu.yansitildi ? Number(p.kartKomisyonu.toplamKesinti) || 0 : 0), 0);
-    komisyonKdv = komToplam * oran / 100;
+    // Spec 0079 R12 (AC-38): yansıtılan komisyonun KDV'si aynı faturanın parçasıdır, aynı oranda tevkifata tabidir. Eskiden
+    // satır içi `komToplam * oran / 100` idi (kapının görmediği ikinci yol); artık tek kapıdan geçer.
+    komisyonKdv = tahsilEdilecekKdv(customer.faturali, komToplam, customer.installDate, kdvRates, customer);
   }
   return parseMoney(customer.fabrikaSatisBedeli) + kdv + komisyonKdv + parseMoney(customer.komisyon);
 };

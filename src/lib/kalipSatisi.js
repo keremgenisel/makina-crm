@@ -1,10 +1,13 @@
-import { parseMoney, calcKDV } from "./utils";
+import { parseMoney, tahsilEdilecekKdv, tahsilKdvOrani } from "./utils";
+import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "./satisTevkifat";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
 // Extra Kalıp satışı ortak kayıt yolu (spec 0006 C3). Müşteri detayındaki Extra Kalıp formu ve Evrak'tan
 // üretim AYNI alanları üretir; iki yol ayrışmasın diye kayıt kuruluşu burada tek kaynaktır.
 
 // Form → batch'teki bütün kalıplara uygulanan ortak alanlar (kalem fiyatı ve kredi kartı hariç).
-export const kalipSatisOrtak = (f, customerId, bugun) => ({
+// Spec 0079 R5, R6/1, R7: tevkifat bütün kalemlere aynı yazılır (bir fatura, bir tevkifat); kapı kapalıysa alanlar silinir.
+export const kalipSatisOrtak = (f, customerId, bugun) => satisTevkifatUygula(kalipSatisOrtakAlanlar(f, customerId, bugun), f, f.faturaTipi);
+const kalipSatisOrtakAlanlar = (f, customerId, bugun) => ({
   customerId, tur: "Kalıp", tarih: f.tarih || bugun,
   currency: f.currency || "TRY", ucretsizMi: false,
   odendi: !!f.odendi, faturaTipi: f.faturaTipi,
@@ -58,19 +61,25 @@ export const yeniKalipSatislari = (ortak, kalemler, { setPartSales, setCustomers
 // Kredi kartı: kalem fiyatından {ucret, kartKomisyonu} üret. Komisyon müşteriye YANSITILDIYSA (kkYansit)
 // ucret = KDV matrahı (kalem+komisyon); komisyon KDV matrahına girer ama ciroya girmez (Finance düşer).
 // Yansıtılmadıysa ucret = kalem, snapshot KDV dahil kalem üzerinden (yansitildi=false, komisyonu biz üstlendik).
+// Spec 0079 R13 (revizyon 2): kart tutarı müşterinin GERÇEKTEN ödediği KDV ile (tahsil oranı); taban düzenlemede kayıtlı anlık
+// görüntünün tabanında kalır (kartTabanKaydi), yeni tabanla hesaplanan anlık görüntü tabanını taşır (kartTabanIsaretle).
 export const kalipKartHesabi = (f, tarih, kkAyar, kdvRates) => {
-  const kkKdvOran = calcKDV(f.faturaTipi, 100, tarih, kdvRates); // uygulanan KDV oranı (Yurtdışı/Faturasız → 0)
+  const taban = kartTabanKaydi(f);
+  const kkKdvOran = tahsilKdvOrani(f.faturaTipi, tarih, kdvRates, taban); // uygulanan (tahsil edilen) KDV oranı; Yurtdışı/Faturasız → 0
   const kkBazTarih = f.kartTarihi || tarih; // blokaj kart işlem tarihinden (boşsa satış tarihi); KDV oranı satış tarihinde kalır
+  const snap = (tutar, yansit) => kartTabanIsaretle(kartKomisyonuSnapshot(tutar, f.taksitSayisi, kkAyar, kkBazTarih, yansit), taban);
   return (kalemFiyat) => {
     const kalem = parseMoney(kalemFiyat);
     if (f.yontem !== "Kredi Kartı" || !f.taksitSayisi) return { ucret: kalem, kartKomisyonu: null };
     if (f.kkYansit) {
       const a = kartYansitmaAyrim(kalem, f.taksitSayisi, kkAyar, kkKdvOran, kkBazTarih);
-      if (a) return { ucret: a.kdvMatrah, kartKomisyonu: kartKomisyonuSnapshot(a.kartTutari, f.taksitSayisi, kkAyar, kkBazTarih, true) };
+      if (a) return { ucret: a.kdvMatrah, kartKomisyonu: snap(a.kartTutari, true) };
     }
-    return { ucret: kalem, kartKomisyonu: kartKomisyonuSnapshot(kalem + calcKDV(f.faturaTipi, kalem, tarih, kdvRates), f.taksitSayisi, kkAyar, kkBazTarih, false) };
+    return { ucret: kalem, kartKomisyonu: snap(kalem + tahsilEdilecekKdv(f.faturaTipi, kalem, tarih, kdvRates, taban), false) };
   };
 };
+// Düzenleme kolu (R5/1): birleştirilen kayıttan tevkifat alanları formun durumuna göre yazılır ya da silinir.
+export const kalipGuncelle = (eski, alanlar, f) => satisTevkifatUygula({ ...eski, ...alanlar }, f, f.faturaTipi);
 
 export const KALIP_MUSTERI_SECILMEDI = "Kalıbın gideceği müşteriyi ve makinayı seçin.";
 
@@ -82,6 +91,8 @@ export const kalipSatisiEkle = (f, { customers = [], setPartSales, setCustomers,
   if (!musteri) return { hata: KALIP_MUSTERI_SECILMEDI };
   const satirlar = (f.kaliplar || []).filter(k => k.ad);
   if (!satirlar.length) return { hata: "En az bir kalıp ekleyin." };
+  const tevkifatHata = satisTevkifatDogrula(f, f.faturaTipi); // spec 0079 R6
+  if (tevkifatHata) return { hata: tevkifatHata };
   const ortak = kalipSatisOrtak(f, musteri.id, bugun);
   const kalipKart = kalipKartHesabi(f, ortak.tarih, kkAyar, kdvRates);
   const kayitlar = yeniKalipSatislari(ortak, satirlar.map(k => { const kk = kalipKart(k.fiyat); return { ad: k.ad, olcu: k.olcu, ucret: kk.ucret, uretimFormGonder: k.uretimFormGonder, kartKomisyonu: kk.kartKomisyonu }; }),

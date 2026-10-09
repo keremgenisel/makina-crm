@@ -7,6 +7,7 @@
 // borçlularda görünmüyordu. Bu yüzden ÖNCE kayıtları (snapshot'la) kurar, SONRA alınan tutarı onlardan süzer.
 import { parseMoney, isPaymentReceived, today } from "./utils";
 import { makinaKartOdemesi } from "./krediKarti";
+import { kartTabanIsaretle } from "./satisTevkifat";
 
 /**
  * @param {Array} satirlar İlk ödeme satırları (_ilkOdemeSatirlari): { yontem, tutar, taksitSayisi?, kkYansit?, vadeTarihi?, hesapId? }
@@ -17,10 +18,12 @@ import { makinaKartOdemesi } from "./krediKarti";
  * @param {object} [opts.ayar] krediKartiKomisyonlari config
  * @param {number} [opts.kdvOran] Faturalı yurtiçi → oran; değilse 0
  * @param {() => number} opts.yeniId Yeni id üretici (uid)
+ * @param {object} [opts.kartTaban] Spec 0079 R13: kdvOran tevkifat düşülmüş tahsil oranıysa onu üreten kayıt (müşteri); anlık
+ *   görüntü tabanını taşır. Tevkifatsızda işaret yazılmaz.
  * @returns {{ kayitlar: Array, alinanTutar: number }} kayitlar = payments'e eklenecek ödemeler,
  *   alinanTutar = kalanBorc'tan düşülecek (yalnız tahsil edilmiş sayılan; blokajlı KK / tahsil edilmemiş çek hariç)
  */
-export const ilkSatisOdemeleri = (satirlar = [], { customerId, currency = "TRY", tarih = today(), ayar = null, kdvOran = 0, yeniId }) => {
+export const ilkSatisOdemeleri = (satirlar = [], { customerId, currency = "TRY", tarih = today(), ayar = null, kdvOran = 0, yeniId, kartTaban = null }) => {
   const kayitlar = (satirlar || []).filter(r => parseMoney(r.tutar) > 0).map(r => {
     const base = { id: yeniId(), customerId, tarih, currency: currency || "TRY", not: "İlk ödeme (satış anında)", yontem: r.yontem || "Nakit",
       // Spec 0063 R5, R4: satırın tahsilat hesabı; boş satırda alan hiç yazılmaz (null da değil, sunucu karşılaştırması).
@@ -29,7 +32,7 @@ export const ilkSatisOdemeleri = (satirlar = [], { customerId, currency = "TRY",
       // Faturalıda karta KDV + komisyon eklenir; borçtan KDV dahil (mal×(1+KDV)) düşer (nakit/çek aynen kalır).
       // Blokaj bu satırın KART İŞLEM TARİHİnden (r.kartTarihi) hesaplanır; boşsa ödeme tarihine düşer.
       const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, ayar, r.kartTarihi || tarih, !!r.kkYansit, kdvOran);
-      return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: mk.kartKomisyonu };
+      return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: kartTabanIsaretle(mk.kartKomisyonu, kartTaban) };
     }
     return { ...base, tutar: parseMoney(r.tutar), ...(r.yontem === "Çek" ? { vadeTarihi: r.vadeTarihi || "", tahsilEdildi: false } : {}) };
   });

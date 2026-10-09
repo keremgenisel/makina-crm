@@ -6,8 +6,9 @@ import { servisParcaGeriAl } from "../lib/servisStok";
 import { netDusumleri, IADE_TIPI } from "../lib/stokHareketi";
 import { makinaGiderSayisi } from "../lib/gider";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, calcKDV, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
+import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
 import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
 import { satisKuruUygula, uretimTarihiDamgala, partiDamgala } from "../lib/satisKaydi";
 import { donenStokUretimTarihi } from "../lib/makinaMaliyeti";
@@ -282,9 +283,13 @@ export const Customers = ({
       const d = cekDogrula(r.cek || {}, { cekler, tutar: r.tutar });
       if (!d.kayit) { showToast(`İlk ödeme çeki: ${Object.values(d.hatalar)[0]}`); return; }
     }
+    // Spec 0079 R6: oran seçilmemiş ya da geçersiz tevkifat kaydedilmez (formda HataMetni de yazar).
+    const tevkifatHata = satisTevkifatDogrula(form, form.faturali);
+    if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
     {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...clean } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...temiz } = form;
+      const clean = satisTevkifatUygula(temiz, form, temiz.faturali); // spec 0079 R5: ekleme kolu
       // Faturasız satışta fatura bedeli kavramı yok → hayalet değer kalmasın (kaynak temizliği).
       if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
       bumpId(customers, services, partSales, payments);
@@ -292,12 +297,13 @@ export const Customers = ({
       if (!clean.serialNo) clean.seriNoBekliyor = true;
       // Satış kuru snapshot'ı (spec 0002 R12): TL dışı satışta o günün kuru; çevrimdışıysa boş kalır.
       Object.assign(clean, satisKuruUygula(null, clean, rates, today()));
-      const odemeKdvOran = calcKDV(clean.faturali, 100, clean.installDate || today(), kdvRates); // faturalı yurtiçi → oran, değilse 0
+      // Spec 0079 R13 (revizyon 2): kart tutarı müşterinin ödediği (tevkifat düşülmüş) KDV oranıyla; faturasız/yurtdışı → 0.
+      const odemeKdvOran = tahsilKdvOrani(clean.faturali, clean.installDate || today(), kdvRates, clean);
       const odemeTarih = clean.installDate || today();
       // Ödeme kayıtlarını (kredi kartında kartKomisyonu snapshot'ı ile) kurup borçtan düşülecek tutarı ONLARDAN
       // süz — blokajlı kredi kartı (tek çekim/taksit) henüz hesaba geçmediğinden borçta kalmalı. Bkz. ilkSatisOdemeleri.
       const { kayitlar: yeniOdemeler, alinanTutar: ilkOdemeAlinanTutar } = ilkSatisOdemeleri(kasaYetki ? _ilkOdemeSatirlari : (_ilkOdemeSatirlari || []).map(({ hesapId, ...r }) => r), { // spec 0063 R2: yetkisiz kayıtta hesap yazılmaz
-        customerId: newId, currency: clean.currency, tarih: odemeTarih, ayar: appSettings?.krediKartiKomisyonlari, kdvOran: odemeKdvOran, yeniId: uid,
+        customerId: newId, currency: clean.currency, tarih: odemeTarih, ayar: appSettings?.krediKartiKomisyonlari, kdvOran: odemeKdvOran, yeniId: uid, kartTaban: clean,
       });
       clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
@@ -333,7 +339,10 @@ export const Customers = ({
       doAdd();
       return;
     } else {
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...clean } = form;
+      const tevkifatHata = satisTevkifatDogrula(form, form.faturali); // spec 0079 R6
+      if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...temiz } = form;
+      const clean = satisTevkifatUygula(temiz, form, temiz.faturali); // spec 0079 R5: düzenleme kolu
       // Faturalı → Faturasız çevrilince eski fatura bedeli kayıtta kalmasın (kaynak temizliği).
       if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
       const wasSerialPending = modal?.edit?.seriNoBekliyor && !modal.edit.serialNo;

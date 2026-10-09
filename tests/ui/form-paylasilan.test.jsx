@@ -16,7 +16,11 @@ const M = [{ id: 1, name: "ABC Makina", model: "AK-100", serialNo: "SN-1" }];
 const D = [{ id: 3, name: "Ege Bayi", bayiMi: true }];
 const P = [{ id: 7, ad: "Rulman" }];
 const sonPencere = () => { const m = document.querySelectorAll(".modal-backdrop"); return m[m.length - 1]; };
-const etiketler = () => [...sonPencere().querySelectorAll("label")].map(l => l.textContent.trim()).filter(Boolean);
+// Spec 0079 R1, R2 ile güncellendi: faturalı yurtiçi formda "Bu fatura tevkifatlı" kutusu yeni alandır. Kutu her paylaşılan
+// formda bulunmalı (aşağıda ayrıca sayılır); geri kalan etiketler öncesiyle birebir aynıdır.
+const TEVKIFAT_ETIKETI = "Bu fatura tevkifatlı";
+const tumEtiketler = () => [...sonPencere().querySelectorAll("label")].map(l => l.textContent.trim()).filter(Boolean);
+const etiketler = () => { const t = tumEtiketler(); expect(t.filter(e => e === TEVKIFAT_ETIKETI)).toHaveLength(1); return t.filter(e => e !== TEVKIFAT_ETIKETI); };
 const tikla = (re) => fireEvent.click(screen.getAllByRole("button").filter(b => re.test(b.textContent.trim())).pop());
 const musteri = () => render(<Customers customers={M} setCustomers={vi.fn()} partSales={[]} services={[]} payments={[]} dealers={D} parts={P}
   setServices={vi.fn()} setPartSales={vi.fn()} setYedekParcaSatislar={vi.fn()} initialDetailId={1} />);
@@ -137,7 +141,8 @@ const ONCE = {
 };
 
 // Dönüşüm öncesi onay kutusu ve açılır liste sayıları (müşteri detayından açılışta).
-const SAYI = {"servis":{"kutu":1,"liste":6},"kalip":{"kutu":2,"liste":3},"yp":{"kutu":2,"liste":2}};
+// Spec 0079 R1 ile güncellendi: her formda bir onay kutusu daha (tevkifat); oran seçicisi kutu kapalıyken çizilmez.
+const SAYI = {"servis":{"kutu":2,"liste":6},"kalip":{"kutu":3,"liste":3},"yp":{"kutu":3,"liste":2}};
 
 describe("Paylaşılan formlar", () => {
   it("AC-9: Servis formu müşteri detayından ve Servis ve Kargo Panosu'ndan aynı biçimde açılır (öncesiyle ve birbiriyle aynı)", () => {

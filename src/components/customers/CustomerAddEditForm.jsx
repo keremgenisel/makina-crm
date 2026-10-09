@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
-import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived } from "../../lib/utils";
+import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani } from "../../lib/utils";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
+import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "../SatisTevkifatAlani";
+import { satisTevkifatOzeti, makinaKartTabaniEskiMi } from "../../lib/satisTevkifat";
 
 export const CustomerAddEditForm = ({
   modal, form, setForm, save, onClose,
@@ -34,7 +36,8 @@ export const CustomerAddEditForm = ({
   // Kredi kartı + "komisyonu yansıt" (option B): komisyon da KDV matrahında. Bu makinada müşteriye yansıtılan
   // toplam kart komisyonu (İlk Ödeme satırları + mevcut ödemeler) → hem üstteki Fatura Bedeli KDV kutusu hem
   // Kalan Borç, KDV'yi (fatura + komisyon) üzerinden gösterir; alttaki kart kutusuyla birebir aynı olur.
-  const kkOran = calcKDV(form.faturali, 100, form.installDate, kdvRates); // uygulanan KDV oranı (0 = faturasız/yurtdışı)
+  // Spec 0079 revizyon 2 (R9/2): kart kırılımı müşterinin ödediği (tevkifat düşülmüş) KDV oranıyla; 0 = faturasız/yurtdışı.
+  const kkOran = tahsilKdvOrani(form.faturali, form.installDate, kdvRates, form);
   const ilkKom = (form._ilkOdemeSatirlari || []).reduce((s, r) => {
     if (r.yontem !== "Kredi Kartı" || !r.taksitSayisi || !r.kkYansit) return s;
     const a = kartYansitmaAyrim(parseMoney(r.tutar), r.taksitSayisi, krediKartiKomisyonlari, kkOran, form.installDate);
@@ -42,7 +45,9 @@ export const CustomerAddEditForm = ({
   }, 0);
   const mevcutKom = (payments || []).reduce((s, p) =>
     s + (form.id && p.customerId === form.id && p.yontem === "Kredi Kartı" && p.kartKomisyonu && p.kartKomisyonu.yansitildi ? Number(p.kartKomisyonu.toplamKesinti) || 0 : 0), 0);
-  const faturaKdvEfektif = calcKDV(form.faturali, parseMoney(form.faturaBedeli) + ilkKom + mevcutKom, form.installDate, kdvRates);
+  const faturaKdvEfektif = tahsilEdilecekKdv(form.faturali, parseMoney(form.faturaBedeli) + ilkKom + mevcutKom, form.installDate, kdvRates, form);
+  // Spec 0079 R23: tevkifatlı faturada KDV kutusunun içinde beş satır (aynı matrah: fatura bedeli + yansıtılan komisyon).
+  const tevOzet = satisTevkifatOzeti(form.faturali, parseMoney(form.faturaBedeli) + ilkKom + mevcutKom, form.installDate, kdvRates, form);
   // İlk ödeme satırlarını (kredi kartında kartKomisyonu snapshot'ı ile) kur → borçtan yalnız GERÇEKTEN
   // tahsil edilenler düşer; blokajlı kredi kartı (tek çekim/taksit) henüz hesaba geçmedi → düşmez, komisyonu
   // gösterime eklenir (çekilen kart tutarı = borç). Snapshot'sız ham satırda isPaymentReceived kartı yanlış
@@ -428,9 +433,12 @@ export const CustomerAddEditForm = ({
             </div>
             {isYurtIci(form.faturali) && (
               <div style={{ fontSize: 12, color: "var(--grn800, #065f46)", background: "var(--grnBg3, #d1fae5)", padding: "7px 12px", borderRadius: 8, marginTop: 8, fontWeight: 600 }}>
+                {!tevOzet.tevkifatli && <>
                 KDV (%{getKdvRateForDate(form.installDate, kdvRates)}): <b>{fmtCur(faturaKdvEfektif, form.currency)}</b>
                 {"  ·  "}KDV dahil toplam: <b>{fmtCur(parseMoney(form.faturaBedeli) + faturaKdvEfektif, form.currency)}</b>
+                </>}
                 {(ilkKom + mevcutKom) > 0 && <span style={{ fontWeight: 400, color: "var(--grn700, #15803d)" }}> · komisyon dahil matrah</span>}
+                <SatisTevkifatOzetSatirlari ozet={tevOzet} currency={form.currency || "TRY"} />
               </div>
             )}
             <Ipucu>
@@ -443,12 +451,14 @@ export const CustomerAddEditForm = ({
           <div style={{ maxWidth: 220 }}><MoneyInput value={form.komisyon} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, komisyon: v }))} /></div>
         </Field>
       </div>
+      {/* Spec 0079 R1, R2: tevkifat kutusu (yalnız faturalı yurtiçi); R13/2: eski tabanlı kartlı tahsilat varsa uyarı. */}
+      <SatisTevkifatAlani form={form} setForm={setForm} saleType={form.faturali} kartUyarisi={!!form.id && makinaKartTabaniEskiMi(form, payments)} />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
       {modal === "add" ? (
         <Field label="İlk Ödeme (Kapora/Ödeme)">
           <PaymentRowsEditor cekler={cekler} rows={form._ilkOdemeSatirlari} onChange={rows => setForm(p => ({ ...p, _ilkOdemeSatirlari: rows }))} sym={CUR_SYM[form.currency || "TRY"]}
-            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} tarih={form.installDate}
+            krediKartiKomisyonlari={krediKartiKomisyonlari} currency={form.currency || "TRY"} kdvOrani={calcKDV(form.faturali, 100, form.installDate, kdvRates)} tahsilKdvOrani={kkOran} tarih={form.installDate}
             satirEki={kasaHesaplari ? (r, i) => <OdemeSatiriHesap satir={r} i={i} currency={form.currency || "TRY"} hesaplar={kasaHesaplari} varsayilan={tahsilatHesapVarsayilan}
               onChange={(idx, v) => setForm(p => ({ ...p, _ilkOdemeSatirlari: (p._ilkOdemeSatirlari || []).map((x, j) => j === idx ? { ...x, hesapId: v } : x) }))} /> : null} />
           <Ipucu>Satış anında alınan kapora varsa girin. Sonraki ödemeler detay görünümünden ("Ödeme Ekle") eklenir.</Ipucu>
