@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Bağlı spec** | `specs/0079-tevkifatli-satis-faturasi.md` (revizyon 2, plan onayıyla) |
+| **Bağlı spec** | `specs/done/0079-tevkifatli-satis-faturasi.md` (revizyon 2, plan onayıyla) |
 | **Dal** | `feat/0079-satis-tevkifat` (main `2a03596`, v3.44.0 üstünde) |
 | **Onay** | Takım Yöneticisi, 2026-10-09: Karar 1 ve planın tamamı kabul |
 
@@ -114,6 +114,9 @@ M = `tests/satis-tevkifat-0079.test.js`, U = `tests/ui/satis-tevkifat-0079.test.
      tevkifatsız ekranlar `ayni` olarak eklendi; `0079-taban-piksel-raporu.json` değişen 44 görüntüyü bugünkü kodla onaylı
      "sonra"ya karşı ölçer: 0 fark.
   5. AC-44 adlı test eklendi (iki altın dosyanın içerik özeti main `2a03596` ile aynı, faaliyet raporu birebir).
+
+- **Kapanış (2026-10-09):** uygulama commit'i `639afe8`. Kanıt eşlemesindeki 0079 `degisti` kayıtları (21 kayıt, 14 ekran)
+  `0079-taban-piksel-raporu.json`'a karşı `ayni`ye çevrildi; taban JPEG'leri (`0079-taban-*.jpg`, 28 dosya) depoya eklendi.
 
 ## 7. Sürüm notu
 

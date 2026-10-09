@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulamada (plan `specs/0079-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (commit `639afe8`, dal `feat/0079-satis-tevkifat`; plan `specs/done/0079-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · geliştirme sahibi atanacak |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Makina satışı (müşteri), servis, Extra Kalıp, yedek parça satışı; satış KDV'sinin hesaplandığı her yer (`calcKDV` zinciri), müşteri borcu, tahsilat tutarı, kredi kartı komisyonu yansıtması, Finans, aylık faaliyet raporu, KDV karşılaştırması, servis formu çıktısı, dışa aktarma |
@@ -513,37 +513,37 @@ rakamı olarak görünüyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] **Kaynak taraması yeşil:** gelir hesaplayan dosyalarda doğrudan `calcKDV(` kalmadı (AC-11),
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi (plan §5).
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] **Kaynak taraması yeşil:** gelir hesaplayan dosyalarda doğrudan `calcKDV(` kalmadı (AC-11),
       muafiyetler yazılı (oran sondası biçimi) ve R11'in ölçülen dosya listesi kapsandı.
-- [ ] **Taramanın görmediği iki yol elle doğrulandı:** `calcCiro`'nun satır içi komisyon KDV'si
+- [x] **Taramanın görmediği iki yol elle doğrulandı:** `calcCiro`'nun satır içi komisyon KDV'si
       (AC-38) ve dondurulmuş kart komisyonu tabanı (AC-37).
-- [ ] **Tevkifatsız veride sıfır fark** çapraz testlerle gösterildi: ciro, borç, tahsilat, kart
+- [x] **Tevkifatsız veride sıfır fark** çapraz testlerle gösterildi: ciro, borç, tahsilat, kart
       komisyonu, aylık rapor, KDV karşılaştırması, servis formu çıktısı, dışa aktarma (AC-31) ve
       iki altın dosya adıyla denetlendi (AC-44).
-- [ ] Context'teki örnek rakamlar motor testinde birebir sabitlendi: AC-9 (yuvarlamasız) ve AC-10
+- [x] Context'teki örnek rakamlar motor testinde birebir sabitlendi: AC-9 (yuvarlamasız) ve AC-10
       (yuvarlamalı, artık kuruş bizde).
-- [ ] 0075 ve 0076 ile kesişim testleri yazıldı (AC-32, AC-33).
-- [ ] Görsel kanıt eklendi (`0079-taban-piksel-raporu.json` + `0079-piksel-raporu.json`): dört formda
+- [x] 0075 ve 0076 ile kesişim testleri yazıldı (AC-32, AC-33).
+- [x] Görsel kanıt eklendi (`0079-taban-piksel-raporu.json` + `0079-piksel-raporu.json`): dört formda
       kutu kapalı (0 piksel) ve açık, özet bloğu mevcut kutunun içinde, `kkYansit` açık dal,
       listedeki rozet (iki yer), müşteri detayındaki borç satırı, raporun yeni kutusu, Finans ve
       Giderler'in KDV kartı. Bilinçli değişen ekranlar `docs/evidence/kanit-eslemesi.json`'da
       `beklenen: "degisti"` + onay satırıyla kayıtlı.
-- [ ] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: satış KDV'sinin tek kapısının `tahsilEdilecekKdv` olduğu,
+- [x] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: satış KDV'sinin tek kapısının `tahsilEdilecekKdv` olduğu,
       `calcKDV`'nin ham KDV anlamına geldiği ve iki yazılı istisnası (oran sondası, kart tabanı),
       dört bölümdeki alanlar, borcun ve tahsilatın düştüğü, yansıtılan komisyon KDV'sinin de
       tevkifata tabi olduğu, dondurulmuş kart komisyonunun geriye dönük düzeltilmediği, alıcının
       beyan edeceği kısmın bilgi rakamı olduğu, ve **0075 X1'in açıldığı**.
-- [ ] Sürüm notu: tevkifatlı satış faturası artık girilebiliyor; işaretlenen eski bir satışın
+- [x] Sürüm notu: tevkifatlı satış faturası artık girilebiliyor; işaretlenen eski bir satışın
       müşteri borcu ve o ayın KDV'si düşer, ama o kaydın kredi kartı komisyonu eski tabanla kalır.
       **Karışık sürüm uyarısı:** güncellenmemiş istemci tevkifat alanlarını görmez ve hesaba
       katmaz, o makinada müşteri borcu ve aylık KDV **fazla** görünür; güncellenmemiş sunucu
       alanları düşürür. Önce sunucu PC, sonra bütün istemciler; güncelleme bitene kadar kutu
       işaretlenmez.
-- [ ] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. Commit ve sürüm yayını yalnız açık talimatla.
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -551,10 +551,14 @@ rakamı olarak görünüyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Gerçek uygulamada sonradan bulunan hata sayısı. |
+| **Spec revizyon sayısı** | 1 | Revizyon 2 (plan onayı, Karar 1): ölçüm, 17 "oran sondası"nın üç iş yaptığını gösterdi; kart tutarı ve ödeme ayrıştırması `tahsilKdvOrani`'ya geçti (R9/2, R13, C1, AC-36). |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-10-09), beş bulgu. |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 | Kart tabanı fatura tipi kapısından geçmiyordu; görsel kanıt eksikti; çok satırlı fatura satır satır sayılıyordu; servis kırılımı 1 kuruş sapıyordu; belge durumları ve AC-44 adı. `specs/README.md` analist dosyası olduğu için düzeltilmedi. |
+| **Regresyon sayısı** | 1 | Aylık raporun servis fatura tipi kırılımı ile KDV özetinin eşitliği tevkifatlı serviste 1 kuruş bozuldu (bölme doğrusal değil); triyajda yakalandı, tevkifatsız serviste hiç bozulmadı. |
+| **Kaçan hata** | 0 | |
 
 **Bu spec'ten çıkarılan ders:**
+
+- Doğrusal bir hesabı yuvarlamalı bir hesapla değiştirmek, kodun örtük varsaydığı "parçaların toplamı bütüne eşittir" eşitliklerini bozar. Tek kapıya taşırken aynı kaydı birden çok parçaya bölerek çağıran yerler ayrıca aranmalı.
+- Bir kapı (burada fatura tipi) yalnız kaydın alanlarına değil, formdan türeyen her şeye uygulanmalı: R5 temizliği kayda uygulanıyordu ama kart anlık görüntüsü formun ham durumundan işaret alıyordu.
+- Biçimsel bir muafiyet ("ikinci argümanı 100 olan çağrı") işlevine göre sınıflanmadan kabul edilmemeli: aynı biçimdeki 17 çağrının 12'si tutar hesaplıyordu.
