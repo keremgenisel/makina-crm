@@ -5,6 +5,7 @@
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { kutuAc } from "./kutuAc";
 import { useState } from "react";
 import { GiderForm } from "../../src/components/GiderForm";
 import { Giderler } from "../../src/components/Giderler";
@@ -193,6 +194,8 @@ describe("Spec 0076 C, D: Giderler ve Dönem Raporu", () => {
   it("AC-23 / AC-25: İndirilecek KDV kartı 240 (140 + 100); KDV kartında indirilemeyen KDV ve KKEG satırları", () => {
     render(<GH />);
     expect(screen.getByText("İndirilecek KDV").parentElement.textContent).toMatch(/240 ₺/);
+    // Spec 0081: yan kutular kapalı başlar; içerik (ve yokluk) iddiasından önce kutu açılır (kutuAc açıldığını kanıtlar, C7).
+    kutuAc("KDV Karşılaştırması");
     const bilgi = screen.getByTestId("kisit-kdv-bilgi");
     expect(bilgi.textContent).toMatch(/İndirilemeyen KDV \(kısıtlı giderler\)60 ₺/);
     expect(bilgi.textContent).toMatch(new RegExp(`${KKEG_ETIKETI.replace(/[()]/g, "\\$&")} · matrah300 ₺`));
@@ -201,6 +204,7 @@ describe("Spec 0076 C, D: Giderler ve Dönem Raporu", () => {
   });
   it("AC-25: kısıtlı kalem yoksa KDV kartında bilgi satırları çizilmez", () => {
     render(<GH g0={[NORMAL]} />);
+    kutuAc("KDV Karşılaştırması"); // yokluk iddiası kutu açıkken (spec 0081 C7)
     expect(screen.queryByTestId("kisit-kdv-bilgi")).toBeNull();
     expect(screen.getByTestId("vergi-matrahi-notu")).toBeTruthy(); // not kısıtlı kalem olmasa da görünür (R26)
   });

@@ -87,7 +87,7 @@ Başlıklı kart bölüm; iki görünüm varyantı var:
 - **`varyant="ayar"`** (varsayılan): Ayarlar ekranının bölümü.
   - Gölgeli, 24 dolgu, 720 piksel genişlik sınırı (`wide` ile tam genişlik).
   - İkonlu koyu başlık (`title`, `icon`).
-  - `collapsible` ile katlanabilir, başlangıç durumu `defaultOpen`. Katlanabilirlik yalnız bu varyantta var.
+  - `collapsible` ile katlanabilir, başlangıç durumu `defaultOpen` (iç durum). `kart` varyantı da katlanır (aşağıda, spec 0016 G10).
 - **`varyant="kart"`**: kenarlıklı, 18 dolgulu, ikonsuz kart. Başlık iki biçimde çizilir:
   - `baslikStili="etiket"` (varsayılan): küçük gri büyük harf etiket. Formun bölümlerini ayırmak için (Evrak).
   - `baslikStili="baslik"`: 15 punto koyu başlık + isteğe bağlı gri alt satır (`altBaslik`). Rapor ve özet kartları için (Giderler).
@@ -100,6 +100,13 @@ Başlıklı kart bölüm; iki görünüm varyantı var:
     kendi öğesinde kalır, bu yüzden `getByText("Dosyalar (2)")` gibi sorgular çalışır. Kapalıyken yalnız başlık satırı çizilir.
   - **`eylemler`** (spec 0016 G10): başlık satırının sağındaki düğmeler (satır sarar); tıklamaları katlanmayı tetiklemez.
   - Bu iki özellik verilmediğinde çıktı öncekiyle birebir aynıdır.
+- **Katlanan başlık klavyeyle açılır (spec 0081 R14), iki varyantta da:** `collapsible` iken başlık öğesi `role="button"`,
+  `tabIndex={0}`, `aria-expanded` ve Enter/Space dinleyicisi taşır (`tasarim.jsx` `katlanirBaslik`, iki başlık yolunun tek
+  yardımcısı). Başlık `<button>`'a çevrilmez (içinde `<div>`'ler var ve düğmenin varsayılanları yerleşimi kaydırır); görünüm
+  değişmez, yalnız klavye odağında tarayıcının odak çerçevesi görünür. `eylemler` düğmeleri başlık düğmesinin **dışındadır**
+  (iç içe düğme yok). Testlerde katlanan bölüm adıyla bulunur: `getByRole("button", { name: /^Başlık/ })`.
+- **Katlama kararı çağıranda (spec 0081 C2):** paylaşılan bir kart bileşeni (örn. `KdvKarsilastirmaKarti`) katlanmayı kendi
+  içine gömmez; `katlanir` gibi bir prop alır, varsayılanı katlanmaz. Aynı kart başka ekranda (Finans) açık kalır.
 
 **Ne zaman kullanılır:** Ayarlar'da her bölüm (`ayar`); bir ekranda içeriği gruplayan her beyaz kart (`kart`).
 Spec 0016 ile:
@@ -118,7 +125,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
-**Örnek:** `src/components/gider/DonemRaporu.jsx:70` (kart, başlık + alt satır)
+**Örnek:** `src/components/gider/DonemRaporu.jsx:73` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)

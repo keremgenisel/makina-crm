@@ -33,7 +33,10 @@ export const StatKart = ({ etiket, deger, alt, renk }) => (
 );
 
 // Dört kova (R8, AC-82): tutar bazlı tam bölme.
-export const KovaKarti = ({ rapor }) => {
+// Spec 0081 R15: Dönem Raporu'nun beş yan kutusu `katlanir` ile kapalı başlar (KartBolum'un kendi iç durumu; denetimli
+// acik/onAcikDegis kullanılmaz, R6/2). Karar çağıranda (C2): yalnız Giderler geçirir, varsayılan katlanmaz. Ad `acik`
+// olamaz: TurKirilimi ve YontemKirilimi'nde `acik` personel ayrıntısının aç/kapasıdır (K21).
+export const KovaKarti = ({ rapor, katlanir = false }) => {
   const k = rapor.kovalar, top = rapor.toplam || 0;
   const dilimler = [
     { ad: "Makinaya atanmış", v: k.makina, renk: "#c2410c", n: rapor.kovaKatki.makina },
@@ -43,7 +46,7 @@ export const KovaKarti = ({ rapor }) => {
   ];
   const yuzde = (v) => (top ? `%${(v / top * 100).toFixed(1).replace(".", ",")}` : "%0");
   return (
-    <KartBolum varyant="kart" baslikStili="baslik" title="Makina Maliyeti Kovaları" altBaslik={`Makina maliyeti hesabının (0002) girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı ${tl2(top)}.`} testId="kova-karti">
+    <KartBolum varyant="kart" baslikStili="baslik" collapsible={katlanir} title="Makina Maliyeti Kovaları" altBaslik={`Makina maliyeti hesabının (0002) girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı ${tl2(top)}.`} testId="kova-karti">
       <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", gap: 2, marginBottom: 14, background: "var(--n150, #f1f5f9)", height: 12 }}>
         {dilimler.filter(d => d.v > 0).map(d => <div key={d.ad} style={{ width: `${(d.v / (top || 1)) * 100}%`, background: d.renk }} />)}
       </div>
@@ -63,11 +66,11 @@ export const KovaKarti = ({ rapor }) => {
 
 // Tür kırılımı (R8, AC-12). Personel satırı kapalı; açılınca çalışan başına resmi/elden (AC-51).
 const PERSONEL_IZGARA = "minmax(0, 1fr) 90px 90px 80px 90px 100px"; // spec 0070 R29: + yol parası; spec 0074 R16: SGK sütunu kalktı
-export const TurKirilimi = ({ rapor }) => {
+export const TurKirilimi = ({ rapor, katlanir = false }) => {
   const [acik, setAcik] = useState(false);
   const top = rapor.toplam || 0;
   return (
-    <KartBolum varyant="kart" baslikStili="baslik" title="Gider Türü Kırılımı" altBaslik="Tahakkuk esası: kalemin gider tarihine göre" style={{ flex: "3 1 380px", minWidth: 0 }} testId="tur-kirilimi">
+    <KartBolum varyant="kart" baslikStili="baslik" collapsible={katlanir} title="Gider Türü Kırılımı" altBaslik="Tahakkuk esası: kalemin gider tarihine göre" style={{ flex: "3 1 380px", minWidth: 0 }} testId="tur-kirilimi">
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {rapor.turKirilimi.map(t => (
           <div key={String(t.turId)}>
@@ -116,10 +119,10 @@ export const TurKirilimi = ({ rapor }) => {
 };
 
 // Tedarikçi kırılımı (R14, R15, AC-47, AC-63, AC-67). Açık borç dönemden bağımsızdır.
-export const TedarikciKirilimi = ({ rapor }) => {
+export const TedarikciKirilimi = ({ rapor, katlanir = false }) => {
   const tk = rapor.tedarikciKirilimi;
   return (
-    <KartBolum varyant="kart" baslikStili="baslik" title="Tedarikçi Kırılımı" altBaslik="Harcamaya göre çoktan aza. Personel kalemleri bu kırılıma girmez." style={{ flex: "3 1 380px", minWidth: 0 }} testId="tedarikci-kirilimi">
+    <KartBolum varyant="kart" baslikStili="baslik" collapsible={katlanir} title="Tedarikçi Kırılımı" altBaslik="Harcamaya göre çoktan aza. Personel kalemleri bu kırılıma girmez." style={{ flex: "3 1 380px", minWidth: 0 }} testId="tedarikci-kirilimi">
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead><tr style={{ fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase", textAlign: "left" }}>
           <th style={{ padding: "6px 4px" }}>Tedarikçi</th><th style={{ padding: "6px 4px", textAlign: "right" }}>Harcama<div style={{ textTransform: "none", fontWeight: 500 }}>seçili dönem</div></th>
@@ -192,7 +195,7 @@ export const BorcOzeti = ({ ozet }) => {
 
 // Spec 0041 R10, AC-12: dönemin kalemlerine yapılan ödemelerin yöntem kırılımı (Q3: ödeme tarihinden bağımsız).
 // R18, Q4: personel ödemeleri ayrıntı kapalıyken tek satır; açılınca yöntemlerine dağılır.
-export const YontemKirilimi = ({ kirilim }) => {
+export const YontemKirilimi = ({ kirilim, katlanir = false }) => {
   const [acik, setAcik] = useState(false);
   if (!kirilim) return null;
   const satirlar = acik ? kirilim.personelSatirlar.reduce((l, p) => {
@@ -205,7 +208,7 @@ export const YontemKirilimi = ({ kirilim }) => {
     </div>
   );
   return (
-    <KartBolum varyant="kart" baslikStili="baslik" title="Ödeme Yöntemi Kırılımı" altBaslik="Bu dönemin giderlerine yapılan ödemeler, ödeme tarihinden bağımsız" style={{ flex: "2 1 300px", minWidth: 0 }} testId="yontem-kirilimi">
+    <KartBolum varyant="kart" baslikStili="baslik" collapsible={katlanir} title="Ödeme Yöntemi Kırılımı" altBaslik="Bu dönemin giderlerine yapılan ödemeler, ödeme tarihinden bağımsız" style={{ flex: "2 1 300px", minWidth: 0 }} testId="yontem-kirilimi">
       {kirilim.toplamK === 0 ? <BosDurum testId="bos-yontem-kirilimi" baslik="Bu dönemin giderlerine ödeme kaydedilmemiş" /> : (
         <div>
           {satirlar.map(s => satir(s.yontem, s.tutarK, "yontem-kirilimi-satiri"))}

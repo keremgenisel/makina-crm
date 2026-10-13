@@ -23,13 +23,15 @@ const KisitBilgi = ({ kisitli, para }) => (
     <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4 }}>{KISIT_KDV_KART_NOTU}</div>
   </div>
 );
-export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = "", kaynak = "", style, gizle = false, kisitli = null }) => {
+export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = "", kaynak = "", style, gizle = false, kisitli = null, katlanir = false }) => {
   // Finans ekranı tutarları "Göster"e basılana kadar gizler; kart da aynı kurala uyar.
   const para = (v) => (gizle ? "———" : tl2(v));
   if (durum !== "tamam") {
     const metin = durum === "oncesi"
       ? `Seçili dönem (${aralikEtiketi}) gider takibinin yürürlük ayından önce. Gider verisi girilmemiş, karşılaştırma yapılamıyor.`
       : `KDV karşılaştırması ay bazlı yapılır. Seçili aralık (${aralikEtiketi}) tam ayları kapsamıyor. Tam bir ay seçin.`;
+    // Spec 0081 R4/2: "karşılaştırma yapılamıyor" kartı `katlanir` gelse de katlanmaz (iki satırlık açıklama; katlama
+    // bilgi değil engel olur). Katlama yalnız aşağıdaki normal dalda.
     return (
       <KartBolum varyant="kart" baslikStili="baslik" title="KDV Karşılaştırması" altBaslik={kaynak} style={style} testId="kdv-karsilastirma">
         <div style={{ border: "1.5px dashed var(--n300, #cbd5e1)", borderRadius: 10, padding: "18px 14px", textAlign: "center", fontSize: 13, color: "var(--n600, #475569)", lineHeight: 1.55, background: "var(--n100, #f8fafc)" }}>
@@ -47,7 +49,7 @@ export const KdvKarsilastirmaKarti = ({ durum = "tamam", sonuc, aralikEtiketi = 
   );
   const devreden = sonuc.devreden > 0;
   return (
-    <KartBolum varyant="kart" baslikStili="baslik" title="KDV Karşılaştırması" altBaslik={kaynak} style={style} testId="kdv-karsilastirma">
+    <KartBolum varyant="kart" baslikStili="baslik" collapsible={katlanir} title="KDV Karşılaştırması" altBaslik={kaynak} style={style} testId="kdv-karsilastirma">
       {satir("Satışlardan hesaplanan KDV (TL)", para(sonuc.hesaplananTL))}
       {satir("Giderlerden indirilecek KDV", `− ${para(sonuc.indirilecek)}`)}
       <div style={{ marginTop: 10, background: devreden ? "var(--grnBg, #f0fdf4)" : "var(--ambBg3, #fff7ed)", border: `1px solid ${devreden ? "var(--grnBr, #bbf7d0)" : "var(--ambBr3, #fed7aa)"}`, borderRadius: 10, padding: "12px 14px" }}>

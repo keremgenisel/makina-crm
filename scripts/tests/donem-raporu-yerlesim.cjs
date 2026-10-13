@@ -24,6 +24,16 @@ const olcUzun = `(() => {
     belgeYukseklik: document.documentElement.scrollHeight, belgeTasma: document.documentElement.scrollWidth > innerWidth + 1 };
 })()`;
 
+// Spec 0081: yan kutular kapalı başlar. Başlıklara tıklayan yardımcı (hepsi ya da verilen kimlikler) ve tür/KDV kart boyları.
+const ac = (idler) => `(() => {
+  const ids = ${JSON.stringify(idler)};
+  let n = 0;
+  for (const id of ids) { const b = document.querySelector('[data-testid="' + id + '"] [role="button"][aria-expanded="false"]'); if (b) { b.click(); n++; } }
+  return n;
+})()`;
+const BES = ["kova-karti", "tur-kirilimi", "kdv-karsilastirma", "tedarikci-kirilimi", "yontem-kirilimi"];
+const durum = `(() => ${JSON.stringify(BES)}.map(id => document.querySelector('[data-testid="' + id + '"] [aria-expanded]')?.getAttribute("aria-expanded") ?? "yok"))()`;
+
 const kesisir = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
 const icinde = (a, w) => a.left >= -0.5 && a.right <= w + 0.5;
 
@@ -37,15 +47,33 @@ app.whenReady().then(async () => {
       await win.loadFile(html);
       let s = null;
       for (let i = 0; i < 50 && !s; i++) { s = await win.webContents.executeJavaScript(olc); if (!s) await new Promise(r => setTimeout(r, 100)); }
-      const ad = `@${genislik}px`;
-      if (!s) { check(`${ad}: Dönem Raporu kartlarıyla çizildi`, false); continue; }
-      check(`${ad}: sayfada yatay kaydırma yok`, !s.belgeTasma);
-      check(`${ad}: sıra kalem listesi → borç özeti → kovalar (AC-1, AC-2)`, s.liste.bottom <= s.borc.top + 0.5 && s.borc.bottom <= s.kova.top + 0.5, JSON.stringify([s.liste, s.borc, s.kova]));
-      check(`${ad}: borç özeti tam genişlik (AC-23)`, Math.abs(s.borc.width - s.liste.width) < 1 && Math.abs(s.borc.left - s.liste.left) < 1, `${s.borc.width} / ${s.liste.width}`);
-      for (const [a, b] of [["tur", "kdv"], ["tedarikci", "yontem"]]) {
-        check(`${ad}: ${a} ve ${b} kartları üst üste binmiyor (AC-4)`, !kesisir(s[a], s[b]), JSON.stringify([s[a], s[b]]));
-        check(`${ad}: ${a} ve ${b} kartları ekranın içinde (AC-4)`, icinde(s[a], s.w) && icinde(s[b], s.w), JSON.stringify([s[a], s[b]]));
-      }
+      const ad0 = `@${genislik}px`;
+      if (!s) { check(`${ad0}: Dönem Raporu kartlarıyla çizildi`, false); continue; }
+      // Spec 0081 AC-22: önce kapalı hâl (varsayılan), sonra hepsi açık (AC-23, 0067'nin ölçümü), sonra tür açık KDV kapalı (AC-28).
+      const kapali = await win.webContents.executeJavaScript(durum);
+      check(`${ad0}: beş kutu kapalı başlar (spec 0081 AC-6)`, kapali.every(x => x === "false"), JSON.stringify(kapali));
+      const kontrol = (ad, s) => {
+        check(`${ad}: sayfada yatay kaydırma yok`, !s.belgeTasma);
+        check(`${ad}: sıra kalem listesi → borç özeti → kovalar (AC-1, AC-2)`, s.liste.bottom <= s.borc.top + 0.5 && s.borc.bottom <= s.kova.top + 0.5, JSON.stringify([s.liste, s.borc, s.kova]));
+        check(`${ad}: borç özeti tam genişlik (AC-23)`, Math.abs(s.borc.width - s.liste.width) < 1 && Math.abs(s.borc.left - s.liste.left) < 1, `${s.borc.width} / ${s.liste.width}`);
+        for (const [a, b] of [["tur", "kdv"], ["tedarikci", "yontem"]]) {
+          check(`${ad}: ${a} ve ${b} kartları üst üste binmiyor (AC-4)`, !kesisir(s[a], s[b]), JSON.stringify([s[a], s[b]]));
+          check(`${ad}: ${a} ve ${b} kartları ekranın içinde (AC-4)`, icinde(s[a], s.w) && icinde(s[b], s.w), JSON.stringify([s[a], s[b]]));
+        }
+      };
+      kontrol(`${ad0} kapalı (spec 0081 AC-22)`, s);
+      // Tür açık, KDV kapalı: flex-start ile kapalı KDV kartı açık tür kartının boyuna uzamaz (AC-28).
+      await win.webContents.executeJavaScript(ac(["tur-kirilimi"]));
+      const t = await win.webContents.executeJavaScript(olc);
+      check(`${ad0}: tür açık, KDV kapalı: KDV kartı uzamaz, üst kenarlar hizalı (spec 0081 AC-28)`,
+        t.kdv.bottom - t.kdv.top < (t.tur.bottom - t.tur.top) - 20 && Math.abs(t.kdv.top - t.tur.top) < 1, JSON.stringify([t.tur, t.kdv]));
+      await win.webContents.executeJavaScript(ac(BES));
+      const acik = await win.webContents.executeJavaScript(durum);
+      check(`${ad0}: beş kutu açıldı`, acik.every(x => x === "true"), JSON.stringify(acik));
+      const h = await win.webContents.executeJavaScript(olc);
+      kontrol(`${ad0} hepsi açık (spec 0081 AC-23)`, h);
+      check(`${ad0}: hepsi açıkken tür ve KDV üstten hizalı (spec 0081 AC-28)`, Math.abs(h.kdv.top - h.tur.top) < 1, JSON.stringify([h.tur, h.kdv]));
+      console.log(`BILGI ${ad0}: hepsi açıkken tür ${Math.round(h.tur.bottom - h.tur.top)} px, KDV ${Math.round(h.kdv.bottom - h.kdv.top)} px`);
     }
     // Spec 0080 AC-19
     for (const genislik of [1280, 1024]) {

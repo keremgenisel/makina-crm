@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 const root = path.join(__dirname, "..");
 
 describe("Dönem Raporu kutu düzeni (Electron altında gerçek yerleşim)", () => {
-  it("AC-4 / AC-23: borç özeti kalem listesinin altında tam genişlik; iki kartlı satırlarda 1280 ve 1024 px'te üst üste binme ve taşma yok; spec 0080 AC-19: yetmiş kalem tek sayfada, belge taşmıyor, kabın yatay kayması ölçülür", async () => {
+  it("AC-4 / AC-23: borç özeti kalem listesinin altında tam genişlik; iki kartlı satırlarda 1280 ve 1024 px'te üst üste binme ve taşma yok; spec 0080 AC-19: yetmiş kalem tek sayfada, belge taşmıyor, kabın yatay kayması ölçülür; spec 0081 AC-22 / AC-23 / AC-28: kutular kapalı, tür açık + KDV kapalı ve hepsi açık hâlde aynı kurallar", async () => {
     const outDir = mkdtempSync(path.join(os.tmpdir(), "donem-raporu-"));
     await build({
       configFile: false, logLevel: "error", root: path.join(root, "scripts", "tests", "layout"), base: "./", plugins: [react()],

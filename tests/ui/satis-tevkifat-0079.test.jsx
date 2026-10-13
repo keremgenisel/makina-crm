@@ -3,6 +3,7 @@
 // zaman çizelgesi ve Stok rozeti, müşteri detayındaki borç satırı, Finans ve Giderler'in KDV kartı.
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+import { kutuAc } from "./kutuAc";
 import { useState } from "react";
 import { ServiceForm } from "../../src/components/ServiceForm";
 import { PartSaleForm } from "../../src/components/PartSaleForm";
@@ -236,9 +237,12 @@ describe("Spec 0079 D: rozet, borç satırı ve KDV kartı", () => {
     };
     const cs = [{ id: 1, name: "TL Firma", currency: "TRY", faturali: FY, faturaBedeli: 250000, installDate: "2026-09-10", ...T(5) }];
     render(<GH satis={cs} />);
+    // Spec 0081: yan kutular kapalı başlar; içerik (ve yokluk) iddiasından önce kutu açılır (kutuAc açıldığını kanıtlar, C7).
+    kutuAc("KDV Karşılaştırması");
     expect(screen.getByTestId("satis-tevkifat-bilgi").textContent).toContain(`${SATIS_TEVKIFAT_KART_ETIKETI}25.000 ₺`);
     cleanup();
     render(<GH satis={[{ ...cs[0], tevkifatli: false }]} />);
+    kutuAc("KDV Karşılaştırması"); // yokluk iddiası kutu açıkken (spec 0081 C7); kapalıyken yanlış nedenle geçerdi
     expect(screen.getByTestId("kdv-karsilastirma")).toBeTruthy();
     expect(screen.queryByTestId("satis-tevkifat-bilgi")).toBeNull();
   });

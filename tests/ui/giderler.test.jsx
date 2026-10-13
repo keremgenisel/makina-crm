@@ -2,6 +2,7 @@
 // Spec 0001: Giderler sekmesi (dönem raporu, kalem listesi, üretim, boş durumlar, gizlilik).
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { kutuAc } from "./kutuAc";
 import { useState } from "react";
 import { Giderler } from "../../src/components/Giderler";
 
@@ -82,6 +83,8 @@ describe("Giderler sekmesi: dönem raporu", () => {
   });
   it("AC-51 / AC-72 / K21: personel kalem listesinde, tür kırılımında ve borç özetinde kapalı başlar", () => {
     render(<Harness g0={[k({ turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, tutar: null, kdvOrani: 0 })]} />);
+    // Spec 0081: yan kutular kapalı başlar; içerik (ve yokluk) iddiasından önce kutu açılır (kutuAc açıldığını kanıtlar, C7).
+    kutuAc("Gider Türü Kırılımı");
     expect(screen.queryByText("Hasan Çelik")).toBeNull();
     fireEvent.click(within(screen.getByTestId("tur-kirilimi")).getByText(/Aç/));
     const ayr = screen.getByTestId("personel-ayrinti");

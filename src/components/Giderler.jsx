@@ -341,11 +341,11 @@ export const Giderler = ({
             {rapor.mukerrerUyari.length > 0 && <UyariSeridi aile="uyari" baslik="Aynı tanımdan bu dönemde birden fazla kalem var." metin={rapor.mukerrerUyari.map(m => `${m.aciklama || "Tanım"} (${m.donem}): ${m.kalemler.length} kalem`).join(", ") + ". İki kullanıcı aynı ayı aynı anda oluşturmuş olabilir; fazla olanı silin."} testId="mukerrer-uyari" />}
             {rapor.bos ? <BosDurum testId="gider-bos-durum" baslik="Bu dönemde gider kaydı yok" metin="Sıfır tutarlı bir tablo yerine bu mesaj gösterilir." eylemler={eylemDugmeleri} /> : (
               <>
+                {/* Spec 0081 R1: dört özet kartı; kira stopajı kartı kaldırıldı, rakam Aylık Gider ve Kasa Raporu'nda (R2). */}
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                   <StatKart etiket="Toplam gider" deger={tl2(rapor.toplam)} alt={`${rapor.kalemler.length} kalem · ödenmemiş dahil`} renk="#e85d1a" />
                   <StatKart etiket="Ödenmemiş gider" deger={tl2(rapor.odenmeyen)} alt={`${rapor.odenmeyenAdet} kalem · seçili dönem`} renk="#dc2626" />
                   <StatKart etiket="Tedarikçilere açık borç (KDV dâhil)" deger={tl2(rapor.tedarikciKirilimi.tedarikciBorcu)} alt="Tüm dönemler, bugüne kadar" renk="#b91c1c" />
-                  <StatKart etiket="Kesilen kira stopajı" deger={tl2(rapor.stopajToplam)} alt={`${rapor.stopajSatirlari.length} kira kalemi`} renk="#b45309" />
                   <StatKart etiket="İndirilecek KDV" deger={tl2(rapor.indirilecekKdv)} alt="Ödeme durumundan bağımsız" renk="#16a34a" />
                 </div>
                 {/* Spec 0067 R1, R2: kalem listesi özet kartlarının hemen altında, borç özeti onun altında tam genişlik; kovalar
@@ -355,14 +355,16 @@ export const Giderler = ({
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
                   odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} baslangicFiltre={baslangicKalemFiltresi} />
                 <BorcOzeti ozet={borc} />
-                <KovaKarti rapor={rapor} />
-                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "stretch" }}>
-                  <TurKirilimi rapor={rapor} />
-                  {kdv && <KdvKarsilastirmaKarti durum={kdv.durum} sonuc={kdv.sonuc} aralikEtiketi={donemEtiketi} kaynak="Satış KDV'si Aylık Faaliyet Raporu motorundan" kisitli={rapor.kisitli || null} style={{ flex: "2 1 300px", minWidth: 0 }} />}
+                {/* Spec 0081 R4, R15: beş yan kutu kapalı başlar (katlanir; durum kartın kendi iç durumu, saklanmaz). Tür ve KDV
+                    satırı flex-start: biri açık biri kapalıyken kapalı kart açığın boyuna uzamaz (R4/3). */}
+                <KovaKarti rapor={rapor} katlanir />
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
+                  <TurKirilimi rapor={rapor} katlanir />
+                  {kdv && <KdvKarsilastirmaKarti katlanir durum={kdv.durum} sonuc={kdv.sonuc} aralikEtiketi={donemEtiketi} kaynak="Satış KDV'si Aylık Faaliyet Raporu motorundan" kisitli={rapor.kisitli || null} style={{ flex: "2 1 300px", minWidth: 0 }} />}
                 </div>
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
-                  <TedarikciKirilimi rapor={rapor} />
-                  {donemKirilimi && <YontemKirilimi kirilim={donemKirilimi} />}
+                  <TedarikciKirilimi rapor={rapor} katlanir />
+                  {donemKirilimi && <YontemKirilimi kirilim={donemKirilimi} katlanir />}
                 </div>
               </>
             )}

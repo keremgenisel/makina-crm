@@ -79,6 +79,14 @@ export const BolumBasligi = ({ children, bosluk, ust }) => (
   <div style={{ ...etiketBaslik, ...(ust != null ? { marginTop: ust } : {}), marginBottom: bosluk ?? 14 }}>{children}</div>
 );
 
+// Spec 0081 R14: katlanan başlık klavyeyle açılır ve durumunu bildirir. Başlık <button>'a çevrilmez (içinde <div>'ler var,
+// düğmenin tarayıcı varsayılanları yerleşimi kaydırır); mevcut öğe düğme rolü, odak, aria-expanded ve Enter/Space alır.
+// İki başlık yolu (kart ve ayar varyantı) bu tek yardımcıyı kullanır.
+const katlanirBaslik = (acikMi, degis) => ({
+  role: "button", tabIndex: 0, "aria-expanded": acikMi,
+  onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); degis(); } },
+});
+
 export const KartBolum = ({
   varyant = "ayar", title, icon, children, collapsible = false, defaultOpen = false, wide = false,
   baslikStili = "etiket", altBaslik, baslikBosluk, baslikRengi = "var(--n900, #0f172a)", style, testId,
@@ -97,7 +105,7 @@ export const KartBolum = ({
         : etiketBaslik;
       baslik = (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginBottom: acikMi ? (baslikBosluk ?? (baslikStili === "baslik" ? 12 : 14)) : 0 }}>
-          <div onClick={collapsible ? degis : undefined}
+          <div onClick={collapsible ? degis : undefined} {...(collapsible ? katlanirBaslik(acikMi, degis) : {})}
             style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, cursor: collapsible ? "pointer" : "default", userSelect: collapsible ? "none" : "auto" }}>
             {collapsible && <span aria-hidden="true" style={{ fontSize: 10, color: "var(--n400, #94a3b8)" }}>{acikMi ? "▾" : "▸"}</span>}
             <div>
@@ -125,12 +133,13 @@ export const KartBolum = ({
   return (
     <div data-testid={testId} style={{ background: "var(--surface, #ffffff)", borderRadius: 12, padding: ayarAcik ? 24 : "18px 24px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", marginBottom: 20, maxWidth: wide ? "100%" : 720 }}>
       <div
-        onClick={collapsible ? () => setOpen(o => !o) : undefined}
+        onClick={collapsible ? () => setOpen(o => !o) : undefined} {...(collapsible ? katlanirBaslik(open, () => setOpen(o => !o)) : {})}
         style={{ fontWeight: 700, fontSize: 16, color: "var(--n900, #0f172a)", marginBottom: ayarAcik ? 16 : 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: collapsible ? "pointer" : "default", userSelect: collapsible ? "none" : "auto" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: "var(--brand, #e85d1a)" }}><Icon name={icon} size={18} /></span>{title}
         </span>
-        {collapsible && <span style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{open ? "▾" : "▸"}</span>}
+        {/* Spec 0081 triyaj: işaret erişilebilir ada girmez (durum aria-expanded ile bildirilir), kart varyantıyla aynı. */}
+        {collapsible && <span aria-hidden="true" style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>{open ? "▾" : "▸"}</span>}
       </div>
       {ayarAcik && children}
     </div>

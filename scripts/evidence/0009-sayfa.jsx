@@ -563,6 +563,10 @@ const ARAMA_KUTU = "doldur:Müşteri, seri no, teklif no, servis, bayi, not ara.
 
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
+  // Spec 0081: Dönem Raporu'nun beş yan kutusu kapalı başlar (giderler-rapor kapalı hâldir); bir kutu açık ve hepsi açık hâl.
+  "giderler-0081-bir-acik": [<GiderEkrani />, ["tikla:Gider Türü Kırılımı", "kaydir:Gider Türü Kırılımı"]],
+  "giderler-0081-hepsi-acik": [<GiderEkrani h0={[]} />, ["tikla:Makina Maliyeti Kovaları", "tikla:Gider Türü Kırılımı", "tikla:KDV Karşılaştırması",
+    "tikla:Tedarikçi Kırılımı", "tikla:Ödeme Yöntemi Kırılımı", "kaydir:Makina Maliyeti Kovaları"]],
   "giderler-bos-tursuz": [<GiderEkrani g0={[]} turler={[]} />, []],
   "giderler-yururluk-oncesi": [<GiderEkrani ayar={{ giderAyarlari: { yururlukAy: "2026-12" } }} />, []],
   "giderler-model": [<GiderEkrani />, ["Makina ve Model"]],
@@ -679,12 +683,12 @@ const EKRANLAR = {
     yedekParcaSatislar={[]} defaultSubTab="makina" showToast={bos} uretimPartileri={[P_KAPALI, P_ACIK]} giderYetki models={MODELLER} />, ["~Stoğa Makina Ekle", "kaydir:Üretim partisi"]],
   // Spec 0023: ek ödemeler.
   "gider-formu-ek-odeme": [<GiderForm kalem={EK_ODEMELI} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ek ödemeler (bu ay)"]],
-  "giderler-personel-ayrinti-kapali": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["kaydir:Gider Türü Kırılımı"]],
+  "giderler-personel-ayrinti-kapali": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["tikla:Gider Türü Kırılımı", "kaydir:Gider Türü Kırılımı"]], // spec 0081: kutu kapalı başlar
   // Spec 0042: resmi (ana) + elden iki hedefli personel kalemi; liste, Ödeme planı ve çok satırlı ödeme (Resmi / Elden).
   "giderler-personel-iki-hedef": [<GiderEkrani g0={[PERSONEL_IKI]} h0={[odm(5201, 5, 30000, "2026-09-20", { taksitId: 5101, hesapId: 401 })]} />, ["dugme:Çalışanları göster", "kaydir:Gider Kalemleri"]],
   "giderler-personel-odeme-plani": [<GiderEkrani g0={[PERSONEL_IKI]} h0={[odm(5201, 5, 30000, "2026-09-20", { taksitId: 5101, hesapId: 401 })]} />, ["dugme:Çalışanları göster", "dugme:Ödeme planı"]],
   "giderler-personel-coklu-odeme": [<GiderEkrani g0={[PERSONEL_IKI]} h0={[]} />, ["dugme:Çalışanları göster", "dugme:Ödeme planı", "dugme:Ödeme gir", "sec:Taksit=5101", "sec:Ödeme yöntemi=Havale", "dugme:Başka yöntemle satır ekle", "sec:Taksit 2=5102", "sec:Ödeme yöntemi 2=Nakit"]],
-  "giderler-personel-ayrinti-acik": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["dugme:▸ Aç", "kaydir:Gider Türü Kırılımı"]],
+  "giderler-personel-ayrinti-acik": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["tikla:Gider Türü Kırılımı", "dugme:▸ Aç", "kaydir:Gider Türü Kırılımı"]], // spec 0081: kutu kapalı başlar
   "anasayfa-kart-rozetleri": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={KK_ODEME} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }} />, []],
   "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
     partSales={PANO_KALIP} setPartSales={bos} kalipYetki yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],
@@ -711,7 +715,7 @@ const EKRANLAR = {
   "giderler-odeme-kayit-taksit": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Ödeme planı", "dugme:Ödeme gir"]],
   // Spec 0041: 1 numaralı kalem Havale + Nakit ile kısmen ödenmiş (Karma); çok satırlı ödeme penceresi ve dönem kırılımı.
   "giderler-karma-yontem": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["kaydir:Gider Kalemleri"]],
-  "giderler-yontem-kirilimi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["kaydir:Ödeme Yöntemi Kırılımı"]],
+  "giderler-yontem-kirilimi": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["tikla:Ödeme Yöntemi Kırılımı", "kaydir:Ödeme Yöntemi Kırılımı"]], // spec 0081: kutu kapalı başlar
   "giderler-coklu-odeme": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["dugme:Ödenmedi", "doldur:Ödeme tutarı=4000", "dugme:Başka yöntemle satır ekle", "sec:Ödeme yöntemi 2=Kredi Kartı"]],
   "giderler-coklu-odeme-hata": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KARMA_H} />, ["dugme:Ödenmedi", "doldur:Ödeme tutarı=4000", "dugme:Başka yöntemle satır ekle", "doldur:Ödeme tutarı 2=999999", "dugme:Ödemeyi Kaydet"]],
   "giderler-odeme-plani-hareket": [<GiderEkrani g0={TAKSIT_GIDERLER} h0={KASA_HAREKETLER} />, ["dugme:Ödeme planı"]],
@@ -962,7 +966,7 @@ const EKRANLAR = {
   "gider-formu-0070-personel": [<GiderForm kalem={{ turId: 3, calisanId: 21, tarih: "2026-09-30", resmiTutar: "30000", eldenTutar: "10000", yolParasi: "1000", sonOdemeTarihi: "2026-10-05" }}
     giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL_0070} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ödeme"]],
   "giderler-0070-borc-sgk": [<GiderEkrani g0={[...GIDERLER, ...SGK_0070]} turler={TURLER_0074} h0={[]} />, ["kaydir:Kime Ne Kadar Borçluyuz"]],
-  "giderler-0070-personel-ayrinti": [<GiderEkrani g0={[...GIDERLER, ...SGK_0070]} turler={TURLER_0074} h0={[]} />, ["~▸ Aç"]],
+  "giderler-0070-personel-ayrinti": [<GiderEkrani g0={[...GIDERLER, ...SGK_0070]} turler={TURLER_0074} h0={[]} />, ["tikla:Gider Türü Kırılımı", "~▸ Aç"]], // spec 0081: kutu kapalı başlar
   // Spec 0074: SGK davranışlı tür (tür yöneticisi), SGK kalem formu (KDV ve tedarikçi yok, öneri düğmesi), sıfır tutarlı SGK
   // tanımı, SGK kaleminin kendi ödeme penceresi.
   "ayarlar-gidertur-0074": [ayarlar("gidertur", { giderTurleri: TURLER_0074 }), []],
@@ -996,7 +1000,7 @@ const EKRANLAR = {
   "gider-formu-0076-tevkifat": [<GiderForm kalem={{ turId: 4, tarih: "2026-09-08", tutar: "1000", kdvOrani: "20", tedarikciId: 12, aciklama: "Binek araç bakımı", sonOdemeTarihi: "2026-09-30",
     kisitliGider: true, indirilebilirOran: 70, tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10 }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
   "giderler-0076-liste": [<GiderEkrani g0={[...GIDERLER, KIS_0076]} h0={[]} />, []],
-  "giderler-0076-kdv": [<GiderEkrani g0={[...GIDERLER, KIS_0076]} h0={[]} />, ["kaydir:KDV Karşılaştırması"]],
+  "giderler-0076-kdv": [<GiderEkrani g0={[...GIDERLER, KIS_0076]} h0={[]} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0081: kutu kapalı başlar
   "giderler-0076-karlilik": [<GiderEkrani g0={[...GIDERLER, KIS_AGU_0076]} h0={[]} />, ["Makina Kârlılığı"]],
   "maliyet-detay-0076": [maliyetDetayi([KIS_AGU_0076]), []],
   "ayarlar-gidertanim-0076": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0076, ...TANIMLAR] }), []],
@@ -1022,7 +1026,7 @@ const EKRANLAR = {
   "stok-yedek-0079": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERI_0079} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
     dealers={DEALERS} yedekParcaSatislar={YP_0079} defaultSubTab="yedeksatis" showToast={bos} />, ["~Kutu Gıda"]],
   "finans-0079-kdv": [<FINANS musteriler={MUSTERI_0079} />, ["Göster", "kaydir:KDV Karşılaştırması"]],
-  "giderler-0079-kdv": [<GiderEkrani satis={SATIS_0079} />, ["kaydir:KDV Karşılaştırması"]],
+  "giderler-0079-kdv": [<GiderEkrani satis={SATIS_0079} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0081: kutu kapalı başlar
   "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],
   "servis-formu-yazdir-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0079[0], MUSTERI_0079, undefined, {}) }} />, []],
 };

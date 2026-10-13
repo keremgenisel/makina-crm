@@ -2,6 +2,7 @@
 // Spec 0023: çalışan ek ödemeleri, arayüz (gider formu, dönem raporunun personel ayrıntısı, kalem listesi).
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { kutuAc } from "./kutuAc";
 import { useState } from "react";
 import { GiderForm } from "../../src/components/GiderForm";
 import { Giderler } from "../../src/components/Giderler";
@@ -104,7 +105,9 @@ describe("Dönem raporu: personel ayrıntısı (R7, R8)", () => {
     ekOdemeler: [{ tur: "prim", aciklama: "Teslim primi", resmiTutar: 1000, eldenTutar: null }, { tur: "prim", aciklama: "Kalite primi", resmiTutar: null, eldenTutar: 500 }] };
   it("AC-10 / AC-11 / AC-19: kapalıyken yalnız toplam; açılınca Resmi, Elden, Ek ödeme ve iki satır ayrı ayrı (AC-4)", () => {
     render(<Harness g0={[KALEM]} />);
-    const tk = screen.getByTestId("tur-kirilimi");
+    // Spec 0081: yan kutular kapalı başlar; içerik (ve yokluk) iddiasından önce kutu açılır (kutuAc açıldığını kanıtlar, C7).
+    const tk = kutuAc("Gider Türü Kırılımı");
+    expect(tk.getAttribute("data-testid")).toBe("tur-kirilimi");
     expect(tk.textContent).toMatch(/51\.500 ₺/);
     expect(within(tk).queryByTestId("personel-ayrinti")).toBeNull();
     expect(tk.textContent).not.toMatch(/Teslim primi/);

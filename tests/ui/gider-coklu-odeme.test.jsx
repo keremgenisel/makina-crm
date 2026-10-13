@@ -3,6 +3,7 @@
 // ödeme penceresinde çok satır, listede türetilen yöntem, Dönem Raporu'nda yöntem kırılımı kartı.
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { kutuAc } from "./kutuAc";
 import { useState } from "react";
 import { Giderler } from "../../src/components/Giderler";
 import { GOC_YONTEM_NOTU } from "../../src/lib/odemeYontemi";
@@ -171,7 +172,9 @@ describe("Spec 0041: Dönem Raporu yöntem kırılımı (R10, R18)", () => {
   const H = [od(1, 7000, "Nakit"), od(2, 5000, "Kredi Kartı"), { id: 3, tur: "odeme", tarih: "2026-09-12", tutar: 3000, yontem: "Nakit", giderId: 610 }];
   it("AC-12 / AC-26: kart yöntem bazında tutarları gösterir; personel ödemeleri ayrıntı kapalıyken tek satır, açılınca yöntemlere dağılır", () => {
     render(<Harness g0={[KALEM, P]} h0={H} />);
-    const k = screen.getByTestId("yontem-kirilimi");
+    // Spec 0081: yan kutular kapalı başlar; içerik (ve yokluk) iddiasından önce kutu açılır (kutuAc açıldığını kanıtlar, C7).
+    const k = kutuAc("Ödeme Yöntemi Kırılımı");
+    expect(k.getAttribute("data-testid")).toBe("yontem-kirilimi");
     expect(within(k).getAllByTestId("yontem-kirilimi-satiri").map(e => e.textContent)).toEqual(["Nakit7.000 ₺", "Kredi Kartı5.000 ₺"]);
     expect(within(k).getByTestId("yontem-kirilimi-personel").textContent).toBe("Personel ödemeleri3.000 ₺");
     expect(k.textContent).toMatch(/Toplam ödenen15\.000 ₺/);

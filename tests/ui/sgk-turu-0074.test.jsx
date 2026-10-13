@@ -4,6 +4,7 @@
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { kutuAc } from "./kutuAc";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { useState } from "react";
@@ -185,6 +186,8 @@ describe("Spec 0074 C: borç kutusu ve kalem listesi", () => {
   });
   it("AC-38: personel ayrıntısının ızgarası altı sütun (SGK sütunu yok)", () => {
     render(<GH g0={[k({ id: 72, tarih: "2026-10-01", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: "30000", eldenTutar: "10000", sonOdemeTarihi: "2026-10-05" })]} />);
+    // Spec 0081: yan kutular kapalı başlar; içerik (ve yokluk) iddiasından önce kutu açılır (kutuAc açıldığını kanıtlar, C7).
+    kutuAc("Gider Türü Kırılımı");
     fireEvent.click(screen.getAllByRole("button").find(b => b.textContent.trim() === "▸ Aç"));
     const baslik = screen.getByTestId("personel-ayrinti").firstElementChild;
     expect([...baslik.children].map(c => c.textContent)).toEqual(["Çalışan", "Resmi", "Elden", "Yol parası", "Ek ödeme", "Toplam"]);

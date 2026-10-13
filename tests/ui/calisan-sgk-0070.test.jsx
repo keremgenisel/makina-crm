@@ -7,6 +7,7 @@
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { kutuAc } from "./kutuAc";
 import { useState } from "react";
 import { CalisanManager, CALISAN_MALIYET_IPUCU } from "../../src/components/CalisanManager";
 import { GiderForm } from "../../src/components/GiderForm";
@@ -113,6 +114,8 @@ describe("Spec 0070 D: personel ayrıntısı", () => {
   // Spec 0074 R16 (AC-38) ile güncellendi: ızgara altı sütun (SGK sütunu yok).
   it("AC-23, AC-43: personel ayrıntısı varsayılan kapalı; açılınca yol parası sütunu satır toplamıyla tutar", () => {
     render(<GH />);
+    // Spec 0081: yan kutular kapalı başlar; içerik (ve yokluk) iddiasından önce kutu açılır (kutuAc açıldığını kanıtlar, C7).
+    kutuAc("Gider Türü Kırılımı");
     expect(screen.queryByTestId("personel-ayrinti")).toBeNull();
     fireEvent.click(screen.getAllByRole("button").find(b => b.textContent.trim() === "▸ Aç"));
     const ayr = screen.getByTestId("personel-ayrinti");
