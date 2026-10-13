@@ -196,12 +196,12 @@ describe("Spec 0071 B: kalem listesi rozeti ve süzgeci", () => {
     expect(screen.getByText("Su Ekim")).toBeTruthy();
     expect(screen.queryByText("Sarf 1")).toBeNull();
   });
-  it("AC-23: süzgeç değişince kalem listesi 1. sayfaya döner; hatırlatma kipiyle çakışmaz", () => {
+  // Spec 0080 ile kısmen geri alındı: kalem listesi artık sayfalanmaz, "1. sayfaya döner" yarısı kalktı (spec 0080 AC-18).
+  it("AC-23 (spec 0080 AC-18; sayfa yarısı spec 0080 ile kalktı): süzgeç hatırlatma kipiyle çakışmaz", () => {
     render(<H />);
-    fireEvent.click(screen.getByText("Sonraki ›"));
-    expect(screen.getByText("‹ Önceki").disabled).toBe(false);
+    expect(screen.getByText("Sarf 1")).toBeTruthy(); // ön koşul: süzgeçten önce satır çizili (triyaj bulgu 3)
     suz("tutarsiz");
-    expect(screen.queryByText("‹ Önceki")).toBeNull(); // iki kalem, tek sayfa
+    expect(screen.queryByText("Sarf 1")).toBeNull();
     // Hatırlatma kipinden süzgece geçilince kip kapanır ve süzgeç uygulanır.
     suz("hatirlatma");
     suz("tutarsiz");

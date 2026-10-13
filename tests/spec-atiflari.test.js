@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 
 const KOK = path.join(__dirname, "..");
-const TASINACAK = [];
+const TASINACAK = ["0080-uygulama-plani.md", "0080-gider-ve-tedarikci-listelerinde-sayfalama-kalkar.md"];
 
 const gez = (d) => readdirSync(path.join(KOK, d)).flatMap(ad => {
   const f = path.join(d, ad);
@@ -30,6 +30,14 @@ describe("specs/done atıfları", () => {
       && !(TASINACAK.includes(ad) && existsSync(path.join(KOK, "specs", ad))))
       .map(([ad, f]) => `${ad} (${[...f].join(", ")})`);
     expect(kirik).toEqual([]);
+  });
+  // Triyaj (spec 0080 bulgu 1): CLAUDE.md'nin görsel kanıt raporu atıfları (`<spec>-piksel-raporu.json`,
+  // `<spec>-taban-piksel-raporu.json`) docs/evidence'da bir dosyaya çıkmalı; yazılıp üretilmeyen rapor yakalanır.
+  it("CLAUDE.md'deki piksel raporu atıfları docs/evidence'da var", () => {
+    const metin = readFileSync(path.join(KOK, "CLAUDE.md"), "utf-8");
+    const adlar = [...new Set([...metin.matchAll(/\b(\d{4}[A-Za-z0-9-]*-piksel-raporu\.json)/g)].map(m => m[1]))];
+    expect(adlar.length).toBeGreaterThan(10);
+    expect(adlar.filter(ad => !existsSync(path.join(KOK, "docs/evidence", ad)))).toEqual([]);
   });
   it("TASINACAK listesi bayat değil: listedekiler henüz specs/ altında (done'a taşınınca listeden çıkarın)", () => {
     for (const ad of TASINACAK) expect(existsSync(path.join(KOK, "specs", ad)), ad).toBe(true);

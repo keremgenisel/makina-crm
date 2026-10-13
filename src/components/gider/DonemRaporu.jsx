@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
-import { Icon, Btn, Pagination } from "../ui";
-import { usePagination } from "../../hooks/usePagination";
-import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, makinaGideriCoz, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, dagitimRozetMetni, kurumTarafAdi, vergiRozetleri,
+import { Icon, Btn } from "../ui";
+import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, makinaCozucuOlustur, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, dagitimRozetMetni, kurumTarafAdi, vergiRozetleri,
   kalemGiderTutari, kalemIndirilebilirKdv, kisitEtkiliMi, kisitliRozetMetni } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
@@ -238,7 +237,7 @@ const YontemOzeti = ({ y, vade }) => {
 // Spec 0003 R8: ödeme süzgeci üst bileşenden yönetilebilir (odemeFiltre/onOdemeFiltre); "Hatırlatma kapsamı"
 // seçeneği ve kapsamdaki satırların vurgusu odemeHatirlatmalari çıktısından (hatirlatma) gelir.
 export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, customers, standardModels, customModels, bugun, canDo, onDuzenle, onSil, onOdendi,
-  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir, yontemKirilimlari = null, donemAnahtari = "", baslangicFiltre = null }) => {
+  odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir, yontemKirilimlari = null, baslangicFiltre = null }) => {
   const [personelAcik, setPersonelAcik] = useState(false);
   // Spec 0026 R18: genel aramadan gelinirse ilk değer (açıklama/tedarikçi metni ya da tür); süzgecin kuralı aynı (C7).
   const [yerelFiltre, setYerelFiltre] = useState(() => ({ tur: "", ted: "", odeme: "", ara: "", ...(baslangicFiltre || {}) }));
@@ -277,11 +276,12 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   const kdvTop = suz.reduce((a, k) => a + kalemKdv(k, dav(k)), 0);
   const kisitliVar = suz.some(k => kisitEtkiliMi(k, dav(k)));
   const indKdvTop = kisitliVar ? suz.reduce((a, k) => a + kalemIndirilebilirKdv(k, dav(k)), 0) : kdvTop;
-  // Spec 0062 R4, R13, R20, R26 (a), R32: çizilen satırlar (personel grup satırı, açıksa çalışan satırları, diğer kalemler)
-  // sayfalanır; dönem ve süzgeçler değişince 1. sayfa, personel aç/kapa sayfayı korur. Başlıktaki kalem sayısı ve alt toplam
-  // bütün süzülmüş kalemlerden (R16).
+  // Çizilen satırlar (personel grup satırı, açıksa çalışan satırları, diğer kalemler; spec 0062 R20, R32). Spec 0080 R1:
+  // sayfalanmaz, bütün süzülmüş satırlar tek seferde çizilir (0062 ile gelen sayfalama ve sıfırlama anahtarı geri alındı).
   const cizim = [...(personel.length ? [{ tip: "grup" }] : []), ...(personelAcik ? personel : []).map(k => ({ tip: "kalem", k })), ...diger.map(k => ({ tip: "kalem", k }))];
-  const { page, setPage, paged, perPage } = usePagination(cizim, 10, `${donemAnahtari}|${filtre.tur}|${filtre.ted}|${filtre.odeme}|${filtre.ara}`);
+  // Spec 0080 R10: makina çözümü bir kez kurulur (stok ve müşteriler haritaya alınır); satır başına tekil çözüm her
+  // çağrıda iki diziyi doğrusal tarıyordu. Sonuç aynıdır (yinelenen kimlik dışında, plan P2).
+  const makinaCoz = useMemo(() => makinaCozucuOlustur({ stock, customers }), [stock, customers]);
 
   const atamaIcerik = (k) => {
     if (!atanabilirMi(dav(k)) || !k.atamaTur) return <span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span>;
@@ -292,7 +292,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
       return <div>{satirlar.map((s, i) => <div key={i} style={{ fontSize: 12 }}><Rozet renk="mavi">Model</Rozet> <b>{s.modelAd}</b> · {s.adet} × {tl2(s.birimMaliyet)}</div>)}
         {olu.length > 0 && <div style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 3 }}>Silinmiş model: tutarı ortak gidere düşer</div>}</div>;
     }
-    const cz = makinaGideriCoz(k, { stock, customers });
+    const cz = makinaCoz(k);
     if (!cz) return <div><span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span><div style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 3 }}>Atandığı makina silinmiş veya takip edilemiyor</div></div>;
     return <div><div style={{ fontWeight: 600 }}>{[cz.model, cz.seri].filter(Boolean).join(" · ")}</div><div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{cz.tur === "stok" ? "Makina Stoğu" : `${cz.ad}${cz.stoktanTakip ? " (stoktan satıldı)" : ""}`}</div></div>;
   };
@@ -430,7 +430,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
             {["Tarih", "Tür", "Açıklama · Tedarikçi", "Atama", "Tutar", "KDV", "Ödenecek", "Ödeme", ""].map((h, i) => <th key={i} style={{ padding: "9px 10px", textAlign: i >= 4 && i <= 6 ? "right" : "left" }}>{h}</th>)}
           </tr></thead>
           <tbody>
-            {paged.map(x => (x.tip === "kalem" ? satir(x.k) : (
+            {cizim.map(x => (x.tip === "kalem" ? satir(x.k) : (
               <tr key="personel-grup" style={{ background: "var(--purBg3)" }}>
                 <td style={{ ...td, color: "var(--n600, #475569)" }}>{personel.length === 1 ? fmtTR(personel[0].tarih) : ""}</td>
                 <td style={td}><DavranisRozeti davranis="personel" /></td>
@@ -455,7 +455,6 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
           </tr></tfoot>
         </table>
       </div>
-      <Pagination total={cizim.length} page={page} setPage={setPage} perPage={perPage} />
     </KartBolum>
   );
 };

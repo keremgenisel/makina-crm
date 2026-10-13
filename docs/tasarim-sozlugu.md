@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:280`
+**Örnek:** `src/components/Giderler.jsx:281`
 **Örnek:** `src/components/Documents.jsx:1112`
 **Örnek:** `src/components/Customers.jsx:491` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:55` (sekme kipi)
@@ -118,7 +118,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
-**Örnek:** `src/components/gider/DonemRaporu.jsx:71` (kart, başlık + alt satır)
+**Örnek:** `src/components/gider/DonemRaporu.jsx:70` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
@@ -166,7 +166,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:341`
+**Örnek:** `src/components/Giderler.jsx:342`
 **Örnek:** `src/components/Customers.jsx:525` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
@@ -188,7 +188,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
-**Örnek:** `src/components/Giderler.jsx:307`
+**Örnek:** `src/components/Giderler.jsx:308`
 **Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
@@ -307,6 +307,10 @@ sayfalanır; elle pager yazılmaz.
 - **Boş ve tek sayfa:** liste boşsa bugünkü boş durum, tek sayfaysa çubuğu `Pagination`'ın kendisi gizler; ekranda ek
   koşul yazılmaz. Aynı ekrandaki iki liste iki ayrı sayfa durumu tutar.
 - **Yazdırma ve dışa aktarma sayfalamayı görmez.**
+- **İstisna (spec 0080):** Giderler › Dönem Raporu'nun **Gider Kalemleri** listesi ve **Tedarikçiler** listesi sayfalanmaz;
+  süzgeçten geçen bütün satırlar tek seferde çizilir (faturalarla satır satır karşılaştırma, tarayıcı araması, alt toplamı
+  tutturma). Yavaşlama görülürse sayfalama ayrı bir spec'le **yalnız Tarih Aralığı kipine** geri gelir; **Ay kipi hiçbir
+  koşulda sayfalanmaz.** Bu iki listeye "kurala uydurmak" için sayfalama eklenmez.
 
 ## Bilinen borç
 

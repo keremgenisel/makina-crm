@@ -2,8 +2,7 @@ import { useState } from "react";
 import { uid } from "../../lib/utils";
 import { tedarikciAdHatasi, tedarikciKullanim } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
-import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "../ui";
-import { usePagination } from "../../hooks/usePagination";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
 import { tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
@@ -54,8 +53,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
   };
   // Spec 0068 C8: liste canlı kayıtlardır (App canlı diziyi verir; ham dizi gelse de çöptekiler çizilmez).
   const sirali = tedarikciler.filter(t => !t.deletedAt).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
-  // Spec 0062 R7, R26 (b): arama kutusu yok; usePagination ile sayfalanır.
-  const { page, setPage, paged, perPage } = usePagination(sirali, 10);
+  // Spec 0062 R7: arama kutusu yok. Spec 0080 R2: sayfalanmaz, bütün canlı tedarikçiler tek seferde çizilir.
   const alan = (ad, key, ph) => <Field label={ad}><Input value={form[key] || ""} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={ph} /></Field>;
 
   return (
@@ -75,7 +73,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
               <th style={{ padding: "9px 12px", textAlign: "right" }}>Açık borç<div style={{ textTransform: "none", fontWeight: 500 }}>tüm dönemler</div></th><th />
             </tr></thead>
             <tbody>
-              {paged.map(t => {
+              {sirali.map(t => {
                 const k = tedarikciKullanim(t.id, giderler, giderTanimlari);
                 const h = harcama.get(String(t.id));
                 return (
@@ -96,7 +94,6 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
             </tbody>
           </table>
         </div>
-        <Pagination total={sirali.length} page={page} setPage={setPage} perPage={perPage} />
       </>)}
 
       {kilitli && (

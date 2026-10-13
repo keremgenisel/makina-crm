@@ -60,14 +60,13 @@ describe("Spec 0062 R27: usePagination", () => {
   });
 });
 
-// Hangi liste hangi dosyada, hangi boyutla (R11, R12, R26; plan §3).
+// Hangi liste hangi dosyada, hangi boyutla (R11, R12, R26; plan §3). Spec 0080 R9: Gider Kalemleri (DonemRaporu.jsx) ve
+// Tedarikçiler (Tedarikciler.jsx) tablodan çıktı, sayfalanmazlar; useFilteredList yasakları tests/sayfalama-kalkar-0080.test.js'te.
 const LISTELER = [
   ["src/components/Kasa.jsx", 10, 4],
   ["src/components/cek/CekPortfoyu.jsx", 10, 2],
-  ["src/components/gider/DonemRaporu.jsx", 10, 1],
   ["src/components/gider/MakinaKarliligi.jsx", 10, 1],
   ["src/components/gider/MakinaModelGorunumu.jsx", 10, 1],
-  ["src/components/gider/Tedarikciler.jsx", 10, 1],
   ["src/components/gider/AcikKalemler.jsx", 10, 1],
   ["src/components/gider/EkstrePenceresi.jsx", 5, 1],
   ["src/components/gider/OdemeHatirlatma.jsx", 5, 1],
@@ -75,7 +74,7 @@ const LISTELER = [
 const KLASORLER = ["src/components/gider", "src/components/kasa", "src/components/cek"];
 
 describe("Spec 0062: kaynak taramaları", () => {
-  it("AC-12 / AC-26 / AC-39: listeler paylaşılan kanca ve Pagination ile sayfalanır; useFilteredList yok (R26)", () => {
+  it("AC-12 / AC-26 / AC-39 (spec 0080 AC-11): listeler paylaşılan kanca ve Pagination ile sayfalanır, kalan yedi dosyada on bir çağrı; useFilteredList yok (R26)", () => {
     for (const [f, , adet] of LISTELER) {
       const s = oku(f);
       expect(s, f).toMatch(/import \{ usePagination \} from "\.\.\/(\.\.\/)?hooks\/usePagination"/);
@@ -112,7 +111,7 @@ describe("Spec 0062: kaynak taramaları", () => {
       expect(oku(f), f).not.toMatch(/\bpaged?\b|usePagination|<Pagination/);
     }
   });
-  it("AC-24: Aylık Gider ve Kasa Raporu'nun kalem listesi tam basılır (sayfa boyutunun çok üstünde kalem)", () => {
+  it("AC-24 (spec 0080 AC-14): Aylık Gider ve Kasa Raporu'nun kalem listesi tam basılır (sayfa boyutunun çok üstünde kalem)", () => {
     let id = 900;
     const ek = Array.from({ length: 27 }, (_, i) => {
       const r = giderKalemDogrula({ id: ++id, tarih: `2026-09-${String(1 + (i % 28)).padStart(2, "0")}`, turId: 1, tutar: 100 + i, kdvOrani: 0, tedarikciId: 11,

@@ -506,7 +506,8 @@ function FormEkrani({ Bilesen, ilk, ...props }) {
 }
 
 // Ekran → [çizim, tıklanacak metinler (sırayla)]
-// Spec 0062: sayfalanan listeler, sayfa boyutunun üstünde satırla (her biri için "Sonraki ›" ile sayfa 2 ekranı).
+// Spec 0062: sayfalanan listeler, sayfa boyutunun üstünde satırla (her biri için "Sonraki ›" ile sayfa 2 ekranı). Spec 0080:
+// Gider Kalemleri ve Tedarikçiler artık sayfalanmaz, onların sayfa 2 ekranı yok.
 const gun62 = (n) => `2026-09-${String(n).padStart(2, "0")}`;
 const KASA62 = { kasaHesaplari: [KASA_HESAPLAR[0]], hesapHareketleri: [], giderler: [],
   payments: Array.from({ length: 14 }, (_, i) => ({ id: 6201 + i, customerId: i % 2 ? 500 : 501, tarih: gun62(i + 1), tutar: 1000 * (i + 1), currency: "TRY", yontem: "Havale", hesapId: 401 })) };
@@ -861,13 +862,17 @@ const EKRANLAR = {
   "kasa-0062-cek-verilen": [kasaCek({ cekler: CEK62 }), ["Çek Portföyü", "Verilen çekler"]],
   "kasa-0062-cek-verilen-sayfa2": [kasaCek({ cekler: CEK62 }), sayfa2(["Çek Portföyü", "Verilen çekler"])],
   "giderler-0062-kalemler": [gider62(), ["kaydir:Gider Kalemleri"]],
-  "giderler-0062-kalemler-sayfa2": [gider62(), [...sayfa2([]), "kaydir:Gider Kalemleri"]],
   "giderler-0062-karlilik": [gider62(), ["Makina Kârlılığı"]],
   "giderler-0062-karlilik-sayfa2": [gider62(), sayfa2(["Makina Kârlılığı"])],
   "giderler-0062-makina-model": [gider62(), ["Makina ve Model"]],
   "giderler-0062-makina-model-sayfa2": [gider62(), sayfa2(["Makina ve Model"])],
   "giderler-0062-tedarikciler": [gider62({ tedler: TED62 }), ["Tedarikçiler"]],
-  "giderler-0062-tedarikciler-sayfa2": [gider62({ tedler: TED62 }), sayfa2(["Tedarikçiler"])],
+  // Spec 0080: Gider Kalemleri ve Tedarikçiler sayfalanmaz; 0062'nin iki "-sayfa2" ekranı kaldırıldı (düğme yokken adım
+  // sessizce sayfa 1'i çekiyordu). Tam liste ekranları listenin sonunu gösterir (son kalem, alt toplam, ardından borç özeti).
+  "giderler-0080-kalemler-tam": [gider62(), ["kaydir:Kime Ne Kadar Borçluyuz"]],
+  "giderler-0080-kalemler-suzgec-bos": [gider62(), ["doldur:Açıklama ara=yokboyle", "kaydir:Gider Kalemleri"]],
+  "giderler-0080-tedarikciler-tam": [gider62({ tedler: TED62 }), ["Tedarikçiler", "kaydir:Tedarikçi 11"]],
+  "giderler-0080-tedarikciler-bos": [gider62({ tedler: [] }), ["Tedarikçiler"]],
   "giderler-0062-acik-kalemler": [gider62(), ["dugme:Açık kalemler (tüm dönemler)", "kaydir:Taraf"]],
   "giderler-0062-acik-kalemler-sayfa2": [gider62(), [...sayfa2(["dugme:Açık kalemler (tüm dönemler)"]), "kaydir:Gider tarihi"]],
   "giderler-0062-ekstre": [gider62(), ["Tedarikçiler", "dugme:Ekstre"]],

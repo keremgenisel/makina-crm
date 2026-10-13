@@ -95,7 +95,8 @@ export const Giderler = ({
   const baslangic = mod === "ay" ? `${ay}-01` : aralik.bas;
   const bitis = mod === "ay" ? ayinSonGunu(ay) : aralik.bit;
   const aralikGecerli = !!baslangic && !!bitis && baslangic <= bitis;
-  // Spec 0062 R13 (AC-28): dönem (Ay ↔ Tarih Aralığı dahil) değişince sayfalı listeler 1. sayfaya döner.
+  // Spec 0062 R13 (AC-28): dönem (Ay ↔ Tarih Aralığı dahil) değişince sayfalı listeler 1. sayfaya döner. Spec 0080 R11:
+  // Gider Kalemleri artık sayfalanmadığı için anahtar yalnız Makina ve Model görünümüne gider.
   const donemAnahtari = `${mod}|${baslangic}|${bitis}`;
   const donemEtiketi = mod === "ay" ? ayAdi(ay) : `${fmtTR(aralik.bas)} – ${fmtTR(aralik.bit)}`;
 
@@ -315,7 +316,7 @@ export const Giderler = ({
           <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
             standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
             onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} />
+            odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
         </>
       )}
       {/* Spec 0061 R1, R21, R22: kip açıkken kapsam ibaresi, açık kalemler tablosu ve dönemden bağımsız borç kartı; dönem kartları gizli. */}
@@ -352,7 +353,7 @@ export const Giderler = ({
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
                   standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} donemAnahtari={donemAnahtari} baslangicFiltre={baslangicKalemFiltresi} />
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} baslangicFiltre={baslangicKalemFiltresi} />
                 <BorcOzeti ozet={borc} />
                 <KovaKarti rapor={rapor} />
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "stretch" }}>

@@ -6,8 +6,6 @@ import { render, screen, fireEvent, cleanup, within } from "@testing-library/rea
 import { useState } from "react";
 import { Kasa } from "../../src/components/Kasa";
 import { CekPortfoyu } from "../../src/components/cek/CekPortfoyu";
-import { Giderler } from "../../src/components/Giderler";
-import { Tedarikciler } from "../../src/components/gider/Tedarikciler";
 import { MakinaKarliligi } from "../../src/components/gider/MakinaKarliligi";
 import { MakinaModelGorunumu } from "../../src/components/gider/MakinaModelGorunumu";
 import { AcikKalemler } from "../../src/components/gider/AcikKalemler";
@@ -209,96 +207,12 @@ const turMap = turHaritasi(TURLER);
 const TED = [{ id: 11, ad: "Demir Bant" }, { id: 12, ad: "Bölge Elektrik" }];
 let nid = 5000;
 const k = (f) => { const r = giderKalemDogrula(f, { turMap, tedarikciler: TED, uid: () => ++nid }); if (r.hatalar.length) throw new Error(JSON.stringify(r.hatalar)); return r.kayit; };
-const KALEMLER = [
-  ...Array.from({ length: 23 }, (_, i) => k({ id: 1 + i, tarih: i % 2 ? "2026-10-01" : "2026-10-02", turId: 1, tutar: 1000 + i, kdvOrani: 20, tedarikciId: 11, aciklama: `Sac ${i + 1}`, sonOdemeTarihi: "2026-10-20" })),
-  k({ id: 40, tarih: "2026-10-01", turId: 2, tutar: 777, kdvOrani: 20, tedarikciId: 12, aciklama: "Elektrik", sonOdemeTarihi: "2026-10-20" }),
-  k({ id: 41, tarih: "2026-10-02", turId: 2, tutar: 888, kdvOrani: 20, tedarikciId: 12, aciklama: "Doğalgaz", sonOdemeTarihi: "2026-10-20" }),
-  ...[1, 2, 3].map(i => k({ id: 60 + i, tarih: "2026-10-01", turId: 3, calisanId: 20 + i, calisanAd: `Çalışan ${i}`, resmiTutar: 30000, eldenTutar: 0, sonOdemeTarihi: "2026-10-05" })),
-];
-function GiderH({ g0 = KALEMLER }) {
-  const [giderler, setGiderler] = useState(g0);
-  const [hesapHareketleri, setHesapHareketleri] = useState([]);
-  return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
-    appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} kasaHesaplari={[]}
-    satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
-}
-const liste = () => screen.getByTestId("kalem-listesi");
-const govdeSatirlari = () => liste().querySelectorAll("tbody tr");
-const altToplam = () => liste().querySelector("tfoot").textContent;
+// Spec 0080 ile kaldırıldı: Gider Kalemleri artık sayfalanmaz. 0062'nin bu listeye ait UI kriterleri (AC-5/31/44, AC-17/32/18,
+// AC-29/14, AC-28, AC-15) ters hâlleriyle tests/ui/sayfalama-kalkar-0080.test.jsx'te (spec 0080 plan P1).
 
-describe("Spec 0062: Gider Kalemleri (R4, R13, R16, R20, R26 a, R32)", () => {
-  it("AC-5 / AC-31 / AC-44: çizilen satır kümesi sayfalanır; personel grubu tek satır, başlıktaki kalem sayısı veri gerçeği", () => {
-    render(<GiderH />);
-    expect(liste().textContent).toMatch(/· 28 kalem/);
-    expect(govdeSatirlari()).toHaveLength(10); // grup satırı + 9 kalem; 26 çizim satırı → 3 sayfa
-    expect(within(liste()).getByText("3")).toBeTruthy();
-    fireEvent.click(within(liste()).getByText("3"));
-    expect(govdeSatirlari()).toHaveLength(6);
-    fireEvent.click(within(liste()).getByText("1"));
-    fireEvent.click(within(liste()).getByText(/Çalışanları göster/));
-    expect(aktif(liste())).toBe("1"); // aç/kapa sayfayı korur (R28)
-    fireEvent.click(within(liste()).getByText("3"));
-    expect(govdeSatirlari()).toHaveLength(9); // 29 çizim satırı
-    expect(liste().textContent).toMatch(/· 28 kalem/);
-  });
-  it("AC-17 / AC-32 / AC-18: alt toplam ve dönem kartları sayfa 1/2'de, personel açık ya da kapalı aynı", () => {
-    render(<GiderH />);
-    const toplam = altToplam();
-    // Spec 0076 R22 ile güncellendi: kart etiketi artık "KDV hariç" demez (kısıtlı kalemde indirilemeyen KDV de girer).
-    const kart = screen.getByText("Toplam gider").parentElement.textContent;
-    sonraki(liste());
-    expect(altToplam()).toBe(toplam);
-    expect(screen.getByText("Toplam gider").parentElement.textContent).toBe(kart);
-    fireEvent.click(within(liste()).getByText("1"));
-    fireEvent.click(within(liste()).getByText(/Çalışanları göster/));
-    sonraki(liste());
-    expect(altToplam()).toBe(toplam);
-  });
-  it("AC-29 / AC-14: tür, tedarikçi, ödeme ve arama süzgeci değişince sayfa 1", () => {
-    render(<GiderH />);
-    const dene = (fn) => { sonraki(liste()); expect(aktif(liste())).toBe("2"); fn(); };
-    dene(() => fireEvent.change(within(liste()).getByLabelText("Tür filtresi"), { target: { value: "1" } }));
-    expect(aktif(liste())).toBe("1");
-    dene(() => fireEvent.change(within(liste()).getByLabelText("Tedarikçi filtresi"), { target: { value: "11" } }));
-    expect(aktif(liste())).toBe("1");
-    dene(() => fireEvent.change(within(liste()).getByLabelText("Ödeme filtresi"), { target: { value: "odenmedi" } }));
-    expect(aktif(liste())).toBe("1");
-    dene(() => fireEvent.change(within(liste()).getByLabelText("Açıklama ara"), { target: { value: "Sac" } }));
-    expect(aktif(liste())).toBe("1");
-  });
-  it("AC-28: dönem (Ay ↔ Tarih Aralığı) değişince sayfa 1", () => {
-    render(<GiderH />);
-    sonraki(liste());
-    expect(aktif(liste())).toBe("2");
-    fireEvent.click(screen.getByText("Tarih Aralığı"));
-    expect(aktif(liste())).toBe("1");
-    sonraki(liste());
-    fireEvent.click(screen.getByText("Ay"));
-    expect(aktif(liste())).toBe("1");
-  });
-  it("AC-15: süzgece uyan kalem yoksa çubuk yok, bugünkü boş metin duruyor", () => {
-    render(<GiderH />);
-    fireEvent.change(within(liste()).getByLabelText("Açıklama ara"), { target: { value: "yokboyle" } });
-    expect(within(liste()).getByText("Filtreye uyan kalem yok.")).toBeTruthy();
-    cubukYok(liste());
-  });
-});
-
-// ── Tedarikçiler, Makina ve Model, Makina Kârlılığı ──
-describe("Spec 0062: Giderler'in diğer listeleri (R5, R6, R7, R26 b)", () => {
-  it("AC-8 / AC-16: Tedarikçiler sayfalanır (arama yok); 10 tedarikçide çubuk yok", () => {
-    const ted = (n) => Array.from({ length: n }, (_, i) => ({ id: 100 + i, ad: `Tedarikçi ${String(i + 1).padStart(2, "0")}` }));
-    const { unmount } = render(<Tedarikciler tedarikciler={ted(12)} setTedarikciler={vi.fn()} giderler={[]} giderTanimlari={[]} rapor={null} hesapHareketleri={[]} />);
-    const kap = screen.getByTestId("tedarikciler");
-    expect(kap.querySelectorAll("tbody tr")).toHaveLength(10);
-    sonraki(kap);
-    expect([...kap.querySelectorAll("tbody tr")].map(r => r.textContent)).toEqual([expect.stringMatching(/Tedarikçi 11/), expect.stringMatching(/Tedarikçi 12/)]);
-    expect(kap.textContent).toMatch(/Tedarikçiler · 12/);
-    unmount();
-    render(<Tedarikciler tedarikciler={ted(10)} setTedarikciler={vi.fn()} giderler={[]} giderTanimlari={[]} rapor={null} hesapHareketleri={[]} />);
-    cubukYok(screen.getByTestId("tedarikciler"));
-  });
+// ── Makina ve Model, Makina Kârlılığı ──
+describe("Spec 0062: Giderler'in diğer listeleri (R5, R6)", () => {
+  // Spec 0080 ile kaldırıldı: Tedarikçiler artık sayfalanmaz (0062 AC-8/AC-16'nın ters hâli spec 0080 AC-8, AC-10).
   it("AC-7: Makina ve Model'in makina listesi sayfalanır; dönem anahtarı değişince 1. sayfa; kova kartları sayfadan bağımsız", () => {
     const rapor = { kovalar: { makina: 1200, model: 0, dagitma: 0, ortak: 0 }, toplam: 1200, modelBazli: [], dagitmaKalemleri: [], kismiOrtak: [], dusenAtamalar: [],
       makinaBazli: Array.from({ length: 12 }, (_, i) => ({ anahtar: `m${i}`, makina: { tur: "stok", model: "AK100", seri: `S${i + 1}` }, kalemler: [], toplam: 100 })) };

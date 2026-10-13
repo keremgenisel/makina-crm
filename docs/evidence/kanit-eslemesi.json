@@ -1076,6 +1076,17 @@
         "rapor": "docs/evidence/0079-taban-piksel-raporu.json",
         "ekran": "giderler-0079-kdv",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-0080-kalemler-tam",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-rapor",
+        "beklenen": "ayni"
       }
     ],
     "src/components/Settings.jsx": [
@@ -1434,6 +1445,28 @@
       {
         "rapor": "docs/evidence/0076-taban-piksel-raporu.json",
         "ekran": "giderler-tedarikciler",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-0062-kalemler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-0080-kalemler-tam",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-0080-kalemler-suzgec-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-rapor",
         "beklenen": "ayni"
       }
     ],
@@ -1902,6 +1935,23 @@
       {
         "rapor": "docs/evidence/0068-taban-piksel-raporu.json",
         "ekran": "giderler-0068-tedarikci-sil",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-0062-tedarikciler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-0080-tedarikciler-tam",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+      },
+      {
+        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "ekran": "giderler-0080-tedarikciler-bos",
         "beklenen": "ayni"
       }
     ],

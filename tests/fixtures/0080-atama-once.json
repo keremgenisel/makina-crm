@@ -1,0 +1,23 @@
+{
+ "baslik": "· 16 kalem",
+ "altToplam": "Toplam103.078 ₺2.615,6 ₺“Ödenecek”: normal kalemde tutar + KDV, kirada net + KDV (stopaj hariç), personelde resmi + elden",
+ "satirlar": [
+  "PersonelPersonel · 3 çalışan Ayrıntı açık▾ Çalışanları gizle90.000 ₺KDV yok90.000 ₺3 ödenmemiş",
+  "01/10/2026Personel PersonelÇalışan 1Resmi 30.000 ₺ · Elden 0 ₺Ortak gider30.000 ₺—30.000 ₺Ödenmedivade 05/10/2026",
+  "01/10/2026Personel PersonelÇalışan 2Resmi 30.000 ₺ · Elden 0 ₺Ortak gider30.000 ₺—30.000 ₺Ödenmedivade 05/10/2026",
+  "01/10/2026Personel PersonelÇalışan 3Resmi 30.000 ₺ · Elden 0 ₺Ortak gider30.000 ₺—30.000 ₺Ödenmedivade 05/10/2026",
+  "01/10/2026Hammadde Sac 2Demir BantAM-200 · S-802Silinen Stoktan (stoktan satıldı)1.001 ₺200,2 ₺%201.201,2 ₺Ödenmedivade 20/10/2026",
+  "01/10/2026Hammadde Sac 4Demir BantAM-400 · S-804Stoktan Alan (stoktan satıldı)1.003 ₺200,6 ₺%201.203,6 ₺Ödenmedivade 20/10/2026",
+  "01/10/2026Hammadde Sac 6Demir BantOrtak giderAtandığı makina silinmiş veya takip edilemiyor1.005 ₺201 ₺%201.206 ₺Ödenmedivade 20/10/2026",
+  "01/10/2026Hammadde Sac 8Demir BantOrtak giderAtandığı makina silinmiş veya takip edilemiyor1.007 ₺201,4 ₺%201.208,4 ₺Ödenmedivade 20/10/2026",
+  "01/10/2026Hammadde Sac 10Demir BantOrtak giderAtandığı makina silinmiş veya takip edilemiyor1.009 ₺201,8 ₺%201.210,8 ₺Ödenmedivade 20/10/2026",
+  "01/10/2026Hammadde Sac 12Demir BantModel AM-100 · 2 × 100 ₺Model Yok Model · 1 × 50 ₺Silinmiş model: tutarı ortak gidere düşer1.011 ₺202,2 ₺%201.213,2 ₺Ödenmedivade 20/10/2026",
+  "02/10/2026Hammadde Sac 1Demir BantAM-100 · S-801Makina Stoğu1.000 ₺200 ₺%201.200 ₺Ödenmedivade 20/10/2026",
+  "02/10/2026Hammadde Sac 3Demir BantAM-300 · S-803Makina Stoğu1.002 ₺200,4 ₺%201.202,4 ₺Ödenmedivade 20/10/2026",
+  "02/10/2026Hammadde Sac 5Demir BantOrtak giderAtandığı makina silinmiş veya takip edilemiyor1.004 ₺200,8 ₺%201.204,8 ₺Ödenmedivade 20/10/2026",
+  "02/10/2026Hammadde Sac 7Demir BantAM-100 · M-901Örnek Gıda1.006 ₺201,2 ₺%201.207,2 ₺Ödenmedivade 20/10/2026",
+  "02/10/2026Hammadde Sac 9Demir BantOrtak giderAtandığı makina silinmiş veya takip edilemiyor1.008 ₺201,6 ₺%201.209,6 ₺Ödenmedivade 20/10/2026",
+  "02/10/2026Hammadde Sac 11Demir BantDağıtılmasın1.010 ₺202 ₺%201.212 ₺Ödenmedivade 20/10/2026",
+  "02/10/2026Hammadde Sac 13Demir BantOrtak gider1.012 ₺202,4 ₺%201.214,4 ₺Ödenmedivade 20/10/2026"
+ ]
+}
