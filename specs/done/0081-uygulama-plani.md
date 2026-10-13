@@ -1,6 +1,6 @@
 # 0081 Uygulama Planı: Dönem Raporu'nda stopaj kartı kalkar, yan kutular kapalı başlar
 
-Spec: `specs/0081-donem-raporu-kutulari-kapali-baslar.md` (revizyon 2). Dal `feat/0081-kutular-kapali` (0080'in kapanışı
+Spec: `specs/done/0081-donem-raporu-kutulari-kapali-baslar.md` (revizyon 2). Dal `feat/0081-kutular-kapali` (0080'in kapanışı
 `f10ffb6` üstünde). Plan Takım Yöneticisi tarafından 2026-10-13'te onaylandı (bütün öneriler kabul).
 
 ## 1. Kodda bulunanlar (spec'e ek)

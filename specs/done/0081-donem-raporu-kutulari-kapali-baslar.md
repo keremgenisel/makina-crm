@@ -2,13 +2,13 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (dal `feat/0081-kutular-kapali`; plan `specs/0081-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (commit `eada126`, dal `feat/0081-kutular-kapali`; plan `specs/done/0081-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · geliştirme atanmadı |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Mali İşler › Giderler (Dönem Raporu); paylaşılan tasarım sözlüğünün katlanan kartı (iki varyant); Ayarlar'ın altı katlanan kartı (R14'ün aynası) |
 | **Bağımlı spec'ler** | 0067 (kutu sırası), 0009 ve 0016 (katlanan kart), 0001, 0041, 0060, 0061, 0075, 0076, 0079 (kutuların içeriği ve donmuş iddiaları) |
 | **Taban** | 0080 uygulanmış hâli (`specs/README.md` sırası: 0080 → 0081 → 0082); satır numaraları ona göre verildi |
-| **Revizyon** | · 1 · 2026-10-13 QA turu (B-1…B-5, Ö-6…Ö-12, K-13…K-16 işlendi) · 2 · 2026-10-13 plan onayı (P1–P7, `specs/0081-uygulama-plani.md`) · 3 · 2026-10-13 triyaj (AC-30 metni yedi dosya ve genel yokluk kuralı) |
+| **Revizyon** | · 1 · 2026-10-13 QA turu (B-1…B-5, Ö-6…Ö-12, K-13…K-16 işlendi) · 2 · 2026-10-13 plan onayı (P1–P7, `specs/done/0081-uygulama-plani.md`) · 3 · 2026-10-13 triyaj (AC-30 metni yedi dosya ve genel yokluk kuralı) |
 
 ---
 
@@ -287,10 +287,10 @@ katlanmasını anlatıyor (0016 eklemiş, eski cümle düzeltilmemiş). DoD zate
 
 ### Plan onayı kararları (revizyon 2, Takım Yöneticisi, 2026-10-13)
 
-Planın yedi önerisinin hepsi kabul edildi; ayrıntı `specs/0081-uygulama-plani.md` §4.
+Planın yedi önerisinin hepsi kabul edildi; ayrıntı `specs/done/0081-uygulama-plani.md` §4.
 
 - **P1.** AC-28'in ikinci yarısı yeniden yazıldı: hepsi açıkken kartlar kendi içeriği kadar, üstten hizalı; fark `degisti`.
-- **P2.** Kutu içini okuyan test dosyası on (iki dosya eklendi); AC-30 bu on dosyayı kapsar. Uygulamada ölçülen sayı yediydi; sapma `specs/0081-uygulama-plani.md` §6'da çözüldü (üç dosya kutu içi okumuyor).
+- **P2.** Kutu içini okuyan test dosyası on (iki dosya eklendi); AC-30 bu on dosyayı kapsar. Uygulamada ölçülen sayı yediydi; sapma `specs/done/0081-uygulama-plani.md` §6'da çözüldü (üç dosya kutu içi okumuyor).
 - **P3.** AC-30'un taraması ortak `tests/ui/kutuAc.js` yardımcısıyla: on dosya onu içe alıp kullanır, yardımcı açıldığını
   `aria-expanded="true"` ile kanıtlar (C7). Mutasyonla gösterilir (0079 AC-27'den açma adımı silinince test düşer).
 - **P4.** R14 sonrası rol sorgusu çakışırsa testin sorgusu daraltılır, bileşene kimlik eklenmez.
@@ -405,40 +405,40 @@ Planın yedi önerisinin hepsi kabul edildi; ayrıntı `specs/0081-uygulama-plan
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Dal 0080'in üstüne açıldı (README sırası) ve spec'teki satır numaraları o tabanla tutuyor.
-- [ ] Hesap içeren iş yok; motor, kalıcı alan, veri bölümü, izin, sunucu ve birleştirme
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Dal 0080'in üstüne açıldı (README sırası) ve spec'teki satır numaraları o tabanla tutuyor.
+- [x] Hesap içeren iş yok; motor, kalıcı alan, veri bölümü, izin, sunucu ve birleştirme
       dosyalarına dokunulmadı (kaynak taramasıyla gösterildi). **Yeni izin eklenmedi: salt
       gösterim işi.**
-- [ ] Katlama tek mekanizmadan geliyor: beş kutuda yerel katlama kodu yok, prop adı `katlanir`,
+- [x] Katlama tek mekanizmadan geliyor: beş kutuda yerel katlama kodu yok, prop adı `katlanir`,
       durum kartın iç durumu (AC-29).
-- [ ] Katlama kararı çağıranda; Finans'ın kartı etkilenmedi (AC-13, AC-29).
-- [ ] KDV kartının iki dönüşü de prop'u alıyor, katlama yalnız normal dalda etkin (AC-27).
-- [ ] Tür ve KDV satırının hizalaması düzeltildi ve kapalı kartın uzamadığı ölçüldü (AC-28).
-- [ ] **Kutu içeriğini okuyan yedi UI test dosyası (plan §6) tek tek elden geçti** ve listesi spec'te
+- [x] Katlama kararı çağıranda; Finans'ın kartı etkilenmedi (AC-13, AC-29).
+- [x] KDV kartının iki dönüşü de prop'u alıyor, katlama yalnız normal dalda etkin (AC-27).
+- [x] Tür ve KDV satırının hizalaması düzeltildi ve kapalı kartın uzamadığı ölçüldü (AC-28).
+- [x] **Kutu içeriğini okuyan yedi UI test dosyası (plan §6) tek tek elden geçti** ve listesi spec'te
       duruyor (AC-30).
-- [ ] **Yokluk iddiaları (C7) kutu açıkken ölçülüyor**; bilinen örnek (0079 AC-27'nin ikinci
+- [x] **Yokluk iddiaları (C7) kutu açıkken ölçülüyor**; bilinen örnek (0079 AC-27'nin ikinci
       yarısı) ve 0076'nın bilgi satırı iddiaları adıyla kontrol edildi.
-- [ ] Aynı sayıyı üreten başka ekran yok; kaldırılan kartın rakamı raporda tek kaynaktan basılıyor.
-- [ ] Yazdırma çıktısı değişmedi: Aylık Gider ve Kasa Raporu ile Aylık Faaliyet Raporu'nun altın
+- [x] Aynı sayıyı üreten başka ekran yok; kaldırılan kartın rakamı raporda tek kaynaktan basılıyor.
+- [x] Yazdırma çıktısı değişmedi: Aylık Gider ve Kasa Raporu ile Aylık Faaliyet Raporu'nun altın
       çıktıları aynı.
-- [ ] Erişilebilirlik düzeltmesi (R14) tasarım sözlüğünde **iki varyat için birden** yapıldı,
+- [x] Erişilebilirlik düzeltmesi (R14) tasarım sözlüğünde **iki varyat için birden** yapıldı,
       `docs/tasarim-sozlugu.md` katlanan kart bölümüne yazıldı ve o bölümdeki "katlanabilirlik
       yalnız bu varyantta var" çelişkisi düzeltildi.
-- [ ] Ayarlar'ın altı katlanan kartı denendi ve bugünkü davranışını koruyor (AC-31).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: kapalı hâl, bir kutu açık hâl, hepsi açık hâl,
+- [x] Ayarlar'ın altı katlanan kartı denendi ve bugünkü davranışını koruyor (AC-31).
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: kapalı hâl, bir kutu açık hâl, hepsi açık hâl,
       boş dönem ve yürürlük öncesi dönem; aydınlık ve karanlık tema. Açık hâlin de başlık kayması
       yüzünden değiştiği yazılı (R7).
-- [ ] **Üç kanıt ekranı kutuyu açacak adımı aldı** ve `kanit-eslemesi.json` kayıtları yenilendi
+- [x] **Üç kanıt ekranı kutuyu açacak adımı aldı** ve `kanit-eslemesi.json` kayıtları yenilendi
       (AC-32); değişen `giderler-*` ekranları `beklenen: "degisti"` + onay satırıyla işaretlendi.
-- [ ] Electron yerleşim testi kapalı ve açık hâl için yeniden ölçüldü (AC-22, AC-23) ve düzeneği
+- [x] Electron yerleşim testi kapalı ve açık hâl için yeniden ölçüldü (AC-22, AC-23) ve düzeneği
       ödeme hareketi bölümünü dizi olarak vermeye devam ediyor (C3).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin 0067 bölümü yeni kart sayısı ve katlanan kutularla güncellendi; 0009 ve 0016
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin 0067 bölümü yeni kart sayısı ve katlanan kutularla güncellendi; 0009 ve 0016
       bölümlerine katlanan başlığın erişilebilirlik düzeltmesi not düşüldü.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -446,10 +446,15 @@ Planın yedi önerisinin hepsi kabul edildi; ayrıntı `specs/0081-uygulama-plan
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 2 | Revizyon 2 (plan onayı, P1–P7): AC-28'in "hepsi açıkken görünüm değişmez" yarısı tutmuyordu; kutu içi okuyan dosya listesi. Revizyon 3 (triyaj): AC-30 metni uygulanan yedi dosyaya ve genel yokluk kuralına getirildi. |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-10-13), üç bulgu. |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Ayar kartının ▸/▾ işareti erişilebilir ada giriyordu; AC-30 taraması yalnız iki bilinen yokluk iddiasını sıralıyordu (genellendi); spec'te dosya sayısı üç farklı yazıyordu (sekiz/on/yedi). Her biri için test eklendi. |
+| **Regresyon sayısı** | 0 | |
+| **Kaçan hata** | 0 | |
 
 **Bu spec'ten çıkarılan ders:**
+
+- Bir bölümü kapalı başlatmak, o bölümün içini okuyan her testi ve her görsel kanıt adımını sessizce boşa çıkarabilir: kapalı kutuda her şey "yok" görünür. 0079 AC-27'nin yokluk satırı açma adımı olmadan da yeşildi; görüntü aracında spec'in saydığı üç ekrana ek üç ekran (personel ayrıntısı) uyarısız konusunu kaybediyordu. Kural sözdizimine bağlanmalı (kutu içi kimliklere giden her yokluk iddiası, kutuya giden her adım), örnek listesine değil.
+- Analistin ölçtüğü "etkilenen dosya" listesi ad aramasıyla çıkarılmışsa fazla ya da eksik olabilir; uygulamada her biri davranışla doğrulanmalı (on yerine yedi çıktı).
+- Ortak bileşene erişilebilirlik eklerken iki kod yolunun ikisinin de eşdeğer öğelerini (burada aria-hidden işaret) karşılaştırın; testler adı ön ekle arıyorsa fazlalığı görmez, tam ad ölçülmeli.
+- Sürüm sonrası gözlem: yok (salt gösterim işi).
