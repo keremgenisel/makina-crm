@@ -145,9 +145,11 @@ describe("Spec 0082: kaynak taramaları", () => {
       for (const tema of ["aydinlik", "karanlik"]) expect(rapor.find(x => x.ad === `${ekran}-${tema}.png`)?.piksel, `${ekran} ${tema}`).toBeGreaterThan(0);
     }
     for (const [dosya, ekran] of [["src/components/settings/SettingsTrash.jsx", "cop-kutusu-0078"]]) {
-      const k = (esl[dosya] || []).find(x => x.rapor === "docs/evidence/0082-piksel-raporu.json" && x.ekran === ekran);
-      expect(k?.beklenen, ekran).toBe("degisti");
-      expect(k?.onay, ekran).toMatch(/spec 0082/);
+      // Uygulama sırasında 0082 raporuna karşı "degisti" + onay; spec done'a taşınınca taban rapora karşı "ayni" (kanıt eşlemesi kuralı).
+      const k = (esl[dosya] || []).find(x => /docs\/evidence\/0082-(taban-)?piksel-raporu\.json/.test(x.rapor) && x.ekran === ekran);
+      if (k?.rapor === "docs/evidence/0082-piksel-raporu.json") { expect(k.beklenen, ekran).toBe("degisti"); expect(k.onay, ekran).toMatch(/spec 0082/); }
+      else expect(k?.beklenen ?? "ayni", ekran).toBe("ayni");
+      expect(k, ekran).toBeTruthy();
     }
   });
   it("AC-35: tasarım sözlüğünün iki satırı güncellendi", () => {

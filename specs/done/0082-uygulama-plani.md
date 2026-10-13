@@ -1,6 +1,6 @@
 # 0082 Uygulama Planı: Standart Genel Giderler kalkar, Tedarikçiler görünümü yeniden adlandırılır
 
-Spec: `specs/0082-standart-genel-giderler-kalkar-tedarikci-adi.md` (revizyon 2). Dal `feat/0082-standart-kalkar` (0081 kapanışı
+Spec: `specs/done/0082-standart-genel-giderler-kalkar-tedarikci-adi.md` (revizyon 2). Dal `feat/0082-standart-kalkar` (0081 kapanışı
 `8dc7bc2` üstünde). Plan Takım Yöneticisi tarafından 2026-10-13'te onaylandı (bütün öneriler kabul).
 
 ## 1. Kodda bulunanlar (spec'e ek)

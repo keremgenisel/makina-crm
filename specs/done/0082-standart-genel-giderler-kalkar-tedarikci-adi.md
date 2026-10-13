@@ -2,14 +2,14 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (dal `feat/0082-standart-kalkar`; plan `specs/0082-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (commit `0b761d1`, dal `feat/0082-standart-kalkar`; plan `specs/done/0082-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · geliştirme atanmadı |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Mali İşler › Giderler (görünüm çubuğu, Tedarikçiler, Makina Kârlılığı, Makina ve Model); Ayarlar (Gider Ayarları, Çöp Kutusu, Yedekleme, İşlem Geçmişi); genel arama; makina maliyeti motoru; veri bölümü, sunucu bölüm eşlemesi, birleştirme, veritabanı |
 | **Bağımlı spec'ler** | 0001 (bölümü getirdi), 0002 (ortak gider kaynağı), 0022, 0026, 0045, 0062, 0064, 0068, 0072, 0076, 0077, 0078 |
 | **Taban** | 0080 ve 0081 uygulanmış hâli (`specs/README.md` sırası 0080 → 0081 → 0082); bütün satır numaraları ona göre verildi |
 | **Ters çevrilen kriterler** | 0001, 0002, 0026, 0045, 0064, 0068, 0072, 0076, 0078 (tam liste Context'te, bulgu B-2) |
-| **Revizyon** | · 1 · 2026-10-13 QA turu (B-1…B-4, Ö-5…Ö-14, K-15…K-28 işlendi; R2/R4/R5/R10/R14, C1/C3/C4/C5/C7, C9, X1 güncellendi, AC-6…AC-8, AC-10, AC-11, AC-15…AC-17, AC-21, AC-22, AC-24, AC-26, AC-30, AC-31 yeniden yazıldı, AC-32…AC-35 eklendi) · 2 · 2026-10-13 plan onayı (P1–P11, `specs/0082-uygulama-plani.md`) |
+| **Revizyon** | · 1 · 2026-10-13 QA turu (B-1…B-4, Ö-5…Ö-14, K-15…K-28 işlendi; R2/R4/R5/R10/R14, C1/C3/C4/C5/C7, C9, X1 güncellendi, AC-6…AC-8, AC-10, AC-11, AC-15…AC-17, AC-21, AC-22, AC-24, AC-26, AC-30, AC-31 yeniden yazıldı, AC-32…AC-35 eklendi) · 2 · 2026-10-13 plan onayı (P1–P11, `specs/done/0082-uygulama-plani.md`) · 3 · 2026-10-13 triyaj (izin etiketi, C9 metni harfe duyarsız, Çöp Kutusu kanıtı) |
 
 ---
 
@@ -368,7 +368,7 @@ Yirmi sekiz boşluğun hepsi karara bağlandı; önerilerin tamamı kabul edildi
 
 ### Plan onayı kararları (revizyon 2, Takım Yöneticisi, 2026-10-13)
 
-Planın on bir önerisinin hepsi kabul edildi; ayrıntı `specs/0082-uygulama-plani.md` §4.
+Planın on bir önerisinin hepsi kabul edildi; ayrıntı `specs/done/0082-uygulama-plani.md` §4.
 
 - **P1.** AC-31 taramasına tam yollu, gerekçeli istisna listesi: 0082'nin kendi iki test dosyası, `scripts/tests/db-roundtrip.cjs`,
   `db-clean-install.cjs`, `server-security.cjs` (eski veriyi taklit eden bloklar), `tests/fixtures/0076-bayraksiz-once.json` ve
@@ -489,46 +489,46 @@ Planın on bir önerisinin hepsi kabul edildi; ayrıntı `specs/0082-uygulama-pl
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Makina maliyeti motorunun gerçekleşen kaynaklı çıktısı önce/sonra fikstürüyle doğrulandı
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Makina maliyeti motorunun gerçekleşen kaynaklı çıktısı önce/sonra fikstürüyle doğrulandı
       (AC-8); fikstür bu spec'ten önceki kodla üretildi ve karşılaştırma C1/2'nin ayıklamasıyla
       yapıldı, ayıklamanın kapsamı ayrıca ölçüldü.
-- [ ] 0076'nın altın fikstürü bayt bayt korundu; üretici fonksiyon standart dalı üretmeyi bıraktı
+- [x] 0076'nın altın fikstürü bayt bayt korundu; üretici fonksiyon standart dalı üretmeyi bıraktı
       ve karşılaştırma iki tarafa aynı ayıklamayı uyguladı (C1/3).
-- [ ] Aynı sayıyı üreten iki yer kalmadı: ortak gider payının tek kaynağı gerçekleşen kayıtlar.
-- [ ] Kaldırılan veri bölümünün **bütün** bağlantıları birlikte kaldırıldı: uygulama durumu, canlı
+- [x] Aynı sayıyı üreten iki yer kalmadı: ortak gider payının tek kaynağı gerçekleşen kayıtlar.
+- [x] Kaldırılan veri bölümünün **bütün** bağlantıları birlikte kaldırıldı: uygulama durumu, canlı
       dizi, maliyet motorunun girdisi, yükleme, kayıt, yedek, otomatik yedek, birleştirme ve silme
       uygulaması, çöp kutusu, otuz günlük temizlik, genel arama, kilit alanı, sunucu bölümü ve
       grubu, sekme eşlemesi, eylem izni, bölüm adı, işlem geçmişi etiketleri, veritabanı okuma ve
       **yazma** yolu, kimlik sayacı ve ölü prop'lar (R5/1, R5/2, R5/3).
-- [ ] Veritabanı tablosu ve satırları yerinde; hiçbir kod yoluyla silinmiyor (AC-18, AC-25).
-- [ ] Yedek okuma geriye dönük uyumlu (AC-20); yedek şema sürümü kararı yazıldı (C5: 3'te kalır).
-- [ ] Karışık sürüm davranışı ölçüldü: eski istemci gövdesi 403 almıyor, tabloyu boşaltmıyor ve
+- [x] Veritabanı tablosu ve satırları yerinde; hiçbir kod yoluyla silinmiyor (AC-18, AC-25).
+- [x] Yedek okuma geriye dönük uyumlu (AC-20); yedek şema sürümü kararı yazıldı (C5: 3'te kalır).
+- [x] Karışık sürüm davranışı ölçüldü: eski istemci gövdesi 403 almıyor, tabloyu boşaltmıyor ve
       işlem geçmişine satır yazmıyor; ters sıradaki güncelleme de tabloyu boşaltmıyor (C4).
-- [ ] Yeni izin eklenmedi, var olan izin kimliği kaldırılmadı (açıkça yazıldı).
-- [ ] **Ters çevrilen kriterler** Context tablosundaki dokuz spec için adıyla yazıldı ve testleri
+- [x] Yeni izin eklenmedi, var olan izin kimliği kaldırılmadı (açıkça yazıldı).
+- [x] **Ters çevrilen kriterler** Context tablosundaki dokuz spec için adıyla yazıldı ve testleri
       güncellendi; konusu kalmayan testler silindi, korunan kanıtlar (0045'in beşinci penceresi,
       0001 AC-94'ün pozitif kontrolü) taşındı.
-- [ ] Silinen ekranın testi ve görsel kanıt kayıtları kaldırıldı; görsel kanıt eşlemesinde
+- [x] Silinen ekranın testi ve görsel kanıt kayıtları kaldırıldı; görsel kanıt eşlemesinde
       karşılığı olmayan kayıt yok.
-- [ ] Görüntü aracının ve yerleşim testi sayfalarının standart gider adımları kaldırıldı; Çöp
+- [x] Görüntü aracının ve yerleşim testi sayfalarının standart gider adımları kaldırıldı; Çöp
       Kutusu kanıt ekranının standart satırı çıkarıldı.
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: beş sekmeli çubuk, yeniden adlandırılmış liste,
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: beş sekmeli çubuk, yeniden adlandırılmış liste,
       ortak gider kaynağı alanı olmayan Gider Ayarları, kaynak ibaresi olmayan maliyet detayı,
       **kaynak satırı ve fark satırı olmayan Makina Kârlılığı özeti**, **standart kategorisi
       olmayan genel arama paleti**, standart satırı olmayan Çöp Kutusu.
-- [ ] `docs/tasarim-sozlugu.md`'nin iki satırı güncellendi (AC-35).
-- [ ] Sürüm notu yazıldı: ayarı "standart" olan kurulumda maliyet rakamlarının değişeceği (R3),
+- [x] `docs/tasarim-sozlugu.md`'nin iki satırı güncellendi (AC-35).
+- [x] Sürüm notu yazıldı: ayarı "standart" olan kurulumda maliyet rakamlarının değişeceği (R3),
       sıranın önce sunucu sonra istemciler olduğu, güncelleme bitene kadar bu ekranın
       kullanılmaması ve **güncellenmemiş bilgisayarlarda ekranın hâlâ görünüp orada yapılan
       değişikliklerin kaydedilmeyeceği** (C4).
-- [ ] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: 0001'in beş gider bölümü dörde iner, 0002'nin ortak gider kaynağı
+- [x] `npm test` yeşil (çıktısıyla, Electron testleri dahil), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: 0001'in beş gider bölümü dörde iner, 0002'nin ortak gider kaynağı
       kararı kapanır, 0078'in altı çöp bölümü beşe iner, 0026'nın kategori listesi daralır,
       işlem geçmişi etiketlerinin bilinen sınırı yazılır.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -536,10 +536,15 @@ Planın on bir önerisinin hepsi kabul edildi; ayrıntı `specs/0082-uygulama-pl
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 2 | Revizyon 2 (plan onayı, P1–P11): istisna listesi, ölü anahtar ayıklaması, 0076 altın dosyası, karışık sürüm kanıtı. Revizyon 3 (triyaj): izin etiketi ve C9 metninin harfe duyarlılığı, Çöp Kutusu kanıtı. |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-10-13), üç bulgu. |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Kullanıcı Yönetimi'ndeki izin etiketi kaldırılan ekranı anıyordu (C9 metni harfe duyarlıydı, iki yorum da kaçtı); Çöp Kutusu'nun "önce" görüntüsü standart verisi çıkarılmış araçla çekildiği için kaldırma görünmüyordu; CLAUDE.md'de yarım parantez. Her biri için test eklendi. |
+| **Regresyon sayısı** | 0 | |
+| **Kaçan hata** | 0 | |
 
 **Bu spec'ten çıkarılan ders:**
+
+- Bir bölümü kaldıran işte "önce" görüntüsü kaldırılan veriyi de taşıyan araçla çekilmeli. Aracın yeni kopyası hem tıklama adlarını hem test verisini değiştiriyor; taban ağacında yalnız adları eski bırakmak yetmedi, çöp kutusu verisi de eski kalmalıydı.
+- Kaynak taramasının metin parçası harfe duyarsız yazılmalı; kullanıcıya görünen metin cümle içinde küçük harfle geçer.
+- Yalnız okuma yolunu değil yazma yolunu da kaldırmak, karışık sürümde veri kaybını önleyen asıl adımdı; ham SQL testi olmadan bu görünmezdi.
+- Commit'e alınan dizin listesi elle yazılınca (`git add src tests …`) `electron/` atlanabiliyor; commit sonrası `git status` mutlaka kontrol edilmeli.
