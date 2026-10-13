@@ -1,6 +1,6 @@
 # 0083 Uygulama Planı: Giderler görünüm sırası ve Kasa'daki iki şeridin sayfa sonuna inmesi
 
-Spec: `specs/0083-gider-gorunum-sirasi-ve-kasa-seritleri.md` (revizyon 3). Dal
+Spec: `specs/done/0083-gider-gorunum-sirasi-ve-kasa-seritleri.md` (revizyon 3). Dal
 `feat/0083-yerlesim` (0082'nin kapanışı `52df9a9` üstünde).
 
 ## 1. Kodda bulunanlar (spec'e ek)

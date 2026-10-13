@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (dal `feat/0083-yerlesim`; plan `specs/0083-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (commit `30d9880`, dal `feat/0083-yerlesim`; plan `specs/done/0083-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · geliştirme atanmadı |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Mali İşler › Giderler (görünüm çubuğu); Mali İşler › Kasa › Hesaplar (ekran yerleşimi); tasarım sözlüğü; görsel kanıt |
@@ -515,39 +515,51 @@ turu): aynı eski metin ikinci belgede de var, `docs/rehber/gider-kasa-kurulum.h
 
 ## Definition of Done
 
-- [ ] R1–R16 uygulanmış; Giderler'de tek dizi satırı, Kasa'da tek JSX bloğu taşınmış.
-- [ ] AC-1…AC-25 karşılanmış; iki yeni test dosyası var: `tests/yerlesim-0083.test.js`
+- [x] R1–R16 uygulanmış; Giderler'de tek dizi satırı, Kasa'da tek JSX bloğu taşınmış.
+- [x] AC-1…AC-25 karşılanmış; iki yeni test dosyası var: `tests/yerlesim-0083.test.js`
       (AC-6 taraması, istisna listesi) ve `tests/ui/yerlesim-0083.test.jsx` (sekme sırası ve
       Kasa'nın DOM sırası).
-- [ ] `scripts/tests/donem-raporu-yerlesim.cjs`'ye R5'in iki yerleşim iddiası eklenmiş (AC-7);
+- [x] `scripts/tests/donem-raporu-yerlesim.cjs`'ye R5'in iki yerleşim iddiası eklenmiş (AC-7);
       yeni Electron yerleşim sayfası açılmamış.
-- [ ] 0082'nin iki kriteri yeni sırayla güncellenmiş, AC-1'in ikinci iddiası korunmuş, yorumunda
+- [x] 0082'nin iki kriteri yeni sırayla güncellenmiş, AC-1'in ikinci iddiası korunmuş, yorumunda
       bu spec'e atıf var (C4).
-- [ ] `docs/tasarim-sozlugu.md`'nin `UyariSeridi` bölümüne istisna maddesi yazılmış (R16, AC-23);
+- [x] `docs/tasarim-sozlugu.md`'nin `UyariSeridi` bölümüne istisna maddesi yazılmış (R16, AC-23);
       sözlüğün üç `Giderler.jsx:<satır>` örneği geçerli (AC-24).
-- [ ] `npm test` ve `npm run lint` yeşil; Electron testleri de koşulmuş (0067'nin dersi).
-- [ ] Taban raporu (`0083-taban-piksel-raporu.json`) bugünkü kodla değişecek ekranlarda 0 fark
+- [x] `npm test` ve `npm run lint` yeşil; Electron testleri de koşulmuş (0067'nin dersi).
+- [x] Taban raporu (`0083-taban-piksel-raporu.json`) bugünkü kodla değişecek ekranlarda 0 fark
       gösteriyor; iş raporu (`0083-piksel-raporu.json`) alınmış. İki tur da **parçalı** çekilmiş
       (`EKRAN_PARCA`) ve parçalar `0009-birlestir.cjs` çağrılmadan önce `rapor.json`'a
       birleştirilmiş (C7).
-- [ ] `docs/evidence/kanit-eslemesi.json`'a bu işin kayıtları `beklenen: "degisti"` + onay ile,
-      **değişen ekranın kaydı olan on sekiz dosyanın hepsine** eklenmiş (C5/4); yalnız Çek
+- [x] `docs/evidence/kanit-eslemesi.json`'a bu işin kayıtları `beklenen: "degisti"` + onay ile,
+      **değişen ekranın kaydı olan dosyaların hepsine** eklenmiş (C5/4; rapor on dokuz dosya verdi, on sekizinci sonrası `GiderForm.jsx`, plan §6); yalnız Çek
       Portföyü ekranlarına kaydı olan satırlar `ayni` kalmış.
-- [ ] Görüntü aracı değişmemiş (AC-25); kanıt aracının tam sayfa çektiği Context'te yazılı.
-- [ ] Git farkı Context'teki beklenen kümeyle aynı (AC-20); çalışma ağacının bu işten önceki
+- [x] Görüntü aracı değişmemiş (AC-25); kanıt aracının tam sayfa çektiği Context'te yazılı.
+- [x] Git farkı Context'teki beklenen kümeyle aynı (AC-20); çalışma ağacının bu işten önceki
       kirli dosyaları (`specs/README.md`, `docs/rehber/`, `scripts/rehber-pdf.cjs`) ayrı
       commitlenmiş.
-- [ ] `CLAUDE.md`'nin Giderler ve Kasa bölümlerindeki sıra ibareleri güncellenmiş.
-- [ ] `specs/README.md`'de spec satırı ve sıra cümlesi güncellenmiş; `tests/spec-atiflari.test.js`
+- [x] `CLAUDE.md`'nin Giderler ve Kasa bölümlerindeki sıra ibareleri güncellenmiş.
+- [x] `specs/README.md`'de spec satırı ve sıra cümlesi güncellenmiş; `tests/spec-atiflari.test.js`
       `TASINACAK` listesi bu işin iki dosyasıyla doldurulmuş ve done'a taşınırken boşaltılmış.
-- [ ] Bulgu B3 açık bulgular tablosunda (satır **zaten yazılı**) ve ikinci belge adı
+- [x] Bulgu B3 açık bulgular tablosunda (satır **zaten yazılı**) ve ikinci belge adı
       (`docs/rehber/gider-kasa-kurulum.html`) o satıra eklenmiş.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu**, kanıt eşlemesindeki `degisti` kayıtları `ayni`ye çevrildi
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu**, kanıt eşlemesindeki `degisti` kayıtları `ayni`ye çevrildi
       (`kanit-eslemesi.test.js`, 0011 AC-11c) ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
 ## SCORECARD
 
-Uygulama bittiğinde doldurulur.
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Spec revizyon sayısı** | 3 | Revizyon 2 (geliştirme öncesi QA turu), revizyon 3 (plan onayı, P5–P9: AC-6 dizi düzeyinde tarama, commit kümesi, plan dosyası, AC-7 iddiaları, AC-21 kapsamı). |
+| **Düzeltme turu sayısı** | 0 | Triyaj turu açılmadı. |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 | |
+| **Regresyon sayısı** | 0 | Süit 329 dosya / 4139 test yeşil (Electron dahil), lint 0 hata. |
+| **Kaçan hata** | 0 | |
+
+**Bu spec'ten çıkarılan ders:**
+
+- Kanıt kapsamını önceki raporun ekran adlarından tahmin etmek eksik kalır: Giderler sayfasını bir pencerenin ya da kabuğun arkasında çizen on ekran (gider formu, kilit, kayıt perdesi, menü) da değişti. Değişen küme ve `degisti` kaydı alacak dosyalar iş raporundan sayılmalı (C5/3 bu yüzden doğruydu); spec'in 18 dosyası 19 çıktı.
+- Yalnız seçili ekranlarla çekilen taban turu da 10 dakika sınırına takılabiliyor (125 ekran, "Object has been destroyed"); `EKRAN_SEC` kümesi ikiye bölünüp çekilmeli.
+- Analistin çalışma ağacında sürdürdüğü `specs/README.md` düzenlemeleri iş commit'ine karışmasın diye README parça parça (`git update-index --cacheinfo`) sahnelendi; P6'nın "beklenen dosya kümesi" kuralı dosya içinde de geçerli.
