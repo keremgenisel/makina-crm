@@ -2,13 +2,13 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı (dal `feat/0080-sayfalama-kalkar`, commit bekliyor; plan `specs/0080-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (commit `507c397`, dal `feat/0080-sayfalama-kalkar`; plan `specs/done/0080-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · geliştirme atanmadı |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Mali İşler › Giderler (Dönem Raporu kalem listesi ve onun makina çözümü, Tedarikçiler görünümü); paylaşılan sayfalama kancasının liste tablosu; görsel kanıt aracı |
 | **Bağımlı spec'ler** | 0062 (kısmen geri alınır), 0071 (AC-23 kısmen geri alınır), 0067 (KalemListesi'nin donmuş prop metni), 0026 (genel aramadan geliş), 0001, 0072, 0076 (kalem listesinin sütunları) |
 | **Sıra** | 0080 → 0081 → 0082 (`specs/README.md`; gerekçe Context'te) |
-| **Revizyon** | · 1 · 2026-10-13 QA turu (B-1…B-4, Ö-5…Ö-12, K-13…K-19 işlendi) · 2 · 2026-10-13 plan onayı (P1–P8, `specs/0080-uygulama-plani.md`) |
+| **Revizyon** | · 1 · 2026-10-13 QA turu (B-1…B-4, Ö-5…Ö-12, K-13…K-19 işlendi) · 2 · 2026-10-13 plan onayı (P1–P8, `specs/done/0080-uygulama-plani.md`) |
 
 ---
 
@@ -270,7 +270,7 @@ gizlenir, öbürü açılır.
 
 ### Plan onayı kararları (revizyon 2, Takım Yöneticisi, 2026-10-13)
 
-Planın sekiz önerisinin hepsi kabul edildi; ayrıntı `specs/0080-uygulama-plani.md` §3.
+Planın sekiz önerisinin hepsi kabul edildi; ayrıntı `specs/done/0080-uygulama-plani.md` §3.
 
 - **P1.** 0062'nin ters çevrilen UI testleri 0062 dosyasından silinir, ters hâlleri bu spec'in AC adlarıyla
   `tests/ui/sayfalama-kalkar-0080.test.jsx`'te yaşar; 0062 dosyasında tek satır atıf kalır. 0071 AC-23 yerinde güncellenir.
@@ -343,32 +343,32 @@ Planın sekiz önerisinin hepsi kabul edildi; ayrıntı `specs/0080-uygulama-pla
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap içeren iş yok; bu spec gösterim katmanını değiştirir ve bir hesabı (R10) çıktısı
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap içeren iş yok; bu spec gösterim katmanını değiştirir ve bir hesabı (R10) çıktısı
       birebir aynı kalacak şekilde hızlandırır. **Motor, sunucu, izin, veritabanı ve birleştirme
       dosyalarına dokunulmadı** (kaynak taramasıyla gösterildi).
-- [ ] 0062'nin liste tablosu güncellendi, kalan yedi satır bozulmadı; elle pager yasağı yerinde ve
+- [x] 0062'nin liste tablosu güncellendi, kalan yedi satır bozulmadı; elle pager yasağı yerinde ve
       `useFilteredList` yasağı iki dosyada sürüyor (AC-12).
-- [ ] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni izin yok (salt gösterim işi; açıkça yazıldı).
-- [ ] Ters çevrilen kriterler tek tek listelendi (hangi test, hangi beklenti, neden): **0062** ve
+- [x] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni izin yok (salt gösterim işi; açıkça yazıldı).
+- [x] Ters çevrilen kriterler tek tek listelendi (hangi test, hangi beklenti, neden): **0062** ve
       **0071 AC-23**. **0067 AC-5 / AC-28**'in birebir prop metni güncellendi ve nedeni o testin
       yorumuna yazıldı.
-- [ ] R10 uygulandı ve çıktı eşitliği aynı veriyle önce/sonra karşılaştırmasıyla gösterildi (AC-16).
-- [ ] `donemAnahtari` iki çağrı yerinden de düştü, Giderler'deki tanım ve Makina ve Model'e geçişi
+- [x] R10 uygulandı ve çıktı eşitliği aynı veriyle önce/sonra karşılaştırmasıyla gösterildi (AC-16).
+- [x] `donemAnahtari` iki çağrı yerinden de düştü, Giderler'deki tanım ve Makina ve Model'e geçişi
       durdu (AC-17).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: on satırın üstünde veriyle iki liste, boş durum
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: on satırın üstünde veriyle iki liste, boş durum
       ve süzgece uyan satır olmayan durum.
-- [ ] Görüntü aracındaki iki `-sayfa2` ekranı kaldırıldı, yerine iki tam liste ekranı eklendi
+- [x] Görüntü aracındaki iki `-sayfa2` ekranı kaldırıldı, yerine iki tam liste ekranı eklendi
       (AC-20).
-- [ ] `docs/evidence/kanit-eslemesi.json` kayıtları güncellendi (bilinçli değişim + onay satırı).
-- [ ] AC-15'in sayısı spec'e yazıldı (jsdom vekil ölçümü); AC-19'un yatay kayma ölçümü yapıldı ve
+- [x] `docs/evidence/kanit-eslemesi.json` kayıtları güncellendi (bilinçli değişim + onay satırı).
+- [x] AC-15'in sayısı spec'e yazıldı (jsdom vekil ölçümü); AC-19'un yatay kayma ölçümü yapıldı ve
       sayısı Context'e yazıldı. Sürüm sonrası elle gözlem (B1) SCORECARD'ın ders satırına eklenir.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin 0062 bölümü "hangi liste sayfalanır" tablosuyla birlikte güncellendi; 0071 ve
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin 0062 bölümü "hangi liste sayfalanır" tablosuyla birlikte güncellendi; 0071 ve
       0067 bölümlerine kısmi geri alma notu düşüldü.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -376,10 +376,15 @@ Planın sekiz önerisinin hepsi kabul edildi; ayrıntı `specs/0080-uygulama-pla
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 1 | Revizyon 2 (plan onayı, P1–P8): ters çevrilen testlerin yeri, R10 eşitliğinin sınırı (yinelenen kimlik), AC-15 eşiği ölçümden sonra, görüntü aracı ekranları, sözlük istisnası. |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-10-13), dört bulgu. |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | CLAUDE.md üretilmemiş taban raporuna atıf yapıyordu; üç kriterin (AC-11, AC-14, AC-18) adlı testi yoktu ve planda AC-14'ün yeri yanlıştı; AC-18 testi ön koşulu sınamıyordu; spec başlığı ve README'de altı spec'in durumu eskiydi. Her biri için test eklendi (rapor atfı, AC adı kapsamı, durum satırları). |
+| **Regresyon sayısı** | 0 | |
+| **Kaçan hata** | 0 | |
 
 **Bu spec'ten çıkarılan ders:**
+
+- Ölçüm aralığına test kütüphanesinin sorgusu girerse ölçülen şey uygulama olmaz: `getByLabelText` 1.200 satırlık DOM'da 10 sn sürdü, uygulamanın süzgeci 0,22 sn.
+- Parçalı görüntü çekimi her parçanın raporunu ayrı yazar; birleştirme aracı tek rapor bekler ve rapor yoksa hata vermeden takılır. Araçların sessiz başarısızlıkları (düğme yokken uyarıyla geçen `sayfa2` adımı da öyleydi) ekran adlarını yalan söyletir.
+- Belgedeki bir atıf (rapor adı, durum satırı) yazıldığı an bir iddiadır; tarama yoksa iddia eskir. Bu spec üç atıf türünü taramaya bağladı.
+- Sürüm sonrası elle gözlem (B1): yapılacak, bir yıllık aralık seçilip sonucu bu satıra eklenecek.

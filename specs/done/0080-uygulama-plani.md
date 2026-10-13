@@ -1,6 +1,6 @@
 # 0080 Uygulama Planı: Gider kalemleri ve tedarikçiler listelerinde sayfalama kalkar
 
-Spec: `specs/0080-gider-ve-tedarikci-listelerinde-sayfalama-kalkar.md` (revizyon 2). Dal `feat/0080-sayfalama-kalkar`
+Spec: `specs/done/0080-gider-ve-tedarikci-listelerinde-sayfalama-kalkar.md` (revizyon 2). Dal `feat/0080-sayfalama-kalkar`
 (main `5d684bf` üstünde). Plan Takım Yöneticisi tarafından 2026-10-13'te onaylandı (bütün öneriler kabul).
 
 ## 1. Kodda bulunanlar (spec'e ek)

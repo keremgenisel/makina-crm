@@ -1078,10 +1078,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "rapor": "docs/evidence/0080-taban-piksel-raporu.json",
         "ekran": "giderler-0080-kalemler-tam",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0080-piksel-raporu.json",
@@ -1448,16 +1447,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "rapor": "docs/evidence/0080-taban-piksel-raporu.json",
         "ekran": "giderler-0062-kalemler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "rapor": "docs/evidence/0080-taban-piksel-raporu.json",
         "ekran": "giderler-0080-kalemler-tam",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0080-piksel-raporu.json",
@@ -1938,16 +1935,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "rapor": "docs/evidence/0080-taban-piksel-raporu.json",
         "ekran": "giderler-0062-tedarikciler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0080-piksel-raporu.json",
+        "rapor": "docs/evidence/0080-taban-piksel-raporu.json",
         "ekran": "giderler-0080-tedarikciler-tam",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-13 · spec 0080 AC-20"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0080-piksel-raporu.json",
