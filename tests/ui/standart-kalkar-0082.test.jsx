@@ -40,14 +40,17 @@ const cubuk = () => within(screen.getByRole("radiogroup", { name: "Görünüm" }
 const gorunum = (ad) => fireEvent.click(screen.getByRole("radio", { name: ad }));
 
 describe("Spec 0082: görünüm çubuğu ve ad (R1, R10, R12–R15)", () => {
-  it("AC-1: çubukta beş sekme; 'Standart Genel Gider' metni ekranda hiç yok", () => {
+  // Spec 0083 ile güncellendi (C4): sıra Dönem Raporu · Tedarikler ve Ekstre · Üretim Partileri · Makina Kârlılığı · Makina ve Model;
+  // 0082'nin kaldırma kanıtı olan ikinci iddia aynen korunur.
+  it("AC-1 (spec 0083 AC-22): çubukta beş sekme; 'Standart Genel Gider' metni ekranda hiç yok", () => {
     render(<GH />);
-    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Makina ve Model", "Tedarikler ve Ekstre", "Üretim Partileri", "Makina Kârlılığı"]);
+    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre", "Üretim Partileri", "Makina Kârlılığı", "Makina ve Model"]);
     expect(document.body.textContent).not.toMatch(/Standart Genel Gider/);
   });
-  it("AC-2: üçüncü sekmenin adı 'Tedarikler ve Ekstre'", () => {
+  // Spec 0083 ile güncellendi (C4): "Tedarikler ve Ekstre" artık ikinci sekme.
+  it("AC-2 (spec 0083 AC-22): ikinci sekmenin adı 'Tedarikler ve Ekstre'", () => {
     render(<GH />);
-    expect(cubuk()[2].textContent).toBe("Tedarikler ve Ekstre");
+    expect(cubuk()[1].textContent).toBe("Tedarikler ve Ekstre");
   });
   it("AC-3: o görünümde liste başlığı 'Tedarikler ve Ekstre' ve canlı tedarikçi sayısı (sekme rolüyle seçilir)", () => {
     render(<GH />);

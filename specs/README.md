@@ -27,12 +27,11 @@ Bu klasör, Altunmak CRM'de yapılacak işlerin **ne olduğunu ve neden istendi�
 
 Spec'i henüz yazılmamış işler için numara ayrılmıştır ki atıf yapılabilsin.
 
-**Bekleyen işlerin yapılma sırası (2026-10-13):** **0080 → 0081 → 0082**. 0070–0079 tamamlandı;
-0079 v3.45.0 ile yayınlandı. Üçü de Giderler sekmesinin sadeleştirilmesi ve Takım Yöneticisi'nin altı
-isteğinden geliyor; isteğe göre aynı spec'e girenler birlikte yazıldı. Sıranın gerekçesi: 0080 ve 0081
-salt gösterim işi ve birbirinden bağımsız, 0082 ise silme işi olduğu için en geniş ayak izine sahip ve
-diğer ikisinin görsel kanıt tabanını geçersiz kılıyor, bu yüzden **en son**. Numara sırayı vermiyor;
-sıra bu satırda yazılı.
+**Bekleyen işlerin yapılma sırası (2026-10-14):** sırada **0083** var; 0070–0082 tamamlandı, 0079
+v3.45.0 ile yayınlandı. 0080, 0081 ve 0082 Giderler sekmesinin sadeleştirilmesiydi ve o sırayla
+uygulandı (son sıradaki 0082 silme işiydi ve diğer ikisinin görsel kanıt tabanını geçersiz
+kılıyordu). 0083 aynı ekranların yerleşim işi: yalnız çizim sırası değişir, bu yüzden 0082'nin
+üstüne biner ve tek kanıt turunda ölçülür. Numara sırayı vermiyor; sıra bu satırda yazılı.
 
 **Numara değişikliği (2026-09-27, Takım Yöneticisi kararı):** bekleyen yedi iş yapılma sırasına göre
 0020–0026 aralığına taşındı. Eski numaralar (0004 → 0024, 0005 → 0023, 0031 → 0025, 0032 → 0021,
@@ -102,6 +101,7 @@ kalıcı kaydıdır.
 | **0080** | Gider kalemleri ve tedarikçiler listelerinde sayfalama kalkar (Tamamlandı) | 0062'nin sayfalaması iki listede faydadan çok engel. Ayın giderlerini faturalarla karşılaştıran kişi listeyi **bütün olarak** görmek istiyor (tarayıcı aramasıyla tutar aramak, alt toplamla tutturmak), bugün onuncu satırdan sonrası ikinci sayfada; tedarikçi listesi ise tanım gereği kısa ve neredeyse hiç değişmiyor. İki liste tek sayfaya döner, kalan **on bir sayfalama çağrısı yedi dosyada** aynen kalır (hesap hareketleri, çek portföyü, ekstre gibi tanım gereği sonsuz büyüyen listeler). 0062'nin iki tuzak kuralı (toplam ve toplu işlem sayfaya bağlanmaz) ve "elle pager yazılmasın" taraması yerinde kalır. Bilinen risk yazılı: Tarih Aralığı kipinde bir yıl seçilirse bütün yıl çizilir; ölçüm sürüm sonrası, gerekirse sayfalama **yalnız o kipe** geri gelir, Ay kipine asla. |
 | **0081** | Dönem Raporu: stopaj kartı kalkar, yan kutular kapalı başlar (Tamamlandı) | Ekran uzadı: beş özet kartı, kalem listesi, borç özeti ve beş tablo kutusu. Kullanıcı kalemlere ve borca bakıyor; kovalar, tür kırılımı, KDV karşılaştırması, tedarikçi kırılımı ve yöntem kırılımı ara sıra bakılıyor ama her açılışta ekranı dolduruyor. Beşi **katlanır ve kapalı** başlar (altyapı hazır: 0016'nın katlanan kartı, varsayılanı zaten kapalı), kalem listesi ve borç özeti her zaman açık. "Kesilen kira stopajı" kartı kalkar, dört kart kalır; rakam kaybolmaz, Aylık Gider ve Kasa Raporu'ndaki stopaj satırı ve kutusu duruyor. **Ölçülmüş bulgu:** "yerine indirilecek KDV'yi koy" denen kart **bugün de var** ve stopajın yanında, yani net sonuç kartın kaldırılması. İki ince yer: KDV karşılaştırması aynı bileşenle **Finans'ta da** çiziliyor (katlama kararı çağıranda olmalı), ve katlanan başlık bugün klavyeyle açılmıyor, durumu da bildirmiyor; tek yerde düzeltilir. |
 | **0082** | Standart Genel Giderler kaldırılır, Tedarikçiler görünümü yeniden adlandırılır (Tamamlandı) | Giderler'in görünüm çubuğundaki altı sekmeden biri kullanılmıyor: fabrika gerçek gider kayıtlarını giriyor, bütçe tablosu tutmuyor. Boş kalmakla da yetinmiyor, makina maliyetinin ortak gider payına **ikinci kaynak** olarak seçilebiliyor; ayar "standart" kalırsa bütün makinaların maliyeti kimsenin doldurmadığı tablodan hesaplanıyor. Bu yüzden yarım kaldırma tehlikeli: bölüm, ayar seçeneği ve motorun standart dalı birlikte kalkar, maliyet her zaman gerçekleşen kayıtlardan hesaplanır. **Ayak izi on yedi kaynak dosyası** (ekran, iki motor, ayar, dört maliyet ekranı, genel arama, çöp kutusu, yedek, App, birleştirme, kilit, sunucu, veritabanı, işlem geçmişi, araçlar). **En riskli tek satır veritabanı yazma yolu:** yalnız okuma kaldırılırsa güncellenmemiş bir istemcinin ilk kaydı tabloyu boşaltır, bu yüzden yazma yolu da kalkar ve satırlar dokunulmadan durur (tablo düşürülmez, X1). Aynı çubukta **Tedarikçiler → "Tedarikler ve Ekstre"**; kayıt türünün adı, izinleri ve arama kategorisi "Tedarikçi" kalır. |
+| **0083** | Giderler görünüm sırası ve Kasa'daki iki şeridin sayfa sonuna inmesi (Uygulanıyor, dal `feat/0083-yerlesim`) | İki yerleşim isteği, ikisi de "yalnız çizim sırası" sınıfında: hiçbir rakam, kural ya da metin değişmiyor. Giderler'in görünüm çubuğu **Dönem Raporu · Tedarikler ve Ekstre · Üretim Partileri · Makina Kârlılığı · Makina ve Model** sırasına geçer (günlük kullanımda ikinci sıra Tedarikler ve Ekstre'ye ait; Makina ve Model ara sıra bakılan analiz görünümü). Kasa › Hesaplar'da ekranın tepesindeki deneme dönemi şeridi ve "hesabı belirtilmemiş" bilgi bloğu **Çalışan avanslarından sonra**, sayfanın sonuna iner; kullanıcı Kasa'ya bakiye için giriyor, bugün bakiyeye ulaşmak için bilgi bloğunun üzerinden geçiyor. **Ölçülmüş karar:** blok parçalanmaz, bütün olarak taşınır, çünkü notun kendi cümlesi "kayıtlar **aşağıda** ayrıca listelenir" diyor ve listeler aynı aracın parçası. Değişiklik iki dosyada (bir dizi satırı, bir JSX bloğu); bedeli görsel kanıtta: çubuk her Giderler ekranının üstünde olduğu için kabaca **120 ekran** bilinçli değişir. 0082'nin iki kabul kriteri (çubuk sırası) ters çevrilir. Kullanıcı rehberi bu işte güncellenmez (0080–0082 sonrası zaten eski, ayrı iş). |
 
 ## Açık bulgular (spec'i yok, karar bekliyor)
 
@@ -109,8 +109,9 @@ kalıcı kaydıdır.
 
 | Bulgu | Nerede bulundu | Öneri |
 |---|---|---|
+| Kullanıcı rehberi (`docs/rehber/gider-kasa-rehberi.html` ve `docs/rehber/gider-kasa-kurulum.html`, ikisi de henüz depoda değil) 0080–0082 sonrası güncellenmedi: "Giderler ekranındaki **altı** görünüm" diyor, tabloda "Tedarikçiler" ve "Standart Genel Giderler" satırları duruyor; kaldırılan stopaj kartı ve kalkan sayfalama da yazılı. | 0083 spec'i yazılırken (2026-10-13) | Ayrı iş olarak 0080–0083'ün tamamını kapsayan tek rehber güncellemesi (görünüm tablosu, sekme sırası, Kasa'nın yeni yerleşimi, kaldırılan kutular) ve PDF'in `scripts/rehber-pdf.cjs` ile yeniden üretilmesi. 0083'e eklenmesi önerilmez: o işin "yalnız çizim sırası" kapsamını bozar ve üç spec'in rehber farkını bu işe yükler. |
 
-Şu an açık bulgu yok. **Kapatılanlar:** `makina-odeme.test.js` tarih bombası ve karanlık temada beyaz kalan teslim ayrıntı
+**Kapatılanlar:** `makina-odeme.test.js` tarih bombası ve karanlık temada beyaz kalan teslim ayrıntı
 kutusu (`n050`), ikisi de 0030 ile (2026-09-27). 0030'un saat kaydırma taraması iki tarih bombası daha buldu
 (`gider-perdesi-yedek`, `musteri-detay-bolumler`), onlar da aynı işte sabitlendi; yöntem `specs/done/0030-uygulama-plani.md` §7'de.
 

@@ -494,6 +494,81 @@ export const Kasa = ({
           giderAyarlari={giderAyarlari} serverPermissions={serverPermissions} showToast={showToast} hesaplar={kasaHesaplari} aktifKullanici={aktifKullanici}
           baslangicYon={baslangicCekYon} />
       ) : (<>
+      {kasaHesaplari.length === 0 ? (
+        <BosDurum testId="bos-kasa" baslik="Henüz hesap yok" metin="Kasa, banka ve kredi kartı hesaplarınızı ekleyin; gider ödemeleri ve müşteri tahsilatları bu hesaplara bağlanır." />
+      ) : (
+        <>
+          <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }} testId="hesap-listesi">
+            <div style={{ minWidth: 640 }}>
+              <div style={{ ...izgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
+                <span>Hesap</span><span>Tür</span><span>Birim</span><span style={{ textAlign: "right" }}>Bakiye</span><span />
+              </div>
+              {siraliHesaplar.map(h => {
+                const b = bakiyeler.get(String(h.id));
+                const secik = seciliHesap && String(seciliHesap.id) === String(h.id);
+                const kullanim = hesapKullanimi(h.id, hesapHareketleri, veri);
+                return (
+                  <div key={h.id} data-testid="hesap-satiri" onClick={() => setSecili(h.id)}
+                    style={{ ...izgara, padding: "10px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)", cursor: "pointer", background: secik ? "var(--ambBg3, #fff7ed)" : "transparent", opacity: h.kapali ? 0.65 : 1 }}>
+                    <span style={{ minWidth: 0 }}><b>{h.ad}</b>{h.kapali && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", border: "1px solid var(--n300, #cbd5e1)", borderRadius: 999, padding: "1px 7px" }}>Kapalı</span>}</span>
+                    <span>{HESAP_TUR_AD[h.tur] || h.tur}</span>
+                    <span>{h.paraBirimi}</span>
+                    <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{b && bakiyeMetni(b)}</span>
+                    <span style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
+                      {canDo("kasa_hesap") && <Btn small variant="ghost" onClick={() => setHesapFormu({ hesap: h })} title="Düzenle"><Icon name="edit" size={12} /></Btn>}
+                      {canDo("kasa_hesap") && <Btn small variant="ghost" onClick={() => kapatAc(h)}>{h.kapali ? "Aç" : "Kapat"}</Btn>}
+                      {canDo("kasa_hesap") && kullanim > 0 && (
+                        <span title={deneme ? "Deneme döneminde hareketi olan hesap da silinebilir." : "Hareketi olan hesap silinemez; kapatılabilir."} style={{ fontSize: 11, color: "var(--n500, #64748b)", alignSelf: "center" }}>{kullanim} hareket</span>
+                      )}
+                      {/* Spec 0056 R4, R6: deneme döneminde hareketli hesapta da silme (taşıma penceresiyle); dönem bitince kendiliğinden kalkar. */}
+                      {canDo("kasa_hesap") && (kullanim === 0 || deneme) && (
+                        <Btn small variant="danger" onClick={() => (kullanim === 0 ? setSilinecek(h) : setTasinacak(h))} title="Sil" aria-label={`Hesabı sil: ${h.ad}`}><Icon name="trash" size={12} /></Btn>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </KartBolum>
+
+          {seciliHesap && seciliBakiye && (
+            <KartBolum varyant="kart" baslikStili="baslik" title={`${seciliHesap.ad} · hareketler`}
+              altBaslik={`Açılış ${para(tl(seciliBakiye.acilisK), seciliHesap.paraBirimi)}${seciliHesap.acilisTarihi ? ` (${fmtTR(seciliHesap.acilisTarihi)})` : ""} · giren ${para(seciliBakiye.giren, seciliHesap.paraBirimi)} · çıkan ${para(seciliBakiye.cikan, seciliHesap.paraBirimi)}`}
+              style={{ overflow: "auto" }} testId="hesap-hareketleri">
+              {seciliBakiye.satirlar.length === 0 ? (
+                <BosDurum testId="bos-hesap-hareketi" baslik="Bu hesapta hareket yok" />
+              ) : (
+                <div style={{ minWidth: 870 }}>
+                  <div style={{ ...hIzgara, padding: "8px 0", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
+                    <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Giren</span><span style={{ textAlign: "right" }}>Çıkan</span><span style={{ textAlign: "right" }}>{seciliHesap.tur === "kart" ? "Bakiye (borç −)" : "Bakiye"}</span><span />
+                  </div>
+                  {hareketSayfasi.paged.map((s, i) => {
+                    const a = satirAciklamasi(s);
+                    return (
+                      <div key={`${s.tur}-${s.hareket?.id ?? s.tahsilat?.id ?? s.cek?.id}-${i}`} data-testid="hareket-satiri" style={{ ...hIzgara, padding: "8px 0", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+                        <span>{fmtTR(s.tarih)}</span>
+                        <span>{a.tur}</span>
+                        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={a.metin}>{a.metin}</span>
+                        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--grn700, #15803d)" }}>{s.girenK ? para(tl(s.girenK), seciliHesap.paraBirimi) : ""}</span>
+                        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--red700, #b91c1c)" }}>{s.cikanK ? para(tl(s.cikanK), seciliHesap.paraBirimi) : ""}</span>
+                        <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{para(tl(s.bakiyeK), seciliHesap.paraBirimi)}</b>
+                        <span style={{ textAlign: "right" }}>{satirEylemleri(s)}</span>
+                      </div>
+                    );
+                  })}
+                  <Pagination total={hareketlerTers.length} page={hareketSayfasi.page} setPage={hareketSayfasi.setPage} perPage={hareketSayfasi.perPage} />
+                </div>
+              )}
+            </KartBolum>
+          )}
+        </>
+      )}
+
+      <CalisanAvanslari aktifKullanici={aktifKullanici} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} kasaHesaplari={kasaHesaplari}
+        giderler={giderler} giderTurleri={giderTurleri} yururlukAy={yururlukAy} canDo={canDo} serverPermissions={serverPermissions} showToast={showToast} />
+
+      {/* Spec 0083 R6, R7: hesabı belirtilmemiş kayıtlar bloğu (deneme şeridi dahil, sekiz parça, iç sırası aynen) sayfanın
+          sonunda, Çalışan avanslarından sonra. Kullanıcı Kasa'ya bakiyeler için gelir; blok bakiye tablosunun önüne geçmez. */}
       {/* Spec 0056 R3 (AC-2, AC-31): deneme dönemi geçici bir hâldir; bitiş ayardan. */}
       {deneme && <UyariSeridi aile="uyari" testId="deneme-donemi">{denemeDonemiMetni(denemeBitis)}</UyariSeridi>}
       <UyariSeridi aile="bilgi" testId="hesapsiz-notu">
@@ -629,79 +704,6 @@ export const Kasa = ({
           </div>
         </KartBolum>
       )}
-
-      {kasaHesaplari.length === 0 ? (
-        <BosDurum testId="bos-kasa" baslik="Henüz hesap yok" metin="Kasa, banka ve kredi kartı hesaplarınızı ekleyin; gider ödemeleri ve müşteri tahsilatları bu hesaplara bağlanır." />
-      ) : (
-        <>
-          <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto" }} testId="hesap-listesi">
-            <div style={{ minWidth: 640 }}>
-              <div style={{ ...izgara, padding: "10px 14px", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
-                <span>Hesap</span><span>Tür</span><span>Birim</span><span style={{ textAlign: "right" }}>Bakiye</span><span />
-              </div>
-              {siraliHesaplar.map(h => {
-                const b = bakiyeler.get(String(h.id));
-                const secik = seciliHesap && String(seciliHesap.id) === String(h.id);
-                const kullanim = hesapKullanimi(h.id, hesapHareketleri, veri);
-                return (
-                  <div key={h.id} data-testid="hesap-satiri" onClick={() => setSecili(h.id)}
-                    style={{ ...izgara, padding: "10px 14px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)", cursor: "pointer", background: secik ? "var(--ambBg3, #fff7ed)" : "transparent", opacity: h.kapali ? 0.65 : 1 }}>
-                    <span style={{ minWidth: 0 }}><b>{h.ad}</b>{h.kapali && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", border: "1px solid var(--n300, #cbd5e1)", borderRadius: 999, padding: "1px 7px" }}>Kapalı</span>}</span>
-                    <span>{HESAP_TUR_AD[h.tur] || h.tur}</span>
-                    <span>{h.paraBirimi}</span>
-                    <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{b && bakiyeMetni(b)}</span>
-                    <span style={{ display: "flex", gap: 6, justifyContent: "flex-end" }} onClick={e => e.stopPropagation()}>
-                      {canDo("kasa_hesap") && <Btn small variant="ghost" onClick={() => setHesapFormu({ hesap: h })} title="Düzenle"><Icon name="edit" size={12} /></Btn>}
-                      {canDo("kasa_hesap") && <Btn small variant="ghost" onClick={() => kapatAc(h)}>{h.kapali ? "Aç" : "Kapat"}</Btn>}
-                      {canDo("kasa_hesap") && kullanim > 0 && (
-                        <span title={deneme ? "Deneme döneminde hareketi olan hesap da silinebilir." : "Hareketi olan hesap silinemez; kapatılabilir."} style={{ fontSize: 11, color: "var(--n500, #64748b)", alignSelf: "center" }}>{kullanim} hareket</span>
-                      )}
-                      {/* Spec 0056 R4, R6: deneme döneminde hareketli hesapta da silme (taşıma penceresiyle); dönem bitince kendiliğinden kalkar. */}
-                      {canDo("kasa_hesap") && (kullanim === 0 || deneme) && (
-                        <Btn small variant="danger" onClick={() => (kullanim === 0 ? setSilinecek(h) : setTasinacak(h))} title="Sil" aria-label={`Hesabı sil: ${h.ad}`}><Icon name="trash" size={12} /></Btn>
-                      )}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </KartBolum>
-
-          {seciliHesap && seciliBakiye && (
-            <KartBolum varyant="kart" baslikStili="baslik" title={`${seciliHesap.ad} · hareketler`}
-              altBaslik={`Açılış ${para(tl(seciliBakiye.acilisK), seciliHesap.paraBirimi)}${seciliHesap.acilisTarihi ? ` (${fmtTR(seciliHesap.acilisTarihi)})` : ""} · giren ${para(seciliBakiye.giren, seciliHesap.paraBirimi)} · çıkan ${para(seciliBakiye.cikan, seciliHesap.paraBirimi)}`}
-              style={{ overflow: "auto" }} testId="hesap-hareketleri">
-              {seciliBakiye.satirlar.length === 0 ? (
-                <BosDurum testId="bos-hesap-hareketi" baslik="Bu hesapta hareket yok" />
-              ) : (
-                <div style={{ minWidth: 870 }}>
-                  <div style={{ ...hIzgara, padding: "8px 0", fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
-                    <span>Tarih</span><span>Tür</span><span>Açıklama</span><span style={{ textAlign: "right" }}>Giren</span><span style={{ textAlign: "right" }}>Çıkan</span><span style={{ textAlign: "right" }}>{seciliHesap.tur === "kart" ? "Bakiye (borç −)" : "Bakiye"}</span><span />
-                  </div>
-                  {hareketSayfasi.paged.map((s, i) => {
-                    const a = satirAciklamasi(s);
-                    return (
-                      <div key={`${s.tur}-${s.hareket?.id ?? s.tahsilat?.id ?? s.cek?.id}-${i}`} data-testid="hareket-satiri" style={{ ...hIzgara, padding: "8px 0", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
-                        <span>{fmtTR(s.tarih)}</span>
-                        <span>{a.tur}</span>
-                        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={a.metin}>{a.metin}</span>
-                        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--grn700, #15803d)" }}>{s.girenK ? para(tl(s.girenK), seciliHesap.paraBirimi) : ""}</span>
-                        <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--red700, #b91c1c)" }}>{s.cikanK ? para(tl(s.cikanK), seciliHesap.paraBirimi) : ""}</span>
-                        <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{para(tl(s.bakiyeK), seciliHesap.paraBirimi)}</b>
-                        <span style={{ textAlign: "right" }}>{satirEylemleri(s)}</span>
-                      </div>
-                    );
-                  })}
-                  <Pagination total={hareketlerTers.length} page={hareketSayfasi.page} setPage={hareketSayfasi.setPage} perPage={hareketSayfasi.perPage} />
-                </div>
-              )}
-            </KartBolum>
-          )}
-        </>
-      )}
-
-      <CalisanAvanslari aktifKullanici={aktifKullanici} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} kasaHesaplari={kasaHesaplari}
-        giderler={giderler} giderTurleri={giderTurleri} yururlukAy={yururlukAy} canDo={canDo} serverPermissions={serverPermissions} showToast={showToast} />
       </>)}
 
       {kilitHesapId != null && hesapKilidi && (

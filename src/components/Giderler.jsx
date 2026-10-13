@@ -34,7 +34,7 @@ import { UretimPartileri } from "./gider/UretimPartileri";
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
 // aylık rapor motorundan alınır, yeniden hesaplanmaz (C10, lib/giderKdv.js).
 const ayAdi = (ay) => { const [y, m] = ay.split("-").map(Number); const s = new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); return s.charAt(0).toLocaleUpperCase("tr") + s.slice(1); };
-const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "makina", label: "Makina ve Model" }, { value: "tedarikci", label: "Tedarikler ve Ekstre" }, { value: "partiler", label: "Üretim Partileri" }, { value: "karlilik", label: "Makina Kârlılığı" }];
+const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "tedarikci", label: "Tedarikler ve Ekstre" }, { value: "partiler", label: "Üretim Partileri" }, { value: "karlilik", label: "Makina Kârlılığı" }, { value: "makina", label: "Makina ve Model" }];
 
 // Spec 0082 R1, R12: beş görünüm; "Tedarikler ve Ekstre" görünümün adıdır, kayıt türü "Tedarikçi" kalır (R14).
 // Dönem seçicisi olmayan görünüm: üretim partileri (spec 0022) dönemden bağımsızdır.

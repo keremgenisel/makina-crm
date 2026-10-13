@@ -195,7 +195,13 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
+**İstisna, sayfa sonundaki şerit (spec 0083 R16):** ekran düzeyindeki kalıcı bilgi şeridi, kullanıcının ekrana asıl geliş
+nedeninin önüne geçiyorsa **bölümüyle birlikte** sayfa sonuna alınabilir. Şerit kendi bölümünden koparılmaz, bölümün iç
+sırası korunur ve şeridin metni yerine göre yeniden yazılmaz. Örnek: Kasa › Hesaplar'da deneme dönemi şeridi ve hesapsız
+notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avanslarının altında durur; kullanıcı Kasa'ya bakiyeler için gelir.
+
 **Örnek:** `src/components/Giderler.jsx:309`
+**Örnek:** `src/components/Kasa.jsx:573` (sayfa sonundaki şerit, spec 0083)
 **Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
 ### Serbest içerik (spec 0011)

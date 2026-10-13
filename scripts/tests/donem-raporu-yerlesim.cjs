@@ -34,6 +34,13 @@ const ac = (idler) => `(() => {
 const BES = ["kova-karti", "tur-kirilimi", "kdv-karsilastirma", "tedarikci-kirilimi", "yontem-kirilimi"];
 const durum = `(() => ${JSON.stringify(BES)}.map(id => document.querySelector('[data-testid="' + id + '"] [aria-expanded]')?.getAttribute("aria-expanded") ?? "yok"))()`;
 
+// Spec 0083 AC-7 (P8): Giderler'in görünüm çubuğu (aria-label="Görünüm") düğmeleri. 1280 px'te tek satır (aynı üst kenar);
+// 1024 px'te hepsi pencerenin içinde (çubuk dar pencerede iki satıra bölünebilir, R5).
+const olcCubuk = `(() => {
+  const d = [...document.querySelectorAll('[role="radiogroup"][aria-label="Görünüm"] [role="radio"]')].map(e => { const b = e.getBoundingClientRect(); return { t: e.textContent, top: Math.round(b.top), left: b.left, right: b.right }; });
+  return { d, w: innerWidth, belgeTasma: document.documentElement.scrollWidth > innerWidth + 1 };
+})()`;
+
 const kesisir = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
 const icinde = (a, w) => a.left >= -0.5 && a.right <= w + 0.5;
 
@@ -49,6 +56,12 @@ app.whenReady().then(async () => {
       for (let i = 0; i < 50 && !s; i++) { s = await win.webContents.executeJavaScript(olc); if (!s) await new Promise(r => setTimeout(r, 100)); }
       const ad0 = `@${genislik}px`;
       if (!s) { check(`${ad0}: Dönem Raporu kartlarıyla çizildi`, false); continue; }
+      {
+        const c = await win.webContents.executeJavaScript(olcCubuk);
+        check(`${ad0}: görünüm çubuğu yeni sırada beş sekme (spec 0083 AC-1)`, c.d.map(x => x.t).join("|") === "Dönem Raporu|Tedarikler ve Ekstre|Üretim Partileri|Makina Kârlılığı|Makina ve Model", JSON.stringify(c.d.map(x => x.t)));
+        if (genislik === 1280) check(`${ad0}: görünüm çubuğu tek satır (spec 0083 AC-7)`, new Set(c.d.map(x => x.top)).size === 1, JSON.stringify(c.d));
+        check(`${ad0}: görünüm çubuğunun düğmeleri pencerenin içinde, belge taşmıyor (spec 0083 AC-7)`, c.d.every(x => x.left >= -0.5 && x.right <= c.w + 0.5) && !c.belgeTasma, JSON.stringify(c));
+      }
       // Spec 0081 AC-22: önce kapalı hâl (varsayılan), sonra hepsi açık (AC-23, 0067'nin ölçümü), sonra tür açık KDV kapalı (AC-28).
       const kapali = await win.webContents.executeJavaScript(durum);
       check(`${ad0}: beş kutu kapalı başlar (spec 0081 AC-6)`, kapali.every(x => x === "false"), JSON.stringify(kapali));
