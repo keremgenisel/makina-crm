@@ -166,7 +166,7 @@ describe("Spec 0024 A: hesap bakiyesi (R6–R8, R15, C5)", () => {
 describe("Spec 0024 A: çift sayım yasağı (C3, C4)", () => {
   it("AC-23: makina maliyeti ve kârlılık ödemeden ve virmandan etkilenmez", () => {
     const hesap = (giderler) => hesaplaMakinaMaliyetleri({ customers: [{ id: 1, name: "F", model: "AK100", serialNo: "S", installDate: "2026-09-20", uretimTarihi: "2026-09-05", fabrikaSatisBedeli: 1, currency: "TRY" }],
-      stock: [], partStockLog: [], giderler, giderTurleri: TUR, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: BUGUN });
+      stock: [], partStockLog: [], giderler, giderTurleri: TUR, standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: BUGUN });
     const a = hesap([KALEM]).makinalar.get("musteri:1");
     const b = hesap(uygula([KALEM], [odeme(1, 5000)])).makinalar.get("musteri:1");
     expect(b.ortakPay).toBe(a.ortakPay);
@@ -248,7 +248,7 @@ describe("Spec 0024 B: avans ve mahsup (R9–R11)", () => {
     const h = [AVANS, { id: 62, tur: "mahsup", tarih: "2026-10-05", tutar: 8000, calisanId: 7, giderId: 6 }];
     for (const [b, e] of [["2026-08-01", "2026-08-31"], ["2026-09-01", "2026-09-30"], ["2026-10-01", "2026-10-31"]]) expect(rapor(h, b, e)).toBe(rapor([], b, e));
     const maliyet = (h) => hesaplaMakinaMaliyetleri({ customers: [{ id: 1, model: "AK100", serialNo: "S", installDate: "2026-09-20", uretimTarihi: "2026-09-05", fabrikaSatisBedeli: 1, currency: "TRY" }],
-      stock: [], partStockLog: [], giderler: uygula([MAAS, EKIM], h), giderTurleri: TUR, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [],
+      stock: [], partStockLog: [], giderler: uygula([MAAS, EKIM], h), giderTurleri: TUR, standardModels: [{ model: "AK100" }], customModels: [],
       giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-10-28" }).makinalar.get("musteri:1").ortakPay;
     expect(maliyet(h)).toBe(maliyet([]));
     expect(borcOzeti(uygula([MAAS], [AVANS]), yetki, BUGUN).toplam).toBe(50000); // avans maaş borcunu düşmez; mahsup düşer

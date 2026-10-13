@@ -35,19 +35,19 @@ export const BUGUN = "2026-07-15";
 const duz = (x) => JSON.parse(JSON.stringify(x, (k, v) => (v instanceof Map ? [...v.entries()] : v instanceof Set ? [...v] : v)));
 
 // Bayraksız veride değişmemesi gereken bütün motor çıktıları (AC-36): dönem raporu (iki dönem), kova, makina maliyeti
-// (gerçek ve standart kaynak), kârlılık özeti, fiyat önerisi, KDV karşılaştırması.
+// (gerçekleşen kaynak; spec 0082'den önce standart da), kârlılık özeti, fiyat önerisi, KDV karşılaştırması.
 export const motorCiktilari = (giderler = GIDERLER) => {
   const turMap = turHaritasi(TURLER);
   const canliModeller = canliModelSeti(MODELLER, []);
   const rapor = (bas, bit) => hesaplaGiderRaporu({ giderler, turler: TURLER, tedarikciler: TEDARIKCILER, stock: STOCK, customers: CUSTOMERS, canliModeller, yururlukAy: "2026-01" }, { baslangic: bas, bitis: bit }, { bugun: BUGUN });
-  const maliyet = (kaynak) => hesaplaMakinaMaliyetleri({ customers: CUSTOMERS, stock: STOCK, giderler, giderTurleri: TURLER, standardModels: MODELLER, uretimPartileri: PARTILER,
-    standartGiderler: [{ id: 901, grupId: 901, ad: "Elektrik", tutar: 4000, baslangicAy: "2026-01" }], giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: kaynak } }, { bugun: BUGUN });
-  const gercek = maliyet("gercek"), standart = maliyet("standart");
+  // Spec 0082 C1/3: standart kaynak kalktı; altın JSON'un `maliyetStandart` bölümü artık üretilmez (karşılaştırmada atılır).
+  const gercek = hesaplaMakinaMaliyetleri({ customers: CUSTOMERS, stock: STOCK, giderler, giderTurleri: TURLER, standardModels: MODELLER, uretimPartileri: PARTILER,
+    giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: BUGUN });
   const yil = rapor("2026-01-01", "2026-12-31");
   return duz({
     raporYil: yil, raporMart: rapor("2026-03-01", "2026-03-31"),
     kovalar: giderler.map(k => kovaDagilimi(k, { davranis: davranisOf(k, turMap), stock: STOCK, customers: CUSTOMERS, canliModeller })),
-    maliyetGercek: gercek, maliyetStandart: standart,
+    maliyetGercek: gercek,
     karlilik: karlilikOzeti(gercek, { baslangic: "2026-01-01", bitis: "2026-12-31" }),
     fiyat: fiyatOnerisi(gercek, { model: "AK100", baslangic: "2026-01-01", bitis: "2026-12-31", yontem: "marj", deger: 20 }),
     kdv: kdvKarsilastir(50000, yil.indirilecekKdv),

@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:281`
+**Örnek:** `src/components/Giderler.jsx:282`
 **Örnek:** `src/components/Documents.jsx:1112`
 **Örnek:** `src/components/Customers.jsx:491` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:55` (sekme kipi)
@@ -173,7 +173,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:342`
+**Örnek:** `src/components/Giderler.jsx:343`
 **Örnek:** `src/components/Customers.jsx:525` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
@@ -195,7 +195,7 @@ bir durum (`uyari`), eksik kurulum ya da yönlendirme (`bilgi`).
 - Kısa süreli geri bildirim: bildirim (toast).
 - Onay isteyen durum: `ConfirmDialog`.
 
-**Örnek:** `src/components/Giderler.jsx:308`
+**Örnek:** `src/components/Giderler.jsx:309`
 **Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
@@ -283,7 +283,7 @@ ekranda kendiliğinden küçülür (`width: 100%`), içerik pencerenin içinde k
   Çek Ekle, Tedarikçi formu, Üretim Partisi formu, Ödeme Planı, Tedarikçi/Çalışan Ekstresi. Yeni bir veri girme ya da
   tablo penceresi de bu sınıfta açılır.
 - **Sınıf 2, kendi küçük boyutunda:** onay (`ConfirmDialog`), "silinemez" ve tek düğmeli bilgi pencereleri; Çek Durumu
-  ve Çek Geçmişi (alınan ve verilen); bir iki alanlık kısa pencereler (Standart Gider işlemi, Tahsilat Hesap penceresi,
+  ve Çek Geçmişi (alınan ve verilen); bir iki alanlık kısa pencereler (Tahsilat Hesap penceresi,
   varsayılan 520). Bunları genişletmek boş alan üretir.
 - **Kapsam dışı:** müşteri ve bayi **detay** modalları kendi genişliğini korur (bayi 760, 0007 R16; müşteri 1080).
 - Genişleyen pencerede formun sarmalayan alan satırları kendiliğinden yan yana dizilir; alan sırası ve etiketleri
@@ -314,7 +314,7 @@ sayfalanır; elle pager yazılmaz.
 - **Boş ve tek sayfa:** liste boşsa bugünkü boş durum, tek sayfaysa çubuğu `Pagination`'ın kendisi gizler; ekranda ek
   koşul yazılmaz. Aynı ekrandaki iki liste iki ayrı sayfa durumu tutar.
 - **Yazdırma ve dışa aktarma sayfalamayı görmez.**
-- **İstisna (spec 0080):** Giderler › Dönem Raporu'nun **Gider Kalemleri** listesi ve **Tedarikçiler** listesi sayfalanmaz;
+- **İstisna (spec 0080):** Giderler › Dönem Raporu'nun **Gider Kalemleri** listesi ve **Tedarikler ve Ekstre** listesi sayfalanmaz;
   süzgeçten geçen bütün satırlar tek seferde çizilir (faturalarla satır satır karşılaştırma, tarayıcı araması, alt toplamı
   tutturma). Yavaşlama görülürse sayfalama ayrı bir spec'le **yalnız Tarih Aralığı kipine** geri gelir; **Ay kipi hiçbir
   koşulda sayfalanmaz.** Bu iki listeye "kurala uydurmak" için sayfalama eklenmez.

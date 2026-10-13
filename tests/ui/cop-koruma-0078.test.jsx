@@ -6,7 +6,6 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";
 import { Kasa } from "../../src/components/Kasa";
-import { StandartGiderler } from "../../src/components/gider/StandartGiderler";
 import { GiderTurManager } from "../../src/components/settings/GiderTurManager";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
 import { cekleriUygula } from "../../src/lib/cek";
@@ -42,11 +41,8 @@ const portfoy = () => fireEvent.click(screen.getByRole("tab", { name: "Çek Port
 const cekSatiri = (no) => screen.getAllByTestId("cek-satiri").find(s => s.textContent.includes(no));
 
 describe("Spec 0078 AC-12, AC-21, AC-22, AC-23: çöp kutusu silme engellerini gevşetmez ve çöptekini göstermez", () => {
-  it("AC-12 (standart gider): grubun bütün sürümleri çöpteyse grup listede görünmez", () => {
-    const copte = { id: 5, grupId: 5, ad: "Eski Kira", tutar: 1, baslangicAy: "2026-01", bitisAy: null, deletedAt: Z };
-    render(<StandartGiderler standartGiderler={withoutDeleted([copte])} setStandartGiderler={vi.fn()} showToast={vi.fn()} canDo={() => true} />);
-    expect(screen.queryByText("Eski Kira")).toBeNull();
-  });
+  // Spec 0082 ile kaldırıldı: 0078 AC-12'nin standart gider vakası (ekran yok).
+
   it("AC-21: hareketi olan kasa hesabı (deneme dönemi kapalı) yine silinemez; yalnız çöpteki hareketi olan silinebilir", () => {
     const kasa = (h0) => render(<KasaH c0={[]} h0={h0} k0={[HESAP(97, "Ziraat")]} />);
     kasa([{ id: 1, tur: "odeme", tarih: "2026-09-02", tutar: 10, hesapId: 97, giderId: 1 }]);
@@ -109,22 +105,8 @@ describe("Spec 0078 AC-15: çöpteki kayıtlar ekran yazımında korunur", () =>
     expect(st.hesaplar.find(h => h.id === 96).deletedAt).toBeTruthy();
     expect(st.hesaplar.find(h => h.id === 97).deletedAt).toBeUndefined();
   });
-  it("standartGiderler (R9): yeni grup eklemek çöpteki sürümleri korur (copuKoru)", () => {
-    let st;
-    const copte = { id: 5, grupId: 5, ad: "Eski", tutar: 1, baslangicAy: "2026-01", bitisAy: null, deletedAt: Z };
-    function H() {
-      const [sg, setSg] = useState([copte]);
-      st = sg;
-      return <StandartGiderler standartGiderler={withoutDeleted(sg)} setStandartGiderler={setSg} showToast={vi.fn()} canDo={() => true} />;
-    }
-    render(<H />);
-    fireEvent.change(screen.getByPlaceholderText("Örn. Kira"), { target: { value: "Kira" } });
-    fireEvent.change(screen.getByLabelText("Aylık tutar"), { target: { value: "20.000" } });
-    fireEvent.change(screen.getByLabelText("Geçerlilik başlangıcı"), { target: { value: "2026-01" } });
-    fireEvent.click(screen.getByText("Ekle"));
-    expect(st).toHaveLength(2);
-    expect(st.find(s => s.id === 5)).toEqual(copte);
-  });
+  // Spec 0082 ile kaldırıldı: standart gider ekranının copuKoru vakası (ekran yok; kalan beş bölüm aşağıda).
+
   it("AC-12 (gider türü), AC-15 giderTurleri: tür ham gelir; listede çöpteki görünmez, başka türü silmek onu korur", () => {
     let st;
     const copte = { id: 3, ad: "Sigorta", davranis: "normal", deletedAt: Z };

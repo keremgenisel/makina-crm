@@ -18,7 +18,7 @@ const MAKINA = { atamaTur: "makina", makinaTur: "musteri", makinaId: 1 };
 // Makina maliyeti yardımcıları (tests/makina-maliyeti.test.js ile aynı biçim).
 const mus = (id, o = {}) => ({ id, name: `Firma ${id}`, model: "AK100", serialNo: `S${id}`, installDate: "2026-03-20", fabrikaSatisBedeli: 500000, currency: "TRY", uretimTarihi: "2026-03-05", ...o });
 const hesapla = (o) => hesaplaMakinaMaliyetleri({
-  customers: [], stock: [], partStockLog: [], giderler: [], giderTurleri: TUR, standartGiderler: [],
+  customers: [], stock: [], partStockLog: [], giderler: [], giderTurleri: TUR,
   standardModels: [{ model: "AK100" }, { model: "AK200" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" }, ...o,
 }, { bugun: "2026-09-24" });
 const kar = (s, id) => makinaKarlilik(s, `musteri:${id}`);

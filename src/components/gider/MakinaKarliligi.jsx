@@ -25,7 +25,6 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
   const [detayAnahtar, setDetayAnahtar] = useState(null);
   // Spec 0062 R5, R13: satırlar sayfalanır, dönem değişince 1. sayfa; "Dönem toplamı" bütün satırlardan (oz.toplam, R16).
   const { page, setPage, paged, perPage } = usePagination(oz.satirlar, 10, `${baslangic}|${bitis}`);
-  const standart = oz.kaynak === "standart";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }} data-testid="makina-karliligi">
@@ -97,20 +96,13 @@ export const MakinaKarliligi = ({ sonuc, baslangic, bitis, rates = null, bugun, 
         {oz.bilinmiyor.adet > 0 && ozetSatir("Üretim tarihi bilinmeyen", `${oz.bilinmiyor.adet} makina`, "Makina düzenleme formundan üretim tarihi girilebilir.", "ozet-bilinmiyor")}
         {ozetSatir("Dağıtılmamış ortak gider", oz.dagitilmamis ? tl2(oz.dagitilmamis.tutar) : "Hesaplanamadı",
           oz.dagitilmamis ? "Hiç makina üretilmeyen ayların ortak gideri; sonraki aylara devredilmez." : "Bu satır ay bazlıdır. Seçili aralık bir ayı ortadan kesiyor; tam ayları kapsayan bir aralık seçin.", "ozet-dagitilmamis")}
-        {standart && ozetSatir("Gerçekleşen ortak gider − standart toplam", oz.standartFark ? tl2(oz.standartFark.fark) : "Hesaplanamadı",
-          oz.standartFark ? `Gerçekleşen ${tl2(oz.standartFark.gercek)}, standart ${tl2(oz.standartFark.standart)}.` : "Bu satır ay bazlıdır. Seçili aralık bir ayı ortadan kesiyor; tam ayları kapsayan bir aralık seçin.", "ozet-standart-fark")}
-        {standart && oz.standartEksik.length > 0 && (
-          <div data-testid="ozet-standart-eksik" style={{ fontSize: 12.5, color: "var(--n600, #475569)", padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
-            Sürümü olmayan standart kalemler sıfır sayıldı: {oz.standartEksik.map(x => `${x.ay}: ${x.adlar.join(", ")}`).join(" · ")}
-          </div>
-        )}
         {oz.modeller.length > 0 && (
           <div data-testid="ozet-modeller" style={{ marginTop: 6 }}>
             {oz.modeller.map(m => <div key={m.model}>{ozetSatir(`${m.model}: henüz makinalara yüklenmemiş malzeme gideri`, tl2(m.yuklenmemis),
               m.payAlamamis > 0 ? `Malzeme payı alamamış makina sayısı: ${m.payAlamamis}` : null, `model-${m.model}`)}</div>)}
           </div>
         )}
-        <MaliyetNotlari kaynak={oz.kaynak} yaklasik={oz.yaklasikVar} dagitimVar={oz.dagitimVar} kisitliVar={!!oz.kisitliVar} />
+        <MaliyetNotlari yaklasik={oz.yaklasikVar} dagitimVar={oz.dagitimVar} kisitliVar={!!oz.kisitliVar} />
       </KartBolum>
 
       <FiyatOnerisi sonuc={sonuc} bugun={bugun} modeller={modeller} />

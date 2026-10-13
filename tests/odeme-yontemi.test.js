@@ -142,7 +142,7 @@ describe("Spec 0041: kapsam (C3, C4)", () => {
   });
   it("AC-14: makina maliyeti ödeme yönteminden etkilenmez (aynı ödemeler farklı yöntemle aynı sonuç)", () => {
     const hesap = (hareketler) => hesaplaMakinaMaliyetleri({ customers: [{ id: 1, name: "F", model: "AK100", serialNo: "S", installDate: "2026-09-20", uretimTarihi: "2026-09-05", fabrikaSatisBedeli: 1, currency: "TRY" }],
-      stock: [], partStockLog: [], giderler: odemeleriUygula([KALEM], hareketler, turMap), giderTurleri: TUR, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-28" }).makinalar.get("musteri:1");
+      stock: [], partStockLog: [], giderler: odemeleriUygula([KALEM], hareketler, turMap), giderTurleri: TUR, standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-28" }).makinalar.get("musteri:1");
     const a = hesap(iki()), b = hesap(iki().map(h => ({ ...h, yontem: "Havale" })));
     expect(b.uretimMaliyeti).toBe(a.uretimMaliyeti);
     expect(b.ortakPay).toBe(a.ortakPay);

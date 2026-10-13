@@ -18,7 +18,7 @@ beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new 
 const TUR = [{ id: 4, ad: "Elektrik", davranis: "normal" }];
 const AYAR = { giderAyarlari: { yururlukAy: "2026-01" } };
 const maliyet = ({ stock = [], customers = [], giderler = [], uretimPartileri = [] }) => hesaplaMakinaMaliyetleri({ customers, stock, partStockLog: [], giderler, giderTurleri: TUR,
-  standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: AYAR.giderAyarlari, uretimPartileri }, { bugun: "2026-09-23" });
+  standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: AYAR.giderAyarlari, uretimPartileri }, { bugun: "2026-09-23" });
 const gid = (id, tarih, tutar) => ({ id, tarih, turId: 4, tutar, kdvOrani: 0, odendi: false });
 const stk = (id, o = {}) => ({ id, model: "AK100", serialNo: `T${id}`, addedDate: "2026-03-10", ...o });
 
@@ -26,7 +26,7 @@ function GiderHarness({ p0 = [], stock = [], customers = [], giderler = [], perm
   const [uretimPartileri, setUretimPartileri] = useState(p0);
   onState?.({ uretimPartileri });
   return <Giderler giderler={giderler} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TUR} tedarikciler={[]} setTedarikciler={vi.fn()}
-    standartGiderler={[]} setStandartGiderler={vi.fn()} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} calisanlar={[]} stock={stock} customers={customers}
+    uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} calisanlar={[]} stock={stock} customers={customers}
     standardModels={[{ model: "AK100" }]} customModels={[]} appSettings={AYAR} serverPermissions={perms} showToast={vi.fn()}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }}
     makinaMaliyet={maliyet({ stock, customers, giderler, uretimPartileri })} />;

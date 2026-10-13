@@ -98,7 +98,7 @@ describe("Dönem raporu: personel ayrıntısı (R7, R8)", () => {
   function Harness({ g0 }) {
     const [giderler, setGiderler] = useState(g0);
     return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TURLER} tedarikciler={[]} setTedarikciler={vi.fn()}
-      standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-06" } }}
+      calisanlar={CAL} standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-06" } }}
       serverPermissions={null} showToast={vi.fn()} satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} />;
   }
   const KALEM = { id: 1, tarih: "2026-09-01", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, odendi: false,

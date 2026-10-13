@@ -14,7 +14,7 @@ const BLOB_SECTIONS = [
   "customModels", "factory", "appSettings", "teklifler", "faturalar", "uretimFormlari",
   "partTypeDefs", "calisanlar", "yedekParcaSatislar",
   // Gider kaydı (spec 0001)
-  "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler",
+  "giderler", "giderTanimlari", "giderTurleri", "tedarikciler",
   // Üretim partisi (spec 0022)
   "uretimPartileri",
   // Kasa ve ödeme hareketleri (spec 0024 A)
@@ -59,7 +59,6 @@ const SECTION_GROUP = {
   giderTanimlari: "giderActions",
   giderTurleri: "giderActions",
   tedarikciler: "giderActions",
-  standartGiderler: "giderActions",
   uretimPartileri: "giderActions",
   // Spec 0024 C6/Q7: hesaplar ve hareketler gider izin boyutunda; kendi eylem kimlikleri (kasa_hesap, gider_odeme, virman).
   kasaHesaplari: "giderActions",
@@ -74,7 +73,7 @@ const IZIN_GRUPLARI = ["customerActions", "dealerActions", "evrakActions", "stoc
 // Gider bölümleri (spec 0001 C6 kural 3 + plan K6): bu uygulamanın "tabs tanımsız = serbest" kuralının
 // TEK istisnası. Sekme listesi tanımsız (veya izin gövdesi hiç olmayan) user rolü gider bölümlerini
 // YAZAMAZ; arayüzde de gider sekmesi yalnız açıkça verildiğinde görünür.
-const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri", "kasaKapsamDisi"]);
+const GIDER_BOLUMLERI = new Set(["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri", "kasaKapsamDisi"]);
 
 // ── Sekme (tabs) düzeyi yazma kısıtı ────────────────────────────────────────────
 // REGRESYON: arayüzün "Kullanıcı Ekle" formu izin gövdesine YALNIZ {tabs:[...]} yazıyordu.
@@ -129,13 +128,12 @@ const BOLUM_SEKMELERI = {
   appSettings:    ["settings", "stock"],
   // Gider kaydı (plan K23). giderler: Ayarlar'dan da yazılır (model yeniden adlandırma zinciri, yedek geri
   // yükleme). giderTanimlari: Gider sekmesindeki üretim uretilenAylar yazar + Ayarlar'daki tanım ekranı ve
-  // çalışan silmede tanım kapatma. tedarikciler/standartGiderler yalnız Giderler sekmesinde yönetilir
+  // çalışan silmede tanım kapatma. tedarikciler yalnız Giderler sekmesinde yönetilir
   // (R13, R22): settings izni tek başına gider verisine yazma yolu açmasın.
   giderler:         ["gider", "settings"],
   giderTanimlari:   ["gider", "settings"],
   giderTurleri:     ["settings"],
   tedarikciler:     ["gider"],
-  standartGiderler: ["gider"],
   // Spec 0052 R7: hesap tanımları Kasa sekmesine bağlı (önkoşul ON_KOSUL_SEKMELERI'nde). R8: ödeme hareketleri
   // Giderler'de kalır, çünkü gider formundan ve ödeme penceresinden de yazılır (Kasa'sız gider kullanıcısı öder).
   kasaHesaplari:    ["kasa"],
@@ -541,7 +539,6 @@ const EYLEM_IDLERI = {
   giderler:         { ekle: "gider_add", sil: "gider_delete" },
   giderTanimlari:   { ekle: "gider_tanim", sil: "gider_tanim" },
   giderTurleri:     { ekle: "gider_tanim", sil: "gider_tanim" },
-  standartGiderler: { ekle: "gider_tanim", sil: "gider_tanim" },
   uretimPartileri:  { ekle: "gider_tanim", sil: "gider_tanim" },
   tedarikciler:     { ekle: "tedarikci_add", sil: "tedarikci_delete" },
   // Spec 0024 C6/Q7: ödemenin izni hareket bölümünün ekleme ve silmesindedir (kalemin odendi alanında değil).

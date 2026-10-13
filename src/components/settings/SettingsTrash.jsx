@@ -13,7 +13,7 @@ import { ciroluTahsilatIdleri, bagliHareketiOlanCekler, BAGLI_HAREKETLI_CEK_NEDE
 import { turHaritasi } from "../../lib/gider";
 import { copHareketGeriAlmaNedeni } from "../../lib/kasa";
 import { makeCanDo } from "../../lib/permissions";
-import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi, standartCopGruplari, standartGeriAlmaCakismasi } from "../../lib/copKutusu";
+import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -31,10 +31,10 @@ export const SettingsTrash = ({
   // Spec 0068 R8, R9, R11, R21: tedarikçi ve üretim partisi de çöp kutusuna gider. Satırlar gider satırlarıyla aynı kapıda
   // (gider yetkisi); geri alma ve kalıcı silme silme izniyle (tedarikçide tedarikci_delete, partide gider_tanim).
   rawTedarikciler = [], setTedarikciler = null, rawUretimPartileri = [], setUretimPartileri = null, serverPermissions = null,
-  // Spec 0078 R1, R23: altı kasa/gider bölümü. Hareket, tanım, tür ve standart gider gider yetkisiyle; kasa hesabı ve çek kasa
+  // Spec 0078 R1, R23 (0082 R8 ile beş): kasa/gider bölümleri. Hareket, tanım ve tür gider yetkisiyle; kasa hesabı ve çek kasa
   // yetkisiyle görünür ve boşaltılır. rawHesapHareketleri null ise (bölümü göndermeyen sunucu) hareket satırı yoktur.
   rawHesapHareketleri = null, setHesapHareketleri = null, rawGiderTanimlari = [], setGiderTanimlari = null, setGiderTurleri = null,
-  rawStandartGiderler = [], setStandartGiderler = null, rawKasaHesaplari = [], setKasaHesaplari = null, kasaVeriYetki = false,
+  rawKasaHesaplari = [], setKasaHesaplari = null, kasaVeriYetki = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   appSettings, showToast,
 }) => {
@@ -250,13 +250,6 @@ export const SettingsTrash = ({
     geriAl(setGiderTurleri, t.id); showToast("Gider türü geri alındı.");
   };
   const purgeTur = (t) => { kaldir(setGiderTurleri, t.id); showToast("Gider türü kalıcı olarak silindi."); };
-  const ayniStandart = (g) => (x) => String(x.grupId ?? x.id) === String(g.grupId) && x.deletedAt === g.deletedAt;
-  const restoreStandart = (g) => {
-    const h = standartGeriAlmaCakismasi(g, rawStandartGiderler);
-    if (h) { showToast(h, "err"); return; }
-    setStandartGiderler?.(p => p.map(x => (ayniStandart(g)(x) ? { ...x, deletedAt: undefined } : x))); showToast("Standart gider geri alındı.");
-  };
-  const purgeStandart = (g) => { setStandartGiderler?.(p => p.filter(x => !ayniStandart(g)(x))); showToast("Standart gider kalıcı olarak silindi."); };
   const restoreKasaHesap = (h) => {
     const c = geriAlmaAdCakismasi(h, rawKasaHesaplari, "kasa hesabı");
     if (c) { showToast(c, "err"); return; }
@@ -305,7 +298,6 @@ export const SettingsTrash = ({
     if (cekYetki && cekler.some(x => x.deletedAt && !korunanCekler.has(String(x.id)))) setCekler(p => p.filter(x => !x.deletedAt || korunanCekler.has(String(x.id))));
     if (tanimYetki && rawGiderTanimlari.some(x => x.deletedAt)) setGiderTanimlari?.(p => p.filter(x => !x.deletedAt));
     if (tanimYetki && giderTurleri.some(x => x.deletedAt)) setGiderTurleri?.(p => p.filter(x => !x.deletedAt));
-    if (tanimYetki && rawStandartGiderler.some(x => x.deletedAt)) setStandartGiderler?.(p => p.filter(x => !x.deletedAt));
     if (kasaHesapYetki && rawKasaHesaplari.some(x => x.deletedAt)) setKasaHesaplari(p => p.filter(x => !x.deletedAt));
     showToast(korunanMusteriIdler.size || rawPayments.some(korunanOdeme)
       ? `Çöp kutusu boşaltıldı; ciro edilmiş çeke bağlı ${rawPayments.filter(korunanOdeme).length} tahsilat (ve müşterisi) çöpte bırakıldı. Önce ciroyu iptal edin.`
@@ -356,7 +348,7 @@ export const SettingsTrash = ({
         restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki ? () => purgeTedarikci(t) : null }));
       rawUretimPartileri.filter(u => u.deletedAt).forEach(u => items.push({ key: `parti-${u.id}`, type: "Üretim Partisi", label: `${u.ad || "—"} · ${u.baslangicAy || ""}${u.bitisAy ? " – " + u.bitisAy : " (açık)"}`, deletedAt: u.deletedAt,
         restore: partiYetki ? () => restoreParti(u) : null, purge: partiYetki ? () => purgeParti(u) : null }));
-      // Spec 0078 R23, R24: hareket, tekrarlayan tanım, gider türü ve standart gider (gider yetkisi). Çeke bağlı hareket
+      // Spec 0078 R23, R24: hareket, tekrarlayan tanım ve gider türü (gider yetkisi). Çeke bağlı hareket
       // çöp kutusuna girmez (R34). Etiketler sabit eşlemeden; kalem, tedarikçi ve çalışan adı yazılmaz.
       hareketler.filter(h => h.deletedAt).forEach(h => {
         const izin = hareketIzinli(h);
@@ -368,8 +360,6 @@ export const SettingsTrash = ({
         restore: tanimYetki ? () => restoreTanim(t) : null, purge: tanimYetki ? () => purgeTanim(t) : null }));
       giderTurleri.filter(t => t.deletedAt).forEach(t => items.push({ key: `tur-${t.id}`, type: "Gider Türü", label: t.ad || "—", deletedAt: t.deletedAt,
         restore: tanimYetki ? () => restoreTur(t) : null, purge: tanimYetki ? () => purgeTur(t) : null }));
-      standartCopGruplari(rawStandartGiderler).forEach(g => items.push({ key: `standart-${g.grupId}-${g.deletedAt}`, type: "Standart Gider", label: g.ad, deletedAt: g.deletedAt,
-        restore: tanimYetki ? () => restoreStandart(g) : null, purge: tanimYetki ? () => purgeStandart(g) : null }));
     }
     // Spec 0078 R23: kasa hesabı ve çek kasa yetkisiyle görünür.
     if (kasaVeriYetki && giderYetki) {
@@ -380,7 +370,7 @@ export const SettingsTrash = ({
         neden: korunanCekler.has(String(c.id)) ? BAGLI_HAREKETLI_CEK_NEDENI : null }));
     }
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawHesapHareketleri, rawGiderTanimlari, rawStandartGiderler, rawKasaHesaplari, cekler, kasaVeriYetki, setHesapHareketleri, setKasaHesaplari, setCekler, rawGiderler, giderTurleri, giderYetki, rawTedarikciler, rawUretimPartileri, tedarikciYetki, partiYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
+  }, [rawHesapHareketleri, rawGiderTanimlari, rawKasaHesaplari, cekler, kasaVeriYetki, setHesapHareketleri, setKasaHesaplari, setCekler, rawGiderler, giderTurleri, giderYetki, rawTedarikciler, rawUretimPartileri, tedarikciYetki, partiYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

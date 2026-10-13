@@ -22,7 +22,7 @@ createRoot(document.getElementById("root")).render(
         setFaturalar={bos} rawFaturalar={[]} rawUretimFormlari={[]} setUretimFormlari={bos} rawGorusmeler={[]} setGorusmeler={bos} rawDosyalar={[]} setDosyalar={bos}
         yedekParcaSatislar={[]} setYedekParcaSatislar={bos} rawYedekParcaSatislar={[]} serverPermissions={null} giderYetki giderVeriYetki
         giderler={[]} setGiderler={bos} rawGiderler={[]} giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} setGiderTurleri={bos}
-        tedarikciler={TANIM_TEDARIKCI} setTedarikciler={bos} standartGiderler={[]} setStandartGiderler={bos} appUpd={{}} onCheckUpdate={bos} onStartUpdate={bos} />
+        tedarikciler={TANIM_TEDARIKCI} setTedarikciler={bos} appUpd={{}} onCheckUpdate={bos} onStartUpdate={bos} />
     </div>
   </div>
 );

@@ -23,11 +23,10 @@ function Harness({ g0 = [], perms = TAM, onState }) {
   const [hesapHareketleri, setHesapHareketleri] = useState(() => tohumHareketleri(g0));
   const [giderTanimlari, setGiderTanimlari] = useState([]);
   const [tedarikciler, setTedarikciler] = useState(TED);
-  const [standartGiderler, setStandartGiderler] = useState([]);
   onState?.({ giderler, hesapHareketleri });
   // Spec 0078 R6 ile güncellendi: App ekranlara canlı hareket dizisini verir (çöpteki ödeme durum hesabına girmez).
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri.filter(h => !h.deletedAt)} setHesapHareketleri={setHesapHareketleri} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
-    giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler}
+    giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
     calisanlar={[]} standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20 } }} serverPermissions={perms}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
 }

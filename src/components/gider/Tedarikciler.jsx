@@ -59,7 +59,8 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
   return (
     <div style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, overflow: "hidden" }} data-testid="tedarikciler">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderBottom: "1px solid var(--n200, #e2e8f0)", gap: 10, flexWrap: "wrap" }}>
-        <b>Tedarikçiler <span style={{ color: "var(--n500, #64748b)", fontWeight: 500, fontSize: 13 }}>· {sirali.length}</span></b>
+        {/* Spec 0082 R12, R13: görünümün adı; kayıt türünün adı "Tedarikçi" kalır (R14). */}
+        <b>Tedarikler ve Ekstre <span style={{ color: "var(--n500, #64748b)", fontWeight: 500, fontSize: 13 }}>· {sirali.length}</span></b>
         {canDo("tedarikci_add") && <Btn onClick={() => ac(null)}><Icon name="plus" size={14} /> Yeni Tedarikçi</Btn>}
       </div>
       {sirali.length === 0 ? (

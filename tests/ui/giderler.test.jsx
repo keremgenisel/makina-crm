@@ -16,16 +16,15 @@ const TURLER = [
 const TED = [{ id: 11, ad: "Yıldız Gayrimenkul" }, { id: 12, ad: "Bölge Elektrik" }];
 const CAL = [{ id: 21, ad: "Hasan Çelik", resmiMaliyet: 30000, eldenMaliyet: 20000 }, { id: 22, ad: "Zeynep Arslan" }];
 
-function Harness({ g0 = [], t0 = [], s0 = [], ayar = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20 } }, perms = null, onState }) {
+function Harness({ g0 = [], t0 = [], ayar = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20 } }, perms = null, onState }) {
   const [giderler, setGiderler] = useState(g0);
   const [giderTanimlari, setGiderTanimlari] = useState(t0);
   const [tedarikciler, setTedarikciler] = useState(TED);
-  const [standartGiderler, setStandartGiderler] = useState(s0);
   // Spec 0024: ödeme bir hareket kaydıdır; App gibi hareket dizisi verilir.
   const [hesapHareketleri, setHesapHareketleri] = useState([]);
-  onState?.({ giderler, giderTanimlari, tedarikciler, standartGiderler, hesapHareketleri });
+  onState?.({ giderler, giderTanimlari, tedarikciler, hesapHareketleri });
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
-    giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler}
+    giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
     calisanlar={CAL} standardModels={[{ model: "AK120_DSC" }]} customModels={[]} appSettings={ayar} serverPermissions={perms}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
 }

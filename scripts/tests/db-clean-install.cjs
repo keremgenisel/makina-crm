@@ -64,6 +64,7 @@ try {
         taksitler: [{ id: 7011, hedef: "ana", sira: 1, vade: "2026-07-31", tutar: 1000, odendi: false, odemeTarihi: null }, { id: 7012, hedef: "elden", sira: 1, vade: "2026-07-31", tutar: 800, odendi: false, odemeTarihi: null },
           { id: 7013, hedef: "ekResmi", sira: 1, vade: "2026-07-31", tutar: 200, odendi: false, odemeTarihi: null }, { id: 7014, hedef: "ekElden", sira: 1, vade: "2026-07-31", tutar: 100, odendi: false, odemeTarihi: null },
           { id: 7015, hedef: "sgk", sira: 1, vade: "2026-08-15", tutar: 300, odendi: false, odemeTarihi: null }] }],
+    // Spec 0082: eski istemci gövdesini taklit eder; bölüm yazılmaz, okunmaz (AC-19).
     standartGiderler: [{ id: 34, grupId: 34, ad: "Kira", tutar: 20000, baslangicAy: "2026-07" }],
     uretimPartileri: [{ id: 35, ad: "P1", baslangicAy: "2026-07", bitisAy: null }, { id: 40, ad: "P0", baslangicAy: "2026-06", bitisAy: null, deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b
     // Spec 0058: temiz kurulumda kasa_kapsam_disi tablosu.
@@ -99,20 +100,22 @@ check("temiz kurulumda spec 0006 sütunları oluştu (teklif alıcı/üretim, ye
   return ok;
 })());
 check("temiz kurulumda uretim_partileri tablosu ve stock.partiId sütunu oluştu (spec 0022)", (blob.uretimPartileri || []).length === 2 && (blob.stock || []).find(x => x.id === 3)?.partiId === 35);
-// Spec 0078 AC-50: temiz kurulumda beş tabloda deletedAt sütunu var (TABLES_WITH_TRASH yirmi üç); altı bölüm çöpe girebilir.
+// Spec 0078 AC-50: temiz kurulumda deletedAt sütunu (TABLES_WITH_TRASH 0082 ile yirmi iki); beş bölüm çöpe girebilir.
 {
   const Z = "2026-10-07T09:00:00.000Z";
   const yaz = structuredClone(blob);
   if (!(yaz.kasaHesaplari || []).length) yaz.kasaHesaplari = [{ id: 77, ad: "Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 0, acilisTarihi: "2026-07-01", kapali: false }];
-  for (const k of ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "standartGiderler", "kasaHesaplari"]) {
+  for (const k of ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "kasaHesaplari"]) {
     if (Array.isArray(yaz[k]) && yaz[k].length) yaz[k] = yaz[k].map(x => ({ ...x, deletedAt: Z }));
   }
   let patladi = false;
   try { dbmod.writeBlobToDb(yaz); } catch (e) { patladi = true; console.error("spec 0078 temiz kurulum yazma:", e.message); }
   const r = dbmod.readBlobFromDb();
-  check("spec 0078 AC-50: temiz kurulumda altı bölüm deletedAt yazılır ve okunur", !patladi
-    && ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "standartGiderler", "kasaHesaplari"].every(k => (r[k] || []).length > 0 && (r[k] || []).every(x => x.deletedAt === Z)));
+  check("spec 0078 AC-50: temiz kurulumda beş bölüm deletedAt yazılır ve okunur", !patladi
+    && ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "kasaHesaplari"].every(k => (r[k] || []).length > 0 && (r[k] || []).every(x => x.deletedAt === Z)));
 }
+check("spec 0082 AC-19: temiz kurulumda okunan veride standart gider bölümü anahtarı yok; tablo duruyor (ölü tablo, X1)", !("standartGiderler" in blob)
+  && (() => { try { return Array.isArray(new (require(path.join(root, "node_modules", "better-sqlite3")))(dbmod.getDbPath(), { readonly: true }).prepare("SELECT * FROM standart_giderler").all()); } catch { return false; } })());
 check("spec 0068 AC-20: temiz kurulumda tedarikciler ve uretim_partileri deletedAt sütunu oluştu", (blob.tedarikciler || []).find(x => x.id === 39)?.deletedAt === "2026-10-01T09:00:00.000Z" && (blob.uretimPartileri || []).find(x => x.id === 40)?.deletedAt === "2026-10-01T09:00:00.000Z");
 check("temiz kurulumda üç bölümün hesapId sütunu oluştu (spec 0044)", (blob.partSales || [])[0]?.hesapId === 5);
 check("temiz kurulumda cekler tablosunun 0049 sütunları oluştu (AC-25)", (blob.cekler || []).find(c => c.id === 38)?.hesapId === 5 && (blob.cekler || []).find(c => c.id === 38)?.tutar === 100);
@@ -151,7 +154,7 @@ check("temiz kurulumda gider ek ödeme tablosu oluştu (spec 0023)", ((blob.gide
 check("spec 0054 AC-21: temiz kurulumda ek ödeme hedef satırları (ekResmi, ekElden) yazıldı", ((blob.giderler || []).find(x => x.id === 37)?.taksitler || []).map(x => x.hedef).join() === "ana,elden,ekResmi,ekElden,sgk"); // spec 0070: aynı fikstürde SGK satırı da var
 check("spec 0058 AC-14: temiz kurulumda kasa_kapsam_disi tablosu oluştu ve giriş yazıldı", (blob.kasaKapsamDisi || []).map(x => `${x.id}:${x.tur}:${x.kayitId}`).join() === "39:hareket:38");
 check("temiz kurulumda gider ödeme satırı tablosu oluştu ve kimlikler yazıldı (spec 0021)", ((blob.giderler || []).find(x => x.id === 33)?.taksitler || []).map(x => x.id).join() === "7001,7002");
-check("temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari oluştu", (() => { const g = (blob.giderler || []).find(x => x.id === 33); return g?.tedarikciId === 31 && g?.modelSatirlari?.[0]?.adet === 5 && (blob.tedarikciler || []).length === 2 && (blob.giderTanimlari || []).length === 1 && (blob.giderTurleri || []).length === 2 && (blob.standartGiderler || []).length === 1 && blob.appSettings?.giderAyarlari?.yururlukAy === "2026-07"; })());
+check("temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari oluştu", (() => { const g = (blob.giderler || []).find(x => x.id === 33); return g?.tedarikciId === 31 && g?.modelSatirlari?.[0]?.adet === 5 && (blob.tedarikciler || []).length === 2 && (blob.giderTanimlari || []).length === 1 && (blob.giderTurleri || []).length === 2 && !("standartGiderler" in blob) /* spec 0082 */ && blob.appSettings?.giderAyarlari?.yururlukAy === "2026-07"; })());
 check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && a?.satirlar?.[0]?.oran === 7.47; })());
 
 // users.permissions (ensureColumns ile gelir) — kullanıcı yazma/okuma çökmemeli

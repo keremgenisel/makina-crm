@@ -94,7 +94,7 @@ describe("Spec 0023: üretim, rapor ve maliyet (R4–R7)", () => {
   });
   it("AC-8: geçmiş aya ek ödeme girilince o ay üretilen makinanın maliyeti artar", () => {
     const hesap = (giderler) => hesaplaMakinaMaliyetleri({ customers: [{ id: 1, name: "F", model: "AK100", serialNo: "S1", installDate: "2026-09-20", uretimTarihi: "2026-09-05", fabrikaSatisBedeli: 1, currency: "TRY" }],
-      stock: [], partStockLog: [], giderler, giderTurleri: TUR, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-28" });
+      stock: [], partStockLog: [], giderler, giderTurleri: TUR, standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-28" });
     const k = { id: 4, ...kayit(per()) };
     const a = hesap([k]).makinalar.get("musteri:1").ortakPay;
     const b = hesap([{ ...k, ekOdemeler: [{ tur: "prim", resmiTutar: 4000 }] }]).makinalar.get("musteri:1").ortakPay;

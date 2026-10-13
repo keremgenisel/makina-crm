@@ -22,7 +22,7 @@ const veri = () => ({
     { id: 52, ad: "Merkez Kasa", tur: "kasa", paraBirimi: "TRY", acilisBakiyesi: 1000, acilisTarihi: `${buAy}-01`, kapali: false }],
   hesapHareketleri: [{ id: 801, tur: "virman", tarih: `${buAy}-02`, tutar: 500, hesapId: 52, karsiHesapId: 51, aciklama: "" },
     { id: 802, tur: "avans", tarih: `${buAy}-02`, tutar: 300, calisanId: 7, hesapId: 52, yontem: "Nakit", aciklama: "" }],
-  cekler: [], giderTanimlari: [], standartGiderler: [],
+  cekler: [], giderTanimlari: [],
   appSettings: { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7, denemeDonemiBitis: "" } },
   dataVersion: 1,
 });

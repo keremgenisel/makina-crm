@@ -8,8 +8,9 @@ import path from "node:path";
 const root = path.join(__dirname, "..");
 const oku = (p) => readFileSync(path.join(root, p), "utf-8");
 // Spec 0023: çalışan ek ödemeleri (alan, tablo ve tür kodu) de listede; listeye eklenmeyen ad testi yeşil bırakıp sızabilirdi.
-// Spec 0070 R32, C7 (AC-45): SGK ve yol parasının kalem ve çalışan kartı alan adları da listede.
-const YASAKLI = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|giderler|giderTanimlari|standartGiderler|tedarikciler|ekOdemeler|gider_ek_odemeleri|EK_ODEME_TUR|fazlaCalisma|sgkTutar|yolParasi|sgkMaliyet|yolParasiMaliyet/;
+// Spec 0070 R32, C7 (AC-45): SGK ve yol parasının kalem ve çalışan kartı alan adları da listede. Spec 0082: standart gider bölümü
+// kalktığı için adı listeden çıktı (kaynakta hiç geçmez, spec 0082 AC-31).
+const YASAKLI = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|giderler|giderTanimlari|tedarikciler|ekOdemeler|gider_ek_odemeleri|EK_ODEME_TUR|fazlaCalisma|sgkTutar|yolParasi|sgkMaliyet|yolParasiMaliyet/;
 
 // Spec 0060 R28: Aylık Gider ve Kasa Raporu'nun tür bazında ek ödeme kutusu (yorum işaretleriyle sınırlı) ve onun dışı.
 const EK_KUTU = /<!--ek-odeme-->[\s\S]*?<!--\/ek-odeme-->/;

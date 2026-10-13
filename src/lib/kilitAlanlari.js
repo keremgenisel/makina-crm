@@ -31,8 +31,6 @@ export const KILIT_ALANLARI = {
   kasa_hesap: { etiket: "Kasa hesabı", pencereler: ["src/components/Kasa.jsx", "src/components/kasa/HesapSilPenceresi.jsx"] },
   tedarikci: { etiket: "Tedarikçi", pencereler: ["src/components/gider/Tedarikciler.jsx"] },
   uretim_partisi: { etiket: "Üretim partisi", pencereler: ["src/components/gider/UretimPartileri.jsx"] },
-  // Plan notu (R33): standart genel gider grubunun tutar / ad / sona erdirme penceresi (spec'te sayılmamıştı).
-  standart_gider: { etiket: "Standart genel gider", pencereler: ["src/components/gider/StandartGiderler.jsx"] },
   // R5, R20, R30: avans ver, avanstan mahsup, ekstreden avans silme, Ayarlar'da çalışan satırı.
   calisan: { etiket: "Çalışan", pencereler: ["src/components/kasa/CalisanAvanslari.jsx", "src/components/gider/OdemeGirisi.jsx", "src/components/CalisanManager.jsx", "src/components/Kasa.jsx"] },
   // R7, R9, R11–R13, R27: veri yazan Ayarlar panelleri (kimlik = Ayarlar kalem kimliği).
@@ -95,6 +93,6 @@ export const AYAR_PANEL_DOSYALARI = [
 export const kilitAlaniEtiketi = (alan) => KILIT_ALANLARI[alan]?.etiket || "Kayıt";
 // Ekranda gösterilen kilit adı: alanın etiketi + kayıt kimliği; Ayarlar panelinde panelin adı (ham kimlik yazılmaz).
 export const kilitEtiketi = (alan, id) => (alan === "ayar" && AYAR_KILITLI[id] ? `${kilitAlaniEtiketi(alan)} · ${AYAR_KILITLI[id]}` : `${kilitAlaniEtiketi(alan)} · ${id}`);
-// R14: anlık işlemin reddinde gösterilen TEK metin (Kasa, çalışan avansları, standart gider, çek portföyü). `ad` verilirse
-// kimlik yerine o yazılır (ör. standart gider grubunun adı).
+// R14: anlık işlemin reddinde gösterilen TEK metin (Kasa, çalışan avansları, çek portföyü). `ad` verilirse kimlik yerine
+// o yazılır.
 export const kilitRedMesaji = (k, ad) => `${kilitEtiketi(k.entity_type, ad ?? k.entity_id)} şu an "${k.locked_by}" tarafından düzenleniyor; işlem yapılmadı.`;

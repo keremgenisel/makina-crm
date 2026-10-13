@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
   kdvAyir, kdvYonuOf, KDV_YONU, giderKalemDogrula, tekrarlayanUret, turHaritasi, kalemTutari, kalemKdv, kalemStopaj, odenecekTutar,
-  kiraHesapla, odemeleriUygula, borcOzeti, hesaplaGiderRaporu, standartYeni, standartTutarDegistir, kurus, DAVRANIS, odemeDurumu,
+  kiraHesapla, odemeleriUygula, borcOzeti, hesaplaGiderRaporu, kurus, DAVRANIS, odemeDurumu,
 } from "../src/lib/gider";
 import { odemeHatirlatmalari } from "../src/lib/odemeHatirlatma";
 import { acikKalemler } from "../src/lib/acikKalemler";
@@ -159,11 +159,8 @@ describe("spec 0071 B: sıfır yalnız tanımdan üretilen normal kalemde (R9, R
     const r = dogrula({ id: 73, tarih: "2026-09-30", turId: 3, calisanId: 7, resmiTutar: "0", eldenTutar: "", ekOdemeler: [], tanimId: 98, donem: "2026-09" });
     expect(r.hatalar).toContainEqual({ alan: "resmiTutar", mesaj: "Tutar sıfırdan büyük olmalı." });
   });
-  it("AC-19: standart genel giderde sıfır iki noktada da reddedilir", () => {
-    expect(standartYeni([], { ad: "Kira", tutar: "0", baslangicAy: "2026-09" }, uid).hata).toBe("Tutar sıfırdan büyük olmalı.");
-    const l = standartYeni([], { ad: "Kira", tutar: "100", baslangicAy: "2026-09" }, uid).liste;
-    expect(standartTutarDegistir(l, l[0].grupId, { tutar: "0", baslangicAy: "2026-10" }, uid).hata).toBe("Tutar sıfırdan büyük olmalı.");
-  });
+  // Spec 0082 ile kaldırıldı: 0071 AC-19 (standart gider; bölüm yok).
+
   it("AC-32: sıfır kalem mükerrer üretim uyarısına ve uretilenAylar kaydına normal kalem gibi girer", () => {
     const u1 = uret();
     expect(u1.guncelTanimlar[0].uretilenAylar).toEqual(["2026-09"]);

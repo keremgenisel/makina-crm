@@ -102,7 +102,7 @@ describe("Spec 0021: taksit gider kavramını değiştirmez (R5, C2, C3)", () =>
   it("AC-11: makina maliyeti ve kârlılık planlı ve plansız aynı", () => {
     const m = (k) => {
       const s = hesaplaMakinaMaliyetleri({ customers: [{ id: 1, name: "F", model: "AK100", serialNo: "S", installDate: "2026-10-20", fabrikaSatisBedeli: 500000, currency: "TRY", uretimTarihi: "2026-10-05" }],
-        stock: [], partStockLog: [], giderler: [k], giderTurleri: turler, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: BUGUN });
+        stock: [], partStockLog: [], giderler: [k], giderTurleri: turler, standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: BUGUN });
       return makinaKarlilik(s, "musteri:1");
     };
     expect(m(planli)).toEqual(m(sade));

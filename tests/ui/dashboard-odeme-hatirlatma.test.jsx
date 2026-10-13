@@ -150,7 +150,7 @@ describe("AC-14: Giderler süzgeci ile Anasayfa kartı aynı sayıyı verir", ()
   const veri = [k(1, { sonOdemeTarihi: "2026-09-20", tarih: "2026-03-10" }), k(2), k(3, { sonOdemeTarihi: "2026-10-20" }), k(4, { odendi: true, sonOdemeTarihi: "2026-09-01" }),
     k(5, { turId: 3, calisanId: 7, calisanAd: "Hasan", resmiTutar: 1000, eldenTutar: 0, tedarikciId: null, sonOdemeTarihi: "2026-09-25" })];
   const giderlerCiz = (o = {}) => render(<Giderler giderler={veri} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TUR}
-    tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]} stock={[]} customers={[]}
+    tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={[]} stock={[]} customers={[]}
     standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: AYAR }} showToast={vi.fn()}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} {...o} />);
   it("süzgeç seçilince satırlar vurgulu, dönem seçici pasif ve açıklamalı, kalem sayısı = kartın iki sayısının toplamı", () => {

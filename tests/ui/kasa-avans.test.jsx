@@ -33,7 +33,7 @@ function GiderHarness({ h0 = [], onState }) {
   const [hesapHareketleri, setHesapHareketleri] = useState(h0);
   onState?.(hesapHareketleri);
   return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TUR}
-    tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
+    tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
     appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={null} showToast={vi.fn()} kasaHesaplari={HESAP} kasaYetki
     hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} />;
@@ -116,7 +116,7 @@ describe("Spec 0024 B: tedarikçi ekstresi ve silme uyarıları (R12, C8, B10)",
   it("AC-16: Tedarikçiler satırından ekstre; borç, ödeme ve kalan bakiye", () => {
     const h0 = [{ id: 71, tur: "odeme", tarih: "2026-09-15", tutar: 500, giderId: 6, hesapId: 1 }];
     render(<GiderHarness h0={h0} />);
-    fireEvent.click(screen.getByText("Tedarikçiler"));
+    fireEvent.click(screen.getByText("Tedarikler ve Ekstre")); // spec 0082 R12 ile güncellendi
     fireEvent.click(screen.getByText("Ekstre"));
     const e = screen.getByTestId("ekstre-penceresi");
     expect(within(e).getAllByTestId("ekstre-satiri").map(s => s.textContent)).toEqual([
@@ -160,7 +160,7 @@ describe("Spec 0024 B triyaj", () => {
     function H() {
       const [hesapHareketleri, setHesapHareketleri] = useState([AVANS]);
       return <Giderler giderler={[GELECEK]} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TUR}
-        tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
+        tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
         appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={null} showToast={vi.fn()} kasaHesaplari={HESAP} kasaYetki
         hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
         satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} />;

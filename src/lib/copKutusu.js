@@ -25,26 +25,3 @@ export const tanimCopEtiketi = (t, turMap) => {
 const HESAP_TUR_COP = { kasa: "Kasa", banka: "Banka", kart: "Kredi kartı" };
 export const hesapCopEtiketi = (h) => `${h?.ad || "—"} · ${HESAP_TUR_COP[h?.tur] || h?.tur || "Hesap"}`;
 
-// R38: standart gider grup olarak silinir; Çöp Kutusu'nda (grup, damga) başına tek satır, geri alma o damgalı sürümleri
-// döndürür. Ad, grubun en geç başlayan çöpteki sürümünden.
-export const standartCopGruplari = (liste = []) => {
-  const m = new Map();
-  for (const s of liste || []) {
-    if (!s?.deletedAt) continue;
-    const k = `${s.grupId ?? s.id}|${s.deletedAt}`;
-    if (!m.has(k)) m.set(k, { grupId: s.grupId ?? s.id, deletedAt: s.deletedAt, surumler: [] });
-    m.get(k).surumler.push(s);
-  }
-  return [...m.values()].map(g => {
-    const son = [...g.surumler].sort((a, b) => String(b.baslangicAy || "").localeCompare(String(a.baslangicAy || "")))[0];
-    return { ...g, ad: son?.ad || "—" };
-  });
-};
-// R18, R16: grup geri alınırken aynı grupta canlı sürüm ya da başka bir grupta aynı adda canlı sürüm varsa yapılmaz.
-export const standartGeriAlmaCakismasi = (grup, liste = []) => {
-  const canli = (liste || []).filter(s => s && !s.deletedAt);
-  if (canli.some(s => String(s.grupId ?? s.id) === String(grup.grupId))) return "Geri alınamadı: bu standart giderin canlı bir sürümü zaten var.";
-  const ad = trLower(String(grup.ad || "").trim());
-  const ayni = ad && canli.find(s => trLower(String(s.ad || "").trim()) === ad);
-  return ayni ? `Geri alınamadı: “${ayni.ad}” adında bir standart gider zaten var. Önce onu yeniden adlandırın.` : null;
-};

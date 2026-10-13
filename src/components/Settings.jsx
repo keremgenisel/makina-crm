@@ -51,7 +51,7 @@ const SETTINGS_GROUPS = [
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
   { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }] },
   // Gider kaydı (spec 0001): grup yalnız gider yetkisi (Giderler sekmesi görünen kullanıcı) olanlara
-  // görünür (plan K7). Tedarikçi ve standart genel gider Ayarlar'da DEĞİL, Giderler sekmesinde yaşar (R13, R22).
+  // görünür (plan K7). Tedarikçi Ayarlar'da DEĞİL, Giderler sekmesinde yaşar (R13).
   { grup: "Giderler", items: [{ id: "gidertur", label: "Gider Türleri", icon: "gider" }, { id: "gidertanim", label: "Tekrarlayan Giderler", icon: "gider" }, { id: "giderayar", label: "Gider Ayarları", icon: "gider" }] },
   { grup: "Evrak & Süreçler", items: [{ id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "kkkomisyon", label: "Kredi Kartı Komisyonları", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }] },
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "sahipsiz", label: "Sahipsiz Kayıtlar", icon: "search" }] },
@@ -69,7 +69,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
   serverPermissions = null,
   // Gider kaydı (spec 0001)
   giderYetki = false, giderVeriYetki = giderYetki, kasaVeriYetki = true, giderler = [], setGiderler = null, rawGiderler = [], giderTanimlari = [], setGiderTanimlari = null,
-  giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, standartGiderler = [], setStandartGiderler = null, uretimPartileri = [], setUretimPartileri = null, kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null, cekler = [], setCekler = null, kasaKapsamDisi = [], setKasaKapsamDisi = null,
+  giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, uretimPartileri = [], setUretimPartileri = null, kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null, cekler = [], setCekler = null, kasaKapsamDisi = [], setKasaKapsamDisi = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
   initialTab = null, onInitialTabConsumed = null, // genel arama: doğrudan bir bölümü aç (ör. Firma Çalışanları)
 }) => {
@@ -217,7 +217,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
           setUretimFormlari={setUretimFormlari}
           giderYetki={giderYetki} giderVeriYetki={giderVeriYetki} kasaVeriYetki={kasaVeriYetki} giderler={rawGiderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
           giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
-          standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri}
+          uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri}
           kasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
           kasaKapsamDisi={kasaKapsamDisi} setKasaKapsamDisi={setKasaKapsamDisi}
           cekler={cekler} setCekler={setCekler}
@@ -371,7 +371,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
          rawGiderler={rawGiderler} setGiderler={setGiderler} giderTurleri={giderTurleri} giderYetki={giderYetki}
          rawTedarikciler={tedarikciler} setTedarikciler={setTedarikciler} rawUretimPartileri={uretimPartileri}
          rawHesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} rawGiderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
-         setGiderTurleri={setGiderTurleri} rawStandartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler}
+         setGiderTurleri={setGiderTurleri}
          rawKasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} kasaVeriYetki={kasaVeriYetki} setUretimPartileri={setUretimPartileri}
          serverPermissions={serverPermissions}/>
       )}

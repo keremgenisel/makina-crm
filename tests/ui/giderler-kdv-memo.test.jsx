@@ -25,7 +25,7 @@ function Harness({ g0 }) {
   return <>
     <button onClick={() => setSatisVerisi({ ...SATIS, customers: [] })}>satış değişti</button>
     <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hareketler} setHesapHareketleri={setHareketler} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-      giderTurleri={[{ id: 4, ad: "Elektrik", davranis: "normal" }]} tedarikciler={[]} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()}
+      giderTurleri={[{ id: 4, ad: "Elektrik", davranis: "normal" }]} tedarikciler={[]} setTedarikciler={vi.fn()}
       calisanlar={[]} standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-06" } }} serverPermissions={null}
       satisVerisi={satisVerisi} showToast={vi.fn()} />
   </>;

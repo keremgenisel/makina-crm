@@ -1,4 +1,6 @@
 // Spec 0076: kısmen indirilebilen gider ve indirilemeyen KDV (binek araç). Motor (src/lib/gider.js) testleri, AC adlı.
+import { createHash } from "node:crypto";
+import { ayikla } from "./fixtures/0082-olu-anahtar";
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -227,7 +229,12 @@ describe("Spec 0076 göç yok, sıfır fark, sunucu değişmedi (R36–R39, C3, 
   });
   it("AC-36: bayraksız veri kümesinde dönem raporu, kova, makina maliyeti (iki kaynak), kârlılık, fiyat önerisi ve KDV karşılaştırması bu işten önceki çıktıyla birebir aynı", () => {
     expect(GIDERLER.some(k => "kisitliGider" in k)).toBe(false);
-    expect(motorCiktilari()).toEqual(JSON.parse(oku("tests/fixtures/0076-bayraksiz-once.json")));
+    // Spec 0082 C1/3: altın dosya 0076'dan önceki kodla üretildi ve bayt bayt korunur (SHA sabit). Standart kaynak kalktığı için
+    // beklenen taraftan `maliyetStandart` atılır ve 0082'nin ölü anahtar ayıklaması iki tarafa uygulanır.
+    const ham = oku("tests/fixtures/0076-bayraksiz-once.json");
+    expect(createHash("sha256").update(ham).digest("hex")).toBe("f185a8c8ddd30d9d754acc5502cb1f14d6c1b4aa1c5f4d5f5497027eb7f8d15e");
+    const { maliyetStandart: _std, ...beklenen } = JSON.parse(ham);
+    expect(ayikla(motorCiktilari())).toEqual(ayikla(beklenen));
   });
   it("AC-38: sunucu kuralı, izin ve birleştirme kısıtlama alanlarını tanımıyor", () => {
     for (const f of ["electron/serverAuth.cjs", "electron/server.cjs", "src/lib/merge.js", "src/lib/permissions.js", "src/components/settings/serverPermissionDefs.js"]) {

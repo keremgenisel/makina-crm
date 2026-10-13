@@ -272,7 +272,7 @@ const veri = (o = {}) => ({
   // Son tahsilat Merkez Kasa'ya girdi: ön seçim oradan (0044 Q8).
   payments: [{ id: 900, customerId: 700, tutar: 10, currency: "TRY", tarih: `${buAy}-03`, yontem: "Havale", hesapId: 53 }],
   kasaHesaplari: HESAPLAR, hesapHareketleri: [],
-  giderTurleri: [], tedarikciler: [], giderler: [], giderTanimlari: [], standartGiderler: [],
+  giderTurleri: [], tedarikciler: [], giderler: [], giderTanimlari: [],
   appSettings: { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7 } },
   dataVersion: 1, ...o,
 });

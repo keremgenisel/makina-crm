@@ -762,19 +762,19 @@ describe("gider bölümleri: C6 kural 3 ve sunucu aynası (K6)", () => {
     expect(yazmaYetkisiVar(null, "user", ["customers"], {}, {}).ok).toBe(true);
   });
   it("varsayılan yeni kullanıcı (gider sekmesi yok) gider bölümlerini yazamaz", () => {
-    for (const bolum of ["giderler", "tedarikciler", "standartGiderler"]) {
+    for (const bolum of ["giderler", "tedarikciler"]) { // spec 0082: standart gider bölümü kalktı
       expect(yazmaYetkisiVar(YENI_KULLANICI, "user", [bolum], {}, {}).ok).toBe(false);
     }
   });
-  it("gider sekmesi açıkça verilen kullanıcı kalem, tanım, tedarikçi ve standart gider yazabilir", () => {
-    for (const bolum of ["giderler", "giderTanimlari", "tedarikciler", "standartGiderler"]) {
+  it("gider sekmesi açıkça verilen kullanıcı kalem, tanım ve tedarikçi yazabilir (spec 0082: standart gider kalktı)", () => {
+    for (const bolum of ["giderler", "giderTanimlari", "tedarikciler"]) {
       expect(yazmaYetkisiVar(GIDERCI, "user", [bolum], {}, {}).ok).toBe(true);
     }
     expect(giderAynaEngeli(GIDERCI, "user", ["giderler"])).toBeNull();
   });
-  it("R13 / R22: tedarikçi ve standart gider yalnız gider sekmesinden; settings tek başına yetmez", () => {
+  it("R13: tedarikçi yalnız gider sekmesinden; settings tek başına yetmez (spec 0082: standart gider kalktı)", () => {
     const ayarci = JSON.stringify({ tabs: ["settings"] });
-    for (const b of ["tedarikciler", "standartGiderler", "giderTurleri", "giderler", "giderTanimlari"]) {
+    for (const b of ["tedarikciler", "giderTurleri", "giderler", "giderTanimlari"]) {
       expect(yazmaYetkisiVar(ayarci, "user", [b], {}, {}).ok, b).toBe(false);
     }
   });
@@ -875,10 +875,10 @@ describe("gider bölümleri: kayıt düzeyi eylem denetimi (K22)", () => {
     const yeni = { giderler: [{ ...kalem, atamaTur: "makina", makinaTur: "musteri", makinaId: 1 }], giderTanimlari: tanimlar };
     expect(eylemDenetimi(eski, yeni, izin(["gider_edit"]), "user").ok).toBe(true);
   });
-  it("tedarikçi ekle/sil kendi izinleriyle; tanım, tür ve standart gider gider_tanim ile", () => {
+  it("tedarikçi ekle/sil kendi izinleriyle; tanım ve tür gider_tanim ile (spec 0082: standart gider kalktı)", () => {
     expect(eylemDenetimi({ tedarikciler: [] }, { tedarikciler: [{ id: 5, ad: "A" }] }, izin(["gider_add"]), "user").gerekli).toBe("tedarikci_add");
     expect(eylemDenetimi({ tedarikciler: [{ id: 5 }] }, { tedarikciler: [] }, izin(["tedarikci_add"]), "user").gerekli).toBe("tedarikci_delete");
-    for (const b of ["giderTanimlari", "giderTurleri", "standartGiderler"]) {
+    for (const b of ["giderTanimlari", "giderTurleri"]) {
       expect(eylemDenetimi({ [b]: [] }, { [b]: [{ id: 7 }] }, izin(["gider_add"]), "user").gerekli).toBe("gider_tanim");
       expect(eylemDenetimi({ [b]: [] }, { [b]: [{ id: 7 }] }, izin(["gider_tanim"]), "user").ok).toBe(true);
     }
@@ -1396,11 +1396,11 @@ describe("Spec 0078: kasa ve gider kayıtları çöp kutusunda", () => {
     const [eo, yo] = sil("hesapHareketleri", { id: 1, tur: "odeme", tutar: 10, hesapId: 51, giderId: 5 });
     expect(yetki(kasasiz(["gider_odeme"]), eo, yo)).toBe(true);
   });
-  it("AC-24, AC-27: tanım, tür, standart gider, kasa hesabı ve bağsız çekin çöpe atılması bugünkü silme iznini ister (yeni kural yok)", () => {
+  it("AC-24, AC-27: tanım, tür, kasa hesabı ve bağsız çekin çöpe atılması bugünkü silme iznini ister (yeni kural yok)", () => {
     const vakalar = [
       ["giderTanimlari", { id: 9, turId: 1, ad: "İnternet", baslangicAy: "2026-01" }, "gider_tanim"],
       ["giderTurleri", { id: 1, ad: "Elektrik", davranis: "normal" }, "gider_tanim"],
-      ["standartGiderler", { id: 91, grupId: 91, ad: "Kira", tutar: 1, baslangicAy: "2026-01" }, "gider_tanim"],
+      // spec 0082 ile kaldırıldı: standart gider vakası (bölüm yok).
       ["kasaHesaplari", { id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY" }, "kasa_hesap"],
       ["cekler", { id: 30, yon: "alinan", paymentId: null, no: "1", banka: "Z", tutar: 5, durum: "portfoy", gecmis: [] }, "gider_odeme"],
     ];

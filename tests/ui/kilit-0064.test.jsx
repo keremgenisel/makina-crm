@@ -10,7 +10,6 @@ import { Dashboard } from "../../src/components/Dashboard";
 import { Kasa } from "../../src/components/Kasa";
 import { Tedarikciler } from "../../src/components/gider/Tedarikciler";
 import { UretimPartileri } from "../../src/components/gider/UretimPartileri";
-import { StandartGiderler } from "../../src/components/gider/StandartGiderler";
 import { CekPortfoyu } from "../../src/components/cek/CekPortfoyu";
 import { Settings } from "../../src/components/Settings";
 import { MAHSUP_KILITLI_HATASI } from "../../src/components/gider/OdemeGirisi";
@@ -54,7 +53,7 @@ function GiderHarness({ h0 = [], onState }) {
   const [hesapHareketleri, setHesapHareketleri] = useState(h0);
   onState?.({ giderler });
   return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TURLER}
-    tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
+    tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
     appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={null} showToast={vi.fn()} kasaHesaplari={HESAP} kasaYetki
     hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} />;
@@ -263,7 +262,7 @@ describe("Spec 0064: Kasa (R3, R5, R6, R14, R29)", () => {
   });
 });
 
-// ── Çek, tedarikçi, üretim partisi, standart gider ──
+// ── Çek, tedarikçi, üretim partisi (spec 0082: standart gider ekranı kalktı) ──
 describe("Spec 0064: çek ve Giderler alt ekranları (R2, R4, R25, R33)", () => {
   const P = [{ id: 300, customerId: 1, tarih: "2026-09-01", tutar: 2000, currency: "TRY", yontem: "Çek", vadeTarihi: "2026-12-01" }];
   const CEK = [{ id: 200, paymentId: 300, no: "C-200", banka: "Ziraat", tur: "hamiline", durum: "portfoy", gecmis: [{ tarih: "2026-09-01", durum: "portfoy" }] }];
@@ -356,18 +355,8 @@ describe("Spec 0064: çek ve Giderler alt ekranları (R2, R4, R25, R33)", () => 
     fireEvent.click(within(screen.getByText("İlk Parti").closest("tr")).getByTitle("Düzenle"));
     await cakismaVar();
   });
-  it("R33: standart gider grubunun penceresi kilitli; 'son sürümü geri al' başkasının kilidinde reddedilir", async () => {
-    const toast = vi.fn();
-    kilitKur({ "standart_gider:9": "ayse" });
-    const set = vi.fn();
-    const SG = [{ id: 1, grupId: 9, ad: "Kira", tutar: 10000, baslangicAy: "2026-01", bitisAy: "2026-05" }, { id: 2, grupId: 9, ad: "Kira", tutar: 12000, baslangicAy: "2026-06", bitisAy: null }];
-    render(<StandartGiderler standartGiderler={SG} setStandartGiderler={set} showToast={toast} aktifKullanici="kerem" />);
-    await waitFor(() => expect(window.crmLocks.list).toHaveBeenCalled());
-    await act(async () => {});
-    fireEvent.click(screen.getByText("Son sürümü geri al"));
-    expect(set).not.toHaveBeenCalled();
-    expect(toast.mock.calls.some(([m]) => /ayse/.test(m))).toBe(true);
-  });
+  // Spec 0082 ile kaldırıldı: 0064 R33 (standart gider grubunun kilidi; alan kilitAlanlari'ndan çıktı, AC-29).
+
 });
 
 // ── Ayarlar ──

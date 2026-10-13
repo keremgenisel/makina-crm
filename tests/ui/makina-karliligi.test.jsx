@@ -3,7 +3,6 @@
 // kaynağı ayarı (R22). Hesap motorda; burada ekranın gösterdikleri.
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
-import { useState } from "react";
 import { Giderler } from "../../src/components/Giderler";
 import { MakinaKarliligi } from "../../src/components/gider/MakinaKarliligi";
 import { SettingsGider } from "../../src/components/settings/SettingsGider";
@@ -15,14 +14,14 @@ beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new 
 const TUR = [{ id: 1, ad: "Genel", davranis: "normal" }];
 const MOD = [{ model: "AK100" }, { model: "AK200" }];
 const mus = (id, o = {}) => ({ id, name: `Firma ${id}`, model: "AK100", serialNo: `S${id}`, installDate: "2026-03-20", fabrikaSatisBedeli: 500000, currency: "TRY", uretimTarihi: "2026-03-05", ...o });
-const hesapla = (o = {}) => hesaplaMakinaMaliyetleri({ customers: [], stock: [], giderler: [], giderTurleri: TUR, standartGiderler: [], standardModels: MOD, customModels: [], giderAyarlari: { yururlukAy: "2026-01" }, ...o }, { bugun: "2026-09-24" });
+const hesapla = (o = {}) => hesaplaMakinaMaliyetleri({ customers: [], stock: [], giderler: [], giderTurleri: TUR, standardModels: MOD, customModels: [], giderAyarlari: { yururlukAy: "2026-01" }, ...o }, { bugun: "2026-09-24" });
 const ciz = (sonuc, o = {}) => render(<MakinaKarliligi sonuc={sonuc} baslangic="2026-03-01" bitis="2026-03-31" bugun="2026-09-24" modeller={MOD} {...o} />);
 
 describe("Makina Kârlılığı alt görünümü", () => {
   it("AC-69: Giderler sekmesinde 'Makina Kârlılığı' alt görünümü var ve açılınca özet çizilir", () => {
     const customers = [mus(1)];
     render(<Giderler giderler={[{ id: 1, tarih: "2026-03-10", turId: 1, tutar: 100000, kdvOrani: 20 }]} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-      giderTurleri={TUR} tedarikciler={[]} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]}
+      giderTurleri={TUR} tedarikciler={[]} setTedarikciler={vi.fn()} calisanlar={[]}
       stock={[]} customers={customers} standardModels={MOD} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }}
       satisVerisi={{ customers, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()}
       makinaMaliyet={hesapla({ customers })} />);
@@ -31,7 +30,7 @@ describe("Makina Kârlılığı alt görünümü", () => {
   });
   it("triyaj bulgu 4: Giderler kendi yedek hesabını yapmaz; App sonucu gelmezse görünüm çizilmez", () => {
     render(<Giderler giderler={[]} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TUR} tedarikciler={[]} setTedarikciler={vi.fn()}
-      standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]} stock={[]} customers={[mus(1)]} standardModels={MOD} customModels={[]}
+      calisanlar={[]} stock={[]} customers={[mus(1)]} standardModels={MOD} customModels={[]}
       appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />);
     fireEvent.click(screen.getByText("Makina Kârlılığı"));
     expect(screen.queryByTestId("makina-karliligi")).toBeNull();
@@ -73,11 +72,12 @@ describe("Makina Kârlılığı alt görünümü", () => {
     expect(within(screen.getByTestId("maliyet-detay")).getByText("Satış bedeli")).toBeTruthy();
     expect(screen.queryByTestId("maliyet-kar-kutusu")).toBeNull(); // spec 0067: kutu artık hiçbir yerde yok
   });
-  it("AC-7 / AC-36: parça hariç notu ve kullanılan kaynak yazar", () => {
-    ciz(hesapla({ customers: [mus(1)], giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } }));
+  // Spec 0082 ile güncellendi: AC-36'nın "kullanılan kaynak yazar" yarısı kalktı (R4/1, tek kaynak).
+  it("AC-7: parça hariç notu yazar; kaynak satırı yok (spec 0082)", () => {
+    ciz(hesapla({ customers: [mus(1)], giderAyarlari: { yururlukAy: "2026-01" } }));
     const n = screen.getAllByTestId("maliyet-notlari")[0].textContent;
     expect(n).toMatch(/Stoktan çekilen parçaların maliyeti hariç/);
-    expect(n).toMatch(/Aylık standart genel giderler/);
+    expect(n).not.toMatch(/Ortak gider kaynağı/);
   });
   it("AC-14 (ekran): kursuz USD satış 'Yaklaşık' işaretli; USD ve TL birlikte (AC-53)", () => {
     ciz(hesapla({ customers: [mus(1, { currency: "USD", fabrikaSatisBedeli: 10000 })] }), { rates: { usd: 40 } });
@@ -105,15 +105,8 @@ describe("Makina Kârlılığı alt görünümü", () => {
     expect(screen.getByTestId("ozet-dagitilmamis").textContent).toMatch(/Hesaplanamadı/);
     expect(screen.getByTestId("ozet-dagitilmamis").textContent).toMatch(/ortadan kesiyor/);
   });
-  it("AC-37 (ekran): standart kaynakta fark satırı görünür, gerçekleşende yok", () => {
-    const g = [{ id: 1, tarih: "2026-03-15", turId: 1, tutar: 300000 }];
-    const std = [{ id: 1, grupId: 1, ad: "Kira", tutar: 100000, baslangicAy: "2026-01" }];
-    const { unmount } = ciz(hesapla({ customers: [mus(1)], giderler: g, standartGiderler: std, giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } }));
-    expect(screen.getByTestId("ozet-standart-fark").textContent).toMatch(/200\.000 ₺/);
-    unmount();
-    ciz(hesapla({ customers: [mus(1)], giderler: g, standartGiderler: std }));
-    expect(screen.queryByTestId("ozet-standart-fark")).toBeNull();
-  });
+  // Spec 0082 ile kaldırıldı: 0002 AC-37 (ekran) standart fark satırı (R4/1).
+
   it("AC-51 (ekran): malzeme payı alamamış makina sayısı model bazında", () => {
     const customers = Array.from({ length: 3 }, (_, i) => mus(i + 1));
     ciz(hesapla({ customers, giderler: [{ id: 1, tarih: "2026-03-01", turId: 1, tutar: 2000, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 1000, adet: 2 }] }] }));
@@ -167,18 +160,4 @@ describe("Fiyat önerisi (R9)", () => {
   });
 });
 
-describe("Ortak gider kaynağı ayarı (R22, C4-3)", () => {
-  function Harness({ onState }) {
-    const [appSettings, setAppSettings] = useState({ giderAyarlari: { yururlukAy: "2026-01", stopajOrani: 20 } });
-    onState(appSettings);
-    return <SettingsGider appSettings={appSettings} setAppSettings={setAppSettings} />;
-  }
-  it("AC-36 / C4-3: kaynak giderAyarlari'na yazılır; herkesi etkilediği yazar", () => {
-    let st;
-    render(<Harness onState={s => { st = s; }} />);
-    expect(screen.getByText(/bütün kullanıcıların gördüğü maliyet ve kâr rakamı değişir/)).toBeTruthy();
-    fireEvent.click(screen.getByText("Aylık standart genel giderler"));
-    fireEvent.click(screen.getByText("Kaydet"));
-    expect(st.giderAyarlari).toMatchObject({ ortakGiderKaynagi: "standart", yururlukAy: "2026-01", stopajOrani: 20 });
-  });
-});
+// Spec 0082 ile kaldırıldı: 0002 R22 / C4-3 ortak gider kaynağı ayarı (seçici yok, R2/1; ters iddia spec 0082 AC-9, AC-10).

@@ -20,7 +20,7 @@ const veri = () => ({
   kasaHesaplari: [{ id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 50000, acilisTarihi: `${buAy}-01`, kapali: false },
     { id: 52, ad: "Döviz", tur: "banka", paraBirimi: "USD", acilisBakiyesi: 0, acilisTarihi: `${buAy}-01`, kapali: false }],
   hesapHareketleri: [],
-  giderTanimlari: [], standartGiderler: [],
+  giderTanimlari: [],
   appSettings: { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7 } },
   dataVersion: 1,
 });

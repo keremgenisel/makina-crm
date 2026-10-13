@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { aramaNormalize, fmtTR, tsGunTR, parcaAdi, fmtCur, yerelBugun } from "../lib/utils";
+import { aramaNormalize, fmtTR, tsGunTR, parcaAdi, fmtCur } from "../lib/utils";
 import { turHaritasi, ayOf } from "../lib/gider";
 import {
-  aramaSorgusu, kalemEslesmesi, kalemBasligi, kalemMeta, tedarikciEslesmesi, tanimEslesmesi, standartGrupSatirlari,
-  standartEslesmesi, standartMeta, partiEslesmesi, hesapEslesmesi, hesapMeta, cekEslesmesi, cekMeta,
+  aramaSorgusu, kalemEslesmesi, kalemBasligi, kalemMeta, tedarikciEslesmesi, tanimEslesmesi,
+  partiEslesmesi, hesapEslesmesi, hesapMeta, cekEslesmesi, cekMeta,
 } from "../lib/aramaGider";
 import { aliciAd } from "./stock/TahsisModal";
 import { Icon } from "./ui";
@@ -13,18 +13,18 @@ import { Icon } from "./ui";
 // (ad, seri no, telefon, yetkili, model, eski sahip adı), teklif/proforma (no, firma), bayi,
 // makina stoğu, yedek parça (kargo) satışları (+ farklı teslimat adresi), Extra Kalıp satışları,
 // servis kayıtları (teknisyen/tip/notlar), notlar, üretim formları, dosyalar, firma çalışanları ve (spec 0026)
-// gider kalemleri, tedarikçiler, standart giderler, tekrarlayan tanımlar, üretim partileri, kasa hesapları ve çekler
+// gider kalemleri, tedarikçiler, tekrarlayan tanımlar, üretim partileri, kasa hesapları ve çekler
 // üzerinde arar (personel kalem/tanımı hiç; ekran içi gider süzgeciyle birleştirilmez, C7); sonuca tıklayınca ilgili ekran doğrudan açılır. Tüm gruplar limitsiz (.slice yok).
 // Klavye: ↑/↓ gezinme, ↵ seçili sonucu aç, esc kapat; üstte kategori çipleri (sayılı) listeyi daraltır.
 // allowedTabs: kullanıcının erişebildiği sekme id'leri — izinli olmayan sekmenin
 // verisi aramada hiç gösterilmez (kısıtlı kullanıcı aramadan o alana sızamaz).
 
 // Kategori sırası + görsel kimliği (ikon rozeti renkleri tema token'larından → koyu tema uyumlu).
-// Spec 0026 R15, R17: tek tablo. Yeni türler sonda (gider kalemleri, tedarikçiler, standart giderler, tekrarlayan
+// Spec 0026 R15, R17: tek tablo. Yeni türler sonda (gider kalemleri, tedarikçiler, tekrarlayan
 // tanımlar, üretim partileri, kasa hesapları, çekler). `kapi` türün görünürlüğüdür (R22). Gider/kasa kapısı App'in
 // giderYetki / kasaYetki değerleridir (C9).
 export const KAT_SIRA = ["musteriler", "servisler", "belgeler", "bayiler", "makinalar", "yedekParcalar", "kaliplar", "uretimler", "dosyalar", "notlar", "calisanlar",
-  "giderler", "tedarikciler", "standartGiderler", "giderTanimlari", "uretimPartileri", "kasaHesaplari", "cekler"];
+  "giderler", "tedarikciler", "giderTanimlari", "uretimPartileri", "kasaHesaplari", "cekler"];
 export const KAT = {
   musteriler:    { baslik: "Müşteriler / Makinalar",     kisa: "Müşteriler",   ikon: "🏢", bg: "var(--ambBg3)", fg: "var(--orTx)",       kapi: k => k.izinli("customers") },
   servisler:     { baslik: "Servis Kayıtları",           kisa: "Servis",       ikon: "🔧", bg: "var(--ambBg)",  fg: "var(--amb700)",     kapi: k => k.izinli("customers") },
@@ -39,7 +39,6 @@ export const KAT = {
   calisanlar:    { baslik: "Çalışanlar",                 kisa: "Çalışanlar",   ikon: "👤", bg: "var(--grnBg2)", fg: "var(--emerald2)",   kapi: k => k.izinli("settings") && !!k.onGoCalisanlar },
   giderler:      { baslik: "Gider Kalemleri",            kisa: "Giderler",     ikon: "🧾", bg: "var(--ambBg3)", fg: "var(--orTx)",       kapi: k => !!k.giderYetki && !!k.onGoGider },
   tedarikciler:  { baslik: "Tedarikçiler",               kisa: "Tedarikçiler", ikon: "🤝", bg: "var(--grnBg)",  fg: "var(--grn700)",     kapi: k => !!k.giderYetki && !!k.onGoGider },
-  standartGiderler: { baslik: "Standart Genel Giderler", kisa: "Standart",     ikon: "📊", bg: "var(--bluBg)",  fg: "var(--blu600)",     kapi: k => !!k.giderYetki && !!k.onGoGider },
   // R14: hedefi Ayarlar olan sonuç settings sekmesini de ister.
   giderTanimlari: { baslik: "Tekrarlayan Giderler",      kisa: "Tekrarlayan",  ikon: "🔁", bg: "var(--purBg)",  fg: "var(--purTx)",      kapi: k => !!k.giderYetki && k.izinli("settings") && !!k.onGoGiderTanim },
   uretimPartileri: { baslik: "Üretim Partileri",         kisa: "Partiler",     ikon: "🏗", bg: "var(--warnBg)", fg: "var(--warnTx)",     kapi: k => !!k.giderYetki && !!k.onGoGider },
@@ -62,7 +61,7 @@ export const genelAramaSonuclari = (q, v, kapiCtx) => {
   const custMap = {}; for (const c of customers) custMap[c.id] = c;
   const custAd = (id) => custMap[id]?.name || "";
   // Spec 0026: gider modülü kuralları saf modülde (aramaGider.js). Eşleşme { kayit, neden } olarak döner.
-  const giderAcik = ["giderler", "tedarikciler", "standartGiderler", "giderTanimlari", "uretimPartileri"].some(acik);
+  const giderAcik = ["giderler", "tedarikciler", "giderTanimlari", "uretimPartileri"].some(acik);
   const sorgu = giderAcik || acik("kasaHesaplari") || acik("cekler") ? aramaSorgusu(q) : null;
   const turMap = giderAcik ? turHaritasi(v.giderTurleri || []) : null;
   const tedMap = giderAcik ? new Map((v.tedarikciler || []).map(t => [String(t.id), t])) : null;
@@ -90,7 +89,6 @@ export const genelAramaSonuclari = (q, v, kapiCtx) => {
     // Spec 0026 (R1, R2, R5, R9–R13, R19): personel kalem ve tanımı hiç çıkmaz; çöptekiler savunma amaçlı da süzülür.
     giderler: acik("giderler") ? esle(v.giderler, k => kalemEslesmesi(k, sorgu, { turMap, tedMap, yururlukAy: v.yururlukAy })) : [],
     tedarikciler: acik("tedarikciler") ? esle(v.tedarikciler, t => tedarikciEslesmesi(t, sorgu)) : [],
-    standartGiderler: acik("standartGiderler") ? esle(standartGrupSatirlari(v.standartGiderler, ayOf(v.bugun || yerelBugun())), g => standartEslesmesi(g, sorgu)) : [],
     giderTanimlari: acik("giderTanimlari") ? esle(v.giderTanimlari, t => tanimEslesmesi(t, sorgu, { turMap, tedMap })) : [],
     uretimPartileri: acik("uretimPartileri") ? esle(v.uretimPartileri, p => partiEslesmesi(p, sorgu)) : [],
     kasaHesaplari: acik("kasaHesaplari") ? esle(v.kasaHesaplari, h => hesapEslesmesi(h, sorgu)) : [],
@@ -102,7 +100,7 @@ const nokta = (parcalar) => parcalar.filter(Boolean).join(" · ");
 
 export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], stock = [], yedekParcaSatislar = [], parts = [], partSales = [], services = [], notes = [], uretimFormlari = [], dosyalar = [], calisanlar = [], onOpenCustomer, onOpenDoc, onOpenDealer, onGoStock, onGoYedekParca, onGoNotes, onGoUretim, onGoCalisanlar, allowedTabs = null,
   // Spec 0026: gider modülü. Diziler ham (ödeme uygulanmamış, X7) ve canlı; kapı App'in giderYetki / kasaYetki değerleri (C9).
-  giderYetki = false, kasaYetki = false, giderler = [], giderTurleri = [], tedarikciler = [], standartGiderler = [], giderTanimlari = [], uretimPartileri = [],
+  giderYetki = false, kasaYetki = false, giderler = [], giderTurleri = [], tedarikciler = [], giderTanimlari = [], uretimPartileri = [],
   kasaHesaplari = [], cekler = [], yururlukAy = null, onGoGider, onGoGiderTanim, onGoKasa }) => {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -113,10 +111,10 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
 
   const kapiCtx = kapiBaglami(allowedTabs, { onGoYedekParca, onGoNotes, onGoUretim, onGoCalisanlar, giderYetki, kasaYetki, onGoGider, onGoGiderTanim, onGoKasa });
   const results = useMemo(() => genelAramaSonuclari(q, { customers, teklifler, dealers, stock, yedekParcaSatislar, parts, partSales, services, notes, uretimFormlari, dosyalar, calisanlar,
-    giderler, giderTurleri, tedarikciler, standartGiderler, giderTanimlari, uretimPartileri, kasaHesaplari, cekler, yururlukAy }, kapiCtx),
+    giderler, giderTurleri, tedarikciler, giderTanimlari, uretimPartileri, kasaHesaplari, cekler, yururlukAy }, kapiCtx),
   // kapiCtx her render yeni nesne; içeriğini oluşturan değerler bağımlılıktır.
   [q, customers, teklifler, dealers, stock, yedekParcaSatislar, parts, partSales, services, notes, uretimFormlari, dosyalar, calisanlar, onGoYedekParca, onGoNotes, onGoUretim, onGoCalisanlar, allowedTabs,
-    giderYetki, kasaYetki, giderler, giderTurleri, tedarikciler, standartGiderler, giderTanimlari, uretimPartileri, kasaHesaplari, cekler, yururlukAy, onGoGider, onGoGiderTanim, onGoKasa]);
+    giderYetki, kasaYetki, giderler, giderTurleri, tedarikciler, giderTanimlari, uretimPartileri, kasaHesaplari, cekler, yururlukAy, onGoGider, onGoGiderTanim, onGoKasa]);
 
   const pick = (fn, ...args) => { setOpen(false); fn?.(...args); };
 
@@ -158,7 +156,6 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
           onOpen: () => pick(onGoGider, { gorunum: "rapor", ay: k.tarih ? ayOf(k.tarih) : null, kalemFiltresi }) };
       },
       tedarikciler: ({ kayit: t, neden }) => ({ uid: `ted${t.id}`, baslik: t.ad || "—", meta: nokta([t.yetkili, t.telefon, t.vergiNo && `VKN ${t.vergiNo}`]), ekstra: neden, onOpen: () => pick(onGoGider, { gorunum: "tedarikci" }) }),
-      standartGiderler: ({ kayit: g, neden }) => ({ uid: `sg${g.grupId}`, baslik: g.temsil.ad || "—", meta: nokta(standartMeta(g)), ekstra: neden, onOpen: () => pick(onGoGider, { gorunum: "standart" }) }),
       giderTanimlari: ({ kayit: t, neden }) => ({ uid: `gt${t.id}`, baslik: t.ad || turMap.get(String(t.turId))?.ad || "Tanım",
         meta: nokta([turMap.get(String(t.turId))?.ad, tedMap.get(String(t.tedarikciId))?.ad, t.baslangicAy && (t.bitisAy ? `${t.baslangicAy} – ${t.bitisAy}` : `${t.baslangicAy}'den beri`), t.kapatildi && "kapalı"]),
         ekstra: neden, onOpen: () => pick(onGoGiderTanim, t.id) }),

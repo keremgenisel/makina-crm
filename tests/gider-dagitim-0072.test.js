@@ -7,7 +7,7 @@ import {
   giderKalemDogrula, tekrarlayanUret, turHaritasi, kalemKovalariKurus, hesaplaGiderRaporu, borcOzeti, canliModelSeti,
   DAGITIM_AY_HATASI, DAVRANIS, ATAMA,
 } from "../src/lib/gider";
-import { hesaplaMakinaMaliyetleri, makinaKarlilik, karlilikOzeti, dagitimPayKapsami, ORTAK_KAYNAK } from "../src/lib/makinaMaliyeti";
+import { hesaplaMakinaMaliyetleri, makinaKarlilik, karlilikOzeti, dagitimPayKapsami } from "../src/lib/makinaMaliyeti";
 import { odemeHatirlatmalari } from "../src/lib/odemeHatirlatma";
 
 const MOD = [{ model: "AK100" }, { model: "AK200" }];
@@ -15,7 +15,7 @@ const TUR = [{ id: 1, ad: "Genel", davranis: "normal" }, { id: 2, ad: "Kira", da
 const turMap = turHaritasi(TUR);
 const BUGUN = "2026-09-24";
 const veri = (o = {}) => ({
-  customers: [], stock: [], partStockLog: [], giderler: [], giderTurleri: TUR, standartGiderler: [],
+  customers: [], stock: [], partStockLog: [], giderler: [], giderTurleri: TUR,
   standardModels: MOD, customModels: [], giderAyarlari: { yururlukAy: "2026-01" }, ...o,
 });
 const hesapla = (o, bugun = BUGUN) => hesaplaMakinaMaliyetleri(veri(o), { bugun });
@@ -106,13 +106,8 @@ describe("Spec 0072 B: makina maliyeti", () => {
     expect(sonra.aylar.get("2026-03").ortakGercek).toBe(8333);
     expect(once.aylar.get("2026-03").ortakGercek).toBe(100000);
   });
-  it("AC-25: ortak gider kaynağı standart iken dağıtımın etkisi yoktur", () => {
-    const std = { giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: ORTAK_KAYNAK.STANDART }, standartGiderler: [{ id: 1, grupId: 1, ad: "Enerji", tutar: 500, baslangicAy: "2026-01" }] };
-    const c = [mus(1, "2026-04-10")];
-    const a = hesapla({ ...std, customers: c, giderler: [INTERNET] }), b = hesapla({ ...std, customers: c, giderler: dagitimsiz([INTERNET]) });
-    expect(kar(a, 1).ortakPay).toBe(kar(b, 1).ortakPay);
-    expect(kar(a, 1).dagitimlar).toEqual([]);
-  });
+  // Spec 0082 ile kaldırıldı: 0072 AC-25 (ortak gider kaynağı standart; kaynak tek).
+
   it("AC-26: gelecek aylara düşen paylar bugün hesaba girmez, o aylar ay tablosuna eklenmez, 'dağıtılmamış' şişmez", () => {
     const s = hesapla({ giderler: [INTERNET] });
     expect(s.aylar.has("2026-10")).toBe(false);

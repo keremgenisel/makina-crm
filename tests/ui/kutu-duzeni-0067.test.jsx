@@ -32,7 +32,7 @@ function GiderH({ g0 = EKIM, yururlukAy = "2026-01" }) {
   const [giderler, setGiderler] = useState(g0);
   const [hesapHareketleri, setHesapHareketleri] = useState([]);
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
+    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
     appSettings={{ giderAyarlari: { yururlukAy } }} kasaHesaplari={[]}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
 }
@@ -97,7 +97,7 @@ describe("Spec 0067 A: Dönem Raporu'nun kutu sırası (R1–R5)", () => {
 const TUR = [{ id: 1, ad: "Genel", davranis: "normal" }];
 const makina = { id: 1, name: "Kutu Gıda", model: "AK100", serialNo: "K-1", installDate: "2026-03-20", fabrikaSatisBedeli: 500000, currency: "TRY", komisyon: 15000, uretimTarihi: "2026-03-05" };
 const VERI = { giderler: [{ id: 1, tarih: "2026-03-10", turId: 1, tutar: 60000 }, { id: 2, tarih: "2026-03-11", turId: 1, tutar: 20000, atamaTur: "makina", makinaTur: "musteri", makinaId: 1 }] };
-const hesapla = () => hesaplaMakinaMaliyetleri({ customers: [makina], stock: [], giderTurleri: TUR, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [],
+const hesapla = () => hesaplaMakinaMaliyetleri({ customers: [makina], stock: [], giderTurleri: TUR, standardModels: [{ model: "AK100" }], customModels: [],
   giderAyarlari: { yururlukAy: "2026-01" }, ...VERI }, { bugun: "2026-09-24" });
 function DetayH(props) {
   const [id, setId] = useState(null);

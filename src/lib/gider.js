@@ -260,8 +260,8 @@ export const kdvYonuOf = (k) => (k?.kdvYonu === KDV_YONU.DAHIL ? KDV_YONU.DAHIL 
 // R6 (plan Q1): kirada KDV dâhil seçimi yalnız brüt girişte vardır; net girişte yön her zaman hariç.
 export const kdvYonuSecilebilirMi = (dav, girisYonu) => dav === DAVRANIS.NORMAL || (dav === DAVRANIS.KIRA && girisYonu !== "net");
 // Formun ve tanımın ortak çözümü: girilen tutar (yön "dahil" ise KDV dâhil) → KDV hariç tutar (TL).
-// R9, R14 (B-6): sıfır tutarın serbest olduğu TEK davranış (tanım ve tanımdan üretilmiş kalem); kira, personel ve
-// standart gider "sıfırdan büyük" kuralını korur.
+// R9, R14 (B-6): sıfır tutarın serbest olduğu TEK davranış (tanım ve tanımdan üretilmiş kalem); kira ve personel
+// "sıfırdan büyük" kuralını korur.
 // Spec 0074 R10: SGK tanımı da ayın kalemini sıfırla üretir (bildirge gelince tutar girilir); kapı tanimKalemi'dir.
 export const sifirTutarSerbestMi = (dav) => dav === DAVRANIS.NORMAL || dav === DAVRANIS.SGK;
 export const girilenHaric = (deger, kdvYonu, kdvOrani) => (kdvYonu === KDV_YONU.DAHIL ? tl(kdvAyir(deger, kdvOrani).tutarK) : deger);
@@ -1301,85 +1301,6 @@ export const kdvObjTopla = (...objs) => {
   const r = {};
   objs.forEach(o => { for (const k in (o || {})) r[k] = (r[k] || 0) + (Number(o[k]) || 0); });
   return r;
-};
-
-// ── Aylık standart genel gider (R22, K37) ─────────────────────────────────────
-// Bütçe/varsayım rakamıdır; dönem gider raporu bu listeyi HİÇ almaz (AC-93). Yalnız 0002 tüketir.
-// Bir grubun o ayda geçerli TEK sürümü: aralığa uyanlardan başlangıcı en geç olan. Çoklu kullanıcı
-// birleştirmesi yalnız eklemeleri taşıdığından (eski sürümün kapatılması bir düzenlemedir, kaybolabilir)
-// bir grupta iki açık sürüm kalabilir; o ay yine yalnız bir kez sayılır.
-const aydaGecerliSurum = (surumler, ay) => surumler
-  .filter(s => s.baslangicAy && s.baslangicAy <= ay && (!s.bitisAy || ay <= s.bitisAy))
-  .reduce((en, s) => (!en || s.baslangicAy > en.baslangicAy ? s : en), null);
-const grupla = (liste) => {
-  const g = new Map();
-  for (const s of liste || []) { const k = String(s.grupId ?? s.id); if (!g.has(k)) g.set(k, []); g.get(k).push(s); }
-  return g;
-};
-export const standartGiderAyi = (liste = [], ay) => {
-  const satirlar = [...grupla(liste).values()].map(sr => aydaGecerliSurum(sr, ay)).filter(Boolean);
-  return { satirlar, toplam: tl(satirlar.reduce((a, s) => a + kurus(s.tutar), 0)) };
-};
-const grupSurumleri = (liste, grupId) => liste.filter(s => String(s.grupId) === String(grupId)).sort((a, b) => a.baslangicAy.localeCompare(b.baslangicAy));
-
-export const standartYeni = (liste = [], { ad, tutar, baslangicAy }, uid) => {
-  const a = String(ad || "").trim();
-  const t = tutarCoz(tutar);
-  if (!a) return { hata: "Ad boş olamaz." };
-  if (t.gecersiz) return { hata: "Tutar sayıya çevrilemedi." };
-  if (t.bos || t.deger <= 0) return { hata: "Tutar sıfırdan büyük olmalı." };
-  if (!baslangicAy) return { hata: "Geçerlilik başlangıç ayı seçilmedi." };
-  const id = uid();
-  return { liste: [...liste, { id, grupId: id, ad: a, tutar: t.deger, baslangicAy, bitisAy: null }] };
-};
-// Tutar değişikliği her zaman yeni sürümdür (AC-96): önceki sürüm bir önceki ayda kapanır.
-export const standartTutarDegistir = (liste = [], grupId, { tutar, baslangicAy }, uid) => {
-  const surumler = grupSurumleri(liste, grupId);
-  const acik = surumler.find(s => !s.bitisAy) || surumler[surumler.length - 1];
-  if (!acik) return { hata: "Kayıt bulunamadı." };
-  const t = tutarCoz(tutar);
-  if (t.gecersiz) return { hata: "Tutar sayıya çevrilemedi." };
-  if (t.bos || t.deger <= 0) return { hata: "Tutar sıfırdan büyük olmalı." };
-  if (!baslangicAy || baslangicAy <= acik.baslangicAy) return { hata: `Yeni geçerlilik ayı ${acik.baslangicAy} sonrasında olmalı.` };
-  const yeni = { id: uid(), grupId: acik.grupId, ad: acik.ad, tutar: t.deger, baslangicAy, bitisAy: acik.bitisAy && acik.bitisAy >= baslangicAy ? acik.bitisAy : null };
-  // Önceki sürüm yeni başlangıçtan bir ay önce kapanır; zaten daha erken sona erdiyse bitişine dokunulmaz
-  // (sona erdirilmiş kalem geriye doğru yeniden açılmasın).
-  const onceki = ayEkle(baslangicAy, -1);
-  const eskiBitis = acik.bitisAy && acik.bitisAy < onceki ? acik.bitisAy : onceki;
-  return { liste: [...liste.map(s => (s.id === acik.id ? { ...s, bitisAy: eskiBitis } : s)), yeni] };
-};
-export const standartSonSurumuGeriAl = (liste = [], grupId) => {
-  const surumler = grupSurumleri(liste, grupId);
-  if (surumler.length < 2) return { hata: "Geri alınacak önceki sürüm yok." };
-  const son = surumler[surumler.length - 1];
-  const onceki = surumler[surumler.length - 2];
-  return { liste: liste.filter(s => s.id !== son.id).map(s => (s.id === onceki.id ? { ...s, bitisAy: son.bitisAy || null } : s)) };
-};
-export const standartSonaErdir = (liste = [], grupId, bitisAy) => {
-  const surumler = grupSurumleri(liste, grupId);
-  const acik = surumler.find(s => !s.bitisAy);
-  if (!acik) return { hata: "Açık sürüm yok." };
-  if (!bitisAy || bitisAy < acik.baslangicAy) return { hata: `Bitiş ayı ${acik.baslangicAy} veya sonrası olmalı.` };
-  return { liste: liste.map(s => (s.id === acik.id ? { ...s, bitisAy } : s)) };
-};
-export const standartAdDegistir = (liste = [], grupId, ad) => {
-  const a = String(ad || "").trim();
-  if (!a) return { hata: "Ad boş olamaz." };
-  return { liste: liste.map(s => (String(s.grupId) === String(grupId) ? { ...s, ad: a } : s)) };
-};
-// Spec 0078 R38: grup silinince bütün canlı sürümleri AYNI damgayı alır (çöp kutusu; Çöp Kutusu'nda grup başına tek satır,
-// geri alma o damgalı sürümleri döndürür). "Son sürümü geri al" bir geri alma eylemidir ve kalıcı kalır.
-export const standartGrupSil = (liste = [], grupId, zaman = new Date().toISOString()) =>
-  ({ liste: liste.map(s => (String(s.grupId) === String(grupId) && !s.deletedAt ? { ...s, deletedAt: zaman } : s)) });
-export const standartGruplar = (liste = [], buAy) => {
-  const g = new Map();
-  for (const s of liste) { if (!g.has(String(s.grupId))) g.set(String(s.grupId), []); g.get(String(s.grupId)).push(s); }
-  return [...g.values()].map(surumler => {
-    surumler.sort((a, b) => a.baslangicAy.localeCompare(b.baslangicAy));
-    const gecerli = buAy ? aydaGecerliSurum(surumler, buAy) : null;
-    const son = surumler[surumler.length - 1];
-    return { grupId: surumler[0].grupId, ad: son.ad, surumler, gecerli, son, sonaErdi: !!son.bitisAy && (!buAy || son.bitisAy < buAy) };
-  }).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
 };
 
 // ── Ödeme hareketleri (spec 0024 A; R2, R3, R18; plan Q1, Q2, Q3) ─────────────

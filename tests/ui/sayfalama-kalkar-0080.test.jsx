@@ -27,7 +27,7 @@ function GiderH({ g0 }) {
   const [giderler, setGiderler] = useState(g0);
   const [hesapHareketleri, setHesapHareketleri] = useState([]);
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
+    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
     appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} kasaHesaplari={[]}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
 }
@@ -186,7 +186,7 @@ describe("Spec 0080: Tedarikçiler tek sayfada", () => {
   it("AC-9: başlıktaki sayı canlı tedarikçiler; çöptekiler sayılmaz ve çizilmez", () => {
     tedCiz([...ted(12), { id: 999, ad: "Çöpteki", deletedAt: "2026-09-01T00:00:00.000Z" }]);
     const kap = screen.getByTestId("tedarikciler");
-    expect(kap.textContent).toMatch(/Tedarikçiler · 12/);
+    expect(kap.textContent).toMatch(/Tedarikler ve Ekstre · 12/); // spec 0082 R13 ile güncellendi
     expect(kap.querySelectorAll("tbody tr")).toHaveLength(12);
     expect(within(kap).queryByText("Çöpteki")).toBeNull();
   });
@@ -194,7 +194,7 @@ describe("Spec 0080: Tedarikçiler tek sayfada", () => {
     tedCiz([]);
     const kap = screen.getByTestId("tedarikciler");
     expect(kap.querySelector("table")).toBeNull();
-    expect(kap.textContent).toMatch(/Tedarikçiler · 0/);
+    expect(kap.textContent).toMatch(/Tedarikler ve Ekstre · 0/); // spec 0082 R13 ile güncellendi
     cubukYok(kap);
   });
 });

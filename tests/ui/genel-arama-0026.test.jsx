@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 const perde = vi.hoisted(() => ({ indi: false }));
 vi.mock("../../src/lib/yayinPerdesi", () => ({ GIDER_PERDESI: true, giderPerdesiIndi: () => perde.indi }));
 const { GlobalSearch, KAT, KAT_SIRA, genelAramaSonuclari } = await import("../../src/components/GlobalSearch");
-const { aramaSorgusu, tutarEslesir, tarihEslesir, personelMi, standartGrupSatirlari, kalemEslesmesi } = await import("../../src/lib/aramaGider");
+const { aramaSorgusu, tutarEslesir, tarihEslesir, personelMi, kalemEslesmesi } = await import("../../src/lib/aramaGider");
 const { turHaritasi } = await import("../../src/lib/gider");
 const { default: App } = await import("../../src/App");
 
@@ -38,12 +38,7 @@ const TANIM = [
   { id: 204, turId: 4, ad: "Gizli Tanım", calisanId: 22, baslangicAy: "2026-01" },
   { id: 205, turId: 3, ad: "Usta maaşı", calisanId: 23, baslangicAy: "2026-01" },
 ];
-const STD = [
-  ...["2026-01", "2026-02", "2026-03", "2026-04"].map((a, i) => ({ id: 301 + i, grupId: 301, ad: "Elektrik", tutar: 1000 + i, baslangicAy: a, bitisAy: a })),
-  { id: 305, grupId: 301, ad: "Elektrik", tutar: 2000, baslangicAy: "2026-05", bitisAy: null },
-  { id: 310, grupId: 310, ad: "Sigorta", tutar: 500, baslangicAy: "2025-01", bitisAy: "2025-12" },
-  { id: 320, grupId: 320, ad: "Gelecek Bütçe", tutar: 700, baslangicAy: "2099-01", bitisAy: null },
-];
+// Spec 0082 ile kaldırıldı: standart gider verisi (kategori yok; ters iddialar spec 0082 AC-27, AC-28'de).
 const PARTI = [
   { id: 401, ad: "Yaz Partisi", baslangicAy: "2026-07", bitisAy: "2026-08", aciklama: "AK100 serisi" },
   { id: 402, ad: "Çöp Parti", baslangicAy: "2026-01", deletedAt: "2026-09-01T00:00:00.000Z" },
@@ -60,7 +55,7 @@ const CEK = [
 
 const tamProps = () => ({
   allowedTabs: null, giderYetki: true, kasaYetki: true,
-  giderler: GIDER, giderTurleri: TURLER, tedarikciler: TED, standartGiderler: STD, giderTanimlari: TANIM, uretimPartileri: PARTI, kasaHesaplari: HESAP, cekler: CEK,
+  giderler: GIDER, giderTurleri: TURLER, tedarikciler: TED, giderTanimlari: TANIM, uretimPartileri: PARTI, kasaHesaplari: HESAP, cekler: CEK,
   onGoGider: vi.fn(), onGoGiderTanim: vi.fn(), onGoKasa: vi.fn(),
 });
 const norm = (s) => s.replace(/\s+/g, " ").trim();
@@ -99,10 +94,7 @@ describe("Spec 0026: gider kayıtları aramada", () => {
     ac("temizlik");
     expect(grup("Tekrarlayan Giderler").map(r => r.t).some(t => t.startsWith("Aylık temizlik"))).toBe(true);
   });
-  it("AC-5: standart genel gider adıyla o kayıt çıkar", () => {
-    ac("Elektrik");
-    expect(grup("Standart Genel Giderler")).toHaveLength(1);
-  });
+
   it("AC-6: personel kalemi çalışan adı, açıklama, tutar ve tarihle bulunmaz", () => {
     for (const q of ["Hasan", "Hasan Çelik", "31337", "31.337", "20.03.2026", "2026-03-20"]) {
       cleanup();
@@ -181,21 +173,8 @@ describe("Spec 0026: gider kayıtları aramada", () => {
     ac("info@yildiz");
     expect(grup("Tedarikçiler")).toHaveLength(0);
   });
-  it("AC-22: beş sürümlü standart gider tek satır, meta yürürlük ayını yazar", () => {
-    ac("Elektrik");
-    const r = grup("Standart Genel Giderler").map(x => x.t);
-    expect(r).toHaveLength(1);
-    expect(r[0]).toContain("yürürlük: 2026-05");
-  });
-  it("AC-38: bu ay geçerli sürümü olmayan grup da tek satır çıkar ve durumunu yazar", () => {
-    ac("Sigorta");
-    expect(grup("Standart Genel Giderler").map(x => x.t)).toEqual([expect.stringContaining("sona erdi")]);
-    cleanup();
-    ac("Gelecek Bütçe");
-    expect(grup("Standart Genel Giderler").map(x => x.t)).toEqual([expect.stringContaining("başlamadı")]);
-    const g = standartGrupSatirlari(STD, "2026-10");
-    expect(g.map(x => [x.grupId, x.temsil.id, x.durum])).toEqual([["301", 305, "gecerli"], ["310", 310, "bitti"], ["320", 320, "baslamadi"]]);
-  });
+
+
   it("AC-24: kapatılmış tekrarlayan tanım çıkar ve 'kapalı' ibaresi taşır", () => {
     ac("Eski servis");
     const r = grup("Tekrarlayan Giderler").map(x => x.t);
@@ -250,7 +229,7 @@ describe("Spec 0026: gider kayıtları aramada", () => {
 describe("Spec 0026: yetki ve kapsam", () => {
   it("AC-10: gider yetkisi olmayan kullanıcıda hiçbir gider sonucu yok", () => {
     ac("Yıldız", { giderYetki: false, kasaYetki: false });
-    for (const b of ["Gider Kalemleri", "Tedarikçiler", "Standart Genel Giderler", "Tekrarlayan Giderler", "Üretim Partileri", "Kasa ve Banka Hesapları", "Çekler"]) expect(grup(b)).toHaveLength(0);
+    for (const b of ["Gider Kalemleri", "Tedarikçiler", "Tekrarlayan Giderler", "Üretim Partileri", "Kasa ve Banka Hesapları", "Çekler"]) expect(grup(b)).toHaveLength(0);
   });
   it("AC-27: gider yetkisi olup kasa yetkisi olmayan kullanıcıda hesap ve çek yok, kalem var", () => {
     ac("Ziraat", { kasaYetki: false });
@@ -260,12 +239,10 @@ describe("Spec 0026: yetki ve kapsam", () => {
     ac("Bant", { kasaYetki: false });
     expect(grup("Gider Kalemleri").length).toBeGreaterThan(0);
   });
-  it("AC-28: Ayarlar sekmesi olmayan gider kullanıcısında tanım yok, standart gider var", () => {
+  // Spec 0082 ile güncellendi: AC-28'in standart yarısı kalktı (kategori yok).
+  it("AC-28: Ayarlar sekmesi olmayan gider kullanıcısında tanım yok", () => {
     ac("temizlik", { allowedTabs: ["dashboard", "gider"] });
     expect(grup("Tekrarlayan Giderler")).toHaveLength(0);
-    cleanup();
-    ac("Elektrik", { allowedTabs: ["dashboard", "gider"] });
-    expect(grup("Standart Genel Giderler")).toHaveLength(1);
   });
   it("AC-12 (TY kararı 2026-10-03, R7 geri alındı): boş kutuda ve 'Sonuç bulunamadı' ekranında kapsam listesi çizilmez", () => {
     ac(null);
@@ -279,7 +256,7 @@ describe("Spec 0026: yetki ve kapsam", () => {
   });
   it("AC-33: yeni kategoriler KAT_SIRA'nın sonunda ve R15 sırasında; ilk on bir aynı", () => {
     expect(KAT_SIRA.slice(0, 11)).toEqual(["musteriler", "servisler", "belgeler", "bayiler", "makinalar", "yedekParcalar", "kaliplar", "uretimler", "dosyalar", "notlar", "calisanlar"]);
-    expect(KAT_SIRA.slice(11)).toEqual(["giderler", "tedarikciler", "standartGiderler", "giderTanimlari", "uretimPartileri", "kasaHesaplari", "cekler"]);
+    expect(KAT_SIRA.slice(11)).toEqual(["giderler", "tedarikciler", "giderTanimlari", "uretimPartileri", "kasaHesaplari", "cekler"]); // spec 0082: standart kalktı
   });
   it("AC-35: kategori tablosunun anahtar kümesi sonuç nesnesinin anahtar kümesine eşit", () => {
     const sonuc = genelAramaSonuclari("ab", {}, { izinli: () => true });
@@ -360,7 +337,7 @@ describe("Spec 0026 triyaj", () => {
 
 // ── Gerçek App ───────────────────────────────────────────────────────────────
 const veri = () => ({
-  customers: [], giderTurleri: TURLER, tedarikciler: TED, giderler: GIDER, giderTanimlari: TANIM, standartGiderler: STD,
+  customers: [], giderTurleri: TURLER, tedarikciler: TED, giderler: GIDER, giderTanimlari: TANIM,
   uretimPartileri: PARTI, kasaHesaplari: HESAP, cekler: CEK, hesapHareketleri: [],
   calisanlar: [{ id: 21, ad: "Hasan Çelik", resmiMaliyet: 30000 }],
   appSettings: { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7 } },
@@ -403,14 +380,12 @@ describe("Spec 0026: gerçek App", () => {
     expect(screen.getByLabelText("Açıklama ara").value).toBe("");
     expect(within(screen.getByTestId("kalem-listesi")).getAllByText(/120\.000/).length).toBeGreaterThan(0);
   });
-  it("AC-8 / AC-9: tedarikçi → Tedarikçiler, standart → Standart Genel Giderler, tanım → Ayarlar › Tekrarlayan Giderler", async () => {
+  // Spec 0082 ile güncellendi: görünümün adı "Tedarikler ve Ekstre" (kategori adı "Tedarikçiler" kalır, R14); standart yarısı kalktı.
+  it("AC-8 / AC-9: tedarikçi → Tedarikler ve Ekstre, tanım → Ayarlar › Tekrarlayan Giderler", async () => {
     await baslat();
     appAra("1234567890");
     fireEvent.click(grup("Tedarikçiler")[0].b);
-    expect(secili("radio", "Tedarikçiler")).toBe("true");
-    appAra("Elektrik");
-    fireEvent.click(grup("Standart Genel Giderler")[0].b);
-    expect(secili("radio", "Standart Genel Giderler")).toBe("true");
+    expect(secili("radio", "Tedarikler ve Ekstre")).toBe("true");
     appAra("temizlik");
     fireEvent.click(grup("Tekrarlayan Giderler")[0].b);
     await waitFor(() => expect(screen.getAllByText("Tekrarlayan Giderler").length).toBeGreaterThan(1));

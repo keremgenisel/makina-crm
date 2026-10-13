@@ -28,11 +28,11 @@ const veri = () => ({
     { id: 2, tarih: `${buAy}-01`, turId: 1, tutar: 5000, kdvOrani: 20, odendi: false, tedarikciId: 11, atamaTur: "makina", makinaTur: "stok", makinaId: 88 },
     { id: 3, tarih: `${buAy}-01`, turId: 1, tutar: 700, kdvOrani: 20, odendi: true, deletedAt: simdiIso },
   ],
-  giderTanimlari: [], standartGiderler: [],
+  giderTanimlari: [],
   appSettings: { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7 } },
   dataVersion: 1,
 });
-const GIDER_ANAHTARLARI = ["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "standartGiderler"];
+const GIDER_ANAHTARLARI = ["giderler", "giderTanimlari", "giderTurleri", "tedarikciler"]; // spec 0082: standart gider kalktı
 
 const baslat = async ({ sunucu = null } = {}) => {
   const kayitlar = [];
@@ -72,7 +72,8 @@ describe.each([
     menu("Giderler");
     await waitFor(() => expect(!!screen.queryByTestId("gider-perdesi")).toBe(inik));
     gorunur(screen.queryByText("Dönem Raporu"));
-    for (const alt of ["Makina ve Model", "Tedarikçiler", "Standart Genel Giderler"]) gorunur(screen.queryAllByText(alt)[0] ?? null);
+    for (const alt of ["Makina ve Model", "Tedarikler ve Ekstre"]) gorunur( // spec 0082 R1, R12 ile güncellendi
+      screen.queryAllByText(alt)[0] ?? null);
   });
 
   it("AC-2: Kurulu sürümde Anasayfa'da ödeme hatırlatma kartı görünmez", async () => {

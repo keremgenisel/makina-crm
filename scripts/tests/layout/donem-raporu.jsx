@@ -22,7 +22,7 @@ function Sayfa() {
   const [giderler, setGiderler] = useState(KALEMLER);
   const [hareketler, setHareketler] = useState(HAREKET);
   const sayfa = <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hareketler} setHesapHareketleri={setHareketler} giderTanimlari={[]} setGiderTanimlari={bos}
-    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={bos} standartGiderler={[]} setStandartGiderler={bos} calisanlar={[]} standardModels={[]} customModels={[]}
+    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={bos} calisanlar={[]} standardModels={[]} customModels={[]}
     appSettings={{ giderAyarlari: { yururlukAy: "2020-01" }, kdvRates: [{ from: "2000-01-01", rate: 20 }] }} kasaHesaplari={[]} customers={MUSTERI} stock={[]}
     satisVerisi={{ customers: MUSTERI, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={bos} />;
   return UZUN ? <div style={{ display: "flex" }}><div style={{ width: 236, flex: "0 0 236px" }} /><div style={{ flex: 1, minWidth: 0 }}>{sayfa}</div></div> : sayfa;

@@ -11,7 +11,7 @@ const MOD = [{ model: "AK100" }, { model: "AK200" }, { model: "AK300" }];
 const TUR = [{ id: 1, ad: "Genel", davranis: "normal" }, { id: 2, ad: "Kira", davranis: "kira" }, { id: 3, ad: "Personel", davranis: "personel" }];
 const BUGUN = "2026-09-24";
 const veri = (o = {}) => ({
-  customers: [], stock: [], partStockLog: [], giderler: [], giderTurleri: TUR, standartGiderler: [],
+  customers: [], stock: [], partStockLog: [], giderler: [], giderTurleri: TUR,
   standardModels: MOD, customModels: [], giderAyarlari: { yururlukAy: "2026-01" }, ...o,
 });
 const hesapla = (o) => hesaplaMakinaMaliyetleri(veri(o), { bugun: BUGUN });
@@ -348,38 +348,23 @@ describe("stokta bekleyen maliyet ve dönem özeti (R7, R19)", () => {
     expect(s.aylar.get("2026-08")?.uretimAdedi || 0).toBe(0);
   });
   it("AC-66: aralık bir ayı ortadan kesiyorsa ay bazlı satırlar hesaplanmaz", () => {
-    const s = hesapla({ customers: [mus(1)], giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } });
+    // Spec 0082 ile güncellendi: standart fark satırı kalktı (R4/1); ay bazlı tek satır dağıtılmamış ortak gider.
+    const s = hesapla({ customers: [mus(1)], giderAyarlari: { yururlukAy: "2026-01" } });
     const o = ozet(s, "2026-03-10", "2026-04-30");
     expect(o.dagitilmamis).toBeNull();
-    expect(o.standartFark).toBeNull();
     expect(o.tamAy).toBe(false);
   });
 });
 
-describe("ortak gider kaynağı (R22, R25, C8)", () => {
-  const std = [{ id: 1, grupId: 1, ad: "Kira", tutar: 100000, baslangicAy: "2026-01", bitisAy: null },
-    { id: 2, grupId: 2, ad: "Enerji", tutar: 50000, baslangicAy: "2026-06", bitisAy: null }];
-  const girdi = (kaynak) => ({ customers: [mus(1)], giderler: [gid(1, { tutar: 300000 })], standartGiderler: std, giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: kaynak } });
-  it("AC-34: standart kaynakta pay o ayın standart toplamından; gerçekleşen kayıtlar katılmaz", () => {
-    expect(kar(hesapla(girdi("standart")), 1).ortakPay).toBe(100000);
+// Spec 0082 ile kaldırıldı: 0002'nin ikinci ortak gider kaynağı (R22, R25, C8; AC-34, AC-36, AC-37, AC-65) yok. Tek kaynak
+// gerçekleşen kayıtlar; eski "standart" ayarlı ve standart satırı dolu veride sonuç aynıdır (0002 AC-35'in gerçekleşen yarısı).
+describe("ortak gider kaynağı: tek kaynak (spec 0082 R2/1)", () => {
+  it("AC-35 (spec 0082 ile güncellendi): ortak pay gerçekleşen kayıtlardan; sonuç kaynak alanı taşımaz (eski veri: 0082 AC-7)", () => {
+    const s = hesapla({ customers: [mus(1)], giderler: [gid(1, { tutar: 300000 })], giderAyarlari: { yururlukAy: "2026-01" } });
+    expect(kar(s, 1).ortakPay).toBe(300000);
+    expect(s).not.toHaveProperty("kaynak");
   });
-  it("AC-35: gerçekleşen kaynakta standart tutarlar katılmaz", () => {
-    expect(kar(hesapla(girdi("gercek")), 1).ortakPay).toBe(300000);
-  });
-  it("AC-37: standart kaynakta fark satırı = gerçekleşen − standart", () => {
-    expect(ozet(hesapla(girdi("standart")), ...MART).standartFark).toEqual({ gercek: 300000, standart: 100000, fark: 200000 });
-    expect(ozet(hesapla(girdi("gercek")), ...MART).standartFark).toBeNull();
-  });
-  it("AC-65: ay tutarı o aya uyan sürümlerin toplamı; sürümü olmayan kalem sıfır ve özette belirtilir", () => {
-    const s = hesapla(girdi("standart"));
-    expect(s.aylar.get("2026-03").ortakStandart).toBe(10000000);
-    expect(s.aylar.get("2026-07").ortakStandart).toBe(15000000);
-    expect(ozet(s, ...MART).standartEksik).toEqual([{ ay: "2026-03", adlar: ["Enerji"] }]);
-  });
-  it("AC-36: sonuç kullanılan kaynağı taşır", () => {
-    expect(hesapla(girdi("standart")).kaynak).toBe("standart");
-    expect(hesapla({}).kaynak).toBe("gercek");
-  });
+
 });
 
 describe("fiyat önerisi (R9, R9b, R24)", () => {
@@ -438,19 +423,7 @@ describe("C9: tek geçiş ve süre", () => {
 });
 
 describe("triyaj düzeltmeleri (0002)", () => {
-  const kira = [{ id: 1, grupId: 1, ad: "Kira", tutar: 50000, baslangicAy: "2026-01", bitisAy: null }];
-  it("bulgu 1: standart kaynakta ilk üretimden önceki aylar düşmez; Ocak–Mart dağıtılmamış 150.000, fark −150.000", () => {
-    const s = hesapla({ customers: [mus(1, { uretimTarihi: "2026-05-04", installDate: "2026-05-20" })], standartGiderler: kira,
-      giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } });
-    expect([...s.aylar.keys()][0]).toBe("2026-01");
-    const o = ozet(s, "2026-01-01", "2026-03-31");
-    expect(o.dagitilmamis.tutar).toBe(150000);
-    expect(o.standartFark).toEqual({ gercek: 0, standart: 150000, fark: -150000 });
-  });
-  it("bulgu 1: yürürlük ayı yoksa standart kaynakta tablo en erken standart başlangıcından başlar", () => {
-    const s = hesapla({ customers: [mus(1, { uretimTarihi: "2026-05-04" })], standartGiderler: kira, giderAyarlari: { ortakGiderKaynagi: "standart" } });
-    expect(s.aylar.get("2026-02")).toMatchObject({ uretimAdedi: 0, dagitilmamis: 5000000 });
-  });
+  // Spec 0082 ile kaldırıldı: standart kaynağın iki triyaj testi (ay tablosunun standart tohumu, standart fark).
   it("bulgu 1: gerçekleşen kaynakta da tablo yürürlük ayından başlar (ilk giderden önceki aylar sıfır olarak var)", () => {
     const s = hesapla({ customers: [mus(1, { uretimTarihi: "2026-05-04" })] });
     expect([...s.aylar.keys()][0]).toBe("2026-01");
@@ -476,15 +449,7 @@ describe("Spec 0076: indirilemeyen KDV maliyete girer (R15, R27)", () => {
     expect(kar(s, 1).kisitliVar).toBe(true);
     expect(ozet(s, ...MART).kisitliVar).toBe(true);
   });
-  it("AC-16: standart kaynakta ortak kovadan gelen kısım maliyete girmez; makinaya atanmış kısıtlı kalem yine girer", () => {
-    const std = [{ id: 1, grupId: 1, ad: "Kira", tutar: 5000, baslangicAy: "2026-01", bitisAy: null }];
-    const g = { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" };
-    const s = hesapla({ customers: [mus(1), mus(2, { uretimTarihi: "2026-04-05" })], standartGiderler: std, giderAyarlari: g,
-      giderler: [kisit(1), kisit(2, { tarih: "2026-04-10", atamaTur: "makina", makinaTur: "musteri", makinaId: 2 })] });
-    expect(kar(s, 1).ortakPay).toBe(5000);
-    expect(kar(s, 2).dogrudan).toBe(1060);
-    expect(kar(s, 1).kisitliVar).toBe(true);
-  });
+  // Spec 0082 ile kaldırıldı: 0076 AC-16'nın standart kaynak yarısı (kaynak tek).
   it("AC-36 (yan): bayraksız ya da oranı 100 olan veride kisitliVar alanı hiç yok", () => {
     expect("kisitliVar" in hesapla({ customers: [mus(1)], giderler: [gid(1)] })).toBe(false);
     expect("kisitliVar" in hesapla({ customers: [mus(1)], giderler: [kisit(1, { indirilebilirOran: 100 })] })).toBe(false);

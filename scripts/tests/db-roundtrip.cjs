@@ -103,7 +103,7 @@ dbmod.writeBlobToDb({
       tahsilatTarihi: "2026-10-05",
       degisenParcalar: [{ partId: "7", ad: "aaaaaa", miktar: 2, fiyat: 9000, disTedarik: false }], parcaUcreti: 18000, parcaCurrency: "TRY", parcaGarantiDisi: true }],
   calisanlar: [{ id: 71, ad: "Ahmet Yılmaz", resmiMaliyet: 39223.13, eldenMaliyet: 15000 }, { id: 72, ad: "Mehmet Demir" }],
-  // Gider kaydı (spec 0001): tür (meta JSON), tedarikçi, tekrarlayan tanım (JSON satırlar), kalem (model alt tablosu), standart gider.
+  // Gider kaydı (spec 0001): tür (meta JSON), tedarikçi, tekrarlayan tanım (JSON satırlar), kalem (model alt tablosu); standart gider bölümü spec 0082 ile ölü (aşağıda yalnız eski istemci gövdesi).
   giderTurleri: [{ id: 41, ad: "Fabrika kirası", davranis: "kira" }, { id: 42, ad: "Personel", davranis: "personel" }, { id: 43, ad: "Hammadde", davranis: "normal" },
     { id: 44, ad: "SGK", davranis: "sgk" }], // spec 0074 AC-33: SGK davranışı meta JSON'da
   tedarikciler: [{ id: 51, ad: "Demir Bant San.", yetkili: "Serkan", telefon: "0332", eposta: "a@b.c", vergiDairesi: "Selçuk", vergiNo: "123", adres: "OSB", not: "vadeli", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki tedarikçi
@@ -234,7 +234,7 @@ dbmod.writeBlobToDb({
     servisAlarm: { acik: true, sesSn: 30, yanipSn: 45 },
     musteriSutunlari: { faturaBedeli: true, fabrikaSatis: false, komisyon: true, extraKalip: true },
     analizGizliModeller: ["AK-100", "AK-160"],
-    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13, ortakGiderKaynagi: "standart", hatirlatmaEsikGun: 15, hesapsizBaslangic: "2026-06-01", indirilebilirOran: 88 },
+    giderAyarlari: { stopajOrani: 20, yururlukAy: "2026-06", varsayilanResmiMaliyet: 39223.13, hatirlatmaEsikGun: 15, hesapsizBaslangic: "2026-06-01", indirilebilirOran: 88 },
     krediKartiKomisyonlari: { bsmv: 5, satirlar: [{ taksit: 1, oran: 3.1, katkiPayi: 0.5, blokajGun: 40 }, { taksit: 3, oran: 7.47, katkiPayi: 0.5, blokajGun: 0 }] } },
 });
 blob = dbmod.readBlobFromDb();
@@ -311,7 +311,7 @@ check("gider: çalışan resmi/elden maliyeti (meta JSON) roundtrip", (() => { c
 check("gider: giderAyarlari (appSettings JSON) roundtrip", (() => { const g = blob.appSettings?.giderAyarlari; return g?.stopajOrani === 20 && g?.yururlukAy === "2026-06" && g?.varsayilanResmiMaliyet === 39223.13; })());
 // Spec 0002 C4-3 ve 0003 C1: yeni alanlar yeni sütun açmadan giderAyarlari JSON'unda taşınır.
 check("spec 0051 AC-29: giderAyarlari.hesapsizBaslangic roundtrip (yeni sütun yok)", blob.appSettings?.giderAyarlari?.hesapsizBaslangic === "2026-06-01");
-check("giderAyarlari.ortakGiderKaynagi + hatirlatmaEsikGun roundtrip (spec 0002/0003)", blob.appSettings?.giderAyarlari?.ortakGiderKaynagi === "standart" && blob.appSettings?.giderAyarlari?.hatirlatmaEsikGun === 15);
+check("giderAyarlari.hatirlatmaEsikGun roundtrip (spec 0003; spec 0082 ile ortak gider kaynağı örneği kalktı)", blob.appSettings?.giderAyarlari?.hatirlatmaEsikGun === 15);
 check("gider: türler (meta JSON, davranış) roundtrip", (blob.giderTurleri || []).length === 4 && blob.giderTurleri.find(t => t.id === 41)?.davranis === "kira");
 check("gider: tedarikçi tüm alanlar roundtrip", (() => { const t = (blob.tedarikciler || [])[0]; return t?.id === 51 && t.ad === "Demir Bant San." && t.yetkili === "Serkan" && t.telefon === "0332" && t.eposta === "a@b.c" && t.vergiDairesi === "Selçuk" && t.vergiNo === "123" && t.adres === "OSB" && t.not === "vadeli"; })());
 check("gider: kalem alanları + odendi boolean roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 81); const kira = (blob.giderler || []).find(x => x.id === 82); return k?.odendi === false && k.tutar === 140000 && k.odemeYontemi === "Çek" && k.sonOdemeTarihi === "2026-08-15" && k.tedarikciId === 51 && k.atamaTur === "model" && kira?.odendi === true && kira.girisYonu === "net" && kira.netTutar === 16000 && kira.stopajOrani === 20 && kira.tanimId === 61 && kira.donem === "2026-07"; })());
@@ -371,7 +371,8 @@ check("spec 0071 AC-16: kdvYonu iki tabloda roundtrip eder, kira girisYonu ile y
   return k?.kdvYonu === "dahil" && kira?.kdvYonu === "haric" && kira.girisYonu === "net" && t?.kdvYonu === "dahil" && p && !("kdvYonu" in p);
 })());
 check("gider: tanım modelSatirlari/uretilenAylar (JSON) + kapatildi roundtrip", (() => { const t = (blob.giderTanimlari || []).find(x => x.id === 61); const k = (blob.giderTanimlari || []).find(x => x.id === 62); return t?.modelSatirlari?.[0]?.adet === 20 && t.uretilenAylar.join(",") === "2026-06,2026-07" && t.tedarikciId === 51 && t.kapatildi === false && k?.kapatildi === true && k.bitisAy === "2026-08"; })());
-check("gider: standart genel gider sürümleri roundtrip", (() => { const s2 = blob.standartGiderler || []; return s2.length === 2 && s2.find(x => x.id === 92)?.grupId === 91 && s2.find(x => x.id === 91)?.bitisAy === "2026-06" && s2.find(x => x.id === 92)?.bitisAy == null; })());
+// Spec 0082 R6 (AC-16, AC-19): gövdede standart gider bölümü gelse bile (yukarıdaki veri eski istemciyi taklit eder) okunmaz ve yazılmaz.
+check("spec 0082: okunan veride standart gider bölümü anahtarı yok", !("standartGiderler" in blob));
 check("firma çalışanları (calisanlar meta) roundtrip", (() => { const a = (blob.calisanlar || []).find(c => c.id === 71); const b = (blob.calisanlar || []).find(c => c.id === 72); return a?.ad === "Ahmet Yılmaz" && b?.ad === "Mehmet Demir" && blob.calisanlar.length === 2; })());
 check("partSale satisFirma* (Diğer aracı firma) roundtrip", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.satisFirma === "Diğer" && p?.satisFirmaAd === "Aracı Firma" && p?.satisFirmaYetkili === "Mehmet Demir" && p?.satisFirmaTel === "05559876543" && p?.satisFirmaUlke === "Türkiye" && p?.satisFirmaSehir === "İzmir"; })());
 check("partSale kargo alanları (Extra Kalıp panosu) roundtrip; panoGizli boolean", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.kargoDurum === "Kargoya Verildi" && p?.kargoFirma === "Yurtiçi" && p?.kargoTakipNo === "KL-1" && p?.kargoTarih === "2026-07-20" && p?.kargoSorumlusu === "Ahmet" && p?.panoDusmeZamani === "2026-07-25T08:00" && p?.panoGizli === true; })());
@@ -460,7 +461,7 @@ check("reopen: gider kalemleri ve model satırları korundu", (() => { const g =
 check("reopen: ek ödeme satırları kalıcı (spec 0023 AC-13)", ((reopen.giderler || []).find(x => x.id === 83)?.ekOdemeler || []).length === 3);
 check("reopen: gider ödeme satırlarının kimlikleri kalıcı (spec 0021 C8)", ((reopen.giderler || []).find(x => x.id === 82)?.taksitler || []).map(x => x.id).join() === "9001,9002,9003");
 check("spec 0068 AC-21: yeniden açılışta çöpteki tedarikçi ve parti çöpte kalır", (reopen.tedarikciler || [])[0]?.deletedAt === "2026-10-01T09:00:00.000Z" && (reopen.uretimPartileri || []).find(x => x.id === 96)?.deletedAt === "2026-10-01T09:00:00.000Z");
-check("reopen: tedarikçi, tanım, tür, standart gider korundu", (reopen.tedarikciler || []).length === 1 && (reopen.giderTanimlari || []).length === 2 && (reopen.giderTurleri || []).length === 4 && (reopen.standartGiderler || []).length === 2);
+check("reopen: tedarikçi, tanım, tür korundu (spec 0082: standart gider bölümü okunmaz)", (reopen.tedarikciler || []).length === 1 && (reopen.giderTanimlari || []).length === 2 && (reopen.giderTurleri || []).length === 4 && !("standartGiderler" in reopen));
 check("reopen: müşteriler korundu", (reopen.customers || []).find(c => c.id === 500)?.name === "Müşteri");
 
 // ── REGRESYON: tahsis id çakışması TÜM save'i patlatıyordu ──
@@ -512,11 +513,11 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   return d.some(x => x.id === 8000) && d.some(x => x.id === 8002) && !d.some(x => x.id === 8001);
 })());
 
-// ── Spec 0078 AC-28, AC-49: altı kasa/gider bölümü çöp kutusunda. Beş tabloda deletedAt sütunu tam tur yapar, giderTurleri
+// ── Spec 0078 AC-28, AC-49: kasa/gider bölümleri çöp kutusunda (0082 ile beş). Beş tabloda deletedAt sütunu tam tur yapar, giderTurleri
 // (meta JSON) alanı kayıtla taşır; canlı kayıtta boş deletedAt blob'a hiç yazılmaz (sunucu karşılaştırması null/yokluk ayırır).
 {
   const ZAMAN78 = "2026-10-07T09:00:00.000Z";
-  const BOLUM78 = ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "standartGiderler", "kasaHesaplari"];
+  const BOLUM78 = ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "kasaHesaplari"]; // spec 0082: standart gider kalktı
   const sil78 = structuredClone(reopen3);
   for (const k of BOLUM78) {
     if (!Array.isArray(sil78[k]) || !sil78[k].length) { check(`spec 0078: ${k} örnek veride var`, false); continue; }
@@ -531,6 +532,28 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
     check(`spec 0078 AC-28: ${k} deletedAt tam turu`, l[0]?.deletedAt === ZAMAN78 && l.length === (sil78[k] || []).length);
     check(`spec 0078 AC-49: ${k} canlı kayıtta boş deletedAt blob'a yazılmaz`, l.slice(1).every(x => !("deletedAt" in x)));
   }
+}
+
+// ── Spec 0082 AC-18, AC-25 (R6, B2): standart gider tablosu ölü tablodur. Satırlar ham SQL ile yazılır; bölümü GÖNDEREN (eski
+// istemci, boş dizi dahil) ve GÖNDERMEYEN iki kayıttan sonra satır sayısı değişmez. "Çöpü boşalt" da bir kayıttır, yani tabloya
+// giden tek yol yazma yoludur ve o kaldırıldı.
+{
+  const dbPath = dbmod.getDbPath();
+  const satirSay = () => { dbmod.close(); const c = new Database(dbPath); const n = c.prepare(`SELECT COUNT(*) AS n FROM standart_giderler`).get().n; c.close(); dbmod.migrateFromJsonIfNeeded(); return n; };
+  dbmod.close();
+  { const c = new Database(dbPath); c.prepare(`DELETE FROM standart_giderler`).run();
+    const ins = c.prepare(`INSERT INTO standart_giderler (id, grupId, ad, tutar, baslangicAy, bitisAy, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    ins.run(7001, 7001, "Kira", 20000, "2026-01", null, null); ins.run(7002, 7002, "Elektrik", 4000, "2026-01", null, "2026-09-01T00:00:00.000Z"); c.close(); }
+  dbmod.migrateFromJsonIfNeeded();
+  check("spec 0082 AC-18: ham SQL ile yazılan iki satır var", satirSay() === 2);
+  const b82 = dbmod.readBlobFromDb();
+  check("spec 0082 AC-19: okunan veride bölüm anahtarı yok", !("standartGiderler" in b82));
+  dbmod.writeBlobToDb({ ...b82, standartGiderler: [] });
+  check("spec 0082 AC-18: bölümü boş dizi olarak GÖNDEREN (eski istemci) kayıt satırları silmez", satirSay() === 2);
+  dbmod.writeBlobToDb({ ...b82, standartGiderler: [{ id: 7003, grupId: 7003, ad: "Yeni", tutar: 1, baslangicAy: "2026-01" }] });
+  check("spec 0082 AC-18: bölümü dolu GÖNDEREN kayıt da yazmaz", satirSay() === 2);
+  dbmod.writeBlobToDb(dbmod.readBlobFromDb());
+  check("spec 0082 AC-18, AC-25: bölümü GÖNDERMEYEN kayıt (çöpü boşaltma dahil) satırlara dokunmaz", satirSay() === 2);
 }
 
 fs.rmSync(tmpDir, { recursive: true, force: true });

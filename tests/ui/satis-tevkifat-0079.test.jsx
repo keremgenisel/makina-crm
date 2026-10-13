@@ -231,7 +231,7 @@ describe("Spec 0079 D: rozet, borç satırı ve KDV kartı", () => {
       const [giderler, setGiderler] = useState([{ id: 1, tarih: "2026-09-15", turId: 4, tutar: 60000, kdvOrani: 20, odendi: false }]);
       const [h, setH] = useState([]);
       return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={h} setHesapHareketleri={setH} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-        giderTurleri={[{ id: 4, ad: "H", davranis: "normal" }]} tedarikciler={[]} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]}
+        giderTurleri={[{ id: 4, ad: "H", davranis: "normal" }]} tedarikciler={[]} setTedarikciler={vi.fn()} calisanlar={[]}
         standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={null} kasaHesaplari={[]} kasaYetki aktifKullanici="k"
         baslangicAy="2026-09" kdvRates={KDV} satisVerisi={{ customers: satis, services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
     };

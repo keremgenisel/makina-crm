@@ -101,7 +101,7 @@ describe("Spec 0066: Gider ve Kasa akordeonlarının ayrımı (R4, R10, R14, R15
       { id: "gider_delete", label: "Gider sil (çöp kutusuna)" },
       { id: "gider_odeme", label: "Ödeme kaydet ve sil" },
       { id: "gider_tekrar_uret", label: "Tekrarlayan kalemleri oluştur" },
-      { id: "gider_tanim", label: "Gider türleri, tekrarlayan tanımlar, gider ayarları, standart genel giderler ve çalışan maliyetleri" },
+      { id: "gider_tanim", label: "Gider türleri, tekrarlayan tanımlar, gider ayarları ve çalışan maliyetleri" },
       { id: "tedarikci_add", label: "Tedarikçi ekle" },
       { id: "tedarikci_edit", label: "Tedarikçi düzenle" },
       { id: "tedarikci_delete", label: "Tedarikçi sil" },

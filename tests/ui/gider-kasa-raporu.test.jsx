@@ -23,7 +23,7 @@ const kap = () => screen.getByTestId("gider-kasa-raporu");
 
 function GiderlerEkrani({ veri = VERI(), kasaYetki = true }) {
   return <Giderler giderler={[K]} setGiderler={vi.fn()} hesapHareketleri={HAREKET} setHesapHareketleri={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-    giderTurleri={TURLER} tedarikciler={[{ id: 11, ad: "Demir Bant" }]} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]}
+    giderTurleri={TURLER} tedarikciler={[{ id: 11, ad: "Demir Bant" }]} setTedarikciler={vi.fn()} calisanlar={[]}
     standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={null} kasaYetki={kasaYetki}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} giderKasaRaporVerisi={veri} />;
 }

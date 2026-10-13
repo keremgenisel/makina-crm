@@ -3,8 +3,7 @@ import { Icon, Field, Btn } from "../ui";
 import { KartBolum } from "../tasarim";
 import { esikAltiKalemSayisi, tutarCoz, kisitOranCoz, varsayilanIndirilebilirOran, KISIT_ORAN_VARSAYILAN } from "../../lib/gider";
 import { TutarInput, AyInput, tutarMetni } from "../gider/GiderAlanlari";
-import { HataMetni, Ipucu, Segment } from "../tasarim";
-import { ORTAK_KAYNAK, ORTAK_KAYNAK_ETIKET } from "../../lib/makinaMaliyeti";
+import { HataMetni, Ipucu } from "../tasarim";
 import { hatirlatmaEsikDogrula, hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
 import { hesapsizBaslangicDogrula, denemeDonemiBitisi } from "../../lib/kasa";
 import { fmtTR, yerelBugun } from "../../lib/utils";
@@ -12,10 +11,13 @@ import { fmtTR, yerelBugun } from "../../lib/utils";
 // Gider ayarları (spec 0001 R6, R10): varsayılan kira stopaj oranı ve gider takibinin yürürlük ayı.
 // appSettings.giderAyarlari sunucu-paylaşımlıdır (disAppSettingsSuz'a girmez). Varsayılan resmi aylık
 // işveren maliyeti de bu nesnede durur ama Firma Çalışanları ekranında düzenlenir (plan K20).
+// Spec 0082 R2/2: makina maliyetinin tek ortak gider kaynağı gerçekleşen kayıtlar; eski seçicinin saklanan değeri
+// (`ortakGiderKaynagi`) kayıtta yayılarak geri yazılmasın diye ilk kayıtta düşürülür. Hiçbir yerde okunmaz.
+const ortakKaynaksiz = (g) => { const { ortakGiderKaynagi: _eski, ...kalan } = g || {}; return kalan; };
+
 export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flash = () => {}, canDo = () => true }) => {
   const mevcut = appSettings?.giderAyarlari || {};
   const [form, setForm] = useState({ stopajOrani: tutarMetni(mevcut.stopajOrani ?? 20), yururlukAy: mevcut.yururlukAy || "",
-    ortakGiderKaynagi: mevcut.ortakGiderKaynagi === ORTAK_KAYNAK.STANDART ? ORTAK_KAYNAK.STANDART : ORTAK_KAYNAK.GERCEK,
     hatirlatmaEsikGun: String(hatirlatmaEsigi(mevcut)), hesapsizBaslangic: mevcut.hesapsizBaslangic || "",
     indirilebilirOran: String(varsayilanIndirilebilirOran(mevcut)), // spec 0076 R34
     // Spec 0056 R1, R2 (Q5): alan hiç yoksa varsayılan tarih gösterilir ve kaydedilir; boş = deneme dönemi kapalı.
@@ -40,7 +42,7 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     const deneme = String(form.denemeDonemiBitis || "").trim();
     if (deneme && !/^\d{4}-\d{2}-\d{2}$/.test(deneme)) { setHata("Deneme dönemi bitiş tarihi geçerli bir tarih değil."); return; }
     setHata("");
-    setAppSettings(p => ({ ...p, giderAyarlari: { ...(p?.giderAyarlari || {}), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, ortakGiderKaynagi: form.ortakGiderKaynagi, hatirlatmaEsikGun: e.deger, indirilebilirOran: io.bos ? null : io.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme } }));
+    setAppSettings(p => ({ ...p, giderAyarlari: { ...ortakKaynaksiz(p?.giderAyarlari), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, hatirlatmaEsikGun: e.deger, indirilebilirOran: io.bos ? null : io.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme } }));
     flash("ok", "Gider ayarları kaydedildi.");
   };
 
@@ -62,13 +64,6 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
             <Ipucu>Seçilen ay dahildir. Bu aydan önceki dönemler için rapor rakam üretmez, “gider verisi girilmemiş” gösterir. Boş bırakılırsa eşik uygulanmaz.</Ipucu>
           </Field>
         </div>
-        {/* Spec 0002 R22, C4-3, C8: makina maliyetinde ortak gider payının kaynağı. İki kaynak asla toplanmaz. */}
-        <Field label="Makina maliyetinde ortak gider kaynağı">
-          <Segment ariaLabel="Ortak gider kaynağı" disabled={!yonetebilir}
-            options={[ORTAK_KAYNAK.GERCEK, ORTAK_KAYNAK.STANDART].map(v => ({ value: v, label: ORTAK_KAYNAK_ETIKET[v] }))}
-            value={form.ortakGiderKaynagi} onChange={v => setForm(p => ({ ...p, ortakGiderKaynagi: v }))} />
-          <Ipucu>Yalnız ortak gider payını etkiler; makinaya ve modele atanmış giderler her zaman gerçekleşen kayıtlardan gelir. Bu ayar sunucu üzerinden paylaşılır: değiştirildiğinde bütün kullanıcıların gördüğü maliyet ve kâr rakamı değişir.</Ipucu>
-        </Field>
         {/* Spec 0003 R5: ödeme hatırlatıcısının eşik günü (Anasayfa kartı ve Giderler süzgeci). */}
         <div style={{ maxWidth: 260 }}>
           <Field label="Ödeme hatırlatma eşiği (gün)">

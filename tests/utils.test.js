@@ -788,12 +788,13 @@ describe("tahsilatTarihiOf", () => {
   });
 });
 
-describe("spec 0002 C4-3: ortak gider kaynağı giderAyarlari içinde, sunucu üzerinden paylaşılır", () => {
+// Spec 0082 ile güncellendi: örnek alan ortak gider kaynağıydı (kaldırıldı, R2); kural aynı, örnek hatırlatma eşiği.
+describe("spec 0002 C4-3: gider ayarları giderAyarlari içinde, sunucu üzerinden paylaşılır", () => {
   it("disAppSettingsSuz makinaya özgü saymaz; birleştirmede yerel seçim korunur", () => {
-    const uzak = { giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } };
-    expect(disAppSettingsSuz(uzak).giderAyarlari.ortakGiderKaynagi).toBe("standart");
-    const r = mergeAppSettings({ giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "gercek" } }, uzak);
-    expect(r.giderAyarlari.ortakGiderKaynagi).toBe("standart");
+    const uzak = { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 15 } };
+    expect(disAppSettingsSuz(uzak).giderAyarlari.hatirlatmaEsikGun).toBe(15);
+    const r = mergeAppSettings({ giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7 } }, uzak);
+    expect(r.giderAyarlari.hatirlatmaEsikGun).toBe(15);
   });
 });
 

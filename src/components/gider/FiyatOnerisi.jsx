@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { fmtTR } from "../../lib/utils";
-import { fiyatOnerisi, sonOnIkiAy, FIYAT_YONTEM, FIYAT_YONTEM_ETIKET, ORTAK_KAYNAK_ETIKET } from "../../lib/makinaMaliyeti";
+import { fiyatOnerisi, sonOnIkiAy, FIYAT_YONTEM, FIYAT_YONTEM_ETIKET } from "../../lib/makinaMaliyeti";
 import { Field, Input, Select } from "../ui";
 import { tl2 } from "./GiderAlanlari";
 import { Segment, HataMetni } from "../tasarim";
@@ -46,7 +46,7 @@ export const FiyatOnerisi = ({ sonuc, bugun, modeller = [] }) => {
         {sonucOneri?.hata && <HataMetni>{sonucOneri.hata}</HataMetni>}
         {sonucOneri?.uyari && <div style={{ color: "var(--orTx, #c2410c)", fontWeight: 700 }}>{sonucOneri.uyari}</div>}
         {sonucOneri?.fiyat != null && <div style={{ fontSize: 20, fontWeight: 800, marginTop: 4 }}>Önerilen fiyat: {tl2(sonucOneri.fiyat)}</div>}
-        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 6 }}>Ortak gider kaynağı: {ORTAK_KAYNAK_ETIKET[sonuc.kaynak]}. Stoktan çekilen parçaların maliyeti hariç.</div>
+        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 6 }}>Stoktan çekilen parçaların maliyeti hariç.</div>
       </div>
     </div>
   );

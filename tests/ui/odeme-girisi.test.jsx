@@ -26,12 +26,11 @@ function H({ g0 = [NORMAL], h0 = [], c0 = C, kasaYetki = true, onState, izle }) 
   const [cekler, setCekler] = useState(c0);
   const [giderTanimlari, setGiderTanimlari] = useState([]);
   const [tedarikciler, setTedarikciler] = useState(TED);
-  const [standartGiderler, setStandartGiderler] = useState([]);
   const st = { giderler, hesapHareketleri, cekler };
   onState?.(st); izle?.push(st);
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
     giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
-    standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} calisanlar={CAL} standardModels={[]} customModels={[]}
+    calisanlar={CAL} standardModels={[]} customModels={[]}
     appSettings={{ giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20 } }} serverPermissions={null}
     kasaHesaplari={HESAP} kasaYetki={kasaYetki} cekler={kasaYetki ? cekler : []} setCekler={kasaYetki ? setCekler : null} payments={kasaYetki ? cekleriUygula(P, cekler) : []}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;

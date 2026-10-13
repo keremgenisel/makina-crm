@@ -1,6 +1,5 @@
 import { fmtTR } from "../../lib/utils";
 import { kalemGiderTutari, kalemGorunenAd, ayOf, ayEkle, dagitimRozetMetni, tl } from "../../lib/gider";
-import { ORTAK_KAYNAK, DAGITIM_STANDART_NOTU } from "../../lib/makinaMaliyeti";
 import { tl2 } from "./GiderAlanlari";
 import { KartBolum } from "../tasarim";
 import { Pagination } from "../ui";
@@ -29,16 +28,11 @@ const DagitimKutusu = ({ makinaMaliyet, giderler, baslangic, bitis, ad, tutar })
   const ids = new Set(aylar.flatMap(ay => (makinaMaliyet.aylar.get(ay)?.dagitimlar || []).map(d => String(d.kalemId))));
   if (!ids.size) return null;
   const kalemler = giderler.filter(k => ids.has(String(k.id))).sort((a, b) => (a.tarih < b.tarih ? -1 : a.tarih > b.tarih ? 1 : 0));
-  const standart = makinaMaliyet.kaynak === ORTAK_KAYNAK.STANDART;
   const toplamK = aylar.reduce((a, ay) => a + (makinaMaliyet.aylar.get(ay)?.ortakGercek || 0), 0);
   return (
     <KartBolum varyant="kart" baslikStili="baslik" title="Bu dönemde makina maliyetine giren ortak gider" testId="dagitim-kutusu" baslikBosluk={10} baslikRengi="inherit">
-      {standart ? <div style={{ fontSize: 13 }}>{DAGITIM_STANDART_NOTU}</div> : (
-        <>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}><span>Ortak gider (aylık paylarla)</span><b data-testid="dagitim-kutusu-toplam">{tl2(tl(toplamK))}</b></div>
-          <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{DAGITIM_KUTU_IBARESI}</div>
-        </>
-      )}
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}><span>Ortak gider (aylık paylarla)</span><b data-testid="dagitim-kutusu-toplam">{tl2(tl(toplamK))}</b></div>
+      <div style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{DAGITIM_KUTU_IBARESI}</div>
       {kalemler.map(x => (
         <div key={x.id} data-testid="dagitim-kutusu-kalem" style={satirStil}>
           <span style={{ color: "var(--n600, #475569)" }}>{fmtTR(x.tarih)}</span>

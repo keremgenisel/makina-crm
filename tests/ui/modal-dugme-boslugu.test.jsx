@@ -8,7 +8,7 @@ import { render, screen, fireEvent, cleanup, within } from "@testing-library/rea
 import { Modal, Btn } from "../../src/components/ui";
 import { GiderForm } from "../../src/components/GiderForm";
 import { Tedarikciler } from "../../src/components/gider/Tedarikciler";
-import { StandartGiderler } from "../../src/components/gider/StandartGiderler";
+import { UretimPartileri } from "../../src/components/gider/UretimPartileri";
 import { GiderTurManager } from "../../src/components/settings/GiderTurManager";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
 import { ServiceForm } from "../../src/components/ServiceForm";
@@ -38,21 +38,21 @@ function TurH() {
   const [giderTurleri, setGiderTurleri] = useState(TURLER);
   return <GiderTurManager giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} giderler={[]} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()} showToast={vi.fn()} />;
 }
-function StdH() {
-  const [sg, setSg] = useState([{ id: 1, grupId: 1, ad: "Elektrik", tutar: 5000, baslangicAy: "2026-01", bitisAy: null }]);
-  return <StandartGiderler standartGiderler={sg} setStandartGiderler={setSg} showToast={vi.fn()} canDo={() => true} />;
-}
 // Sarmalayıcısız altı formdan beşinin penceresi; açılış adımı ve birincil düğmenin metni.
 const PENCERELER = [
   ["GiderForm", () => render(<GiderForm giderTurleri={TURLER} tedarikciler={[]} calisanlar={[]} modeller={[]} stock={[]} customers={[]} giderAyarlari={{}} onSave={vi.fn()} onCancel={vi.fn()} />), "İptal", "Kaydet"],
   ["SettingsGiderTanimlari", () => { render(<SettingsGiderTanimlari giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TURLER} calisanlar={[]} showToast={vi.fn()} />); fireEvent.click(screen.getByText("Yeni Tanım")); }, "İptal", "Kaydet"],
   ["GiderTurManager", () => { render(<TurH />); fireEvent.click(screen.getAllByTitle("Düzenle")[0]); }, "İptal", "Kaydet"],
   ["Tedarikciler", () => { render(<Tedarikciler tedarikciler={[]} setTedarikciler={vi.fn()} giderler={[]} giderTanimlari={[]} showToast={vi.fn()} />); fireEvent.click(screen.getByText("Yeni Tedarikçi")); }, "İptal", "Kaydet"],
-  ["StandartGiderler", () => { render(<StdH />); fireEvent.click(screen.getByText("Tutarı değiştir")); }, "İptal", "Kaydet"],
+  // Spec 0082 C7 (2): beşinci pencere silinen standart gider ekranının yerine Üretim Partisi penceresi (aynı sınıf, İptal + Kaydet).
+  ["UretimPartileri", () => { render(<UretimPartileri uretimPartileri={[]} setUretimPartileri={vi.fn()} stock={[]} customers={[]} showToast={vi.fn()} canDo={() => true} />); fireEvent.click(screen.getByText("Yeni Üretim Partisi")); }, "İptal", "Kaydet"],
 ];
 const birincil = (metin) => screen.getAllByText(metin).map(e => e.closest("button")).filter(Boolean).pop();
 
 describe("Spec 0045: form pencerelerinde düğme boşluğu", () => {
+  it("spec 0082 AC-32: beş pencere kalır; silinen standart gider penceresinin yerinde Üretim Partisi penceresi", () => {
+    expect(PENCERELER.map(p => p[0])).toEqual(["GiderForm", "SettingsGiderTanimlari", "GiderTurManager", "Tedarikciler", "UretimPartileri"]);
+  });
   it.each(PENCERELER)("AC-13 / AC-14 / AC-16: %s alt satırında boşluk var, ikincil solda birincil en sağda", (ad, ac, ikincil, bir) => {
     ac();
     const kap = altKap(birincil(bir));

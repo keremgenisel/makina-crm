@@ -9,7 +9,7 @@ import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGi
 import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
 import { MakinaKarliligi } from "../../src/components/gider/MakinaKarliligi";
 import { DAGITIM_KUTU_IBARESI } from "../../src/components/gider/MakinaModelGorunumu";
-import { hesaplaMakinaMaliyetleri, makinaKarlilik, DAGITIM_NOTU, DAGITIM_STANDART_NOTU } from "../../src/lib/makinaMaliyeti";
+import { hesaplaMakinaMaliyetleri, makinaKarlilik, DAGITIM_NOTU } from "../../src/lib/makinaMaliyeti";
 import { DAGITIM_MAKINA_NEDENI, DAGITIM_DAGITMA_NEDENI, DAGITIM_MODEL_IPUCU, DAGITIM_TANIM_IPUCU } from "../../src/lib/gider";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -110,10 +110,10 @@ describe("Spec 0072: tekrarlayan tanım formu", () => {
 // ── Gerçek Giderler: kalem listesi rozeti ve Makina ve Model kutusu ────────
 const INTERNET = { id: 10, tarih: "2026-09-02", turId: 4, tutar: 12000, kdvOrani: 20, aciklama: "İnternet aboneliği", dagitimAy: 12 };
 const NORMAL = { id: 11, tarih: "2026-09-05", turId: 4, tutar: 500, kdvOrani: 20, aciklama: "Kırtasiye" };
-const hesapla = (giderler, o = {}) => hesaplaMakinaMaliyetleri({ customers: [], stock: [], giderler, giderTurleri: TURLER, standartGiderler: [], standardModels: MOD, customModels: [],
+const hesapla = (giderler, o = {}) => hesaplaMakinaMaliyetleri({ customers: [], stock: [], giderler, giderTurleri: TURLER, standardModels: MOD, customModels: [],
   giderAyarlari: { yururlukAy: "2026-01" }, ...o }, { bugun: "2026-09-24" });
 const giderlerAc = (giderler, makinaMaliyet = hesapla(giderler)) => render(<Giderler giderler={giderler} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-  giderTurleri={TURLER} tedarikciler={[]} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={CAL} stock={[]} customers={[]}
+  giderTurleri={TURLER} tedarikciler={[]} setTedarikciler={vi.fn()} calisanlar={CAL} stock={[]} customers={[]}
   standardModels={MOD} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} showToast={vi.fn()} makinaMaliyet={makinaMaliyet}
   satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} />);
 
@@ -139,14 +139,11 @@ describe("Spec 0072: kalem listesi ve Makina ve Model", () => {
     expect(kalem.textContent).toMatch(/12\.000 ₺/);
     expect(kalem.textContent).toMatch(/12 aya dağıtılmış/);
   });
-  it("AC-38: dönemde dağıtılmış kalem yoksa kutu çizilmez; standart kaynakta etkisizlik cümlesi", () => {
+  // Spec 0082 ile güncellendi: AC-38'in "standart kaynakta etkisizlik" yarısı kalktı (tek kaynak).
+  it("AC-38: dönemde dağıtılmış kalem yoksa kutu çizilmez", () => {
     giderlerAc([NORMAL]);
     fireEvent.click(screen.getByText("Makina ve Model"));
     expect(screen.queryByTestId("dagitim-kutusu")).toBeNull();
-    cleanup();
-    giderlerAc([INTERNET], hesapla([INTERNET], { giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } }));
-    fireEvent.click(screen.getByText("Makina ve Model"));
-    expect(within(screen.getByTestId("dagitim-kutusu")).getByText(DAGITIM_STANDART_NOTU)).toBeTruthy();
   });
 });
 
@@ -161,11 +158,8 @@ describe("Spec 0072: maliyet detayı ve notlar", () => {
     expect(screen.queryByTestId("dagitim-paylari")).toBeNull();
     expect(screen.queryByTestId("dagitim-notu")).toBeNull();
   });
-  it("AC-17: Makina Kârlılığı notları standart kaynakta etkisizlik cümlesini yazar", () => {
-    render(<MakinaKarliligi sonuc={hesapla([INTERNET], { customers: [mus], giderAyarlari: { yururlukAy: "2026-01", ortakGiderKaynagi: "standart" } })}
-      baslangic="2026-09-01" bitis="2026-09-30" bugun="2026-09-24" modeller={MOD} />);
-    expect(screen.getByTestId("dagitim-notu").textContent).toBe(DAGITIM_STANDART_NOTU);
-  });
+  // Spec 0082 ile kaldırıldı: 0072 AC-17'nin standart kaynak yarısı (tek kaynak).
+
   it("AC-31: personel davranışlı dağıtılmış kalemin detay satırı 'Personel gideri' yazar", () => {
     const pers = { id: 12, tarih: "2026-09-01", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "Hasan Çelik", resmiTutar: 1200, eldenTutar: 0, dagitimAy: 12 };
     render(<MakinaMaliyetDetay detay={makinaKarlilik(hesapla([pers], { customers: [mus] }), "musteri:1")} />);

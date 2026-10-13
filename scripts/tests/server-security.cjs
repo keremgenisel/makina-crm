@@ -491,6 +491,28 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
       && !(await gUst(adminTok)).tedarikciler.some(t => t.id === 9070));
   }
 
+  // ── Spec 0082 AC-17, C4 (karışık sürüm): güncellenmemiş istemci gövdede standart gider bölümünü göndermeye devam eder.
+  // Yeni sunucu bölümü tanımaz: kısıtlı kullanıcı 403 almaz, tablo yazılmaz (ham SQL ile satır sayısı), işlem geçmişi bölüm
+  // adı yazmaz. Satırlar sunucu açıkken ham bağlantıyla yazılır (ölü tablo; uygulama okumaz).
+  {
+    const Database = require(path.join(root, "node_modules", "better-sqlite3"));
+    const ham = () => new Database(dbmod.getDbPath());
+    { const c = ham(); c.prepare(`INSERT INTO standart_giderler (id, grupId, ad, tutar, baslangicAy) VALUES (8801, 8801, 'Kira', 20000, '2026-01'), (8802, 8802, 'Su', 500, '2026-01')`).run(); c.close(); }
+    const say = () => { const c = ham(); const n = c.prepare(`SELECT COUNT(*) AS n FROM standart_giderler`).get().n; c.close(); return n; };
+    let g82 = await gUst(gidTok);
+    check("spec 0082 AC-19: sunucunun verdiği veride standart gider bölümü yok", !("standartGiderler" in g82));
+    const r1 = await postData({ ...g82, dataVersion: undefined, standartGiderler: [] }, g82.dataVersion, gidTok);
+    check("spec 0082 AC-17: eski istemci gövdesi (boş standart bölüm) kısıtlı kullanıcıda 403 almaz → 200", r1.status === 200);
+    g82 = await gUst(gidTok);
+    const r2 = await postData({ ...g82, dataVersion: undefined, giderler: [...(g82.giderler || []), { id: 9801, tarih: "2026-09-10", turId: 1, tutar: 100, kdvOrani: 0 }],
+      standartGiderler: [{ id: 8803, grupId: 8803, ad: "Yeni", tutar: 1, baslangicAy: "2026-01" }] }, g82.dataVersion, gidTok);
+    check("spec 0082 AC-17: eski istemci gövdesi (dolu standart bölüm + meşru kalem) → 200, meşru kalem yazıldı", r2.status === 200 && (await gUst(gidTok)).giderler.some(k => k.id === 9801));
+    check("spec 0082 AC-17, AC-18: tablo yazılmadı (iki ham satır aynen)", say() === 2);
+    const a82 = await (await api("/api/audit?limit=300", {}, adminTok)).json();
+    const satirlar82 = (a82.rows || []).filter(r => r.action === "veri_kaydedildi" && r.username === "giderci");
+    check("spec 0082 AC-17: bu yazımların işlem geçmişinde standart gider bölüm adı yok", satirlar82.length > 0 && satirlar82.every(r => !/Standart/.test(r.entity_name || "")));
+  }
+
   // ── Spec 0040: çek portföyü (AC-20, AC-33, AC-34) ─────────────────────────────
   let cA = await gUst(adminTok);
   await postData({ ...cA, dataVersion: undefined, customers: [...(cA.customers || []), { id: 9600, name: "Çekli Müşteri", kaliplar: [] }],

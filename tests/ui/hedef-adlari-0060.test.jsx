@@ -37,7 +37,7 @@ function GiderH({ h0 = H0, perms = null, onHedef }) {
   const [giderler, setGiderler] = useState(GIDERLER);
   const [hesapHareketleri, setHesapHareketleri] = useState(h0);
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
+    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
     appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={perms} kasaHesaplari={[{ id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 0, acilisTarihi: "2026-01-01" }]}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
 }
@@ -98,7 +98,7 @@ describe("Spec 0060 R6, R7 (triyaj bulgu 1): ek ödeme özeti hedef başına", (
     function H2() {
       const [g, setG] = useState([P2]);
       return <Giderler giderler={g} setGiderler={setG} hesapHareketleri={[]} setHesapHareketleri={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-        giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
+        giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={CAL} standardModels={[]} customModels={[]}
         appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={null}
         satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
     }

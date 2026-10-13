@@ -163,7 +163,6 @@ const BOLUM_ADLARI = {
   giderTanimlari: "Tekrarlayan Giderler",
   giderTurleri: "Gider Türleri",
   tedarikciler: "Tedarikçiler",
-  standartGiderler: "Standart Genel Giderler",
   uretimPartileri: "Üretim Partileri",
   kasaHesaplari: "Kasa ve Banka Hesapları", hesapHareketleri: "Hesap Hareketleri",
   cekler: "Çek Portföyü",

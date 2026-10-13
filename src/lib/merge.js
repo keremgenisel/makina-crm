@@ -23,10 +23,10 @@ import { stokEtkisi } from "./stokHareketi";
 // eklenmeli — yoksa sunucu-PC yeniden yükle+birleştir (mergeLocalIntoReloaded) sırasında o dizideki
 // yerel eklemeler düşer (calisanlar bu yüzden kayboluyordu). calisanlar'ın dış id referansı yok,
 // bu yüzden 2. geçişteki remap listelerine eklenmesi gerekmez.
-// Gider kaydı (spec 0001): kalem, tekrarlayan tanım, tür, tedarikçi ve standart genel gider listeleri.
+// Gider kaydı (spec 0001): kalem, tekrarlayan tanım, tür ve tedarikçi listeleri (standart gider spec 0082 ile kalktı).
 // Model dağılım satırları kalemin içinde taşınır (tahsis deseni), ayrı anahtar değildir.
 export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "payments", "gorusmeler", "dosyalar", "uretimFormlari", "faturalar", "calisanlar", "yedekParcaSatislar",
-  "giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "standartGiderler", "uretimPartileri",
+  "giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "uretimPartileri",
   // Spec 0024: kasa hesapları ve hesap hareketleri (ödeme, virman).
   "kasaHesaplari", "hesapHareketleri",
   // Spec 0040: çek portföyü (tahsilata bağlı).
@@ -48,7 +48,7 @@ export const kimlikOf = (key, x) => x?.[KIMLIK_ALANI[key] || "id"];
 
 // Spec 0077 R14, R16, X1: deletedAt'i birleştirmede korunan bölümler = MERGE_KEYS'ten kalıcı silinen bölümler ve stok
 // hareketi (yalnız büyür) çıkınca kalanlar. Kalıcı silinen bölümlerde silme diziden çıkarmaktır, iki blobla ayırt edilemez.
-// Spec 0078 R30 (S2): hareketler, çekler, tanımlar, türler, standart giderler ve kasa hesapları çöp kutusuna girdi ve bu
+// Spec 0078 R30 (S2): hareketler, çekler, tanımlar, türler ve kasa hesapları çöp kutusuna girdi ve bu
 // kümeden çıktı; geriye silmesi zaten geri alma olan kapsam dışı girişleri (0078 X1) ve yalnız büyüyen stok hareketi kalır.
 export const KALICI_SILINEN = new Set(["kasaKapsamDisi", "partStockLog"]);
 export const SILME_KORUNAN = MERGE_KEYS.filter(k => !KALICI_SILINEN.has(k));
@@ -198,7 +198,6 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null, ta
   const KAPSAM_HARITA = { servis: "services", kalip: "partSales", yedekParca: "yedekParcaSatislar" };
   adds.kasaKapsamDisi = adds.kasaKapsamDisi.map(g => ({ ...g,
     kayitId: remapRef(maps[g.tur === "hareket" ? "hesapHareketleri" : KAPSAM_HARITA[g.kaynak]] || new Map(), g.kayitId) }));
-  adds.standartGiderler = adds.standartGiderler.map(x => ({ ...x, grupId: remapRef(maps.standartGiderler, x.grupId) }));
   // Üretim partisi (spec 0022): satılmış makinanın damgalı parti bağı yeniden atanan parti id'sini izler.
   // Spec 0077 R31: makina stoğu artık birleşir; satılan makinanın kaynak stok satırı (sourceStockId) yeniden atanan stok
   // kimliğini izler (seri/stok düşümü koruması aşağıda bu değerle çalışır).

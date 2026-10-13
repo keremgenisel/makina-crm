@@ -21,10 +21,10 @@ const GIDER = {
   giderTanimlari: [{ id: 3, ad: "Kira", turId: 1, baslangicAy: "2026-01" }],
   giderTurleri: [{ id: 1, ad: "Malzeme", davranis: "normal" }],
   tedarikciler: [{ id: 11, ad: "Demir Bant" }],
-  standartGiderler: [{ id: 21, grupId: 21, ad: "Elektrik", tutar: 1000, baslangicAy: "2026-01" }],
+  // spec 0082 ile kaldırıldı: standart gider bölümü (yedekte yazılmaz; eski yedeğin yok sayılması spec 0082 AC-20).
 };
 const ANAHTARLAR = Object.keys(GIDER);
-const SETTER = { giderler: "setGiderler", giderTanimlari: "setGiderTanimlari", giderTurleri: "setGiderTurleri", tedarikciler: "setTedarikciler", standartGiderler: "setStandartGiderler" };
+const SETTER = { giderler: "setGiderler", giderTanimlari: "setGiderTanimlari", giderTurleri: "setGiderTurleri", tedarikciler: "setTedarikciler" };
 
 const temel = () => ({
   customers: [], services: [], dealers: [], stock: [], customModels: [], standardModels: [], factory: {},
@@ -56,7 +56,7 @@ const geriYukleAc = async (yedek) => {
 };
 
 describe("AC-8: Kurulu sürümde yedekleme ekranında gider ibaresi görünmez, ancak alınan yedek dosyası gider verisini içerir", () => {
-  it("perde inik (giderYetki false, izin var): ekranda gider sözü yok; yedekte beş gider dizisi aynen var", async () => {
+  it("perde inik (giderYetki false, izin var): ekranda gider sözü yok; yedekte dört gider dizisi aynen var (spec 0082: beşten dörde)", async () => {
     const p = temel();
     const { container } = render(<SettingsBackup {...p} giderYetki={false} giderVeriYetki />);
     expect(container.textContent).not.toMatch(/gider/i);
@@ -74,7 +74,7 @@ describe("AC-8: Kurulu sürümde yedekleme ekranında gider ibaresi görünmez, 
 
 describe("AC-9: Böyle alınmış bir yedek geri yüklendiğinde gider verisi eksiksiz geri gelir", () => {
   const yedek = { app: "altunmak-crm", schemaVersion: 2, customers: [], notes: [], ...GIDER };
-  it("tam geri yükleme (görünen bütün paketler seçili): beş gider dizisi yedekteki hâliyle yerleşir", async () => {
+  it("tam geri yükleme (görünen bütün paketler seçili): dört gider dizisi yedekteki hâliyle yerleşir (spec 0082: beşten dörde)", async () => {
     const p = temel();
     render(<SettingsBackup {...p} giderYetki={false} giderVeriYetki />);
     await geriYukleAc(yedek);

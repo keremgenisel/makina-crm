@@ -299,6 +299,7 @@ CREATE TABLE IF NOT EXISTS tedarikciler (
   id INTEGER PRIMARY KEY,
   ad TEXT, yetkili TEXT, telefon TEXT, eposta TEXT, vergiDairesi TEXT, vergiNo TEXT, adres TEXT, notField TEXT, deletedAt TEXT
 );
+-- Spec 0082 R6, X1: ölü tablo. Ne okunur ne yazılır; satırlar yerinde durur (güncellenmemiş istemci boşaltamasın).
 CREATE TABLE IF NOT EXISTS standart_giderler (
   id INTEGER PRIMARY KEY,
   grupId INTEGER, ad TEXT, tutar REAL, baslangicAy TEXT, bitisAy TEXT, deletedAt TEXT
@@ -563,7 +564,7 @@ const DELETED_AT_COLUMN = [["deletedAt", "TEXT"]];
 // Spec 0068 R8, R9, R9b: tedarikçi ve üretim partisi de çöp kutusuna gider (önceden kalıcı siliniyordu).
 const TABLES_WITH_TRASH = ["customers", "dealers", "services", "stock", "notes", "parts", "part_sales", "payments", "kalip_defs", "custom_models", "uretim_formlari", "gorusmeler", "dosyalar", "teklifler", "faturalar", "yedek_parca_satis", "tedarikciler", "uretim_partileri",
   // Spec 0078 R1, R5: kasa ve gider kayıtları çöp kutusuna (giderTurleri meta JSON, alan kayıtla taşınır).
-  "hesap_hareketleri", "cekler", "gider_tanimlari", "standart_giderler", "kasa_hesaplari"];
+  "hesap_hareketleri", "cekler", "gider_tanimlari", "kasa_hesaplari"];
 
 const toInt = (b) => (b ? 1 : 0);
 const toBool = (v) => !!v;
@@ -953,11 +954,7 @@ function populateAll(conn, data, skip = new Set()) {
     const stmt = conn.prepare(`INSERT INTO tedarikciler (id, ad, yetkili, telefon, eposta, vergiDairesi, vergiNo, adres, notField, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const t of data.tedarikciler) stmt.run(t.id, t.ad ?? null, t.yetkili ?? null, t.telefon ?? null, t.eposta ?? null, t.vergiDairesi ?? null, t.vergiNo ?? null, t.adres ?? null, t.not ?? null, t.deletedAt ?? null);
   }
-  if (Array.isArray(data.standartGiderler) && !skip.has("standartGiderler")) {
-    conn.prepare(`DELETE FROM standart_giderler`).run();
-    const stmt = conn.prepare(`INSERT INTO standart_giderler (id, grupId, ad, tutar, baslangicAy, bitisAy, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    for (const s of data.standartGiderler) stmt.run(s.id, s.grupId ?? s.id, s.ad ?? null, s.tutar ?? null, s.baslangicAy ?? null, s.bitisAy ?? null, s.deletedAt ?? null);
-  }
+  // Spec 0082 R6 (B2): standart gider yazma yolu kaldırıldı; gövdede gelse bile tablo boşaltılmaz.
 
   if (Array.isArray(data.teklifler) && !skip.has("teklifler")) {
     conn.prepare(`DELETE FROM teklifler`).run();
@@ -1004,7 +1001,7 @@ function populateAll(conn, data, skip = new Set()) {
 
   const nextId = typeof data.nextId === "number"
     ? data.nextId
-    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.standartGiderler, data.uretimPartileri, data.kasaHesaplari, data.hesapHareketleri, data.cekler, data.kasaKapsamDisi]) + 1;
+    : maxIdAcross([data.customers, data.dealers, data.services, data.stock, data.partSales, data.payments, data.kalipDefs, data.partStock, data.partStockLog, data.uretimFormlari, data.yedekParcaSatislar, data.giderler, data.giderTanimlari, data.tedarikciler, data.uretimPartileri, data.kasaHesaplari, data.hesapHareketleri, data.cekler, data.kasaKapsamDisi]) + 1;
   conn.prepare(`INSERT INTO meta (key, value) VALUES ('nextId', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(String(nextId));
 }
 
@@ -1506,7 +1503,6 @@ function readBlobFromDb() {
   }));
   const tedarikciler = db.prepare(`SELECT * FROM tedarikciler`).all().map(({ notField, ...rest }) => ({ ...rest, not: notField }));
   // Spec 0078 C4: boş deletedAt blob'a yazılmaz (sunucu karşılaştırması null ile yokluğu ayırır).
-  const standartGiderler = db.prepare(`SELECT * FROM standart_giderler`).all().map(({ deletedAt, ...rest }) => ({ ...rest, ...bosOlmayan({ deletedAt }) }));
   const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, deletedAt, ...rest }) => ({ ...rest, kapali: toBool(kapali), ...bosOlmayan({ deletedAt }) }));
   const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, deletedAt, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir), ...bosOlmayan({ deletedAt }) }));
   const kasaKapsamDisi = db.prepare(`SELECT * FROM kasa_kapsam_disi`).all();
@@ -1537,7 +1533,7 @@ function readBlobFromDb() {
     customers, dealers, stock, kalipDefs, partTypeDefs, calisanlar, standardModels, customModels, factory,
     services, notes, parts, partSales, payments, gorusmeler, dosyalar, teklifler, appSettings, nextId,
     partStock, partStockLog, faturalar, uretimFormlari, yedekParcaSatislar,
-    giderler, giderTanimlari, giderTurleri, tedarikciler, standartGiderler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, kasaKapsamDisi,
+    giderler, giderTanimlari, giderTurleri, tedarikciler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, kasaKapsamDisi,
   };
 }
 

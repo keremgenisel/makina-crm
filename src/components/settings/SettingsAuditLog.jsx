@@ -10,7 +10,6 @@ const ENTITY_LABELS = {
   yedek_parca_satis: "Yedek Parça Satışı",
   // Gider kaydı (spec 0001)
   gider: "Gider", gider_tanim: "Tekrarlayan Gider", gider_tur: "Gider Türü", tedarikci: "Tedarikçi",
-  standart_gider: "Standart Genel Gider",
   uretim_partisi: "Üretim Partisi", // spec 0022; etiketi 0068 ile eklendi (önceden ham anahtar görünüyordu)
   // Kasa (spec 0024)
   kasa_hesap: "Kasa/Banka Hesabı", kasa_kapsam: "Kasa İş Listesi", kasa_hareketi: "Kasa Hareketi", virman: "Virman", avans: "Çalışan Avansı", cek: "Çek",
@@ -31,7 +30,6 @@ const ACTION_LABELS = {
   odendi: "Ödendi", odeme_iptal: "Ödeme İptal",
   // Gider kaydı (spec 0001)
   tekrar_uretildi: "Tekrarlayan Kalemler Oluşturuldu", tur_tasindi: "Tür Taşındı", tanim_kapatildi: "Tanım Kapatıldı",
-  surum_eklendi: "Yeni Tutar Sürümü", surum_geri_alindi: "Sürüm Geri Alındı", sona_erdirildi: "Sona Erdirildi",
   // Kasa (spec 0024)
   kapatildi: "Kapatıldı", acildi: "Yeniden Açıldı", kapsam_disi: "Kapsam Dışı Bırakıldı", hareket_tasindi: "Hareketleri Taşındı", kapsama_alindi: "Kapsama Alındı", mahsup_edildi: "Avanstan Mahsup Edildi",
   // Çek portföyü (spec 0040)

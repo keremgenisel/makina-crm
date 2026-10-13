@@ -98,7 +98,7 @@ const GIDERLER = [
 const CUSTOMERS = [mus(1), mus(2), mus(9, { deletedAt: "2026-04-01" })];
 const rapor = () => hesaplaGiderRaporu({ giderler: GIDERLER, turler: TUR, tedarikciler: [], customers: CUSTOMERS, canliModeller: canliModelSeti(MOD, []), yururlukAy: "2026-01" },
   { baslangic: "2026-03-01", bitis: "2026-03-31" }, { bugun: "2026-09-24" });
-const maliyet = () => hesaplaMakinaMaliyetleri({ customers: CUSTOMERS, stock: [], partStockLog: [], giderler: GIDERLER, giderTurleri: TUR, standartGiderler: [],
+const maliyet = () => hesaplaMakinaMaliyetleri({ customers: CUSTOMERS, stock: [], partStockLog: [], giderler: GIDERLER, giderTurleri: TUR,
   standardModels: MOD, customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-24" });
 
 describe("Makina ve Model görünümü (R8, R9, R10)", () => {

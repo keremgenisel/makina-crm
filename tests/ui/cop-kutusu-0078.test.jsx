@@ -24,7 +24,7 @@ const VARSAYILAN = {
   cekler: [{ id: 30, paymentId: null, yon: "alinan", no: "123", banka: "Ziraat", kesideci: "Ali Veli", tutar: 5, durum: "portfoy", gecmis: [], deletedAt: Z }],
   tanimlar: [{ id: 81, turId: 9, ad: "İnternet", baslangicAy: "2026-01", deletedAt: Z }, { id: 82, turId: 1, ad: "Mehmet Kaya", calisanId: 8, baslangicAy: "2026-01", deletedAt: Z }],
   turler: [...TURLER, { id: 3, ad: "Sigorta", davranis: "normal", deletedAt: Z }],
-  standart: [{ id: 91, grupId: 91, ad: "Kira", tutar: 100, baslangicAy: "2026-01", bitisAy: "2026-06", deletedAt: Z }, { id: 92, grupId: 91, ad: "Kira", tutar: 120, baslangicAy: "2026-07", bitisAy: null, deletedAt: Z }],
+  // spec 0082 ile kaldırıldı: standart gider satırları (bölüm çöp kutusunda değil, R8).
   hesaplar: [{ id: 52, ad: "Eski Kasa", tur: "kasa", paraBirimi: "TRY", deletedAt: Z }],
 };
 const TUM_IZIN = null; // izin tanımsız = tam erişim
@@ -34,9 +34,8 @@ function H({ v = VARSAYILAN, giderYetki = true, kasaVeriYetki = true, perms = TU
   const [cekler, setCekler] = useState(v.cekler);
   const [tanimlar, setTanimlar] = useState(v.tanimlar);
   const [turler, setTurler] = useState(v.turler);
-  const [standart, setStandart] = useState(v.standart);
   const [hesaplar, setHesaplar] = useState(v.hesaplar);
-  onState?.({ hareketler, cekler, tanimlar, turler, standart, hesaplar });
+  onState?.({ hareketler, cekler, tanimlar, turler, hesaplar });
   return <SettingsTrash rawCustomers={bos} rawServices={bos} rawPartSales={bos} rawPayments={bos} rawDealers={bos} rawStock={bos} rawNotes={bos}
     rawKalipDefs={bos} rawParts={bos} rawCustomModels={bos} rawTeklifler={bos} rawFaturalar={bos} rawUretimFormlari={bos} rawGorusmeler={bos} rawDosyalar={bos}
     setCustomers={noop} setServices={noop} setPartSales={noop} setPayments={noop} setDealers={noop} setStock={noop} setNotes={noop} setKalipDefs={noop}
@@ -45,22 +44,21 @@ function H({ v = VARSAYILAN, giderYetki = true, kasaVeriYetki = true, perms = TU
     rawTedarikciler={bos} setTedarikciler={noop} rawUretimPartileri={bos} setUretimPartileri={noop} serverPermissions={perms}
     rawHesapHareketleri={hareketler} setHesapHareketleri={setHareketler} cekler={cekler} setCekler={setCekler}
     rawGiderTanimlari={tanimlar} setGiderTanimlari={setTanimlar} setGiderTurleri={setTurler}
-    rawStandartGiderler={standart} setStandartGiderler={setStandart} rawKasaHesaplari={hesaplar} setKasaHesaplari={setHesaplar} kasaVeriYetki={kasaVeriYetki} />;
+    rawKasaHesaplari={hesaplar} setKasaHesaplari={setHesaplar} kasaVeriYetki={kasaVeriYetki} />;
 }
 const satirTur = (tur) => screen.getAllByRole("row").filter(r => within(r).queryAllByText(tur).length && r.querySelector("td"));
 
 describe("Spec 0078 D: Çöp Kutusu'nda altı satır türü", () => {
-  it("AC-1, AC-3, AC-4, AC-5: ödeme, avans, çek, tanım, tür, standart gider ve hesap görünür ve geri alınır", () => {
+  // Spec 0082 ile güncellendi: standart gider satırı kalktı (altı → beş tür, R8).
+  it("AC-1, AC-3, AC-4, AC-5: ödeme, avans, çek, tanım, tür ve hesap görünür ve geri alınır", () => {
     let st;
     render(<H onState={s => { st = s; }} />);
-    for (const t of ["Ödeme", "Avans", "Çek", "Tekrarlayan Tanım", "Gider Türü", "Standart Gider", "Kasa Hesabı"]) expect(satirTur(t).length, t).toBeGreaterThan(0);
-    expect(satirTur("Standart Gider")).toHaveLength(1); // R38: grup başına tek satır
+    for (const t of ["Ödeme", "Avans", "Çek", "Tekrarlayan Tanım", "Gider Türü", "Kasa Hesabı"]) expect(satirTur(t).length, t).toBeGreaterThan(0);
     for (const r of screen.getAllByRole("row").filter(r => r.querySelector("td"))) fireEvent.click(within(r).getByText("Geri Al"));
     expect(st.hareketler.every(h => h.deletedAt === undefined)).toBe(true);
     expect(st.cekler[0].deletedAt).toBeUndefined();
     expect(st.tanimlar.every(t => t.deletedAt === undefined)).toBe(true);
     expect(st.turler.find(t => t.id === 3).deletedAt).toBeUndefined();
-    expect(st.standart.every(s => s.deletedAt === undefined)).toBe(true);
     expect(st.hesaplar[0].deletedAt).toBeUndefined();
     expect(screen.getByText("Çöp kutusu boş.")).toBeTruthy();
   });
@@ -72,19 +70,16 @@ describe("Spec 0078 D: Çöp Kutusu'nda altı satır türü", () => {
     expect(metin).toContain("Elektrik · İnternet");
     expect(metin).toContain("Eski Kasa · Kasa");
   });
-  it("AC-7: aynı adda canlı tür, hesap ya da standart gider varken geri alma yapılmaz ve nedeni söylenir", () => {
+  it("AC-7: aynı adda canlı tür ya da hesap varken geri alma yapılmaz ve nedeni söylenir (spec 0082: standart yarısı kalktı)", () => {
     const toast = vi.fn(); let st;
     const v = { ...VARSAYILAN, turler: [...VARSAYILAN.turler, { id: 4, ad: "sigorta", davranis: "normal" }],
-      hesaplar: [...VARSAYILAN.hesaplar, { id: 53, ad: "eski kasa", tur: "kasa", paraBirimi: "TRY" }],
-      standart: [...VARSAYILAN.standart, { id: 93, grupId: 93, ad: "KİRA", tutar: 1, baslangicAy: "2026-09" }] };
+      hesaplar: [...VARSAYILAN.hesaplar, { id: 53, ad: "eski kasa", tur: "kasa", paraBirimi: "TRY" }] };
     render(<H v={v} showToast={toast} onState={s => { st = s; }} />);
     fireEvent.click(within(satirTur("Gider Türü")[0]).getByText("Geri Al"));
     fireEvent.click(within(satirTur("Kasa Hesabı")[0]).getByText("Geri Al"));
-    fireEvent.click(within(satirTur("Standart Gider")[0]).getByText("Geri Al"));
     expect(st.turler.find(t => t.id === 3).deletedAt).toBe(Z);
     expect(st.hesaplar.find(h => h.id === 52).deletedAt).toBe(Z);
-    expect(st.standart.filter(s => s.grupId === 91).every(s => s.deletedAt === Z)).toBe(true);
-    expect(toast.mock.calls.map(c => c[0]).join("|")).toMatch(/gider türü zaten var.*kasa hesabı zaten var.*standart gider zaten var/);
+    expect(toast.mock.calls.map(c => c[0]).join("|")).toMatch(/gider türü zaten var.*kasa hesabı zaten var/);
   });
   it("AC-9, AC-44: kalıcı silme kaydı diziden çıkarır; çeke bağlı canlı hareketi olan çekte Kalıcı Sil yok ve neden yazılır", () => {
     let st;
@@ -103,7 +98,6 @@ describe("Spec 0078 D: Çöp Kutusu'nda altı satır türü", () => {
     expect(st.cekler.map(c => c.id)).toEqual([30]);
     expect(st.tanimlar).toEqual([]);
     expect(st.turler.map(t => t.id)).toEqual([1, 9]);
-    expect(st.standart).toEqual([]);
     expect(st.hesaplar).toEqual([]);
   });
   it("AC-26: gider yetkisi yoksa altı türün satırı yok ve boşaltma onlara dokunmaz; kasa yetkisi yoksa hesap ve çek satırı yok", () => {
@@ -148,7 +142,7 @@ const veri = (o = {}) => ({
   giderler: [{ id: 1, tarih: `${buAy}-01`, turId: 1, tutar: 10000, kdvOrani: 20, tedarikciId: 11, aciklama: "Bant alımı", modelSatirlari: [], taksitler: [] }],
   kasaHesaplari: [{ id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 50000, acilisTarihi: `${buAy}-01`, kapali: false }],
   hesapHareketleri: [{ id: 61, tur: "odeme", tarih: `${buAy}-02`, tutar: 12000, yontem: "Havale", hesapId: 51, giderId: 1 }],
-  giderTanimlari: [], standartGiderler: [], cekler: [],
+  giderTanimlari: [], cekler: [],
   appSettings: { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7 } },
   dataVersion: 1, ...o,
 });

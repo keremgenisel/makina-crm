@@ -231,7 +231,7 @@ describe("Spec 0054: tüketiciler (R11, R13, R20, AC-16–AC-18, AC-20, AC-32, A
     expect(kalemTutari(satirli, P)).toBe(kalemTutari(satirsiz, P));
     expect(kalemKovalariKurus(satirli, P)).toEqual(kalemKovalariKurus(satirsiz, P));
     const hesap = (g) => hesaplaMakinaMaliyetleri({ customers: [{ id: 1, name: "F", model: "AK100", serialNo: "S", installDate: "2026-09-20", uretimTarihi: "2026-09-05", fabrikaSatisBedeli: 1, currency: "TRY" }],
-      stock: [], partStockLog: [], giderler: [g], giderTurleri: TUR, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-28" }).makinalar.get("musteri:1");
+      stock: [], partStockLog: [], giderler: [g], giderTurleri: TUR, standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-28" }).makinalar.get("musteri:1");
     const a = hesap(satirsiz), b = hesap(satirli);
     expect(b.uretimMaliyeti).toBe(a.uretimMaliyeti);
     expect(b.ortakPay).toBe(a.ortakPay);

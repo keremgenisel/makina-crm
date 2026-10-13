@@ -36,7 +36,7 @@ function GH({ g0 = KALEMLER, h0 = HAREKET, yururlukAy = "2026-01" }) {
   const [giderler, setGiderler] = useState(g0);
   const [hesapHareketleri, setHesapHareketleri] = useState(h0);
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
+    giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
     appSettings={{ giderAyarlari: { yururlukAy }, kdvRates: KDV }} kdvRates={KDV} kasaHesaplari={[]} satisVerisi={SATIS} showToast={vi.fn()} />;
 }
 
@@ -191,7 +191,7 @@ describe("Spec 0081 R6/2: durum yeniden kurulmada sıfırlanır", () => {
   it("AC-24: görünüm değişimi kutuyu kapatır", () => {
     render(<GH />);
     kutuAc("Gider Türü Kırılımı");
-    fireEvent.click(screen.getByText("Tedarikçiler"));
+    fireEvent.click(screen.getByText("Tedarikler ve Ekstre")); // spec 0082 R12 ile güncellendi
     fireEvent.click(screen.getByText("Dönem Raporu"));
     kapali("Gider Türü Kırılımı", "tur-kirilimi");
   });

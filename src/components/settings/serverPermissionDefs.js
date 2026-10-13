@@ -236,7 +236,7 @@ export const GIDER_ACTION_GROUPS = [
     { id: "gider_tekrar_uret", label: "Tekrarlayan kalemleri oluştur" },
   ]},
   { grup: "Tanım yönetimi", items: [
-    { id: "gider_tanim", label: "Gider türleri, tekrarlayan tanımlar, gider ayarları, standart genel giderler ve çalışan maliyetleri" },
+    { id: "gider_tanim", label: "Gider türleri, tekrarlayan tanımlar, gider ayarları ve çalışan maliyetleri" },
   ]},
   { grup: "Tedarikçi yönetimi", items: [
     { id: "tedarikci_add",    label: "Tedarikçi ekle" },

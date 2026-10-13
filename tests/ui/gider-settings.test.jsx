@@ -70,6 +70,7 @@ describe("Gider Türleri (R2, K12, K13)", () => {
 });
 
 describe("Gider Ayarları (R10)", () => {
+  // Spec 0082 ile güncellendi: ortak gider kaynağı alanı kayıtta yok (R2; eski değerin düşmesi spec 0082 AC-10).
   it("AC-33: yürürlük ayı ileri alınınca eşik altı kalem sayısı uyarısı; kalemler silinmez", () => {
     const setAppSettings = vi.fn();
     const giderler = [{ id: 1, tarih: "2026-06-05" }, { id: 2, tarih: "2026-06-20" }, { id: 3, tarih: "2026-07-01" }, { id: 4, tarih: "2026-05-01", deletedAt: "x" }];
@@ -79,13 +80,13 @@ describe("Gider Ayarları (R10)", () => {
     expect(screen.getByText("Eşiğin altında 2 gider kalemi kaldı.")).toBeTruthy();
     fireEvent.click(screen.getByText("Kaydet"));
     const yeni = setAppSettings.mock.calls[0][0]({ giderAyarlari: { varsayilanResmiMaliyet: 5 } });
-    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", ortakGiderKaynagi: "gercek", hatirlatmaEsikGun: 7, indirilebilirOran: 70, hesapsizBaslangic: "", denemeDonemiBitis: "2027-01-01" }); // 0051: boş = eşik yok; spec 0056 Q5: alan yoksa varsayılan yazılır; spec 0076 R34: indirilebilir oran varsayılanı (70) yazılır
+    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", hatirlatmaEsikGun: 7, indirilebilirOran: 70, hesapsizBaslangic: "", denemeDonemiBitis: "2027-01-01" }); // 0051: boş = eşik yok; spec 0056 Q5: alan yoksa varsayılan yazılır; spec 0076 R34: indirilebilir oran varsayılanı (70) yazılır
   });
   // Triyaj (spec 0076): oran alanı eklenirken başlangıç tarihi formun ilk durumundan düşmüş, başka bir alan kaydedilince
   // 0051 eşiği sessizce siliniyordu. Dolu ayarla açılan form yalnız oran değiştirilip kaydedilince bütün alanları korur.
   it("triyaj 0076: dolu ayarla açılan form yalnız oran değiştirilip kaydedilince diğer bütün alanları (hesapsız başlangıç dahil) korur", () => {
     const setAppSettings = vi.fn();
-    const dolu = { stopajOrani: 15, yururlukAy: "2026-03", ortakGiderKaynagi: "standart", hatirlatmaEsikGun: 12, hesapsizBaslangic: "2026-04-01", denemeDonemiBitis: "2026-12-15", indirilebilirOran: 70 };
+    const dolu = { stopajOrani: 15, yururlukAy: "2026-03", hatirlatmaEsikGun: 12, hesapsizBaslangic: "2026-04-01", denemeDonemiBitis: "2026-12-15", indirilebilirOran: 70 };
     render(<SettingsGider appSettings={{ giderAyarlari: dolu }} setAppSettings={setAppSettings} giderler={[]} />);
     expect(screen.getByLabelText("Hesapsız kayıt başlangıç tarihi").value).toBe("2026-04-01");
     fireEvent.change(screen.getByLabelText("Binek araç giderlerinde indirilebilir oran"), { target: { value: "88" } });

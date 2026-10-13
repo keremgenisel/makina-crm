@@ -113,37 +113,6 @@ export const tanimEslesmesi = (t, s, { turMap, tedMap }) => {
   ]);
 };
 
-// ── Standart gider: grup başına tek satır (R10, AC-22, AC-38) ────────────────
-// Gösterilen sürüm: bu ay geçerli olan (aralığa uyanlardan en geç başlayan, standartGiderAyi kuralı), yoksa gelecekte
-// en erken başlayan, yoksa en son biten. standartGiderAyi bu ay geçerli olmayan grubu hiç döndürmez; yalnız onu
-// kullanmak kaydı aramadan düşürürdü.
-export const standartGrupSatirlari = (liste = [], ay) => {
-  const gruplar = new Map();
-  for (const sv of liste || []) {
-    if (!sv || sv.deletedAt) continue;
-    const k = String(sv.grupId ?? sv.id);
-    if (!gruplar.has(k)) gruplar.set(k, []);
-    gruplar.get(k).push(sv);
-  }
-  return [...gruplar.entries()].map(([grupId, surumler]) => {
-    const gecerli = surumler.filter(x => x.baslangicAy && x.baslangicAy <= ay && (!x.bitisAy || ay <= x.bitisAy))
-      .reduce((en, x) => (!en || x.baslangicAy > en.baslangicAy ? x : en), null);
-    if (gecerli) return { grupId, temsil: gecerli, durum: "gecerli", surumler };
-    const gelecek = surumler.filter(x => x.baslangicAy && x.baslangicAy > ay)
-      .reduce((en, x) => (!en || x.baslangicAy < en.baslangicAy ? x : en), null);
-    if (gelecek) return { grupId, temsil: gelecek, durum: "baslamadi", surumler };
-    const biten = surumler.reduce((en, x) => (!en || String(x.bitisAy || "") > String(en.bitisAy || "") ? x : en), null);
-    return { grupId, temsil: biten, durum: "bitti", surumler };
-  });
-};
-export const standartEslesmesi = (g, s) => (g.surumler.some(x => metinEslesir(x.ad, s)) ? { neden: null } : null);
-export const standartMeta = (g) => [
-  `Aylık ${tl2(g.temsil.tutar)}`,
-  g.temsil.baslangicAy && `yürürlük: ${g.temsil.baslangicAy}`,
-  g.durum === "bitti" && "sona erdi",
-  g.durum === "baslamadi" && "başlamadı",
-];
-
 // Üretim partisi: ad, açıklama, dönem (R5, AC-16).
 export const partiEslesmesi = (p, s) => (!p || p.deletedAt ? null : ilk([
   [metinEslesir(p.ad, s), null],

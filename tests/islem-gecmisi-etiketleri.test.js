@@ -64,6 +64,13 @@ describe("Spec 0068: İşlem Geçmişi etiket kapsamı", () => {
     expect(act.has("mahsup_edildi")).toBe(true);
     expect([...act].filter(x => !harita("ACTION_LABELS").has(x))).toEqual([]);
   });
+  // Spec 0082 R5/2 (AC-30): kayıt türü haritasında ters yön denetimi; ölü anahtar (silinen standart gider türü gibi) kalmaz.
+  // Eylem haritası bilerek tek yönlü kalır (yayılarak yazılan eylemler taramaya görünmüyor; spec 0082 Context).
+  it("spec 0082 AC-30: kayıt türü haritasında ölü anahtar yok; silinen ekranın tür ve üç eylem etiketi haritada yok", () => {
+    for (const [k, v] of Object.entries(DINAMIK)) (v || turAudit()).forEach(x => k.includes("|entity|") ? ent.add(x) : act.add(x));
+    expect([...harita("ENTITY_LABELS")].filter(x => !ent.has(x))).toEqual([]);
+    for (const x of ["surum_eklendi", "surum_geri_alindi", "sona_erdirildi"]) expect(harita("ACTION_LABELS").has(x), x).toBe(false);
+  });
   it("AC-4: etiketi olmayan yeni bir tür eklenirse kapsam testi kırılır (aynı denetim sahte bir türle)", () => {
     const sahte = new Set([...ent, "yeni_bolum_0068"]);
     expect([...sahte].filter(x => !harita("ENTITY_LABELS").has(x))).toEqual(["yeni_bolum_0068"]);

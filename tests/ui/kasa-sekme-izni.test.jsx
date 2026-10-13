@@ -105,7 +105,7 @@ const veri = () => ({
   giderler: [],
   kasaHesaplari: [{ id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 50000, acilisTarihi: `${buAy}-01`, kapali: false }],
   hesapHareketleri: [], cekler: [],
-  giderTanimlari: [], standartGiderler: [],
+  giderTanimlari: [],
   appSettings: { giderAyarlari: { yururlukAy: "2026-01", hatirlatmaEsikGun: 7 } },
   dataVersion: 1,
 });

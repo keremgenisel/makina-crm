@@ -11,7 +11,7 @@ const gid = (id, tarih, tutar, o = {}) => ({ id, tarih, turId: 1, tutar, kdvOran
 const stk = (id, o = {}) => ({ id, model: "AK100", serialNo: `T${String(id).padStart(3, "0")}`, addedDate: "2026-03-20", ...o });
 const mus = (id, o = {}) => ({ id, name: `Firma ${id}`, model: "AK100", serialNo: `S${id}`, installDate: "2026-06-10", fabrikaSatisBedeli: 500000, currency: "TRY", uretimTarihi: "2026-05-05", ...o });
 const hesapla = (o = {}) => hesaplaMakinaMaliyetleri({
-  customers: [], stock: [], partStockLog: [], giderler: [], giderTurleri: TUR, standartGiderler: [],
+  customers: [], stock: [], partStockLog: [], giderler: [], giderTurleri: TUR,
   standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" }, uretimPartileri: [], ...o,
 }, { bugun: BUGUN });
 const pay = (s, anahtar) => s.makinalar.get(anahtar).ortakPay;

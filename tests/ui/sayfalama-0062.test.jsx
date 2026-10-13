@@ -227,7 +227,7 @@ describe("Spec 0062: Giderler'in diğer listeleri (R5, R6)", () => {
   it("AC-6: Makina Kârlılığı listesi sayfalanır; dönem toplamı bütün makinalardan", () => {
     const mus = (id) => ({ id, name: `Firma ${id}`, model: "AK100", serialNo: `S${id}`, installDate: "2026-03-20", fabrikaSatisBedeli: 500000, currency: "TRY", uretimTarihi: "2026-03-05" });
     const sonuc = hesaplaMakinaMaliyetleri({ customers: Array.from({ length: 12 }, (_, i) => mus(i + 1)), stock: [], giderler: [], giderTurleri: [{ id: 1, ad: "Genel", davranis: "normal" }],
-      standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-24" });
+      standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-24" });
     render(<MakinaKarliligi sonuc={sonuc} baslangic="2026-03-01" bitis="2026-03-31" bugun="2026-09-24" modeller={[{ model: "AK100" }]} />);
     const tablo = screen.getByTestId("karlilik-tablosu");
     const toplam = screen.getByTestId("karlilik-toplam").textContent;

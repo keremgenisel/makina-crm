@@ -13,7 +13,7 @@ import { SettingsGider } from "../../src/components/settings/SettingsGider";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
 import { MaliyetNotlari } from "../../src/components/gider/MakinaMaliyetDetay";
 import { KISIT_KAPSAM_IPUCU } from "../../src/components/gider/GiderAlanlari";
-import { KISITLI_NOTU, KISITLI_STANDART_NOTU } from "../../src/lib/makinaMaliyeti";
+import { KISITLI_NOTU } from "../../src/lib/makinaMaliyeti";
 import { giderKalemDogrula, turHaritasi, KISIT_KUTU_ETIKETI, KISIT_ORAN_HATASI, KISIT_FORM_NOTU, KKEG_ETIKETI, VERGI_MATRAHI_NOTU, GIDER_TOPLAMI_CUMLESI } from "../../src/lib/gider";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -151,7 +151,7 @@ describe("Spec 0076 C, D: Giderler ve Dönem Raporu", () => {
     const [giderler, setGiderler] = useState(g0);
     const [hesapHareketleri, setHesapHareketleri] = useState([]);
     return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-      giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} standartGiderler={[]} setStandartGiderler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
+      giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]}
       appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={null} kasaHesaplari={[]} kasaYetki aktifKullanici="kerem" baslangicAy="2026-09"
       satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
   }
@@ -211,15 +211,13 @@ describe("Spec 0076 C, D: Giderler ve Dönem Raporu", () => {
 });
 
 describe("Spec 0076 R27: maliyet notları", () => {
-  it("AC-28: not yalnız kısıtlı kalem varken; standart kaynakta ortak kısmın girmediğini söyler", () => {
-    render(<MaliyetNotlari kaynak="gercek" />);
+  // Spec 0082 ile güncellendi: standart kaynak yarısı kalktı; MaliyetNotlari `kaynak` prop'u almaz (R4/2).
+  it("AC-28: not yalnız kısıtlı kalem varken", () => {
+    render(<MaliyetNotlari />);
     expect(screen.queryByTestId("kisitli-maliyet-notu")).toBeNull();
     cleanup();
-    render(<MaliyetNotlari kaynak="gercek" kisitliVar />);
+    render(<MaliyetNotlari kisitliVar />);
     expect(screen.getByTestId("kisitli-maliyet-notu").textContent).toBe(KISITLI_NOTU);
-    cleanup();
-    render(<MaliyetNotlari kaynak="standart" kisitliVar />);
-    expect(screen.getByTestId("kisitli-maliyet-notu").textContent).toBe(KISITLI_STANDART_NOTU);
   });
 });
 

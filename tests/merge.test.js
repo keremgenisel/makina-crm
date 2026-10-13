@@ -162,16 +162,15 @@ describe("buildMergePlan", () => {
 });
 
 describe("buildMergePlan: gider kaydı (spec 0001)", () => {
-  it("C5: yeni gider kalemi, tanım, tür, tedarikçi ve standart gider birleştirmede korunur", () => {
+  it("C5: yeni gider kalemi, tanım, tür ve tedarikçi birleştirmede korunur (spec 0082: standart gider kalktı, AC-23)", () => {
     const my = blob({
       giderTurleri: [{ id: 11, ad: "Hammadde", davranis: "normal" }],
       tedarikciler: [{ id: 12, ad: "A" }],
       giderTanimlari: [{ id: 13, turId: 11, ad: "Sarf", baslangicAy: "2026-09", uretilenAylar: [] }],
       giderler: [{ id: 14, turId: 11, tutar: 1000, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 5 }] }],
-      standartGiderler: [{ id: 15, grupId: 15, ad: "Kira", tutar: 20000, baslangicAy: "2026-01" }],
     });
-    const plan = buildMergePlan(my, blob({ giderTurleri: [], tedarikciler: [], giderTanimlari: [], giderler: [], standartGiderler: [] }));
-    for (const k of ["giderTurleri", "tedarikciler", "giderTanimlari", "giderler", "standartGiderler"]) expect(plan.adds[k]).toHaveLength(1);
+    const plan = buildMergePlan(my, blob({ giderTurleri: [], tedarikciler: [], giderTanimlari: [], giderler: [] }));
+    for (const k of ["giderTurleri", "tedarikciler", "giderTanimlari", "giderler"]) expect(plan.adds[k]).toHaveLength(1);
     expect(plan.adds.giderler[0].modelSatirlari).toHaveLength(1);
   });
 
@@ -264,14 +263,13 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
   });
 
   it("iki PC aynı id'yi üretirse tür/tedarikçi/tanım/müşteri referansları yeni id'yi izler", () => {
-    const turId = uid(), tedId = uid(), tanimId = uid(), cid = uid(), sgId = uid();
+    const turId = uid(), tedId = uid(), tanimId = uid(), cid = uid();
     const my = blob({
       customers: [{ id: cid, name: "Yerel", kaliplar: [] }],
       giderTurleri: [{ id: turId, ad: "Yerel tür", davranis: "normal" }],
       tedarikciler: [{ id: tedId, ad: "Yerel ted" }],
       giderTanimlari: [{ id: tanimId, turId, tedarikciId: tedId, ad: "T" }],
       giderler: [{ id: 99001, turId, tedarikciId: tedId, tanimId, atamaTur: "makina", makinaTur: "musteri", makinaId: cid }],
-      standartGiderler: [{ id: sgId, grupId: sgId, ad: "Kira", tutar: 1 }, { id: 99002, grupId: sgId, ad: "Kira", tutar: 2 }],
     });
     const sunucu = blob({
       customers: [{ id: cid, name: "Başkası", kaliplar: [] }],
@@ -279,7 +277,6 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
       tedarikciler: [{ id: tedId, ad: "Başka ted" }],
       giderTanimlari: [{ id: tanimId, ad: "Başka" }],
       giderler: [],
-      standartGiderler: [{ id: sgId, grupId: sgId, ad: "Başka", tutar: 9 }],
     });
     const plan = buildMergePlan(my, sunucu);
     const g = plan.adds.giderler[0];
@@ -288,7 +285,7 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(g.tanimId).toBe(plan.maps.giderTanimlari.get(tanimId));
     expect(g.makinaId).toBe(plan.maps.customers.get(cid));
     expect(plan.adds.giderTanimlari[0].turId).toBe(plan.maps.giderTurleri.get(turId));
-    expect(plan.adds.standartGiderler.find(x => x.id === 99002).grupId).toBe(plan.maps.standartGiderler.get(sgId));
+    // spec 0082 ile kaldırıldı: standart gider grup kimliği eşlemesi (bölüm birleştirilmez, AC-23).
   });
   it("spec 0006 AC-35: teklifin nihai müşterisi ve yedek parçanın belge bağı yeniden atanan kimlikleri izler; bayi kimliği değişmez", () => {
     const cid = uid(), tid = uid();
@@ -506,7 +503,7 @@ describe("Spec 0078 AC-30, AC-31: çöp kutusuna giren kasa/gider bölümlerinde
     cekler: { id: 30, paymentId: null, yon: "alinan", no: "1", banka: "Z", durum: "portfoy", gecmis: [] },
     giderTanimlari: { id: 81, turId: 9, ad: "İnternet", baslangicAy: "2026-01" },
     giderTurleri: { id: 9, ad: "Elektrik", davranis: "normal" },
-    standartGiderler: { id: 91, grupId: 91, ad: "Kira", tutar: 1, baslangicAy: "2026-01" },
+    // spec 0082 ile kaldırıldı: standart gider (bölüm yok); kalan beş bölüm.
     kasaHesaplari: { id: 51, ad: "Ziraat", tur: "banka", paraBirimi: "TRY" },
   };
   it("AC-30: bu PC'nin çöpe attığı kayıt (taban canlı, sunucu canlı) birleştirmeden sonra çöpte kalır", () => {

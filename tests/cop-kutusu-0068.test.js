@@ -38,7 +38,7 @@ describe("Spec 0068 R10, R17: çöpteki tedarikçi motor çıktısını değişt
 
 describe("Spec 0068 R9, R10: çöpteki parti makinaları aylık kurala düşürür, geri alınınca eski dağıtım döner", () => {
   const veri = (partiler) => ({
-    customers: [], partStockLog: [], giderTurleri: TURLER, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [],
+    customers: [], partStockLog: [], giderTurleri: TURLER, standardModels: [{ model: "AK100" }], customModels: [],
     stock: [{ id: 1, model: "AK100", serialNo: "S1", addedDate: "2026-07-10", partiId: 5 }, { id: 2, model: "AK100", serialNo: "S2", addedDate: "2026-08-10", partiId: 5 }],
     giderler: [{ id: 20, tarih: "2026-07-15", turId: 1, tutar: 50000, kdvOrani: 0, modelSatirlari: [] }, { id: 21, tarih: "2026-08-15", turId: 1, tutar: 10000, kdvOrani: 0, modelSatirlari: [] }],
     giderAyarlari: { yururlukAy: "2026-01" }, uretimPartileri: partiler,
@@ -61,10 +61,11 @@ describe("Spec 0068 R20: geri almada ad çakışması", () => {
 });
 
 describe("Spec 0068 R12, R13, R22: kalıcı silme metni tek sabit", () => {
-  const BES = ["src/components/settings/SettingsGiderTanimlari.jsx", "src/components/settings/GiderTurManager.jsx", "src/components/gider/StandartGiderler.jsx",
+  // Spec 0082 ile güncellendi (C7 (1)): standart gider ekranı silindi; pencere listesi beşten dörde.
+  const BES = ["src/components/settings/SettingsGiderTanimlari.jsx", "src/components/settings/GiderTurManager.jsx",
     "src/components/Kasa.jsx", "src/components/cek/CekPortfoyu.jsx"];
   // Spec 0078 R3, AC-35 ile TERS ÇEVRİLDİ: altı bölüm çöp kutusuna girdi; kalıcılık metni ve iki sabit kalktı.
-  it("AC-16 / AC-17 (spec 0078 ile ters çevrildi): beş pencere ve Çöp Kutusu kalıcılık metni içermez; sabitler yok", () => {
+  it("AC-16 / AC-17 (spec 0078 ile ters çevrildi, 0082 ile dört pencere): dört pencere ve Çöp Kutusu kalıcılık metni içermez; sabitler yok", () => {
     for (const f of [...BES, "src/components/settings/SettingsTrash.jsx", "src/components/Settings.jsx", "src/components/kasa/HesapSilPenceresi.jsx"]) {
       expect(oku(f), f).not.toMatch(/KALICI_SILME_NOTU|KALICI_SILINEN_BOLUMLER|kalici-silme-notu|çöp kutusuna gitmez/);
     }

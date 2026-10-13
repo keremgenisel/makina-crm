@@ -180,7 +180,7 @@ describe("Spec 0040: gelir, kasa ve borç (R5, R6, R17, R18; C2)", () => {
   });
   it("AC-21 / C6: makina maliyeti çekten ve cirodan etkilenmez", () => {
     const hesap = (h) => hesaplaMakinaMaliyetleri({ customers: [{ ...MUSTERI, uretimTarihi: "2026-09-05" }], stock: [], partStockLog: [], giderler: kalemler(h), giderTurleri: TUR,
-      standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-10-28" }).makinalar.get("musteri:1").ortakPay;
+      standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-10-28" }).makinalar.get("musteri:1").ortakPay;
     expect(hesap(cirola().hareketler.map((x, i) => ({ ...x, id: 900 + i })))).toBe(hesap([]));
   });
 });

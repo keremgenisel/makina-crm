@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Spec 0001: Giderler › Tedarikçiler (R13). Standart Genel Giderler standart-giderler.test.jsx içinde.
+// Spec 0001: Giderler › Tedarikçiler (R13); spec 0082'den beri görünümün adı "Tedarikler ve Ekstre".
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";

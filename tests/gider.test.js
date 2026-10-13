@@ -3,8 +3,7 @@ import {
   kiraHesapla, tutarCoz, giderKalemDogrula, modelSatirlariDogrula, turHaritasi, kalemTutari, odenecekTutar,
   kovaDagilimi, makinaGideriCoz, canliModelSeti, hesaplaGiderRaporu, borcOzeti, kdvKarsilastir, tekrarlayanUret,
   tanimKapat, personelMukerrer, turKullanim, tedarikciKullanim, tedarikciAdHatasi, vadesiGectiMi, yururlukKapsami,
-  esikAltiKalemSayisi, tamAylar, standartGiderAyi, standartYeni, standartTutarDegistir, standartSonSurumuGeriAl,
-  standartSonaErdir, modelAdiTasi, modelKullanim, DAVRANIS, makinaCozucuOlustur, standartGruplar,
+  esikAltiKalemSayisi, tamAylar, modelAdiTasi, modelKullanim, DAVRANIS, makinaCozucuOlustur,
 } from "../src/lib/gider";
 
 const turler = [
@@ -405,53 +404,13 @@ describe("gider motoru: tekrarlayan üretim (R3, R4)", () => {
   });
 });
 
-describe("gider motoru: standart genel gider (R22)", () => {
-  const u = () => ++n;
-  it("AC-92 / AC-96: tutar değişince yeni sürüm, eski kendi ayında geçerli", () => {
-    const a = standartYeni([], { ad: "Kira", tutar: "20.000", baslangicAy: "2026-01" }, u).liste;
-    const gid = a[0].grupId;
-    const b = standartTutarDegistir(a, gid, { tutar: 25000, baslangicAy: "2026-07" }, u).liste;
-    expect(b).toHaveLength(2);
-    expect(standartGiderAyi(b, "2026-06").toplam).toBe(20000);
-    expect(standartGiderAyi(b, "2026-07").toplam).toBe(25000);
-    expect(standartTutarDegistir(b, gid, { tutar: 1, baslangicAy: "2026-07" }, u).hata).toBeTruthy();
-    const c = standartSonSurumuGeriAl(b, gid).liste;
-    expect(c).toHaveLength(1);
-    expect(c[0].bitisAy).toBeNull();
-    expect(standartGiderAyi(standartSonaErdir(c, gid, "2026-08").liste, "2026-09").toplam).toBe(0);
-  });
-  it("AC-93: dönem raporu standart listeyi hiç almaz", () => {
-    const g = [kalem({})];
-    const a = hesaplaGiderRaporu({ giderler: g, turler }, { baslangic: "2026-09-01", bitis: "2026-09-30" });
-    const b = hesaplaGiderRaporu({ giderler: g, turler, standartGiderler: [{ tutar: 999999, baslangicAy: "2026-01" }] }, { baslangic: "2026-09-01", bitis: "2026-09-30" });
-    expect(b.toplam).toBe(a.toplam);
-    expect(b.kovalar).toEqual(a.kovalar);
-  });
-});
+// Spec 0082 ile kaldırıldı: 0001 R22, AC-92…AC-96 standart gider sürümleri; konusu kalmayan AC-93 testi de silindi (C7 (4)).
 
 describe("triyaj düzeltmeleri", () => {
+  // Spec 0082 ile kaldırıldı: standart gider sürümlerinin iki triyaj testi (bulgu 3, 4).
   const u = () => ++n;
-  it("bulgu 3: sona erdirilmiş sürüm yeni tutar girilince geriye doğru yeniden açılmaz", () => {
-    const a = standartYeni([], { ad: "Sigorta", tutar: 100, baslangicAy: "2026-01" }, u).liste;
-    const gid = a[0].grupId;
-    const b = standartSonaErdir(a, gid, "2026-03").liste;
-    const c = standartTutarDegistir(b, gid, { tutar: 150, baslangicAy: "2026-06" }, u).liste;
-    expect(c.find(x => x.tutar === 100).bitisAy).toBe("2026-03");
-    expect(standartGiderAyi(c, "2026-04").toplam).toBe(0);
-    expect(standartGiderAyi(c, "2026-05").toplam).toBe(0);
-    expect(standartGiderAyi(c, "2026-06").toplam).toBe(150);
-    expect(standartGiderAyi(c, "2026-02").toplam).toBe(100);
-  });
-  it("bulgu 4: birleştirmede iki açık sürüm kalsa bile bir ay yalnız bir kez sayılır (başlangıcı en geç olan)", () => {
-    const yarim = [
-      { id: 1, grupId: 1, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: null }, // kapatılması kaybolmuş
-      { id: 2, grupId: 1, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null },
-      { id: 3, grupId: 3, ad: "Elektrik", tutar: 5000, baslangicAy: "2026-01", bitisAy: null },
-    ];
-    expect(standartGiderAyi(yarim, "2026-08").toplam).toBe(30000);
-    expect(standartGiderAyi(yarim, "2026-03").toplam).toBe(25000);
-    expect(standartGruplar(yarim, "2026-08").find(g => g.ad === "Kira").gecerli.tutar).toBe(25000);
-  });
+
+
   it("bulgu 8: toplu makina çözücü makinaGideriCoz ile aynı sonucu verir", () => {
     const stock = [{ id: 1, model: "A", serialNo: "S1" }, { id: 2, model: "B", deletedAt: "x" }];
     const customers = [{ id: 10, name: "F", model: "C", serialNo: "S3", sourceStockId: 5 }, { id: 11, name: "G", deletedAt: "x" }];

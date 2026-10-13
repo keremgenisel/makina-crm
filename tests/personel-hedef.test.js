@@ -160,7 +160,7 @@ describe("Spec 0042: tüketiciler (R6, R12, AC-8–AC-10, AC-19)", () => {
   });
   it("AC-19: makina maliyeti hedef ayrımından etkilenmez", () => {
     const hesap = (g) => hesaplaMakinaMaliyetleri({ customers: [{ id: 1, name: "F", model: "AK100", serialNo: "S", installDate: "2026-09-20", uretimTarihi: "2026-09-05", fabrikaSatisBedeli: 1, currency: "TRY" }],
-      stock: [], partStockLog: [], giderler: [g], giderTurleri: TUR, standartGiderler: [], standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-28" }).makinalar.get("musteri:1");
+      stock: [], partStockLog: [], giderler: [g], giderTurleri: TUR, standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-28" }).makinalar.get("musteri:1");
     const a = hesap({ ...per(), id: 5 }), b = hesap(k());
     expect(b.uretimMaliyeti).toBe(a.uretimMaliyeti);
     expect(b.ortakPay).toBe(a.ortakPay);

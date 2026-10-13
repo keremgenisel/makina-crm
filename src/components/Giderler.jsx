@@ -25,7 +25,6 @@ import { yontemKirilimlari, donemYontemKirilimi } from "../lib/odemeYontemi";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 import { MakinaModelGorunumu } from "./gider/MakinaModelGorunumu";
 import { Tedarikciler } from "./gider/Tedarikciler";
-import { StandartGiderler } from "./gider/StandartGiderler";
 import { MakinaKarliligi } from "./gider/MakinaKarliligi";
 import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
@@ -35,16 +34,18 @@ import { UretimPartileri } from "./gider/UretimPartileri";
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
 // aylık rapor motorundan alınır, yeniden hesaplanmaz (C10, lib/giderKdv.js).
 const ayAdi = (ay) => { const [y, m] = ay.split("-").map(Number); const s = new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); return s.charAt(0).toLocaleUpperCase("tr") + s.slice(1); };
-const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "makina", label: "Makina ve Model" }, { value: "tedarikci", label: "Tedarikçiler" }, { value: "standart", label: "Standart Genel Giderler" }, { value: "partiler", label: "Üretim Partileri" }, { value: "karlilik", label: "Makina Kârlılığı" }];
+const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "makina", label: "Makina ve Model" }, { value: "tedarikci", label: "Tedarikler ve Ekstre" }, { value: "partiler", label: "Üretim Partileri" }, { value: "karlilik", label: "Makina Kârlılığı" }];
 
-// Dönem seçicisi olmayan görünümler: standart gider bütçesi ve üretim partileri (spec 0022) dönemden bağımsızdır.
-const DONEMSIZ = new Set(["standart", "partiler"]);
+// Spec 0082 R1, R12: beş görünüm; "Tedarikler ve Ekstre" görünümün adıdır, kayıt türü "Tedarikçi" kalır (R14).
+// Dönem seçicisi olmayan görünüm: üretim partileri (spec 0022) dönemden bağımsızdır.
+const DONEMSIZ = new Set(["partiler"]);
+// Spec 0082 R10: bilinmeyen başlangıç görünümü (ör. kaldırılan "standart") sessizce Dönem Raporu açar.
+const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "rapor");
 
 export const Giderler = ({
   giderler: giderlerHam = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
-  standartGiderler = [], setStandartGiderler, uretimPartileri = [], setUretimPartileri, calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
+  uretimPartileri = [], setUretimPartileri, calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
   appSettings = {}, kdvRates, factory = null, rates = null, satisVerisi = {}, serverPermissions = null, showToast = () => {},
-  aktifKullanici = "", // spec 0064 R14: anlık işlem denetimi (standart gider "son sürümü geri al")
   // Spec 0002: App'te bir kez hesaplanan makina maliyetleri (C9). Tek kaynak: burada yedek hesap yapılmaz,
   // yoksa App yolundan farklı girdiyle (stok hareketleri olmadan) farklı üretim tarihi çözülürdü.
   makinaMaliyet = null,
@@ -65,7 +66,7 @@ export const Giderler = ({
   const canDo = makeCanDo(serverPermissions, "giderActions");
   // Canlı yerel gün (spec 0003 C3, H1): hatırlatma kapsamı Anasayfa kartıyla aynı "bugün"e bakmalı (AC-14).
   const bugun = useBugun();
-  const [gorunum, setGorunum] = useState(baslangicGorunum || "rapor");
+  const [gorunum, setGorunum] = useState(() => gecerliGorunum(baslangicGorunum));
   const [odemeFiltre, setOdemeFiltre] = useState(baslangicOdemeFiltresi || "");
   const [mod, setMod] = useState("ay");
   const [ay, setAy] = useState(baslangicAy || ayOf(bugun));
@@ -203,7 +204,7 @@ export const Giderler = ({
   const hedefDegistir = (k, hedef) => setOdemeHedefi({ kalemId: k.id, hedef: { hedef } });
   // Spec 0041 R5, R13 + 0053 R17: pencere doğrulanmış girişi ({hareketler, cek}) verir; hepsi tek güncellemeyle yazılır.
   // Triyaj (bulgu 3): çöpe taşıma onayı da aynı kilidi alır; yoksa başkasının ödeme penceresi açıkken kalem çöpe gider,
-  // o kullanıcı çöpteki kaleme ödeme yazardı (Kasa hesap, tedarikçi, parti ve standart gider silmesiyle aynı kural).
+  // o kullanıcı çöpteki kaleme ödeme yazardı (Kasa hesap, tedarikçi ve parti silmesiyle aynı kural).
   const kilitKalemId = odemeHedefi?.kalemId ?? form?.kalemId ?? planKalemId ?? silinecek?.id ?? null;
   const { lockConflict: giderKilidi, forceAcquire: giderKilidiDevral } = useLock("gider", kilitKalemId);
   const kilitKapat = () => { setOdemeHedefi(null); setForm(null); setPlanKalemId(null); setSilinecek(null); };
@@ -387,9 +388,6 @@ export const Giderler = ({
       {gorunum === "partiler" && (
         <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
           makinaMaliyet={makinaMaliyet} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
-      )}
-      {gorunum === "standart" && (
-        <StandartGiderler standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} />
       )}
 
       {giderKilidi && kilitKalemId != null ? (

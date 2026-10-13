@@ -20,10 +20,9 @@ function Harness({ g0 = [], h0 = [], onState }) {
   const [hesapHareketleri, setHesapHareketleri] = useState(h0);
   const [giderTanimlari, setGiderTanimlari] = useState([]);
   const [tedarikciler, setTedarikciler] = useState(TED);
-  const [standartGiderler, setStandartGiderler] = useState([]);
   onState?.({ giderler, hesapHareketleri });
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari}
-    giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} standartGiderler={standartGiderler} setStandartGiderler={setStandartGiderler}
+    giderTurleri={TURLER} tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
     calisanlar={CAL} standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20 } }} serverPermissions={null}
     kasaHesaplari={HESAPLAR} kasaYetki
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
