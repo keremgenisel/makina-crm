@@ -46,7 +46,7 @@ export const KovaKarti = ({ rapor, katlanir = false }) => {
   ];
   const yuzde = (v) => (top ? `%${(v / top * 100).toFixed(1).replace(".", ",")}` : "%0");
   return (
-    <KartBolum varyant="kart" baslikStili="baslik" collapsible={katlanir} title="Makina Maliyeti Kovaları" altBaslik={`Makina maliyeti hesabının (0002) girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı ${tl2(top)}.`} testId="kova-karti">
+    <KartBolum varyant="kart" baslikStili="baslik" collapsible={katlanir} title="Makina Maliyeti Kovaları" altBaslik={`Makina maliyeti hesabının girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı ${tl2(top)}.`} testId="kova-karti">
       <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", gap: 2, marginBottom: 14, background: "var(--n150, #f1f5f9)", height: 12 }}>
         {dilimler.filter(d => d.v > 0).map(d => <div key={d.ad} style={{ width: `${(d.v / (top || 1)) * 100}%`, background: d.renk }} />)}
       </div>
@@ -65,7 +65,7 @@ export const KovaKarti = ({ rapor, katlanir = false }) => {
 };
 
 // Tür kırılımı (R8, AC-12). Personel satırı kapalı; açılınca çalışan başına resmi/elden (AC-51).
-const PERSONEL_IZGARA = "minmax(0, 1fr) 90px 90px 80px 90px 100px"; // spec 0070 R29: + yol parası; spec 0074 R16: SGK sütunu kalktı
+const PERSONEL_IZGARA = "minmax(96px, 1.4fr) repeat(4, minmax(64px, 1fr)) minmax(76px, 1fr)", AD_HUCRE = { fontWeight: 600, overflowWrap: "anywhere" }, TUTAR_HUCRE = { textAlign: "right", whiteSpace: "nowrap" }; // spec 0070 R29: + yol parası; spec 0074 R16: SGK sütunu kalktı; yarım genişlik kartta sabit tutar sütunları ad sütununu sıfıra indirip adı Resmi'nin üstüne bindiriyordu, ad sütununun alt sınırı var
 export const TurKirilimi = ({ rapor, katlanir = false }) => {
   const [acik, setAcik] = useState(false);
   const top = rapor.toplam || 0;
@@ -89,19 +89,19 @@ export const TurKirilimi = ({ rapor, katlanir = false }) => {
                 {/* Spec 0023 R7 (P2): Resmi ve Elden yalnız maaş; ek ödemeler ayrı sütun ve çalışanın altında satır satır. */}
                 <div style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", textTransform: "uppercase" }}>
                   {/* Spec 0070 R29: yol parası ayrı sütun; satır toplamı sütunların toplamıdır. Spec 0074 R16: SGK personel kaleminde değil. */}
-                  <span>Çalışan</span><span style={{ textAlign: "right" }}>Resmi</span><span style={{ textAlign: "right" }}>Elden</span><span style={{ textAlign: "right" }}>Yol parası</span><span style={{ textAlign: "right" }}>Ek ödeme</span><span style={{ textAlign: "right" }}>Toplam</span>
+                  <span style={{ overflowWrap: "anywhere" }}>Çalışan</span><span style={{ textAlign: "right" }}>Resmi</span><span style={{ textAlign: "right" }}>Elden</span><span style={{ textAlign: "right" }}>Yol parası</span><span style={{ textAlign: "right" }}>Ek ödeme</span><span style={{ textAlign: "right" }}>Toplam</span>
                 </div>
                 {t.calisanlar.map(c => (
                   <div key={String(c.calisanId)} style={{ padding: "5px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }} data-testid="personel-ayrinti-calisan">
                     <div style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8 }}>
-                      <span style={{ fontWeight: 600 }}>{c.ad}</span><span style={{ textAlign: "right" }}>{tl2(c.resmi)}</span>
-                      <span style={{ textAlign: "right" }}>{tl2(c.elden)}</span><span style={{ textAlign: "right" }}>{c.yol ? tl2(c.yol) : "—"}</span>
-                      <span style={{ textAlign: "right" }}>{c.ek ? tl2(c.ek) : "—"}</span><b style={{ textAlign: "right" }}>{tl2(c.toplam)}</b>
+                      <span style={AD_HUCRE}>{c.ad}</span><span style={TUTAR_HUCRE}>{tl2(c.resmi)}</span>
+                      <span style={TUTAR_HUCRE}>{tl2(c.elden)}</span><span style={TUTAR_HUCRE}>{c.yol ? tl2(c.yol) : "—"}</span>
+                      <span style={TUTAR_HUCRE}>{c.ek ? tl2(c.ek) : "—"}</span><b style={TUTAR_HUCRE}>{tl2(c.toplam)}</b>
                     </div>
                     {(c.ekSatirlari || []).map((e, i) => (
                       <div key={i} data-testid="personel-ek-odeme" style={{ display: "grid", gridTemplateColumns: PERSONEL_IZGARA, gap: 8, fontSize: 12, color: "var(--n600, #475569)", paddingTop: 3 }}>
-                        <span style={{ paddingLeft: 12 }}>{EK_ODEME_TUR_AD[e.tur] || e.tur}{e.aciklama ? ` · ${e.aciklama}` : ""}</span><span /><span /><span />
-                        <span style={{ textAlign: "right" }}>{tl2(e.tutar)}</span><span />
+                        <span style={{ paddingLeft: 12, overflowWrap: "anywhere" }}>{EK_ODEME_TUR_AD[e.tur] || e.tur}{e.aciklama ? ` · ${e.aciklama}` : ""}</span><span /><span /><span />
+                        <span style={TUTAR_HUCRE}>{tl2(e.tutar)}</span><span />
                       </div>
                     ))}
                   </div>
@@ -188,7 +188,7 @@ export const BorcOzeti = ({ ozet }) => {
         </div>
       ))}
       <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--n200, #e2e8f0)", paddingTop: 10, marginTop: 4 }}><b>Toplam borç</b><b style={{ fontSize: 15 }}>{tl2(ozet.toplam)}</b></div>
-      <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 8 }}>“Vadesi geçti” yalnız görsel işarettir; hatırlatma ve bildirim ayrı bir iştir (0003). Borcu sıfırlanan taraf bu listeden düşer.</div>
+      <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 8 }}>“Vadesi geçti” yalnız görsel işarettir; ödeme hatırlatması Anasayfa'daki Gider Ödemeleri kartındadır. Borcu sıfırlanan taraf bu listeden düşer.</div>
     </KartBolum>
   );
 };

@@ -34,6 +34,22 @@ const ac = (idler) => `(() => {
 const BES = ["kova-karti", "tur-kirilimi", "kdv-karsilastirma", "tedarikci-kirilimi", "yontem-kirilimi"];
 const durum = `(() => ${JSON.stringify(BES)}.map(id => document.querySelector('[data-testid="' + id + '"] [aria-expanded]')?.getAttribute("aria-expanded") ?? "yok"))()`;
 
+// Personel ayrıntısı: her satırda (başlık, çalışan, ek ödeme) hücreler soldan sağa sıralı ve üst üste binmiyor, hiçbir
+// hücrenin içeriği kendi kutusundan taşmıyor (yarım genişlik kartta ad sütunu sıfıra iniyor, ad Resmi sütununa biniyordu).
+const olcPersonel = `(() => {
+  const a = document.querySelector('[data-testid="personel-ayrinti"]'); if (!a) return null;
+  const satirlar = [a.firstElementChild, ...a.querySelectorAll('[data-testid="personel-ayrinti-calisan"] > div')];
+  const sorun = [];
+  for (const s of satirlar) {
+    const h = [...s.children].map(c => ({ t: c.textContent, b: c.getBoundingClientRect(), tasar: c.scrollWidth > c.clientWidth + 1 }));
+    for (let i = 0; i < h.length; i++) {
+      if (h[i].tasar) sorun.push("taşıyor: " + h[i].t);
+      if (i && h[i - 1].b.right > h[i].b.left + 0.5) sorun.push("biniyor: " + h[i - 1].t + " | " + h[i].t);
+    }
+  }
+  return { satir: satirlar.length, sorun };
+})()`;
+
 // Spec 0083 AC-7 (P8): Giderler'in görünüm çubuğu (aria-label="Görünüm") düğmeleri. 1280 px'te tek satır (aynı üst kenar);
 // 1024 px'te hepsi pencerenin içinde (çubuk dar pencerede iki satıra bölünebilir, R5).
 const olcCubuk = `(() => {
@@ -88,6 +104,10 @@ app.whenReady().then(async () => {
       kontrol(`${ad0} kapalı (spec 0081 AC-22)`, s);
       // Tür açık, KDV kapalı: flex-start ile kapalı KDV kartı açık tür kartının boyuna uzamaz (AC-28).
       await win.webContents.executeJavaScript(ac(["tur-kirilimi"]));
+      await win.webContents.executeJavaScript(`(() => { const b = [...document.querySelectorAll('[data-testid="tur-kirilimi"] button')].find(x => x.textContent.trim() === "▸ Aç"); if (b) b.click(); return !!b; })()`);
+      let p = null;
+      for (let i = 0; i < 30 && !p; i++) { p = await win.webContents.executeJavaScript(olcPersonel); if (!p) await new Promise(r => setTimeout(r, 100)); }
+      check(`${ad0}: personel ayrıntısında sütunlar birbirine girmiyor`, !!p && p.satir >= 4 && p.sorun.length === 0, JSON.stringify(p));
       const t = await win.webContents.executeJavaScript(olc);
       check(`${ad0}: tür açık, KDV kapalı: KDV kartı uzamaz, üst kenarlar hizalı (spec 0081 AC-28)`,
         t.kdv.bottom - t.kdv.top < (t.tur.bottom - t.tur.top) - 20 && Math.abs(t.kdv.top - t.tur.top) < 1, JSON.stringify([t.tur, t.kdv]));

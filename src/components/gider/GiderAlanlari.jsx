@@ -152,7 +152,7 @@ export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar,
     <div>
       <Segment ariaLabel="Makina maliyeti ataması" options={ATAMA_SECENEKLERI} value={at} onChange={degistir} />
       {bilgi && <div role="status" style={{ fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "7px 10px", marginTop: 8 }}>{bilgi}</div>}
-      {at === ATAMA.ORTAK && <Ipucu>Ortak gider, makina maliyeti hesabında (0002) makinalara dağıtılır.</Ipucu>}
+      {at === ATAMA.ORTAK && <Ipucu>Ortak gider, makina maliyeti hesabında makinalara dağıtılır.</Ipucu>}
       {at === ATAMA.DAGITMA && <Ipucu>Makina maliyetine hiç girmez (ör. satılmak üzere yedek parça stoğuna alınan mal). Gider toplamında ve borç özetinde normal görünür.</Ipucu>}
       {at === ATAMA.MAKINA && (
         <div style={{ marginTop: 10 }}>
