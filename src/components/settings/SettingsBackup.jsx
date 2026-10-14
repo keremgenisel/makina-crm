@@ -7,6 +7,8 @@ import { kasaKayitlariniKoru, kasaHareketiMi, kasaCekiMi } from "../../lib/yedek
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
 import { baskaKilitler, kilitleriDevral, kilitleriBirak, DEVRALMA_SINIR_MESAJI, devralmaHataMesaji } from "../../lib/kilitDevralma";
 import { KartBolum } from "../tasarim";
+import { restorePaketleri, paketNotlari } from "../../lib/yedekPaketleri";
+import { paketCumlesi } from "../../lib/bolumAdlari";
 
 export const SettingsBackup = ({
   aktifKullanici = "",
@@ -139,17 +141,9 @@ export const SettingsBackup = ({
   // Bölümler tek tek değil, ilişki bütünlüğü bozulmayacak paketler halinde seçilir:
   // müşteri çocukları (servis/ödeme/kalıp satışı/görüşme) DB'de gerçek FK ile müşteriye
   // bağlı olduğundan müşterilerden ayrı geri yüklenemez.
-  const RESTORE_PAKETLERI = [
-    { id: "musteri", ad: "Müşteri verileri", aciklama: "müşteriler, servisler, kalıp satışları, ödemeler, görüşmeler" },
-    { id: "evrak", ad: "Evraklar", aciklama: "teklifler, proformalar, faturalar" },
-    { id: "stok", ad: "Stok ve üretim", aciklama: "makina stoğu, parça stoğu ve geçmişi, üretim formları" },
-    { id: "bayi", ad: "Bayiler", aciklama: "" },
-    { id: "dosyalar", ad: "Dosyalar", aciklama: "müşteri, makina, servis ve bayi belgeleri (dosya arşivi)" },
-    { id: "tanim", ad: "Tanımlar", aciklama: "modeller, kalıp ve parça tanımları" },
-    { id: "not", ad: "Notlar", aciklama: "" },
-    ...(giderYetki ? [{ id: "gider", ad: "Giderler", aciklama: "gider kalemleri, tekrarlayan tanımlar, gider türleri, tedarikçiler, kasa hesapları, ödemeler ve çekler" }] : []),
-    { id: "ayar", ad: "Firma ve ayarlar", aciklama: "firma bilgileri, uygulama ayarları, e-posta yapılandırması" },
-  ];
+  // Spec 0086: paketler ve geri yükledikleri bölümler veri olarak lib/yedekPaketleri.js'te; açıklama cümlesi o listeden
+  // üretilir (lib/bolumAdlari.paketCumlesi), elle yazılmaz. Geri yükleme dalı aşağıda aynen kalır (C1).
+  const RESTORE_PAKETLERI = restorePaketleri({ giderYetki }).map(pk => ({ ...pk, aciklama: paketCumlesi(pk) }));
   const [restorePaketler, setRestorePaketler] = useState(() => new Set(RESTORE_PAKETLERI.map(pk => pk.id)));
   // Perde inik + izin var: gizli gider paketi yalnız görünen bütün paketler seçiliyken (tam geri yükleme) yüklenir;
   // kısmi geri yükleme kullanıcının göremediği gider verisine dokunmaz.
@@ -461,7 +455,14 @@ export const SettingsBackup = ({
                 <span style={{ fontWeight: 600, color: "var(--n900, #0f172a)" }}>{pk.ad}</span>
                 {pk.aciklama && <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>({pk.aciklama})</span>}
               </label>
-            ))}
+            )).flatMap((satir, i) => {
+              // Spec 0086 R5, R8, R11: paketin altındaki notlar (Kasa'sız notu yalnız Kasa yetkisi olmayan kullanıcıda).
+              const notlar = paketNotlari(RESTORE_PAKETLERI[i], { kasaVeriYetki });
+              return [satir, ...notlar.map((n, j) => (
+                <div key={`${RESTORE_PAKETLERI[i].id}-not-${j}`} data-testid={`paket-notu-${RESTORE_PAKETLERI[i].id}`}
+                  style={{ fontSize: 11.5, color: "var(--n500, #64748b)", padding: "0 0 4px 24px", lineHeight: 1.45 }}>ℹ {n}</div>
+              ))];
+            })}
           </div>
           {restorePaketler.has("musteri") && !restorePaketler.has("evrak") && (
             <div style={{ fontSize: 12.5, color: "var(--amb700, #b45309)", marginBottom: 8 }}>

@@ -110,6 +110,12 @@ if (ekran.startsWith("kilit-")) {
     window.crmStorage = new Proxy({ restore: async () => yedek }, { get: (o, k) => o[k] ?? (async () => null) });
   }
 }
+// Spec 0086 (R12, revizyon 3 P1): seçmeli geri yüklemenin paket listesi yalnız bir yedek seçilince çizilir; üç ekran sahte
+// yedekle "Yedekten Geri Yükle" adımına kadar gider (Kasa'lı varsayılan, Kasa'sız, gidersiz). Aynı yedek kilit-geri-yukleme'de.
+if (ekran.startsWith("ayarlar-backup-paketler")) {
+  const yedek = { app: "altunmak-crm", schemaVersion: 3, exportedAt: "2026-09-20T10:00:00Z", customers: [], services: [], dealers: [], stock: [] };
+  window.crmStorage = new Proxy({ restore: async () => yedek }, { get: (o, k) => o[k] ?? (async () => null) });
+}
 // Spec 0043: kenar çubuğu yalnız App kabuğunda çizilir; "uygulama-menu-*" ekranları gerçek App'i örnek veriyle açar.
 // Makine yereli menü tercihleri (dar kip, grup durumu) ve tek çocuklu kullanıcı App ilk çizilmeden kurulur.
 const UYGULAMA = ekran.startsWith("uygulama-menu");
@@ -966,6 +972,10 @@ const EKRANLAR = {
   "kilit-katalog-paneli": [ayarlar("models"), []],
   "kilit-cop-kutusu": [ayarlar("trash"), []],
   "kilit-geri-yukleme": [ayarlar("backup"), ["dugme:Yedekten Geri Yükle", "dugme:Evet, Geri Yükle"]],
+  // Spec 0086 (R12, P1): paket listesi ve notları (Kasa'lı varsayılan; Kasa'sız notu; gider paketi yok).
+  "ayarlar-backup-paketler": [ayarlar("backup"), ["dugme:Yedekten Geri Yükle", "kaydir:Geri yüklenecek bölümler"]],
+  "ayarlar-backup-paketler-kasasiz": [ayarlar("backup", { kasaVeriYetki: false }), ["dugme:Yedekten Geri Yükle", "kaydir:Geri yüklenecek bölümler"]],
+  "ayarlar-backup-paketler-gidersiz": [ayarlar("backup", { giderYetki: false, giderVeriYetki: false }), ["dugme:Yedekten Geri Yükle", "kaydir:Geri yüklenecek bölümler"]],
   "gider-tanim-tablo": [<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} setGiderTanimlari={bos} giderTurleri={TANIM_TURLERI} tedarikciler={TANIM_TEDARIKCI}
     calisanlar={TANIM_CALISAN} showToast={bos} giderAyarlari={{ yururlukAy: "2025-06" }} />, []],
   // Spec 0026: genel arama paleti (boş kutu, sonuç yok, gider sonuçları, taksit vadesi, kasasız ve gider yetkisiz kullanıcı).

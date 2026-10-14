@@ -1,0 +1,3095 @@
+{
+ "Müşteri verileri tek, Kasa var": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setPayments",
+    {
+     "deger": [
+      {
+       "id": 104,
+       "tutar": 20
+      }
+     ]
+    }
+   ],
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 30,
+       "yon": "verilen",
+       "durum": "odendi",
+       "tutar": 500,
+       "hesapId": 51
+      },
+      {
+       "id": 31,
+       "paymentId": null,
+       "durum": "portfoy"
+      },
+      {
+       "id": 142,
+       "paymentId": 104,
+       "durum": "tahsil"
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Müşteri verileri."
+   ]
+  ]
+ },
+ "Evraklar tek, Kasa var": {
+  "setterlar": [
+   [
+    "setTeklifler",
+    {
+     "deger": [
+      {
+       "id": 106
+      }
+     ]
+    }
+   ],
+   [
+    "setFaturalar",
+    {
+     "deger": [
+      {
+       "id": 107
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Evraklar."
+   ]
+  ]
+ },
+ "Stok ve üretim tek, Kasa var": {
+  "setterlar": [
+   [
+    "setStock",
+    {
+     "deger": [
+      {
+       "id": 108
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStock",
+    {
+     "deger": [
+      {
+       "id": 109
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStockLog",
+    {
+     "deger": [
+      {
+       "id": 110
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimFormlari",
+    {
+     "deger": [
+      {
+       "id": 111
+      }
+     ]
+    }
+   ],
+   [
+    "setYedekParcaSatislar",
+    {
+     "deger": [
+      {
+       "id": 112
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Stok ve üretim."
+   ]
+  ]
+ },
+ "Bayiler tek, Kasa var": {
+  "setterlar": [
+   [
+    "setDealers",
+    {
+     "deger": [
+      {
+       "id": 113
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Bayiler."
+   ]
+  ]
+ },
+ "Dosyalar tek, Kasa var": {
+  "setterlar": [
+   [
+    "setDosyalar",
+    {
+     "deger": [
+      {
+       "id": 114
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Dosyalar."
+   ]
+  ]
+ },
+ "Tanımlar tek, Kasa var": {
+  "setterlar": [
+   [
+    "setKalipDefs",
+    {
+     "deger": [
+      {
+       "id": 115,
+       "ad": "YK"
+      }
+     ]
+    }
+   ],
+   [
+    "setPartTypeDefs",
+    {
+     "deger": [
+      {
+       "id": 116,
+       "ad": "YT"
+      }
+     ]
+    }
+   ],
+   [
+    "setCalisanlar",
+    {
+     "deger": [
+      {
+       "id": 117,
+       "ad": "YÇ"
+      }
+     ]
+    }
+   ],
+   [
+    "setCustomModels",
+    {
+     "deger": [
+      {
+       "ad": "Yedek Özel"
+      }
+     ]
+    }
+   ],
+   [
+    "setStandardModels",
+    {
+     "deger": [
+      "AK100",
+      "AK200"
+     ]
+    }
+   ],
+   [
+    "setParts",
+    {
+     "deger": [
+      {
+       "id": 118
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Tanımlar."
+   ]
+  ]
+ },
+ "Notlar tek, Kasa var": {
+  "setterlar": [
+   [
+    "setNotes",
+    {
+     "deger": [
+      {
+       "id": 119
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Notlar."
+   ]
+  ]
+ },
+ "Giderler tek, Kasa var": {
+  "setterlar": [
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 32,
+       "paymentId": 4,
+       "durum": "portfoy"
+      },
+      {
+       "id": 140,
+       "yon": "verilen",
+       "durum": "yazildi",
+       "hesapId": 60
+      },
+      {
+       "id": 141,
+       "paymentId": null,
+       "durum": "portfoy"
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTurleri",
+    {
+     "deger": [
+      {
+       "id": 120
+      }
+     ]
+    }
+   ],
+   [
+    "setTedarikciler",
+    {
+     "deger": [
+      {
+       "id": 121
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTanimlari",
+    {
+     "deger": [
+      {
+       "id": 122
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderler",
+    {
+     "deger": [
+      {
+       "id": 123,
+       "odendi": true,
+       "tutar": 50,
+       "tarih": "2026-09-01"
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimPartileri",
+    {
+     "deger": [
+      {
+       "id": 124
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaHesaplari",
+    {
+     "deger": [
+      {
+       "id": 60,
+       "ad": "Eski Banka"
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaKapsamDisi",
+    {
+     "deger": [
+      {
+       "id": 125
+      }
+     ]
+    }
+   ],
+   [
+    "setHesapHareketleri",
+    {
+     "deger": [
+      {
+       "id": 126,
+       "tur": "odeme",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "giderId": 123
+      },
+      {
+       "id": 127,
+       "tur": "virman",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "karsiHesapId": 60
+      },
+      {
+       "id": 128,
+       "tur": "mahsup",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": null,
+       "calisanId": 117
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Giderler."
+   ]
+  ]
+ },
+ "Firma ve ayarlar tek, Kasa var": {
+  "setterlar": [
+   [
+    "setFactory",
+    {
+     "deger": {
+      "name": "Yedek Firma"
+     }
+    }
+   ],
+   [
+    "setAppSettings",
+    {
+     "guncelleyici": {
+      "kdv": 18,
+      "backupFolder": "C:\\Bugun",
+      "autoBackup": true,
+      "giderAyarlari": {
+       "yururlukAy": "2026-01"
+      }
+     }
+    }
+   ]
+  ],
+  "mail": [
+   [
+    "restoreConfigFromBackup",
+    {
+     "host": "smtp.ornek"
+    }
+   ],
+   [
+    "restoreFullLog",
+    [
+     {
+      "id": 1
+     }
+    ]
+   ]
+  ],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Firma ve ayarlar. E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli."
+   ]
+  ]
+ },
+ "hepsi, Kasa var": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setPayments",
+    {
+     "deger": [
+      {
+       "id": 104,
+       "tutar": 20
+      }
+     ]
+    }
+   ],
+   [
+    "setCekler",
+    {
+     "deger": [
+      {
+       "id": 140,
+       "yon": "verilen",
+       "durum": "yazildi",
+       "hesapId": 60
+      },
+      {
+       "id": 141,
+       "paymentId": null,
+       "durum": "portfoy"
+      },
+      {
+       "id": 142,
+       "paymentId": 104,
+       "durum": "tahsil"
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ],
+   [
+    "setTeklifler",
+    {
+     "deger": [
+      {
+       "id": 106
+      }
+     ]
+    }
+   ],
+   [
+    "setFaturalar",
+    {
+     "deger": [
+      {
+       "id": 107
+      }
+     ]
+    }
+   ],
+   [
+    "setStock",
+    {
+     "deger": [
+      {
+       "id": 108
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStock",
+    {
+     "deger": [
+      {
+       "id": 109
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStockLog",
+    {
+     "deger": [
+      {
+       "id": 110
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimFormlari",
+    {
+     "deger": [
+      {
+       "id": 111
+      }
+     ]
+    }
+   ],
+   [
+    "setYedekParcaSatislar",
+    {
+     "deger": [
+      {
+       "id": 112
+      }
+     ]
+    }
+   ],
+   [
+    "setDealers",
+    {
+     "deger": [
+      {
+       "id": 113
+      }
+     ]
+    }
+   ],
+   [
+    "setDosyalar",
+    {
+     "deger": [
+      {
+       "id": 114
+      }
+     ]
+    }
+   ],
+   [
+    "setKalipDefs",
+    {
+     "deger": [
+      {
+       "id": 115,
+       "ad": "YK"
+      }
+     ]
+    }
+   ],
+   [
+    "setPartTypeDefs",
+    {
+     "deger": [
+      {
+       "id": 116,
+       "ad": "YT"
+      }
+     ]
+    }
+   ],
+   [
+    "setCalisanlar",
+    {
+     "deger": [
+      {
+       "id": 117,
+       "ad": "YÇ"
+      }
+     ]
+    }
+   ],
+   [
+    "setCustomModels",
+    {
+     "deger": [
+      {
+       "ad": "Yedek Özel"
+      }
+     ]
+    }
+   ],
+   [
+    "setStandardModels",
+    {
+     "deger": [
+      "AK100",
+      "AK200"
+     ]
+    }
+   ],
+   [
+    "setParts",
+    {
+     "deger": [
+      {
+       "id": 118
+      }
+     ]
+    }
+   ],
+   [
+    "setNotes",
+    {
+     "deger": [
+      {
+       "id": 119
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTurleri",
+    {
+     "deger": [
+      {
+       "id": 120
+      }
+     ]
+    }
+   ],
+   [
+    "setTedarikciler",
+    {
+     "deger": [
+      {
+       "id": 121
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTanimlari",
+    {
+     "deger": [
+      {
+       "id": 122
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderler",
+    {
+     "deger": [
+      {
+       "id": 123,
+       "odendi": true,
+       "tutar": 50,
+       "tarih": "2026-09-01"
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimPartileri",
+    {
+     "deger": [
+      {
+       "id": 124
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaHesaplari",
+    {
+     "deger": [
+      {
+       "id": 60,
+       "ad": "Eski Banka"
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaKapsamDisi",
+    {
+     "deger": [
+      {
+       "id": 125
+      }
+     ]
+    }
+   ],
+   [
+    "setHesapHareketleri",
+    {
+     "deger": [
+      {
+       "id": 126,
+       "tur": "odeme",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "giderId": 123
+      },
+      {
+       "id": 127,
+       "tur": "virman",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "karsiHesapId": 60
+      },
+      {
+       "id": 128,
+       "tur": "mahsup",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": null,
+       "calisanId": 117
+      }
+     ]
+    }
+   ],
+   [
+    "setFactory",
+    {
+     "deger": {
+      "name": "Yedek Firma"
+     }
+    }
+   ],
+   [
+    "setAppSettings",
+    {
+     "guncelleyici": {
+      "kdv": 18,
+      "backupFolder": "C:\\Bugun",
+      "autoBackup": true,
+      "giderAyarlari": {
+       "yururlukAy": "2026-01"
+      }
+     }
+    }
+   ]
+  ],
+  "mail": [
+   [
+    "restoreConfigFromBackup",
+    {
+     "host": "smtp.ornek"
+    }
+   ],
+   [
+    "restoreFullLog",
+    [
+     {
+      "id": 1
+     }
+    ]
+   ]
+  ],
+  "bildirim": [
+   [
+    "ok",
+    "Yedek başarıyla yüklendi. E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli."
+   ]
+  ]
+ },
+ "Müşteri verileri tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setPayments",
+    {
+     "deger": [
+      {
+       "id": 104,
+       "tutar": 20
+      }
+     ]
+    }
+   ],
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 30,
+       "yon": "verilen",
+       "durum": "odendi",
+       "tutar": 500,
+       "hesapId": 51
+      },
+      {
+       "id": 31,
+       "paymentId": null,
+       "durum": "portfoy"
+      },
+      {
+       "id": 142,
+       "paymentId": 104,
+       "durum": "tahsil"
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Müşteri verileri."
+   ]
+  ]
+ },
+ "Evraklar tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setTeklifler",
+    {
+     "deger": [
+      {
+       "id": 106
+      }
+     ]
+    }
+   ],
+   [
+    "setFaturalar",
+    {
+     "deger": [
+      {
+       "id": 107
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Evraklar."
+   ]
+  ]
+ },
+ "Stok ve üretim tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setStock",
+    {
+     "deger": [
+      {
+       "id": 108
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStock",
+    {
+     "deger": [
+      {
+       "id": 109
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStockLog",
+    {
+     "deger": [
+      {
+       "id": 110
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimFormlari",
+    {
+     "deger": [
+      {
+       "id": 111
+      }
+     ]
+    }
+   ],
+   [
+    "setYedekParcaSatislar",
+    {
+     "deger": [
+      {
+       "id": 112
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Stok ve üretim."
+   ]
+  ]
+ },
+ "Bayiler tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setDealers",
+    {
+     "deger": [
+      {
+       "id": 113
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Bayiler."
+   ]
+  ]
+ },
+ "Dosyalar tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setDosyalar",
+    {
+     "deger": [
+      {
+       "id": 114
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Dosyalar."
+   ]
+  ]
+ },
+ "Tanımlar tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setKalipDefs",
+    {
+     "deger": [
+      {
+       "id": 115,
+       "ad": "YK"
+      }
+     ]
+    }
+   ],
+   [
+    "setPartTypeDefs",
+    {
+     "deger": [
+      {
+       "id": 116,
+       "ad": "YT"
+      }
+     ]
+    }
+   ],
+   [
+    "setCalisanlar",
+    {
+     "deger": [
+      {
+       "id": 117,
+       "ad": "YÇ"
+      }
+     ]
+    }
+   ],
+   [
+    "setCustomModels",
+    {
+     "deger": [
+      {
+       "ad": "Yedek Özel"
+      }
+     ]
+    }
+   ],
+   [
+    "setStandardModels",
+    {
+     "deger": [
+      "AK100",
+      "AK200"
+     ]
+    }
+   ],
+   [
+    "setParts",
+    {
+     "deger": [
+      {
+       "id": 118
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Tanımlar."
+   ]
+  ]
+ },
+ "Notlar tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setNotes",
+    {
+     "deger": [
+      {
+       "id": 119
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Notlar."
+   ]
+  ]
+ },
+ "Giderler tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 30,
+       "yon": "verilen",
+       "durum": "odendi",
+       "tutar": 500,
+       "hesapId": 51
+      },
+      {
+       "id": 32,
+       "paymentId": 4,
+       "durum": "portfoy"
+      },
+      {
+       "id": 141,
+       "paymentId": null,
+       "durum": "portfoy"
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTurleri",
+    {
+     "deger": [
+      {
+       "id": 120
+      }
+     ]
+    }
+   ],
+   [
+    "setTedarikciler",
+    {
+     "deger": [
+      {
+       "id": 121
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTanimlari",
+    {
+     "deger": [
+      {
+       "id": 122
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderler",
+    {
+     "deger": [
+      {
+       "id": 123,
+       "odendi": true,
+       "tutar": 50,
+       "tarih": "2026-09-01"
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimPartileri",
+    {
+     "deger": [
+      {
+       "id": 124
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaHesaplari",
+    {
+     "deger": [
+      {
+       "id": 60,
+       "ad": "Eski Banka"
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaKapsamDisi",
+    {
+     "deger": [
+      {
+       "id": 125
+      }
+     ]
+    }
+   ],
+   [
+    "setHesapHareketleri",
+    {
+     "guncelleyici": [
+      {
+       "id": 27,
+       "tur": "virman",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "karsiHesapId": 52
+      },
+      {
+       "id": 28,
+       "tur": "avans",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "calisanId": 17
+      },
+      {
+       "id": 126,
+       "tur": "odeme",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "giderId": 123
+      },
+      {
+       "id": 128,
+       "tur": "mahsup",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": null,
+       "calisanId": 117
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Giderler."
+   ]
+  ]
+ },
+ "Firma ve ayarlar tek, Kasa yok": {
+  "setterlar": [
+   [
+    "setFactory",
+    {
+     "deger": {
+      "name": "Yedek Firma"
+     }
+    }
+   ],
+   [
+    "setAppSettings",
+    {
+     "guncelleyici": {
+      "kdv": 18,
+      "backupFolder": "C:\\Bugun",
+      "autoBackup": true,
+      "giderAyarlari": {
+       "yururlukAy": "2026-01"
+      }
+     }
+    }
+   ]
+  ],
+  "mail": [
+   [
+    "restoreConfigFromBackup",
+    {
+     "host": "smtp.ornek"
+    }
+   ],
+   [
+    "restoreFullLog",
+    [
+     {
+      "id": 1
+     }
+    ]
+   ]
+  ],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Firma ve ayarlar. E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli."
+   ]
+  ]
+ },
+ "hepsi, Kasa yok": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setPayments",
+    {
+     "deger": [
+      {
+       "id": 104,
+       "tutar": 20
+      }
+     ]
+    }
+   ],
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 30,
+       "yon": "verilen",
+       "durum": "odendi",
+       "tutar": 500,
+       "hesapId": 51
+      },
+      {
+       "id": 141,
+       "paymentId": null,
+       "durum": "portfoy"
+      },
+      {
+       "id": 142,
+       "paymentId": 104,
+       "durum": "tahsil"
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ],
+   [
+    "setTeklifler",
+    {
+     "deger": [
+      {
+       "id": 106
+      }
+     ]
+    }
+   ],
+   [
+    "setFaturalar",
+    {
+     "deger": [
+      {
+       "id": 107
+      }
+     ]
+    }
+   ],
+   [
+    "setStock",
+    {
+     "deger": [
+      {
+       "id": 108
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStock",
+    {
+     "deger": [
+      {
+       "id": 109
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStockLog",
+    {
+     "deger": [
+      {
+       "id": 110
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimFormlari",
+    {
+     "deger": [
+      {
+       "id": 111
+      }
+     ]
+    }
+   ],
+   [
+    "setYedekParcaSatislar",
+    {
+     "deger": [
+      {
+       "id": 112
+      }
+     ]
+    }
+   ],
+   [
+    "setDealers",
+    {
+     "deger": [
+      {
+       "id": 113
+      }
+     ]
+    }
+   ],
+   [
+    "setDosyalar",
+    {
+     "deger": [
+      {
+       "id": 114
+      }
+     ]
+    }
+   ],
+   [
+    "setKalipDefs",
+    {
+     "deger": [
+      {
+       "id": 115,
+       "ad": "YK"
+      }
+     ]
+    }
+   ],
+   [
+    "setPartTypeDefs",
+    {
+     "deger": [
+      {
+       "id": 116,
+       "ad": "YT"
+      }
+     ]
+    }
+   ],
+   [
+    "setCalisanlar",
+    {
+     "deger": [
+      {
+       "id": 117,
+       "ad": "YÇ"
+      }
+     ]
+    }
+   ],
+   [
+    "setCustomModels",
+    {
+     "deger": [
+      {
+       "ad": "Yedek Özel"
+      }
+     ]
+    }
+   ],
+   [
+    "setStandardModels",
+    {
+     "deger": [
+      "AK100",
+      "AK200"
+     ]
+    }
+   ],
+   [
+    "setParts",
+    {
+     "deger": [
+      {
+       "id": 118
+      }
+     ]
+    }
+   ],
+   [
+    "setNotes",
+    {
+     "deger": [
+      {
+       "id": 119
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTurleri",
+    {
+     "deger": [
+      {
+       "id": 120
+      }
+     ]
+    }
+   ],
+   [
+    "setTedarikciler",
+    {
+     "deger": [
+      {
+       "id": 121
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTanimlari",
+    {
+     "deger": [
+      {
+       "id": 122
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderler",
+    {
+     "deger": [
+      {
+       "id": 123,
+       "odendi": true,
+       "tutar": 50,
+       "tarih": "2026-09-01"
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimPartileri",
+    {
+     "deger": [
+      {
+       "id": 124
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaHesaplari",
+    {
+     "deger": [
+      {
+       "id": 60,
+       "ad": "Eski Banka"
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaKapsamDisi",
+    {
+     "deger": [
+      {
+       "id": 125
+      }
+     ]
+    }
+   ],
+   [
+    "setHesapHareketleri",
+    {
+     "guncelleyici": [
+      {
+       "id": 27,
+       "tur": "virman",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "karsiHesapId": 52
+      },
+      {
+       "id": 28,
+       "tur": "avans",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "calisanId": 17
+      },
+      {
+       "id": 126,
+       "tur": "odeme",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "giderId": 123
+      },
+      {
+       "id": 128,
+       "tur": "mahsup",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": null,
+       "calisanId": 117
+      }
+     ]
+    }
+   ],
+   [
+    "setFactory",
+    {
+     "deger": {
+      "name": "Yedek Firma"
+     }
+    }
+   ],
+   [
+    "setAppSettings",
+    {
+     "guncelleyici": {
+      "kdv": 18,
+      "backupFolder": "C:\\Bugun",
+      "autoBackup": true,
+      "giderAyarlari": {
+       "yururlukAy": "2026-01"
+      }
+     }
+    }
+   ]
+  ],
+  "mail": [
+   [
+    "restoreConfigFromBackup",
+    {
+     "host": "smtp.ornek"
+    }
+   ],
+   [
+    "restoreFullLog",
+    [
+     {
+      "id": 1
+     }
+    ]
+   ]
+  ],
+  "bildirim": [
+   [
+    "ok",
+    "Yedek başarıyla yüklendi. E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli."
+   ]
+  ]
+ },
+ "AC-7 tahsilatsız çekli yedek, yalnız Müşteri": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Müşteri verileri."
+   ]
+  ]
+ },
+ "AC-7 tahsilatsız çekli yedek, Müşteri + Giderler": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 32,
+       "paymentId": 4,
+       "durum": "portfoy"
+      },
+      {
+       "id": 140,
+       "yon": "verilen",
+       "durum": "yazildi",
+       "hesapId": 60
+      },
+      {
+       "id": 141,
+       "paymentId": null,
+       "durum": "portfoy"
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTurleri",
+    {
+     "deger": [
+      {
+       "id": 120
+      }
+     ]
+    }
+   ],
+   [
+    "setTedarikciler",
+    {
+     "deger": [
+      {
+       "id": 121
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTanimlari",
+    {
+     "deger": [
+      {
+       "id": 122
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderler",
+    {
+     "deger": [
+      {
+       "id": 123,
+       "odendi": true,
+       "tutar": 50,
+       "tarih": "2026-09-01"
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimPartileri",
+    {
+     "deger": [
+      {
+       "id": 124
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaHesaplari",
+    {
+     "deger": [
+      {
+       "id": 60,
+       "ad": "Eski Banka"
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaKapsamDisi",
+    {
+     "deger": [
+      {
+       "id": 125
+      }
+     ]
+    }
+   ],
+   [
+    "setHesapHareketleri",
+    {
+     "deger": [
+      {
+       "id": 126,
+       "tur": "odeme",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "giderId": 123
+      },
+      {
+       "id": 127,
+       "tur": "virman",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "karsiHesapId": 60
+      },
+      {
+       "id": 128,
+       "tur": "mahsup",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": null,
+       "calisanId": 117
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Müşteri verileri, Giderler."
+   ]
+  ]
+ },
+ "hareketsiz eski yedek, yalnız Giderler (göç)": {
+  "setterlar": [
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 32,
+       "paymentId": 4,
+       "durum": "portfoy"
+      },
+      {
+       "id": 140,
+       "yon": "verilen",
+       "durum": "yazildi",
+       "hesapId": 60
+      },
+      {
+       "id": 141,
+       "paymentId": null,
+       "durum": "portfoy"
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTurleri",
+    {
+     "deger": [
+      {
+       "id": 120
+      }
+     ]
+    }
+   ],
+   [
+    "setTedarikciler",
+    {
+     "deger": [
+      {
+       "id": 121
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTanimlari",
+    {
+     "deger": [
+      {
+       "id": 122
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderler",
+    {
+     "deger": [
+      {
+       "id": 123,
+       "odendi": true,
+       "tutar": 50,
+       "tarih": "2026-09-01"
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimPartileri",
+    {
+     "deger": [
+      {
+       "id": 124
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaHesaplari",
+    {
+     "deger": [
+      {
+       "id": 60,
+       "ad": "Eski Banka"
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaKapsamDisi",
+    {
+     "deger": [
+      {
+       "id": 125
+      }
+     ]
+    }
+   ],
+   [
+    "setHesapHareketleri",
+    {
+     "guncelleyici": [
+      {
+       "id": 27,
+       "tur": "virman",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "karsiHesapId": 52
+      },
+      {
+       "id": 28,
+       "tur": "avans",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "calisanId": 17
+      },
+      {
+       "tur": "odeme",
+       "hesapId": null,
+       "karsiHesapId": null,
+       "kaynak": "goc",
+       "aciklama": null,
+       "tarih": null,
+       "tutar": null,
+       "yontem": null,
+       "giderId": 123,
+       "taksitId": null,
+       "tamKapatir": true,
+       "gocKaynak": "gider:123",
+       "id": 900001
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Giderler."
+   ]
+  ]
+ },
+ "hareketsiz eski yedek, Giderler, Kasa yok": {
+  "setterlar": [
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 30,
+       "yon": "verilen",
+       "durum": "odendi",
+       "tutar": 500,
+       "hesapId": 51
+      },
+      {
+       "id": 32,
+       "paymentId": 4,
+       "durum": "portfoy"
+      },
+      {
+       "id": 141,
+       "paymentId": null,
+       "durum": "portfoy"
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTurleri",
+    {
+     "deger": [
+      {
+       "id": 120
+      }
+     ]
+    }
+   ],
+   [
+    "setTedarikciler",
+    {
+     "deger": [
+      {
+       "id": 121
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTanimlari",
+    {
+     "deger": [
+      {
+       "id": 122
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderler",
+    {
+     "deger": [
+      {
+       "id": 123,
+       "odendi": true,
+       "tutar": 50,
+       "tarih": "2026-09-01"
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimPartileri",
+    {
+     "deger": [
+      {
+       "id": 124
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaHesaplari",
+    {
+     "deger": [
+      {
+       "id": 60,
+       "ad": "Eski Banka"
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaKapsamDisi",
+    {
+     "deger": [
+      {
+       "id": 125
+      }
+     ]
+    }
+   ],
+   [
+    "setHesapHareketleri",
+    {
+     "guncelleyici": [
+      {
+       "id": 27,
+       "tur": "virman",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "karsiHesapId": 52
+      },
+      {
+       "id": 28,
+       "tur": "avans",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "calisanId": 17
+      },
+      {
+       "tur": "odeme",
+       "hesapId": null,
+       "karsiHesapId": null,
+       "kaynak": "goc",
+       "aciklama": null,
+       "tarih": null,
+       "tutar": null,
+       "yontem": null,
+       "giderId": 123,
+       "taksitId": null,
+       "tamKapatir": true,
+       "gocKaynak": "gider:123",
+       "id": 900001
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Giderler."
+   ]
+  ]
+ },
+ "perde inik + izinli, hepsi": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setPayments",
+    {
+     "deger": [
+      {
+       "id": 104,
+       "tutar": 20
+      }
+     ]
+    }
+   ],
+   [
+    "setCekler",
+    {
+     "deger": [
+      {
+       "id": 140,
+       "yon": "verilen",
+       "durum": "yazildi",
+       "hesapId": 60
+      },
+      {
+       "id": 141,
+       "paymentId": null,
+       "durum": "portfoy"
+      },
+      {
+       "id": 142,
+       "paymentId": 104,
+       "durum": "tahsil"
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ],
+   [
+    "setTeklifler",
+    {
+     "deger": [
+      {
+       "id": 106
+      }
+     ]
+    }
+   ],
+   [
+    "setFaturalar",
+    {
+     "deger": [
+      {
+       "id": 107
+      }
+     ]
+    }
+   ],
+   [
+    "setStock",
+    {
+     "deger": [
+      {
+       "id": 108
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStock",
+    {
+     "deger": [
+      {
+       "id": 109
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStockLog",
+    {
+     "deger": [
+      {
+       "id": 110
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimFormlari",
+    {
+     "deger": [
+      {
+       "id": 111
+      }
+     ]
+    }
+   ],
+   [
+    "setYedekParcaSatislar",
+    {
+     "deger": [
+      {
+       "id": 112
+      }
+     ]
+    }
+   ],
+   [
+    "setDealers",
+    {
+     "deger": [
+      {
+       "id": 113
+      }
+     ]
+    }
+   ],
+   [
+    "setDosyalar",
+    {
+     "deger": [
+      {
+       "id": 114
+      }
+     ]
+    }
+   ],
+   [
+    "setKalipDefs",
+    {
+     "deger": [
+      {
+       "id": 115,
+       "ad": "YK"
+      }
+     ]
+    }
+   ],
+   [
+    "setPartTypeDefs",
+    {
+     "deger": [
+      {
+       "id": 116,
+       "ad": "YT"
+      }
+     ]
+    }
+   ],
+   [
+    "setCalisanlar",
+    {
+     "deger": [
+      {
+       "id": 117,
+       "ad": "YÇ"
+      }
+     ]
+    }
+   ],
+   [
+    "setCustomModels",
+    {
+     "deger": [
+      {
+       "ad": "Yedek Özel"
+      }
+     ]
+    }
+   ],
+   [
+    "setStandardModels",
+    {
+     "deger": [
+      "AK100",
+      "AK200"
+     ]
+    }
+   ],
+   [
+    "setParts",
+    {
+     "deger": [
+      {
+       "id": 118
+      }
+     ]
+    }
+   ],
+   [
+    "setNotes",
+    {
+     "deger": [
+      {
+       "id": 119
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTurleri",
+    {
+     "deger": [
+      {
+       "id": 120
+      }
+     ]
+    }
+   ],
+   [
+    "setTedarikciler",
+    {
+     "deger": [
+      {
+       "id": 121
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderTanimlari",
+    {
+     "deger": [
+      {
+       "id": 122
+      }
+     ]
+    }
+   ],
+   [
+    "setGiderler",
+    {
+     "deger": [
+      {
+       "id": 123,
+       "odendi": true,
+       "tutar": 50,
+       "tarih": "2026-09-01"
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimPartileri",
+    {
+     "deger": [
+      {
+       "id": 124
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaHesaplari",
+    {
+     "deger": [
+      {
+       "id": 60,
+       "ad": "Eski Banka"
+      }
+     ]
+    }
+   ],
+   [
+    "setKasaKapsamDisi",
+    {
+     "deger": [
+      {
+       "id": 125
+      }
+     ]
+    }
+   ],
+   [
+    "setHesapHareketleri",
+    {
+     "deger": [
+      {
+       "id": 126,
+       "tur": "odeme",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "giderId": 123
+      },
+      {
+       "id": 127,
+       "tur": "virman",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": 51,
+       "karsiHesapId": 60
+      },
+      {
+       "id": 128,
+       "tur": "mahsup",
+       "tarih": "2026-09-10",
+       "tutar": 100,
+       "hesapId": null,
+       "calisanId": 117
+      }
+     ]
+    }
+   ],
+   [
+    "setFactory",
+    {
+     "deger": {
+      "name": "Yedek Firma"
+     }
+    }
+   ],
+   [
+    "setAppSettings",
+    {
+     "guncelleyici": {
+      "kdv": 18,
+      "backupFolder": "C:\\Bugun",
+      "autoBackup": true,
+      "giderAyarlari": {
+       "yururlukAy": "2026-01"
+      }
+     }
+    }
+   ]
+  ],
+  "mail": [
+   [
+    "restoreConfigFromBackup",
+    {
+     "host": "smtp.ornek"
+    }
+   ],
+   [
+    "restoreFullLog",
+    [
+     {
+      "id": 1
+     }
+    ]
+   ]
+  ],
+  "bildirim": [
+   [
+    "ok",
+    "Yedek başarıyla yüklendi. E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli."
+   ]
+  ]
+ },
+ "perde inik + izinli, kısmi (Müşteri)": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setPayments",
+    {
+     "deger": [
+      {
+       "id": 104,
+       "tutar": 20
+      }
+     ]
+    }
+   ],
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 30,
+       "yon": "verilen",
+       "durum": "odendi",
+       "tutar": 500,
+       "hesapId": 51
+      },
+      {
+       "id": 31,
+       "paymentId": null,
+       "durum": "portfoy"
+      },
+      {
+       "id": 142,
+       "paymentId": 104,
+       "durum": "tahsil"
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ]
+  ],
+  "mail": [],
+  "bildirim": [
+   [
+    "ok",
+    "Seçilen bölümler yedekten yüklendi: Müşteri verileri."
+   ]
+  ]
+ },
+ "gider izni yok, hepsi": {
+  "setterlar": [
+   [
+    "setCustomers",
+    {
+     "deger": [
+      {
+       "id": 101,
+       "name": "Yedek Müşteri",
+       "kalanBorc": 1234
+      }
+     ]
+    }
+   ],
+   [
+    "setServices",
+    {
+     "deger": [
+      {
+       "id": 102
+      }
+     ]
+    }
+   ],
+   [
+    "setPartSales",
+    {
+     "deger": [
+      {
+       "id": 103
+      }
+     ]
+    }
+   ],
+   [
+    "setPayments",
+    {
+     "deger": [
+      {
+       "id": 104,
+       "tutar": 20
+      }
+     ]
+    }
+   ],
+   [
+    "setCekler",
+    {
+     "guncelleyici": [
+      {
+       "id": 30,
+       "yon": "verilen",
+       "durum": "odendi",
+       "tutar": 500,
+       "hesapId": 51
+      },
+      {
+       "id": 31,
+       "paymentId": null,
+       "durum": "portfoy"
+      },
+      {
+       "id": 142,
+       "paymentId": 104,
+       "durum": "tahsil"
+      }
+     ]
+    }
+   ],
+   [
+    "setGorusmeler",
+    {
+     "deger": [
+      {
+       "id": 105
+      }
+     ]
+    }
+   ],
+   [
+    "setTeklifler",
+    {
+     "deger": [
+      {
+       "id": 106
+      }
+     ]
+    }
+   ],
+   [
+    "setFaturalar",
+    {
+     "deger": [
+      {
+       "id": 107
+      }
+     ]
+    }
+   ],
+   [
+    "setStock",
+    {
+     "deger": [
+      {
+       "id": 108
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStock",
+    {
+     "deger": [
+      {
+       "id": 109
+      }
+     ]
+    }
+   ],
+   [
+    "setPartStockLog",
+    {
+     "deger": [
+      {
+       "id": 110
+      }
+     ]
+    }
+   ],
+   [
+    "setUretimFormlari",
+    {
+     "deger": [
+      {
+       "id": 111
+      }
+     ]
+    }
+   ],
+   [
+    "setYedekParcaSatislar",
+    {
+     "deger": [
+      {
+       "id": 112
+      }
+     ]
+    }
+   ],
+   [
+    "setDealers",
+    {
+     "deger": [
+      {
+       "id": 113
+      }
+     ]
+    }
+   ],
+   [
+    "setDosyalar",
+    {
+     "deger": [
+      {
+       "id": 114
+      }
+     ]
+    }
+   ],
+   [
+    "setKalipDefs",
+    {
+     "deger": [
+      {
+       "id": 115,
+       "ad": "YK"
+      }
+     ]
+    }
+   ],
+   [
+    "setPartTypeDefs",
+    {
+     "deger": [
+      {
+       "id": 116,
+       "ad": "YT"
+      }
+     ]
+    }
+   ],
+   [
+    "setCalisanlar",
+    {
+     "deger": [
+      {
+       "id": 117,
+       "ad": "YÇ"
+      }
+     ]
+    }
+   ],
+   [
+    "setCustomModels",
+    {
+     "deger": [
+      {
+       "ad": "Yedek Özel"
+      }
+     ]
+    }
+   ],
+   [
+    "setStandardModels",
+    {
+     "deger": [
+      "AK100",
+      "AK200"
+     ]
+    }
+   ],
+   [
+    "setParts",
+    {
+     "deger": [
+      {
+       "id": 118
+      }
+     ]
+    }
+   ],
+   [
+    "setNotes",
+    {
+     "deger": [
+      {
+       "id": 119
+      }
+     ]
+    }
+   ],
+   [
+    "setFactory",
+    {
+     "deger": {
+      "name": "Yedek Firma"
+     }
+    }
+   ],
+   [
+    "setAppSettings",
+    {
+     "guncelleyici": {
+      "kdv": 18,
+      "backupFolder": "C:\\Bugun",
+      "autoBackup": true,
+      "giderAyarlari": {
+       "yururlukAy": "2026-01"
+      }
+     }
+    }
+   ]
+  ],
+  "mail": [
+   [
+    "restoreConfigFromBackup",
+    {
+     "host": "smtp.ornek"
+    }
+   ],
+   [
+    "restoreFullLog",
+    [
+     {
+      "id": 1
+     }
+    ]
+   ]
+  ],
+  "bildirim": [
+   [
+    "ok",
+    "Yedek başarıyla yüklendi. E-posta şifresi yedeklenmez, Ayarlar'dan tekrar girilmeli."
+   ]
+  ]
+ }
+}

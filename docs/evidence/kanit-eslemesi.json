@@ -4152,6 +4152,35 @@
         "rapor": "docs/evidence/0082-taban-piksel-raporu.json",
         "ekran": "kilit-geri-yukleme",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "ekran": "ayarlar-backup",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "ekran": "kilit-geri-yukleme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0086 R12"
+      },
+      {
+        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "ekran": "ayarlar-backup-paketler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0086 R12"
+      },
+      {
+        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "ekran": "ayarlar-backup-paketler-kasasiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0086 R12"
+      },
+      {
+        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "ekran": "ayarlar-backup-paketler-gidersiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0086 R12"
       }
     ],
     "src/components/settings/SettingsCompany.jsx": [
