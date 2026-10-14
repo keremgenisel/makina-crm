@@ -195,7 +195,7 @@ describe("Spec 0076 C, D: Giderler ve Dönem Raporu", () => {
     expect(screen.getByText("İndirilecek KDV").parentElement.textContent).toMatch(/240 ₺/);
     const bilgi = screen.getByTestId("kisit-kdv-bilgi");
     expect(bilgi.textContent).toMatch(/İndirilemeyen KDV \(kısıtlı giderler\)60 ₺/);
-    expect(bilgi.textContent).toMatch(new RegExp(`${KKEG_ETIKETI.replace(/[()]/g, "\\$&")} · matrah300 ₺`));
+    expect(bilgi.textContent).toMatch(new RegExp(`${KKEG_ETIKETI.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} · matrah300 ₺`));
     expect(bilgi.textContent).toMatch(/KKEG · KDV60 ₺/);
     expect(bilgi.textContent).toMatch(/KKEG · toplam360 ₺/);
   });
