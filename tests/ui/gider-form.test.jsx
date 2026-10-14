@@ -258,3 +258,62 @@ describe("GiderForm: atama (R7, R20, R21)", () => {
     expect(screen.getByLabelText("Tedarikçiye ödendi")).toBeTruthy();
   });
 });
+
+// Spec 0084 R7/1, R8 (P8): yeni kira kaleminde stopaj vadesi beyan döneminin ödeme tarihiyle ön dolar; düzenlemede dolmaz.
+describe("Spec 0084: stopaj vadesi ön doldurma", () => {
+  const stopajSatiri = (kayit) => kayit.taksitler.find(t => t.hedef === "stopaj");
+  it("spec 0084 AC-10: yeni kira kaleminde vade ön dolu; tarih değişince yeniden hesaplanır; elle girilen değer korunur ve saklanır", () => {
+    const onSave = ac();
+    tur(1);
+    fireEvent.change(screen.getByLabelText("Brüt kira"), { target: { value: "20.000" } });
+    // Sistem tarihi 2026-09-23: 3. dönem (Temmuz-Eylül), ödeme 2026-10-26 (varsayılan üç aylık, gün 26).
+    expect(screen.getByLabelText("Stopaj vadesi").value).toBe("2026-10-26");
+    expect(screen.getByText("Beyan döneminin ödeme tarihi dolduruldu (26/10/2026); gerekirse değiştirin.")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Tarih *"), { target: { value: "2026-11-05" } });
+    expect(screen.getByLabelText("Stopaj vadesi").value).toBe("2027-01-26");
+    fireEvent.change(screen.getByLabelText("Stopaj vadesi"), { target: { value: "2027-05-01" } });
+    // Başka döneme geçen tarih önerisini değiştirir (2027-04-26); elle girilen değer yine üstündür.
+    fireEvent.change(screen.getByLabelText("Tarih *"), { target: { value: "2027-02-01" } });
+    expect(screen.getByLabelText("Stopaj vadesi").value).toBe("2027-05-01");
+    expect(screen.getByText("Opsiyonel. Girilmezse stopaj borç özetinde görünür, hatırlatıcıya girmez.")).toBeTruthy();
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(stopajSatiri(onSave.mock.calls[0][0]).vade).toBe("2027-05-01");
+  });
+  it("spec 0084 AC-10: dokunulmadan kaydedilen yeni kalemin stopaj vadesi ön dolu değerdir; ayar aylık ve gün 15 ise ona göre", () => {
+    const onSave = ac({ giderAyarlari: { stopajOrani: 20, stopajBeyanDonemi: "aylik", stopajOdemeGunu: 15 } });
+    tur(1);
+    fireEvent.change(screen.getByLabelText("Brüt kira"), { target: { value: "20.000" } });
+    expect(screen.getByLabelText("Stopaj vadesi").value).toBe("2026-10-15");
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(stopajSatiri(onSave.mock.calls[0][0]).vade).toBe("2026-10-15");
+  });
+  it("spec 0084 R8: stopaj taksit sayısı 2 ve üstündeyse ön doldurma yapılmaz, ilk vade zorunlu kalır", () => {
+    const onSave = ac();
+    tur(1);
+    fireEvent.change(screen.getByLabelText("Brüt kira"), { target: { value: "20.000" } });
+    fireEvent.change(screen.getByLabelText("Stopaj taksit sayısı"), { target: { value: "2" } });
+    expect(screen.getByLabelText("Stopaj vadesi").value).toBe("");
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText("İlk stopaj taksitinin vadesi girilmedi.")).toBeTruthy();
+  });
+  it("spec 0084 AC-11: düzenleme kipinde ön doldurma yok; vadesi boş eski kalem değiştirilmeden kaydedilince vadesi boş kalır; ipucu bugünkü metin (yeni metin yalnız ön dolu değer dururken, revizyon 4)", () => {
+    const eski = { id: 77, tarih: "2026-08-05", turId: 1, girisYonu: "brut", tutar: 20000, netTutar: 16000, stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, aciklama: "Ağustos kirası",
+      taksitler: [{ id: 901, hedef: "ana", sira: 1, vade: "2026-08-10", tutar: 16000 }, { id: 902, hedef: "stopaj", sira: 1, vade: null, tutar: 4000 }] };
+    const onSave = ac({ kalem: eski });
+    expect(screen.getByLabelText("Stopaj vadesi").value).toBe("");
+    expect(screen.getByText("Opsiyonel. Girilmezse stopaj borç özetinde görünür, hatırlatıcıya girmez.")).toBeTruthy();
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(stopajSatiri(onSave.mock.calls[0][0]).vade).toBeNull();
+  });
+  it("spec 0084 AC-11: düzenleme kipinde dolu stopaj vadesine dokunulmaz; gider tarihi değişse de kayıttaki değer kalır", () => {
+    const eski = { id: 78, tarih: "2026-08-05", turId: 1, girisYonu: "brut", tutar: 20000, netTutar: 16000, stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, aciklama: "Ağustos kirası",
+      taksitler: [{ id: 911, hedef: "ana", sira: 1, vade: "2026-08-10", tutar: 16000 }, { id: 912, hedef: "stopaj", sira: 1, vade: "2026-11-20", tutar: 4000 }] };
+    const onSave = ac({ kalem: eski });
+    expect(screen.getByLabelText("Stopaj vadesi").value).toBe("2026-11-20");
+    fireEvent.change(screen.getByLabelText("Tarih *"), { target: { value: "2026-08-06" } });
+    expect(screen.getByLabelText("Stopaj vadesi").value).toBe("2026-11-20");
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(stopajSatiri(onSave.mock.calls[0][0]).vade).toBe("2026-11-20");
+  });
+});

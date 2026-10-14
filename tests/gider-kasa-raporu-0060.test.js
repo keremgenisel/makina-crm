@@ -48,10 +48,13 @@ describe("Spec 0060 R11, R28: ek ödemeler tür bazında", () => {
 describe("Spec 0060 R12, R31: stopaj", () => {
   it("AC-14 / AC-41: ayın kesilen, ödenen ve açık stopajı kira toplamından ayrı; kesilen = ödenen + açık", () => {
     const r = R();
-    expect(r.gider.stopaj).toEqual({ kesilen: 4000, odenen: 4000, acik: 0 });
+    // Spec 0084 ile güncellendi (R21/1): kutunun üç rakamı aynen; nesne beyan dönemi tablosunu (`donemler`) de taşır.
+    const { donemler, ...ucRakam } = r.gider.stopaj;
+    expect(ucRakam).toEqual({ kesilen: 4000, odenen: 4000, acik: 0 });
+    expect(donemler).toHaveLength(1);
     expect(r.gider.stopaj.kesilen).toBe(r.gider.ozet.stopaj);
     const odenmemis = R({ hareketler: H.filter(h => h.id !== 112) }).gider.stopaj;
-    expect(odenmemis).toEqual({ kesilen: 4000, odenen: 0, acik: 4000 });
+    expect({ ...odenmemis, donemler: undefined }).toEqual({ kesilen: 4000, odenen: 0, acik: 4000, donemler: undefined });
     expect(HTML()).toMatch(/GİDER · STOPAJ[\s\S]*Kesilen stopaj[\s\S]*Ödenen[\s\S]*Ay sonunda açık/);
   });
   it("AC-30: stopaj özeti saf motorda tek fonksiyondan; rapor kendi döngüsünü yazmaz", () => {

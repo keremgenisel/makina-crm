@@ -29,6 +29,9 @@ import { MakinaKarliligi } from "./gider/MakinaKarliligi";
 import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { UretimPartileri } from "./gider/UretimPartileri";
+import { StopajDonemleri } from "./gider/StopajDonemleri";
+import { stopajBeyanAyari, stopajOdemeTarihi, stopajDonemleri } from "../lib/stopajDonemi";
+import { useKilitListesi } from "../hooks/useKilitListesi";
 
 // Giderler üst sekmesi (spec 0001, C14). Yalnız gider yetkisi olan kullanıcıya görünür (C6 kural 3).
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
@@ -62,6 +65,8 @@ export const Giderler = ({
   cekler = [], setCekler = null, payments = [],
   // Triyaj bulgu 2: sunucu hareket bölümünü göndermedi (0024 öncesi sunucu); durum eski işaretten, ödeme girişi kapalı.
   hareketBolumuYok = false,
+  // Spec 0084 R19 (AC-29): toplu stopaj ödemesi kalemlerin gider kilidine anlık bakar; kendi kilidini ayırt etmek için.
+  aktifKullanici = "",
 }) => {
   const canDo = makeCanDo(serverPermissions, "giderActions");
   // Canlı yerel gün (spec 0003 C3, H1): hatırlatma kapsamı Anasayfa kartıyla aynı "bugün"e bakmalı (AC-14).
@@ -76,6 +81,9 @@ export const Giderler = ({
   const [uretimSonucu, setUretimSonucu] = useState(null);
   const giderAyarlari = appSettings?.giderAyarlari || {};
   const yururlukAy = giderAyarlari.yururlukAy || null;
+  // Spec 0084 R2: beyan ayarının tek okuma yolu.
+  const beyan = useMemo(() => stopajBeyanAyari(giderAyarlari), [giderAyarlari]);
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
   const turMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
   const giderler = useMemo(() => odemeleriUygula(giderlerHam, hesapHareketleri, turMap), [giderlerHam, hesapHareketleri, turMap]);
   // Spec 0041 R3, R4: kalemin yöntemi ödemelerden türetilir (bir kez; hareket bölümü yoksa boş, yöntem yazılmaz).
@@ -84,8 +92,11 @@ export const Giderler = ({
   const modeller = useMemo(() => [...standardModels, ...customModels.filter(m => !m.deletedAt)], [standardModels, customModels]);
 
   // Ödeme hatırlatıcısı (spec 0003 R8, C2): Anasayfa kartıyla AYNI saf hesap, aynı bugün ve eşik.
-  const hatirlatma = useMemo(() => odemeHatirlatmalari(giderler, { turler: giderTurleri, tedarikciler, yururlukAy, esikGun: hatirlatmaEsigi(giderAyarlari) }, bugun),
-    [giderler, giderTurleri, tedarikciler, yururlukAy, giderAyarlari, bugun]);
+  const hatirlatma = useMemo(() => odemeHatirlatmalari(giderler, { turler: giderTurleri, tedarikciler, yururlukAy, esikGun: hatirlatmaEsigi(giderAyarlari), beyanAyari: beyan }, bugun),
+    [giderler, giderTurleri, tedarikciler, yururlukAy, giderAyarlari, bugun, beyan]);
+  // Spec 0084 R12 (AC-15): başlık düğmesinin sayısı açık DÖNEM sayar; pencere dönem seçicisinden bağımsızdır.
+  const stopajSonuc = useMemo(() => stopajDonemleri(giderler, { turler: giderTurleri, yururlukAy, ayar: beyan }, bugun), [giderler, giderTurleri, yururlukAy, beyan, bugun]);
+  const [stopajPenceresi, setStopajPenceresi] = useState(false);
   const hatirlatmaModu = gorunum === "rapor" && odemeFiltre === "hatirlatma";
   // Spec 0061 R1, R20, R30 (C9): açık kalemler kipi ödeme süzgecinin değeri DEĞİL, ayrı bir durumdur; yalnız Dönem Raporu'nda,
   // hatırlatma kipiyle birbirini dışlar, kaydedilmez.
@@ -132,7 +143,8 @@ export const Giderler = ({
 
   const uretimAyi = mod === "ay" ? ay : ayOf(bugun);
   const uret = () => {
-    const u = tekrarlayanUret(giderTanimlari, giderler, uretimAyi, { turMap, calisanlar, giderAyarlari, kdvRates, uid });
+    // Spec 0084 R7/2, R9 (P1): üretilen kira kaleminin stopaj vadesi beyan döneminin ödeme tarihi.
+    const u = tekrarlayanUret(giderTanimlari, giderler, uretimAyi, { turMap, calisanlar, giderAyarlari, kdvRates, uid, stopajVadeOf: (t) => stopajOdemeTarihi(t, beyan) });
     if (u.yeniKalemler.length) setGiderler(p => [...p, ...u.yeniKalemler]);
     setGiderTanimlari(p => copuKoru(u.guncelTanimlar, p)); // spec 0078 R9: tanımlar canlı gelir
     logAction({ serverPermissions, action: "tekrar_uretildi", entity: "gider", entityName: uretimAyi, detail: { ay: uretimAyi, eklenen: u.eklenen, zatenVardi: u.zatenVardi } });
@@ -189,6 +201,15 @@ export const Giderler = ({
     setForm(null);
   };
   // Spec 0024 R17/R18: ödeme anahtarı, kira anahtarları ve Ödeme Planı satırları aynı ödeme penceresini açar.
+  // Spec 0084 R15, R16 (P5): toplu stopaj ödemesi tek yazma yolundan (0073 R20); satır başına bir hareket, tek yazım.
+  const stopajOdemeKaydet = (hareketler, donem) => {
+    const yazilan = odemeGirisiYaz({ hareketler }, { setHesapHareketleri, setCekler, uid });
+    for (const h of yazilan) {
+      const k = giderler.find(x => String(x.id) === String(h.giderId));
+      logAction({ serverPermissions, action: "odendi", entity: "gider", entityId: h.giderId, entityName: k?.aciklama || "", detail: { tutar: h.tutar, yontem: h.yontem || null, donem: donem.donemAdi } });
+    }
+    showToast(`${donem.donemAdi}: ${yazilan.length} stopaj ödemesi kaydedildi.`);
+  };
   const [odemeHedefi, setOdemeHedefi] = useState(null); // null | {kalemId, hedef: {taksitId}|{hedef}|null}
   const odemeKalemi = odemeHedefi == null ? null : giderler.find(k => k.id === odemeHedefi.kalemId) || null;
   // Hareket yazıcısı yoksa (bölümü tanımayan eski sunucu, triyaj bulgu 2) ödeme penceresi açılmaz.
@@ -297,6 +318,13 @@ export const Giderler = ({
               style={{ border: `1px solid ${acikKalemlerModu ? "var(--amb600, #d97706)" : "var(--n300, #cbd5e1)"}`, background: acikKalemlerModu ? "var(--ambBg, #fffbeb)" : "var(--surface, #ffffff)",
                 color: "var(--n900, #0f172a)", borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               {acikKalemlerModu ? "Açık kalemleri kapat" : "Açık kalemler (tüm dönemler)"}
+            </button>
+          )}
+          {/* Spec 0084 R12 (AC-15): yalnız Dönem Raporu'nda ve yalnız açık dönem varken; sayı dönem sayar. */}
+          {gorunum === "rapor" && stopajSonuc.acikDonemSayisi > 0 && (
+            <button type="button" data-testid="stopaj-donemleri-dugmesi" onClick={() => setStopajPenceresi(true)}
+              style={{ border: "1px solid var(--n300, #cbd5e1)", background: "var(--surface, #ffffff)", color: "var(--n900, #0f172a)", borderRadius: 8, padding: "7px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Kira stopajı ({stopajSonuc.acikDonemSayisi} dönem açık)
             </button>
           )}
           {!DONEMSIZ.has(gorunum) && (donemsizKip
@@ -413,6 +441,11 @@ export const Giderler = ({
           odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy}
           onDuzenle={odemeDuzenle(odemeKalemi)}
           cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler} tedarikciler={tedarikciler} />
+      )}
+      {stopajPenceresi && (
+        <StopajDonemleri giderler={giderler} turler={giderTurleri} turMap={turMap} yururlukAy={yururlukAy} ayar={beyan} bugun={bugun}
+          hesaplar={kasaHesaplari} hesapSecimi={kasaYetki} hareketler={hesapHareketleri || []} baskasiKilitli={baskasiKilitli}
+          odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri && !hareketBolumuYok} onKaydet={stopajOdemeKaydet} onClose={() => setStopajPenceresi(false)} />
       )}
       {silinecek && (
         <ConfirmDialog title="Gider silinsin mi?" message={`${fmtTR(silinecek.tarih)} tarihli “${silinecek.aciklama || silinecek.calisanAd || "gider"}” kalemi Çöp Kutusu'na taşınacak. 30 gün içinde geri alınabilir.${silinecek.tanimId != null ? " Tekrarlayan tanımdan geldiği için o ay yeniden üretilmez." : ""}`}

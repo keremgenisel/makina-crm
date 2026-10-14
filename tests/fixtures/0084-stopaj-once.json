@@ -1,0 +1,1073 @@
+{
+ "raporYil": {
+  "yururlukOncesi": false,
+  "kapsamDisi": null,
+  "bos": false,
+  "kalemler": [
+   {
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 20000,
+    "stopajOrani": 20,
+    "kdvOrani": 0,
+    "tedarikciId": 12,
+    "id": 1,
+    "tarih": "2026-01-05",
+    "aciklama": "Ocak kirası",
+    "sonOdemeTarihi": "2026-04-26",
+    "kdvYonu": "haric",
+    "netTutar": 16000,
+    "resmiTutar": null,
+    "eldenTutar": null,
+    "sgkTutar": null,
+    "yolParasi": null,
+    "calisanId": null,
+    "calisanAd": null,
+    "ekOdemeler": [],
+    "odendi": true,
+    "odemeTarihi": "2026-03-30",
+    "taksitler": [
+     {
+      "id": 84001,
+      "hedef": "ana",
+      "sira": 1,
+      "vade": "2026-01-10",
+      "tutar": 16000,
+      "odendi": true,
+      "odemeTarihi": "2026-01-10",
+      "_odenenK": 1600000
+     },
+     {
+      "id": 84002,
+      "hedef": "stopaj",
+      "sira": 1,
+      "vade": "2026-04-26",
+      "tutar": 4000,
+      "odendi": true,
+      "odemeTarihi": "2026-03-30",
+      "_odenenK": 400000
+     }
+    ],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": []
+   },
+   {
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 20000,
+    "stopajOrani": 20,
+    "kdvOrani": 0,
+    "tedarikciId": 12,
+    "id": 2,
+    "tarih": "2026-02-05",
+    "aciklama": "Şubat kirası",
+    "sonOdemeTarihi": "2026-02-10",
+    "kdvYonu": "haric",
+    "netTutar": 16000,
+    "resmiTutar": null,
+    "eldenTutar": null,
+    "sgkTutar": null,
+    "yolParasi": null,
+    "calisanId": null,
+    "calisanAd": null,
+    "ekOdemeler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [
+     {
+      "id": 84003,
+      "hedef": "ana",
+      "sira": 1,
+      "vade": "2026-02-10",
+      "tutar": 16000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 0
+     },
+     {
+      "id": 84004,
+      "hedef": "stopaj",
+      "sira": 1,
+      "vade": null,
+      "tutar": 4000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 0
+     }
+    ],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": []
+   },
+   {
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 30000,
+    "stopajOrani": 20,
+    "kdvOrani": 0,
+    "tedarikciId": 13,
+    "id": 3,
+    "tarih": "2026-03-05",
+    "aciklama": "Mart kirası",
+    "sonOdemeTarihi": "2026-03-10",
+    "kdvYonu": "haric",
+    "netTutar": 24000,
+    "resmiTutar": null,
+    "eldenTutar": null,
+    "sgkTutar": null,
+    "yolParasi": null,
+    "calisanId": null,
+    "calisanAd": null,
+    "ekOdemeler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [
+     {
+      "id": 84005,
+      "hedef": "ana",
+      "sira": 1,
+      "vade": "2026-03-10",
+      "tutar": 24000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 0
+     },
+     {
+      "id": 84006,
+      "hedef": "stopaj",
+      "sira": 1,
+      "vade": "2026-04-20",
+      "tutar": 3000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 100000
+     },
+     {
+      "id": 84007,
+      "hedef": "stopaj",
+      "sira": 2,
+      "vade": "2026-05-20",
+      "tutar": 3000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 0
+     }
+    ],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": []
+   },
+   {
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 20000,
+    "stopajOrani": 20,
+    "kdvOrani": 0,
+    "tedarikciId": 12,
+    "id": 4,
+    "tarih": "2026-11-05",
+    "aciklama": "Kasım kirası",
+    "sonOdemeTarihi": "2026-11-10",
+    "kdvYonu": "haric",
+    "netTutar": 16000,
+    "resmiTutar": null,
+    "eldenTutar": null,
+    "sgkTutar": null,
+    "yolParasi": null,
+    "calisanId": null,
+    "calisanAd": null,
+    "ekOdemeler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [
+     {
+      "id": 84008,
+      "hedef": "ana",
+      "sira": 1,
+      "vade": "2026-11-10",
+      "tutar": 16000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 0
+     },
+     {
+      "id": 84009,
+      "hedef": "stopaj",
+      "sira": 1,
+      "vade": "2027-01-26",
+      "tutar": 4000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 0
+     }
+    ],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": []
+   },
+   {
+    "id": 5,
+    "tarih": "2026-02-15",
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 10000,
+    "netTutar": 8000,
+    "stopajOrani": 20,
+    "kdvOrani": 0,
+    "tedarikciId": 13,
+    "aciklama": "Eski depo kirası",
+    "taksitler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "_odenen": {
+     "ana": 0,
+     "stopaj": 0
+    }
+   },
+   {
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 5000,
+    "stopajOrani": 0,
+    "kdvOrani": 0,
+    "tedarikciId": 13,
+    "id": 6,
+    "tarih": "2026-03-20",
+    "aciklama": "Stopajsız kira",
+    "kdvYonu": "haric",
+    "netTutar": 5000,
+    "resmiTutar": null,
+    "eldenTutar": null,
+    "sgkTutar": null,
+    "yolParasi": null,
+    "calisanId": null,
+    "calisanAd": null,
+    "ekOdemeler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": [],
+    "_odenen": {
+     "ana": 0
+    }
+   },
+   {
+    "id": 7,
+    "tarih": "2026-02-12",
+    "turId": 1,
+    "tutar": 10000,
+    "kdvOrani": 20,
+    "tedarikciId": 11,
+    "aciklama": "Sac levha",
+    "sonOdemeTarihi": "2026-02-28",
+    "kdvYonu": "haric",
+    "stopajOrani": null,
+    "girisYonu": null,
+    "netTutar": null,
+    "resmiTutar": null,
+    "eldenTutar": null,
+    "sgkTutar": null,
+    "yolParasi": null,
+    "calisanId": null,
+    "calisanAd": null,
+    "ekOdemeler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": [],
+    "_odenen": {
+     "ana": 0
+    }
+   },
+   {
+    "id": 8,
+    "tarih": "2026-02-28",
+    "turId": 3,
+    "calisanId": 21,
+    "calisanAd": "Deniz Ak",
+    "resmiTutar": 30000,
+    "eldenTutar": 0,
+    "sonOdemeTarihi": "2026-03-05",
+    "kdvYonu": null,
+    "yolParasi": null,
+    "ekOdemeler": [],
+    "tutar": null,
+    "kdvOrani": 0,
+    "tedarikciId": null,
+    "stopajOrani": null,
+    "girisYonu": null,
+    "netTutar": null,
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": [],
+    "_odenen": {
+     "ana": 0
+    }
+   }
+  ],
+  "toplam": 145000,
+  "odenen": 20000,
+  "odenmeyen": 125000,
+  "odenmeyenAdet": 7,
+  "stopajToplam": 20000,
+  "stopajSatirlari": [
+   {
+    "kalemId": 1,
+    "tarih": "2026-01-05",
+    "aciklama": "Ocak kirası",
+    "brut": 20000,
+    "stopajOrani": 20,
+    "stopaj": 4000,
+    "girisYonu": "brut"
+   },
+   {
+    "kalemId": 2,
+    "tarih": "2026-02-05",
+    "aciklama": "Şubat kirası",
+    "brut": 20000,
+    "stopajOrani": 20,
+    "stopaj": 4000,
+    "girisYonu": "brut"
+   },
+   {
+    "kalemId": 3,
+    "tarih": "2026-03-05",
+    "aciklama": "Mart kirası",
+    "brut": 30000,
+    "stopajOrani": 20,
+    "stopaj": 6000,
+    "girisYonu": "brut"
+   },
+   {
+    "kalemId": 4,
+    "tarih": "2026-11-05",
+    "aciklama": "Kasım kirası",
+    "brut": 20000,
+    "stopajOrani": 20,
+    "stopaj": 4000,
+    "girisYonu": "brut"
+   },
+   {
+    "kalemId": 5,
+    "tarih": "2026-02-15",
+    "aciklama": "Eski depo kirası",
+    "brut": 10000,
+    "stopajOrani": 20,
+    "stopaj": 2000,
+    "girisYonu": "brut"
+   },
+   {
+    "kalemId": 6,
+    "tarih": "2026-03-20",
+    "aciklama": "Stopajsız kira",
+    "brut": 5000,
+    "stopajOrani": 0,
+    "stopaj": 0,
+    "girisYonu": "brut"
+   }
+  ],
+  "indirilecekKdv": 2000,
+  "kovalar": {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 145000
+  },
+  "kovaKatki": {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 8
+  },
+  "makinaBazli": [],
+  "modelBazli": [],
+  "dagitmaKalemleri": [],
+  "kismiOrtak": [],
+  "dusenAtamalar": [],
+  "turKirilimi": [
+   {
+    "turId": 2,
+    "ad": "Kira",
+    "davranis": "kira",
+    "toplam": 105000,
+    "adet": 6,
+    "calisanlar": null
+   },
+   {
+    "turId": 3,
+    "ad": "Maaşlar",
+    "davranis": "personel",
+    "toplam": 30000,
+    "adet": 1,
+    "calisanlar": [
+     {
+      "calisanId": 21,
+      "ad": "Deniz Ak",
+      "resmi": 30000,
+      "elden": 0,
+      "yol": 0,
+      "ek": 0,
+      "toplam": 30000,
+      "ekSatirlari": []
+     }
+    ]
+   },
+   {
+    "turId": 1,
+    "ad": "Hammadde",
+    "davranis": "normal",
+    "toplam": 10000,
+    "adet": 1,
+    "calisanlar": null
+   }
+  ],
+  "tedarikciKirilimi": {
+   "satirlar": [
+    {
+     "tedarikciId": "12",
+     "ad": "Yıldız Gayrimenkul",
+     "harcama": 60000,
+     "acikBorc": 16000,
+     "vadesiGecti": true
+    },
+    {
+     "tedarikciId": "13",
+     "ad": "Kuzey Depo",
+     "harcama": 45000,
+     "acikBorc": 37000,
+     "vadesiGecti": true
+    },
+    {
+     "tedarikciId": "11",
+     "ad": "Demir Bant",
+     "harcama": 10000,
+     "acikBorc": 12000,
+     "vadesiGecti": true
+    }
+   ],
+   "secilmemis": {
+    "harcama": 0,
+    "adet": 0,
+    "acikBorc": 0
+   },
+   "toplamHarcama": 115000,
+   "tedarikciBorcu": 65000,
+   "toplamBorc": 65000
+  },
+  "mukerrerUyari": []
+ },
+ "raporSubat": {
+  "yururlukOncesi": false,
+  "kapsamDisi": null,
+  "bos": false,
+  "kalemler": [
+   {
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 20000,
+    "stopajOrani": 20,
+    "kdvOrani": 0,
+    "tedarikciId": 12,
+    "id": 2,
+    "tarih": "2026-02-05",
+    "aciklama": "Şubat kirası",
+    "sonOdemeTarihi": "2026-02-10",
+    "kdvYonu": "haric",
+    "netTutar": 16000,
+    "resmiTutar": null,
+    "eldenTutar": null,
+    "sgkTutar": null,
+    "yolParasi": null,
+    "calisanId": null,
+    "calisanAd": null,
+    "ekOdemeler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [
+     {
+      "id": 84003,
+      "hedef": "ana",
+      "sira": 1,
+      "vade": "2026-02-10",
+      "tutar": 16000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 0
+     },
+     {
+      "id": 84004,
+      "hedef": "stopaj",
+      "sira": 1,
+      "vade": null,
+      "tutar": 4000,
+      "odendi": false,
+      "odemeTarihi": null,
+      "_odenenK": 0
+     }
+    ],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": []
+   },
+   {
+    "id": 5,
+    "tarih": "2026-02-15",
+    "turId": 2,
+    "girisYonu": "brut",
+    "tutar": 10000,
+    "netTutar": 8000,
+    "stopajOrani": 20,
+    "kdvOrani": 0,
+    "tedarikciId": 13,
+    "aciklama": "Eski depo kirası",
+    "taksitler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "_odenen": {
+     "ana": 0,
+     "stopaj": 0
+    }
+   },
+   {
+    "id": 7,
+    "tarih": "2026-02-12",
+    "turId": 1,
+    "tutar": 10000,
+    "kdvOrani": 20,
+    "tedarikciId": 11,
+    "aciklama": "Sac levha",
+    "sonOdemeTarihi": "2026-02-28",
+    "kdvYonu": "haric",
+    "stopajOrani": null,
+    "girisYonu": null,
+    "netTutar": null,
+    "resmiTutar": null,
+    "eldenTutar": null,
+    "sgkTutar": null,
+    "yolParasi": null,
+    "calisanId": null,
+    "calisanAd": null,
+    "ekOdemeler": [],
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": [],
+    "_odenen": {
+     "ana": 0
+    }
+   },
+   {
+    "id": 8,
+    "tarih": "2026-02-28",
+    "turId": 3,
+    "calisanId": 21,
+    "calisanAd": "Deniz Ak",
+    "resmiTutar": 30000,
+    "eldenTutar": 0,
+    "sonOdemeTarihi": "2026-03-05",
+    "kdvYonu": null,
+    "yolParasi": null,
+    "ekOdemeler": [],
+    "tutar": null,
+    "kdvOrani": 0,
+    "tedarikciId": null,
+    "stopajOrani": null,
+    "girisYonu": null,
+    "netTutar": null,
+    "odendi": false,
+    "odemeTarihi": null,
+    "taksitler": [],
+    "atamaTur": "",
+    "makinaTur": null,
+    "makinaId": null,
+    "modelSatirlari": [],
+    "_odenen": {
+     "ana": 0
+    }
+   }
+  ],
+  "toplam": 70000,
+  "odenen": 0,
+  "odenmeyen": 70000,
+  "odenmeyenAdet": 4,
+  "stopajToplam": 6000,
+  "stopajSatirlari": [
+   {
+    "kalemId": 2,
+    "tarih": "2026-02-05",
+    "aciklama": "Şubat kirası",
+    "brut": 20000,
+    "stopajOrani": 20,
+    "stopaj": 4000,
+    "girisYonu": "brut"
+   },
+   {
+    "kalemId": 5,
+    "tarih": "2026-02-15",
+    "aciklama": "Eski depo kirası",
+    "brut": 10000,
+    "stopajOrani": 20,
+    "stopaj": 2000,
+    "girisYonu": "brut"
+   }
+  ],
+  "indirilecekKdv": 2000,
+  "kovalar": {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 70000
+  },
+  "kovaKatki": {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 4
+  },
+  "makinaBazli": [],
+  "modelBazli": [],
+  "dagitmaKalemleri": [],
+  "kismiOrtak": [],
+  "dusenAtamalar": [],
+  "turKirilimi": [
+   {
+    "turId": 2,
+    "ad": "Kira",
+    "davranis": "kira",
+    "toplam": 30000,
+    "adet": 2,
+    "calisanlar": null
+   },
+   {
+    "turId": 3,
+    "ad": "Maaşlar",
+    "davranis": "personel",
+    "toplam": 30000,
+    "adet": 1,
+    "calisanlar": [
+     {
+      "calisanId": 21,
+      "ad": "Deniz Ak",
+      "resmi": 30000,
+      "elden": 0,
+      "yol": 0,
+      "ek": 0,
+      "toplam": 30000,
+      "ekSatirlari": []
+     }
+    ]
+   },
+   {
+    "turId": 1,
+    "ad": "Hammadde",
+    "davranis": "normal",
+    "toplam": 10000,
+    "adet": 1,
+    "calisanlar": null
+   }
+  ],
+  "tedarikciKirilimi": {
+   "satirlar": [
+    {
+     "tedarikciId": "12",
+     "ad": "Yıldız Gayrimenkul",
+     "harcama": 20000,
+     "acikBorc": 16000,
+     "vadesiGecti": true
+    },
+    {
+     "tedarikciId": "11",
+     "ad": "Demir Bant",
+     "harcama": 10000,
+     "acikBorc": 12000,
+     "vadesiGecti": true
+    },
+    {
+     "tedarikciId": "13",
+     "ad": "Kuzey Depo",
+     "harcama": 10000,
+     "acikBorc": 37000,
+     "vadesiGecti": true
+    }
+   ],
+   "secilmemis": {
+    "harcama": 0,
+    "adet": 0,
+    "acikBorc": 0
+   },
+   "toplamHarcama": 40000,
+   "tedarikciBorcu": 65000,
+   "toplamBorc": 65000
+  },
+  "mukerrerUyari": []
+ },
+ "kovalar": [
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 20000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 20000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 30000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 20000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 10000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 5000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 10000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 30000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 20000
+  },
+  {
+   "makina": 0,
+   "model": 0,
+   "dagitma": 0,
+   "ortak": 20000
+  }
+ ],
+ "maliyet": {
+  "makinalar": [
+   [
+    "musteri:601",
+    {
+     "anahtar": "musteri:601",
+     "tur": "musteri",
+     "id": 601,
+     "model": "AK100",
+     "modelKey": "ak100",
+     "seri": "S601",
+     "ad": "Firma A",
+     "uretimTarihi": "2026-03-05",
+     "uretimKaynak": "kayit",
+     "satildi": true,
+     "satisTarihi": "2026-03-20",
+     "kayit": {
+      "id": 601,
+      "name": "Firma A",
+      "model": "AK100",
+      "serialNo": "S601",
+      "installDate": "2026-03-20",
+      "fabrikaSatisBedeli": 500000,
+      "currency": "TRY",
+      "uretimTarihi": "2026-03-05"
+     },
+     "uretimAy": "2026-03",
+     "veriYok": false,
+     "dogrudan": 0,
+     "dogrudanKalemler": [],
+     "malzeme": 0,
+     "malzemePaylari": [],
+     "ortakPay": 3500000,
+     "malzemePayiAlamadi": false,
+     "uretimMaliyeti": 3500000
+    }
+   ]
+  ],
+  "liste": [
+   {
+    "anahtar": "musteri:601",
+    "tur": "musteri",
+    "id": 601,
+    "model": "AK100",
+    "modelKey": "ak100",
+    "seri": "S601",
+    "ad": "Firma A",
+    "uretimTarihi": "2026-03-05",
+    "uretimKaynak": "kayit",
+    "satildi": true,
+    "satisTarihi": "2026-03-20",
+    "kayit": {
+     "id": 601,
+     "name": "Firma A",
+     "model": "AK100",
+     "serialNo": "S601",
+     "installDate": "2026-03-20",
+     "fabrikaSatisBedeli": 500000,
+     "currency": "TRY",
+     "uretimTarihi": "2026-03-05"
+    },
+    "uretimAy": "2026-03",
+    "veriYok": false,
+    "dogrudan": 0,
+    "dogrudanKalemler": [],
+    "malzeme": 0,
+    "malzemePaylari": [],
+    "ortakPay": 3500000,
+    "malzemePayiAlamadi": false,
+    "uretimMaliyeti": 3500000
+   }
+  ],
+  "aylar": [
+   [
+    "2026-01",
+    {
+     "ay": "2026-01",
+     "uretimAdedi": 0,
+     "ortakGercek": 2000000,
+     "ortak": 2000000,
+     "pay": 0,
+     "dagitilmamis": 2000000,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 2000000
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-02",
+    {
+     "ay": "2026-02",
+     "uretimAdedi": 0,
+     "ortakGercek": 7000000,
+     "ortak": 7000000,
+     "pay": 0,
+     "dagitilmamis": 7000000,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 7000000
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-03",
+    {
+     "ay": "2026-03",
+     "uretimAdedi": 1,
+     "ortakGercek": 3500000,
+     "ortak": 3500000,
+     "pay": 3500000,
+     "dagitilmamis": 0,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 3500000
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-04",
+    {
+     "ay": "2026-04",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-05",
+    {
+     "ay": "2026-05",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-06",
+    {
+     "ay": "2026-06",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-07",
+    {
+     "ay": "2026-07",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-08",
+    {
+     "ay": "2026-08",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-09",
+    {
+     "ay": "2026-09",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-10",
+    {
+     "ay": "2026-10",
+     "uretimAdedi": 0,
+     "ortakGercek": 0,
+     "ortak": 0,
+     "pay": 0,
+     "dagitilmamis": 0,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 0
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ],
+   [
+    "2026-11",
+    {
+     "ay": "2026-11",
+     "uretimAdedi": 0,
+     "ortakGercek": 2000000,
+     "ortak": 2000000,
+     "pay": 0,
+     "dagitilmamis": 2000000,
+     "siniflar": {
+      "makina": 0,
+      "model": 0,
+      "dagitma": 0,
+      "ortak": 2000000
+     },
+     "partiPaylari": [],
+     "dagitimlar": []
+    }
+   ]
+  ],
+  "havuzlar": [],
+  "yururlukAy": "2026-01",
+  "partiler": [],
+  "dagitimVar": false
+ }
+}

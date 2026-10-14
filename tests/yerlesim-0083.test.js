@@ -3,7 +3,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
-import { createHash } from "node:crypto";
 import { HESAPSIZ_NOTU } from "../src/lib/kasa";
 
 const kok = resolve(__dirname, "..");
@@ -68,10 +67,13 @@ describe("Spec 0083: kaynak taramaları", () => {
     expect(b).toMatch(/\*\*İstisna, sayfa sonundaki şerit \(spec 0083 R16\):\*\*/);
     expect(b).toMatch(/\*\*Örnek:\*\* `src\/components\/Kasa\.jsx:\d+` \(sayfa sonundaki şerit, spec 0083\)/);
   });
-  it("AC-25: görüntü aracı bu işte değişmedi (0082 sonrası içerik sabit)", () => {
-    const sha = (f) => createHash("sha256").update(readFileSync(resolve(kok, f))).digest("hex");
-    expect(sha("scripts/evidence/0009-sayfa.jsx")).toBe("8d5ff47c3115fd28a64b83cf7d735fed1b6e23db0240f7f4cee732dd8db5a07a");
-    expect(sha("scripts/evidence/0009-ekran.cjs")).toBe("6462974b06865ea500660e4436129efeb945e5989b64e9e93d676c7cc2b7e62a");
+  // Spec 0084 ile güncellendi (D1): SHA sabitlemesi yalnız 0083'ün kendi kanıt turu içindi; 0084 araca yeni ekran ekledi.
+  // Kalan iddia: 0083 raporunun ekranlarının hepsi araçta durur (bu işin kanıtı yeniden üretilebilir).
+  it("AC-25: 0083 raporundaki her ekran görüntü aracında tanımlı", () => {
+    const arac = oku("scripts/evidence/0009-sayfa.jsx");
+    const ekranlar = new Set(JSON.parse(oku("docs/evidence/0083-piksel-raporu.json")).map(x => x.ad.replace(/-(aydinlik|karanlik)\.png$/, "")));
+    const eksik = [...ekranlar].filter(e => !arac.includes(`"${e}"`) && !arac.includes(`"${e.split("-").pop()}"`));
+    expect(eksik).toEqual([]);
   });
   it("AC-20 / R14 (git farkının taramayla desteklenen yarısı): motor, sunucu, veritabanı, birleştirme ve yazdırma bu spec'i bilmez", () => {
     for (const f of ["src/lib/kasa.js", "src/lib/gider.js", "src/lib/merge.js", "src/lib/printTemplates.js", "src/lib/giderRaporu.js", "electron/db.cjs", "electron/serverAuth.cjs", "electron/server.cjs"])

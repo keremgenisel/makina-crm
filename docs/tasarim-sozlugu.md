@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:282`
+**Örnek:** `src/components/Giderler.jsx:303`
 **Örnek:** `src/components/Documents.jsx:1112`
 **Örnek:** `src/components/Customers.jsx:491` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:55` (sekme kipi)
@@ -173,7 +173,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:343`
+**Örnek:** `src/components/Giderler.jsx:371`
 **Örnek:** `src/components/Customers.jsx:525` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
@@ -200,7 +200,7 @@ nedeninin önüne geçiyorsa **bölümüyle birlikte** sayfa sonuna alınabilir.
 sırası korunur ve şeridin metni yerine göre yeniden yazılmaz. Örnek: Kasa › Hesaplar'da deneme dönemi şeridi ve hesapsız
 notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avanslarının altında durur; kullanıcı Kasa'ya bakiyeler için gelir.
 
-**Örnek:** `src/components/Giderler.jsx:309`
+**Örnek:** `src/components/Giderler.jsx:337`
 **Örnek:** `src/components/Kasa.jsx:573` (sayfa sonundaki şerit, spec 0083)
 **Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
@@ -324,6 +324,10 @@ sayfalanır; elle pager yazılmaz.
   süzgeçten geçen bütün satırlar tek seferde çizilir (faturalarla satır satır karşılaştırma, tarayıcı araması, alt toplamı
   tutturma). Yavaşlama görülürse sayfalama ayrı bir spec'le **yalnız Tarih Aralığı kipine** geri gelir; **Ay kipi hiçbir
   koşulda sayfalanmaz.** Bu iki listeye "kurala uydurmak" için sayfalama eklenmez.
+- **İstisna (spec 0084 C6):** Giderler'in **Kira stopajı beyan dönemleri** penceresindeki dönem listesi ve bir dönemin ödeme
+  satırı listesi sayfalanmaz: dönem listesi yılda dört satırdır (aylık kipte on iki), bir dönemin ödeme satırı listesi en çok
+  birkaç satırdır. `tests/sayfalama-0062.test.js`'in `LISTELER` tablosuna kayıt eklenmez (klasör taraması yalnız elle pager
+  yazılmasını yasaklar; kayıt eklemek tersine sayfalama ister).
 
 ## Bilinen borç
 

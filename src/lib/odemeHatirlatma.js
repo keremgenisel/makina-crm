@@ -6,6 +6,7 @@
 // (bugün ≤ vade ≤ bugün + eşik) kavramını ekler. Anasayfa kartı, liste penceresi ve Giderler süzgeci aynı
 // fonksiyonu aynı `bugun` ve eşikle kullanır, sayılar bu yüzden ayrışamaz (AC-14).
 import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, satirliMi, borcKapsamindaMi, kurumTarafAdi, DAVRANIS, HEDEF, VERGI_DAIRESI } from "./gider";
+import { stopajDonemi, stopajBeyanAyari } from "./stopajDonemi";
 
 export const HATIRLATMA_ESIK_VARSAYILAN = 7;
 export const HATIRLATMA_ESIK_MAX = 365;
@@ -43,7 +44,7 @@ const sirala = (a, b) => (a.vade !== b.vade ? (a.vade < b.vade ? -1 : 1)
 
 // Bölüm satırları: personel kalemleri bölüm başına tek toplu satır (R3, AC-17, H5); satır, bölümdeki en eski
 // personel vadesinin yerinde durur.
-const bolumSatirlari = (ogeler) => {
+const bolumSatirlari = (ogeler, beyanAyari) => {
   // Spec 0042 R12, Q6: iki hedefli personel kaleminin hedefleri tek alt satırda birleşir (sayı kalem sayar); hedef
   // kırılımı alt satırın `hedefler`inde, yalnız satır açılınca görünür.
   const birlesik = new Map();
@@ -56,7 +57,28 @@ const bolumSatirlari = (ogeler) => {
   }
   const personel = [...birlesik.values()];
   // Spec 0074 R20: SGK ayda tek kalemdir ve normal kalem satırı olarak görünür (0070'in toplu satırı kalktı).
-  const satirlar = ogeler.filter(o => !o.personel).map(o => ({ tur: "kalem", ...o }));
+  // Spec 0084 R20 (revizyon 3, P3): aynı vadeye ve aynı beyan dönemine düşen İKİ ya da daha çok kira stopajı hedefi tek satırda
+  // toplanır; tek hedef bugünkü normal satırdır. Kira kaleminin ANA hedefi ayrı satır kalır (K-20). KDV tevkifatı gruplanmaz (C5).
+  const stopajGrubu = new Map();
+  for (const o of ogeler.filter(x => !x.personel && x.hedef === HEDEF.STOPAJ)) {
+    const d = stopajDonemi(o.kalem.tarih, beyanAyari);
+    const key = `${o.vade}|${d?.anahtar || ""}`;
+    if (!stopajGrubu.has(key)) stopajGrubu.set(key, { donem: d, ogeler: [] });
+    stopajGrubu.get(key).ogeler.push(o);
+  }
+  const gruptaki = new Set();
+  const stopajSatirlari = [];
+  for (const g of stopajGrubu.values()) {
+    if (g.ogeler.length < 2 || !g.donem) continue;
+    g.ogeler.forEach(o => gruptaki.add(o.anahtar));
+    const ilk = g.ogeler[0];
+    stopajSatirlari.push({
+      tur: "stopaj", vade: ilk.vade, kalem: ilk.kalem, adet: g.ogeler.length, donemAnahtari: g.donem.anahtar, donemAdi: g.donem.hatirlatmaAdi, donemTamAdi: g.donem.donemAdi,
+      anahtar: `stopaj:${ilk.vade}:${g.donem.anahtar}`, taraf: VERGI_DAIRESI, gunFarki: ilk.gunFarki, gecti: ilk.gecti,
+      odenecekK: g.ogeler.reduce((a, o) => a + o.odenecekK, 0), odenecek: g.ogeler.reduce((a, o) => a + o.odenecekK, 0) / 100, kalemler: g.ogeler,
+    });
+  }
+  const satirlar = [...ogeler.filter(o => !o.personel && !gruptaki.has(o.anahtar)).map(o => ({ tur: "kalem", ...o })), ...stopajSatirlari];
   if (personel.length) {
     const ilk = personel[0];
     satirlar.push({
@@ -67,7 +89,9 @@ const bolumSatirlari = (ogeler) => {
   // ogeler zaten `sirala` ile sıralı gelir (vade, ödenecek, id). Array.prototype.sort kararlıdır: burada yalnız
   // personel satırını vadesinin yerine yerleştiriyoruz; aynı vadeli kalemler (tur === tur → 0) önceki sırayı korur,
   // eşit vadede personel satırı kalemlerden sonra gelir.
-  return satirlar.sort((a, b) => (a.vade !== b.vade ? (a.vade < b.vade ? -1 : 1) : a.tur === b.tur ? 0 : a.tur === "personel" ? 1 : -1));
+  // Spec 0084: eşit vadede sıra kalem, stopaj grubu, personel (stopaj grubu yokken bugünkü sıra birebir aynı).
+  const sira = { kalem: 0, stopaj: 1, personel: 2 };
+  return satirlar.sort((a, b) => (a.vade !== b.vade ? (a.vade < b.vade ? -1 : 1) : sira[a.tur] - sira[b.tur]));
 };
 
 const kalemSayilari = (gecmis, yaklasan) => {
@@ -76,7 +100,8 @@ const kalemSayilari = (gecmis, yaklasan) => {
   return { gecmis: g.size, yaklasan: y.size };
 };
 
-export const odemeHatirlatmalari = (giderler = [], { turler = [], tedarikciler = [], yururlukAy = null, esikGun = HATIRLATMA_ESIK_VARSAYILAN } = {}, bugun) => {
+// Spec 0084 R20 (revizyon 3, D3): beyanAyari stopajBeyanAyari'nın sonucudur (üç çağıran geçirir); verilmezse varsayılan.
+export const odemeHatirlatmalari = (giderler = [], { turler = [], tedarikciler = [], yururlukAy = null, esikGun = HATIRLATMA_ESIK_VARSAYILAN, beyanAyari = stopajBeyanAyari(null) } = {}, bugun) => {
   const turMap = turHaritasi(turler);
   const tedMap = new Map(tedarikciler.map(t => [String(t.id), t]));
   const esik = yururlukAy ? `${yururlukAy}-01` : "";
@@ -117,7 +142,7 @@ export const odemeHatirlatmalari = (giderler = [], { turler = [], tedarikciler =
   return {
     sayilar: kalemSayilari(gecmis, yaklasan),
     gecmis, yaklasan,
-    gecmisSatirlar: bolumSatirlari(gecmis), yaklasanSatirlar: bolumSatirlari(yaklasan),
+    gecmisSatirlar: bolumSatirlari(gecmis, beyanAyari), yaklasanSatirlar: bolumSatirlari(yaklasan, beyanAyari),
     kalemIdleri: new Set([...gecmis, ...yaklasan].map(o => String(o.id))),
     esikGun, bugun,
   };

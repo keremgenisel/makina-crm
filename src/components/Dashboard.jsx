@@ -7,6 +7,7 @@ import { StatCard, Modal, Btn, Icon, LockConflict } from "./ui";
 import { useLock } from "../hooks/useLock";
 import { useBugun } from "../hooks/useBugun";
 import { teklifKaydedildiMi, teklifUretimDurumu } from "../lib/evrakUretim";
+import { stopajBeyanAyari } from "../lib/stopajDonemi";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
 import { turHaritasi, DAVRANIS } from "../lib/gider";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
@@ -29,6 +30,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const bugunYerel = useBugun();
   const hatirlatma = useMemo(() => (giderYetki ? odemeHatirlatmalari(giderler, {
     turler: giderTurleri, tedarikciler, yururlukAy: giderAyarlari?.yururlukAy || null, esikGun: hatirlatmaEsigi(giderAyarlari),
+    beyanAyari: stopajBeyanAyari(giderAyarlari), // spec 0084 R20 (D3)
   }, bugunYerel) : null), [giderYetki, giderler, giderTurleri, tedarikciler, giderAyarlari, bugunYerel]);
   // R6, plan H8: Giderler ile aynı işlem geçmişi satırı. Spec 0024 R17: "Ödendi" tutarı kalanla, hesabı son
   // kullanılanla dolu ödeme penceresini açar (taksitli hedefte en yakın açık taksit).

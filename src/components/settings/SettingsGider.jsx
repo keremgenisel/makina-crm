@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Icon, Field, Btn } from "../ui";
-import { KartBolum } from "../tasarim";
+import { KartBolum, Segment } from "../tasarim";
 import { esikAltiKalemSayisi, tutarCoz, kisitOranCoz, varsayilanIndirilebilirOran, KISIT_ORAN_VARSAYILAN } from "../../lib/gider";
 import { TutarInput, AyInput, tutarMetni } from "../gider/GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
 import { hatirlatmaEsikDogrula, hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
 import { hesapsizBaslangicDogrula, denemeDonemiBitisi } from "../../lib/kasa";
 import { fmtTR, yerelBugun } from "../../lib/utils";
+import { stopajBeyanAyari, stopajBeyanDogrula, BEYAN_DONEMI, BEYAN_DONEMI_AD } from "../../lib/stopajDonemi";
 
 // Gider ayarları (spec 0001 R6, R10): varsayılan kira stopaj oranı ve gider takibinin yürürlük ayı.
 // appSettings.giderAyarlari sunucu-paylaşımlıdır (disAppSettingsSuz'a girmez). Varsayılan resmi aylık
@@ -21,7 +22,9 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     hatirlatmaEsikGun: String(hatirlatmaEsigi(mevcut)), hesapsizBaslangic: mevcut.hesapsizBaslangic || "",
     indirilebilirOran: String(varsayilanIndirilebilirOran(mevcut)), // spec 0076 R34
     // Spec 0056 R1, R2 (Q5): alan hiç yoksa varsayılan tarih gösterilir ve kaydedilir; boş = deneme dönemi kapalı.
-    denemeDonemiBitis: denemeDonemiBitisi(mevcut) || "" });
+    denemeDonemiBitis: denemeDonemiBitisi(mevcut) || "",
+    // Spec 0084 R1, C9 (Ö-8): iki alan formun ilk durumunda VE kaydet'in alan listesinde birlikte (0076 triyajının dersi).
+    stopajBeyanDonemi: stopajBeyanAyari(mevcut).donem, stopajOdemeGunu: String(stopajBeyanAyari(mevcut).gun) });
   const [hata, setHata] = useState("");
   const yonetebilir = canDo("gider_tanim");
   const esikAlti = esikAltiKalemSayisi(giderler, form.yururlukAy || null);
@@ -41,8 +44,12 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     // Spec 0056 Q5: biçimsiz tarih kaydedilmez; geçmiş tarih serbest (dönemi kapatmanın bir yolu).
     const deneme = String(form.denemeDonemiBitis || "").trim();
     if (deneme && !/^\d{4}-\d{2}-\d{2}$/.test(deneme)) { setHata("Deneme dönemi bitiş tarihi geçerli bir tarih değil."); return; }
+    // Spec 0084 R2, AC-2: dönem iki değerden biri, gün 1–31 tam sayı; geçersizse hiçbir alan kaydedilmez.
+    const by = stopajBeyanDogrula({ donem: form.stopajBeyanDonemi, gun: form.stopajOdemeGunu });
+    if (by.hata) { setHata(by.hata); return; }
     setHata("");
-    setAppSettings(p => ({ ...p, giderAyarlari: { ...ortakKaynaksiz(p?.giderAyarlari), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, hatirlatmaEsikGun: e.deger, indirilebilirOran: io.bos ? null : io.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme } }));
+    setAppSettings(p => ({ ...p, giderAyarlari: { ...ortakKaynaksiz(p?.giderAyarlari), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, hatirlatmaEsikGun: e.deger, indirilebilirOran: io.bos ? null : io.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme,
+      stopajBeyanDonemi: by.deger.donem, stopajOdemeGunu: by.deger.gun } }));
     flash("ok", "Gider ayarları kaydedildi.");
   };
 
@@ -54,6 +61,17 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
           <Field label="Varsayılan kira stopaj oranı">
             <TutarInput sym="%" ariaLabel="Varsayılan kira stopaj oranı" value={form.stopajOrani} disabled={!yonetebilir} onChange={v => setForm(p => ({ ...p, stopajOrani: v }))} />
             <Ipucu>Yeni kira kaleminde ön doldurulur; kalem bazında değiştirilebilir. Üretilmiş kalemler bu ayar değişince değişmez.</Ipucu>
+          </Field>
+          {/* Spec 0084 R1: kira stopajının beyan dönemi ve ödeme günü; yeni kira kaleminin stopaj vadesini ön doldurur. */}
+          <Field label="Kira stopajı beyan dönemi">
+            <Segment kip="dugme" genislik="icerik" ariaLabel="Kira stopajı beyan dönemi" disabled={!yonetebilir} value={form.stopajBeyanDonemi}
+              options={[BEYAN_DONEMI.AYLIK, BEYAN_DONEMI.UC_AYLIK].map(v => ({ value: v, label: BEYAN_DONEMI_AD[v] }))}
+              onChange={v => setForm(p => ({ ...p, stopajBeyanDonemi: v }))} />
+          </Field>
+          <Field label="Stopaj ödeme günü">
+            <input aria-label="Stopaj ödeme günü" className="input" inputMode="numeric" value={form.stopajOdemeGunu} disabled={!yonetebilir}
+              onChange={e => setForm(p => ({ ...p, stopajOdemeGunu: e.target.value }))} style={{ width: 100 }} />
+            <Ipucu>Beyan dönemini izleyen ayın bu günü; ayda yoksa ay sonu. Yeni kira kaleminde stopaj vadesi buna göre ön doldurulur, üretilmiş kalemler ayar değişince değişmez. Varsayılan üç aylık, 26.</Ipucu>
           </Field>
           <Field label="Binek araç giderlerinde indirilebilir oran">
             <TutarInput sym="%" ariaLabel="Binek araç giderlerinde indirilebilir oran" value={form.indirilebilirOran} disabled={!yonetebilir} onChange={v => setForm(p => ({ ...p, indirilebilirOran: v }))} />

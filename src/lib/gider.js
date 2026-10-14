@@ -949,7 +949,9 @@ export const esikAltiKalemSayisi = (giderler = [], yururlukAy) =>
 // ── Tekrarlayan kalem üretimi (R3, R4, K2, K8, K9, K17, K36) ──────────────────
 export const tanimAyaUyarMi = (t, ay) => !!t?.baslangicAy && t.baslangicAy <= ay && (!t.bitisAy || ay <= t.bitisAy);
 
-export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, calisanlar = [], giderAyarlari = {}, kdvRates, uid } = {}) => {
+// Spec 0084 R7/2, R9 (revizyon 3, P1): stopajVadeOf(tarih) verilirse üretilen kira kaleminin stopaj vadesi ondan gelir (çağıran
+// stopajDonemi.js'ten verir; motor dönem kavramını bilmez, döngüsel içe aktarma olmaz). Verilmezse bugünkü davranış (vadesiz).
+export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, calisanlar = [], giderAyarlari = {}, kdvRates, uid, stopajVadeOf = null } = {}) => {
   const yeniKalemler = [];
   const guncelTanimlar = [];
   let eklenen = 0, zatenVardi = 0;
@@ -1013,7 +1015,8 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
     // Spec 0072 R4: tanımdaki dağıtım üretilen kaleme taşınır (makina ve "dağıtılmasın" atamasında taşınmaz, R17).
     if (dagitimAyOf({ dagitimAy: t.dagitimAy, atamaTur: kalem.atamaTur }) > 1) kalem.dagitimAy = Number(t.dagitimAy);
     // Stopajlı kira iki ödeme hedefiyle doğar (spec 0021 R6); satırlar kalemle birlikte kurulur.
-    const odeme = odemeSatirlariKur(kalem, dav, {}, uid ? { uid } : {});
+    const stopajVade = dav === DAVRANIS.KIRA && typeof stopajVadeOf === "function" ? stopajVadeOf(kalem.tarih) || null : null;
+    const odeme = odemeSatirlariKur(kalem, dav, stopajVade ? { stopajVade } : {}, uid ? { uid } : {});
     kalem.taksitler = odeme.satirlar || [];
     if (kalem.taksitler.length) Object.assign(kalem, taksitDurumuTuret(kalem));
     yeniKalemler.push(kalem);

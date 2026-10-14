@@ -323,3 +323,31 @@ describe("Spec 0076: kısıtlı gider bilgi rakamları çıktıda yalnız toplam
     expect(kutu).not.toMatch(/Zümrüt/);
   });
 });
+
+// Spec 0084 C7 (AC-34): beyan dönemi tablosu, gruplanmış stopaj satırı ve Stopaj Dönemleri penceresi personel verisi taşımaz.
+// Çıktı temelli: ayırt edici çalışan adı ve tutarlarıyla üretilen belgede stopaj kutusu ve vade tabloları ad/tutar içermez;
+// kaynak tarafında yeni modül ve pencere kişi alanı okumaz.
+describe("Spec 0084: stopaj dönemi çıktısı personel verisi taşımaz", () => {
+  it("spec 0084 AC-34: stopaj kutusu ve vade satırları kişi bazlı ad ve tutar içermez; yeni dosyalar kişi alanı okumaz", async () => {
+    const { giderKasaRaporu, buildGiderKasaRaporuHtml } = await import("../src/lib/giderRaporu");
+    const { giderKalemDogrula, turHaritasi } = await import("../src/lib/gider");
+    const turler = [{ id: 2, ad: "Kira", davranis: "kira" }, { id: 3, ad: "Maaşlar", davranis: "personel" }];
+    let n = 1;
+    const kayit = (f) => giderKalemDogrula(f, { turMap: turHaritasi(turler), uid: () => ++n }).kayit;
+    const kalemler = [
+      kayit({ id: 1, tarih: "2026-09-02", turId: 2, girisYonu: "brut", tutar: 10000, stopajOrani: 20, kdvOrani: 0, aciklama: "Eylül kirası", sonOdemeTarihi: "2026-09-05", stopajVade: "2026-10-26" }),
+      kayit({ id: 2, tarih: "2026-08-02", turId: 2, girisYonu: "brut", tutar: 10000, stopajOrani: 20, kdvOrani: 0, aciklama: "Ağustos kirası", sonOdemeTarihi: "2026-08-05", stopajVade: "2026-10-26" }),
+      kayit({ id: 3, tarih: "2026-09-30", turId: 3, calisanId: 7, calisanAd: "Behiye Sarıkamışlıoğlu", resmiTutar: 43219, eldenTutar: 18765, sonOdemeTarihi: "2026-10-05" }),
+    ];
+    const html = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: kalemler, hareketler: [], turler, yururlukAy: "2026-01", esikGun: 30, hesaplar: [] }, "2026-09"));
+    const i = html.indexOf("GİDER · STOPAJ");
+    expect(i).toBeGreaterThan(0);
+    const kutu = html.slice(i, html.indexOf("</section>", i) > 0 ? html.indexOf("</section>", i) : i + 3000);
+    expect(html).toContain("Kira stopajı · 2026 3. dönem (Temmuz-Eylül) · 2 kalem");
+    for (const yasak of ["Behiye", "Sarıkamışlıoğlu", "43.219", "18.765", "Resmi", "Elden"]) expect(kutu, yasak).not.toContain(yasak);
+    for (const f of ["src/lib/stopajDonemi.js", "src/components/gider/StopajDonemleri.jsx"]) {
+      const kod = readFileSync(f, "utf-8");
+      expect(kod, f).not.toMatch(/calisanAd|calisanId|resmiTutar|eldenTutar|ekOdemeler|yolParasi/);
+    }
+  });
+});

@@ -52,9 +52,12 @@ const Bolum = ({ baslik, bolum, satirlar, odendiYetkisi, onOdendi }) => {
   const [acik, setAcik] = useState({});
   // Spec 0062 R9, R24, R31, R32: bölüm başına ayrı sayfa (5); personel grup satırı tek satır, açılınca çalışan satırları
   // satır kümesine girer. Bölüm başlığındaki sayı bütün listeden. Aç/kapa sayfayı korur (grup satırı her sayfada olabilir, R28).
+  // Spec 0084 R20 (P2): gruplanmış kira stopajı satırı personel emsaliyle açılır; alt satırlar bugünkü "Ödendi" düğmesini taşır.
   const cizim = satirlar.flatMap(s => (s.tur === "personel"
     ? [{ tip: "personel", s }, ...(acik.personel ? s.kalemler.map(o => ({ tip: "cocuk", o })) : [])]
-    : [{ tip: "kalem", o: s }]));
+    : s.tur === "stopaj"
+      ? [{ tip: "stopaj", s }, ...(acik[s.anahtar] ? s.kalemler.map(o => ({ tip: "cocuk", o })) : [])]
+      : [{ tip: "kalem", o: s }]));
   const { page, setPage, paged, perPage } = usePagination(cizim, 5);
   if (!satirlar.length) return null;
   return (
@@ -74,6 +77,19 @@ const Bolum = ({ baslik, bolum, satirlar, odendiYetkisi, onOdendi }) => {
             </div>
             <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(s.odenecek)}</b>
             <span>{fmtTR(s.vade)}</span><span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(s.kalemler[0].gunFarki)}</span><span />
+          </div>
+        ); })()
+          : x.tip === "stopaj" ? (() => { const s = x.s; return (
+          <div key={s.anahtar} data-testid="hatirlatma-stopaj" style={{ ...izgara, padding: "8px 12px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+            <div>
+              <b>{s.donemAdi} · {s.adet} kalem</b>
+              <div style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{s.taraf}</div>
+              <div><button type="button" aria-expanded={!!acik[s.anahtar]} onClick={() => setAcik(a => ({ ...a, [s.anahtar]: !a[s.anahtar] }))}
+                style={{ background: "none", border: "none", padding: 0, color: "var(--orTx, #c2410c)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                {acik[s.anahtar] ? "▾ Kalemleri gizle" : "▸ Kalemleri göster"}</button></div>
+            </div>
+            <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(s.odenecek)}</b>
+            <span>{fmtTR(s.vade)}</span><span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(s.gunFarki)}</span><span />
           </div>
         ); })()
           // Spec 0074 R20: SGK kalemi normal kalem satırıdır (0070'in toplu kurum satırı kalktı).

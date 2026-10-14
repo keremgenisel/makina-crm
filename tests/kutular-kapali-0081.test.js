@@ -21,7 +21,8 @@ describe("Spec 0081: stopaj rakamı raporda kalır (R2, R3, C5, C6)", () => {
   it("AC-4: Aylık Gider ve Kasa Raporu'nda stopaj özeti ve 'GİDER · STOPAJ' kutusu bugünkü rakamlarla basılır", () => {
     const r = giderKasaRaporu(girdi(), "2026-09");
     expect(r.gider.ozet.stopaj).toBe(4000);
-    expect(r.gider.stopaj).toEqual({ kesilen: 4000, odenen: 4000, acik: 0 });
+    // Spec 0084 ile güncellendi (R21/1): üç rakam aynen; nesne beyan dönemi tablosunu (`donemler`) de taşır.
+    expect({ ...r.gider.stopaj, donemler: undefined }).toEqual({ kesilen: 4000, odenen: 4000, acik: 0, donemler: undefined });
     expect(buildGiderKasaRaporuHtml(r)).toMatch(/GİDER · STOPAJ[\s\S]*Kesilen stopaj[\s\S]*Ödenen[\s\S]*Ay sonunda açık/);
   });
   it("AC-5: motorun stopaj alanları duruyor; ekranda okuyan satır kaldırıldı", () => {

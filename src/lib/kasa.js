@@ -429,6 +429,26 @@ export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false,
   };
 };
 
+// Spec 0084 R15/1 (revizyon 3, P4): çok kaleme dağıtım çekirdeği (eski cek.js dagitimHareketleri, taşındı ve parametreleşti).
+// Her dağıtım satırı bugünkü odemeDogrula'dan geçer (tek hedef, kalan sınırı, hesap); 0024'ün "bir ödeme bir kalemi kapatır"
+// kuralı değişmez: satır başına bir hareket. satirlar: [{anahtar, tutarK}] (seçili); adaylar: [{anahtar, kalem, taksitId}];
+// bayrak: odemeDogrula'nın ciro/kendiCek seçenekleri; ek: her harekete eklenecek alanlar (ör. cekId). Ya hep ya hiç: bir
+// satır bile geçmezse hareket yoktur; `satirHatalari` satır başına bütün hataları, `hatalar` ilk hatalı satırınkileri taşır.
+export const cokKalemOdemeleri = ({ satirlar = [], adaylar = [], tarih, hesapId = null, hesaplar = [], yontem, aciklama, turMap, bayrak = {}, ek = {} } = {}) => {
+  const hareketler = [];
+  const satirHatalari = {};
+  let ilk = null;
+  for (const d of satirlar) {
+    const a = adaylar.find(x => x.anahtar === d.anahtar);
+    if (!a) { const h = ["Seçilen gider kalemi bulunamadı."]; satirHatalari[d.anahtar] = h; ilk ??= h; continue; }
+    const r = odemeDogrula({ tarih, tutar: tl(d.tutarK), yontem, hesapId, taksitId: a.taksitId, aciklama }, { kalem: a.kalem, turMap, hesaplar, ...bayrak });
+    if (!r.kayit) { const h = Object.values(r.hatalar); satirHatalari[d.anahtar] = h; ilk ??= h; continue; }
+    hareketler.push({ ...r.kayit, ...ek });
+  }
+  if (ilk) return { hatalar: ilk, satirHatalari };
+  return { hareketler };
+};
+
 // Spec 0041 R5, R6, R12–R14: tek pencerede çok satırlı ödeme. Tarih pencere başına, açıklama satır başına. Her dolu satır
 // bugünkü odemeDogrula'dan geçer (ciro reddi, hesap, satırın hedef kalanı; Q8); üstüne iki katman: taksitli kalemde aynı
 // taksite giden satırların toplamı o taksidin kalanını, bütün satırların toplamı kalemin kalanını aşamaz. Ya hep ya hiç

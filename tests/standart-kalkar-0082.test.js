@@ -123,12 +123,14 @@ describe("Spec 0082: kaynak taramaları", () => {
     const { KILIT_ALANLARI } = await import("../src/lib/kilitAlanlari.js");
     expect(Object.keys(KILIT_ALANLARI)).not.toContain("standart_gider");
   });
-  it("AC-34: Giderler üç ölü prop'u almaz, App geçirmez", () => {
+  // Spec 0084 ile güncellendi (R19, AC-29): `aktifKullanici` toplu stopaj ödemesinin kilit denetimi için geri geldi;
+  // ölü prop iki tanedir.
+  it("AC-34: Giderler iki ölü prop'u almaz, App geçirmez", () => {
     const g = oku("src/components/Giderler.jsx");
     const imza = g.slice(g.indexOf("export const Giderler = ({"), g.indexOf("}) => {", g.indexOf("export const Giderler = ({")));
-    expect(imza).not.toMatch(/aktifKullanici|standartGiderler|setStandartGiderler/);
+    expect(imza).not.toMatch(/standartGiderler|setStandartGiderler/);
     const app = oku("src/App.jsx"); const c = app.slice(app.indexOf("<Giderler "), app.indexOf("/>", app.indexOf("<Giderler ")));
-    expect(c).not.toMatch(/aktifKullanici|standartGiderler|setStandartGiderler/);
+    expect(c).not.toMatch(/standartGiderler|setStandartGiderler/);
   });
   // Triyaj: CLAUDE.md'de düzenlemeden kalan yarım parantez kaldırılmayan kaynağı anlatıyordu.
   it("AC-31 (belge): CLAUDE.md artık var olmayan standart kaynağı anlatan ibare taşımaz", () => {

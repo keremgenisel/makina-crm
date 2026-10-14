@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { today, getKdvRateForDate, yerelBugun } from "../lib/utils";
+import { today, getKdvRateForDate, yerelBugun, fmtTR } from "../lib/utils";
+import { stopajOdemeTarihi, stopajBeyanAyari } from "../lib/stopajDonemi";
 import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula,
   kdvAyir, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, kalemKdv, KDV_YONU, kurus, tl, kdvliMi, tedarikciSecilirMi, sgkDavranisiMi, calisanSgkToplami, SGK_TOPLAM_YOK_NEDENI,
   tevkifatliMi, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kalemTevkifat, odenecekTutar,
@@ -19,6 +20,9 @@ import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 const numId = (v) => (v === "" || v == null ? null : (/^\d+$/.test(String(v)) ? Number(v) : v));
 const idMetni = (v) => (v == null ? "" : String(v));
 // Spec 0074 R24, C2: personel formundaki kalıcı not. SGK ayrı bir gider türüdür, kendi kalemiyle ödenir; personel tutarı SGK içermez.
+// Spec 0084 R8 (K-19): stopaj vadesinin iki ipucu. Ön dolu değer duruyorsa yeni metin, aksi hâlde bugünkü metin.
+export const STOPAJ_VADE_IPUCU = "Opsiyonel. Girilmezse stopaj borç özetinde görünür, hatırlatıcıya girmez.";
+export const stopajOneriIpucu = (tarih) => `Beyan döneminin ödeme tarihi dolduruldu (${fmtTR(tarih)}); gerekirse değiştirin.`;
 export const PERSONEL_SGK_NOTU = "SGK bu kaleme girmez: aylık SGK'yı SGK türünde ayrı bir gider kalemi olarak girin ve o kalemden ödeyin. Maaş transferini de ayrıca gider olarak girmeyin; aynı para iki kez sayılır.";
 
 const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
@@ -173,6 +177,18 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   }, [dav, kira?.brut, normalTutar, form.kdvOrani, form.stopajOrani, form.resmiTutar, form.eldenTutar, form.ekOdemeler, form.taksitSayisi, form.sonOdemeTarihi, form.stopajTaksitSayisi, form.stopajVade, form.eldenVade, form.taksitler, form.odendi, form.odemeTarihi, yolForm, tevkifatAlanlari, form.tevkifatTaksitSayisi, form.tevkifatVade]);
   const planli = !!onizleme.hata || (onizleme.satirlar || []).length > 0;
   const stopajVar = dav === DAVRANIS.KIRA && (kira?.stopaj || 0) > 0;
+  // Spec 0084 R7/1, R8, P8 (AC-10, AC-11): yeni kira kaleminde stopaj vadesi beyan döneminin ödeme tarihiyle ön dolar ve
+  // kullanıcı alana dokunmadıkça gider tarihiyle yeniden hesaplanır; dokununca elle girilen değer üstündür. Düzenleme kipinde
+  // ön doldurma yoktur (vadesi boş eski kayıt sessizce değişmez). Taksitli stopajda (≥ 2) ön doldurma yapılmaz, ilk vade zorunlu
+  // kalır (0021). "Elle değiştirildi" bilgisi yalnız formun durumundadır, kayda yazılmaz.
+  const [stopajVadeElle, setStopajVadeElle] = useState(false);
+  const stopajTaksitli = Number(form.stopajTaksitSayisi) >= 2;
+  const stopajOnerisi = form.id == null && stopajVar && !stopajTaksitli ? stopajOdemeTarihi(form.tarih, stopajBeyanAyari(giderAyarlari)) : null;
+  useEffect(() => {
+    if (stopajVadeElle || form.id != null || !stopajVar) return;
+    const hedef = stopajOnerisi || "";
+    setForm(f => (f.stopajVade === hedef ? f : { ...f, stopajVade: hedef }));
+  }, [stopajVadeElle, form.id, stopajVar, stopajOnerisi]);
   // Spec 0042 R4, X7, Q4: resmi ve eldeni olan personel iki hedefle ödenir; taksit yalnız resmiye, elden tek satır.
   const personelTutarlari = dav === DAVRANIS.PERSONEL ? { resmi: tutarCoz(form.resmiTutar).deger + (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.resmiTutar).deger || 0), 0),
     elden: tutarCoz(form.eldenTutar).deger + yolForm + (form.ekOdemeler || []).reduce((a, e) => a + (tutarCoz(e.eldenTutar).deger || 0), 0) } : null;
@@ -494,9 +510,9 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
             </div>
             <div style={{ flex: "1 1 170px" }}>
               <Field label={Number(form.stopajTaksitSayisi) >= 2 ? "İlk stopaj taksitinin vadesi" : "Stopaj vadesi"}>
-                <Input aria-label="Stopaj vadesi" type="date" value={form.stopajVade} onChange={e => set({ stopajVade: e.target.value })} />
+                <Input aria-label="Stopaj vadesi" type="date" value={form.stopajVade} onChange={e => { setStopajVadeElle(true); set({ stopajVade: e.target.value }); }} />
                 <HataMetni>{hata("stopajVade")}</HataMetni>
-                <Ipucu>Opsiyonel. Girilmezse stopaj borç özetinde görünür, hatırlatıcıya girmez.</Ipucu>
+                <Ipucu>{stopajOnerisi && form.stopajVade === stopajOnerisi ? stopajOneriIpucu(stopajOnerisi) : STOPAJ_VADE_IPUCU}</Ipucu>
               </Field>
             </div>
           </div>

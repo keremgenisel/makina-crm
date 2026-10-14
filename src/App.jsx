@@ -9,6 +9,7 @@ import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMo
 import { hesaplaMakinaMaliyetleri } from "./lib/makinaMaliyeti";
 import { odemeleriUygula, turHaritasi, canliModelSeti } from "./lib/gider";
 import { hatirlatmaEsigi } from "./lib/odemeHatirlatma";
+import { stopajBeyanAyari } from "./lib/stopajDonemi";
 import { cekleriUygula, odemeleriAyikla, ciroluTahsilatIdleri, bagliCekler, bagliHareketiOlanCekler } from "./lib/cek";
 import { menuSatirlari, MENU_GRUPLARI, MALI_ISLER_ANAHTARI, grupIcindeMi } from "./lib/menuGruplari";
 import { teklifUretimPlani, uretilenKalemBirlesimi, bekleyenIsYokkenMakinaKalemleri } from "./lib/evrakUretim";
@@ -894,6 +895,7 @@ export default function App() {
     giderler, hareketler: canliHareketler, turler: giderTurleri, tedarikciler: liveTedarikciler, stock: liveStock, customers: liveCustomers,
     canliModeller: canliModelSeti(standardModels, liveCustomModels), yururlukAy: appSettings.giderAyarlari?.yururlukAy || null,
     esikGun: hatirlatmaEsigi(appSettings.giderAyarlari), satisVerisi: giderSatisVerisi,
+    stopajBeyan: stopajBeyanAyari(appSettings.giderAyarlari), // spec 0084 R20, R21 (D3)
     kdvSecenek: { factoryName: factory?.name || "Altuntaş Makina", kdvRates: appSettings.kdvRates, factory, rates },
     hesaplar: canliKasaHesaplari, cekler: canliCekler, payments: livePayments, services: liveServices, partSales: livePartSales,
     yedekParcaSatislar: liveYedekParcaSatislar, dealers: liveDealers, factory, kdvRates: appSettings.kdvRates,
@@ -1690,7 +1692,7 @@ export default function App() {
         {activeTab === "finance"   && <Finance   customers={liveCustomers} services={liveServices} dealers={liveDealers} partSales={livePartSales} yedekParcaSatislar={liveYedekParcaSatislar} factory={factory} kdvRates={appSettings.kdvRates} rates={rates} payments={livePayments} teklifler={liveTeklifler} serverPermissions={effectivePermissions} giderYetki={giderYetki} giderler={giderler} giderTurleri={giderTurleri} giderYururlukAy={appSettings.giderAyarlari?.yururlukAy || null}
           giderKasaRaporVerisi={giderKasaRaporVerisi} kasaYetki={kasaYetki} />}
         {activeTab === "gider"     && !giderYetki && <GiderPerdesi />}
-        {activeTab === "gider"     && giderYetki && <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={canliGiderTanimlari} setGiderTanimlari={setGiderTanimlari}
+        {activeTab === "gider"     && giderYetki && <Giderler aktifKullanici={savedUsername} giderler={giderler} setGiderler={setGiderler} giderTanimlari={canliGiderTanimlari} setGiderTanimlari={setGiderTanimlari}
           giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} setTedarikciler={setTedarikciler} uretimPartileri={liveUretimPartileri} setUretimPartileri={setUretimPartileri}
           calisanlar={liveCalisanlar} stock={liveStock} customers={liveCustomers} standardModels={standardModels} customModels={liveCustomModels}
           appSettings={appSettings} kdvRates={appSettings.kdvRates} factory={factory} rates={rates} serverPermissions={effectivePermissions} showToast={showToast}

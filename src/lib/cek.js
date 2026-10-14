@@ -4,7 +4,7 @@
 // Durumun tek kaynağı çek kaydıdır (C10). Ciro bir gider ödemesinin aracıdır: `cekId` taşıyan, hesapsız ödeme hareketleri
 // (0024 `hesapHareketleri`, R5, R7). Ciro tahsilata ve müşteri kaydına yazmaz (Q3); gelir tarihi çekin geçmişinden okunur.
 import { kurus, tl, satirliMi, odemeHedefleri, davranisOf, DAVRANIS, HEDEF } from "./gider";
-import { odemeDogrula } from "./kasa";
+import { cokKalemOdemeleri } from "./kasa";
 import { parseMoney, trLower } from "./utils";
 
 export const CEK_DURUM = { PORTFOY: "portfoy", TAHSILE: "tahsile", TAHSIL: "tahsil", CIRO: "ciro", KARSILIKSIZ: "karsiliksiz" };
@@ -234,17 +234,13 @@ export const ciroPlani = ({ cek, odeme = null, tutarK = null, currency = null, a
 // Spec 0049 Q5 (C2): ciro ile kendi çekimizin ortak çekirdeği. Her dağıtım satırı 0024 odemeDogrula'dan geçer (tek hedef,
 // kalan sınırı, hesapsız); hareketler çeke `cekId` ile bağlanır. Fark uyarıdır (R8, R12).
 const FARK_UYARISI = (farkK) => `Çek tutarı kapatılan borçlardan ${kuruslu(farkK)} ₺ fazla. Fark hiçbir borcu kapatmaz ve alacak olarak işlenmez; gerekirse açıklamaya yazın.`;
+// Spec 0084 R15/2: çekirdek kasa.cokKalemOdemeleri'ne taşındı; çeke özgü fark ve uyarı burada kalır, çıktı birebir aynı
+// (ilk hatalı satırın hataları; hareketlere cekId eklenir; 0040 ve 0049 testleri dokunulmadan yeşil, AC-32).
 const dagitimHareketleri = ({ secili, adaylar, cekK, tarih, turMap, cekId, yontem, aciklama, bayrak }) => {
-  const hareketler = [];
-  for (const d of secili) {
-    const a = adaylar.find(x => x.anahtar === d.anahtar);
-    if (!a) return { hatalar: ["Seçilen gider kalemi bulunamadı."] };
-    const r = odemeDogrula({ tarih, tutar: tl(d.tutarK), yontem, hesapId: null, taksitId: a.taksitId, aciklama }, { kalem: a.kalem, turMap, hesaplar: [], ...bayrak });
-    if (!r.kayit) return { hatalar: Object.values(r.hatalar) };
-    hareketler.push({ ...r.kayit, cekId });
-  }
-  const farkK = cekK - secili.reduce((a, d) => a + d.tutarK, 0);
-  return { hareketler, farkK, uyari: farkK > 0 ? FARK_UYARISI(farkK) : null };
+  const d = cokKalemOdemeleri({ satirlar: secili, adaylar, tarih, hesapId: null, hesaplar: [], yontem, aciklama, turMap, bayrak, ek: { cekId } });
+  if (d.hatalar) return { hatalar: d.hatalar };
+  const farkK = cekK - secili.reduce((a, x) => a + x.tutarK, 0);
+  return { hareketler: d.hareketler, farkK, uyari: farkK > 0 ? FARK_UYARISI(farkK) : null };
 };
 
 // ── Spec 0049 B: kendi çekimiz (verilen çek; R7–R13, Q3–Q5) ────────────────────

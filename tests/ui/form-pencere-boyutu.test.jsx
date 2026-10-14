@@ -74,6 +74,7 @@ const SINIF1 = [
   ["src/components/cek/CiroPenceresi.jsx", '"Kendi Çekimizi Yaz"'], ["src/components/cek/CekEklePenceresi.jsx", 'title="Portföye Çek Ekle"'],
   ["src/components/gider/Tedarikciler.jsx", '"Yeni Tedarikçi"'], ["src/components/gider/UretimPartileri.jsx", '"Yeni Üretim Partisi"'],
   ["src/components/gider/OdemePlaniPenceresi.jsx", 'title="Ödeme Planı"'], ["src/components/gider/EkstrePenceresi.jsx", 'Ekstresi`}'],
+  ["src/components/gider/StopajDonemleri.jsx", 'title="Kira stopajı beyan dönemleri"'], // spec 0084 R25/2
 ];
 const SINIF2 = [
   ["src/components/cek/CekPortfoyu.jsx", 'title="Verilen Çek Durumu"', 560], ["src/components/cek/CekPortfoyu.jsx", 'title="Verilen Çek Geçmişi"', 600],

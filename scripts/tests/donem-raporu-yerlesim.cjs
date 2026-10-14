@@ -41,6 +41,12 @@ const olcCubuk = `(() => {
   return { d, w: innerWidth, belgeTasma: document.documentElement.scrollWidth > innerWidth + 1 };
 })()`;
 
+// Spec 0084 AC-38: başlığın sağ grubundaki üç düğme (hatırlatma, açık kalemler, kira stopajı); pencerenin içinde, üst üste binmez.
+const olcBaslik = `(() => {
+  const r = (id) => { const e = document.querySelector('[data-testid="' + id + '"]'); if (!e) return null; const b = e.getBoundingClientRect(); return { left: b.left, right: b.right, top: b.top, bottom: b.bottom, t: e.textContent }; };
+  return { d: ["hatirlatma-dugmesi", "acik-kalemler-dugmesi", "stopaj-donemleri-dugmesi"].map(r), w: innerWidth, belgeTasma: document.documentElement.scrollWidth > innerWidth + 1 };
+})()`;
+
 const kesisir = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5;
 const icinde = (a, w) => a.left >= -0.5 && a.right <= w + 0.5;
 
@@ -61,6 +67,11 @@ app.whenReady().then(async () => {
         check(`${ad0}: görünüm çubuğu yeni sırada beş sekme (spec 0083 AC-1)`, c.d.map(x => x.t).join("|") === "Dönem Raporu|Tedarikler ve Ekstre|Üretim Partileri|Makina Kârlılığı|Makina ve Model", JSON.stringify(c.d.map(x => x.t)));
         if (genislik === 1280) check(`${ad0}: görünüm çubuğu tek satır (spec 0083 AC-7)`, new Set(c.d.map(x => x.top)).size === 1, JSON.stringify(c.d));
         check(`${ad0}: görünüm çubuğunun düğmeleri pencerenin içinde, belge taşmıyor (spec 0083 AC-7)`, c.d.every(x => x.left >= -0.5 && x.right <= c.w + 0.5) && !c.belgeTasma, JSON.stringify(c));
+        const b = await win.webContents.executeJavaScript(olcBaslik);
+        const [hat, acik, stp] = b.d;
+        check(`${ad0}: stopajlı kira kalemiyle "Kira stopajı (1 dönem açık)" düğmesi çizildi (spec 0084 AC-38)`, !!stp && stp.t === "Kira stopajı (1 dönem açık)", JSON.stringify(stp));
+        check(`${ad0}: başlığın üç düğmesi pencerenin içinde, üst üste binmiyor, belge taşmıyor (spec 0084 AC-38)`,
+          !!(hat && acik && stp) && [hat, acik, stp].every(x => icinde(x, b.w)) && !kesisir(hat, acik) && !kesisir(acik, stp) && !kesisir(hat, stp) && !b.belgeTasma, JSON.stringify(b));
       }
       // Spec 0081 AC-22: önce kapalı hâl (varsayılan), sonra hepsi açık (AC-23, 0067'nin ölçümü), sonra tür açık KDV kapalı (AC-28).
       const kapali = await win.webContents.executeJavaScript(durum);

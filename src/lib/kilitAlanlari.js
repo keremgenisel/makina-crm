@@ -58,6 +58,7 @@ export const KILITSIZ_DOSYALAR = {
   "src/components/gider/AcikKalemler.jsx": "salt okunur liste (spec 0061); \"Ödeme kaydet\" Giderler'in gider kilitli ödeme penceresini açar",
   "src/components/gider/EkstrePenceresi.jsx": "salt okunur ekstre; avans silme çağıranın (CalisanAvanslari) anlık denetiminden geçer",
   "src/components/gider/FiyatOnerisi.jsx": "salt okunur hesap",
+  "src/components/gider/StopajDonemleri.jsx": "toplu stopaj ödemesi kayıt anında kalemlerin gider kilidine anlık bakar (spec 0084 R19); pencere kilit tutmaz",
   "src/components/gider/GiderAlanlari.jsx": "paylaşılan alanlar; pencereyi açan kilitler",
   "src/components/gider/GiderPerdesi.jsx": "bilgi sayfası",
   "src/components/gider/KdvKarsilastirmaKarti.jsx": "salt okunur kart",

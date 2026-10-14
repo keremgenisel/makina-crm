@@ -352,6 +352,12 @@ const KIRA_K = k(32, { turId: 1, tutar: 20000, netTutar: 16000, girisYonu: "brut
   taksitler: [tks(3201, "ana", 1, "2026-09-25", 16000), tks(3202, "stopaj", 1, "2026-08-26", 1000, true), tks(3203, "stopaj", 2, "2026-09-26", 1000),
     tks(3204, "stopaj", 3, "2026-10-26", 1000), tks(3205, "stopaj", 4, "2026-11-26", 1000)] });
 const TAKSIT_GIDERLER = [...GIDERLER, TAKSITLI_K, KIRA_K];
+// Spec 0084: üçüncü çeyreğin iki stopajlı kirası (stopaj vadesi 20.09.2026, açık; aracın günü 23.09.2026) ve satırsız eski bir depo kirası; hatırlatıcıda
+// aynı vade ve dönemdeki iki stopaj tek satırda gruplanır. Eski kod alanları yok sayar (önce çekimi aynı sayfayla).
+const kira84 = (id, tarih, ad, ana) => k(id, { turId: 1, tutar: 20000, netTutar: 16000, girisYonu: "brut", stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, aciklama: ad, tarih,
+  sonOdemeTarihi: ana, taksitler: [tks(id * 10 + 1, "ana", 1, ana, 16000), tks(id * 10 + 2, "stopaj", 1, "2026-09-20", 4000)] });
+const STOPAJ_0084 = [...GIDERLER, kira84(841, "2026-07-01", "Temmuz depo kirası", "2026-07-10"), kira84(842, "2026-08-01", "Ağustos depo kirası", "2026-08-10"),
+  k(843, { turId: 1, tutar: 10000, netTutar: 8000, girisYonu: "brut", stopajOrani: 20, kdvOrani: 0, tedarikciId: 11, aciklama: "Eski ambar kirası", tarih: "2026-08-15", taksitler: [] })];
 
 // Spec 0024: kasa hesapları ve ödeme hareketleri. Saklı bayraklı ödenmiş satırlar göçteki gibi hareketle temsil edilir;
 // 1 numaralı kalem ve kiranın kiraya veren taksiti kısmen ödenmiş.
@@ -663,6 +669,12 @@ const EKRANLAR = {
   // Spec 0021: taksit ve vergi dairesi (stopaj) ödemesi.
   "gider-formu-taksit": [<GiderForm kalem={TAKSITLI_K} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ödeme planı"]],
   "gider-formu-kira-stopaj": [<GiderForm kalem={{ ...KIRA_K, kdvOrani: 20 }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Vergi dairesi (stopaj)"]],
+  // Spec 0084: stopaj vadesi ön dolu yeni kira kalemi, Stopaj Dönemleri penceresi, dönemin toplu ödemesi, Anasayfa grup satırı.
+  "gider-formu-0084-on-dolu": [<GiderForm kalem={{ ...KIRA_K, id: null, taksitler: [] }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Vergi dairesi (stopaj)"]],
+  "giderler-0084-stopaj-donemleri": [<GiderEkrani g0={STOPAJ_0084} h0={[]} />, ["dugme:Kira stopajı ("]],
+  "giderler-0084-donemi-ode": [<GiderEkrani g0={STOPAJ_0084} h0={[]} />, ["dugme:Kira stopajı (", "dugme:Dönemi öde"]],
+  "anasayfa-hatirlatma-0084": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
+    giderYetki giderler={STOPAJ_0084} setHesapHareketleri={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />, ["Gider Ödemeleri", "dugme:Kalemleri göster"]],
   "giderler-taksit-liste": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["kaydir:Gider Kalemleri"]],
   "giderler-taksit-borc": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["kaydir:Kime Ne Kadar Borçluyuz"]],
   "giderler-odeme-plani": [<GiderEkrani g0={TAKSIT_GIDERLER} />, ["dugme:Ödeme planı"]],
