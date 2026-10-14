@@ -1,0 +1,96 @@
+[
+  {
+    "ad": "uygulama-menu-acik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-acik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-kapali-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-kapali-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-tek-cocuk-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-tek-cocuk-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-kasasiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-kasasiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-kasali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "uygulama-menu-kasali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Henüz gider türü tanımlı değil.Ayarlar › Giderler › Gider Türleri'nden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-server-sunucu-aydinlik.png",
+    "boyut": "2880x2388",
+    "seritler": [
+      "2 bilgisayar güncellenmeli: sürümü bu bilgisayardan eski ya da bilinmi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-server-sunucu-karanlik.png",
+    "boyut": "2880x2388",
+    "seritler": [
+      "2 bilgisayar güncellenmeli: sürümü bu bilgisayardan eski ya da bilinmi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-guvenlik-gecmisi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-guvenlik-gecmisi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

@@ -54,6 +54,27 @@ if (ekran === "ayarlar-0068-auditlog") {
   ];
   window.auditLog = { get: async (q = {}) => ({ ok: true, rows: SATIRLAR.slice(q.offset || 0, (q.offset || 0) + (q.limit || 10)), total: SATIRLAR.length }) };
 }
+// Spec 0085 (R23, revizyon 3 P1): Kullanıcı Geçmişi'nde sürüm rozeti ve sunucu PC'deki "Bağlı bilgisayarlar ve sürümleri"
+// kartı. Araçta köprü yok: güvenlik geçmişi (yerel IPC) ve sunucu kipindeki appServer sahte kurulur. Araç Settings'e
+// version="3.39.0" verdiği için kartın tabanı v3.39.0; satırlar biri eski, biri güncel, biri sürümsüz, biri geri döngü (sayılmaz).
+if (ekran === "ayarlar-guvenlik-gecmisi" || ekran === "ayarlar-server-sunucu") {
+  const SATIRLAR = [
+    { id: 9, ts: "2026-09-23T09:40:00.000Z", actor: "muhasebe", action: "oturum_yenilendi", target: "muhasebe", ip: "192.168.1.21", detail: JSON.stringify({ istemciSurum: "3.39.0" }) },
+    { id: 8, ts: "2026-09-23T09:10:00.000Z", actor: "servis", action: "giris_basarili", target: null, ip: "192.168.1.30", detail: JSON.stringify({ rol: "user", ikiAdimli: false, istemciSurum: "3.38.0" }) },
+    { id: 7, ts: "2026-09-23T08:50:00.000Z", actor: "deneme", action: "giris_basarisiz", target: null, ip: "192.168.1.44", detail: JSON.stringify({ sebep: "Yanlış şifre", istemciSurum: "3.39.0" }) },
+    { id: 6, ts: "2026-09-22T17:20:00.000Z", actor: "depo", action: "oturum_yenilendi", target: "depo", ip: "100.64.0.7", detail: null },
+    { id: 5, ts: "2026-09-22T08:00:00.000Z", actor: "admin", action: "giris_basarili", target: null, ip: "127.0.0.1", detail: JSON.stringify({ rol: "admin", ikiAdimli: false }) },
+    { id: 4, ts: "2026-09-21T16:00:00.000Z", actor: "admin", action: "kullanici_eklendi", target: "depo", ip: "192.168.1.10", detail: null },
+  ];
+  window.securityLog = { get: async (q = {}) => { const r = SATIRLAR.filter(x => !q.action || x.action === q.action); return { ok: true, rows: r.slice(q.offset || 0, (q.offset || 0) + (q.limit || 10)), total: r.length }; }, clear: async () => ({ ok: true }) };
+  if (ekran === "ayarlar-server-sunucu") {
+    const t = {
+      getConfig: async () => ({ isServer: true, running: true, port: 3000, ips: ["192.168.1.10"] }),
+      apiRequest: async ({ path = "" } = {}) => ({ ok: true, status: 200, data: /2fa/.test(path) ? { enabled: false } : [] }),
+    };
+    window.appServer = new Proxy(t, { get: (o, k) => o[k] ?? (String(k).startsWith("on") ? () => () => {} : async () => null) });
+  }
+}
 if (ekran.startsWith("kullanici-izin-kasa")) {
   // Spec 0052: izin ekranı. Geri doldurulmuş (Kasa'lı) ve Kasa'sı kaldırılmış iki kullanıcı; ikincisi düzenlemede açılır.
   const KULLANICILAR = [
@@ -891,6 +912,9 @@ const EKRANLAR = {
   // Spec 0068: Çöp Kutusu satırları ve kalıcı silme bilgi satırı, İşlem Geçmişi parti etiketi, çek raporu, iki silme penceresi.
   "ayarlar-0068-trash": [ayarlar("trash", { tedarikciler: COP_TED, uretimPartileri: COP_PARTI, setUretimPartileri: bos }), []],
   "ayarlar-0068-auditlog": [ayarlar("auditlog"), []],
+  // Spec 0085 (R23, P1): sahte köprüyle sunucu kipi (kart) ve Kullanıcı Geçmişi (sürüm rozeti).
+  "ayarlar-server-sunucu": [ayarlar("server"), []],
+  "ayarlar-guvenlik-gecmisi": [ayarlar("securitylog"), []],
   "ayarlar-0068-export-cek": [ayarlar("export", { kasaVeriYetki: true, cekler: CEK68 }), ["tikla:Müşteri & Servis (5)"]],
   "giderler-0068-tedarikci-sil": [<GiderEkrani tedler={[{ id: 14, ad: "Akın Hırdavat" }, ...TED]} />, ["Tedarikler ve Ekstre", "baslik:Sil"]],
   "giderler-0068-parti-sil": partiEkrani(["Üretim Partileri", "baslik:Sil"]),

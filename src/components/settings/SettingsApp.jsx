@@ -7,6 +7,8 @@ import { applyTheme, getSavedTheme } from "../../lib/theme";
 // noktadan yönetilir ve buraya prop olarak gelir — bu panel yalnızca onu gösterir. Böylece
 // güncelleme olayları bu sekme açık olmasa da yakalanır (üst şerit App'te) ve preload'ın
 // removeAllListeners deseninin yol açtığı "tek dinleyici" çakışması yaşanmaz.
+const GUNCELLEME_ACIKLAMASI = "Yeni bir sürüm yayınlandığında buradan tek tıkla indirip kurabilirsiniz. Verileriniz korunur.";
+
 export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = null, onStartUpdate = null }) => {
   // ── Açılışta otomatik başlat ──
   const [openAtLogin, setOpenAtLoginState] = useState(null); // null=yükleniyor
@@ -41,8 +43,11 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
       {/* ── Uygulama Güncellemesi ── */}
       <KartBolum title="Uygulama Güncellemesi" icon="refresh">
         <div className="section-desc">
-          Kurulu sürüm: <b style={{ color: "var(--n900, #0f172a)" }}>v{version}</b>. Yeni bir sürüm yayınlandığında buradan
-          tek tıkla indirip kurabilirsiniz. Verileriniz korunur.
+          {/* Spec 0085 R2: sürüm bilinene kadar "Kurulu sürüm" cümlesi çizilmez (eski rakam yazılmaz). Devam cümlesi kalın
+              sürümün ardından TEK metin düğümü olarak basılır; iki düğüme bölünse harf aralığı değişip görünüm kayardı. */}
+          {version
+            ? <>Kurulu sürüm: <b style={{ color: "var(--n900, #0f172a)" }}>v{version}</b>{`. ${GUNCELLEME_ACIKLAMASI}`}</>
+            : GUNCELLEME_ACIKLAMASI}
         </div>
 
         {upd.state === "idle" && (
@@ -97,7 +102,7 @@ export const SettingsApp = ({ version, flash, appUpd = null, onCheckUpdate = nul
       {askInstall && (
         <Modal title="Güncelleme Bulundu" onClose={() => setAskInstall(false)}>
           <div style={{ fontSize: 14, color: "var(--n600, #475569)", lineHeight: 1.7, marginBottom: 8 }}>
-            Yeni sürüm <b>v{upd.latest}</b> yayınlandı (kurulu: v{version}).
+            Yeni sürüm <b>v{upd.latest}</b> yayınlandı{version ? ` (kurulu: v${version})` : ""}.
           </div>
           <div style={{ fontSize: 13, color: "var(--n500, #64748b)", lineHeight: 1.6, marginBottom: 20 }}>
             Şimdi yüklensin mi? Güncelleme indirildikten sonra uygulama <b>otomatik olarak yeniden başlatılacak</b>.

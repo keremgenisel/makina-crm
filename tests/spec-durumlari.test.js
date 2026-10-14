@@ -18,6 +18,14 @@ describe("Spec durum satırları (0070 ve sonrası)", () => {
     const yanlis = numaralar("specs/done").filter(no => !/Tamamlandı/.test(satirDurumu(no) || ""));
     expect(yanlis).toEqual([]);
   });
+  // Triyaj (spec 0085 bulgu 3): README tablosuna spec dosyası commitlenmeden satır eklenince README olmayan bir spec'e atıf
+  // yapıyordu (0086 satırı, dosyası izlenmiyordu). CI yalnız izlenen dosyaları gördüğü için orada kırılır.
+  it("README tablosundaki her satırın spec dosyası specs/ ya da specs/done altında var", () => {
+    const satirlar = [...README.matchAll(/^\| \*\*(\d{4})\*\* \|/gm)].map(m => m[1]).filter(no => Number(no) >= ESIK);
+    const dosyali = new Set([...numaralar("specs"), ...numaralar("specs/done")]);
+    expect(satirlar.length).toBeGreaterThan(10);
+    expect(satirlar.filter(no => !dosyali.has(no))).toEqual([]);
+  });
   it("planı yazılmış, done'a taşınmamış spec ne başlıkta ne README'de \"Taslak\" der", () => {
     const yanlis = [];
     for (const no of numaralar("specs")) {

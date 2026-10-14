@@ -227,7 +227,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
 
       {settingsTab === "securitystatus" && <SettingsSecurityStatus />}
       {settingsTab === "security" && <SettingsSecurity flash={flash} appSettings={appSettings} setAppSettings={setAppSettings} />}
-      {settingsTab === "server" && <SettingsServer flash={flash} settingsGroups={SETTINGS_GROUPS} />}
+      {settingsTab === "server" && <SettingsServer flash={flash} settingsGroups={SETTINGS_GROUPS} version={version} />}
       {settingsTab === "securitylog" && isAdmin && <SettingsSecurityLog serverPermissions={serverPermissions} flash={flash} />}
       {settingsTab === "auditlog" && isAdmin && <SettingsAuditLog serverPermissions={serverPermissions} flash={flash} geriAl={{
         musteri: [rawCustomers, setCustomers], bayi: [rawDealers, setDealers], servis: [rawServices, setServices],

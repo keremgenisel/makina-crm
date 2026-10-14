@@ -74,6 +74,25 @@ check("security_log: q sebep ile eşleşir", dbmod.getSecurityLog({ q: "Yanlış
 check("security_log: temizle 3 satır siler", dbmod.clearSecurityLog() === 3);
 check("security_log: temizlik sonrası boş", dbmod.getSecurityLog({}).total === 0);
 
+// ── Spec 0085 AC-8, AC-13, C3: iki sürüm alanı var olan JSON detayında birlikte gidip gelir; sütunlar değişmez ──
+{
+  dbmod.writeSecurityEntry({ ts: new Date().toISOString(), actor: "ayse", action: "giris_basarili", ip: "10.0.0.5", detail: JSON.stringify({ rol: "user", ikiAdimli: false, istemciSurum: "9.1.0" }) });
+  const g = dbmod.getSecurityLog({ actor: "ayse", action: "giris_basarili" }).rows[0];
+  check("spec 0085: security_log detayı istemciSurum'u taşır", JSON.parse(g.detail).istemciSurum === "9.1.0");
+  dbmod.writeAuditEntry({ ts: new Date().toISOString(), username: "ayse", role: "user", action: "veri_kaydedildi", entity: "sunucu", entity_id: null, entity_name: "Notlar", detail: JSON.stringify({ bolumler: ["notes"], surum: 42, istemciSurum: "9.1.0" }) });
+  const a = dbmod.getAuditLog({ q: "Notlar" }).rows.find(r => r.username === "ayse");
+  check("spec 0085 AC-8: audit_log detayında veri sürümü (surum) ve uygulama sürümü (istemciSurum) birlikte", JSON.stringify(JSON.parse(a.detail)) === JSON.stringify({ bolumler: ["notes"], surum: 42, istemciSurum: "9.1.0" }));
+  const dbPath = dbmod.getDbPath();
+  dbmod.close();
+  const c = new Database(dbPath);
+  const sut = (t) => c.prepare(`PRAGMA table_info(${t})`).all().map(x => x.name).join(",");
+  check("spec 0085 C3: security_log sütunları değişmedi", sut("security_log") === "id,ts,actor,action,target,ip,detail");
+  check("spec 0085 C3: audit_log sütunları değişmedi", sut("audit_log") === "id,ts,username,role,action,entity,entity_id,entity_name,detail");
+  c.close();
+  dbmod.migrateFromJsonIfNeeded();
+  dbmod.clearSecurityLog();
+}
+
 // ── Tam tur: kritik alanlar ──────────────────────────────────────────────────
 dbmod.writeBlobToDb({
   customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850, currency: "USD", satisKuru: 41.2345, uretimTarihi: "2026-03-14", partiId: 95,

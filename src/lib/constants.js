@@ -259,7 +259,8 @@ export const DEFAULT_KK_KOMISYONLARI = {
   ],
 };
 
-export const APP_VERSION = "3.42.0";
+// Spec 0085 R1: uygulama sürümünün sabiti yok; tek kaynak package.json (Electron'da app.getVersion(), köprü
+// window.appUpdater.version()).
 
 // ── Hata raporu e-postasının gideceği sabit geliştirici adresi ──
 export const DEV_REPORT_EMAIL = "keremgenisel@gmail.com";

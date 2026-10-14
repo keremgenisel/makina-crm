@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { sonTahsilatHesabi, kapsamDisiTemizle } from "./lib/kasa";
 import LOGO from "./assets/logo.avif?inline";
 import {
-  APP_VERSION, DEFAULT_KDV_RATES, DEFAULT_KK_KOMISYONLARI, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
+  DEFAULT_KDV_RATES, DEFAULT_KK_KOMISYONLARI, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR, INIT_PART_TYPES,
 } from "./lib/constants";
 import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, yerelYedekAyariOku, yerelYedekAyariYaz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
@@ -88,7 +88,7 @@ export default function App() {
   const [ypOpenId, setYpOpenId] = useState(null); // bayi detayından: Stok > Yedek Parça Satışı'nda ilgili satışa git
   const [savedServerUrl, setSavedServerUrl] = useState(""); // giriş ekranı için önceki sunucu adresi
   const [savedUsername, setSavedUsername] = useState(""); // giriş ekranı için önceki kullanıcı adı
-  const [appVersion, setAppVersion] = useState(APP_VERSION);
+  const [appVersion, setAppVersion] = useState(""); // spec 0085 R1/R2: köprüden gelir; gelene kadar ekranda sürüm yazılmaz
   // Kenar menü ikon rayına daraltıldı mı? Her bilgisayara özel (localStorage) — appSettings'e koyulsa
   // tüm istemcilere senkron olurdu; menü görünümü kişisel bir tercih.
   const [sidebarDar, setSidebarDar] = useState(() => { try { return localStorage.getItem("sidebarDar") === "1"; } catch { return false; } });
@@ -1606,7 +1606,7 @@ export default function App() {
               style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(232,93,26,.25)", background: "rgba(232,93,26,.13)", color: "#e8a878", cursor: "pointer", fontSize: 15, lineHeight: 1, display: "grid", placeItems: "center" }}>
               «
             </button>
-            <span>{`v${appVersion}`}</span>
+            {appVersion && <span>{`v${appVersion}`}</span>}
           </div>
           {serverMode === "active" && (
             <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "5px 10px", borderRadius: 7, background: serverOnline ? "rgba(52,211,153,.13)" : "rgba(248,113,113,.13)", border: `1px solid ${serverOnline ? "rgba(52,211,153,.28)" : "rgba(248,113,113,.28)"}` }}>
@@ -1646,7 +1646,7 @@ export default function App() {
           {appUpd.state === "available" && (
             <>
               <span style={{ flex: 1 }}>
-                Yeni sürüm <b>v{appUpd.latest}</b> yayınlandı (kurulu: v{appVersion}). Güncellemek için tıklayın, verileriniz korunur.
+                Yeni sürüm <b>v{appUpd.latest}</b> yayınlandı{appVersion ? ` (kurulu: v${appVersion})` : ""}. Güncellemek için tıklayın, verileriniz korunur.
               </span>
               <button onClick={startAppUpdate} style={{ background: "var(--surface, #ffffff)", color: "var(--orTx, #c2410c)", border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
                 Güncelle

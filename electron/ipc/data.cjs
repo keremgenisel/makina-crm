@@ -10,6 +10,10 @@ const { encryptBackup, decryptBackup, isEncryptedBackup } = require("../backupCr
 const files = require("../files.cjs");
 const jsonStore = require("../jsonStore.cjs");
 const securityQueue   = require("../securityQueue.cjs");
+// Spec 0085 R5, C1: istemci sürümü başlığı YALNIZ iki yerde eklenir: clientFetch (apiFetch + fileFetch + yoklama)
+// ve giriş isteği. Üçüncü bir ekleme yeri yasak (kaynak taraması, tests/surum-gorunurlugu-0085.test.js).
+const { surumBasligiEkle } = require("../istemciSurum.mjs");
+const uygulamaSurumu = () => { try { return appRef?.getVersion?.() || null; } catch { return null; } };
 
 const getSecurityQueuePath = (app) => path.join(app.getPath("userData"), "security-queue.json");
 
@@ -190,7 +194,8 @@ function refreshPin(app) {
 // Pinli client fetch: pin varsa undici.fetch + dispatcher, yoksa aynı undici.fetch (http/https
 // farketmez). Global fetch yerine undici.fetch: dispatcher aynı undici sürümünden gelmeli.
 function clientFetch(url, opts = {}) {
-  return pinliFetch(url, pinnedDispatcher ? { ...opts, dispatcher: pinnedDispatcher } : opts);
+  const o = surumBasligiEkle(opts, uygulamaSurumu());
+  return pinliFetch(url, pinnedDispatcher ? { ...o, dispatcher: pinnedDispatcher } : o);
 }
 // Son çalışan adresi config'e kaydet — böylece bir sonraki açılışta önce O denenir. Örn. istemci
 // Tailscale adresiyle yapılandırılmış ama fabrikada LAN'dan gidiyorsa, açılışta ölü Tailscale
@@ -391,12 +396,12 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
     }
 
     try {
-      const res = await pinliFetch(`${loginUrl}/auth/login`, {
+      const res = await pinliFetch(`${loginUrl}/auth/login`, surumBasligiEkle({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, totpCode }),
         ...(dispatcher ? { dispatcher } : {}),
-      });
+      }, app.getVersion()));
       const body = await res.json();
       // 2FA açıksa sunucu requires2fa döner — renderer kod alanını gösterir.
       // retryAfterSec: kademeli kilit (429) aktifse kalan süre — giriş ekranı geri sayım gösterir.

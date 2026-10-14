@@ -489,7 +489,10 @@ export const serverKonumEtiketi = ({ viaTailscale, sameLan }) =>
 // Semver karşılaştırması: latest, current'tan KESİN olarak daha yeni mi (2.72.0 > 2.70.0).
 // Güncelleme bildirimi yalnızca gerçekten daha yeni sürümde çıksın diye — ham string
 // eşitsizliği ("2.9.0" !== "2.10.0") yanıltıcı olurdu. Eksik/bozuk alanlar 0 sayılır.
+// Spec 0085 R22: mevcut sürüm bilinmiyorsa (boş) "daha yeni" denmez; yoksa sürüm köprüden gelene kadar
+// her yayın güncelleme gibi görünür ve şerit "kurulu: v" yazardı.
 export const surumDahaYeni = (latest, current) => {
+  if (!String(current || "").trim()) return false;
   const parcala = (v) => String(v || "").trim().replace(/^v/i, "").split(".").map(n => parseInt(n, 10) || 0);
   const a = parcala(latest), b = parcala(current);
   for (let i = 0; i < Math.max(a.length, b.length); i++) {

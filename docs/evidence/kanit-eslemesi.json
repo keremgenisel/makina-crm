@@ -4115,10 +4115,23 @@
         "beklenen": "ayni"
       }
     ],
+    "src/components/settings/BagliBilgisayarlar.jsx": [
+      {
+        "rapor": "docs/evidence/0085-piksel-raporu.json",
+        "ekran": "ayarlar-server-sunucu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0085 R13"
+      }
+    ],
     "src/components/settings/SettingsApp.jsx": [
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-app"
+      },
+      {
+        "rapor": "docs/evidence/0085-piksel-raporu.json",
+        "ekran": "ayarlar-app",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsBackup.jsx": [
@@ -4420,6 +4433,22 @@
       {
         "rapor": "docs/evidence/0009-piksel-raporu.json",
         "ekran": "ayarlar-server-istemci"
+      },
+      {
+        "rapor": "docs/evidence/0085-piksel-raporu.json",
+        "ekran": "ayarlar-server",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0085-piksel-raporu.json",
+        "ekran": "ayarlar-server-istemci",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0085-piksel-raporu.json",
+        "ekran": "ayarlar-server-sunucu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0085 R13"
       }
     ],
     "src/components/settings/SettingsServisPanosu.jsx": [

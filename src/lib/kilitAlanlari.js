@@ -70,6 +70,7 @@ export const KILITSIZ_DOSYALAR = {
   "src/components/cek/CekEklePenceresi.jsx": "yeni kayıt (kimlik yok, R17)",
   "src/components/settings/csvUtils.js": "yardımcı",
   "src/components/settings/serverPermissionDefs.js": "izin tanımları",
+  "src/components/settings/BagliBilgisayarlar.jsx": "salt okunur kart (spec 0085); yalnız güvenlik geçmişini okur",
   "src/components/settings/SettingsAuditLog.jsx": "salt okunur panel",
   "src/components/settings/SettingsSecurityLog.jsx": "salt okunur panel",
   "src/components/settings/SettingsSecurityStatus.jsx": "salt okunur panel",

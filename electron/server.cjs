@@ -23,6 +23,9 @@ const { rateLimit } = require("express-rate-limit"); // genel /api hız sınır�
 const totp = require("./totp.cjs");
 const fsx = require("fs");
 const files = require("./files.cjs");
+// Spec 0085: istemci sürümü başlığı ve detay alanı tek yerde (saf ES modülü, require(esm); db.cjs'in göç çekirdeğiyle aynı desen).
+// Denetim izidir, güvenlik sınırı değil: değer yalnız kırpılıp kayda yazılır, hiçbir karar ona bakmaz (R8, R20, C2).
+const { ISTEMCI_SURUM_BASLIGI, istektenIstemciSurum, detayaSurumEkle } = require("./istemciSurum.mjs");
 const qrcode = require("qrcode");
 
 // Tek port hem HTTP hem HTTPS dinler: muxServer ilk bayta göre soketi httpsSrv (TLS
@@ -246,25 +249,27 @@ function broadcast(channel, ...args) {
 // bu yol 2FA'yı, kademeli kilidi ve "giris_basarili/basarisiz" kaydını tamamen baypas ediyordu
 // (2FA açık admin şifresi sınırsız denenebiliyordu). ip: oran-sınırı/kayıt anahtarı.
 // Sonuç: { status, error?, requires2fa?, retryAfterSec?, token?, user? }.
-async function authenticateLogin({ username, password, totpCode, ip } = {}) {
+// istemciSurum (spec 0085 R6): giriş isteğinin başlığından, kırpılmış; yoksa detaya anahtar hiç yazılmaz (R7).
+// Sunucu kurulum akışı (ipc/data.cjs setupAdmin) bunu geçirmez; o satır geri döngüden gelir ve kartta atlanır (P2).
+async function authenticateLogin({ username, password, totpCode, ip, istemciSurum = null } = {}) {
   const cleanIp = String(ip || "").replace(/^::ffff:/, "") || "?"; // gösterim için sadeleştir
   if (!username || !password) return { status: 400, error: "Kullanıcı adı ve şifre gerekli" };
   const blockedMs = loginBlockedMs(ip, username);
   if (blockedMs > 0) {
-    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Çok fazla deneme (geçici engel)" } });
+    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: detayaSurumEkle({ sebep: "Çok fazla deneme (geçici engel)" }, istemciSurum) });
     return { status: 429, error: "Çok fazla başarısız deneme. Lütfen biraz sonra tekrar deneyin.", retryAfterSec: Math.ceil(blockedMs / 1000) };
   }
   if (!db || !db.isActive()) return { status: 503, error: "Veritabanı henüz hazır değil" };
   const user = db.getUserByUsername(username);
   if (!user || !user.is_active) {
     loginRateFail(ip, username);
-    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: user ? "Hesap pasif" : "Kullanıcı adı yok" } });
+    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: detayaSurumEkle({ sebep: user ? "Hesap pasif" : "Kullanıcı adı yok" }, istemciSurum) });
     return { status: 401, error: "Kullanıcı adı veya şifre hatalı" };
   }
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) {
     loginRateFail(ip, username);
-    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Yanlış şifre" } });
+    logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: detayaSurumEkle({ sebep: "Yanlış şifre" }, istemciSurum) });
     return { status: 401, error: "Kullanıcı adı veya şifre hatalı" };
   }
   // İkinci faktör (opsiyonel, kullanıcı başına): 2FA açıksa TOTP/kurtarma kodu da gerekir.
@@ -272,7 +277,7 @@ async function authenticateLogin({ username, password, totpCode, ip } = {}) {
     if (!totpCode) return { status: 401, error: "İki adımlı doğrulama kodu gerekli", requires2fa: true };
     if (!verify2fa(user, totpCode)) {
       loginRateFail(ip, username);
-      logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: { sebep: "Yanlış 2FA kodu" } });
+      logSecurity({ actor: username, action: "giris_basarisiz", ip: cleanIp, detail: detayaSurumEkle({ sebep: "Yanlış 2FA kodu" }, istemciSurum) });
       return { status: 401, error: "Doğrulama kodu hatalı", requires2fa: true };
     }
   }
@@ -282,7 +287,7 @@ async function authenticateLogin({ username, password, totpCode, ip } = {}) {
   // issueAdminToken ile kendi süreci içinde yeniler; admin'e tek oturum zorlamak sunucu PC'yi kilitlerdi.
   let tv = user.token_version ?? 1;
   if (user.role !== "admin") tv = db.bumpUserTokenVersion(user.id) ?? (tv + 1);
-  logSecurity({ actor: user.username, action: "giris_basarili", ip: cleanIp, detail: { rol: user.role, ikiAdimli: !!user.totp_enabled } });
+  logSecurity({ actor: user.username, action: "giris_basarili", ip: cleanIp, detail: detayaSurumEkle({ rol: user.role, ikiAdimli: !!user.totp_enabled }, istemciSurum) });
   const token = signToken({ id: user.id, username: user.username, role: user.role, tv });
   return { status: 200, token, user: { id: user.id, username: user.username, role: user.role, permissions: user.permissions ?? null } };
 }
@@ -324,7 +329,7 @@ function buildApp() {
     try {
       const ip = req.socket?.remoteAddress || req.ip || "?";
       const { username, password, totpCode } = req.body || {};
-      const r = await authenticateLogin({ username, password, totpCode, ip });
+      const r = await authenticateLogin({ username, password, totpCode, ip, istemciSurum: istektenIstemciSurum(req.get(ISTEMCI_SURUM_BASLIGI)) });
       if (r.retryAfterSec) res.set("Retry-After", String(r.retryAfterSec));
       if (r.status === 200) return res.json({ token: r.token, user: r.user });
       // retryAfterSec gövdeye de konur: istemci giriş ekranı kademeli kilit geri sayımını gösterir.
@@ -340,7 +345,8 @@ function buildApp() {
     try {
       const { id, username, role } = req.user;
       const u = db?.getUserByUsername(username);
-      logSecurity({ actor: username, action: "oturum_yenilendi", target: username, ip: reqIp(req) });
+      // Spec 0085 R6/R7: başlık varsa detay yalnız sürümü taşır; yoksa detay bugünkü gibi boş (null) kalır.
+      logSecurity({ actor: username, action: "oturum_yenilendi", target: username, ip: reqIp(req), detail: detayaSurumEkle(null, istektenIstemciSurum(req.get(ISTEMCI_SURUM_BASLIGI))) });
       res.json({ token: signToken({ id, username, role, tv: u?.token_version ?? 1 }), user: { id, username, role, permissions: u?.permissions ?? null } });
     } catch (err) {
       console.error("[server] /auth/me hatası:", err);
@@ -498,7 +504,8 @@ function buildApp() {
             ts: new Date().toISOString(), username: req.user.username, role: rol,
             action: "veri_kaydedildi", entity: "sunucu", entity_id: null,
             entity_name: degisen.map(b => BOLUM_ADLARI[b] || b).join(", "),
-            detail: JSON.stringify({ bolumler: degisen, surum: newVersion }),
+            // `surum` VERİ sürümüdür (çakışma sayacı, X4) ve korunur; uygulama sürümü yanında `istemciSurum` (spec 0085 R6).
+            detail: JSON.stringify(detayaSurumEkle({ bolumler: degisen, surum: newVersion }, istektenIstemciSurum(req.get(ISTEMCI_SURUM_BASLIGI)))),
           });
         } catch (e) { console.error("[server] sunucu işlem kaydı yazılamadı:", e); }
       }

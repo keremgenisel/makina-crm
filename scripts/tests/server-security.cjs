@@ -102,6 +102,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("cirosuz",     bcrypt.hashSync("ciro1234", 10), "user", CIROSUZ);
   dbmod.createUser("copcu",       bcrypt.hashSync("copcu123", 10), "user", COPCU);
   dbmod.createUser("eskiUser",    bcrypt.hashSync("eski123", 10), "user", null);
+  // Spec 0085: istemci sürümü başlığı (tam yetkili kullanıcı; yalnız bu blokta).
+  dbmod.createUser("surumcu",     bcrypt.hashSync("surum123", 10), "user", null);
   dbmod.createUser("uretici",     bcrypt.hashSync("uret123", 10), "user", URETICI);
   // Spec 0006 C8: yalnız Evrak sekmeli kullanıcı (CRM'e Kaydet): gereken eylem izinleriyle / kalıp izni olmadan.
   dbmod.createUser("evrakci",     bcrypt.hashSync("evrak123", 10), "user", JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_kalip_add"], stockActions: ["yedek_parca_add"] }));
@@ -837,6 +839,49 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("2FA sıfırlama olayı kaydedildi", secAll.rows.some(r => r.action === "2fa_sifirlandi" && r.target === "tfa"));
   const secByAction = await (await api("/api/security-log?action=giris_basarili", {}, adminTok)).json();
   check("action filtresi yalnız giris_basarili döner", secByAction.rows.every(r => r.action === "giris_basarili"));
+  // ── Spec 0085: istemci sürümü başlığı (R5–R8, R20; AC-8, AC-11, AC-12, AC-13, AC-32) ──────────
+  // Başlık yalnız kayda yazılır: kırpılır, hiçbir karar ona bakmaz. Başlıksız istekte anahtar hiç yazılmaz.
+  {
+    const H = { "X-App-Surum": "9.1.0" };
+    const det = (r) => { try { return r.detail ? JSON.parse(r.detail) : null; } catch { return "bozuk"; } };
+    const sonGuv = (actor, action) => dbmod.getSecurityLog({ actor, action, limit: 1 }).rows[0];
+    // HTTP: yanlış şifre (başlıklı), sonra başarılı giriş (başlıklı; IP sayacını da sıfırlar)
+    await api("/auth/login", { method: "POST", headers: H, body: JSON.stringify({ username: "surumcu", password: "yanlis" }) });
+    check("spec 0085 AC-13: başarısız giriş (yanlış şifre) sebep ile sürümü taşır", JSON.stringify(det(sonGuv("surumcu", "giris_basarisiz"))) === JSON.stringify({ sebep: "Yanlış şifre", istemciSurum: "9.1.0" }));
+    const g = await api("/auth/login", { method: "POST", headers: H, body: JSON.stringify({ username: "surumcu", password: "surum123" }) });
+    const sTok = (await g.json()).token;
+    check("spec 0085 AC-13: başarılı giriş sürümü taşır, rol alanları korunur", g.status === 200 && JSON.stringify(det(sonGuv("surumcu", "giris_basarili"))) === JSON.stringify({ rol: "user", ikiAdimli: false, istemciSurum: "9.1.0" }));
+    await api("/auth/me", { headers: H }, sTok);
+    check("spec 0085 AC-13: oturum yenileme sürümü taşır", JSON.stringify(det(sonGuv("surumcu", "oturum_yenilendi"))) === JSON.stringify({ istemciSurum: "9.1.0" }));
+    await api("/auth/me", {}, sTok);
+    check("spec 0085 AC-11: başlıksız oturum yenilemede detay bugünkü gibi boş (anahtar yok, null yazılmaz)", sonGuv("surumcu", "oturum_yenilendi").detail === null);
+    // Kırpma (AC-12): zararlı karakterler düşer, en çok 32 karakter
+    await api("/auth/me", { headers: { "X-App-Surum": "9.1.0<script>" + "9".repeat(40) } }, sTok);
+    const kirpik = det(sonGuv("surumcu", "oturum_yenilendi"))?.istemciSurum || "";
+    check("spec 0085 AC-12: başlık kırpıldı ([0-9A-Za-z.+-], ≤ 32)", kirpik.length === 32 && /^[0-9A-Za-z.+-]+$/.test(kirpik) && kirpik.startsWith("9.1.0script"));
+    await api("/auth/me", { headers: { "X-App-Surum": "<<>>" } }, sTok);
+    check("spec 0085 AC-12: kırpınca boş kalan başlıkta anahtar yazılmaz", sonGuv("surumcu", "oturum_yenilendi").detail === null);
+    // Doğrudan authenticateLogin (sahte IP; 127.0.0.1 sayacına dokunmaz): diğer başarısız dallar
+    await server.authenticateLogin({ username: "yokBoyleKullanici85", password: "x", ip: "10.0.85.2", istemciSurum: "9.1.0" });
+    check("spec 0085 AC-13: başarısız giriş (kullanıcı adı yok) sürümü taşır", JSON.stringify(det(sonGuv("yokBoyleKullanici85", "giris_basarisiz"))) === JSON.stringify({ sebep: "Kullanıcı adı yok", istemciSurum: "9.1.0" }));
+    let kilitSon = null;
+    for (let i = 0; i < 6 && !(kilitSon?.status === 429); i++) kilitSon = await server.authenticateLogin({ username: "kilit85", password: "x", ip: "10.0.85.3", istemciSurum: "9.1.0" });
+    check("spec 0085 AC-13: başarısız giriş (kademeli kilit) sürümü taşır", kilitSon?.status === 429 && JSON.stringify(det(sonGuv("kilit85", "giris_basarisiz"))) === JSON.stringify({ sebep: "Çok fazla deneme (geçici engel)", istemciSurum: "9.1.0" }));
+    await server.authenticateLogin({ username: "yokBoyleKullanici85b", password: "x", ip: "10.0.85.4" });
+    check("spec 0085 AC-11: sürümsüz başarısız girişte anahtar yok (detay yalnız sebep)", JSON.stringify(det(sonGuv("yokBoyleKullanici85b", "giris_basarisiz"))) === JSON.stringify({ sebep: "Kullanıcı adı yok" }));
+    // Veri yazımı: eski sürüm başlığıyla kabul edilir (R20, AC-32); detayda veri sürümü ve uygulama sürümü yan yana (AC-8)
+    const v1 = await curVer(sTok);
+    const y1 = await api("/api/data", { method: "POST", headers: { "X-App-Surum": "1.0.0" }, body: JSON.stringify({ data: { notes: [{ id: 4, text: "not" }, { id: 8501, text: "0085" }] }, dataVersion: v1 }) }, sTok);
+    check("spec 0085 AC-32: eski sürümlü istemcinin yazımı kabul edilir (403 yok) → 200", y1.status === 200);
+    const a1 = (await (await api("/api/audit?limit=5", {}, adminTok)).json()).rows.find(r => r.action === "veri_kaydedildi" && r.username === "surumcu");
+    const d1 = JSON.parse(a1?.detail || "{}");
+    check("spec 0085 AC-8: veri_kaydedildi detayı veri sürümü (surum) ve uygulama sürümünü (istemciSurum) ayrı taşır", d1.istemciSurum === "1.0.0" && d1.surum === v1 + 1 && Array.isArray(d1.bolumler));
+    const v2 = await curVer(sTok);
+    const y2 = await postData({ notes: [{ id: 4, text: "not" }, { id: 8501, text: "0085" }, { id: 8502, text: "0085b" }] }, v2, sTok);
+    const a2 = (await (await api("/api/audit?limit=5", {}, adminTok)).json()).rows.find(r => r.action === "veri_kaydedildi" && r.username === "surumcu");
+    check("spec 0085 AC-11: başlıksız yazımda istemciSurum anahtarı yok, veri sürümü yerinde", y2.status === 200 && JSON.stringify(Object.keys(JSON.parse(a2.detail))) === JSON.stringify(["bolumler", "surum"]));
+  }
+
   // ingest: yalnız app-lock eylemleri kabul edilir; sahte "giris_basarili" enjeksiyonu reddedilir
   const ingest = await (await api("/api/security-log/ingest", { method: "POST", body: JSON.stringify({ entries: [
     { ts: new Date().toISOString(), actor: "Cihaz: TEST", action: "giris_basarili" },

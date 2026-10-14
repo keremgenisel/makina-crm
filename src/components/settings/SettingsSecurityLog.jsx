@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Btn, Icon, ConfirmDialog, DateInput } from "../ui";
+import { kayitIstemciSurumu } from "../../lib/surumOzeti";
 
 export const ACTION_LABELS = {
   giris_basarili: "Giriş Başarılı", giris_basarisiz: "Giriş Başarısız",
@@ -26,6 +27,36 @@ export function girisBasarisizNedeni(row) {
   if (row?.action !== "giris_basarisiz") return "";
   try { const d = typeof row.detail === "string" ? JSON.parse(row.detail) : row.detail; return d?.sebep || ""; }
   catch { return ""; }
+}
+
+// Spec 0085 R10: istemci sürümü yalnız giriş, başarısız giriş ve oturum yenileme satırlarında gösterilir
+// (sunucunun başlıktan yazdığı eylemler); sürüm yoksa "bilinmiyor". Eylem etiketi haritası değişmez (R12).
+export const SURUMLU_EYLEMLER = ["giris_basarili", "giris_basarisiz", "oturum_yenilendi"];
+export function istemciSurumMetni(row) {
+  if (!SURUMLU_EYLEMLER.includes(row?.action)) return "";
+  const s = kayitIstemciSurumu(row);
+  return s ? `v${s}` : "bilinmiyor";
+}
+
+const fmtTs = (ts) => {
+  if (!ts) return "—";
+  try { return new Date(ts).toLocaleString("tr-TR"); } catch { return ts; }
+};
+const detayGoster = (r) => {
+  if (!r.detail) return "—";
+  try {
+    const d = JSON.parse(r.detail);
+    return Object.entries(d).map(([k, v]) => `${k}: ${v}`).join(", ") || "—";
+  } catch { return r.detail; }
+};
+
+// CSV satırları (saf): var olan altı sütun aynı sırada, sürüm sonda (R11). Detay sütunu sürümü de içerir
+// (kabul edilen yineleme, R10/X7).
+export function kullaniciGecmisiCsv(rows) {
+  const header = ["Zaman", "Yapan", "Eylem", "Hedef", "IP", "Detay", "İstemci sürümü"];
+  return [header, ...(rows || []).map(r => [
+    fmtTs(r.ts), r.actor || "", (ACTION_LABELS[r.action] || r.action) + (girisBasarisizNedeni(r) ? ` · ${girisBasarisizNedeni(r)}` : ""), r.target || "", r.ip || "", detayGoster(r), istemciSurumMetni(r),
+  ])];
 }
 
 // Eylem türü filtresi için gruplu seçenekler
@@ -139,23 +170,8 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
 
   const go = (p) => setPage(p);
 
-  const fmtTs = (ts) => {
-    if (!ts) return "—";
-    try { return new Date(ts).toLocaleString("tr-TR"); } catch { return ts; }
-  };
-  const detayGoster = (r) => {
-    if (!r.detail) return "—";
-    try {
-      const d = JSON.parse(r.detail);
-      return Object.entries(d).map(([k, v]) => `${k}: ${v}`).join(", ") || "—";
-    } catch { return r.detail; }
-  };
-
   const exportCsv = () => {
-    const header = ["Zaman", "Yapan", "Eylem", "Hedef", "IP", "Detay"];
-    const csvRows = [header, ...rows.map(r => [
-      fmtTs(r.ts), r.actor || "", (ACTION_LABELS[r.action] || r.action) + (girisBasarisizNedeni(r) ? ` · ${girisBasarisizNedeni(r)}` : ""), r.target || "", r.ip || "", detayGoster(r),
-    ])];
+    const csvRows = kullaniciGecmisiCsv(rows);
     const csv = "﻿" + csvRows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
@@ -258,6 +274,12 @@ export function SettingsSecurityLog({ serverPermissions, flash = () => {} }) {
                     </span>
                     {girisBasarisizNedeni(r) && (
                       <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: "var(--red700, #b91c1c)" }}>· {girisBasarisizNedeni(r)}</span>
+                    )}
+                    {istemciSurumMetni(r) && (
+                      <span data-testid="istemci-surum" title="İstemcinin bildirdiği uygulama sürümü" style={{ marginLeft: 6, display: "inline-block", padding: "1px 6px", borderRadius: 5, fontSize: 10.5, fontWeight: 700, whiteSpace: "nowrap",
+                        background: "var(--n150, #f1f5f9)", color: kayitIstemciSurumu(r) ? "var(--n600, #475569)" : "var(--n400, #94a3b8)" }}>
+                        {istemciSurumMetni(r)}
+                      </span>
                     )}
                   </td>
                   <td style={{ ...tdStyle, color: "var(--n600, #475569)", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appLockMi(r.action) ? "—" : (r.target || "—")}</td>

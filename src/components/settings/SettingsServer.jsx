@@ -4,6 +4,7 @@ import { SettingsTwoFactor } from "./SettingsTwoFactor";
 import { ConfirmDialog } from "../ui";
 import { isTailscaleIp } from "../../lib/utils";
 import { UserManager } from "./UserManager";
+import { BagliBilgisayarlar } from "./BagliBilgisayarlar";
 
 // ── Uzaktan erişim (Tailscale) yardım kutusu ─────────────────────────────────
 // Tıklayınca açılan kısa bilgilendirme; hem sunucu hem istemci ekranında gösterilir.
@@ -170,7 +171,8 @@ export function SetupWizard({ onDone, flash }) {
 }
 
 // ── Ana bileşen ───────────────────────────────────────────────────────────────
-export function SettingsServer({ flash, settingsGroups = [] }) {
+// version (spec 0085 R15): bu bilgisayarın uygulama sürümü; bağlı bilgisayarlar kartının karşılaştırma tabanı.
+export function SettingsServer({ flash, settingsGroups = [], version = "" }) {
   const [cfg, setCfg]             = useState(null);
   const [mode, setMode]           = useState(null); // null=bekleniyor | "none" | "server" | "client"
   const [pick, setPick]           = useState(null); // "server" | "client" | null (kurulum seçimi)
@@ -344,6 +346,8 @@ export function SettingsServer({ flash, settingsGroups = [] }) {
             </button>
           </div>
         </KartBolum>
+        {/* Spec 0085 R13, R17: kart yalnız sunucu PC'de ve sunucu çalışırken; istemci dalı değişmez. */}
+        {running && <BagliBilgisayarlar version={version} />}
         {running && <SettingsTwoFactor flash={flash} />}
         {running && <KartBolum title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} /></KartBolum>}
       </>
