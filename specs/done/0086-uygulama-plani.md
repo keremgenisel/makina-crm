@@ -1,6 +1,6 @@
 # 0086 Uygulama Planı: Yedekleme paketleri geri yükledikleri bölümleri tek kaynaktan söyler
 
-Spec: `specs/0086-yedekleme-paketleri-tek-kaynaktan.md` (revizyon 3). Dal `feat/0086-yedek-paketleri` (0085 kapanışı
+Spec: `specs/done/0086-yedekleme-paketleri-tek-kaynaktan.md` (revizyon 3). Tamamlandı: commit `b3040bb`. Dal `feat/0086-yedek-paketleri` (0085 kapanışı
 `9b4de51` üstünde, P4).
 
 ## 1. Kodda bulunanlar (spec'e ek, revizyon 3'e işlendi)

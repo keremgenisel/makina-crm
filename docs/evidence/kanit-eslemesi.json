@@ -4159,28 +4159,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "rapor": "docs/evidence/0086-taban-piksel-raporu.json",
         "ekran": "kilit-geri-yukleme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0086 R12"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "rapor": "docs/evidence/0086-taban-piksel-raporu.json",
         "ekran": "ayarlar-backup-paketler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0086 R12"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "rapor": "docs/evidence/0086-taban-piksel-raporu.json",
         "ekran": "ayarlar-backup-paketler-kasasiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0086 R12"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0086-piksel-raporu.json",
+        "rapor": "docs/evidence/0086-taban-piksel-raporu.json",
         "ekran": "ayarlar-backup-paketler-gidersiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-14 · spec 0086 R12"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsCompany.jsx": [

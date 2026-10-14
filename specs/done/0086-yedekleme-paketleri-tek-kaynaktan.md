@@ -2,13 +2,13 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (revizyon 3: plan onayı kararları P1–P4 işlendi; dal `feat/0086-yedek-paketleri`) |
+| **Durum** | Tamamlandı (commit `b3040bb`, dal `feat/0086-yedek-paketleri`; plan `specs/done/0086-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · Geliştirici (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Veri Yönetimi › Yedekleme (seçmeli geri yükleme paketleri); görüntü aracı ve görsel kanıt |
 | **Bağımlı spec'ler** | 0022 (üretim partileri), 0024 (kasa hesapları ve hareketleri), 0040 ve 0049 (çek bölümünün iki pakete bölünmesi), 0052 (Kasa'sız kullanıcının geri yüklemesi), 0058 (kasa iş listesi), 0008 (gider paketinin perde kuralı), 0064 (geri yükleme kilit ön denetimi ve `kilit-geri-yukleme` kanıt ekranı), 0009 ve 0011 (kanıt eşlemesi), 0001 · 0051 · 0076 · 0084 (gider ayarlarının alanları) |
 | **Taban** | `9b4de51` (0085 kapanışı, `feat/0085-istemci-surumu`; revizyon 3 P4: 0085 main'e alınmadığı için dal ve kanıt tabanı onun üstü, yoksa 0085'in menü değişiklikleri sahte fark olurdu. Revizyon 2 `7768968` diyordu) |
-| **Revizyon** | · 1 · 2026-10-14 ilk taslak · 2 · 2026-10-14 geliştirme öncesi QA turu (B-1…B-5, Ö-6…Ö-10, K-11…K-16 işlendi; sözlük eşitliği, çek ve Kasa cümlesinin üretimi, taramanın tanımı, birleşim kriteri, iki kanıt ekranı) · 3 · 2026-10-14 plan onayı (P1 kanıt ekranları ve Kasa varsayılanı, P2 teklifler özel ifadesi, P3 genel satır deseni, P4 taban; plan `specs/0086-uygulama-plani.md`) |
+| **Revizyon** | · 1 · 2026-10-14 ilk taslak · 2 · 2026-10-14 geliştirme öncesi QA turu (B-1…B-5, Ö-6…Ö-10, K-11…K-16 işlendi; sözlük eşitliği, çek ve Kasa cümlesinin üretimi, taramanın tanımı, birleşim kriteri, iki kanıt ekranı) · 3 · 2026-10-14 plan onayı (P1 kanıt ekranları ve Kasa varsayılanı, P2 teklifler özel ifadesi, P3 genel satır deseni, P4 taban; plan `specs/done/0086-uygulama-plani.md`) |
 
 ---
 
@@ -388,30 +388,43 @@ kanıt kümesi R12 ve AC-21'dedir.
 
 ## Definition of Done
 
-- [ ] R1–R12 uygulanmış; paket listesi veri, cümle üretilmiş, iki tarama yerinde (satır eşleşmesi
+- [x] R1–R12 uygulanmış; paket listesi veri, cümle üretilmiş, iki tarama yerinde (satır eşleşmesi
       ve birleşim eşitliği).
-- [ ] AC-1…AC-23 testlerle karşılanmış: `tests/yedek-paketleri-0086.test.js` (liste ile dal
+- [x] AC-1…AC-23 testlerle karşılanmış: `tests/yedek-paketleri-0086.test.js` (liste ile dal
       eşleşmesi, birleşim eşitliği, iki sözlüğün 32 bölüm üzerinden eşitliği, cümle üretimi ve
       `trLower`), `tests/ui/yedek-paketleri-0086.test.jsx` (dokuz paketin cümlesi, üç not, yetki
       dalları, bildirim metni).
-- [ ] Üç var olan geri yükleme testi (`ui/cek-portfoy-0049`, `ui/gider-perdesi-yedek`,
+- [x] Üç var olan geri yükleme testi (`ui/cek-portfoy-0049`, `ui/gider-perdesi-yedek`,
       `ui/kasa-sekme-yedek`) **dokunulmadan** yeşil; davranış eşitliği yeni testteki setter çağrı
       listesiyle ölçülmüş (AC-18).
-- [ ] `npm test` ve `npm run lint` yeşil.
-- [ ] Görsel kanıt R12'deki (revizyon 3 P1) kümeyle çekilmiş: `kilit-geri-yukleme` ve üç yeni
+- [x] `npm test` ve `npm run lint` yeşil.
+- [x] Görsel kanıt R12'deki (revizyon 3 P1) kümeyle çekilmiş: `kilit-geri-yukleme` ve üç yeni
       `ayarlar-backup-paketler*` ekranı değişir, `ayarlar-backup` 0 fark; `docs/evidence/0086-*` ile
       `kanit-eslemesi.json` güncel.
-- [ ] `CLAUDE.md`'ye üç senkron noktası kuralı yazılmış: yeni bölüm eklerken geri yükleme dalı,
+- [x] `CLAUDE.md`'ye üç senkron noktası kuralı yazılmış: yeni bölüm eklerken geri yükleme dalı,
       paketin `bolumler` listesi ve kimlik sayacı listesi birlikte güncellenir.
-- [ ] `specs/README.md` güncel; `partTypeDefs`'in kimlik sayacı listesinde olmaması açık bulgular
+- [x] `specs/README.md` güncel; `partTypeDefs`'in kimlik sayacı listesinde olmaması açık bulgular
       tablosuna yazılmış (X7); `tests/spec-atiflari.test.js` `TASINACAK` listesi bu işin
       dosyalarıyla doldurulmuş ve done'a taşınırken boşaltılmış.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu**, kanıt eşlemesindeki `degisti` kayıtları `ayni`ye çevrildi
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu**, kanıt eşlemesindeki `degisti` kayıtları `ayni`ye çevrildi
       (`kanit-eslemesi.test.js`, 0011 AC-11c) ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
 ## SCORECARD
 
-Uygulama bittiğinde doldurulur.
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Spec revizyon sayısı** | 3 | Revizyon 2 (geliştirme öncesi QA), 3 (plan onayı: P1 kanıt ekranları ve Kasa varsayılanı, P2 teklifler özel ifadesi, P3 genel satır deseni, P4 taban). |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-10-14), dört bulgu. |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Dosyalar kutusu dosyaların kendisini değil yalnız listeyi geri yüklüyordu (cümle aksini düşündürüyordu); Kasa'sız notunun dayanağı olan App satırı taranmıyordu; spec'in üç yeri uygulamanın gerisindeydi; README satırı önceki paragrafa yapışıktı. |
+| **Regresyon sayısı** | 0 | Süit 338 dosya / 4278 test yeşil (Electron dahil), lint 0 hata. |
+| **Kaçan hata** | 0 | |
+
+**Bu spec'ten çıkarılan ders:**
+
+- "Bu paket neyi geri yükler" sorusunun cevabı yalnız geri yükleme dalında değil: dosyalar yedek açılır açılmaz köprü katmanında yazılıyordu. Anlatım işi, verinin geçtiği bütün katmanlarda ölçülmeli.
+- Davranış eşitliği fikstürü üretilirken test düzeneğinin kendisi davranışa karışabiliyor (sayfadaki başka bir onay kutusu tıklanıyordu); fikstürün izi, ilk üretimde satır satır okunmalı.
+- Spec'in "değişir" dediği kanıt ekranı önce o durumu gerçekten çiziyor mu, ölçülmeli: liste yalnız yedek seçilince çiziliyordu.
+- Bir notun doğruluğu başka bir dosyadaki satıra dayanıyorsa (App'in setter'ı yetkiye bağlaması), o satır notun testiyle birlikte taranmalı.
