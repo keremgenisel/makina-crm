@@ -2,13 +2,13 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (revizyon 3: plan onayı kararları P1–P4 işlendi; dal `feat/0085-istemci-surumu`) |
+| **Durum** | Tamamlandı (commit `27d294e`, dal `feat/0085-istemci-surumu`; plan `specs/done/0085-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · Geliştirici (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Sunucu › Sunucu Bağlantısı ve Kullanıcı Geçmişi; Ayarlar › Uygulama'nın "Kurulu sürüm" metinleri; kenar çubuğundaki sürüm yazısı; üst güncelleme şeridi; elle ve otomatik yedeğin sürüm damgası; istemcinin HTTP istek başlıkları; `security_log` ve `audit_log` kayıtlarının detayı; görüntü aracı |
 | **Bağımlı spec'ler** | 0071 · 0074 · 0075 · 0076 · 0082 · 0084 (hepsinin sürüm notu "önce sunucu PC, sonra istemciler" diyor), 0077 (kayıt hatası nedenleri, "403 istemciyi salt okunur yapmaz"), 0068 (işlem geçmişi etiket kapsamı), 0009 ve 0011 (kanıt eşlemesi, `tasarim.jsx` kullanan dosyanın kaydı), 0082 (otomatik yedek çağrısının kaynak taraması), 0064 (görüntü aracında köprü sahteleme deseni) |
 | **Taban** | main `7768968` (0084 birleşmiş, bağımlılık güncellemeleri ve Giderler metin düzeltmesi sonrası; spec revizyon 1 `a111de4` diyordu, bir commit eskiydi) |
-| **Revizyon** | · 1 · 2026-10-14 ilk taslak · 2 · 2026-10-14 geliştirme öncesi QA turu (B-1…B-5, Ö-6…Ö-12, K-13…K-18 işlendi; alan adı çakışması, kartın veri yolu, boş sürümün güncelleme uyarısı, yedi tüketici, üçüncü istek yolu) · 3 · 2026-10-14 plan onayı (P1 kanıt ekranı, P2 geri döngü satırları, P3 kullanıcı başına satır, P4 rozet ve boş sürüm; plan `specs/0085-uygulama-plani.md`) |
+| **Revizyon** | · 1 · 2026-10-14 ilk taslak · 2 · 2026-10-14 geliştirme öncesi QA turu (B-1…B-5, Ö-6…Ö-12, K-13…K-18 işlendi; alan adı çakışması, kartın veri yolu, boş sürümün güncelleme uyarısı, yedi tüketici, üçüncü istek yolu) · 3 · 2026-10-14 plan onayı (P1 kanıt ekranı, P2 geri döngü satırları, P3 kullanıcı başına satır, P4 rozet ve boş sürüm; plan `specs/done/0085-uygulama-plani.md`) |
 
 ---
 
@@ -471,29 +471,43 @@ riskiydi ve çözüm yazma yolunu kaldırmak olmuştu.
 
 ## Definition of Done
 
-- [ ] R1–R23 uygulanmış; başlık iki yerde, alan adı (`istemciSurum`) tek sabitte, özetleme saf
+- [x] R1–R23 uygulanmış; başlık iki yerde, alan adı (`istemciSurum`) tek sabitte, özetleme saf
       modülde, kart IPC'den besleniyor.
-- [ ] AC-1…AC-33 testlerle karşılanmış: `tests/surum-gorunurlugu-0085.test.js` (saf özet,
+- [x] AC-1…AC-33 testlerle karşılanmış: `tests/surum-gorunurlugu-0085.test.js` (saf özet,
       taramalar, paket sürümü eşitliği, boş sürümde `surumDahaYeni`),
       `tests/ui/surum-gorunurlugu-0085.test.jsx` (iki ekran, sunucu ve istemci dalları, boş
       sürümde şeridin çizilmemesi), `scripts/tests/server-security.cjs` bloğu (başlıklı ve
       başlıksız yazım, kırpma, eski sürümle yazım kabul edilir),
       `scripts/tests/db-roundtrip.cjs` (detay JSON'unda iki sürüm alanı birlikte).
-- [ ] `npm test` ve `npm run lint` yeşil; Electron testleri koşulmuş.
-- [ ] Görsel kanıt C7'deki kümeyle çekilmiş: yeni `ayarlar-guvenlik-gecmisi` ekranı araca
+- [x] `npm test` ve `npm run lint` yeşil; Electron testleri koşulmuş.
+- [x] Görsel kanıt C7'deki kümeyle çekilmiş: yeni `ayarlar-guvenlik-gecmisi` ekranı araca
       eklenmiş ve `window.securityLog` sahtelenmiş; `docs/evidence/0085-*` ile
       `kanit-eslemesi.json` güncel (gerekliyse `SettingsSecurityLog.jsx` kaydı eklenmiş).
-- [ ] `CLAUDE.md`'ye yazılmış: tek sürüm kaynağı kuralı, başlık sabiti ve eklendiği iki yer,
+- [x] `CLAUDE.md`'ye yazılmış: tek sürüm kaynağı kuralı, başlık sabiti ve eklendiği iki yer,
       `detail`'deki iki sürüm alanının ayrımı (`surum` = veri sürümü, `istemciSurum` = uygulama
       sürümü), kartın IPC'den beslendiği.
-- [ ] `specs/README.md` güncel; `tests/spec-atiflari.test.js` `TASINACAK` listesi bu işin
+- [x] `specs/README.md` güncel; `tests/spec-atiflari.test.js` `TASINACAK` listesi bu işin
       dosyalarıyla doldurulmuş ve done'a taşınırken boşaltılmış.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu**, kanıt eşlemesindeki `degisti` kayıtları `ayni`ye çevrildi
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu**, kanıt eşlemesindeki `degisti` kayıtları `ayni`ye çevrildi
       (`kanit-eslemesi.test.js`, 0011 AC-11c) ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
 ## SCORECARD
 
-Uygulama bittiğinde doldurulur.
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Spec revizyon sayısı** | 3 | Revizyon 2 (geliştirme öncesi QA), 3 (plan onayı: P1 kanıt ekranı, P2 geri döngü satırları, P3 kullanıcı başına satır, P4 rozet ve boş sürüm). |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-10-14), üç bulgu. |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Sunucu sürümü bilinmezken kart "hepsi güncel" diyordu (1.0.0 bile güncel sayılıyordu); README sıra cümlesi uygulamanın gerisindeydi; README'nin 0086 satırı spec dosyası olmadan commit'e girecekti. |
+| **Regresyon sayısı** | 0 | Süit 335 dosya / 4249 test yeşil (Electron dahil), lint 0 hata. |
+| **Kaçan hata** | 0 | |
+
+**Bu spec'ten çıkarılan ders:**
+
+- Spec'in "değişir" dediği kanıt ekranı araçta gerçekten o kipte çiziliyor mu, ölçülmeli: `ayarlar-server` araçta köprü olmadığı için sunucu kipine hiç girmiyordu, yeni kart orada görünmezdi.
+- "Sunucu kendi adına kayıt üretmiyor" gibi yokluk iddiaları bütün çağıranlarla ölçülmeli: kurulum akışı `authenticateLogin`'i geri döngüden çağırıp başlıksız giriş satırı yazıyordu.
+- Koşullu metin JSX'te ayrı bir metin düğümüne bölünürse harf aralığı değişir ve görünüm piksel düzeyinde kayar; görünümü korunacak cümle tek düğüm basılmalı.
+- "Bilinmiyor" ile "karşılaştırılmadı" ayrı durumlardır: taban yokken "güncel" demek yanlış güven verir.
+- Görüntü aracında aynı kodun iki çekimi de farklı çıkabiliyor; beklenmeyen fark önce taban kodla tekrar çekilerek ayıklanmalı.

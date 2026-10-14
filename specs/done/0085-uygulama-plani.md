@@ -1,6 +1,6 @@
 # 0085 Uygulama Planı: İstemci sürümü görünür olur
 
-Spec: `specs/0085-istemci-surumu-gorunur-olur.md` (revizyon 3). Dal `feat/0085-istemci-surumu` (taban `7768968`).
+Spec: `specs/done/0085-istemci-surumu-gorunur-olur.md` (revizyon 3). Tamamlandı: commit `27d294e`. Dal `feat/0085-istemci-surumu` (taban `7768968`).
 
 ## 1. Kodda bulunanlar (spec'e ek, revizyon 3'e işlendi)
 
