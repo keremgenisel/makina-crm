@@ -1,6 +1,6 @@
 # 0084 Uygulama Planı: Kira stopajı üç aylık beyan dönemiyle ödenir
 
-Spec: `specs/0084-kira-stopajinda-uc-aylik-beyan-donemi.md` (revizyon 3). Dal `feat/0084-stopaj-donemi`
+Spec: `specs/done/0084-kira-stopajinda-uc-aylik-beyan-donemi.md` (revizyon 3). Dal `feat/0084-stopaj-donemi`
 (0083 kapanışı `c1c5496` üstünde; C8 sağlandı).
 
 ## 1. Kodda bulunanlar (spec'e ek, revizyon 3'e işlendi)

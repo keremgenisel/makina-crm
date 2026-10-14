@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (dal `feat/0084-stopaj-donemi`; plan `specs/0084-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (commit `e619fbd`, dal `feat/0084-stopaj-donemi`; plan `specs/done/0084-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) · geliştirme atanmadı |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Mali İşler › Giderler (gider formunun stopaj bölümü, yeni Stopaj Dönemleri penceresi, başlık satırı, borç özeti), Anasayfa ödeme hatırlatıcısı, Ayarlar › Giderler › Gider Ayarları, Aylık Gider ve Kasa Raporu'nun stopaj kutusu ve vade tabloları, tasarım sözlüğü, Electron yerleşim düzeneği, görsel kanıt |
@@ -595,40 +595,53 @@ görünür; iki kiralanan yer varsa altı satır.
 
 ## Definition of Done
 
-- [ ] R1–R26 uygulanmış; dönem hesabı tek saf modülde, toplu ödeme taşınmış dağıtım çekirdeğiyle,
+- [x] R1–R26 uygulanmış; dönem hesabı tek saf modülde, toplu ödeme taşınmış dağıtım çekirdeğiyle,
       vade formda ön dolarak.
-- [ ] AC-1…AC-39 testlerle karşılanmış: `tests/stopaj-donemi-0084.test.js` (motor, dönem ve vade,
+- [x] AC-1…AC-39 testlerle karşılanmış: `tests/stopaj-donemi-0084.test.js` (motor, dönem ve vade,
       TZ sabitli), `tests/ui/stopaj-donemi-0084.test.jsx` (pencere, toplu ödeme, satırsız kalemin
       salt okunur satırı, izin, kilit), `tests/gider-kasa-raporu-0084.test.js` (rapor kutusu ve
       vade tabloları), ek bloklar `gider.test.js` (tekrarlayan üretim), `odeme-hatirlatma.test.js`
       (gruplama), `ui/gider-form` (ön doldurma), `ui/gider-settings` (ayar ve C9'un koruması),
       `gider-gizlilik.test.js`, `cek.test.js` ve `cek-0049.test.js` (çekirdek taşıma, dokunulmadan
       yeşil).
-- [ ] Önce/sonra kanıtı: stopajlı veriyle motor çıktısı (dönem raporu, kova, maliyet) bu spec'ten
+- [x] Önce/sonra kanıtı: stopajlı veriyle motor çıktısı (dönem raporu, kova, maliyet) bu spec'ten
       önceki kodla birebir aynı (`tests/fixtures/0084-stopaj-once.json`).
-- [ ] 0059'un altın rapor dosyası ve `0059-aylik-faaliyet.html` dokunulmamış, 0059 testi
+- [x] 0059'un altın rapor dosyası ve `0059-aylik-faaliyet.html` dokunulmamış, 0059 testi
       dokunulmadan yeşil (D2); gruplanmış stopaj satırı ve dönem tablosu 0084 rapor testinde.
-- [ ] 0083'ün AC-25 testi ekran adları iddiasına çevrilmiş, yorumunda bu spec'e atıf var (D1).
-- [ ] 0082'nin ölü prop kriteri (AC-34) iki prop olarak güncellenmiş, yorumunda bu spec'e atıf var.
-- [ ] Yeni pencere `src/lib/kilitAlanlari.js` `KILITSIZ_DOSYALAR`'a gerekçesiyle ve
+- [x] 0083'ün AC-25 testi ekran adları iddiasına çevrilmiş, yorumunda bu spec'e atıf var (D1).
+- [x] 0082'nin ölü prop kriteri (AC-34) iki prop olarak güncellenmiş, yorumunda bu spec'e atıf var.
+- [x] Yeni pencere `src/lib/kilitAlanlari.js` `KILITSIZ_DOSYALAR`'a gerekçesiyle ve
       `tests/ui/form-pencere-boyutu.test.jsx` `SINIF1`'e eklenmiş (R25).
-- [ ] `scripts/tests/layout/donem-raporu.jsx`'in kısa dalına stopajlı kira kalemi eklenmiş, uzun
+- [x] `scripts/tests/layout/donem-raporu.jsx`'in kısa dalına stopajlı kira kalemi eklenmiş, uzun
       dal dokunulmamış; Electron yerleşim testi yeşil.
-- [ ] `npm test` ve `npm run lint` yeşil; Electron testleri koşulmuş.
-- [ ] Görsel kanıt: 0083 uygulandıktan **sonra** çekilmiş (C8); bilinçli değişen küme iş raporunun
+- [x] `npm test` ve `npm run lint` yeşil; Electron testleri koşulmuş.
+- [x] Görsel kanıt: 0083 uygulandıktan **sonra** çekilmiş (C8); bilinçli değişen küme iş raporunun
       fark listesinden okunmuş ve `beklenen: "degisti"` + onay satırıyla, değişen ekranın kaydı
       olan her dosyaya yazılmış; `docs/evidence/0084-*` ve `kanit-eslemesi.json` güncel.
-- [ ] `docs/tasarim-sozlugu.md`'de sayfalama istisnası (C6) yazılı.
-- [ ] `CLAUDE.md`'nin gider bölümüne beyan dönemi mekanizması ve satırsız kalemin bilinen sınırı
+- [x] `docs/tasarim-sozlugu.md`'de sayfalama istisnası (C6) yazılı.
+- [x] `CLAUDE.md`'nin gider bölümüne beyan dönemi mekanizması ve satırsız kalemin bilinen sınırı
       eklenmiş.
-- [ ] `specs/README.md` güncel; `tests/spec-atiflari.test.js` `TASINACAK` listesi bu işin iki
+- [x] `specs/README.md` güncel; `tests/spec-atiflari.test.js` `TASINACAK` listesi bu işin iki
       dosyasıyla doldurulmuş ve done'a taşınırken boşaltılmış (K-23).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu**, kanıt eşlemesindeki `degisti` kayıtları `ayni`ye çevrildi
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu**, kanıt eşlemesindeki `degisti` kayıtları `ayni`ye çevrildi
       (`kanit-eslemesi.test.js`, 0011 AC-11c) ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
 ## SCORECARD
 
-Uygulama bittiğinde doldurulur.
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Spec revizyon sayısı** | 4 | Revizyon 2 (geliştirme öncesi QA), 3 (plan onayı: D1–D3 ölçüm düzeltmeleri, P1–P10), 4 (triyaj: kapsam tam ödenmiş kalemi içerir, AC-11 ipucu, satır sayısı). |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-10-14), altı bulgu. |
+| **Bulgu gerçek/gürültü oranı** | 6 / 0 | Varsayılan yöntem "Çek" ise ekran ile kayıt ayrışıyordu; hesap kimliği dize yazılıyordu; spec metni uygulamanın gerisindeydi; aday üreticisi kopyalanmıştı; "Satır" yalnız açık satırları sayıyordu; iki test aynı satırdaydı. |
+| **Regresyon sayısı** | 0 | Süit 332 dosya / 4192 test yeşil (Electron dahil, triyaj öncesi); triyaj sonrası Electron dışı 320 dosya / 4177 test, lint 0 hata. |
+| **Kaçan hata** | 0 | |
+
+**Bu spec'ten çıkarılan ders:**
+
+- Spec'in kapsam kuralı başka bir ekranın kuralına atıfla yazılınca (borç özeti) o ekranın amacına bağlı bir şart (tam ödenmiş kalem hariç) gizlice taşınabiliyor; kapsam, yeni ekranın sorusuna göre ölçülmeli (ödenmiş dönem de bir cevaptır).
+- Görüntü aracının sabit günü (23.09.2026) örnek verinin vadesini belirliyor; tarihe duyarlı yeni ekranın verisi o güne göre kurulmalı, yoksa ekran sessizce boş çekilir.
+- Seçici değeri kayda giderken her zaman kaydın kendi kimliğine çevrilmeli; dize kimlik sunucu karşılaştırmasında sahte "değişti" üretir.
+- Birbirini yedekleyen iki koruma mutasyonla ölçülemez; teke indirmek hem kodu hem testi sadeleştirdi.
