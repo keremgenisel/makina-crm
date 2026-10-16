@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, uygulama planı 2026-10-16) |
+| **Durum** | Tamamlandı (commit `332f2a6`) |
 | **Sahip** | Analist (spec) · Geliştirici (uygulama) |
 | **Etkilenen alanlar** | Ayarlar › Katalog › Parça/Yedek Parça (`PartManager`), Ayarlar › Katalog › Makina Modelleri (`ModelsManager`), parça ve model tanımlarının veritabanı alanları, parça dışa/içe aktarması, `ui.jsx` (kuruşlu tutar alanının taşınması), katalog panellerinin kilidi, görüntü aracı ve görsel kanıt |
 | **Onaylayan** | Takım Yöneticisi |
@@ -564,36 +564,36 @@ yedek parça satışı seçicilerini besliyor, "büküm işçiliği" oraya girer
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Adet, işaret ve maliyetin birlikte yazılması **saf bir modülde** (`src/lib/urunAgaci.js`) ve
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Adet, işaret ve maliyetin birlikte yazılması **saf bir modülde** (`src/lib/urunAgaci.js`) ve
       kendi testi var; iki alanın ayrışmasını yasaklayan kaynak taraması yazıldı (AC-19).
-- [ ] Doğrulama saf fonksiyonda (`parcaMaliyetDogrula`) ve içe aktarma önizlemesi de onu kullanıyor
+- [x] Doğrulama saf fonksiyonda (`parcaMaliyetDogrula`) ve içe aktarma önizlemesi de onu kullanıyor
       (AC-7).
-- [ ] `TutarInput` `ui.jsx`'e taşındı, `GiderAlanlari` yeniden dışa veriyor ve gider tarafının
+- [x] `TutarInput` `ui.jsx`'e taşındı, `GiderAlanlari` yeniden dışa veriyor ve gider tarafının
       testleri dokunulmadan yeşil (AC-3).
-- [ ] Dört nokta kuralı uygulandı (`parts` maliyet sütunu, iki model tablosunda ek maliyet
+- [x] Dört nokta kuralı uygulandı (`parts` maliyet sütunu, iki model tablosunda ek maliyet
       kalemleri) ve `db-roundtrip` + `db-clean-install` testlerine eklendi; fikstüre parça ve model
       satırları eklendi (bugün ikisi de boş, AC-31).
-- [ ] Boş değerin gövdeye yazılmadığı üç yolda da ölçüldü (parça okuması, model okuması, içe
+- [x] Boş değerin gövdeye yazılmadığı üç yolda da ölçüldü (parça okuması, model okuması, içe
       aktarma; AC-4, AC-25, AC-30): spec öncesi gövdeyle birebir karşılaştırma fikstürü var.
-- [ ] Yeni veri bölümü yok; bu açıkça yazıldı. Yeni eylem izni ve yeni sunucu istisnası yok; bu
+- [x] Yeni veri bölümü yok; bu açıkça yazıldı. Yeni eylem izni ve yeni sunucu istisnası yok; bu
       açıkça yazıldı (C5, C7).
-- [ ] İki bilinen sınır spec'te yazılı ve testle ölçülü (C7 sunucu izni, C8 çakışma birleştirmesi).
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı yok (bu da yazıldı).
-- [ ] Para kuralına uyuldu: alan tanımı gereği TL ve KDV hariç, kuruş korunuyor, para birimi seçimi
+- [x] İki bilinen sınır spec'te yazılı ve testle ölçülü (C7 sunucu izni, C8 çakışma birleştirmesi).
+- [x] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı yok (bu da yazıldı).
+- [x] Para kuralına uyuldu: alan tanımı gereği TL ve KDV hariç, kuruş korunuyor, para birimi seçimi
       yok, saklama `REAL` (C6).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: `0087-piksel-raporu.json` ve taban raporu; dört
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: `0087-piksel-raporu.json` ve taban raporu; dört
       yeni ekran (`katalog-parca`, `katalog-parca-yeni`, `ayarlar-yedekparca-maliyetsiz`, `katalog-model-ekmaliyet`),
       `ayarlar-models` 0 piksel; `kanit-eslemesi.json`'daki iki kayıt `degisti` + `onay` (R18).
-- [ ] `src/types.d.ts` parça ve model tipleri güncellendi.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi (parçanın iki fiyatı: satış ve alış; maliyetin KDV hariç olduğu;
+- [x] `src/types.d.ts` parça ve model tipleri güncellendi.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi (parçanın iki fiyatı: satış ve alış; maliyetin KDV hariç olduğu;
       adetin tek kaynağı kit, parça işareti süzgeç; `TutarInput`'un yeni yeri).
-- [ ] `specs/README.md`'nin açık bulgular tablosu ve `tests/spec-atiflari.test.js`'in `TASINACAK`
+- [x] `specs/README.md`'nin açık bulgular tablosu ve `tests/spec-atiflari.test.js`'in `TASINACAK`
       listesi bu spec için güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -601,10 +601,13 @@ yedek parça satışı seçicilerini besliyor, "büküm işçiliği" oraya girer
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | 1 ilk taslak, 2 QA turu (25 bulgu), 3 uygulama planı onayı (P1–P11; kancayı paylaşan panel sayısı üçe düzeltildi) |
+| **Düzeltme turu sayısı** | 1 | Triyaj 2026-10-16 |
+| **Bulgu gerçek/gürültü oranı** | 4/0 | Yanlış "kitten düşecek" ipucu, içe aktarmada belirsiz noktalı maliyet, yalnız çöpteki modelde kit adı, iki belge tutarsızlığı |
+| **Regresyon sayısı** | 0 | Gider tarafının testleri `TutarInput` taşımasından sonra dokunulmadan yeşil |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** İki kaynaklı veride (işaret ve kit) ekranın gösterdiği uyarı, yazma kuralıyla aynı kümeden
+türemeli; ipucunu "kitte olan her model"den kurmak, kuralı "kayıttaki işaretten kaldırılan model" olan yazımla ayrıştı ve ancak
+spec öncesi bozulmuş veride (eski adda kalan işaret) görünür oldu. Ayrıca "X'i kullanan dosyalar" sayımı metin aramasıyla değil
+içe aktarma ve çağrıyla yapılmalı (`PartTypeManager` yorumunda kancanın adı geçiyordu).

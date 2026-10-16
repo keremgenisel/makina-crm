@@ -1,6 +1,7 @@
 # 0087 Uygulama Planı: Parça maliyeti ve ürün ağacı adetleri
 
-Spec: `specs/0087-parca-maliyeti-ve-urun-agaci.md` (revizyon 3). Dal `feat/0087-parca-maliyeti` (taban `4110a6a`, v3.46.0).
+Spec: `specs/done/0087-parca-maliyeti-ve-urun-agaci.md` (revizyon 3). Tamamlandı: commit `332f2a6`. Dal `feat/0087-parca-maliyeti`
+(taban `4110a6a`, v3.46.0).
 
 ## 1. Kodda bulunanlar (spec'e ek, revizyon 3'e işlendi)
 

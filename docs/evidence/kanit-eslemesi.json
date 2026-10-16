@@ -5166,16 +5166,14 @@
     ],
     "src/components/ModelsManager.jsx": [
       {
-        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "rapor": "docs/evidence/0087-taban-piksel-raporu.json",
         "ekran": "katalog-model",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "rapor": "docs/evidence/0087-taban-piksel-raporu.json",
         "ekran": "katalog-model-ekmaliyet",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0087-piksel-raporu.json",
@@ -5192,28 +5190,24 @@
     ],
     "src/components/PartManager.jsx": [
       {
-        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "rapor": "docs/evidence/0087-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "rapor": "docs/evidence/0087-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-maliyetsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "rapor": "docs/evidence/0087-taban-piksel-raporu.json",
         "ekran": "katalog-parca",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "rapor": "docs/evidence/0087-taban-piksel-raporu.json",
         "ekran": "katalog-parca-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartTypeManager.jsx": [
