@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, uygulama planı 2026-10-16) |
+| **Durum** | Tamamlandı (commit `b06c721`) |
 | **Sahip** | Analist (spec) · Geliştirici (uygulama) |
 | **Etkilenen alanlar** | Yeni üst sekme (Mali İşler grubu), yeni saf maliyet motoru, Üretim Partileri yönetiminin taşınması (Giderler dört görünüme iner), gider türü tanımları ve tür silme penceresi, `appSettings` maliyet ayarları, makina modeli tanımları, izin ekranı ve sunucunun **beş** bölümünün sekme eşlemesi, genel aramanın parti yönlendirmesi, üretim tarihi çözümü için `makinaMaliyeti.makinaListesi`'nin kullanılması (revizyon 3), görsel kanıt aracı |
 | **Onaylayan** | Takım Yöneticisi |
@@ -814,40 +814,40 @@ pencereye hedef türün rolünü yazdırıyor.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap React'sız **saf motorda** yazıldı ve kendi testi var; ekranda çarpım/bölme olmadığı
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap React'sız **saf motorda** yazıldı ve kendi testi var; ekranda çarpım/bölme olmadığı
       kaynak taramasıyla sabitlendi (R25).
-- [ ] Dönem havuzu bugünkü gider motorundan okunuyor; ikinci bir süzme/toplama yazılmadığı
+- [x] Dönem havuzu bugünkü gider motorundan okunuyor; ikinci bir süzme/toplama yazılmadığı
       taramayla sabitlendi (C2).
-- [ ] Dört nokta kuralı uygulandı (hesap ayarları, kâr katsayısı, Extra Kalıp fiyatı, planlanan
+- [x] Dört nokta kuralı uygulandı (hesap ayarları, kâr katsayısı, Extra Kalıp fiyatı, planlanan
       adetler) ve `db-roundtrip` + `db-clean-install`e eklendi; tür rolünün JSON'da taşındığı
       ölçüldü. Boş değerin gövdeye yazılmadığı ölçüldü (parti okuması alanları yaydığı için
       ayıklama gerekti, C8/2) ve `src/types.d.ts` güncellendi.
-- [ ] Yeni veri bölümü **yok**; bu açıkça yazıldı. Yeni eylem izni **yok**, yalnız yeni sekme izni;
+- [x] Yeni veri bölümü **yok**; bu açıkça yazıldı. Yeni eylem izni **yok**, yalnız yeni sekme izni;
       **beş** bölümün sunucu sekme eşlemesi, yeni sekmenin önkoşulu ve izin ekranı birlikte
       güncellendi (C6, C9) ve kabul edilen `appSettings` sınırı `server-authz` ile sabitlendi.
-- [ ] Hesap kuruş tamsayısıyla yapıldı; yuvarlama ve artık kuruş kuralı testle sabitlendi (R25/2).
-- [ ] Üretim tarihi çözümü dışa verili `makinaListesi`'nden okunuyor (revizyon 3) ve ikinci bir zincir yazılmadığı taramayla
+- [x] Hesap kuruş tamsayısıyla yapıldı; yuvarlama ve artık kuruş kuralı testle sabitlendi (R25/2).
+- [x] Üretim tarihi çözümü dışa verili `makinaListesi`'nden okunuyor (revizyon 3) ve ikinci bir zincir yazılmadığı taramayla
       sabitlendi (R9/3, AC-49).
-- [ ] Taşımanın bedeli ödendi: Giderler dört görünüme indi, C14'teki ters çevrilen kriterlerin
+- [x] Taşımanın bedeli ödendi: Giderler dört görünüme indi, C14'teki ters çevrilen kriterlerin
       hepsi yorumda "spec 0088 ile" notuyla güncellendi, genel aramanın yönlendirmesi ve görüntü
       aracının ekran adımı taşındı, parti ekranına `makinaMaliyet` verildi ve parti kapanışının
       anlık görüntüsünün dolu yazıldığı ölçüldü (AC-37).
-- [ ] Çift sayım yasağının testi var (AC-11) ve eski maliyet modelinin değişmediği kıyas
+- [x] Çift sayım yasağının testi var (AC-11) ve eski maliyet modelinin değişmediği kıyas
       fikstürüyle ölçüldü (AC-42).
-- [ ] Gizlilik taraması yeni dosyaları kapsıyor (AC-40); personel ayrıntısı hiçbir yerde yok.
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı yok (bu da yazıldı).
-- [ ] Para kuralına uyuldu: hesap TL, kuru olmayan döviz satışı tanımlı biçimde dışarıda
+- [x] Gizlilik taraması yeni dosyaları kapsıyor (AC-40); personel ayrıntısı hiçbir yerde yok.
+- [x] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı yok (bu da yazıldı).
+- [x] Para kuralına uyuldu: hesap TL, kuru olmayan döviz satışı tanımlı biçimde dışarıda
       bırakılıyor ve sayısı yazıyor (AC-30).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: dört görünüm, boş durumlar (tür rolü yok, ürün
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: dört görünüm, boş durumlar (tür rolü yok, ürün
       ağacı yok, parti boş), eksik maliyet işareti, hata durumları.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi (yeni sekme, yeni hesap modeli, iki maliyet modelinin yan yana
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi (yeni sekme, yeni hesap modeli, iki maliyet modelinin yan yana
       yaşadığı ve hangisinin neyi cevapladığı, Giderler'in dört görünümü, `maliyetRolu` ile
       `davranis` ayrımı, kuruş kuralı).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -855,10 +855,14 @@ pencereye hedef türün rolünü yazdırıyor.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | 1 ilk taslak, 2 QA turu (27 bulgu), 3 uygulama planı onayı (P1–P11; iki sunucu ölçümü düzeltildi: önkoşul bölüm düzeyindeydi, `appSettings` alan düzeyinde denetleniyordu) |
+| **Düzeltme turu sayısı** | 1 | Triyaj 2026-10-17 |
+| **Bulgu gerçek/gürültü oranı** | 5/0 | Modeli bulunamayan satılmış makina kârı şişiriyordu, çöpteki genel tür çelişkisi, silinemeyen bulunamayan plan, gelecekteki partide ters dönem, spec metni |
+| **Regresyon sayısı** | 0 | Bugünkü maliyet modeli ve Dönem Raporu taban koddan üretilmiş kıyas fikstürüyle birebir aynı |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Yeni bir hesap eski bir veriyle eşleşirken (model adı, tür kimliği) eşleşmeyen kaydın nereye düştüğü
+yazılı olmalı: "bulunamazsa 0 ekle" varsayılanı satışın tamamını kâr gösterdi. Eşleşme kuralı eski motordan alınmalı (`modelKey`,
+`trLower`) ve bulunamayan kayıt hiçbir toplama girmeden ayrı sayılmalı. Ayrıca durum bilgisi (ör. "pay yok") hesapla aynı kümeden
+türemeli; canlı sayım ile ham havuz ayrışınca ekran kendi kendisiyle çelişti. Spec yazımında sunucu davranışı kod okunarak
+ölçülmeli: iki "ölçüm" (önkoşul tablosu, `appSettings` sınırı) uygulama planında yanlış çıktı.

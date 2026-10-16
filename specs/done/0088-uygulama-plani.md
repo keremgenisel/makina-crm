@@ -1,6 +1,7 @@
 # 0088 Uygulama Planı: Makina Maliyet Hesabı
 
-Spec: `specs/0088-makina-maliyet-hesabi.md` (revizyon 3). Dal `feat/0088-makina-maliyeti` (0087 kapanışı `6e9355f` üstünde).
+Spec: `specs/done/0088-makina-maliyet-hesabi.md` (revizyon 3). Tamamlandı: commit `b06c721`. Dal `feat/0088-makina-maliyeti`
+(0087 kapanışı `6e9355f` üstünde).
 
 ## 1. Kodda bulunanlar (spec'e ek, revizyon 3'e işlendi)
 
@@ -93,3 +94,5 @@ Spec'in "Uygulama planı kararları" tablosu (P1–P11).
   çöpteki tür rol tablosunda "(çöpte)" satırıyla görünür ve rolü değişir. (3) Planlanan adetler penceresi modeli bulunamayan adları
   "Kaldır" düğmesiyle listeler. (4) Başlangıcı gelecekte olan partide tedarik karşılaştırması yerine "Parti henüz başlamadı" ibaresi.
   (5) Spec'in revizyon 3 ile çelişen dört yeri (B-3, AC-6/2, X12, Etkilenen alanlar ve DoD'un çözücü maddesi) düzeltildi.
+- **S13. Kapanış:** yeni `maliyet-*` ekranları taban kodda yoktu; taban raporuna bugünkü kodla onaylı görüntülerine karşı çekilerek
+  eklendi (30 görüntü, 0 fark; rapor 158 görüntü).
