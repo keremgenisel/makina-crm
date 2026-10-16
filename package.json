@@ -55,7 +55,7 @@
     "concurrently": "^10.0.6",
     "cross-env": "^10.1.0",
     "d3-geo": "^3.1.1",
-    "electron": "^44.7.0",
+    "electron": "^44.7.1",
     "electron-builder": "^26.15.3",
     "eslint": "^10.12.0",
     "eslint-plugin-react-hooks": "^7.1.1",
@@ -66,7 +66,7 @@
     "topojson-simplify": "^2.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
-    "vitest": "^5.0.3",
+    "vitest": "^5.0.4",
     "wait-on": "^9.5.1",
     "world-atlas": "^2.0.2"
   },
