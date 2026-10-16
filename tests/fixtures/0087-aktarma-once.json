@@ -1,0 +1,114 @@
+{
+  "disa": [
+    [
+      "Rulman",
+      "Bearing",
+      "R-6204",
+      "Standart",
+      "",
+      "",
+      450,
+      "",
+      ""
+    ],
+    [
+      "Kayış",
+      "",
+      "",
+      "Standart",
+      "",
+      "",
+      90,
+      "",
+      ""
+    ],
+    [
+      "Silinen",
+      "",
+      "",
+      "Standart",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  ],
+  "coz": {
+    "parts": [
+      {
+        "id": 7,
+        "ad": "Rulman",
+        "adEN": "Bearing",
+        "kod": "R-6205",
+        "tip": "Standart",
+        "tanim": "",
+        "tanimEN": "",
+        "fiyatTRY": 450,
+        "fiyatUSD": "",
+        "fiyatEUR": "",
+        "_mevcut": true
+      },
+      {
+        "id": 1001,
+        "ad": "Yeni Pul",
+        "adEN": "Washer",
+        "kod": "P-1",
+        "tip": "Standart",
+        "tanim": "",
+        "tanimEN": "",
+        "fiyatTRY": "15",
+        "fiyatUSD": "",
+        "fiyatEUR": "",
+        "_mevcut": false
+      }
+    ],
+    "errors": [
+      "Satır 4: Parça adı boş, atlandı."
+    ],
+    "yeniler": 1,
+    "guncellenenler": 1
+  },
+  "uygulanan": [
+    {
+      "id": 1001,
+      "ad": "Yeni Pul",
+      "adEN": "Washer",
+      "kod": "P-1",
+      "tip": "Standart",
+      "tanim": "",
+      "tanimEN": "",
+      "fiyatTRY": "15",
+      "fiyatUSD": "",
+      "fiyatEUR": ""
+    },
+    {
+      "id": 7,
+      "ad": "Rulman",
+      "adEN": "Bearing",
+      "kod": "R-6205",
+      "tip": "Standart",
+      "tanim": "",
+      "tanimEN": "",
+      "fiyatTRY": 450,
+      "fiyatUSD": "",
+      "fiyatEUR": "",
+      "models": [
+        "AK100_DS"
+      ],
+      "resim": "r.jpg",
+      "maliyet": 120.5
+    },
+    {
+      "id": 8,
+      "ad": "Kayış",
+      "models": [],
+      "fiyatTRY": 90
+    },
+    {
+      "id": 9,
+      "ad": "Silinen",
+      "deletedAt": "2026-10-01T10:00:00.000Z"
+    }
+  ]
+}

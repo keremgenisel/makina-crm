@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
 import { CUR_SYM, tipRenk } from "../lib/constants";
-import { Icon, Field, Input, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
-import { HataMetni } from "./tasarim";
+import { Icon, Field, Input, MoneyInput, TutarInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload } from "./ui";
+import { HataMetni, Ipucu, UyariSeridi } from "./tasarim";
+import { tutarMetni } from "../lib/tutarGirdisi";
+import { kilitRedMesaji } from "../lib/kilitAlanlari";
+import { MALIYET_ETIKETI, MALIYET_IPUCU, KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, maliyetMetni, maliyetGirildiMi, parcaMaliyetDogrula,
+  kitAdediDogrula, parcaKitAdetleri, parcaKitPlani, kitleriGuncelle, isaretsizKitteMetni } from "../lib/urunAgaci";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -55,6 +59,48 @@ const ModelBadges = ({ models = [] }) => {
   );
 };
 
+// Spec 0087 R1, R3, R14: TL alış maliyeti (KDV hariç), kuruşlu `TutarInput`; hata kayıt öncesinde alanın altında.
+const MaliyetAlani = ({ value, onChange, hata }) => (
+  <Field label={MALIYET_ETIKETI}>
+    <TutarInput value={value ?? ""} onChange={onChange} placeholder="Girilmedi" invalid={!!hata} ariaLabel="Alış maliyeti" />
+    <HataMetni>{hata || ""}</HataMetni>
+    <Ipucu>{MALIYET_IPUCU}</Ipucu>
+  </Field>
+);
+
+// Spec 0087 R5, R7 (plan P7, P8): işaretli canlı modeller için "Model · Adet" satırları. Adet makina kitine yazılır, boşsa
+// yalnız işaret kalır. Bu düzenlemede işareti kaldırılan ve kitinde bu parça olan model için ipucu (onay penceresi yok).
+// Triyaj (bulgu 1): ipucu yalnız GERÇEKTEN düşecek modellere çıkar, yani kayıttaki işaretten (`eskiModeller`) bu düzenlemede
+// kaldırılan ve kitinde bu parça olan modellere (urunAgaci.kitleriGuncelle'nin kuralı). İşareti hiç olmayan ama kitinde bu parça
+// olan model (0087 öncesi yeniden adlandırılmış modellerde olur) ayrı bilgi satırıdır; kayıt o kite dokunmaz.
+const ModelAdetleri = ({ selected = [], allModels = [], adetler, setAdetler, hatalar = {}, kittekiler = {}, eskiModeller = [] }) => {
+  const isaretli = allModels.map(m => (typeof m === "string" ? m : m.model)).filter(ad => selected.includes(ad));
+  const canli = (ad) => allModels.some(m => (typeof m === "string" ? m : m.model) === ad);
+  const dusecek = Object.keys(kittekiler).filter(ad => !selected.includes(ad) && eskiModeller.includes(ad) && canli(ad));
+  const isaretsizKitte = Object.keys(kittekiler).filter(ad => !selected.includes(ad) && !eskiModeller.includes(ad) && canli(ad));
+  if (!isaretli.length && !dusecek.length && !isaretsizKitte.length) return null;
+  return (
+    <div data-testid="model-adetleri" style={{ marginTop: 8, display: "grid", gap: 6 }}>
+      {isaretli.map(ad => {
+        const deger = adetler[ad] ?? "";
+        return (
+          <div key={ad} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 1fr) 96px minmax(120px, 2fr)", gap: 8, alignItems: "center" }}>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>{ad}</span>
+            <Input value={deger} inputMode="numeric" aria-label={`${ad} adedi`} placeholder="Adet"
+              onChange={e => setAdetler(p => ({ ...p, [ad]: e.target.value }))} />
+            <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>
+              {hatalar[ad] ? <HataMetni>{hatalar[ad]}</HataMetni> : (String(deger).trim() === "" ? "kitte yok" : "makina kitinde")}
+            </div>
+          </div>
+        );
+      })}
+      {dusecek.map(ad => <Ipucu key={ad}>{`${ad}: ${KITTEN_DUSECEK_IPUCU}`}</Ipucu>)}
+      {isaretsizKitte.map(ad => <Ipucu key={ad}>{isaretsizKitteMetni(ad, kittekiler[ad])}</Ipucu>)}
+      <Ipucu>{KIT_ADET_IPUCU}</Ipucu>
+    </div>
+  );
+};
+
 // Parça tipi seçici — tipler kullanıcı-tanımlı partTypeDefs listesinden gelir.
 const TipSelector = ({ value, onChange, partTypeDefs = [] }) => (
   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -74,8 +120,18 @@ const TipSelector = ({ value, onChange, partTypeDefs = [] }) => (
   </div>
 );
 
-export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, allModels = [], partTypeDefs = [] }) => {
-  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "" };
+// Spec 0087 R15/1: panel iki model dizisini (canlı) ve yazıcılarını alır; kit yazımı yalnız urunAgaci'nden geçer (AC-19).
+// `baskasiKilitli` Settings'in canlı kilit listesidir (R16).
+export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, standardModels = [], customModels = [],
+  setStandardModels = null, setCustomModels = null, partTypeDefs = [], baskasiKilitli = null, rawCustomModels = null }) => {
+  const allModels = [...standardModels, ...customModels];
+  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "", maliyet: "" };
+  // Spec 0087 R4, C4 (plan P4): maliyetin ham metni kayıtta sayıya çevrilir; boşsa alan gövdeye hiç yazılmaz.
+  const hazirla = (kayit) => {
+    const { maliyet, ...geri } = kayit;
+    const d = parcaMaliyetDogrula(maliyet);
+    return d.bos || d.hata ? geri : { ...geri, maliyet: d.deger };
+  };
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
       items: parts,
@@ -86,6 +142,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       addMsg: "Yedek parça tanımı kaydedildi.",
       editMsg: "Yedek parça düzenlendi.",
       deleteMsg: "Yedek parça tanımı silindi.",
+      hazirla,
       onRename: (oldAd, newAd) => setServices?.(p => p.map(s =>
         Array.isArray(s.degisenParcalar) && s.degisenParcalar.some(x => parcaAdi(x) === oldAd)
           ? { ...s, degisenParcalar: s.degisenParcalar.map(x => parcaAdi(x) === oldAd ? (typeof x === "string" ? newAd : { ...x, ad: newAd }) : x) }
@@ -103,14 +160,61 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     return bits.length ? bits.join(" · ") : "—";
   };
 
-  const openAdd = () => { setForm(emptyForm); setAddOpen(true); };
-  const submitAdd = () => { if (add()) setAddOpen(false); };
+  // Formun kit adetleri kancanın formunda TUTULMAZ (gövdeye sızmasın, plan P4): model adı → ham metin.
+  const [adetler, setAdetler] = useState({});
+  const [kittekiler, setKittekiler] = useState({});
+  const [hatalar, setHatalar] = useState({ maliyet: null, adet: {} });
+  // R10, AC-8, AC-9: kümesi bütün canlı parçalar (arama ve sayfadan bağımsız; `parts` App'ten çöpü süzülmüş gelir).
+  const maliyetsizSayi = parts.filter(p => !maliyetGirildiMi(p)).length;
+
+  const openAdd = () => { setForm(emptyForm); setAdetler({}); setKittekiler({}); setHatalar({ maliyet: null, adet: {} }); setAddOpen(true); };
+  const openEdit = (k) => {
+    const kit = parcaKitAdetleri(k.id, [standardModels, customModels]);
+    setKittekiler(kit);
+    setAdetler(Object.fromEntries(Object.entries(kit).map(([m, n]) => [m, String(n)])));
+    setHatalar({ maliyet: null, adet: {} });
+    startEdit({ ...k, maliyet: tutarMetni(k.maliyet) });
+  };
+
+  // R7, R14–R16, plan P5: doğrula → karşı bölüme yazılacaksa kilide anlık bak (reddedilirse kayıt bütünüyle yazılmaz) →
+  // parçayı kancayla yaz → kancanın döndürdüğü kimlikle kiti iki model dizisine aynı `kit` nesnesiyle yaz.
+  const kaydet = (kip) => {
+    const f = kip === "ekle" ? form : editForm;
+    const m = parcaMaliyetDogrula(f.maliyet);
+    const isaretli = allModels.map(x => x.model).filter(ad => (f.models || []).includes(ad));
+    const adetHata = {}; const adetMap = {};
+    for (const ad of isaretli) { const d = kitAdediDogrula(adetler[ad]); if (d.hata) adetHata[ad] = d.hata; else adetMap[ad] = d.deger; }
+    setHatalar({ maliyet: m.hata, adet: adetHata });
+    if (m.hata || Object.keys(adetHata).length) return;
+    const eski = kip === "ekle" ? null : parts.find(x => x.id === editId);
+    const kitGirdisi = { partId: kip === "ekle" ? "__yeni__" : editId, ad: (f.ad || "").trim(), models: f.models || [], eskiModeller: eski?.models || [], adetler: adetMap };
+    // Triyaj (bulgu 3): yazma kararı TAM özel model dizisiyle verilir; kit satırı yalnız çöpteki bir modelde duruyorsa ad
+    // taşıması da yazılsın (geri alınan model eski adı basmasın). Canlı dizi yalnız ekranda çizilenleri taşır.
+    const plan = parcaKitPlani(kitGirdisi, standardModels, rawCustomModels || customModels);
+    const kilit = plan.karsiBolumeYazar ? baskasiKilitli?.("ayar", "models") : null;
+    if (kilit) { showToast(kilitRedMesaji(kilit), "err"); return; }
+    const id = kip === "ekle" ? add() : saveEdit();
+    if (!id) return;
+    if (kip === "ekle") setAddOpen(false);
+    if (!plan.karsiBolumeYazar) return;
+    const kit = { ...plan.kit, partId: id };
+    setStandardModels?.(p => kitleriGuncelle(p, kit));
+    setCustomModels?.(p => kitleriGuncelle(p, kit));
+  };
+  const submitAdd = () => kaydet("ekle");
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Parça/Yedek Parça Ekle</Btn>
       </div>
+      {maliyetsizSayi > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <UyariSeridi aile="uyari" testId="maliyetsiz-parca">
+            <b>{maliyetsizSayi}</b> parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçaları eksik sayar.
+          </UyariSeridi>
+        </div>
+      )}
       <div style={{ position: "relative", marginBottom: 12 }}>
         <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)" }}><Icon name="search" size={15} /></span>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Yedek parça ara..."
@@ -133,6 +237,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Ad / Tanım</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Modeller</th>
                 <th style={{ padding: "8px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Fiyat</th>
+                <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}>Maliyet</th>
                 <th style={{ padding: "8px 14px", textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)" }}></th>
               </tr>
             </thead>
@@ -165,9 +270,12 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontSize: 13, color: "var(--n600, #475569)" }}>{priceSummary(k)}</span>
                   </td>
+                  <td data-testid="parca-maliyet" style={{ padding: "10px 14px", textAlign: "right", fontSize: 13, whiteSpace: "nowrap", color: maliyetGirildiMi(k) ? "var(--n700, #334155)" : "var(--n300, #cbd5e1)" }}>
+                    {maliyetMetni(k.maliyet)}
+                  </td>
                   <td style={{ padding: "10px 14px" }}>
                     <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                      <Btn small variant="ghost" onClick={() => startEdit(k)}><Icon name="edit" size={12} /></Btn>
+                      <Btn small variant="ghost" title="Düzenle" onClick={() => openEdit(k)}><Icon name="edit" size={12} /></Btn>
                       <Btn small variant="danger" onClick={() => requestDelete(k)}><Icon name="trash" size={12} /></Btn>
                     </div>
                   </td>
@@ -220,6 +328,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={form} onChange={setForm} />
           </Field>
+          <MaliyetAlani value={form.maliyet} onChange={v => setForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={form.tip || "Standart"} onChange={v => setForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />
@@ -228,9 +337,10 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
           </Field>
           </div>
-          <Field label="Kullanıldığı Modeller">
+          <Field label="Kullanıldığı Modeller ve Kit Adetleri">
             <ModelChips selected={form.models || []} allModels={allModels}
               onChange={models => setForm(p => ({ ...p, models }))} />
+            <ModelAdetleri selected={form.models || []} allModels={allModels} adetler={adetler} setAdetler={setAdetler} hatalar={hatalar.adet} />
           </Field>
         </Modal>
       )}
@@ -239,7 +349,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
         <Modal wide title="Yedek Parçayı Düzenle" onClose={cancelEdit}
           footer={<div style={{ display: "flex", gap: 8 }}>
             <Btn variant="ghost" onClick={cancelEdit}>İptal</Btn>
-            <Btn onClick={saveEdit}><Icon name="check" size={14} /> Kaydet</Btn>
+            <Btn onClick={() => kaydet("duzenle")}><Icon name="check" size={14} /> Kaydet</Btn>
           </div>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           <Field label="Yedek Parça Adı (TR)">
@@ -268,6 +378,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={editForm} onChange={setEditForm} />
           </Field>
+          <MaliyetAlani value={editForm.maliyet} onChange={v => setEditForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={editForm.tip || "Standart"} onChange={v => setEditForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />
@@ -276,9 +387,11 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />
           </Field>
           </div>
-          <Field label="Kullanıldığı Modeller">
+          <Field label="Kullanıldığı Modeller ve Kit Adetleri">
             <ModelChips selected={editForm.models || []} allModels={allModels}
               onChange={models => setEditForm(p => ({ ...p, models }))} />
+            <ModelAdetleri selected={editForm.models || []} allModels={allModels} adetler={adetler} setAdetler={setAdetler} hatalar={hatalar.adet} kittekiler={kittekiler}
+              eskiModeller={parts.find(x => x.id === editId)?.models || []} />
           </Field>
         </Modal>
       )}

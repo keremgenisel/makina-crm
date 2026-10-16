@@ -102,6 +102,7 @@ describe("Spec 0045: tutar girdisi (saf)", () => {
     const gez = (d) => { for (const a of readdirSync(d)) { const y = path.join(d, a); if (statSync(y).isDirectory()) gez(y); else if (/\.jsx?$/.test(a)) dosyalar.push(y); } };
     gez("src");
     const kullanan = dosyalar.filter(f => /tutarGirdisiIsle|hamaCevir/.test(readFileSync(f, "utf8")));
-    expect(kullanan.map(f => f.split(path.sep).join("/")).sort()).toEqual(["src/components/gider/GiderAlanlari.jsx", "src/lib/tutarGirdisi.js"]);
+    // Spec 0087 R3: TutarInput gider/GiderAlanlari.jsx'ten ui.jsx'e taşındı.
+    expect(kullanan.map(f => f.split(path.sep).join("/")).sort()).toEqual(["src/components/ui.jsx", "src/lib/tutarGirdisi.js"]);
   });
 });

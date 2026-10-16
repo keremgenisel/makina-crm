@@ -146,6 +146,18 @@ const TURLER = [
 const TED = [{ id: 11, ad: "Yıldız Gayrimenkul" }, { id: 12, ad: "Bölge Elektrik" }];
 const CAL = [{ id: 21, ad: "Hasan Çelik", resmiMaliyet: 30000, eldenMaliyet: 20000 }, { id: 22, ad: "Zeynep Arslan" }];
 const MODELLER = [{ model: "AK120_DSC" }, { model: "AK100" }];
+// Spec 0087: maliyetli ve maliyetsiz parçalar, adetli kit ve ek maliyet kalemli model.
+const PARCA_0087 = [
+  { id: 7, ad: "Rulman 6204", kod: "R-6204", tip: "Standart", fiyatTRY: 450, models: ["AK120_DSC", "AK100"], maliyet: 120.5 },
+  { id: 8, ad: "Konveyör bant", kod: "KB-1", tip: "Standart", fiyatTRY: 900, models: ["AK120_DSC"] },
+  { id: 9, ad: "Perçin", kod: "P-4", tip: "Standart", models: [], maliyet: 0 },
+  { id: 10, ad: "Pleksi kapak", kod: "PK-2", tip: "Standart", fiyatTRY: 300, models: [] },
+];
+const MODELLER_0087 = [
+  { model: "AK120_DSC", defaultParcalar: [{ partId: "7", ad: "Rulman 6204", miktar: 4 }],
+    ekMaliyetler: [{ ad: "Büküm işçiliği", tutar: 90 }, { ad: "Helis dişli açımı", tutar: 145.6 }] },
+  { model: "AK100", defaultParcalar: [{ partId: "7", ad: "Rulman 6204", miktar: 2 }] },
+];
 const MUSTERILER = [
   { id: 500, name: "Kutu Gıda", model: "AK120_DSC", serialNo: "S-1", currency: "TRY", faturali: "Faturalı Yurtiçi", faturaBedeli: 250000, fabrikaSatisBedeli: 240000, installDate: "2026-08-10", uretimTarihi: "2026-07-15", kalanBorc: 0 },
   { id: 501, name: "Ege Köfte", model: "AK100", serialNo: "S-2", currency: "TRY", faturali: "Faturalı Yurtiçi", faturaBedeli: 180000, installDate: "2026-09-05", uretimTarihi: "2026-08-20", kalanBorc: 20000 },
@@ -642,6 +654,11 @@ const EKRANLAR = {
   "not-formu": [<Notes notes={NOTLAR} setNotes={bos} aktifKullanici="kerem" />, ["~Yeni Not"]],
   "eposta-formu": [<EpostaEkrani />, []],
   "katalog-model": [ayarlar("models"), ["~Yeni Model Ekle"]],
+  // Spec 0087 R18: parça formu (maliyetli düzenleme ve maliyetsiz yeni kayıt), maliyeti girilmemiş ibaresi, adetli kit ve ek kalem.
+  "katalog-parca": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Kullanıldığı Modeller ve Kit Adetleri"]],
+  "katalog-parca-yeni": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["~Parça/Yedek Parça Ekle"]],
+  "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],
+  "katalog-model-ekmaliyet": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Ek Maliyet Kalemleri"]],
   "katalog-calisan": [ayarlar("calisanlar"), []],
   "musteri-detay": [musteriDetay(), ["~Yeni Sahip"]],
   // Spec 0011: serbest içerikli şerit örneği (yalnız "sonra"; önceki bileşen children almıyordu). Üç aile.

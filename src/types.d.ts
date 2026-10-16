@@ -192,9 +192,44 @@ export interface Part {
   fiyatTRY?: number;
   fiyatUSD?: number;
   fiyatEUR?: number;
-  models?: unknown;
+  /** Spec 0087: parçanın kullanıldığı model adları (uyumluluk işareti; adet değil). */
+  models?: string[];
   tip?: string;
   resim?: string;
+  deletedAt?: ISODate | null;
+  /** Spec 0087 R1: alış maliyeti, TL, KDV hariç (matrah); girilmemişse alan yok. fiyatTRY/USD/EUR satış fiyatıdır. */
+  maliyet?: number;
+}
+
+/** Spec 0087: makina kiti satırı (stok düşümünün kaynağı, adetin tek kaynağı). */
+export interface KitSatiri {
+  partId: string;
+  ad?: string;
+  miktar: number;
+}
+
+/** Spec 0087 R9: modelin parça olmayan maliyet kalemi; her makina için TL, KDV hariç. */
+export interface EkMaliyet {
+  ad: string;
+  tutar: number;
+}
+
+/** Standart ve özel makina modeli (standardModels / customModels; kimlik model adıdır). */
+export interface MakinaModeli {
+  model: string;
+  urunAdi?: string;
+  urunAdiEN?: string;
+  sogutma?: string;
+  kapasite?: string;
+  kalip?: string;
+  tanim?: string;
+  tanimEN?: string;
+  resim?: string | null;
+  defaultParcalar?: KitSatiri[];
+  /** Ölü alan (0087 X5): yazılır ve okunur, hiçbir ekran kullanmaz. */
+  defaultBantlar?: unknown[];
+  /** Spec 0087 R9: boş liste gövdeye yazılmaz. */
+  ekMaliyetler?: EkMaliyet[];
   deletedAt?: ISODate | null;
 }
 

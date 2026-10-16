@@ -3,10 +3,10 @@ import { uid, today } from "../lib/utils";
 import { tutarCoz, tanimKapat, acikTanimMi, ayOf, tl } from "../lib/gider";
 import { avansBorcuK } from "../lib/kasa";
 import { logAction } from "../lib/audit";
-import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "./ui";
+import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict, TutarInput } from "./ui";
 import { useLock } from "../hooks/useLock";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
-import { TutarInput, tl2, tutarMetni } from "./gider/GiderAlanlari";
+import { tl2, tutarMetni } from "./gider/GiderAlanlari";
 import { HataMetni, Ipucu } from "./tasarim";
 
 // Firma çalışanları (ad soyad). Servis Panosu kartlarındaki ve servis formundaki "teknisyen"

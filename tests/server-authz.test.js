@@ -1441,3 +1441,43 @@ describe("Spec 0078: kasa ve gider kayıtları çöp kutusunda", () => {
     expect(hesapTasimaYazimiMi({ ...e, kasaHesaplari: [H(51, { deletedAt: Z }), H(52)] }, y)).toBe(false);
   });
 });
+
+// Spec 0087 (C5, C7): parça maliyeti ve ürün ağacı adetleri yeni izin ya da sunucu istisnası açmaz. Yazım bugünkü katalog
+// kurallarıyla geçer ya da reddedilir; C7'nin bilinen sınırı (stockActions: [] ile model adı taşıma 403) burada ölçülür.
+describe("Spec 0087: katalog yazımları bugünkü izinle", () => {
+  const P = { id: 7, ad: "Rulman", models: ["AK100_DS"], fiyatTRY: 450 };
+  const M = { model: "AK100_DS", defaultParcalar: [] };
+  const db = { parts: [P], standardModels: [M], customModels: [] };
+  const sonuc = (perms, yeni) => {
+    const degisen = degisenBolumler(db, yeni);
+    const y = yazmaYetkisiVar(perms, "user", degisen, db, yeni);
+    return y.ok ? eylemDenetimi(db, yeni, perms, "user").ok : false;
+  };
+  const AYARCI = JSON.stringify({ tabs: ["settings"] });
+  const STOKSUZ = JSON.stringify({ tabs: ["settings"], stockActions: [] });
+  const AYARSIZ = JSON.stringify({ tabs: ["customers"] });
+
+  it("AC-35: yalnız maliyeti değiştiren yazım bugünkü parça düzenlemesiyle (satış fiyatı) birebir aynı izni ister", () => {
+    const maliyetli = { ...db, parts: [{ ...P, maliyet: 7.5 }] };
+    const fiyatli = { ...db, parts: [{ ...P, fiyatTRY: 500 }] };
+    expect(degisenBolumler(db, maliyetli)).toEqual(["parts"]);
+    for (const perms of [AYARCI, STOKSUZ, AYARSIZ]) expect(sonuc(perms, maliyetli), perms).toBe(sonuc(perms, fiyatli));
+    expect(sonuc(AYARCI, maliyetli)).toBe(true);
+    expect(sonuc(STOKSUZ, maliyetli)).toBe(false);
+    expect(sonuc(AYARSIZ, maliyetli)).toBe(false);
+  });
+
+  it("AC-36: parça kartından adet yazımı parts ve standardModels'i birlikte değiştirir; katalog kullanıcısı yazabilir", () => {
+    const yeni = { ...db, standardModels: [{ ...M, defaultParcalar: [{ partId: "7", ad: "Rulman", miktar: 4 }] }], parts: [{ ...P, models: ["AK100_DS", "AK120_DS"] }] };
+    expect(degisenBolumler(db, yeni).sort()).toEqual(["parts", "standardModels"]);
+    expect(sonuc(AYARCI, yeni)).toBe(true);
+    expect(sonuc(AYARSIZ, yeni)).toBe(false);
+  });
+
+  it("AC-36, C7 (bilinen sınır, ölçüldü): stockActions'ı boş kullanıcı işaretli parçası olan modelin adını değiştiremez (403)", () => {
+    const yeni = { ...db, standardModels: [{ ...M, model: "AK100_DSX" }], parts: [{ ...P, models: ["AK100_DSX"] }] };
+    expect(sonuc(STOKSUZ, yeni)).toBe(false);
+    // Parçaya dokunmayan ad değişikliği bu kullanıcıda bugün olduğu gibi geçer.
+    expect(sonuc(STOKSUZ, { ...db, standardModels: [{ ...M, kapasite: "120" }] })).toBe(true);
+  });
+});

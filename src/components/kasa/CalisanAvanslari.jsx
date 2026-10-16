@@ -4,12 +4,12 @@ import { tl } from "../../lib/gider";
 import { avansDogrula, avansBorclari, avansSilinebilirMi, avansDuzenlenebilirMi, avansEnAzMetni, calisanEkstresi, secilebilirHesaplar, HESAP_TUR_AD, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
 import { odemeGirisiYaz } from "../../lib/formOdemesi";
 import { logAction, hareketDuzenlemeKaydi } from "../../lib/audit";
-import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict } from "../ui";
+import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict, TutarInput } from "../ui";
 import { useLock } from "../../hooks/useLock";
 import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { KartBolum, BosDurum, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
-import { TutarInput, tl2, ODEME_SECENEKLERI } from "../gider/GiderAlanlari";
+import { tl2, ODEME_SECENEKLERI } from "../gider/GiderAlanlari";
 import { Rozet } from "../gider/DonemRaporu";
 import { EkstrePenceresi } from "../gider/EkstrePenceresi";
 

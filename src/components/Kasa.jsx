@@ -9,13 +9,13 @@ import { hesabiSilinmisMi, HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogr
 import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
 import { SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { useBugun } from "../hooks/useBugun";
-import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui";
+import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict, Pagination, TutarInput } from "./ui";
 import { usePagination } from "../hooks/usePagination";
 import { useLock } from "../hooks/useLock";
 import { useKilitListesi } from "../hooks/useKilitListesi";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
-import { TutarInput, tutarMetni, hedefEtiketi, cokHedefliMi, taksitAdi } from "./gider/GiderAlanlari";
+import { hedefEtiketi, cokHedefliMi, taksitAdi, tutarMetni } from "./gider/GiderAlanlari";
 import { CalisanAvanslari, AvansFormu } from "./kasa/CalisanAvanslari";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";

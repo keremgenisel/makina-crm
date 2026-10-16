@@ -35,6 +35,7 @@ import { SettingsSecurityStatus } from "./settings/SettingsSecurityStatus";
 import { GiderTurManager } from "./settings/GiderTurManager";
 import { SettingsGiderTanimlari } from "./settings/SettingsGiderTanimlari";
 import { useLock } from "../hooks/useLock";
+import { useKilitListesi } from "../hooks/useKilitListesi";
 import { AYAR_KILITLI, AYAR_SALT_OKUNUR } from "../lib/kilitAlanlari";
 import { SettingsGider } from "./settings/SettingsGider";
 
@@ -92,6 +93,9 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
   // kilitlenir, sekme değişince bırakılır; salt okunur paneller kilit almaz. Katalog panelinde de kilit panel düzeyindedir
   // (ekleme kaybı ve düzenleme yarışı birlikte kapanır). "Geri Dön" ilk görünen salt okunur panele geçer.
   const { lockConflict: ayarKilidi, forceAcquire: ayarKilidiDevral } = useLock("ayar", AYAR_KILITLI[settingsTab] ? settingsTab : null);
+  // Spec 0087 R16: Makina Modelleri ile Parça/Yedek Parça panelleri birbirinin bölümünü yazdığı için kayıt anında karşı
+  // panelin kilidine anlık bakarlar (tek canlı liste, kendi kilidi engellemez).
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
   const ayarKilitli = !!(ayarKilidi && AYAR_KILITLI[settingsTab]);
   const ayarKilidiGeriDon = () => {
     const gorunen = visibleGroups.flatMap(g => g.items.map(it => it.id));
@@ -243,8 +247,8 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
           </div>
           <ModelsManager showToast={showToast} standardModels={standardModels} setStandardModels={setStandardModels}
-            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts}
-            appSettings={appSettings} setAppSettings={setAppSettings}
+            customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts} setParts={setParts}
+            baskasiKilitli={baskasiKilitli} appSettings={appSettings} setAppSettings={setAppSettings}
             giderler={rawGiderler} setGiderler={setGiderler} giderTanimlari={giderTanimlari} setGiderTanimlari={setGiderTanimlari} />
         </KartBolum>
       )}
@@ -264,7 +268,9 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
           <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}
-            allModels={[...standardModels, ...customModels]} partTypeDefs={partTypeDefs} />
+            standardModels={standardModels} customModels={customModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels}
+            partTypeDefs={partTypeDefs} baskasiKilitli={baskasiKilitli}
+            rawCustomModels={rawCustomModels.length >= customModels.length ? rawCustomModels : customModels} />
         </KartBolum>
       )}
 

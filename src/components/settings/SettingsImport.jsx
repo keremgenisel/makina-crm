@@ -4,8 +4,8 @@ import { PART_TYPE_PALETTE_KEYS } from "../../lib/constants";
 import { Icon, Btn, Modal } from "../ui";
 import { KartBolum } from "../tasarim";
 import { downloadCSV, IMPORT_HEADERS } from "./csvUtils";
+import { PARCA_AKTARMA_BASLIKLARI, PARCA_SABLON_ORNEGI, parcaSatirlariniCoz, parcaIceAktarmaUygula } from "../../lib/parcaAktarma";
 
-const PARTS_IMPORT_HEADERS = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
 
 export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts, partTypeDefs = [], setPartTypeDefs = null }) => {
   // CSV ayrıştırıcı (tırnak içi ; ve satır sonu destekli, ayraç ; veya ,)
@@ -175,36 +175,8 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
     return { customers: newCustomers, services: newServices, errors, guncellenecek };
   };
 
-  // Yedek parça satırlarını kayıt dizisine çevirir
-  const partsRowsToRecords = (rows) => {
-    const dataRows = rows.slice(1);
-    const newParts = []; const errors = [];
-    let yeniler = 0, guncellenenler = 0;
-    let idc = Date.now();
-    const byAd = new Map();
-    (parts || []).forEach(p => { if (p.ad && !p.deletedAt) byAd.set(trLower(p.ad), p); });
-    dataRows.forEach((r, idx) => {
-      const cell = (i) => (r[i] == null ? "" : String(r[i]).trim());
-      const ad = cell(0);
-      if (!ad) { errors.push(`Satır ${idx + 2}: Parça adı boş, atlandı.`); return; }
-      const mevcut = byAd.get(trLower(ad));
-      const id = mevcut ? mevcut.id : (++idc);
-      if (mevcut) guncellenenler++; else yeniler++;
-      newParts.push({
-        id, ad,
-        adEN: cell(1) || (mevcut?.adEN ?? ""),
-        kod: cell(2) || (mevcut?.kod ?? ""),
-        tip: cell(3) || (mevcut?.tip ?? "Standart"),
-        tanim: cell(4) || (mevcut?.tanim ?? ""),
-        tanimEN: cell(5) || (mevcut?.tanimEN ?? ""),
-        fiyatTRY: cell(6) || (mevcut?.fiyatTRY ?? ""),
-        fiyatUSD: cell(7) || (mevcut?.fiyatUSD ?? ""),
-        fiyatEUR: cell(8) || (mevcut?.fiyatEUR ?? ""),
-        _mevcut: !!mevcut,
-      });
-    });
-    return { parts: newParts, errors, yeniler, guncellenenler };
-  };
+  // Yedek parça satırlarını kayıt dizisine çevirir (spec 0087: saf çekirdek lib/parcaAktarma.js'te)
+  const partsRowsToRecords = (rows) => parcaSatirlariniCoz(rows, parts);
 
   // xlsx (SheetJS) paketinde npm üzerinden düzeltilmemiş bilinen bir Prototip Kirlenmesi/ReDoS açığı var
   // (GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9). Kaynağı tamamen engelleyemediğimiz için saldırı yüzeyini
@@ -305,14 +277,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
         });
       }
     }
-    setParts(p => {
-      const guncelMap = new Map();
-      impParts.forEach(x => { const { _mevcut, ...clean } = x; guncelMap.set(x.id, clean); });
-      const updated = p.map(x => guncelMap.has(x.id) ? { ...x, ...guncelMap.get(x.id) } : x);
-      const existingIds = new Set(p.map(x => x.id));
-      const yeniler = impParts.filter(x => !existingIds.has(x.id)).map(x => { const { _mevcut, ...clean } = x; return clean; });
-      return [...yeniler, ...updated];
-    });
+    setParts(p => parcaIceAktarmaUygula(p, impParts));
     flash("ok", `${partsImportPreview.yeniler} yeni parça eklendi, ${partsImportPreview.guncellenenler} parça güncellendi.`);
     setPartsImportPreview(null);
   };
@@ -337,16 +302,16 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
   };
 
   const downloadPartsTemplate = async () => {
-    const ornek = ["Örnek Parça", "Example Part", "PRC-001", "Standart", "Parça açıklaması", "Part description", "250", "", ""];
+    const ornek = PARCA_SABLON_ORNEGI;
     try {
       const XLSX = await import("xlsx");
-      const ws = XLSX.utils.aoa_to_sheet([PARTS_IMPORT_HEADERS, ornek]);
+      const ws = XLSX.utils.aoa_to_sheet([PARCA_AKTARMA_BASLIKLARI, ornek]);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Yedek Parçalar");
       XLSX.writeFile(wb, "yedek-parca-sablonu.xlsx");
       flash("ok", "Yedek parça şablonu indirildi.");
     } catch {
-      downloadCSV([PARTS_IMPORT_HEADERS, ornek], "yedek-parca-sablonu.csv");
+      downloadCSV([PARCA_AKTARMA_BASLIKLARI, ornek], "yedek-parca-sablonu.csv");
       flash("ok", "Şablon (CSV) indirildi.");
     }
   };

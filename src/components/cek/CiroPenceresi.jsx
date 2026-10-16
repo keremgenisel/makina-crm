@@ -2,9 +2,9 @@ import { useState, useMemo } from "react";
 import { fmtTR, today, uid, parseMoney } from "../../lib/utils";
 import { tl, kurus, turHaritasi } from "../../lib/gider";
 import { ciroAdaylari, ciroVarsayilanDagitim, ciroPlani, kendiCekPlani, TAM_CIRO_NOTU } from "../../lib/cek";
-import { Btn, Field, Input, Select, Modal, Icon } from "../ui";
+import { Btn, Field, Input, Select, Modal, Icon, TutarInput } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi, BosDurum } from "../tasarim";
-import { TutarInput, tutarMetni, tl2 } from "../gider/GiderAlanlari";
+import { tl2, tutarMetni } from "../gider/GiderAlanlari";
 
 // Ciro penceresi (spec 0040 R4, R7–R9, R16; Q8; AC-6, AC-12, AC-13, AC-17). Bir çek bütün olarak tek alacaklıya ciro edilir;
 // tutar alacaklının kalemlerine dağıtılır ve her kalem (taksitli kalemde her taksit) için ayrı, hesapsız bir ödeme hareketi

@@ -2,9 +2,8 @@ import { useState } from "react";
 import { today } from "../../lib/utils";
 import { CURRENCIES } from "../../lib/constants";
 import { bagsizCekDogrula, CEK_TURLERI, BAGSIZ_GELIR_NOTU } from "../../lib/cek";
-import { Btn, Field, Input, Select, Modal, Icon } from "../ui";
+import { Btn, Field, Input, Select, Modal, Icon, TutarInput } from "../ui";
 import { HataMetni, UyariSeridi } from "../tasarim";
-import { TutarInput } from "../gider/GiderAlanlari";
 
 // Spec 0049 R1, R3 (Q11; AC-1, AC-2): tahsilata bağlı olmayan alınan çeki portföye elle ekler. Kimden serbest metin ya da
 // müşteri. Çek gelir değildir; bilgi şeridi bunu söyler. Doğrulama saf motorda (bagsizCekDogrula).

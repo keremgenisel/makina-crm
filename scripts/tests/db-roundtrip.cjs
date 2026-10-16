@@ -575,6 +575,31 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0082 AC-18, AC-25: bölümü GÖNDERMEYEN kayıt (çöpü boşaltma dahil) satırlara dokunmaz", satirSay() === 2);
 }
 
+// ── Spec 0087 AC-4, AC-25, AC-31 (C1, C4): parça maliyeti (REAL, kuruşlu) ve iki model bölümünde ek maliyet kalemleri.
+// Maliyetsiz parça ve ek kalemsiz modelin okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0087-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0087-govde-once.json"), "utf8"));
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  check("spec 0087 AC-4: maliyetsiz parçanın gövdesi spec öncesiyle birebir aynı (maliyet anahtarı yok)", esit(b.parts, once.parts) && b.parts.every(p => !("maliyet" in p)));
+  check("spec 0087 AC-25: ek kalemsiz modelin gövdesi iki bölümde spec öncesiyle aynı", esit(b.standardModels, once.standardModels) && esit(b.customModels, once.customModels));
+  const ek = [{ ad: "Büküm işçiliği", tutar: 90 }, { ad: "Kaplama", tutar: 145.6 }];
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.parts.push({ id: 10, ad: "Pul", models: [], maliyet: 7.5 }, { id: 11, ad: "Hediye vida", models: [], maliyet: 0 });
+  girdi.standardModels[0].ekMaliyetler = ek;
+  girdi.customModels[0].ekMaliyetler = [{ ad: "Montaj", tutar: 1234.56 }];
+  dbmod.writeBlobToDb(girdi);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0087 AC-31: parça maliyeti kuruşuyla korunur (7,50)", c.parts.find(p => p.id === 10)?.maliyet === 7.5);
+  check("spec 0087 AC-31, R4: sıfır maliyet girilmiş sayılır ve korunur", c.parts.find(p => p.id === 11)?.maliyet === 0);
+  check("spec 0087 AC-31: standart modelin ek kalemleri sırasıyla korunur", esit(c.standardModels[0].ekMaliyetler, ek));
+  check("spec 0087 AC-31: özel modelin ek kalemi kuruşuyla korunur", esit(c.customModels[0].ekMaliyetler, [{ ad: "Montaj", tutar: 1234.56 }]));
+  check("spec 0087 AC-4: maliyetsiz parça yine anahtarsız", !("maliyet" in c.parts.find(p => p.id === 7)));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

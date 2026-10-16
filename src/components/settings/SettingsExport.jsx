@@ -8,6 +8,7 @@ import { KartBolum } from "../tasarim";
 import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT_HEADERS } from "./csvUtils";
 import { aliciAd, aliciRozet } from "../stock/TahsisModal";
 import { hareketTipAdi } from "../../lib/stokHareketi";
+import { PARCA_AKTARMA_BASLIKLARI, parcaDisaAktarmaSatiri } from "../../lib/parcaAktarma";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 import { cekBilgisi, tahsilatHaritasi, yonOf, CEK_DURUM_AD, CEK_TUR_AD } from "../../lib/cek";
 import { SATIS_TEVKIFAT_EXPORT_HEAD, satisTevkifatExportHucreleri } from "../../lib/satisTevkifat";
@@ -330,8 +331,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportParts = async (mode = "download") => {
-    const head = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)"];
-    const rows = [head, ...parts.map(p => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? ""])];
+    // Spec 0087 R11: başlık ve satır içe aktarmayla tek kaynaktan; maliyet son sütun.
+    const rows = [PARCA_AKTARMA_BASLIKLARI, ...parts.map(parcaDisaAktarmaSatiri)];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Yedek Parça"); openExportMailXLSXBase64(b64, "yedek-parca-tanimlari.xlsx", "Yedek Parça Tanımları"); return; }
       await downloadXlsx(rows, "yedek-parca-tanimlari.xlsx", "Yedek Parça"); flash("ok", "Yedek parça tanımları Excel olarak indirildi.");

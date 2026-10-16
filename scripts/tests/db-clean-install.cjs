@@ -157,6 +157,23 @@ check("temiz kurulumda gider ödeme satırı tablosu oluştu ve kimlikler yazıl
 check("temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari oluştu", (() => { const g = (blob.giderler || []).find(x => x.id === 33); return g?.tedarikciId === 31 && g?.modelSatirlari?.[0]?.adet === 5 && (blob.tedarikciler || []).length === 2 && (blob.giderTanimlari || []).length === 1 && (blob.giderTurleri || []).length === 2 && !("standartGiderler" in blob) /* spec 0082 */ && blob.appSettings?.giderAyarlari?.yururlukAy === "2026-07"; })());
 check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() => { const a = blob.appSettings?.krediKartiKomisyonlari; return a?.bsmv === 5 && a?.satirlar?.[0]?.oran === 7.47; })());
 
+// Spec 0087 AC-31: temiz kurulumda parça maliyeti ve iki model tablosunda ek maliyet kalemleri ilk oturumda yazılır.
+{
+  let h = null;
+  try {
+    dbmod.writeBlobToDb({
+      parts: [{ id: 41, ad: "Pul", models: ["AK100"], maliyet: 7.5 }],
+      standardModels: [{ model: "AK100", defaultParcalar: [{ partId: "41", ad: "Pul", miktar: 4 }], ekMaliyetler: [{ ad: "Büküm", tutar: 90 }] }],
+      customModels: [{ model: "OZEL", defaultParcalar: [], ekMaliyetler: [{ ad: "Kaplama", tutar: 145.6 }] }],
+    });
+  } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0087 AC-31: temiz kurulumda maliyet ve ek maliyet sütunları var ve yazıldı", h === null
+    && b.parts.find(p => p.id === 41)?.maliyet === 7.5
+    && b.standardModels.find(m => m.model === "AK100")?.ekMaliyetler?.[0]?.tutar === 90
+    && b.customModels.find(m => m.model === "OZEL")?.ekMaliyetler?.[0]?.tutar === 145.6);
+}
+
 // users.permissions (ensureColumns ile gelir) — kullanıcı yazma/okuma çökmemeli
 let userHata = null;
 try { dbmod.createUser("admin", "hash", "user", JSON.stringify({ customerActions: [] })); }

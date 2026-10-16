@@ -525,3 +525,20 @@ describe("Spec 0078 AC-30, AC-31: çöp kutusuna giren kasa/gider bölümlerinde
     }
   });
 });
+
+// ── Spec 0087 C8: bilinen sınır (ölçüldü). Birleştirme yalnız eklemeleri geri uygular: yeni parça (ve maliyeti) korunur,
+// var olan modelin kit düzenlemesi sunucu kopyasına yenilir; standart modeller hiç birleşmez (0077 X7).
+describe("Spec 0087 C8: katalog çakışması", () => {
+  it("AC-37: yeni parçanın eklenmesi maliyetiyle korunur; var olan modelin kit düzenlemesi plana girmez", () => {
+    const sunucu = blob({ parts: [{ id: 7, ad: "Rulman", models: ["AK100_DS"] }],
+      standardModels: [{ model: "AK100_DS", defaultParcalar: [] }], customModels: [{ model: "OZEL_1", defaultParcalar: [] }] });
+    const my = blob({ parts: [{ id: 7, ad: "Rulman", models: ["AK100_DS"] }, { id: 9001, ad: "Pul", models: ["OZEL_1"], maliyet: 7.5 }],
+      standardModels: [{ model: "AK100_DS", defaultParcalar: [{ partId: "7", ad: "Rulman", miktar: 4 }] }],
+      customModels: [{ model: "OZEL_1", defaultParcalar: [{ partId: "9001", ad: "Pul", miktar: 46 }] }] });
+    const plan = buildMergePlan(my, sunucu);
+    expect(plan.adds.parts).toHaveLength(1);
+    expect(plan.adds.parts[0]).toMatchObject({ ad: "Pul", maliyet: 7.5, models: ["OZEL_1"] });
+    expect(plan.adds.customModels).toEqual([]);
+    expect(plan.adds.standardModels).toBeUndefined();
+  });
+});

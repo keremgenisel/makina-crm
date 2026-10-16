@@ -1,0 +1,75 @@
+{
+  "parts": [
+    {
+      "id": 7,
+      "ad": "Rulman",
+      "adEN": "Bearing",
+      "kod": "R-6204",
+      "tanim": "",
+      "tanimEN": "",
+      "fiyatTRY": 450,
+      "fiyatUSD": "",
+      "fiyatEUR": "",
+      "models": [
+        "AK100_DS"
+      ],
+      "deletedAt": null,
+      "tip": "Standart",
+      "resim": ""
+    },
+    {
+      "id": 8,
+      "ad": "Silinen parça",
+      "adEN": "",
+      "kod": "",
+      "tanim": "",
+      "tanimEN": "",
+      "fiyatTRY": null,
+      "fiyatUSD": null,
+      "fiyatEUR": null,
+      "models": [],
+      "deletedAt": "2026-10-01T10:00:00.000Z",
+      "tip": "Standart",
+      "resim": ""
+    }
+  ],
+  "standardModels": [
+    {
+      "model": "AK100_DS",
+      "sogutma": "Soğutmalı",
+      "kapasite": "100",
+      "kalip": "14 cm",
+      "kompresör": null,
+      "tanim": "",
+      "tanimEN": "",
+      "urunAdi": "",
+      "urunAdiEN": "",
+      "defaultParcalar": [
+        {
+          "partId": "7",
+          "ad": "Rulman",
+          "miktar": 2
+        }
+      ],
+      "defaultBantlar": [],
+      "resim": null
+    }
+  ],
+  "customModels": [
+    {
+      "model": "OZEL_1",
+      "sogutma": "Soğutmasız",
+      "kapasite": "50",
+      "kalip": "",
+      "kompresör": null,
+      "deletedAt": null,
+      "tanim": "",
+      "tanimEN": "",
+      "urunAdi": "",
+      "urunAdiEN": "",
+      "defaultParcalar": [],
+      "defaultBantlar": [],
+      "resim": null
+    }
+  ]
+}

@@ -1,9 +1,10 @@
-import React, { useId, useState, useEffect, useRef, cloneElement, isValidElement, Children } from "react";
+import React, { useId, useState, useEffect, useRef, useLayoutEffect, cloneElement, isValidElement, Children } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CITY_SUPPLEMENT, ODEME_YONTEMLERI } from "../lib/constants";
 import { ILCELER } from "../lib/map/ilceler";
 import { aramaNormalize, parseMoney } from "../lib/utils";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { cekDogrula, CEK_TURLERI } from "../lib/cek";
+import { tutarGosterim, tutarGirdisiIsle } from "../lib/tutarGirdisi";
 
 export const Icon = ({ name, size = 16 }) => {
   const paths = {
@@ -345,6 +346,41 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
   );
 };
 
+// Kuruşlu tutar girişi: MoneyInput yalnız tam sayı aldığı için (ör. 39.223,13 işveren maliyeti) ayrı
+// bileşen. Durum ham metni tutar; sayıya çevirme ve doğrulama kayıtta tutarCoz ile yapılır (AC-2).
+// Spec 0045: görünüm binlik noktalıdır, imleç korunur (lib/tutarGirdisi.js, tek yer). Spec 0087 R3: gider/GiderAlanlari.jsx'ten buraya taşındı (parça
+// maliyeti de kullanır); GiderAlanlari aynı adla yeniden dışa verir. Oran alanı (sym "%") ayraç
+// almaz ve bugünkü gibi ham çalışır (R9, Q3).
+export const TutarInput = ({ value, onChange, placeholder = "0,00", sym = "₺", invalid = false, id, ariaLabel, disabled }) => {
+  const oran = sym === "%";
+  const ref = useRef(null);
+  const tusRef = useRef(null);
+  const imlecRef = useRef(null);
+  const [, yenile] = useState(0); // reddedilen tuşta da imleç geri konsun diye çizimi zorlar
+  const gosterim = oran ? (value ?? "") : tutarGosterim(value);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (imlecRef.current == null || !el || document.activeElement !== el) return;
+    el.setSelectionRange(imlecRef.current, imlecRef.current);
+    imlecRef.current = null;
+  });
+  const degisti = (e) => {
+    if (oran) { onChange(e.target.value); return; }
+    const r = tutarGirdisiIsle({ yeni: e.target.value, onceki: gosterim, imlec: e.target.selectionStart, tus: tusRef.current });
+    tusRef.current = null;
+    imlecRef.current = r.imlec;
+    yenile(n => n + 1);
+    onChange(r.ham);
+  };
+  return (
+    <div style={{ position: "relative" }}>
+      <input ref={ref} id={id} aria-label={ariaLabel} value={gosterim} disabled={disabled} inputMode="decimal"
+        onKeyDown={e => { tusRef.current = e.key; }} onChange={degisti} placeholder={placeholder} className="input"
+        style={{ paddingRight: 28, textAlign: "right", fontWeight: 600, ...(invalid ? { borderColor: "var(--red500, #ef4444)", background: "var(--redBg, #fef2f2)" } : {}) }} />
+      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "var(--n400, #94a3b8)", fontSize: 14, pointerEvents: "none" }}>{sym}</span>
+    </div>
+  );
+};
 export const MoneyInput = ({ value, onChange, placeholder = "0", sym = "₺", id, ariaLabel }) => {
   const display = (value === "" || value == null || isNaN(value)) ? "" : new Intl.NumberFormat("tr-TR").format(value);
   const handle = (e) => {

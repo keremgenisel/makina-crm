@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Icon, Field, Btn } from "../ui";
+import { Icon, Field, Btn, TutarInput } from "../ui";
 import { KartBolum, Segment } from "../tasarim";
 import { esikAltiKalemSayisi, tutarCoz, kisitOranCoz, varsayilanIndirilebilirOran, KISIT_ORAN_VARSAYILAN } from "../../lib/gider";
-import { TutarInput, AyInput, tutarMetni } from "../gider/GiderAlanlari";
+import { AyInput, tutarMetni } from "../gider/GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
 import { hatirlatmaEsikDogrula, hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
 import { hesapsizBaslangicDogrula, denemeDonemiBitisi } from "../../lib/kasa";

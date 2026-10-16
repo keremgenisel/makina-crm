@@ -3,9 +3,9 @@ import { uid, today, getKdvRateForDate } from "../../lib/utils";
 import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi, dagitimAySayisiCoz, dagitimSecilebilirMi, kdvliMi, tedarikciSecilirMi, kurumTarafAdi,
   tevkifatliMi, tevkifatDogrula, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kisitliGiderMi, kisitDogrula, varsayilanIndirilebilirOran } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
-import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog } from "../ui";
+import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, TutarInput } from "../ui";
 import { KartBolum } from "../tasarim";
-import { TutarInput, AyInput, AtamaAlani, DagitimAlani, DavranisRozeti, KisitAlani, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { AyInput, AtamaAlani, DagitimAlani, DavranisRozeti, KisitAlani, tl2, tutarMetni } from "../gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "../tasarim";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler

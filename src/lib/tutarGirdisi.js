@@ -88,3 +88,6 @@ export const tutarGirdisiIsle = ({ yeni = "", onceki = "", imlec = null, tus = n
   const gosterim = bicimle(ham);
   return { ham, gosterim, imlec: konumBul(gosterim, anlamliSay(metin, konum)) };
 };
+
+// Saklanan sayıyı forma ham metin olarak geri koymak için (düzenleme açılışı). Spec 0087 R3: GiderAlanlari'ndan taşındı.
+export const tutarMetni = (n) => (n == null || n === "" ? "" : String(n).replace(".", ","));

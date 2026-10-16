@@ -5,12 +5,12 @@ import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer
   kdvAyir, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, kalemKdv, KDV_YONU, kurus, tl, kdvliMi, tedarikciSecilirMi, sgkDavranisiMi, calisanSgkToplami, SGK_TOPLAM_YOK_NEDENI,
   tevkifatliMi, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kalemTevkifat, odenecekTutar,
   kisitliGiderMi, kisitHesabi, kisitOranCoz, varsayilanIndirilebilirOran, KKEG_ETIKETI } from "../lib/gider";
-import { Icon, Field, Input, Select, Btn, Modal } from "./ui";
+import { Icon, Field, Input, Select, Btn, Modal, TutarInput } from "./ui";
 import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
-import { TutarInput, AtamaAlani, DagitimAlani, DavranisRozeti, tl2, tutarMetni, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, KisitAlani, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi } from "./gider/GiderAlanlari";
+import { AtamaAlani, DagitimAlani, DavranisRozeti, tl2, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, KisitAlani, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi, tutarMetni } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).

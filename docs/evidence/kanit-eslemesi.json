@@ -5166,8 +5166,20 @@
     ],
     "src/components/ModelsManager.jsx": [
       {
-        "rapor": "docs/evidence/0015-taban-piksel-raporu.json",
+        "rapor": "docs/evidence/0087-piksel-raporu.json",
         "ekran": "katalog-model",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+      },
+      {
+        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "ekran": "katalog-model-ekmaliyet",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+      },
+      {
+        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "ekran": "ayarlar-models",
         "beklenen": "ayni"
       }
     ],
@@ -5180,9 +5192,28 @@
     ],
     "src/components/PartManager.jsx": [
       {
-        "rapor": "docs/evidence/0015-piksel-raporu.json",
+        "rapor": "docs/evidence/0087-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca",
-        "beklenen": "ayni"
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+      },
+      {
+        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-maliyetsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+      },
+      {
+        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
+      },
+      {
+        "rapor": "docs/evidence/0087-piksel-raporu.json",
+        "ekran": "katalog-parca-yeni",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0087 R18"
       }
     ],
     "src/components/PartTypeManager.jsx": [
