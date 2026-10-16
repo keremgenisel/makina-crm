@@ -12,6 +12,7 @@ export const ALL_TABS = [
   { id: "finance",   label: "Finans" },
   { id: "gider",     label: "Giderler" },
   { id: "kasa",      label: "Kasa" },
+  { id: "maliyet",   label: "Makina Maliyeti" }, // spec 0088 R1, R2: kendi izni, varsayılan kapalı, Giderler önkoşul
   { id: "evrak",     label: "Evrak Yönetimi" },
   { id: "notes",     label: "Notlar" },
   { id: "servis",    label: "Servis ve Kargo Panosu" },
@@ -22,7 +23,7 @@ export const ALL_TABS = [
 // "gider" ve "kasa" (spec 0052 R5) bilinçli olarak YOK: gider sekmesi varsayılan kapalıdır ve yalnız açıkça verilir (spec 0001 C6).
 export const DEFAULT_USER_TABS = ["dashboard", "customers", "dealers", "stock", "evrak", "notes"];
 // İzin ekranında "(varsayılan kapalı)" ibaresi alan sekmeler (spec 0001 C6, spec 0052 R5).
-export const VARSAYILAN_KAPALI_SEKMELER = new Set(["gider", "kasa"]);
+export const VARSAYILAN_KAPALI_SEKMELER = new Set(["gider", "kasa", "maliyet"]);
 // Spec 0052 R11: Kasa ekranının eylemleri; Kasa sekmesi olmayan kullanıcıda etkisizdir.
 export const KASA_EYLEM_IDLERI = new Set(["kasa_hesap", "virman", "avans"]);
 export const KASA_ETKISIZ_IPUCU = "Kasa sekmesi olmayan kullanıcıda bu eylemler kullanılmaz.";

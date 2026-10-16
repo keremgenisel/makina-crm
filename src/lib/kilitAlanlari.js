@@ -30,11 +30,16 @@ export const KILIT_ALANLARI = {
   // R3, R6, R25: hesap formu, hesap silme / taşıma, virmanın kaynak hesabı; R14 kapat / aç denetimi.
   kasa_hesap: { etiket: "Kasa hesabı", pencereler: ["src/components/Kasa.jsx", "src/components/kasa/HesapSilPenceresi.jsx"] },
   tedarikci: { etiket: "Tedarikçi", pencereler: ["src/components/gider/Tedarikciler.jsx"] },
-  uretim_partisi: { etiket: "Üretim partisi", pencereler: ["src/components/gider/UretimPartileri.jsx"] },
+  // Spec 0088 R32: Parti Hesabı planlanan adetleri kayıt anında partinin kilidine bakar.
+  uretim_partisi: { etiket: "Üretim partisi", pencereler: ["src/components/gider/UretimPartileri.jsx", "src/components/maliyet/PartiHesabi.jsx"] },
   // R5, R20, R30: avans ver, avanstan mahsup, ekstreden avans silme, Ayarlar'da çalışan satırı.
   calisan: { etiket: "Çalışan", pencereler: ["src/components/kasa/CalisanAvanslari.jsx", "src/components/gider/OdemeGirisi.jsx", "src/components/CalisanManager.jsx", "src/components/Kasa.jsx"] },
   // R7, R9, R11–R13, R27: veri yazan Ayarlar panelleri (kimlik = Ayarlar kalem kimliği).
-  ayar: { etiket: "Ayarlar paneli", pencereler: ["src/components/Settings.jsx"] },
+  // Spec 0088 R32: Makina Maliyeti ekranı kâr katsayısını (Makina Modelleri) ve tür rolünü (Gider Türleri) yazarken o panellerin
+  // kilidine kayıt anında bakar.
+  ayar: { etiket: "Ayarlar paneli", pencereler: ["src/components/Settings.jsx", "src/components/maliyet/ModelMaliyetleri.jsx", "src/components/maliyet/HesapAyarlari.jsx"] },
+  // Spec 0088 R32 (plan sapması S2): Hesap Ayarları formu; Ayarlar paneli olmadığı için `ayar` alanına giremez (AYAR_KILITLI kuralı).
+  maliyet_ayar: { etiket: "Makina Maliyeti hesap ayarları", pencereler: ["src/components/maliyet/HesapAyarlari.jsx"] },
 };
 
 // R9, R27: kilitlenen Ayarlar panelleri (Settings.jsx'teki sabit kimlikler) ve insan okunur adları. "Çalışma saatleri"
@@ -54,6 +59,7 @@ export const AYAR_SALT_OKUNUR = ["securitystatus", "export", "sentmail", "auditl
 // R33 (AC-35): gider/, kasa/, cek/ ve settings/ altında kilit almayan dosyalar ve gerekçeleri. Listede de pencere
 // listesinde de olmayan dosya testi düşürür (yeni bir pencere kilitsiz doğmasın).
 export const KILITSIZ_DOSYALAR = {
+  "src/components/maliyet/PayOzeti.jsx": "salt okunur özet (spec 0088)",
   "src/components/gider/DonemRaporu.jsx": "salt okunur rapor görünümü",
   "src/components/gider/AcikKalemler.jsx": "salt okunur liste (spec 0061); \"Ödeme kaydet\" Giderler'in gider kilitli ödeme penceresini açar",
   "src/components/gider/EkstrePenceresi.jsx": "salt okunur ekstre; avans silme çağıranın (CalisanAvanslari) anlık denetiminden geçer",

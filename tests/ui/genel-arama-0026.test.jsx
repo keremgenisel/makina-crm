@@ -57,6 +57,8 @@ const tamProps = () => ({
   allowedTabs: null, giderYetki: true, kasaYetki: true,
   giderler: GIDER, giderTurleri: TURLER, tedarikciler: TED, giderTanimlari: TANIM, uretimPartileri: PARTI, kasaHesaplari: HESAP, cekler: CEK,
   onGoGider: vi.fn(), onGoGiderTanim: vi.fn(), onGoKasa: vi.fn(),
+  // Spec 0088 ile (R23/3): üretim partisi sonucu Makina Maliyeti'ne gider; kapı o sekmenin görünürlüğü.
+  maliyetYetki: true, onGoMaliyet: vi.fn(),
 });
 const norm = (s) => s.replace(/\s+/g, " ").trim();
 const ac = (sorgu, ek = {}) => {
@@ -468,5 +470,19 @@ describe("Spec 0076: genel arama kısıtlı kalemde (AC-22)", () => {
     expect(kalemEslesmesi(k, aramaSorgusu("1.060"), ctx)).toBeNull();
     expect(kalemMeta(k, ctx).join(" ")).toMatch(/1\.000 ₺/);
     expect(kalemMeta(k, ctx).join(" ")).not.toMatch(/1\.060/);
+  });
+});
+
+// Spec 0088 R23/3 (AC-37/3): üretim partisi sonucu yeni sekmeyi açar; kapı Makina Maliyeti'nin görünürlüğü.
+describe("Spec 0088: parti sonucunun yönlendirmesi", () => {
+  it("AC-37/3: parti sonucu Makina Maliyeti › Üretim Partileri'ni açar, Giderler'i açmaz", () => {
+    const p = ac("Yaz Partisi");
+    fireEvent.click(grup("Üretim Partileri")[0].b);
+    expect(p.onGoMaliyet).toHaveBeenCalledWith({ gorunum: "partiler" });
+    expect(p.onGoGider).not.toHaveBeenCalled();
+  });
+  it("AC-37/3: Makina Maliyeti sekmesi olmayan (Giderler'i olan) kullanıcıda parti kategorisi hiç çıkmaz", () => {
+    ac("Yaz Partisi", { maliyetYetki: false, onGoMaliyet: null });
+    expect(grup("Üretim Partileri")).toHaveLength(0);
   });
 });

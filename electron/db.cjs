@@ -270,7 +270,7 @@ CREATE TABLE IF NOT EXISTS gider_tanimlari (
 -- stock.partiId / customers.partiId (satışta damgalanır). kapanisOrtaklari: kapanıştaki ay ortakları (JSON, R15).
 CREATE TABLE IF NOT EXISTS uretim_partileri (
   id INTEGER PRIMARY KEY,
-  ad TEXT, baslangicAy TEXT, bitisAy TEXT, aciklama TEXT, kapanmaZamani TEXT, kapanisOrtaklari TEXT, deletedAt TEXT
+  ad TEXT, baslangicAy TEXT, bitisAy TEXT, aciklama TEXT, kapanmaZamani TEXT, kapanisOrtaklari TEXT, deletedAt TEXT, planlananAdetler TEXT
 );
 -- Kasa (spec 0024 A): hesaplar ve hesap hareketleri. Bakiye saklanmaz, hareketlerden türetilir (C1).
 -- Hareket türleri: "odeme" (gider ödemesi: giderId, taksitId?; tamKapatir = göçten gelen tam kapatma) ve "virman".
@@ -314,8 +314,8 @@ CREATE TABLE IF NOT EXISTS payments (
 CREATE INDEX IF NOT EXISTS idx_payments_customer ON payments(customer_id);
 
 CREATE TABLE IF NOT EXISTS kalip_defs (id INTEGER PRIMARY KEY, ad TEXT, deletedAt TEXT, kod TEXT, urunAdi TEXT, urunAdiEN TEXT, tanim TEXT, tanimEN TEXT, resim TEXT);
-CREATE TABLE IF NOT EXISTS standard_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT, tanim TEXT, tanimEN TEXT, defaultParcalar TEXT, defaultBantlar TEXT, urunAdi TEXT, urunAdiEN TEXT, resim TEXT, ekMaliyetler TEXT);
-CREATE TABLE IF NOT EXISTS custom_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT, deletedAt TEXT, tanim TEXT, tanimEN TEXT, defaultParcalar TEXT, defaultBantlar TEXT, urunAdi TEXT, urunAdiEN TEXT, resim TEXT, ekMaliyetler TEXT);
+CREATE TABLE IF NOT EXISTS standard_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT, tanim TEXT, tanimEN TEXT, defaultParcalar TEXT, defaultBantlar TEXT, urunAdi TEXT, urunAdiEN TEXT, resim TEXT, ekMaliyetler TEXT, karKatsayisi REAL, kalipListeFiyati REAL);
+CREATE TABLE IF NOT EXISTS custom_models (model TEXT PRIMARY KEY, sogutma TEXT, kapasite TEXT, kalip TEXT, kompresor TEXT, deletedAt TEXT, tanim TEXT, tanimEN TEXT, defaultParcalar TEXT, defaultBantlar TEXT, urunAdi TEXT, urunAdiEN TEXT, resim TEXT, ekMaliyetler TEXT, karKatsayisi REAL, kalipListeFiyati REAL);
 CREATE TABLE IF NOT EXISTS teklifler (
   id INTEGER PRIMARY KEY,
   type TEXT, no TEXT, tarih TEXT, dil TEXT, currency TEXT,
@@ -335,7 +335,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
 );
 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT, haritaKonum TEXT);
-CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT, giderAyarlari TEXT);
+CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT, giderAyarlari TEXT, maliyetAyarlari TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
   id INTEGER PRIMARY KEY,
@@ -461,6 +461,13 @@ const MODELS_BANTLAR_COLUMN = [["defaultBantlar", "TEXT"]];
 // Spec 0087 R9: modelin ek maliyet kalemleri ([{ ad, tutar }] JSON, her makina için TL, KDV hariç); boş liste NULL.
 const MODELS_EK_MALIYET_COLUMN = [["ekMaliyetler", "TEXT"]];
 const ekMaliyetYaz = (v) => (Array.isArray(v) && v.length ? JSON.stringify(v) : null);
+// Spec 0088 C7: modelin kâr katsayısı ve Extra Kalıp liste fiyatı (TL, KDV hariç); boşsa NULL ve gövdeye yazılmaz.
+const MODELS_MALIYET_0088_COLUMNS = [["karKatsayisi", "REAL"], ["kalipListeFiyati", "REAL"]];
+// Spec 0088 R18: üretim partisinin planlanan adetleri ({ model: adet } JSON); boşsa NULL.
+const URETIM_PARTI_PLAN_COLUMN = [["planlananAdetler", "TEXT"]];
+const planYaz = (v) => (v && typeof v === "object" && Object.keys(v).length ? JSON.stringify(v) : null);
+// Spec 0088 R29: Makina Maliyeti hesap ayarları (dönem, varsayılan adet); kendi JSON sütunu, boşsa gövdeye yazılmaz.
+const APP_SETTINGS_MALIYET_COLUMN = [["maliyetAyarlari", "TEXT"]];
 const KALIP_DEFS_NEW_COLUMNS = [["kod", "TEXT"], ["urunAdi", "TEXT"], ["urunAdiEN", "TEXT"], ["tanim", "TEXT"], ["tanimEN", "TEXT"]];
 const KALIP_DEFS_RESIM_COLUMN = [["resim", "TEXT"]];
 const TEKLIFLER_NEW_COLUMNS = [["email", "TEXT"], ["authority", "TEXT"], ["forwarder", "TEXT"], ["kurRate", "TEXT"], ["parentTeklifId", "INTEGER"]];
@@ -856,14 +863,14 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.standardModels) && !skip.has("standardModels")) {
     conn.prepare(`DELETE FROM standard_models`).run();
-    const stmt = conn.prepare(`INSERT INTO standard_models (model, sogutma, kapasite, kalip, kompresor, tanim, tanimEN, defaultParcalar, defaultBantlar, urunAdi, urunAdiEN, resim, ekMaliyetler) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const m of data.standardModels) stmt.run(m.model, m.sogutma ?? null, m.kapasite ?? null, m.kalip ?? null, m["kompresör"] ?? null, m.tanim ?? null, m.tanimEN ?? null, json(m.defaultParcalar ?? []), json(m.defaultBantlar ?? []), m.urunAdi ?? null, m.urunAdiEN ?? null, m.resim ?? null, ekMaliyetYaz(m.ekMaliyetler));
+    const stmt = conn.prepare(`INSERT INTO standard_models (model, sogutma, kapasite, kalip, kompresor, tanim, tanimEN, defaultParcalar, defaultBantlar, urunAdi, urunAdiEN, resim, ekMaliyetler, karKatsayisi, kalipListeFiyati) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const m of data.standardModels) stmt.run(m.model, m.sogutma ?? null, m.kapasite ?? null, m.kalip ?? null, m["kompresör"] ?? null, m.tanim ?? null, m.tanimEN ?? null, json(m.defaultParcalar ?? []), json(m.defaultBantlar ?? []), m.urunAdi ?? null, m.urunAdiEN ?? null, m.resim ?? null, ekMaliyetYaz(m.ekMaliyetler), m.karKatsayisi ?? null, m.kalipListeFiyati ?? null);
   }
 
   if (Array.isArray(data.customModels) && !skip.has("customModels")) {
     conn.prepare(`DELETE FROM custom_models`).run();
-    const stmt = conn.prepare(`INSERT INTO custom_models (model, sogutma, kapasite, kalip, kompresor, deletedAt, tanim, tanimEN, defaultParcalar, defaultBantlar, urunAdi, urunAdiEN, resim, ekMaliyetler) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const m of data.customModels) stmt.run(m.model, m.sogutma ?? null, m.kapasite ?? null, m.kalip ?? null, m["kompresör"] ?? null, m.deletedAt ?? null, m.tanim ?? null, m.tanimEN ?? null, json(m.defaultParcalar ?? []), json(m.defaultBantlar ?? []), m.urunAdi ?? null, m.urunAdiEN ?? null, m.resim ?? null, ekMaliyetYaz(m.ekMaliyetler));
+    const stmt = conn.prepare(`INSERT INTO custom_models (model, sogutma, kapasite, kalip, kompresor, deletedAt, tanim, tanimEN, defaultParcalar, defaultBantlar, urunAdi, urunAdiEN, resim, ekMaliyetler, karKatsayisi, kalipListeFiyati) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const m of data.customModels) stmt.run(m.model, m.sogutma ?? null, m.kapasite ?? null, m.kalip ?? null, m["kompresör"] ?? null, m.deletedAt ?? null, m.tanim ?? null, m.tanimEN ?? null, json(m.defaultParcalar ?? []), json(m.defaultBantlar ?? []), m.urunAdi ?? null, m.urunAdiEN ?? null, m.resim ?? null, ekMaliyetYaz(m.ekMaliyetler), m.karKatsayisi ?? null, m.kalipListeFiyati ?? null);
   }
 
   // Parça tipleri: küçük ve şeması esnek (davranış bayrakları) olduğu için kendi tablosu
@@ -951,8 +958,8 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
     conn.prepare(`DELETE FROM uretim_partileri`).run();
-    const stmt = conn.prepare(`INSERT INTO uretim_partileri (id, ad, baslangicAy, bitisAy, aciklama, kapanmaZamani, kapanisOrtaklari, deletedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const p of data.uretimPartileri) stmt.run(p.id, p.ad ?? null, p.baslangicAy ?? null, p.bitisAy ?? null, p.aciklama ?? null, p.kapanmaZamani ?? null, p.kapanisOrtaklari ? json(p.kapanisOrtaklari) : null, p.deletedAt ?? null);
+    const stmt = conn.prepare(`INSERT INTO uretim_partileri (id, ad, baslangicAy, bitisAy, aciklama, kapanmaZamani, kapanisOrtaklari, deletedAt, planlananAdetler) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const p of data.uretimPartileri) stmt.run(p.id, p.ad ?? null, p.baslangicAy ?? null, p.bitisAy ?? null, p.aciklama ?? null, p.kapanmaZamani ?? null, p.kapanisOrtaklari ? json(p.kapanisOrtaklari) : null, p.deletedAt ?? null, planYaz(p.planlananAdetler));
   }
   if (Array.isArray(data.tedarikciler) && !skip.has("tedarikciler")) {
     conn.prepare(`DELETE FROM tedarikciler`).run();
@@ -982,8 +989,8 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.appSettings && !skip.has("appSettings")) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []), json(s.giderAyarlari ?? null));
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []), json(s.giderAyarlari ?? null), s.maliyetAyarlari ? json(s.maliyetAyarlari) : null);
   }
 
   if (Array.isArray(data.faturalar) && !skip.has("faturalar")) {
@@ -1083,6 +1090,10 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "parts", PARTS_MALIYET_COLUMN);
   ensureColumns(conn, "standard_models", MODELS_EK_MALIYET_COLUMN);
   ensureColumns(conn, "custom_models", MODELS_EK_MALIYET_COLUMN);
+  ensureColumns(conn, "standard_models", MODELS_MALIYET_0088_COLUMNS);
+  ensureColumns(conn, "custom_models", MODELS_MALIYET_0088_COLUMNS);
+  ensureColumns(conn, "uretim_partileri", URETIM_PARTI_PLAN_COLUMN);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_MALIYET_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_KASE_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_PINNED_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_EVRAK_COLUMN);
@@ -1444,6 +1455,8 @@ function readBlobFromDb() {
     defaultBantlar: parseJsonCol(m.defaultBantlar, []),
     resim: m.resim ?? null,
     ...ekMaliyetOku(m.ekMaliyetler),
+    ...(m.karKatsayisi == null ? {} : { karKatsayisi: m.karKatsayisi }),
+    ...(m.kalipListeFiyati == null ? {} : { kalipListeFiyati: m.kalipListeFiyati }),
   }));
   const customModels = db.prepare(`SELECT * FROM custom_models`).all().map((m) => ({
     model: m.model, sogutma: m.sogutma, kapasite: m.kapasite, kalip: m.kalip, "kompresör": m.kompresor, deletedAt: m.deletedAt,
@@ -1453,6 +1466,8 @@ function readBlobFromDb() {
     defaultBantlar: parseJsonCol(m.defaultBantlar, []),
     resim: m.resim ?? null,
     ...ekMaliyetOku(m.ekMaliyetler),
+    ...(m.karKatsayisi == null ? {} : { karKatsayisi: m.karKatsayisi }),
+    ...(m.kalipListeFiyati == null ? {} : { kalipListeFiyati: m.kalipListeFiyati }),
   }));
 
   const factoryRow = db.prepare(`SELECT * FROM factory WHERE id = 1`).get();
@@ -1474,8 +1489,8 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []), giderAyarlari: parseJsonCol(giderAyarlari, null) };
+    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []), giderAyarlari: parseJsonCol(giderAyarlari, null), ...(maliyetAyarlari ? { maliyetAyarlari: parseJsonCol(maliyetAyarlari, null) } : {}) };
   }
 
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();
@@ -1526,7 +1541,8 @@ function readBlobFromDb() {
   const cek0049 = new Set([...CEKLER_0049_COLUMNS.map(([ad]) => ad), "deletedAt"]); // spec 0078 C4
   const cekler = db.prepare(`SELECT * FROM cekler`).all().map(({ gecmis, ...rest }) => ({
     ...Object.fromEntries(Object.entries(rest).filter(([k, v]) => v != null || !cek0049.has(k))), gecmis: parseJsonCol(gecmis, []) }));
-  const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null) }));
+  // Spec 0088 C8/2: planlanan adet boşsa gövdeye yazılmaz (alanları yayan okuma `null` yazar, sunucu sahte fark görürdü).
+  const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, planlananAdetler, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null), ...(planlananAdetler ? { planlananAdetler: parseJsonCol(planlananAdetler, {}) } : {}) }));
 
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
     ...rest,

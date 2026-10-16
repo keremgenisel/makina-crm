@@ -34,9 +34,10 @@ export function gorunurSekmeler(tabs, serverMode, serverPermissions) {
   // Spec 0024 C6: Kasa yalnız Giderler ve Finans birlikte görünürken görünür (önkoşul; yarım veriyle bakiye yok).
   // Spec 0052 R2: Kasa'nın kendi sekme izni var; önkoşul üstüne gelir, izin listesinde "kasa" yazmıyorsa görünmez.
   /** @param {Array<{id: string}>} liste */
+  // Spec 0088 R2: Makina Maliyeti gider verisi okur; Giderler görünmüyorsa çizilmez (sunucuda SEKME_ON_KOSULLARI aynası).
   const kasaSuz = (liste) => {
     const ids = new Set(liste.map(t => t.id));
-    return liste.filter(t => t.id !== "kasa" || (ids.has("gider") && ids.has("finance")));
+    return liste.filter(t => (t.id !== "kasa" || (ids.has("gider") && ids.has("finance"))) && (t.id !== "maliyet" || ids.has("gider")));
   };
   if (serverMode !== "active") return kasaSuz(tabs);
   if (!serverPermissions || serverPermissions.role === "admin") return kasaSuz(tabs);

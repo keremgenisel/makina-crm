@@ -2366,6 +2366,30 @@
         "rapor": "docs/evidence/0084-taban-piksel-raporu.json",
         "ekran": "giderler-yontem-kirilimi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "giderler-tedarikciler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "giderler-karlilik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "giderler-model",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "giderler-hatirlatma",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
       }
     ],
     "src/components/Settings.jsx": [
@@ -4113,6 +4137,12 @@
         "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur-0074",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "gider-tur-sil-rol",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
       }
     ],
     "src/components/settings/BagliBilgisayarlar.jsx": [
@@ -4177,6 +4207,18 @@
         "rapor": "docs/evidence/0086-taban-piksel-raporu.json",
         "ekran": "ayarlar-backup-paketler-gidersiz",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "ayarlar-backup-paketler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "kilit-geri-yukleme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
       }
     ],
     "src/components/settings/SettingsCompany.jsx": [
@@ -7064,6 +7106,124 @@
         "rapor": "docs/evidence/0084-taban-piksel-raporu.json",
         "ekran": "giderler-0084-donemi-ode",
         "beklenen": "ayni"
+      }
+    ],
+    "src/components/MakinaMaliyeti.jsx": [
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-uretim-partileri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      }
+    ],
+    "src/components/maliyet/PayOzeti.jsx": [
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-bos-rol",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-bos-ayar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      }
+    ],
+    "src/components/maliyet/ModelMaliyetleri.jsx": [
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-modeller-dokum",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-katsayi-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      }
+    ],
+    "src/components/maliyet/PartiHesabi.jsx": [
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-parti-planli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-parti-plan-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-parti-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      }
+    ],
+    "src/components/maliyet/HesapAyarlari.jsx": [
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar-oneri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
+      },
+      {
+        "rapor": "docs/evidence/0088-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar-rol-uyari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-16 · spec 0088 R23"
       }
     ]
   }

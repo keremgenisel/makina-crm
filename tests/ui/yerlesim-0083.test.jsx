@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // Spec 0083: Giderler görünüm çubuğunun sırası ve Kasa › Hesaplar'da hesapsız kayıtlar bloğunun (deneme şeridi dahil) sayfa
 // sonuna, Çalışan avanslarından sonraya inmesi. Gerçek Giderler ve Kasa. Yalnız çizim sırası değişir; metinler birebir.
-// Bu dosya beş görünüm etiketini sıralı dizide taşır (AC-1): AC-6 taramasında gerekçeli istisnadır (P5).
+// Bu dosya görünüm etiketlerini sıralı dizide taşır (AC-1): AC-6 taramasında gerekçeli istisnadır (P5). Spec 0088 ile dört görünüm:
+// Üretim Partileri Makina Maliyeti ekranına taşındı (R23/2), dönem seçicisi her görünümde (AC-42/2).
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
@@ -33,26 +34,26 @@ const gorunum = (ad) => fireEvent.click(screen.getByRole("radio", { name: ad }))
 const secili = (ad) => screen.getByRole("radio", { name: ad }).getAttribute("aria-checked");
 
 describe("Spec 0083 A: Giderler görünüm çubuğu (R1–R4)", () => {
-  it("AC-1: beş sekme sırayla Dönem Raporu · Tedarikler ve Ekstre · Üretim Partileri · Makina Kârlılığı · Makina ve Model", () => {
+  it("AC-1 (spec 0088 ile): dört sekme sırayla Dönem Raporu · Tedarikler ve Ekstre · Makina Kârlılığı · Makina ve Model", () => {
     render(<GH />);
-    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre", "Üretim Partileri", "Makina Kârlılığı", "Makina ve Model"]);
+    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"]);
   });
-  it("AC-2: ikinci sekme 'Tedarikler ve Ekstre', beşinci 'Makina ve Model'", () => {
+  it("AC-2: ikinci sekme 'Tedarikler ve Ekstre', sonuncu 'Makina ve Model' (spec 0088 ile dördüncü)", () => {
     render(<GH />);
     expect(cubuk()[1].textContent).toBe("Tedarikler ve Ekstre");
-    expect(cubuk()[4].textContent).toBe("Makina ve Model");
+    expect(cubuk()[3].textContent).toBe("Makina ve Model");
   });
   it("AC-3: açılışta Dönem Raporu seçili; her sekme kendi görünümünü çizer", () => {
     render(<GH />);
     expect(secili("Dönem Raporu")).toBe("true");
     expect(screen.getByTestId("kalem-listesi")).toBeTruthy();
     gorunum("Tedarikler ve Ekstre"); expect(screen.getByTestId("tedarikciler")).toBeTruthy();
-    gorunum("Üretim Partileri"); expect(screen.getByTestId("bos-uretim-partileri")).toBeTruthy();
+    expect(screen.queryByRole("radio", { name: "Üretim Partileri" })).toBeNull(); // spec 0088 ile
     gorunum("Makina Kârlılığı"); expect(screen.queryByTestId("makina-karliligi") || screen.queryByTestId("karlilik-bos")).toBeTruthy();
     gorunum("Makina ve Model"); expect(screen.getByText("Makinaya atanmış")).toBeTruthy();
     expect(screen.queryByTestId("kalem-listesi")).toBeNull();
   });
-  it("AC-4: dönem seçicisi yalnız Üretim Partileri'nde çizilmez; geçersiz aralık uyarısı aynı koşulla", () => {
+  it("AC-4 (spec 0088 AC-42/2 ile): dönem seçicisi bütün görünümlerde çizilir; geçersiz aralık uyarısı her görünümde", () => {
     render(<GH />);
     for (const ad of ["Dönem Raporu", "Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"]) {
       gorunum(ad);
@@ -63,10 +64,9 @@ describe("Spec 0083 A: Giderler görünüm çubuğu (R1–R4)", () => {
     fireEvent.change(screen.getByLabelText("Başlangıç tarihi"), { target: { value: "2026-10-15" } });
     fireEvent.change(screen.getByLabelText("Bitiş tarihi"), { target: { value: "2026-10-01" } });
     expect(screen.getByText("Başlangıç tarihi bitişten sonra olamaz.")).toBeTruthy();
-    gorunum("Üretim Partileri");
-    expect(screen.queryByLabelText("Dönem ayı")).toBeNull();
-    expect(screen.queryByLabelText("Başlangıç tarihi")).toBeNull();
-    expect(screen.queryByText("Başlangıç tarihi bitişten sonra olamaz.")).toBeNull();
+    gorunum("Makina ve Model");
+    expect(screen.getByLabelText("Başlangıç tarihi")).toBeTruthy();
+    expect(screen.getByText("Başlangıç tarihi bitişten sonra olamaz.")).toBeTruthy();
   });
   it("AC-5: genel aramadan 'tedarikci' Tedarikler ve Ekstre'yi açar; bilinmeyen değer sessizce Dönem Raporu", () => {
     const { unmount } = render(<GH baslangicGorunum="tedarikci" />);

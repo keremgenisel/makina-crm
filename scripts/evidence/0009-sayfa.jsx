@@ -29,6 +29,9 @@ import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMa
 import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
 import * as Tasarim from "../../src/components/tasarim";
 import { Kasa } from "../../src/components/Kasa";
+import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
+import { GiderTurManager } from "../../src/components/settings/GiderTurManager";
+import * as M88 from "../../tests/fixtures/0088-veri.js";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
 import { odemeleriUygula, turHaritasi, giderKalemDogrula } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
@@ -529,6 +532,23 @@ const PARTI_MUSTERI = MUSTERILER.map(c => ({ ...c, partiId: 901 }));
 const PARTI_STOK = [{ id: 9201, model: "AK100", serialNo: "S-3", addedDate: "2026-09-10", partiId: 902 }, { id: 9202, model: "AK120_DSC", serialNo: "S-4", addedDate: "2026-09-15", partiId: 902 },
   { id: 9203, model: "AK100", serialNo: "S-5", addedDate: "2026-09-18" }];
 const partiEkrani = (adimlar) => [<GiderEkrani p0={[P_KAPALI, P_ACIK]} musteriler={PARTI_MUSTERI} stok={PARTI_STOK} />, adimlar];
+
+// Spec 0088: Makina Maliyeti (dört görünüm). Veri tests/fixtures/0088-veri.js (motor ve ekran testleriyle aynı); `p0`/`musteriler`/`stok`
+// verilirse taşınan Üretim Partileri görünümü 0022'nin kanıt verisiyle çizilir (R23/4).
+function MaliyetEkrani({ ayar = M88.AYAR, turler = M88.TURLER, p0 = M88.PARTILER, musteriler = M88.CUSTOMERS, stok = M88.STOCK, giderler = M88.GIDERLER }) {
+  const [giderTurleri, setGiderTurleri] = useState(turler);
+  const [standardModels, setStandardModels] = useState(M88.MODELLER);
+  const [uretimPartileri, setUretimPartileri] = useState(p0);
+  const [appSettings, setAppSettings] = useState({ giderAyarlari: { yururlukAy: "2026-01" }, ...(ayar ? { maliyetAyarlari: ayar } : {}) });
+  const makinaMaliyet = hesaplaMakinaMaliyetleri({ customers: musteriler, stock: stok, partStockLog: [], giderler, giderTurleri, standardModels: MODELLER, customModels: [],
+    giderAyarlari: { yururlukAy: "2026-01" }, uretimPartileri }, { bugun: "2026-09-23" });
+  return <MakinaMaliyeti aktifKullanici="kerem" giderler={giderler} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={[]} stock={stok} customers={musteriler}
+    partStockLog={[]} parts={M88.PARCALAR} standardModels={standardModels} customModels={[]} setStandardModels={setStandardModels} setCustomModels={bos}
+    uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} appSettings={appSettings} setAppSettings={setAppSettings} rates={{ usd: 41 }}
+    makinaMaliyet={makinaMaliyet} serverPermissions={null} showToast={bos} />;
+}
+const maliyetEkrani = (o, adimlar = []) => [<MaliyetEkrani {...o} />, adimlar];
+const maliyetPartiEkrani = (adimlar) => maliyetEkrani({ p0: [P_KAPALI, P_ACIK], musteriler: PARTI_MUSTERI, stok: PARTI_STOK, giderler: GIDERLER, turler: TURLER }, ["Üretim Partileri", ...adimlar]);
 const partiMaliyetDetayi = (anahtar) => {
   const s = hesaplaMakinaMaliyetleri({ customers: PARTI_MUSTERI, stock: PARTI_STOK, partStockLog: [], giderler: GIDERLER, giderTurleri: TURLER,
     standardModels: MODELLER, customModels: [], giderAyarlari: AYAR.giderAyarlari, uretimPartileri: [P_KAPALI, P_ACIK] }, { bugun: "2026-09-23" });
@@ -725,8 +745,24 @@ const EKRANLAR = {
   "anasayfa-hatirlatma-taksit": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
     giderYetki giderler={TAKSIT_GIDERLER} setHesapHareketleri={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />, ["Gider Ödemeleri"]],
   // Spec 0022: üretim partisi.
-  "giderler-uretim-partileri": partiEkrani(["Üretim Partileri"]),
-  "giderler-uretim-partisi-formu": partiEkrani(["Üretim Partileri", "~Yeni Üretim Partisi"]),
+  // Spec 0088 R23/4: parti yönetimi Makina Maliyeti ekranına taşındı (aynı parti verisi, makinaMaliyet verilir).
+  "maliyet-uretim-partileri": maliyetPartiEkrani([]),
+  "maliyet-uretim-partisi-formu": maliyetPartiEkrani(["~Yeni Üretim Partisi"]),
+  "maliyet-modeller": maliyetEkrani({}),
+  "maliyet-modeller-dokum": maliyetEkrani({}, ["dugme:▸ AK100"]),
+  "maliyet-katsayi-formu": maliyetEkrani({}, ["baslik:Katsayı ve liste fiyatı"]),
+  "maliyet-bos-rol": maliyetEkrani({ turler: M88.TURLER.map(({ maliyetRolu: _r, ...t }) => t) }),
+  "maliyet-bos-ayar": maliyetEkrani({ ayar: null }),
+  "maliyet-parti": maliyetEkrani({}, ["Parti Hesabı"]),
+  "maliyet-parti-planli": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803"]),
+  "maliyet-parti-plan-formu": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803", "dugme:Planlanan adetler"]),
+  "maliyet-parti-bos": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=802"]),
+  "maliyet-ayarlar": maliyetEkrani({}, ["Hesap Ayarları"]),
+  "maliyet-ayarlar-oneri": maliyetEkrani({ ayar: null }, ["Hesap Ayarları"]),
+  "maliyet-ayarlar-hata": maliyetEkrani({ ayar: { baslangicAy: "2026-12", bitisAy: "2026-01", varsayilanAdet: 0 } }, ["Hesap Ayarları", "dugme:Kaydet"]),
+  "maliyet-ayarlar-rol-uyari": maliyetEkrani({ turler: M88.TURLER.map(t => (t.id === 3 ? { ...t, maliyetRolu: "urunAgaci" } : t)) }, ["Hesap Ayarları", "kaydir:Gider türlerinin maliyet rolü"]),
+  "gider-tur-sil-rol": [<GiderTurManager giderTurleri={[{ id: 1, ad: "Genel", davranis: "normal", maliyetRolu: "genel" }, { id: 2, ad: "Tedarik", davranis: "normal", maliyetRolu: "urunAgaci" }]}
+    setGiderTurleri={bos} giderler={[{ id: 9, tarih: "2026-02-01", turId: 1, tutar: 100 }]} setGiderler={bos} giderTanimlari={[]} setGiderTanimlari={bos} />, ["baslik:Sil"]],
   "giderler-karlilik-parti": partiEkrani(["Makina Kârlılığı"]),
   "giderler-model-parti-degisim": partiEkrani(["Makina ve Model", "kaydir:Kapanmış partilerin aylarında"]),
   "maliyet-detay-parti-acik": [partiMaliyetDetayi("stok:9201"), []],

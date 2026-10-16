@@ -174,6 +174,24 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.customModels.find(m => m.model === "OZEL")?.ekMaliyetler?.[0]?.tutar === 145.6);
 }
 
+// Spec 0088 AC-43: temiz kurulumda kâr katsayısı, Extra Kalıp fiyatı, planlanan adetler ve maliyet ayarları ilk oturumda yazılır.
+{
+  let h = null;
+  try {
+    dbmod.writeBlobToDb({
+      standardModels: [{ model: "AK100", defaultParcalar: [], karKatsayisi: 2.5, kalipListeFiyati: 4500 }],
+      customModels: [{ model: "OZEL", defaultParcalar: [], karKatsayisi: 1.9 }],
+      uretimPartileri: [{ id: 81, ad: "P", baslangicAy: "2026-01", planlananAdetler: { AK100: 3 } }],
+      appSettings: { maliyetAyarlari: { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 120 } },
+    });
+  } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0088 AC-43: temiz kurulumda 0088 sütunları var ve yazıldı", h === null
+    && b.standardModels.find(m => m.model === "AK100")?.karKatsayisi === 2.5 && b.standardModels.find(m => m.model === "AK100")?.kalipListeFiyati === 4500
+    && b.customModels.find(m => m.model === "OZEL")?.karKatsayisi === 1.9 && b.uretimPartileri.find(p => p.id === 81)?.planlananAdetler?.AK100 === 3
+    && b.appSettings?.maliyetAyarlari?.varsayilanAdet === 120);
+}
+
 // users.permissions (ensureColumns ile gelir) — kullanıcı yazma/okuma çökmemeli
 let userHata = null;
 try { dbmod.createUser("admin", "hash", "user", JSON.stringify({ customerActions: [] })); }

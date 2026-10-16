@@ -164,7 +164,9 @@ describe("Spec 0087: ürün ağacı adetleri (saf)", () => {
 
   it("AC-19: işaret ile kiti birlikte yazan tek yol urunAgaci'dir (kaynak taraması)", () => {
     const yazan = kaynaklar().filter(f => /defaultParcalar/.test(kod(f)));
-    expect(yazan.sort()).toEqual(["src/components/ModelsManager.jsx", "src/components/stock/MakinaStokTab.jsx", "src/lib/urunAgaci.js"]);
+    // Spec 0088 ile: Makina Maliyeti motoru kiti OKUR (direkt maliyet, R11); yazmaz (taraması aşağıda).
+    expect(yazan.sort()).toEqual(["src/components/ModelsManager.jsx", "src/components/stock/MakinaStokTab.jsx", "src/lib/makinaStandartMaliyet.js", "src/lib/urunAgaci.js"]);
+    expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/defaultParcalar\s*:/);
     // Parça paneli kite yalnız urunAgaci üzerinden yazar; model paneli parçanın işaretini yalnız urunAgaci üzerinden taşır.
     expect(kod("src/components/PartManager.jsx")).toMatch(/setStandardModels\?\.\(p => kitleriGuncelle\(p, kit\)\)/);
     expect(kod("src/components/PartManager.jsx")).not.toMatch(/defaultParcalar/);

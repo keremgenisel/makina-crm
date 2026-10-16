@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { uid, trLower } from "../../lib/utils";
 import { turKullanim } from "../../lib/gider";
+import { MALIYET_ROLU_ETIKET, maliyetRoluOf, rolFarkiUyarisi } from "../../lib/makinaStandartMaliyet";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal } from "../ui";
 import { DavranisRozeti, DAVRANIS_AD } from "../gider/GiderAlanlari";
-import { HataMetni, Ipucu } from "../tasarim";
+import { HataMetni, Ipucu, UyariSeridi } from "../tasarim";
 
 // Gider türleri (spec 0001 R2, plan K12/K13). Davranış (normal / kira / personel) tür oluşturulurken
 // seçilir; tür kullanıma girince davranışı kilitlenir (ad serbest). Silinen tür çöp kutusuna gider (spec 0078): kullanımdaki
@@ -178,6 +179,18 @@ export const GiderTurManager = ({ giderTurleri: tumTurler = [], setGiderTurleri,
                       </Select>
                     </Field>
                     <Ipucu>Listede yalnız {DAVRANIS_AD[sil.tur.davranis]} davranışlı türler var ({sil.hedefler.length}).</Ipucu>
+                    {/* Spec 0088 R30 (AC-17): kalemler hedef türe taşınınca Makina Maliyeti'ndeki havuz hedefin rolüne göre değişir. */}
+                    {(() => {
+                      const hedef = sil.hedefler.find(h => String(h.id) === String(sil.hedefId));
+                      if (!hedef) return null;
+                      const rolUyarisi = rolFarkiUyarisi(sil.tur, hedef);
+                      return (
+                        <div data-testid="hedef-maliyet-rolu" style={{ marginTop: 6 }}>
+                          <Ipucu>{`Hedef türün maliyet rolü: ${MALIYET_ROLU_ETIKET[maliyetRoluOf(hedef)]}.`}</Ipucu>
+                          {rolUyarisi && <div style={{ marginTop: 6 }}><UyariSeridi aile="uyari" testId="rol-farki-uyarisi">{rolUyarisi}</UyariSeridi></div>}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

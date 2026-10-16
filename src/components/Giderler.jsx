@@ -28,7 +28,6 @@ import { Tedarikciler } from "./gider/Tedarikciler";
 import { MakinaKarliligi } from "./gider/MakinaKarliligi";
 import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
-import { UretimPartileri } from "./gider/UretimPartileri";
 import { StopajDonemleri } from "./gider/StopajDonemleri";
 import { stopajBeyanAyari, stopajOdemeTarihi, stopajDonemleri } from "../lib/stopajDonemi";
 import { useKilitListesi } from "../hooks/useKilitListesi";
@@ -37,17 +36,17 @@ import { useKilitListesi } from "../hooks/useKilitListesi";
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
 // aylık rapor motorundan alınır, yeniden hesaplanmaz (C10, lib/giderKdv.js).
 const ayAdi = (ay) => { const [y, m] = ay.split("-").map(Number); const s = new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); return s.charAt(0).toLocaleUpperCase("tr") + s.slice(1); };
-const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "tedarikci", label: "Tedarikler ve Ekstre" }, { value: "partiler", label: "Üretim Partileri" }, { value: "karlilik", label: "Makina Kârlılığı" }, { value: "makina", label: "Makina ve Model" }];
+const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "tedarikci", label: "Tedarikler ve Ekstre" }, { value: "karlilik", label: "Makina Kârlılığı" }, { value: "makina", label: "Makina ve Model" }];
 
-// Spec 0082 R1, R12: beş görünüm; "Tedarikler ve Ekstre" görünümün adıdır, kayıt türü "Tedarikçi" kalır (R14).
-// Dönem seçicisi olmayan görünüm: üretim partileri (spec 0022) dönemden bağımsızdır.
-const DONEMSIZ = new Set(["partiler"]);
+// Spec 0082 R1, R12: "Tedarikler ve Ekstre" görünümün adıdır, kayıt türü "Tedarikçi" kalır (R14). Spec 0088 R23/2: dört görünüm;
+// Üretim Partileri Makina Maliyeti ekranına taşındı, dönem seçicisi olmayan görünüm kalmadı.
+const DONEMSIZ = new Set();
 // Spec 0082 R10: bilinmeyen başlangıç görünümü (ör. kaldırılan "standart") sessizce Dönem Raporu açar.
 const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "rapor");
 
 export const Giderler = ({
   giderler: giderlerHam = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
-  uretimPartileri = [], setUretimPartileri, calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
+  calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
   appSettings = {}, kdvRates, factory = null, rates = null, satisVerisi = {}, serverPermissions = null, showToast = () => {},
   // Spec 0002: App'te bir kez hesaplanan makina maliyetleri (C9). Tek kaynak: burada yedek hesap yapılmaz,
   // yoksa App yolundan farklı girdiyle (stok hareketleri olmadan) farklı üretim tarihi çözülürdü.
@@ -412,10 +411,6 @@ export const Giderler = ({
       )}
       {gorunum === "karlilik" && aralikGecerli && makinaMaliyet && (
         <MakinaKarliligi sonuc={makinaMaliyet} baslangic={baslangic} bitis={bitis} rates={rates} bugun={bugun} modeller={modeller} />
-      )}
-      {gorunum === "partiler" && (
-        <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
-          makinaMaliyet={makinaMaliyet} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
       )}
 
       {giderKilidi && kilitKalemId != null ? (

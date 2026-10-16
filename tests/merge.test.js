@@ -542,3 +542,25 @@ describe("Spec 0087 C8: katalog çakışması", () => {
     expect(plan.adds.standardModels).toBeUndefined();
   });
 });
+
+// ── Spec 0088: yeni alanlar bugünkü bölüm kurallarıyla taşınır (AC-43/2, AC-45, AC-45/2).
+import { mergeAppSettings, disAppSettingsSuz } from "../src/lib/utils";
+describe("Spec 0088: çakışma birleştirmesi", () => {
+  it("AC-43/2: maliyet ayarları bu PC'nin değişikliği olarak korunur ve makinaya özgü sayılmaz (istemciler arasında taşınır)", () => {
+    const yerel = { kdvRates: [], maliyetAyarlari: { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 120 } };
+    const sunucu = { kdvRates: [], maliyetAyarlari: { baslangicAy: "2025-01", bitisAy: "2025-12", varsayilanAdet: 100 } };
+    expect(mergeAppSettings(sunucu, yerel).maliyetAyarlari).toEqual(yerel.maliyetAyarlari);
+    expect(disAppSettingsSuz(yerel).maliyetAyarlari).toEqual(yerel.maliyetAyarlari);
+  });
+  it("AC-45: özel modelin kimliği adıdır, yeni modelin katsayısı ve liste fiyatı eklemeyle gelir; yeni partinin planlanan adetleri korunur", () => {
+    const my = blob({ customModels: [{ model: "OZEL_YENI", karKatsayisi: 2.2, kalipListeFiyati: 4500 }],
+      uretimPartileri: [{ id: 9101, ad: "Yeni parti", baslangicAy: "2026-09", planlananAdetler: { OZEL_YENI: 10 } }] });
+    const plan = buildMergePlan(my, blob({ customModels: [{ model: "OZEL_ESKI" }] }));
+    expect(plan.adds.customModels).toEqual([{ model: "OZEL_YENI", karKatsayisi: 2.2, kalipListeFiyati: 4500 }]);
+    expect(plan.adds.uretimPartileri[0]).toMatchObject({ ad: "Yeni parti", planlananAdetler: { OZEL_YENI: 10 } });
+  });
+  it("AC-45/2 (bilinen sınır): standart modeller birleşmez; standart modelin katsayısı çakışmada sunucu kopyasına yenilir", () => {
+    const plan = buildMergePlan(blob({ standardModels: [{ model: "AK100", karKatsayisi: 2.5 }] }), blob({ standardModels: [{ model: "AK100" }] }));
+    expect(plan.adds.standardModels).toBeUndefined();
+  });
+});

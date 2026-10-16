@@ -351,3 +351,19 @@ describe("Spec 0084: stopaj dönemi çıktısı personel verisi taşımaz", () =
     }
   });
 });
+
+// Spec 0088 AC-40, R26, X4: Makina Maliyeti ekranı ve motoru personel ayrıntısını okumaz ve hiçbir çıktı (yazdırma, dışa
+// aktarma) üretmez. Ekranın metni ayırt edici çalışan verisiyle ui/makina-maliyeti-0088'de (AC-39) taranır.
+describe("Spec 0088: Makina Maliyeti personel ayrıntısı taşımaz", () => {
+  const PERSONEL = /resmiTutar|eldenTutar|resmiMaliyet|eldenMaliyet|calisanAd|calisanlar|ekOdemeler|gider_ek_odemeleri|fazlaCalisma|sgkTutar|yolParasi|personelHedef/;
+  const dosyalar = ["src/lib/makinaStandartMaliyet.js", "src/components/MakinaMaliyeti.jsx",
+    ...readdirSync(path.join(root, "src/components/maliyet")).map(f => `src/components/maliyet/${f}`)];
+  it("AC-40: yeni ekranın ve motorun dosyaları personel alanlarını okumaz", () => {
+    expect(dosyalar.length).toBeGreaterThanOrEqual(6);
+    const kod = (f) => oku(f).split("\n").filter(l => !/^\s*(\/\/|\*|\/\*|\{\/\*)/.test(l)).join("\n"); // yorumlar taranmaz
+    for (const f of dosyalar) expect(kod(f), f).not.toMatch(PERSONEL);
+  });
+  it("X4: yeni ekran yazdırma ve dışa aktarma API'sini çağırmaz", () => {
+    for (const f of dosyalar) expect(oku(f), f).not.toMatch(/appPrint|printHtml|downloadCSV|XLSX|writeFile/);
+  });
+});

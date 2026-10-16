@@ -7,6 +7,7 @@ import {
   BLOB_SECTIONS, SECTION_GROUP, BOLUM_SEKMELERI, AYAR_ALAN_SEKMELERI,
   degisenBolumler, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
   GIDER_BOLUMLERI, giderAynaEngeli, cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, hesapTasimaYazimiMi, denemeDonemiAcikSunucu, kapsamGirisiGecersizMi, kapsamDisiTemizlikMi,
+  SEKME_ON_KOSULLARI, etkinSekmeler,
 } from "../electron/serverAuth.cjs";
 import { READONLY_SERVER_PERMISSIONS } from "../src/lib/permissions.js";
 import { ALL_TABS, DEFAULT_USER_TABS } from "../src/components/settings/serverPermissionDefs.js";
@@ -955,7 +956,8 @@ describe("gider: tanımdan üretim izni serbest kalem için atlatılamaz (bulgu 
 describe("spec 0022: üretim partileri bölümü", () => {
   it("bölüm eşlemesi: giderActions, BOLUM_SEKMELERI yalnız gider (triyaj bulgu 3: stok bağı stock bölümünde), gider bölümleri listesinde", () => {
     expect(SECTION_GROUP.uretimPartileri).toBe("giderActions");
-    expect(BOLUM_SEKMELERI.uretimPartileri).toEqual(["gider"]);
+    // Spec 0088 ile: parti yönetimi Makina Maliyeti sekmesine taşındı (R23); stok sekmesi hâlâ yok (triyaj bulgu 3).
+    expect(BOLUM_SEKMELERI.uretimPartileri).toEqual(["gider", "maliyet"]);
     expect(GIDER_BOLUMLERI.has("uretimPartileri")).toBe(true);
   });
   it("parti eklemek/silmek gider_tanim ister", () => {
@@ -1479,5 +1481,56 @@ describe("Spec 0087: katalog yazımları bugünkü izinle", () => {
     expect(sonuc(STOKSUZ, yeni)).toBe(false);
     // Parçaya dokunmayan ad değişikliği bu kullanıcıda bugün olduğu gibi geçer.
     expect(sonuc(STOKSUZ, { ...db, standardModels: [{ ...M, kapasite: "120" }] })).toBe(true);
+  });
+});
+
+// Spec 0088 C9 (revizyon 3): Makina Maliyeti sekmesinin dört yazımı, sekme düzeyinde önkoşul ve appSettings'in alan düzeyi.
+describe("Spec 0088: Makina Maliyeti sekmesinin sunucu kapısı", () => {
+  const db = {
+    giderTurleri: [{ id: 1, ad: "Genel", davranis: "normal" }],
+    standardModels: [{ model: "AK100", defaultParcalar: [] }],
+    customModels: [{ model: "OZEL", defaultParcalar: [] }],
+    uretimPartileri: [{ id: 801, ad: "P", baslangicAy: "2026-01" }],
+    appSettings: { kdvRates: [{ from: "2000-01-01", rate: 20 }] },
+  };
+  const sonuc = (perms, yeni) => {
+    const degisen = degisenBolumler(db, yeni);
+    const y = yazmaYetkisiVar(perms, "user", degisen, db, yeni);
+    return y.ok ? eylemDenetimi(db, yeni, perms, "user").ok : false;
+  };
+  const MALIYETCI = JSON.stringify({ tabs: ["gider", "maliyet"] });
+  const GIDERSIZ = JSON.stringify({ tabs: ["maliyet"] });
+  const AYARCI = JSON.stringify({ tabs: ["settings"] });
+  const YAZIMLAR = {
+    rol: { ...db, giderTurleri: [{ ...db.giderTurleri[0], maliyetRolu: "genel" }] },
+    ayar: { ...db, appSettings: { ...db.appSettings, maliyetAyarlari: { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 120 } } },
+    katsayi: { ...db, standardModels: [{ ...db.standardModels[0], karKatsayisi: 2.2, kalipListeFiyati: 4500 }], customModels: [{ ...db.customModels[0], karKatsayisi: 1.9 }] },
+    parti: { ...db, uretimPartileri: [{ ...db.uretimPartileri[0], planlananAdetler: { AK100: 10 } }] },
+  };
+
+  it("AC-6: yalnız Makina Maliyeti ve Giderler sekmesi olan (Ayarlar'sız) kullanıcı dört yazımı da yapabilir", () => {
+    for (const [ad, yeni] of Object.entries(YAZIMLAR)) expect(sonuc(MALIYETCI, yeni), ad).toBe(true);
+  });
+
+  it("AC-6/2: Makina Maliyeti yazılı ama Giderler'i olmayan kullanıcı bu bölümleri yazamaz (sekme önkoşulu)", () => {
+    for (const [ad, yeni] of Object.entries(YAZIMLAR)) expect(sonuc(GIDERSIZ, yeni), ad).toBe(false);
+  });
+
+  it("AC-6/3 (revizyon 3): yeni sekmeli kullanıcı appSettings'in diğer alanlarını yazamaz (alan düzeyinde denetim)", () => {
+    expect(sonuc(MALIYETCI, { ...db, appSettings: { ...db.appSettings, kdvRates: [{ from: "2000-01-01", rate: 18 }] } })).toBe(false);
+    expect(yazmaYetkisiVar(MALIYETCI, "user", ["appSettings"], db, { ...db, appSettings: { kdvRates: [] } }).reddedilenAlan).toBe("kdvRates");
+  });
+
+  it("C9/3 (revizyon 3, bilinen sınır): tür ve model bölümleri bölüm düzeyinde güvenilir; yeni sekmeli kullanıcı tür adını ve model kitini de yazabilir", () => {
+    expect(sonuc(MALIYETCI, { ...db, giderTurleri: [{ ...db.giderTurleri[0], ad: "Yeni ad" }] })).toBe(true);
+    expect(sonuc(MALIYETCI, { ...db, standardModels: [{ ...db.standardModels[0], defaultParcalar: [{ partId: "7", ad: "R", miktar: 1 }] }] })).toBe(true);
+  });
+
+  it("C9/2: önkoşul sekme düzeyindedir; Ayarlar'ı olup Giderler'i olmayan kullanıcının model ve tür yazımı bozulmaz", () => {
+    expect(sonuc(AYARCI, YAZIMLAR.katsayi)).toBe(true);
+    expect(sonuc(AYARCI, YAZIMLAR.ayar)).toBe(true);
+    expect(etkinSekmeler(["maliyet", "settings"])).toEqual(["settings"]);
+    expect(etkinSekmeler(["maliyet", "gider"])).toEqual(["maliyet", "gider"]);
+    expect(SEKME_ON_KOSULLARI).toEqual({ maliyet: ["gider"] });
   });
 });

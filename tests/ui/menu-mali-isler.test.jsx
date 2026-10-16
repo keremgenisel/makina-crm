@@ -36,10 +36,11 @@ const kullanici = (tabs) => ({ serverUrl: "http://10.0.0.2:3000", isActive: true
 describe("Spec 0043: Mali İşler grubu", () => {
   it("AC-1 / AC-2 / AC-14: grup Stok ile Evrak arasında; altında Finans, Giderler, Kasa bu sırayla, adlar değişmedi", async () => {
     await baslat();
-    expect(menuAdlari()).toEqual(["Anasayfa", "Müşteriler", "Bayiler", "Stok", "Mali İşler", "Finans", "Giderler", "Kasa",
+    // Spec 0088 ile: grubun dördüncü ekranı Makina Maliyeti (R1, Kasa'dan sonra).
+    expect(menuAdlari()).toEqual(["Anasayfa", "Müşteriler", "Bayiler", "Stok", "Mali İşler", "Finans", "Giderler", "Kasa", "Makina Maliyeti",
       "Evrak Yönetimi", "Notlar", "Servis ve Kargo Panosu", "Faaliyet Haritası", "Analiz", "Ayarlar"]);
     const liste = within(nav()).getByRole("group", { name: "Mali İşler" });
-    expect([...liste.querySelectorAll("button")].map(b => b.textContent.trim())).toEqual(["Finans", "Giderler", "Kasa"]);
+    expect([...liste.querySelectorAll("button")].map(b => b.textContent.trim())).toEqual(["Finans", "Giderler", "Kasa", "Makina Maliyeti"]);
   });
   it("AC-3 / AC-6 / AC-11: başlık açar kapar, ekran açmaz; açık/kapalı bilgisini taşır", async () => {
     await baslat();
@@ -92,12 +93,12 @@ describe("Spec 0043: Mali İşler grubu", () => {
     const liste = within(nav()).getByRole("group", { name: "Mali İşler" });
     expect([...liste.querySelectorAll("button")].map(b => b.textContent.trim())).toEqual(["Finans", "Giderler"]);
   });
-  it("AC-10: dar kipte grup başlığı çizilmez, üç ekran düz ikon", async () => {
+  it("AC-10: dar kipte grup başlığı çizilmez, grubun ekranları düz ikon (spec 0088 ile dört)", async () => {
     localStorage.setItem("sidebarDar", "1");
     await baslat();
     expect(grup()).toBeNull();
     const basliklar = [...nav().querySelectorAll("button")].map(b => b.getAttribute("title"));
-    expect(basliklar.slice(3, 8)).toEqual(["Stok", "Finans", "Giderler", "Kasa", "Evrak Yönetimi"]);
+    expect(basliklar.slice(3, 9)).toEqual(["Stok", "Finans", "Giderler", "Kasa", "Makina Maliyeti", "Evrak Yönetimi"]);
   });
   it("AC-12: Notlar'da kaydedilmemiş taslak varken gruptaki ekrana geçmek onay ister", async () => {
     await baslat();

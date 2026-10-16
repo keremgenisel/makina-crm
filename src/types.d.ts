@@ -230,7 +230,46 @@ export interface MakinaModeli {
   defaultBantlar?: unknown[];
   /** Spec 0087 R9: boş liste gövdeye yazılmaz. */
   ekMaliyetler?: EkMaliyet[];
+  /** Spec 0088 R14: kâr katsayısı (önerilen satış = toplam maliyet × katsayı); boşsa alan yok. */
+  karKatsayisi?: number;
+  /** Spec 0088 R15: Extra Kalıp liste fiyatı, TL, KDV hariç; maliyete girmez. */
+  kalipListeFiyati?: number;
   deletedAt?: ISODate | null;
+}
+
+/** Spec 0088 R5: gider türünün maliyet rolü; `davranis` ile ayrı kavram (ad tuzağı, C15). */
+export type MaliyetRolu = "urunAgaci" | "genel" | "yok";
+
+/** Gider türü (meta JSON). */
+export interface GiderTuru {
+  id: ID;
+  ad: string;
+  davranis?: "normal" | "kira" | "personel" | "sgk";
+  /** Spec 0088 R5, R6: verilmemişse "maliyete girmez". */
+  maliyetRolu?: MaliyetRolu;
+  deletedAt?: ISODate | null;
+}
+
+/** Üretim partisi (spec 0022). */
+export interface UretimPartisi {
+  id: ID;
+  ad: string;
+  baslangicAy: string;
+  bitisAy?: string | null;
+  aciklama?: string;
+  kapanmaZamani?: string | null;
+  kapanisOrtaklari?: Record<string, number> | null;
+  /** Spec 0088 R18: model adı → planlanan adet; boşsa alan yok. */
+  planlananAdetler?: Record<string, number>;
+  deletedAt?: ISODate | null;
+}
+
+/** Spec 0088 R29: appSettings.maliyetAyarlari (Makina Maliyeti hesap ayarları). */
+export interface MaliyetAyarlari {
+  baslangicAy: string;
+  bitisAy: string;
+  /** Dönemin TOPLAM varsayılan üretim adedi (aylık değil), 1–10000. */
+  varsayilanAdet: number;
 }
 
 export interface KalipDef {

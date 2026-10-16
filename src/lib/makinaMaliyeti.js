@@ -469,6 +469,12 @@ export const sonOnIkiAy = (bugun) => {
   const buAy = ayOf(bugun);
   return { baslangic: `${ayEkle(buAy, -11)}-01`, bitis: ayinSonGunu(buAy) };
 };
+// Spec 0088 R14/2 (plan P4): KAT yönteminin (kâr katsayısı) doğrulaması ve uyarısı TEK yerde; bugünkü fiyat önerisi ile
+// Makina Maliyeti ekranının kâr katsayısı aynı kavramdır. Sıfırdan büyük olmalı, 1'in altı "zararına satış" uyarısıdır.
+export const KAT_HATASI = "Kat değeri sıfırdan büyük olmalı.";
+export const KAT_ZARAR_UYARISI = "Kat 1'in altında: önerilen fiyat ortalama maliyetin altında, zararına satış.";
+export const katDegeriDogrula = (d) => (!(Number(d) > 0) ? { hata: KAT_HATASI, uyari: null } : { hata: null, uyari: Number(d) < 1 ? KAT_ZARAR_UYARISI : null });
+
 export const fiyatOnerisi = (sonuc, { model, baslangic, bitis, yontem, deger } = {}) => {
   const key = trLower(model || "");
   const secilen = sonuc.liste.filter(m => m.modelKey === key && m.uretimTarihi && m.uretimTarihi >= baslangic && m.uretimTarihi <= bitis && !m.veriYok);
@@ -485,9 +491,10 @@ export const fiyatOnerisi = (sonuc, { model, baslangic, bitis, yontem, deger } =
     if (!(d >= 0)) return { ...temel, hata: "Eklenecek kâr sıfır veya daha büyük olmalı." };
     fiyatK = ortK * (1 + d / 100);
   } else {
-    if (!(d > 0)) return { ...temel, hata: "Kat değeri sıfırdan büyük olmalı." };
+    const kd = katDegeriDogrula(d);
+    if (kd.hata) return { ...temel, hata: kd.hata };
     fiyatK = ortK * d;
-    if (d < 1) uyari = "Kat 1'in altında: önerilen fiyat ortalama maliyetin altında, zararına satış.";
+    uyari = kd.uyari;
   }
   return { ...temel, fiyat: Math.round(fiyatK / 100), uyari };
 };

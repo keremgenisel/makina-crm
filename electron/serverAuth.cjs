@@ -122,8 +122,9 @@ const BOLUM_SEKMELERI = {
   kalipDefs:      ["settings"],
   partTypeDefs:   ["settings"],
   calisanlar:     ["settings"],
-  standardModels: ["settings"],
-  customModels:   ["settings"],
+  // Spec 0088 C9: Makina Maliyeti ekranı modelin kâr katsayısını ve Extra Kalıp liste fiyatını yazar.
+  standardModels: ["settings", "maliyet"],
+  customModels:   ["settings", "maliyet"],
   factory:        ["settings"],
   appSettings:    ["settings", "stock"],
   // Gider kaydı (plan K23). giderler: Ayarlar'dan da yazılır (model yeniden adlandırma zinciri, yedek geri
@@ -132,7 +133,7 @@ const BOLUM_SEKMELERI = {
   // (R13, R22): settings izni tek başına gider verisine yazma yolu açmasın.
   giderler:         ["gider", "settings"],
   giderTanimlari:   ["gider", "settings"],
-  giderTurleri:     ["settings"],
+  giderTurleri:     ["settings", "maliyet"], // spec 0088 C9: gider türünün maliyet rolü
   tedarikciler:     ["gider"],
   // Spec 0052 R7: hesap tanımları Kasa sekmesine bağlı (önkoşul ON_KOSUL_SEKMELERI'nde). R8: ödeme hareketleri
   // Giderler'de kalır, çünkü gider formundan ve ödeme penceresinden de yazılır (Kasa'sız gider kullanıcısı öder).
@@ -143,7 +144,7 @@ const BOLUM_SEKMELERI = {
   // Spec 0022 C5 (triyaj bulgu 3): parti tanımları yalnız Giderler sekmesinde yazılır. Makinayı partiye bağlamak
   // `stock` bölümündeki partiId alanıdır, bu bölüme dokunmaz; bu yüzden "stock" burada YOKTUR (eklenseydi etkisiz
   // kalırdı: gider bölümü olduğu için gider sekmesi olmayan kullanıcıyı K6 aynası zaten reddeder).
-  uretimPartileri:  ["gider"],
+  uretimPartileri:  ["gider", "maliyet"], // spec 0088 R23: parti yönetimi Makina Maliyeti ekranında
 };
 
 // appSettings tek bir bölüm ama iki ayrı sahibi var: asıl ayarlar (KDV, otomatik yedek) Ayarlar
@@ -161,6 +162,7 @@ const AYAR_ALAN_SEKMELERI = {
   musteriSutunlari:   ["settings"], // Ayarlar > Uygulama > Müşteri Görünümü (liste fiyat sütunları)
   analizGizliModeller: ["settings"], // Ayarlar > Katalog > Makina Modelleri ("Analiz'de Göster")
   giderAyarlari:  ["settings"], // Ayarlar > Giderler > Gider Ayarları + Firma Çalışanları varsayılan resmi maliyet
+  maliyetAyarlari: ["settings", "maliyet"], // spec 0088 R29: Makina Maliyeti › Hesap Ayarları (dönem, varsayılan adet)
 };
 // Hiçbir sekmeye ait olmayan alanlar: otomatik yedekleme her istemcide App.jsx'te çalışır ve
 // başarılı yedek sonrası lastBackup yazar — sekmesi olmayan bu yazma engellenirse Ayarlar
@@ -226,8 +228,14 @@ const ON_KOSUL_SEKMELERI = {
 
 // Bir bölüm, kullanıcının açık sekmelerinden hiçbiri tarafından yazılamıyor mu?
 // tabs tanımsızsa (dizi değil) tüm sekmeler açık sayılır — mevcut istemci semantiği.
+// Spec 0088 C9/2 (plan P1): SEKME düzeyinde önkoşul. `ON_KOSUL_SEKMELERI` bölüme uygulanır; Makina Maliyeti'nin önkoşulu
+// (Giderler) oraya yazılsaydı Ayarlar'ı olup Giderler'i olmayan kullanıcının model düzenlemesi de reddedilirdi. Ham sekme
+// listesi denetimden önce bundan geçer: önkoşulu sağlanmayan sekme yokmuş sayılır (istemcinin gorunurSekmeler kuralının aynası).
+const SEKME_ON_KOSULLARI = { maliyet: ["gider"] };
+const etkinSekmeler = (tabs) => (Array.isArray(tabs) ? tabs.filter(t => (SEKME_ON_KOSULLARI[t] || []).every(o => tabs.includes(o))) : tabs);
+
 function sekmeEngelli(perms, section) {
-  const tabs = perms?.tabs;
+  const tabs = etkinSekmeler(perms?.tabs);
   if (!Array.isArray(tabs)) return GIDER_BOLUMLERI.has(section); // K6: gider bölümlerinde tanımsız = kapalı
   const yazanSekmeler = BOLUM_SEKMELERI[section];
   if (!yazanSekmeler) return true; // haritada yok → güvenli tarafta reddet
@@ -245,7 +253,7 @@ function ayarAlanEngelli(perms, eskiAyar, yeniAyar) {
     if (AYAR_SERBEST_ALANLAR.has(alan)) continue;
     if (stableStringify(eski[alan]) === stableStringify(yeni[alan])) continue;
     const sekmeler = AYAR_ALAN_SEKMELERI[alan] || AYAR_VARSAYILAN_SEKMELER;
-    const tabs = perms?.tabs;
+    const tabs = etkinSekmeler(perms?.tabs);
     if (Array.isArray(tabs) && !sekmeler.some(t => tabs.includes(t))) return alan;
   }
   return null;
@@ -874,5 +882,5 @@ function sonAdminiDusururMu(users, targetId, patch = {}) {
 
 module.exports = {
   cekYalnizCiroMu, cekYalnizBagsizMi, tahsilatHesabiYalnizMi, hesapTasimaYazimiMi, denemeDonemiAcikSunucu, kapsamGirisiGecersizMi, kapsamDisiTemizlikMi, BLOB_SECTIONS, SECTION_GROUP, IZIN_GRUPLARI, BOLUM_SEKMELERI, ON_KOSUL_SEKMELERI, KASA_SEKMELI_KAYITLAR, kasaKaydiDegistiMi, AYAR_ALAN_SEKMELERI, GIDER_BOLUMLERI, giderAynaEngeli, giderZincirDegisikligiMi,
-  stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
+  SEKME_ON_KOSULLARI, etkinSekmeler, stableStringify, degisenBolumler, parsePerms, grupEngelli, sekmeEngelli, ayarAlanEngelli, kisitliMi, yazmaYetkisiVar, eylemDenetimi, EYLEM_IDLERI, ALAN_IZINLERI, dosyaIslemYetkisi, dosyaSilmeYetkisi, sonAdminiDusururMu,
 };

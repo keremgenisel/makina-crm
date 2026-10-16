@@ -104,7 +104,8 @@ describe("Spec 0068 C4, R15, R16, X7: sunucu ve izinler değişmedi", () => {
   const sa = oku("electron/serverAuth.cjs");
   it("AC-22 / AC-24 / AC-36: sekme eşlemesi ['gider'] kaldı; silme izinleri aynı; ALAN_IZINLERI'nde deletedAt yok", () => {
     expect(sa).toMatch(/tedarikciler:\s+\["gider"\],/);
-    expect(sa).toMatch(/uretimPartileri:\s+\["gider"\],/);
+    // Spec 0088 ile: parti yönetimi Makina Maliyeti sekmesine taşındı (R23); "settings" hâlâ eklenmedi (0001 R13/R22).
+    expect(sa).toMatch(/uretimPartileri:\s+\["gider", "maliyet"\],/);
     expect(sa).toMatch(/uretimPartileri:\s+\{ ekle: "gider_tanim", sil: "gider_tanim" \}/);
     expect(sa).toMatch(/tedarikciler:\s+\{ ekle: "tedarikci_add", sil: "tedarikci_delete" \}/);
     const i = sa.indexOf("const ALAN_IZINLERI"), j = sa.indexOf("};", i);

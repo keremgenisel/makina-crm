@@ -144,7 +144,8 @@ describe("Spec 0067 B: müşteri detayında maliyet kutusu yok (R6–R10, R17, R
     expect(cus).not.toMatch(/<CustomerDetailModal[\s\S]{0,4000}rates=\{rates\}/);
     const app = oku("src/App.jsx");
     expect(app).toMatch(/const makinaMaliyet = useMemo\(\(\) => \(giderYetki \? hesaplaMakinaMaliyetleri/);
-    expect(app.match(/makinaMaliyet=\{makinaMaliyet\}/g)).toHaveLength(1); // yalnız Giderler
+    // Spec 0088 ile: Giderler ve Makina Maliyeti (taşınan Üretim Partileri görünümü, R24); müşteri detayı hâlâ yok.
+    expect(app.match(/makinaMaliyet=\{makinaMaliyet\}/g)).toHaveLength(2);
     expect(app).not.toMatch(/<Customers [^\n]*makinaMaliyet=/);
     expect(oku("src/components/gider/MakinaKarliligi.jsx")).toContain("<MakinaMaliyetDetay detay={makinaKarlilik(sonuc, detayAnahtar, rates)} />");
   });

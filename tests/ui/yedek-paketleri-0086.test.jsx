@@ -5,7 +5,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, fireEvent, screen, cleanup, waitFor, within } from "@testing-library/react";
 import { SettingsBackup } from "../../src/components/settings/SettingsBackup";
-import { YEDEK_PAKETLERI, GIDER_AYAR_NOTU, KASASIZ_NOTU, YEREL_AYAR_NOTU, DOSYA_NOTU } from "../../src/lib/yedekPaketleri";
+import { YEDEK_PAKETLERI, GIDER_AYAR_NOTU, KASASIZ_NOTU, YEREL_AYAR_NOTU, DOSYA_NOTU, MALIYET_AYAR_NOTU } from "../../src/lib/yedekPaketleri";
 import { paketCumlesi } from "../../src/lib/bolumAdlari";
 
 afterEach(() => { cleanup(); delete window.crmStorage; delete window.appMail; });
@@ -51,7 +51,8 @@ describe("Spec 0086: paket cümleleri ve notlar", () => {
     await ac({ giderYetki: true, kasaVeriYetki: true });
     expect(screen.getByTestId("paket-notu-gider").textContent).toBe(`ℹ ${GIDER_AYAR_NOTU}`);
     expect(screen.getAllByTestId("paket-notu-gider")).toHaveLength(1);
-    expect(screen.getByTestId("paket-notu-ayar").textContent).toBe(`ℹ ${YEREL_AYAR_NOTU}`);
+    // Spec 0088 ile (AC-43/3): "Firma ve ayarlar" paketinde iki not, maliyet ayarları önce.
+    expect(screen.getAllByTestId("paket-notu-ayar").map(e => e.textContent)).toEqual([`ℹ ${MALIYET_AYAR_NOTU}`, `ℹ ${YEREL_AYAR_NOTU}`]);
     expect(screen.queryByText(KASASIZ_NOTU, { exact: false })).toBeNull();
     // Triyaj bulgu 1: Dosyalar kutusu yalnız listeyi geri yükler, dosyaların kendisi yedek açılırken eklenir.
     expect(screen.getByTestId("paket-notu-dosyalar").textContent).toBe(`ℹ ${DOSYA_NOTU}`);
@@ -66,7 +67,7 @@ describe("Spec 0086: paket cümleleri ve notlar", () => {
     await ac({ giderYetki: false, kasaVeriYetki: false });
     expect(paketSatirlari().map(l => l.querySelector("span").textContent)).not.toContain("Giderler");
     expect(screen.queryByTestId("paket-notu-gider")).toBeNull();
-    expect(screen.getByTestId("paket-notu-ayar")).toBeTruthy();
+    expect(screen.getAllByTestId("paket-notu-ayar")).toHaveLength(2); // spec 0088 ile
   });
 
   it("AC-20: kimlik, sıra, sayı aynı; hepsi seçili başlar; Tümünü Kaldır/Seç; notlar seçili kümeyi değiştirmez", async () => {

@@ -14,7 +14,8 @@ describe("Spec 0043: menuSatirlari", () => {
       "Evrak Yönetimi", "Notlar", "Servis ve Kargo Panosu", "Faaliyet Haritası", "Analiz", "Ayarlar"]);
   });
   it("AC-15: grup tanımı mevcut sekme kimliklerini kullanır, sekme nesneleri olduğu gibi geçer", () => {
-    expect(MENU_GRUPLARI[0].cocuklar).toEqual(["finance", "gider", "kasa"]);
+    // Spec 0088 ile: Makina Maliyeti grubun dördüncü çocuğu (R1).
+    expect(MENU_GRUPLARI[0].cocuklar).toEqual(["finance", "gider", "kasa", "maliyet"]);
     const g = menuSatirlari(HEPSI).find(s => s.tur === "grup");
     expect(g.cocuklar[0]).toBe(HEPSI[4]);
   });

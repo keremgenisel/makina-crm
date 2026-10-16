@@ -87,9 +87,10 @@ describe("Spec 0052: izin ekranı", () => {
   it("AC-26: izin özetindeki oran yeni sekmeyle güncellenir; admin rolüne geçirilen kullanıcının listesine 'kasa' yazılır", async () => {
     yonetici();
     await waitFor(() => expect(screen.getByText("ali")).toBeTruthy());
-    expect(ALL_TABS).toHaveLength(13);
-    expect(within(satir("ali")).getByText("4 / 13")).toBeTruthy();
-    expect(within(satir("veli")).getByText("3 / 13")).toBeTruthy();
+    // Spec 0088 ile: ALL_TABS'e Makina Maliyeti eklendi (on dört sekme).
+    expect(ALL_TABS).toHaveLength(14);
+    expect(within(satir("ali")).getByText("4 / 14")).toBeTruthy();
+    expect(within(satir("veli")).getByText("3 / 14")).toBeTruthy();
     // Rol seçici admin'e geçince listeyi ALL_TABS'ten yazar (R18, zararsız: admin'in izni null kaydedilir).
     const src = readFileSync("src/components/settings/UserManager.jsx", "utf-8");
     expect(src).toMatch(/tabs: e\.target\.value === "admin" \? ALL_TABS\.map\(t => t\.id\)/);

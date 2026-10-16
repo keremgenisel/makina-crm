@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { YEDEK_PAKETLERI, restorePaketleri, paketNotlari, GIDER_AYAR_NOTU, KASASIZ_NOTU, YEREL_AYAR_NOTU, DOSYA_NOTU } from "../src/lib/yedekPaketleri";
+import { YEDEK_PAKETLERI, restorePaketleri, paketNotlari, GIDER_AYAR_NOTU, KASASIZ_NOTU, YEREL_AYAR_NOTU, DOSYA_NOTU, MALIYET_AYAR_NOTU } from "../src/lib/yedekPaketleri";
 import { BOLUM_ADLARI, EK_ADLARI, paketCumlesi, girdiBolumu } from "../src/lib/bolumAdlari";
 import { BACKUP_SCHEMA_VERSION } from "../src/lib/constants";
 import { YEREL_AYAR_ALANLARI } from "../src/lib/utils";
@@ -111,7 +111,8 @@ describe("Spec 0086 R5, R8, R11: notlar", () => {
   it("AC-12: Kasa notu yalnız Kasa yetkisi olmayan kullanıcıda; gider notu her zaman", () => {
     expect(paketNotlari(pk("gider"), { kasaVeriYetki: true })).toEqual([GIDER_AYAR_NOTU]);
     expect(paketNotlari(pk("gider"), { kasaVeriYetki: false })).toEqual([GIDER_AYAR_NOTU, KASASIZ_NOTU]);
-    expect(paketNotlari(pk("ayar"), { kasaVeriYetki: false })).toEqual([YEREL_AYAR_NOTU]);
+    // Spec 0088 ile (R29, AC-43/3): "Firma ve ayarlar" paketinde Makina Maliyeti hesap ayarları notu da var.
+    expect(paketNotlari(pk("ayar"), { kasaVeriYetki: false })).toEqual([MALIYET_AYAR_NOTU, YEREL_AYAR_NOTU]);
     expect(paketNotlari(pk("musteri"), { kasaVeriYetki: false })).toEqual([]);
   });
 });

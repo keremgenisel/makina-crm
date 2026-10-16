@@ -41,7 +41,8 @@ export const KAT = {
   tedarikciler:  { baslik: "Tedarikçiler",               kisa: "Tedarikçiler", ikon: "🤝", bg: "var(--grnBg)",  fg: "var(--grn700)",     kapi: k => !!k.giderYetki && !!k.onGoGider },
   // R14: hedefi Ayarlar olan sonuç settings sekmesini de ister.
   giderTanimlari: { baslik: "Tekrarlayan Giderler",      kisa: "Tekrarlayan",  ikon: "🔁", bg: "var(--purBg)",  fg: "var(--purTx)",      kapi: k => !!k.giderYetki && k.izinli("settings") && !!k.onGoGiderTanim },
-  uretimPartileri: { baslik: "Üretim Partileri",         kisa: "Partiler",     ikon: "🏗", bg: "var(--warnBg)", fg: "var(--warnTx)",     kapi: k => !!k.giderYetki && !!k.onGoGider },
+  // Spec 0088 R23/3: parti yönetimi Makina Maliyeti ekranında; kapı o sekmenin görünürlüğü.
+  uretimPartileri: { baslik: "Üretim Partileri",         kisa: "Partiler",     ikon: "🏗", bg: "var(--warnBg)", fg: "var(--warnTx)",     kapi: k => !!k.maliyetYetki && !!k.onGoMaliyet },
   // R4 (B-4): hesap ve çek Kasa ekranında yaşar; kapı kasa yetkisi.
   kasaHesaplari: { baslik: "Kasa ve Banka Hesapları",    kisa: "Hesaplar",     ikon: "🏦", bg: "var(--grnBg2)", fg: "var(--emerald2)",   kapi: k => !!k.kasaYetki && !!k.onGoKasa },
   cekler:        { baslik: "Çekler",                     kisa: "Çekler",       ikon: "🧷", bg: "var(--bluBg2)", fg: "var(--cyan)",       kapi: k => !!k.kasaYetki && !!k.onGoKasa },
@@ -101,7 +102,7 @@ const nokta = (parcalar) => parcalar.filter(Boolean).join(" · ");
 export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], stock = [], yedekParcaSatislar = [], parts = [], partSales = [], services = [], notes = [], uretimFormlari = [], dosyalar = [], calisanlar = [], onOpenCustomer, onOpenDoc, onOpenDealer, onGoStock, onGoYedekParca, onGoNotes, onGoUretim, onGoCalisanlar, allowedTabs = null,
   // Spec 0026: gider modülü. Diziler ham (ödeme uygulanmamış, X7) ve canlı; kapı App'in giderYetki / kasaYetki değerleri (C9).
   giderYetki = false, kasaYetki = false, giderler = [], giderTurleri = [], tedarikciler = [], giderTanimlari = [], uretimPartileri = [],
-  kasaHesaplari = [], cekler = [], yururlukAy = null, onGoGider, onGoGiderTanim, onGoKasa }) => {
+  kasaHesaplari = [], cekler = [], yururlukAy = null, onGoGider, onGoGiderTanim, onGoKasa, maliyetYetki = false, onGoMaliyet }) => {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [aktif, setAktif] = useState("all"); // seçili kategori çipi
@@ -109,12 +110,12 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  const kapiCtx = kapiBaglami(allowedTabs, { onGoYedekParca, onGoNotes, onGoUretim, onGoCalisanlar, giderYetki, kasaYetki, onGoGider, onGoGiderTanim, onGoKasa });
+  const kapiCtx = kapiBaglami(allowedTabs, { onGoYedekParca, onGoNotes, onGoUretim, onGoCalisanlar, giderYetki, kasaYetki, onGoGider, onGoGiderTanim, onGoKasa, maliyetYetki, onGoMaliyet });
   const results = useMemo(() => genelAramaSonuclari(q, { customers, teklifler, dealers, stock, yedekParcaSatislar, parts, partSales, services, notes, uretimFormlari, dosyalar, calisanlar,
     giderler, giderTurleri, tedarikciler, giderTanimlari, uretimPartileri, kasaHesaplari, cekler, yururlukAy }, kapiCtx),
   // kapiCtx her render yeni nesne; içeriğini oluşturan değerler bağımlılıktır.
   [q, customers, teklifler, dealers, stock, yedekParcaSatislar, parts, partSales, services, notes, uretimFormlari, dosyalar, calisanlar, onGoYedekParca, onGoNotes, onGoUretim, onGoCalisanlar, allowedTabs,
-    giderYetki, kasaYetki, giderler, giderTurleri, tedarikciler, giderTanimlari, uretimPartileri, kasaHesaplari, cekler, yururlukAy, onGoGider, onGoGiderTanim, onGoKasa]);
+    giderYetki, kasaYetki, giderler, giderTurleri, tedarikciler, giderTanimlari, uretimPartileri, kasaHesaplari, cekler, yururlukAy, onGoGider, onGoGiderTanim, onGoKasa, maliyetYetki, onGoMaliyet]);
 
   const pick = (fn, ...args) => { setOpen(false); fn?.(...args); };
 
@@ -160,7 +161,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
         meta: nokta([turMap.get(String(t.turId))?.ad, tedMap.get(String(t.tedarikciId))?.ad, t.baslangicAy && (t.bitisAy ? `${t.baslangicAy} – ${t.bitisAy}` : `${t.baslangicAy}'den beri`), t.kapatildi && "kapalı"]),
         ekstra: neden, onOpen: () => pick(onGoGiderTanim, t.id) }),
       uretimPartileri: ({ kayit: p, neden }) => ({ uid: `up${p.id}`, baslik: p.ad || "Parti", meta: nokta([p.baslangicAy && (p.bitisAy ? `${p.baslangicAy} – ${p.bitisAy}` : `${p.baslangicAy}'den beri`), p.bitisAy ? "kapalı" : "açık", p.aciklama]),
-        ekstra: neden, onOpen: () => pick(onGoGider, { gorunum: "partiler" }) }),
+        ekstra: neden, onOpen: () => pick(onGoMaliyet, { gorunum: "partiler" }) }),
       kasaHesaplari: ({ kayit: h, neden }) => ({ uid: `kh${h.id}`, baslik: h.ad || "Hesap", meta: nokta(hesapMeta(h)), ekstra: neden, onOpen: () => pick(onGoKasa, { hesapId: h.id }) }),
       cekler: ({ kayit: c, neden }) => ({ uid: `ck${c.id}`, baslik: `Çek No ${c.no || "—"}`, meta: nokta(cekMeta(c)), ekstra: neden, onOpen: () => pick(onGoKasa, { gorunum: "cek", cekYon: c.yon === "verilen" ? "verilen" : "alinan" }) }),
     };

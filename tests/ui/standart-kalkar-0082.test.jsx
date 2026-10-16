@@ -40,11 +40,11 @@ const cubuk = () => within(screen.getByRole("radiogroup", { name: "Görünüm" }
 const gorunum = (ad) => fireEvent.click(screen.getByRole("radio", { name: ad }));
 
 describe("Spec 0082: görünüm çubuğu ve ad (R1, R10, R12–R15)", () => {
-  // Spec 0083 ile güncellendi (C4): sıra Dönem Raporu · Tedarikler ve Ekstre · Üretim Partileri · Makina Kârlılığı · Makina ve Model;
+  // Spec 0083 ile güncellendi (C4), spec 0088 ile dört sekme (Üretim Partileri Makina Maliyeti'ne taşındı, R23/2);
   // 0082'nin kaldırma kanıtı olan ikinci iddia aynen korunur.
-  it("AC-1 (spec 0083 AC-22): çubukta beş sekme; 'Standart Genel Gider' metni ekranda hiç yok", () => {
+  it("AC-1 (spec 0083 AC-22, spec 0088 ile): çubukta dört sekme; 'Standart Genel Gider' metni ekranda hiç yok", () => {
     render(<GH />);
-    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre", "Üretim Partileri", "Makina Kârlılığı", "Makina ve Model"]);
+    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"]);
     expect(document.body.textContent).not.toMatch(/Standart Genel Gider/);
   });
   // Spec 0083 ile güncellendi (C4): "Tedarikler ve Ekstre" artık ikinci sekme.
@@ -76,14 +76,14 @@ describe("Spec 0082: görünüm çubuğu ve ad (R1, R10, R12–R15)", () => {
     fireEvent.click(within(screen.getByText("Demir Bant").closest("tr")).getByText("Ekstre"));
     expect(screen.getByText("Tedarikçi Ekstresi")).toBeTruthy();
   });
-  it("AC-6: dönem seçicisi yalnız Üretim Partileri'nde çizilmez", () => {
+  // Spec 0088 ile (AC-42/2): dönemsiz görünüm kalmadı, dönem seçicisi her görünümde.
+  it("AC-6 (spec 0088 ile): dönem seçicisi bütün görünümlerde çizilir", () => {
     render(<GH />);
     for (const ad of ["Dönem Raporu", "Makina ve Model", "Tedarikler ve Ekstre", "Makina Kârlılığı"]) {
       gorunum(ad);
       expect(screen.queryByLabelText("Dönem ayı"), ad).toBeTruthy();
     }
-    gorunum("Üretim Partileri");
-    expect(screen.queryByLabelText("Dönem ayı")).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Üretim Partileri" })).toBeNull();
   });
   it("R10: bilinmeyen başlangıç görünümü (kaldırılan 'standart') sessizce Dönem Raporu açar", () => {
     render(<GH baslangicGorunum="standart" />);

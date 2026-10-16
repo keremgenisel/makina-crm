@@ -13,6 +13,9 @@ export const GIDER_AYAR_NOTU = "Gider ayarları (gider takibi yürürlük ayı, 
 // R8 (0052 R19): Kasa yetkisi olmayan kullanıcıda Kasa'ya ait kayıtlara dokunulmaz.
 export const KASASIZ_NOTU = "Kasa yetkiniz olmadığı için kasa hesapları, kasa iş listesi, virman ve avans hareketleri ve verilen çekler "
   + "bugünkü hâliyle korunur.";
+// Spec 0088 R29 (AC-43/3): Makina Maliyeti hesap ayarları uygulama ayarlarının kendi anahtarındadır.
+// Metin "gider" sözcüğünü taşımaz: perde inikken yedekleme ekranında gider sözü geçmez (spec 0008 AC-8).
+export const MALIYET_AYAR_NOTU = "Makina Maliyeti hesap ayarları (dönem ve dönemde varsayılan üretim adedi) bu pakette geri yüklenir.";
 // R11: makinaya özgü alanlar (utils.YEREL_AYAR_ALANLARI) geri yüklenmez, disAppSettingsSuz ayıklar.
 export const YEREL_AYAR_NOTU = "Bu bilgisayarın yedekleme ayarları (otomatik yedek, yedek klasörü, yedekleme sıklığı, son yedek tarihi) "
   + "geri yüklenmez; bugünkü değerleri korunur.";
@@ -38,7 +41,7 @@ export const YEDEK_PAKETLERI = [
       { bolum: "cekler", metin: "bağsız ve verilen çekler" }, "kasaKapsamDisi"],
     notlar: [{ metin: GIDER_AYAR_NOTU }, { metin: KASASIZ_NOTU, yalnizKasasiz: true }] },
   { id: "ayar", ad: "Firma ve ayarlar", bolumler: ["factory", "appSettings"], ekler: ["mailConfig", "mailLog"],
-    notlar: [{ metin: YEREL_AYAR_NOTU }] },
+    notlar: [{ metin: MALIYET_AYAR_NOTU }, { metin: YEREL_AYAR_NOTU }] },
 ];
 
 // Gider paketi yalnız gider yetkisiyle görünür (spec 0001 R11, 0008 K3); sıra ve kimlikler değişmez.

@@ -56,9 +56,10 @@ describe("Spec 0064: kilit alanlarının tek listesi (R19)", () => {
 });
 
 describe("Spec 0064: kapsam taraması (R33, AC-35)", () => {
-  it("AC-35: gider/, kasa/, cek/ ve settings/ altındaki her dosya ya bir kilit alanının penceresi ya Ayarlar paneli ya gerekçeli kilitsiz", () => {
+  // Spec 0088 R32: maliyet/ klasörü de kapsamda.
+  it("AC-35: gider/, kasa/, cek/, settings/ ve maliyet/ altındaki her dosya ya bir kilit alanının penceresi ya Ayarlar paneli ya gerekçeli kilitsiz", () => {
     const kapsam = new Set([...Object.values(KILIT_ALANLARI).flatMap(a => a.pencereler), ...AYAR_PANEL_DOSYALARI, ...Object.keys(KILITSIZ_DOSYALAR)]);
-    const eksik = ["src/components/gider", "src/components/kasa", "src/components/cek", "src/components/settings"].flatMap(dosyalar).map(f => f.split(path.sep).join("/")).filter(f => !kapsam.has(f));
+    const eksik = ["src/components/gider", "src/components/kasa", "src/components/cek", "src/components/settings", "src/components/maliyet"].flatMap(dosyalar).map(f => f.split(path.sep).join("/")).filter(f => !kapsam.has(f));
     expect(eksik).toEqual([]);
     for (const [f, neden] of Object.entries(KILITSIZ_DOSYALAR)) { expect(existsSync(f), f).toBe(true); expect(neden.length, f).toBeGreaterThan(5); }
     for (const f of AYAR_PANEL_DOSYALARI) expect(existsSync(f), f).toBe(true);

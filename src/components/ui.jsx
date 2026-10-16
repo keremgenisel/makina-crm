@@ -25,6 +25,7 @@ export const Icon = ({ name, size = 16 }) => {
     analiz:     "M3 3v18h18M7 16v-5M12 16V8M17 16v-9",
     gider:      "M6 3h12v18l-3-2-3 2-3-2-3 2V3zM9 8h6M9 12h6M9 16h3",
     kasa:       "M3 7h18v12H3zM3 11h18M7 15h3M16 7V5a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2",
+    maliyet:    "M6 3h12v18H6zM9 7h6M9 11h1M12 11h1M15 11h0M9 14h1M12 14h1M9 17h1M12 17h1M15 14v3",
     mali:       "M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3M21 11h-5a2 2 0 0 0 0 4h5z", // spec 0043: Mali İşler grubu (cüzdan)
     chevronDown:  "M6 9l6 6 6-6",
     chevronRight: "M9 6l6 6-6 6",

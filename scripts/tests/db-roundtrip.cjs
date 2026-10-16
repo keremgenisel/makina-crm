@@ -600,6 +600,34 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0087 AC-4: maliyetsiz parça yine anahtarsız", !("maliyet" in c.parts.find(p => p.id === 7)));
 }
 
+// ── Spec 0088 AC-43, AC-44 (C7, C8, C8/2): tür rolü (meta JSON), modelin kâr katsayısı ve Extra Kalıp fiyatı, partinin
+// planlanan adetleri, appSettings.maliyetAyarlari. Rolsüz tür, katsayısız model, plansız parti ve maliyet ayarı olmayan
+// uygulama ayarlarının okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0088-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0088-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  check("spec 0088 AC-44: rolsüz tür, katsayısız model ve plansız partinin gövdesi spec öncesiyle aynı",
+    esit(b.giderTurleri, once.giderTurleri) && esit(b.standardModels, once.standardModels) && esit(b.customModels, once.customModels) && esit(b.uretimPartileri, once.uretimPartileri));
+  check("spec 0088 AC-44: maliyet ayarı olmayan appSettings gövdesi spec öncesiyle aynı (anahtar yok)", esit(b.appSettings, once.appSettings) && !("maliyetAyarlari" in b.appSettings));
+  const g = structuredClone(GOVDE_GIRDISI);
+  g.giderTurleri[0].maliyetRolu = "genel"; g.giderTurleri[1].maliyetRolu = "urunAgaci";
+  g.standardModels[0].karKatsayisi = 2.19498; g.standardModels[0].kalipListeFiyati = 4500.5;
+  g.customModels[0].karKatsayisi = 1.97;
+  g.uretimPartileri[0].planlananAdetler = { AK100_DS: 40, OZEL_1: 5 };
+  g.appSettings.maliyetAyarlari = { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 120 };
+  dbmod.writeBlobToDb(g);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0088 AC-43: tür rolü meta JSON'da taşınır", c.giderTurleri.map(t => t.maliyetRolu).join() === "genel,urunAgaci");
+  check("spec 0088 AC-43: kâr katsayısı beş ondalığıyla ve Extra Kalıp fiyatı kuruşuyla korunur (iki model bölümü)",
+    c.standardModels[0].karKatsayisi === 2.19498 && c.standardModels[0].kalipListeFiyati === 4500.5 && c.customModels[0].karKatsayisi === 1.97 && !("kalipListeFiyati" in c.customModels[0]));
+  check("spec 0088 AC-43: planlanan adetler korunur", esit(c.uretimPartileri[0].planlananAdetler, { AK100_DS: 40, OZEL_1: 5 }));
+  check("spec 0088 AC-43: maliyet ayarları kendi anahtarında korunur", esit(c.appSettings.maliyetAyarlari, { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 120 }));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

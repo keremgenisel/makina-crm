@@ -37,6 +37,7 @@ import { Analiz } from "./components/Analiz";
 import { Giderler } from "./components/Giderler";
 import { GiderPerdesi } from "./components/gider/GiderPerdesi";
 import { Kasa } from "./components/Kasa";
+import { MakinaMaliyeti } from "./components/MakinaMaliyeti";
 import { giderPerdesiIndi } from "./lib/yayinPerdesi";
 import { Notes } from "./components/Notes";
 import { ServisPanosu } from "./components/ServisPanosu";
@@ -59,6 +60,8 @@ const TABS = [
   { id: "gider",     label: "Giderler",     icon: "gider"     },
   // Spec 0024 C6/Q9: kendi izin kutusu yok; Giderler + Finans görünürse ve yayın perdesi kalkıksa görünür.
   { id: "kasa",      label: "Kasa",         icon: "kasa"      },
+  // Spec 0088 R1, R2: Makina Maliyeti; kendi izni, varsayılan kapalı, Giderler önkoşul (permissions.gorunurSekmeler).
+  { id: "maliyet",   label: "Makina Maliyeti", icon: "maliyet" },
   { id: "evrak",     label: "Evrak Yönetimi", icon: "evrak"   },
   { id: "notes",     label: "Notlar",       icon: "notes"     },
   { id: "servis",    label: "Servis ve Kargo Panosu", icon: "service"  },
@@ -180,7 +183,7 @@ export default function App() {
   // ── Tab izin filtresi: yerel mod / sunucu PC / admin → tüm tablar; user rolü → izin listesi ──
   // Giderler sekmesi tek istisnadır (spec 0001 C6 kural 3): tabs tanımsız user rolü görmez (gorunurSekmeler).
   // Spec 0024 C7: yayın perdesi inikken Kasa sekmesi menüde hiç görünmez.
-  const visibleTabs = useMemo(() => gorunurSekmeler(TABS, serverMode, serverPermissions).filter(t => t.id !== "kasa" || !giderPerdesiIndi()), [serverMode, serverPermissions]);
+  const visibleTabs = useMemo(() => gorunurSekmeler(TABS, serverMode, serverPermissions).filter(t => (t.id !== "kasa" && t.id !== "maliyet") || !giderPerdesiIndi()), [serverMode, serverPermissions]);
   // Gider verisi ve ondan türeyen her rakam (KDV karşılaştırması, çalışan maliyeti, çöp gider satırları,
   // Ayarlar > Giderler grubu) yalnız gider sekmesi görünen kullanıcıya çizilir (R11, plan K7).
   // GEÇİCİ yayın perdesi (spec 0008, lib/yayinPerdesi.js): izin (giderSekmesi) değişmez; perde inikken sekme
@@ -189,6 +192,8 @@ export default function App() {
   const giderYetki = giderSekmesi && !giderPerdesiIndi();
   // Spec 0024 C6: kasa (hesap seçimi dahil) gider yetkisi + Finans sekmesi ister; Kasa sekmesi de aynı koşulla görünür.
   const kasaYetki = useMemo(() => giderYetki && visibleTabs.some(t => t.id === "kasa"), [giderYetki, visibleTabs]);
+  // Spec 0088 R2: Makina Maliyeti ekranı ve ona giden yollar (genel aramanın parti sonucu) bu kapıdan.
+  const maliyetYetki = useMemo(() => giderYetki && visibleTabs.some(t => t.id === "maliyet"), [giderYetki, visibleTabs]);
   // Spec 0052 R7: hesap tanımlarını sunucuda yalnız Kasa sekmeli kullanıcı yazar. Yedek geri yüklemesi Kasa'sı olmayan
   // kullanıcıda hesap tanımlarına dokunmaz (dokunsaydı bütün kayıt 403 alırdı). Perdeden bağımsızdır (0008 K3 deseni).
   const kasaSekmesi = useMemo(() => gorunurSekmeler(TABS, serverMode, serverPermissions).some(t => t.id === "kasa"), [serverMode, serverPermissions]);
@@ -915,6 +920,9 @@ export default function App() {
   const [kasaAcilis, setKasaAcilis] = useState(null);
   useEffect(() => { if (tab !== "gider" && giderAcilis) setGiderAcilis(null); }, [tab, giderAcilis]);
   useEffect(() => { if (tab !== "kasa" && kasaAcilis) setKasaAcilis(null); }, [tab, kasaAcilis]);
+  // Spec 0088 R23/3: genel aramanın üretim partisi sonucu Makina Maliyeti'ni açar (giderAcilis / kasaAcilis deseni).
+  const [maliyetAcilis, setMaliyetAcilis] = useState(null);
+  useEffect(() => { if (tab !== "maliyet" && maliyetAcilis) setMaliyetAcilis(null); }, [tab, maliyetAcilis]);
   const copMusteriler = useMemo(() => customers.filter(c => c.deletedAt), [customers]);
   // Spec 0072 triyaj (bulgu 2): motorun "bugün"ü yerel gündür ve memoya bağlıdır. today() UTC'dir (ayın 1'inde 00:00–03:00
   // arası önceki ayı verir) ve memo tarihe bağlı değildi; uygulama ay dönümünde açık kalınca yeni ayın dağıtım payı (ve açık
@@ -1499,11 +1507,12 @@ export default function App() {
             // ham (ödeme uygulanmamış, X7) ve canlı (R12).
             giderYetki={giderYetki} kasaYetki={kasaYetki}
             giderler={giderYetki ? liveGiderler : []} giderTurleri={giderYetki ? giderTurleri : []} tedarikciler={giderYetki ? liveTedarikciler : []}
-            giderTanimlari={giderYetki ? canliGiderTanimlari : []} uretimPartileri={giderYetki ? liveUretimPartileri : []}
+            giderTanimlari={giderYetki ? canliGiderTanimlari : []} uretimPartileri={maliyetYetki ? liveUretimPartileri : []} maliyetYetki={maliyetYetki}
             kasaHesaplari={kasaYetki ? canliKasaHesaplari : []} cekler={kasaYetki ? cekler : []} yururlukAy={appSettings.giderAyarlari?.yururlukAy || null}
             onGoGider={giderYetki ? (a) => { setGiderOdemeFiltresi(""); setGiderAcilis(o => ({ ...a, no: (o?.no || 0) + 1 })); setTab("gider"); } : null}
             onGoGiderTanim={giderYetki ? () => { setSettingsTab("gidertanim"); setTab("settings"); } : null}
             onGoKasa={kasaYetki ? (a) => { setKasaAcilis(o => ({ ...a, no: (o?.no || 0) + 1 })); setTab("kasa"); } : null}
+            onGoMaliyet={maliyetYetki ? (a) => { setMaliyetAcilis(o => ({ ...a, no: (o?.no || 0) + 1 })); setTab("maliyet"); } : null}
           />
         </div>
         <nav className="sb-scroll" style={{ padding: sidebarDar ? "16px 8px" : "16px 12px", flex: 1, overflowY: "auto" }}>
@@ -1693,7 +1702,7 @@ export default function App() {
           giderKasaRaporVerisi={giderKasaRaporVerisi} kasaYetki={kasaYetki} />}
         {activeTab === "gider"     && !giderYetki && <GiderPerdesi />}
         {activeTab === "gider"     && giderYetki && <Giderler aktifKullanici={savedUsername} giderler={giderler} setGiderler={setGiderler} giderTanimlari={canliGiderTanimlari} setGiderTanimlari={setGiderTanimlari}
-          giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} setTedarikciler={setTedarikciler} uretimPartileri={liveUretimPartileri} setUretimPartileri={setUretimPartileri}
+          giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} setTedarikciler={setTedarikciler}
           calisanlar={liveCalisanlar} stock={liveStock} customers={liveCustomers} standardModels={standardModels} customModels={liveCustomModels}
           appSettings={appSettings} kdvRates={appSettings.kdvRates} factory={factory} rates={rates} serverPermissions={effectivePermissions} showToast={showToast}
           satisVerisi={giderSatisVerisi} makinaMaliyet={makinaMaliyet} key={`gider-${giderOdemeFiltresi}-${giderAcilis?.no || 0}`} baslangicOdemeFiltresi={giderOdemeFiltresi}
@@ -1709,6 +1718,12 @@ export default function App() {
           dealers={liveDealers} factory={factory} kdvRates={appSettings.kdvRates} giderKasaRaporVerisi={giderKasaRaporVerisi}
           kasaKapsamDisi={kasaKapsamDisi} setKasaKapsamDisi={setKasaKapsamDisi} setPayments={setPayments}
           key={`kasa-${kasaAcilis?.no || 0}`} baslangicGorunum={kasaAcilis?.gorunum || "hesaplar"} baslangicHesapId={kasaAcilis?.hesapId ?? null} baslangicCekYon={kasaAcilis?.cekYon || null} />}
+        {activeTab === "maliyet"   && maliyetYetki && <MakinaMaliyeti aktifKullanici={savedUsername} giderler={liveGiderler} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri}
+          tedarikciler={liveTedarikciler} stock={liveStock} customers={liveCustomers} partStockLog={partStockLog} parts={liveParts}
+          standardModels={standardModels} customModels={liveCustomModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels}
+          uretimPartileri={liveUretimPartileri} setUretimPartileri={setUretimPartileri} appSettings={appSettings} setAppSettings={setAppSettings} rates={rates}
+          makinaMaliyet={makinaMaliyet} serverPermissions={effectivePermissions} showToast={showToast}
+          key={`maliyet-${maliyetAcilis?.no || 0}`} baslangicGorunum={maliyetAcilis?.gorunum || "modeller"} />}
         {activeTab === "analiz"    && <Analiz    customers={liveCustomers} services={liveServices} partSales={livePartSales} yedekParcaSatislar={liveYedekParcaSatislar} parts={liveParts} appSettings={appSettings} />}
         {activeTab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} />}
         {activeTab === "evrak"     && <Documents dealers={liveDealers} yedekParcaSatislar={liveYedekParcaSatislar} teklifler={teklifler} setTeklifler={setTeklifler} faturalar={faturalar} setFaturalar={setFaturalar} customers={liveCustomers} partSales={livePartSales} allModels={allModels} factory={factory} appSettings={appSettings} showToast={showToast} kalipDefs={liveKalipDefs} parts={liveParts} geoData={geoData} loadingGeo={loadingGeo} onEvrakKaydet={evrakKaydet} serverPermissions={effectivePermissions} openDocId={docOpenId} onDocOpenConsumed={() => setDocOpenId(null)} />}

@@ -2,7 +2,7 @@
 // değişmez (C1, C2); görünürlük zaten süzülmüş `visibleTabs` üzerinden türetilir.
 // Kural (R11, docs/tasarim-sozlugu.md): menüde grup, aynı soruyu cevaplayan en az üç ekran biriktiğinde açılır.
 export const MENU_GRUPLARI = [
-  { id: "mali", label: "Mali İşler", icon: "mali", cocuklar: ["finance", "gider", "kasa"] },
+  { id: "mali", label: "Mali İşler", icon: "mali", cocuklar: ["finance", "gider", "kasa", "maliyet"] }, // spec 0088 R1
 ];
 
 export const MALI_ISLER_ANAHTARI = "maliIslerAcik"; // R4: makineye özel görünüm tercihi (localStorage)

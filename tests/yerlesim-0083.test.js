@@ -11,7 +11,8 @@ const gez = (d) => readdirSync(resolve(kok, d)).flatMap(ad => {
   const f = `${d}/${ad}`;
   return statSync(resolve(kok, f)).isDirectory() ? gez(f) : /\.(jsx?|cjs|mjs)$/.test(ad) ? [f] : [];
 });
-const ETIKETLER = ["Dönem Raporu", "Tedarikler ve Ekstre", "Üretim Partileri", "Makina Kârlılığı", "Makina ve Model"];
+// Spec 0088 ile: Üretim Partileri Makina Maliyeti ekranına taşındı (R23/2); Giderler dört görünüm.
+const ETIKETLER = ["Dönem Raporu", "Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"];
 // P5: sıra, beş etiketi TEK bir dizi değişmezinde birlikte taşıyan yerde yazılıdır. İç içe köşeli parantezi olmayan her dizi
 // parçası taranır (GORUNUMLER nesne dizisi süslü parantez taşır, köşeli değil).
 const siraDizisiVarMi = (metin) => [...metin.matchAll(/\[[^[\]]*\]/g)].some(m => ETIKETLER.every(e => m[0].includes(`"${e}"`)));
@@ -20,13 +21,13 @@ const siraDizisiVarMi = (metin) => [...metin.matchAll(/\[[^[\]]*\]/g)].some(m =>
 const ISTISNA = ["tests/ui/standart-kalkar-0082.test.jsx", "tests/ui/yerlesim-0083.test.jsx", "tests/yerlesim-0083.test.js"];
 
 describe("Spec 0083: kaynak taramaları", () => {
-  it("AC-6: beş görünüm etiketini tek dizide birlikte taşıyan tek kaynak dosya Giderler.jsx; görüntü aracı adları ayrı adımlarda taşır", () => {
+  it("AC-6: dört görünüm etiketini (spec 0088 ile) tek dizide birlikte taşıyan tek kaynak dosya Giderler.jsx; görüntü aracı adları ayrı adımlarda taşır", () => {
     const dosyalar = ["src", "scripts/evidence", "tests"].flatMap(gez);
     const bulunan = dosyalar.filter(f => siraDizisiVarMi(oku(f)));
     expect(bulunan.filter(f => !ISTISNA.includes(f))).toEqual(["src/components/Giderler.jsx"]);
     for (const f of ISTISNA) expect(siraDizisiVarMi(oku(f)), `eskimiş istisna: ${f}`).toBe(true);
     const arac = oku("scripts/evidence/0009-sayfa.jsx");
-    expect(ETIKETLER.every(e => arac.includes(e))).toBe(true); // beşini de taşır (dosya düzeyinde tarama burada kırılırdı)
+    expect(ETIKETLER.every(e => arac.includes(e))).toBe(true); // hepsini taşır (dosya düzeyinde tarama burada kırılırdı)
     expect(siraDizisiVarMi(arac)).toBe(false);
   });
   it("AC-24 / C2: GORUNUMLER tek satır ve yeni sırada; sözlüğün üç Giderler.jsx atfı tasarim-kaynak ile denetlenir", () => {
@@ -34,8 +35,8 @@ describe("Spec 0083: kaynak taramaları", () => {
     const satir = g.split("\n").find(l => l.startsWith("const GORUNUMLER = ["));
     expect(satir).toMatch(/\];$/);
     expect([...satir.matchAll(/label: "([^"]+)"/g)].map(m => m[1])).toEqual(ETIKETLER);
-    expect([...satir.matchAll(/value: "([^"]+)"/g)].map(m => m[1])).toEqual(["rapor", "tedarikci", "partiler", "karlilik", "makina"]);
-    expect(g).toMatch(/const DONEMSIZ = new Set\(\["partiler"\]\);/);
+    expect([...satir.matchAll(/value: "([^"]+)"/g)].map(m => m[1])).toEqual(["rapor", "tedarikci", "karlilik", "makina"]);
+    expect(g).toMatch(/const DONEMSIZ = new Set\(\);/); // spec 0088 AC-42/2: dönemsiz görünüm kalmadı
     expect(g).toMatch(/GORUNUMLER\.some\(x => x\.value === g\) \? g : "rapor"/); // açılış dizinin sırasından değil (R2)
   });
   it("AC-7 (kaynak): çubuğun kabı flex 0 0 auto; sağ grup kendi kabında bütün olarak", () => {
@@ -72,7 +73,9 @@ describe("Spec 0083: kaynak taramaları", () => {
   it("AC-25: 0083 raporundaki her ekran görüntü aracında tanımlı", () => {
     const arac = oku("scripts/evidence/0009-sayfa.jsx");
     const ekranlar = new Set(JSON.parse(oku("docs/evidence/0083-piksel-raporu.json")).map(x => x.ad.replace(/-(aydinlik|karanlik)\.png$/, "")));
-    const eksik = [...ekranlar].filter(e => !arac.includes(`"${e}"`) && !arac.includes(`"${e.split("-").pop()}"`));
+    // Spec 0088 ile (R23/4): Giderler › Üretim Partileri ekranları Makina Maliyeti'ne taşındı ve araçta yeni adlarıyla durur.
+    const TASINAN = { "giderler-uretim-partileri": "maliyet-uretim-partileri", "giderler-uretim-partisi-formu": "maliyet-uretim-partisi-formu" };
+    const eksik = [...ekranlar].map(e => TASINAN[e] || e).filter(e => !arac.includes(`"${e}"`) && !arac.includes(`"${e.split("-").pop()}"`));
     expect(eksik).toEqual([]);
   });
   it("AC-20 / R14 (git farkının taramayla desteklenen yarısı): motor, sunucu, veritabanı, birleştirme ve yazdırma bu spec'i bilmez", () => {

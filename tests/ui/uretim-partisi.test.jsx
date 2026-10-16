@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
-// Spec 0022: üretim partisi, arayüz (Giderler › Üretim Partileri, stok formu, satış damgası, dönen stok, maliyet
+// Spec 0022: üretim partisi, arayüz (Makina Maliyeti › Üretim Partileri, stok formu, satış damgası, dönen stok, maliyet
 // detayı, kârlılık listesi, Makina ve Model uyarısı).
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";
+// Spec 0088 ile (R23, C14): parti yönetimi Giderler'den Makina Maliyeti ekranına taşındı; düzenek yeni ekranı çizer,
+// kayıt alanları, doğrulama metinleri, kapanış görüntüsü ve izin aynen (AC-34, AC-37).
+import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
 import { Giderler } from "../../src/components/Giderler";
 import { Customers } from "../../src/components/Customers";
 import { MakinaStokTab } from "../../src/components/stock/MakinaStokTab";
@@ -25,13 +28,20 @@ const stk = (id, o = {}) => ({ id, model: "AK100", serialNo: `T${id}`, addedDate
 function GiderHarness({ p0 = [], stock = [], customers = [], giderler = [], perms = null, onState }) {
   const [uretimPartileri, setUretimPartileri] = useState(p0);
   onState?.({ uretimPartileri });
-  return <Giderler giderler={giderler} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TUR} tedarikciler={[]} setTedarikciler={vi.fn()}
-    uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} calisanlar={[]} stock={stock} customers={customers}
-    standardModels={[{ model: "AK100" }]} customModels={[]} appSettings={AYAR} serverPermissions={perms} showToast={vi.fn()}
-    satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }}
-    makinaMaliyet={maliyet({ stock, customers, giderler, uretimPartileri })} />;
+  return <MakinaMaliyeti giderler={giderler} giderTurleri={TUR} setGiderTurleri={vi.fn()} tedarikciler={[]}
+    uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers} parts={[]}
+    standardModels={[{ model: "AK100" }]} customModels={[]} setStandardModels={vi.fn()} setCustomModels={vi.fn()} appSettings={AYAR} setAppSettings={vi.fn()}
+    serverPermissions={perms} showToast={vi.fn()} makinaMaliyet={maliyet({ stock, customers, giderler, uretimPartileri })} />;
 }
-const partilerSekmesi = () => fireEvent.click(screen.getByText("Üretim Partileri"));
+// Spec 0088 R24/2 (AC-37/2): "Kapanmış partilerin aylarında değişen ortak gider" kutusu Giderler › Makina ve Model'de kalır.
+function GiderlerHarness({ p0 = [], stock = [], giderler = [] }) {
+  return <Giderler giderler={giderler} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TUR} tedarikciler={[]} setTedarikciler={vi.fn()}
+    uretimPartileri={p0} setUretimPartileri={vi.fn()} calisanlar={[]} stock={stock} customers={[]}
+    standardModels={[{ model: "AK100" }]} customModels={[]} appSettings={AYAR} serverPermissions={null} showToast={vi.fn()}
+    satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }}
+    makinaMaliyet={maliyet({ stock, giderler, uretimPartileri: p0 })} />;
+}
+const partilerSekmesi = () => fireEvent.click(screen.getByRole("radio", { name: "Üretim Partileri" }));
 const yeniParti = (ad, bas, bit) => {
   fireEvent.click(screen.getByText("Yeni Üretim Partisi"));
   fireEvent.change(screen.getByLabelText("Parti adı"), { target: { value: ad } });
@@ -40,7 +50,7 @@ const yeniParti = (ad, bas, bit) => {
   fireEvent.click(screen.getByText("Kaydet"));
 };
 
-describe("Giderler › Üretim Partileri (R1, R11, C5)", () => {
+describe("Makina Maliyeti › Üretim Partileri (R1, R11, C5; spec 0088 AC-34, AC-37)", () => {
   it("AC-1: ad, başlangıç ayı ve açıklamayla parti oluşturulur ve listede açık olarak görünür", () => {
     let st;
     render(<GiderHarness onState={s => { st = s; }} />);
@@ -103,11 +113,11 @@ describe("Giderler › Üretim Partileri (R1, R11, C5)", () => {
     expect(within(screen.getByTestId("parti-satiri")).queryByTitle("Düzenle")).toBeNull();
     expect(within(screen.getByTestId("parti-satiri")).queryByTitle("Sil")).toBeNull();
   });
-  it("AC-11: kapanmış partinin ayında ortak gider değişince Makina ve Model'de satır görünür (pencere yok)", () => {
+  it("AC-11 (spec 0088 AC-37/2): kapanmış partinin ayında ortak gider değişince Giderler › Makina ve Model'de satır görünür (pencere yok)", () => {
     const stock = [stk(1, { partiId: 1 })];
     const kapanis = maliyet({ stock, giderler: [gid(1, "2026-01-10", 1000)], uretimPartileri: [] });
     const kapali = partiKapanisUygula(null, { id: 1, ad: "Q1", baslangicAy: "2026-01", bitisAy: "2026-01" }, kapanis.aylar, "2026-02-01T10:00:00");
-    render(<GiderHarness p0={[kapali]} stock={stock} giderler={[gid(1, "2026-01-10", 1000), gid(2, "2026-01-20", 250)]} />);
+    render(<GiderlerHarness p0={[kapali]} stock={stock} giderler={[gid(1, "2026-01-10", 1000), gid(2, "2026-01-20", 250)]} />);
     fireEvent.click(screen.getByText("Makina ve Model"));
     const kutu = screen.getByTestId("parti-degisimleri");
     expect(kutu.textContent).toMatch(/Q1.*kapanışta 1\.000 ₺, bugün 1\.250 ₺/);

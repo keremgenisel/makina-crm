@@ -80,7 +80,8 @@ app.whenReady().then(async () => {
       if (!s) { check(`${ad0}: Dönem Raporu kartlarıyla çizildi`, false); continue; }
       {
         const c = await win.webContents.executeJavaScript(olcCubuk);
-        check(`${ad0}: görünüm çubuğu yeni sırada beş sekme (spec 0083 AC-1)`, c.d.map(x => x.t).join("|") === "Dönem Raporu|Tedarikler ve Ekstre|Üretim Partileri|Makina Kârlılığı|Makina ve Model", JSON.stringify(c.d.map(x => x.t)));
+        // Spec 0088 ile: Üretim Partileri Makina Maliyeti ekranına taşındı (R23/2), çubuk dört sekme.
+        check(`${ad0}: görünüm çubuğu dört sekme (spec 0083 AC-1, spec 0088 ile)`, c.d.map(x => x.t).join("|") === "Dönem Raporu|Tedarikler ve Ekstre|Makina Kârlılığı|Makina ve Model", JSON.stringify(c.d.map(x => x.t)));
         if (genislik === 1280) check(`${ad0}: görünüm çubuğu tek satır (spec 0083 AC-7)`, new Set(c.d.map(x => x.top)).size === 1, JSON.stringify(c.d));
         check(`${ad0}: görünüm çubuğunun düğmeleri pencerenin içinde, belge taşmıyor (spec 0083 AC-7)`, c.d.every(x => x.left >= -0.5 && x.right <= c.w + 0.5) && !c.belgeTasma, JSON.stringify(c));
         const b = await win.webContents.executeJavaScript(olcBaslik);
