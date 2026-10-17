@@ -11,17 +11,20 @@ const gez = (d) => readdirSync(resolve(kok, d)).flatMap(ad => {
   const f = `${d}/${ad}`;
   return statSync(resolve(kok, f)).isDirectory() ? gez(f) : /\.(jsx?|cjs|mjs)$/.test(ad) ? [f] : [];
 });
-// Spec 0088 ile: Üretim Partileri Makina Maliyeti ekranına taşındı (R23/2); Giderler dört görünüm.
-const ETIKETLER = ["Dönem Raporu", "Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"];
+// Spec 0088 ile: Üretim Partileri Makina Maliyeti ekranına taşındı (R23/2). Spec 0089 ile (R1, C7 0083 AC-1): Giderler iki görünüm;
+// Makina Kârlılığı ve Makina ve Model kalktı.
+const ETIKETLER = ["Dönem Raporu", "Tedarikler ve Ekstre"];
 // P5: sıra, beş etiketi TEK bir dizi değişmezinde birlikte taşıyan yerde yazılıdır. İç içe köşeli parantezi olmayan her dizi
 // parçası taranır (GORUNUMLER nesne dizisi süslü parantez taşır, köşeli değil).
 const siraDizisiVarMi = (metin) => [...metin.matchAll(/\[[^[\]]*\]/g)].some(m => ETIKETLER.every(e => m[0].includes(`"${e}"`)));
 // Gerekçeli istisnalar: sıranın kendisini sınayan iki test (0082 C4 ile ters çevrilen kriter ve bu işin AC-1'i) ve bu taramanın
 // kendi beklenen sırası (ETIKETLER).
-const ISTISNA = ["tests/ui/standart-kalkar-0082.test.jsx", "tests/ui/yerlesim-0083.test.jsx", "tests/yerlesim-0083.test.js"];
+// Spec 0089 ile: 0089'un iki UI testi de sırayı sınar (AC-1, AC-21).
+const ISTISNA = ["tests/ui/standart-kalkar-0082.test.jsx", "tests/ui/yerlesim-0083.test.jsx", "tests/yerlesim-0083.test.js",
+  "tests/ui/gider-gorunum-0089.test.jsx", "tests/ui/gider-gorunum-0089-app.test.jsx"];
 
 describe("Spec 0083: kaynak taramaları", () => {
-  it("AC-6: dört görünüm etiketini (spec 0088 ile) tek dizide birlikte taşıyan tek kaynak dosya Giderler.jsx; görüntü aracı adları ayrı adımlarda taşır", () => {
+  it("AC-6: iki görünüm etiketini (spec 0089 ile) tek dizide birlikte taşıyan tek kaynak dosya Giderler.jsx; görüntü aracı adları ayrı adımlarda taşır", () => {
     const dosyalar = ["src", "scripts/evidence", "tests"].flatMap(gez);
     const bulunan = dosyalar.filter(f => siraDizisiVarMi(oku(f)));
     expect(bulunan.filter(f => !ISTISNA.includes(f))).toEqual(["src/components/Giderler.jsx"]);
@@ -29,13 +32,15 @@ describe("Spec 0083: kaynak taramaları", () => {
     const arac = oku("scripts/evidence/0009-sayfa.jsx");
     expect(ETIKETLER.every(e => arac.includes(e))).toBe(true); // hepsini taşır (dosya düzeyinde tarama burada kırılırdı)
     expect(siraDizisiVarMi(arac)).toBe(false);
+    // Spec 0089 AC-3: kalkan iki etiket kaynakta hiçbir görünüm dizisinde yok.
+    expect(oku("src/components/Giderler.jsx")).not.toMatch(/Makina Kârlılığı|"Makina ve Model"/);
   });
   it("AC-24 / C2: GORUNUMLER tek satır ve yeni sırada; sözlüğün üç Giderler.jsx atfı tasarim-kaynak ile denetlenir", () => {
     const g = oku("src/components/Giderler.jsx");
     const satir = g.split("\n").find(l => l.startsWith("const GORUNUMLER = ["));
     expect(satir).toMatch(/\];$/);
     expect([...satir.matchAll(/label: "([^"]+)"/g)].map(m => m[1])).toEqual(ETIKETLER);
-    expect([...satir.matchAll(/value: "([^"]+)"/g)].map(m => m[1])).toEqual(["rapor", "tedarikci", "karlilik", "makina"]);
+    expect([...satir.matchAll(/value: "([^"]+)"/g)].map(m => m[1])).toEqual(["rapor", "tedarikci"]); // spec 0089 ile
     expect(g).toMatch(/const DONEMSIZ = new Set\(\);/); // spec 0088 AC-42/2: dönemsiz görünüm kalmadı
     expect(g).toMatch(/GORUNUMLER\.some\(x => x\.value === g\) \? g : "rapor"/); // açılış dizinin sırasından değil (R2)
   });
@@ -75,7 +80,13 @@ describe("Spec 0083: kaynak taramaları", () => {
     const ekranlar = new Set(JSON.parse(oku("docs/evidence/0083-piksel-raporu.json")).map(x => x.ad.replace(/-(aydinlik|karanlik)\.png$/, "")));
     // Spec 0088 ile (R23/4): Giderler › Üretim Partileri ekranları Makina Maliyeti'ne taşındı ve araçta yeni adlarıyla durur.
     const TASINAN = { "giderler-uretim-partileri": "maliyet-uretim-partileri", "giderler-uretim-partisi-formu": "maliyet-uretim-partisi-formu" };
-    const eksik = [...ekranlar].map(e => TASINAN[e] || e).filter(e => !arac.includes(`"${e}"`) && !arac.includes(`"${e.split("-").pop()}"`));
+    // Spec 0089 ile (R10, C7 0088 R23/4): kalkan iki görünümün ekranları araçtan bilinçli olarak düştü (tam ad listesi).
+    const KALKAN = new Set(["giderler-model", "giderler-karlilik", "giderler-model-personel", "maliyet-detay-personel", "giderler-karlilik-parti",
+      "giderler-model-parti-degisim", "maliyet-detay-parti-acik", "maliyet-detay-parti-kapali", "giderler-0072-model", "giderler-0072-karlilik",
+      "giderler-0072-detay", "giderler-0062-karlilik", "giderler-0062-karlilik-sayfa2", "giderler-0062-makina-model", "giderler-0062-makina-model-sayfa2",
+      "giderler-0076-karlilik", "maliyet-detay-0076", "giderler-0068-parti-sil"]);
+    for (const e of KALKAN) expect(arac.includes(`"${e}"`), `araçta kalmış: ${e}`).toBe(false);
+    const eksik = [...ekranlar].filter(e => !KALKAN.has(e)).map(e => TASINAN[e] || e).filter(e => !arac.includes(`"${e}"`) && !arac.includes(`"${e.split("-").pop()}"`));
     expect(eksik).toEqual([]);
   });
   it("AC-20 / R14 (git farkının taramayla desteklenen yarısı): motor, sunucu, veritabanı, birleştirme ve yazdırma bu spec'i bilmez", () => {
@@ -109,7 +120,9 @@ describe("Spec 0083: kaynak taramaları", () => {
         else expect(k.beklenen ?? "ayni").toBe("ayni");
       }
     }
-    expect(dosyaSayisi).toBe(19); // spec'in 18'i + GiderForm.jsx (formun arkasındaki çubuk; C5/3 gereği rapor karar verir)
+    // spec'in 18'i + GiderForm.jsx (formun arkasındaki çubuk; C5/3 gereği rapor karar verir). Spec 0089 ile: kaldırılan
+    // üç dosyanın kanıt kayıtları (FiyatOnerisi, MakinaKarliligi, MakinaModelGorunumu) çıktı.
+    expect(dosyaSayisi).toBe(19 - ["FiyatOnerisi", "MakinaKarliligi", "MakinaModelGorunumu"].length);
   });
   it("DoD: AC-1…AC-25'in her biri bir test adında (0083 dosyalarında 'AC-n', başka dosyalarda 'spec 0083 AC-n')", () => {
     const bulunan = new Set();

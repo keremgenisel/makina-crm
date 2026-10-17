@@ -2,7 +2,8 @@
 // Spec 0083: Giderler görünüm çubuğunun sırası ve Kasa › Hesaplar'da hesapsız kayıtlar bloğunun (deneme şeridi dahil) sayfa
 // sonuna, Çalışan avanslarından sonraya inmesi. Gerçek Giderler ve Kasa. Yalnız çizim sırası değişir; metinler birebir.
 // Bu dosya görünüm etiketlerini sıralı dizide taşır (AC-1): AC-6 taramasında gerekçeli istisnadır (P5). Spec 0088 ile dört görünüm:
-// Üretim Partileri Makina Maliyeti ekranına taşındı (R23/2), dönem seçicisi her görünümde (AC-42/2).
+// Üretim Partileri Makina Maliyeti ekranına taşındı (R23/2), dönem seçicisi her görünümde (AC-42/2). Spec 0089 ile (R1, C7 0083
+// AC-1, 0088 R24): iki görünüm; Makina Kârlılığı ve Makina ve Model kalktı, Giderler makinaMaliyet almaz.
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
@@ -11,7 +12,6 @@ import { Giderler } from "../../src/components/Giderler";
 import { Kasa, denemeDonemiMetni } from "../../src/components/Kasa";
 import { HESAPSIZ_NOTU } from "../../src/lib/kasa";
 import { odemeleriUygula, turHaritasi } from "../../src/lib/gider";
-import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-30T10:00:00")); });
@@ -26,22 +26,21 @@ function GH({ baslangicGorunum }) {
   return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={h} setHesapHareketleri={setH} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
     giderTurleri={GTUR} tedarikciler={GTED} setTedarikciler={vi.fn()} calisanlar={[]} standardModels={[]} customModels={[]} baslangicGorunum={baslangicGorunum}
     appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} kasaHesaplari={[]} showToast={vi.fn()} canDo={() => true}
-    satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }}
-    makinaMaliyet={hesaplaMakinaMaliyetleri({ giderler: KALEM, giderTurleri: GTUR, giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-30" })} />;
+    satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} />;
 }
 const cubuk = () => within(screen.getByRole("radiogroup", { name: "Görünüm" })).getAllByRole("radio");
 const gorunum = (ad) => fireEvent.click(screen.getByRole("radio", { name: ad }));
 const secili = (ad) => screen.getByRole("radio", { name: ad }).getAttribute("aria-checked");
 
 describe("Spec 0083 A: Giderler görünüm çubuğu (R1–R4)", () => {
-  it("AC-1 (spec 0088 ile): dört sekme sırayla Dönem Raporu · Tedarikler ve Ekstre · Makina Kârlılığı · Makina ve Model", () => {
+  it("AC-1 (spec 0089 ile): iki sekme sırayla Dönem Raporu · Tedarikler ve Ekstre", () => {
     render(<GH />);
-    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"]);
+    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre"]);
   });
-  it("AC-2: ikinci sekme 'Tedarikler ve Ekstre', sonuncu 'Makina ve Model' (spec 0088 ile dördüncü)", () => {
+  it("AC-2: ikinci ve son sekme 'Tedarikler ve Ekstre' (spec 0089 ile)", () => {
     render(<GH />);
     expect(cubuk()[1].textContent).toBe("Tedarikler ve Ekstre");
-    expect(cubuk()[3].textContent).toBe("Makina ve Model");
+    expect(cubuk()).toHaveLength(2);
   });
   it("AC-3: açılışta Dönem Raporu seçili; her sekme kendi görünümünü çizer", () => {
     render(<GH />);
@@ -49,13 +48,14 @@ describe("Spec 0083 A: Giderler görünüm çubuğu (R1–R4)", () => {
     expect(screen.getByTestId("kalem-listesi")).toBeTruthy();
     gorunum("Tedarikler ve Ekstre"); expect(screen.getByTestId("tedarikciler")).toBeTruthy();
     expect(screen.queryByRole("radio", { name: "Üretim Partileri" })).toBeNull(); // spec 0088 ile
-    gorunum("Makina Kârlılığı"); expect(screen.queryByTestId("makina-karliligi") || screen.queryByTestId("karlilik-bos")).toBeTruthy();
-    gorunum("Makina ve Model"); expect(screen.getByText("Makinaya atanmış")).toBeTruthy();
+    // Spec 0089 ile: Makina Kârlılığı ve Makina ve Model görünümleri yok.
+    expect(screen.queryByRole("radio", { name: "Makina Kârlılığı" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Makina ve Model" })).toBeNull();
     expect(screen.queryByTestId("kalem-listesi")).toBeNull();
   });
   it("AC-4 (spec 0088 AC-42/2 ile): dönem seçicisi bütün görünümlerde çizilir; geçersiz aralık uyarısı her görünümde", () => {
     render(<GH />);
-    for (const ad of ["Dönem Raporu", "Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"]) {
+    for (const ad of ["Dönem Raporu", "Tedarikler ve Ekstre"]) { // spec 0089 ile iki görünüm
       gorunum(ad);
       expect(screen.queryByLabelText("Dönem ayı"), ad).toBeTruthy();
     }
@@ -64,7 +64,7 @@ describe("Spec 0083 A: Giderler görünüm çubuğu (R1–R4)", () => {
     fireEvent.change(screen.getByLabelText("Başlangıç tarihi"), { target: { value: "2026-10-15" } });
     fireEvent.change(screen.getByLabelText("Bitiş tarihi"), { target: { value: "2026-10-01" } });
     expect(screen.getByText("Başlangıç tarihi bitişten sonra olamaz.")).toBeTruthy();
-    gorunum("Makina ve Model");
+    gorunum("Tedarikler ve Ekstre"); // spec 0089 ile (eskiden Makina ve Model)
     expect(screen.getByLabelText("Başlangıç tarihi")).toBeTruthy();
     expect(screen.getByText("Başlangıç tarihi bitişten sonra olamaz.")).toBeTruthy();
   });

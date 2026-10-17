@@ -32,13 +32,13 @@ describe("Spec 0080: kaynak taramaları", () => {
     expect(s).toMatch(/const makinaCoz = useMemo\(\(\) => makinaCozucuOlustur\(\{ stock, customers \}\), \[stock, customers\]\);/);
     expect(s).toMatch(/const cz = makinaCoz\(k\);/);
   });
-  it("AC-17: donemAnahtari KalemListesi'ne geçmez; tanım ve Makina ve Model'e geçiş durur (R11)", () => {
+  // Spec 0089 ile (C7 0080 AC-17; 0089 R2, AC-7): tek tüketicisi Makina ve Model kalktığı için donemAnahtari de kalktı.
+  it("AC-17 (spec 0089 ile): donemAnahtari KalemListesi'ne geçmez ve Giderler'de hiç yok (R11)", () => {
     const g = oku("src/components/Giderler.jsx");
     const cagrilar = g.split("<KalemListesi ").slice(1).map(p => p.slice(0, p.indexOf("/>")));
     expect(cagrilar).toHaveLength(2);
     for (const c of cagrilar) expect(c).not.toMatch(/donemAnahtari/);
-    expect(g).toMatch(/const donemAnahtari = `\$\{mod\}\|\$\{baslangic\}\|\$\{bitis\}`;/);
-    expect(g).toMatch(/<MakinaModelGorunumu [^>]*donemAnahtari=\{donemAnahtari\}/);
+    expect(g).not.toMatch(/donemAnahtari|MakinaModelGorunumu/);
     expect(oku("src/components/gider/DonemRaporu.jsx")).not.toMatch(/donemAnahtari/);
   });
   it("AC-20: görüntü aracında iki -sayfa2 ekranı yok, dört 0080 ekranı var", () => {

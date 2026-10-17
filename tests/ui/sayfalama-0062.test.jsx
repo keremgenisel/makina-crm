@@ -6,14 +6,11 @@ import { render, screen, fireEvent, cleanup, within } from "@testing-library/rea
 import { useState } from "react";
 import { Kasa } from "../../src/components/Kasa";
 import { CekPortfoyu } from "../../src/components/cek/CekPortfoyu";
-import { MakinaKarliligi } from "../../src/components/gider/MakinaKarliligi";
-import { MakinaModelGorunumu } from "../../src/components/gider/MakinaModelGorunumu";
 import { AcikKalemler } from "../../src/components/gider/AcikKalemler";
 import { EkstrePenceresi } from "../../src/components/gider/EkstrePenceresi";
 import { OdemeHatirlatmaPenceresi } from "../../src/components/gider/OdemeHatirlatma";
 import { giderKalemDogrula, turHaritasi, odemeleriUygula } from "../../src/lib/gider";
 import { hesapBakiyeleri } from "../../src/lib/kasa";
-import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-10-02T10:00:00")); });
@@ -211,33 +208,8 @@ const k = (f) => { const r = giderKalemDogrula(f, { turMap, tedarikciler: TED, u
 // AC-29/14, AC-28, AC-15) ters hâlleriyle tests/ui/sayfalama-kalkar-0080.test.jsx'te (spec 0080 plan P1).
 
 // ── Makina ve Model, Makina Kârlılığı ──
-describe("Spec 0062: Giderler'in diğer listeleri (R5, R6)", () => {
-  // Spec 0080 ile kaldırıldı: Tedarikçiler artık sayfalanmaz (0062 AC-8/AC-16'nın ters hâli spec 0080 AC-8, AC-10).
-  it("AC-7: Makina ve Model'in makina listesi sayfalanır; dönem anahtarı değişince 1. sayfa; kova kartları sayfadan bağımsız", () => {
-    const rapor = { kovalar: { makina: 1200, model: 0, dagitma: 0, ortak: 0 }, toplam: 1200, modelBazli: [], dagitmaKalemleri: [], kismiOrtak: [], dusenAtamalar: [],
-      makinaBazli: Array.from({ length: 12 }, (_, i) => ({ anahtar: `m${i}`, makina: { tur: "stok", model: "AK100", seri: `S${i + 1}` }, kalemler: [], toplam: 100 })) };
-    const { rerender } = render(<MakinaModelGorunumu rapor={rapor} turMap={turMap} donemAnahtari="ay|a" />);
-    expect(screen.getAllByText(/^AK100 · Seri S\d+$/)).toHaveLength(10);
-    sonraki(document.body);
-    expect(screen.getAllByText(/^AK100 · Seri S\d+$/).map(e => e.textContent)).toEqual(["AK100 · Seri S11", "AK100 · Seri S12"]);
-    expect(screen.getByText("12 makina")).toBeTruthy();
-    rerender(<MakinaModelGorunumu rapor={rapor} turMap={turMap} donemAnahtari="ay|b" />);
-    expect(aktif(document.body)).toBe("1");
-  });
-  it("AC-6: Makina Kârlılığı listesi sayfalanır; dönem toplamı bütün makinalardan", () => {
-    const mus = (id) => ({ id, name: `Firma ${id}`, model: "AK100", serialNo: `S${id}`, installDate: "2026-03-20", fabrikaSatisBedeli: 500000, currency: "TRY", uretimTarihi: "2026-03-05" });
-    const sonuc = hesaplaMakinaMaliyetleri({ customers: Array.from({ length: 12 }, (_, i) => mus(i + 1)), stock: [], giderler: [], giderTurleri: [{ id: 1, ad: "Genel", davranis: "normal" }],
-      standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-24" });
-    render(<MakinaKarliligi sonuc={sonuc} baslangic="2026-03-01" bitis="2026-03-31" bugun="2026-09-24" modeller={[{ model: "AK100" }]} />);
-    const tablo = screen.getByTestId("karlilik-tablosu");
-    const toplam = screen.getByTestId("karlilik-toplam").textContent;
-    expect(toplam).toMatch(/6\.000\.000/);
-    expect(tablo.querySelectorAll("tbody tr")).toHaveLength(11); // 10 makina + dönem toplamı
-    sonraki(screen.getByTestId("makina-karliligi"));
-    expect(tablo.querySelectorAll("tbody tr")).toHaveLength(3);
-    expect(screen.getByTestId("karlilik-toplam").textContent).toBe(toplam);
-  });
-});
+// Spec 0089 ile kaldırıldı (C7 0062 R11, R12): iki görünüm dosyalarıyla kalktı; 0062'nin AC-6 ve AC-7'si (iki listenin sayfalanması)
+// ekranla birlikte düştü. Sayfalanan liste tablosu (beş dosya, dokuz çağrı) tests/sayfalama-0062.test.js'te.
 
 // ── Açık kalemler ──
 describe("Spec 0062: Açık kalemler (R10, R13, R32)", () => {

@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 // Spec 0072: peşin ödenen giderin aylara dağıtılması, arayüz. Gider formu ve tanım formu (alan, pasif durum, ipuçları),
 // kalem listesi rozeti, maliyet detayı ve notları, Makina ve Model'in yeni kutusu (gerçek Giderler). Test adları AC-<n> taşır.
+// Spec 0089 ile (C7 0072 R16, AC-16/17/18/30/31/38): Makina ve Model, maliyet detayı ve notları ekrandan kalktı; dağıtım
+// kuralı (C3) değişmez. Kova cümlesi Dönem Raporu'nda, detayın satırları motorun makina sonucunda ölçülür.
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { GiderForm } from "../../src/components/GiderForm";
 import { Giderler } from "../../src/components/Giderler";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
-import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
-import { MakinaKarliligi } from "../../src/components/gider/MakinaKarliligi";
-import { DAGITIM_KUTU_IBARESI } from "../../src/components/gider/MakinaModelGorunumu";
-import { hesaplaMakinaMaliyetleri, makinaKarlilik, DAGITIM_NOTU } from "../../src/lib/makinaMaliyeti";
+import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
+import { kutuAc } from "./kutuAc";
 import { DAGITIM_MAKINA_NEDENI, DAGITIM_DAGITMA_NEDENI, DAGITIM_MODEL_IPUCU, DAGITIM_TANIM_IPUCU } from "../../src/lib/gider";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -112,9 +112,9 @@ const INTERNET = { id: 10, tarih: "2026-09-02", turId: 4, tutar: 12000, kdvOrani
 const NORMAL = { id: 11, tarih: "2026-09-05", turId: 4, tutar: 500, kdvOrani: 20, aciklama: "Kırtasiye" };
 const hesapla = (giderler, o = {}) => hesaplaMakinaMaliyetleri({ customers: [], stock: [], giderler, giderTurleri: TURLER, standardModels: MOD, customModels: [],
   giderAyarlari: { yururlukAy: "2026-01" }, ...o }, { bugun: "2026-09-24" });
-const giderlerAc = (giderler, makinaMaliyet = hesapla(giderler)) => render(<Giderler giderler={giderler} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
+const giderlerAc = (giderler) => render(<Giderler giderler={giderler} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
   giderTurleri={TURLER} tedarikciler={[]} setTedarikciler={vi.fn()} calisanlar={CAL} stock={[]} customers={[]}
-  standardModels={MOD} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} showToast={vi.fn()} makinaMaliyet={makinaMaliyet}
+  standardModels={MOD} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} showToast={vi.fn()}
   satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} />);
 
 describe("Spec 0072: kalem listesi ve Makina ve Model", () => {
@@ -127,43 +127,29 @@ describe("Spec 0072: kalem listesi ve Makina ve Model", () => {
     expect(satir.textContent).toMatch(/12\.000 ₺/);
     expect(satir.textContent).not.toMatch(/(?<!\d)1\.000 ₺/);
   });
-  it("AC-18 / AC-30 / AC-38: Makina ve Model'de kova kartları ve cümlesi aynı; yeni kutu ortak gideri paylarla, ibareyle ve tam tutarlı listeyle", () => {
+  it("AC-18 / AC-30 / AC-38 (spec 0089 ile): kova cümlesi Dönem Raporu'nda aynı; Makina ve Model ve dağıtım kutusu yok", () => {
     giderlerAc([INTERNET, NORMAL]);
-    fireEvent.click(screen.getByText("Makina ve Model"));
-    expect(screen.getByText(/Dört kovanın toplamı = dönem toplamı/).textContent).toMatch(/12\.500 ₺/);
-    const kutu = screen.getByTestId("dagitim-kutusu");
-    expect(within(kutu).getByTestId("dagitim-kutusu-toplam").textContent).toMatch(/1\.500 ₺/); // 1.000 pay + 500 kırtasiye
-    expect(within(kutu).getByText(DAGITIM_KUTU_IBARESI)).toBeTruthy();
-    const kalem = within(kutu).getByTestId("dagitim-kutusu-kalem");
-    expect(kalem.textContent).toMatch(/İnternet aboneliği/);
-    expect(kalem.textContent).toMatch(/12\.000 ₺/);
-    expect(kalem.textContent).toMatch(/12 aya dağıtılmış/);
-  });
-  // Spec 0082 ile güncellendi: AC-38'in "standart kaynakta etkisizlik" yarısı kalktı (tek kaynak).
-  it("AC-38: dönemde dağıtılmış kalem yoksa kutu çizilmez", () => {
-    giderlerAc([NORMAL]);
-    fireEvent.click(screen.getByText("Makina ve Model"));
+    const kova = kutuAc("Makina Maliyeti Kovaları");
+    expect(kova.textContent).toMatch(/dört kovanın toplamı = dönem toplamı 12\.500 ₺/i);
+    expect(screen.queryByText("Makina ve Model")).toBeNull();
     expect(screen.queryByTestId("dagitim-kutusu")).toBeNull();
   });
 });
 
-describe("Spec 0072: maliyet detayı ve notlar", () => {
+describe("Spec 0072: maliyet detayı ve notlar (spec 0089 ile motor düzeyinde)", () => {
   const mus = { id: 1, name: "Firma", model: "AK100", serialNo: "S1", installDate: "2026-09-10", uretimTarihi: "2026-09-10", currency: "TRY", fabrikaSatisBedeli: 500000 };
-  it("AC-16 / AC-17: detay payın aylık paydan geldiğini yazar; not yalnız dağıtım varken", () => {
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(hesapla([INTERNET], { customers: [mus] }), "musteri:1")} />);
-    expect(screen.getByTestId("dagitim-paylari").textContent).toMatch(/İnternet aboneliği · 12 aya dağıtılmış, aylık 1\.000 ₺/);
-    expect(screen.getByTestId("dagitim-notu").textContent).toBe(DAGITIM_NOTU);
-    cleanup();
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(hesapla([NORMAL], { customers: [mus] }), "musteri:1")} />);
-    expect(screen.queryByTestId("dagitim-paylari")).toBeNull();
-    expect(screen.queryByTestId("dagitim-notu")).toBeNull();
+  it("AC-16 / AC-17 (spec 0089 ile): makinanın payı aylık paydan gelir; işaret yalnız dağıtım varken", () => {
+    const d = makinaKarlilik(hesapla([INTERNET], { customers: [mus] }), "musteri:1");
+    expect(d.dagitimVar).toBe(true);
+    expect(d.dagitimlar).toEqual([{ kalemId: 10, aciklama: "İnternet aboneliği", aySayisi: 12, ilkAy: "2026-09", sonAy: "2027-08", pay: 1000 }]);
+    const n = makinaKarlilik(hesapla([NORMAL], { customers: [mus] }), "musteri:1");
+    expect(n.dagitimVar).toBeFalsy();
+    expect(n.dagitimlar || []).toEqual([]);
   });
-  // Spec 0082 ile kaldırıldı: 0072 AC-17'nin standart kaynak yarısı (tek kaynak).
-
-  it("AC-31: personel davranışlı dağıtılmış kalemin detay satırı 'Personel gideri' yazar", () => {
+  it("AC-31 (spec 0089 ile): personel davranışlı dağıtılmış kalemin satırı 'Personel gideri' yazar", () => {
     const pers = { id: 12, tarih: "2026-09-01", turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "Hasan Çelik", resmiTutar: 1200, eldenTutar: 0, dagitimAy: 12 };
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(hesapla([pers], { customers: [mus] }), "musteri:1")} />);
-    expect(screen.getByTestId("dagitim-paylari").textContent).toMatch(/Personel gideri · 12 aya dağıtılmış/);
-    expect(screen.getByTestId("maliyet-detay").textContent).not.toMatch(/Hasan/);
+    const d = makinaKarlilik(hesapla([pers], { customers: [mus] }), "musteri:1");
+    expect(d.dagitimlar[0].aciklama).toBe("Personel gideri");
+    expect(JSON.stringify(d.dagitimlar)).not.toMatch(/Hasan/);
   });
 });

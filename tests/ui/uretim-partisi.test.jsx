@@ -1,17 +1,16 @@
 // @vitest-environment jsdom
 // Spec 0022: üretim partisi, arayüz (Makina Maliyeti › Üretim Partileri, stok formu, satış damgası, dönen stok, maliyet
-// detayı, kârlılık listesi, Makina ve Model uyarısı).
+// detayı, kârlılık listesi, Makina ve Model uyarısı). Spec 0089 ile (C7 0022 AC-11, AC-16; 0088 R24/2): parti değişim kutusu
+// Makina Maliyeti › Üretim Partileri'ne taşındı (0089 R11); maliyet detayı ve kârlılık listesi ekrandan kalktı, parti ve geçici
+// bilgisi motorun makina sonucunda ölçülür; stokta taşınan maliyetin parti kırılımı kalktı (0089 envanteri).
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";
 // Spec 0088 ile (R23, C14): parti yönetimi Giderler'den Makina Maliyeti ekranına taşındı; düzenek yeni ekranı çizer,
 // kayıt alanları, doğrulama metinleri, kapanış görüntüsü ve izin aynen (AC-34, AC-37).
 import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
-import { Giderler } from "../../src/components/Giderler";
 import { Customers } from "../../src/components/Customers";
 import { MakinaStokTab } from "../../src/components/stock/MakinaStokTab";
-import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
-import { MakinaKarliligi } from "../../src/components/gider/MakinaKarliligi";
 import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
 import { partiKapanisUygula } from "../../src/lib/uretimPartisi";
 
@@ -32,14 +31,6 @@ function GiderHarness({ p0 = [], stock = [], customers = [], giderler = [], perm
     uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers} parts={[]}
     standardModels={[{ model: "AK100" }]} customModels={[]} setStandardModels={vi.fn()} setCustomModels={vi.fn()} appSettings={AYAR} setAppSettings={vi.fn()}
     serverPermissions={perms} showToast={vi.fn()} makinaMaliyet={maliyet({ stock, customers, giderler, uretimPartileri })} />;
-}
-// Spec 0088 R24/2 (AC-37/2): "Kapanmış partilerin aylarında değişen ortak gider" kutusu Giderler › Makina ve Model'de kalır.
-function GiderlerHarness({ p0 = [], stock = [], giderler = [] }) {
-  return <Giderler giderler={giderler} setGiderler={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TUR} tedarikciler={[]} setTedarikciler={vi.fn()}
-    uretimPartileri={p0} setUretimPartileri={vi.fn()} calisanlar={[]} stock={stock} customers={[]}
-    standardModels={[{ model: "AK100" }]} customModels={[]} appSettings={AYAR} serverPermissions={null} showToast={vi.fn()}
-    satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }}
-    makinaMaliyet={maliyet({ stock, giderler, uretimPartileri: p0 })} />;
 }
 const partilerSekmesi = () => fireEvent.click(screen.getByRole("radio", { name: "Üretim Partileri" }));
 const yeniParti = (ad, bas, bit) => {
@@ -113,13 +104,14 @@ describe("Makina Maliyeti › Üretim Partileri (R1, R11, C5; spec 0088 AC-34, A
     expect(within(screen.getByTestId("parti-satiri")).queryByTitle("Düzenle")).toBeNull();
     expect(within(screen.getByTestId("parti-satiri")).queryByTitle("Sil")).toBeNull();
   });
-  it("AC-11 (spec 0088 AC-37/2): kapanmış partinin ayında ortak gider değişince Giderler › Makina ve Model'de satır görünür (pencere yok)", () => {
+  it("AC-11 (spec 0089 ile, 0089 R11): kapanmış partinin ayında ortak gider değişince Makina Maliyeti › Üretim Partileri'nde satır görünür (pencere yok)", () => {
     const stock = [stk(1, { partiId: 1 })];
     const kapanis = maliyet({ stock, giderler: [gid(1, "2026-01-10", 1000)], uretimPartileri: [] });
     const kapali = partiKapanisUygula(null, { id: 1, ad: "Q1", baslangicAy: "2026-01", bitisAy: "2026-01" }, kapanis.aylar, "2026-02-01T10:00:00");
-    render(<GiderlerHarness p0={[kapali]} stock={stock} giderler={[gid(1, "2026-01-10", 1000), gid(2, "2026-01-20", 250)]} />);
-    fireEvent.click(screen.getByText("Makina ve Model"));
+    render(<GiderHarness p0={[kapali]} stock={stock} giderler={[gid(1, "2026-01-10", 1000), gid(2, "2026-01-20", 250)]} />);
+    partilerSekmesi();
     const kutu = screen.getByTestId("parti-degisimleri");
+    expect(kutu.textContent).toMatch(/Kapanmış partilerin aylarında değişen ortak gider/);
     expect(kutu.textContent).toMatch(/Q1.*kapanışta 1\.000 ₺, bugün 1\.250 ₺/);
   });
 });
@@ -180,31 +172,26 @@ describe("Satış ve dönüş (R2)", () => {
   });
 });
 
-describe("Maliyet ekranları (R7, R10, AC-16)", () => {
+describe("Maliyet motoru: parti ve geçici (R7, R10; spec 0089 ile ekranlar kalktı)", () => {
   const ACIK = { id: 5, ad: "2026-1", baslangicAy: "2026-01", bitisAy: null };
   const KAPALI = { ...ACIK, bitisAy: "2026-03" };
   const musteri = { id: 1, name: "Firma", model: "AK100", serialNo: "S1", installDate: "2026-06-01", fabrikaSatisBedeli: 500000, currency: "TRY", uretimTarihi: "2026-03-01", partiId: 5 };
-  it("AC-9 / AC-13: açık partide detay parti adını ve geçici ibaresini gösterir", () => {
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(maliyet({ customers: [musteri], giderler: [gid(1, "2026-02-10", 1000)], uretimPartileri: [ACIK] }), "musteri:1")} />);
-    expect(screen.getByText(/Parti 2026-1: Ocak 2026 – sürüyor, 1 makina/)).toBeTruthy();
-    expect(screen.getByTestId("maliyet-gecici").textContent).toMatch(/Geçici: parti kapanınca bu ibare kalkar/);
+  it("AC-9 / AC-13 (spec 0089 ile): açık partide makina sonucu parti adını ve geçici işaretini taşır", () => {
+    const d = makinaKarlilik(maliyet({ customers: [musteri], giderler: [gid(1, "2026-02-10", 1000)], uretimPartileri: [ACIK] }), "musteri:1");
+    expect(d.parti).toMatchObject({ ad: "2026-1", adet: 1 });
+    expect(d.gecici).toBe(true);
   });
-  it("AC-10: kapalı partide ibare yok", () => {
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(maliyet({ customers: [musteri], giderler: [gid(1, "2026-02-10", 1000)], uretimPartileri: [KAPALI] }), "musteri:1")} />);
-    expect(screen.getByText(/Parti 2026-1: Ocak 2026 – Mart 2026, 1 makina/)).toBeTruthy();
-    expect(screen.queryByTestId("maliyet-gecici")).toBeNull();
+  it("AC-10 (spec 0089 ile): kapalı partide geçici işareti yok", () => {
+    const d = makinaKarlilik(maliyet({ customers: [musteri], giderler: [gid(1, "2026-02-10", 1000)], uretimPartileri: [KAPALI] }), "musteri:1");
+    expect(d.parti).toMatchObject({ ad: "2026-1" });
+    expect(d.gecici).toBe(false);
   });
-  it("triyaj bulgu 2: başlamamış partinin makinası 'henüz başlamadı' açıklamasıyla, 'yürürlük öncesi' metni olmadan", () => {
+  it("triyaj bulgu 2 (spec 0089 ile): başlamamış partinin makinası 'partiBaslamadi', yürürlük öncesi sayılmaz", () => {
     const GELECEK = { id: 6, ad: "Kasım", baslangicAy: "2026-11", bitisAy: null };
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(maliyet({ stock: [stk(1, { partiId: 6 })], uretimPartileri: [GELECEK] }), "stok:1")} />);
-    expect(screen.getByTestId("parti-baslamadi").textContent).toMatch(/Parti henüz başlamadı \(Kasım 2026\)/);
-    expect(screen.queryByText(/yürürlük ayından önce/)).toBeNull();
+    const d = makinaKarlilik(maliyet({ stock: [stk(1, { partiId: 6 })], uretimPartileri: [GELECEK] }), "stok:1");
+    expect(d.partiBaslamadi).toBe(true);
+    expect(d.veriYok).toBeFalsy();
   });
-  it("AC-13 / AC-16: kârlılık listesinde parti rozeti, stokta satırında parti kırılımı", () => {
-    const s = maliyet({ customers: [musteri], stock: [stk(2, { partiId: 5 })], giderler: [gid(1, "2026-02-10", 1000)], uretimPartileri: [ACIK] });
-    render(<MakinaKarliligi sonuc={s} baslangic="2026-06-01" bitis="2026-06-30" bugun="2026-09-23" modeller={[{ model: "AK100" }]} />);
-    expect(screen.getByText("Parti 2026-1 · geçici")).toBeTruthy();
-    const kirilim = screen.getByTestId("ozet-stokta-partiler");
-    expect(kirilim.textContent).toMatch(/Parti 2026-1.*Açık · geçici.*1 makina stokta.*500 ₺/);
-  });
+  // Spec 0089 ile kaldırıldı (C7 0022 AC-16): kârlılık listesindeki parti rozeti ve "stokta taşınan maliyet" parti kırılımı
+  // ekranla birlikte kalktı (0089 kayıp envanteri).
 });

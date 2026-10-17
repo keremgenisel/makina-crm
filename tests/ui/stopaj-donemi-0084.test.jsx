@@ -31,11 +31,11 @@ const pencereyiAc = () => fireEvent.click(dugme());
 const donemSatiri = (anahtar) => screen.getByTestId(`stopaj-donem-${anahtar}`);
 
 describe("Spec 0084: başlık düğmesi (R12)", () => {
-  // Spec 0088 ile: Üretim Partileri Giderler'den taşındı; diğer görünümler üç.
+  // Spec 0088 ile: Üretim Partileri Giderler'den taşındı. Spec 0089 ile (C7 0084 AC-38): diğer görünüm yalnız Tedarikler ve Ekstre.
   it("AC-15: düğme yalnız Dönem Raporu'nda ve açık dönem varken; sayı dönem sayar, diğer görünümlerde yok", () => {
     render(<H />);
     expect(dugme().textContent).toBe("Kira stopajı (1 dönem açık)");
-    for (const ad of ["Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"]) {
+    for (const ad of ["Tedarikler ve Ekstre"]) {
       fireEvent.click(screen.getByRole("radio", { name: ad }));
       expect(dugme(), ad).toBeNull();
     }

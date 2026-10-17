@@ -72,7 +72,7 @@ describe.each([
     menu("Giderler");
     await waitFor(() => expect(!!screen.queryByTestId("gider-perdesi")).toBe(inik));
     gorunur(screen.queryByText("Dönem Raporu"));
-    for (const alt of ["Makina ve Model", "Tedarikler ve Ekstre"]) gorunur( // spec 0082 R1, R12 ile güncellendi
+    for (const alt of ["Tedarikler ve Ekstre"]) gorunur( // spec 0082 R1, R12 ile güncellendi; spec 0089 ile Makina ve Model kalktı
       screen.queryAllByText(alt)[0] ?? null);
   });
 

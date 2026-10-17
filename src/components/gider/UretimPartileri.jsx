@@ -8,12 +8,13 @@ import { AyInput, tl2 } from "./GiderAlanlari";
 import { KartBolum, BosDurum, HataMetni, Ipucu } from "../tasarim";
 import { Rozet } from "./DonemRaporu";
 
-// Giderler › Üretim Partileri (spec 0022 R1, R3, R7, R11; plan P5, P8). Parti yalnız maliyet dağıtımının
+// Makina Maliyeti › Üretim Partileri (spec 0088 ile Giderler'den taşındı; spec 0022 R1, R3, R7, R11; plan P5, P8). Parti yalnız maliyet dağıtımının
 // tabanıdır (C7): kapsadığı ayların ortak gideri partinin makinalarına eşit bölünür. Rakamlar App'te bir kez
 // hesaplanan makina maliyetinden gelir (tek motor, C1). Tanım, kapatma ve silme `gider_tanim` ister (C5).
 // Spec 0068 R9: silme çöp kutusuna taşır; makina bağı okuma anında çözüldüğü için alan temizlenmez (0022 R11) ve parti geri
 // alınınca bağ kendiliğinden döner. Liste canlı dizidir; yazım tam dizi üzerinde işlevsel güncelleyiciyle (C8).
 const BOS = { id: null, ad: "", baslangicAy: "", bitisAy: null, aciklama: "" };
+const satirStil = { display: "grid", gridTemplateColumns: "100px minmax(0, 1fr) 120px", gap: 12, padding: "8px 0", borderTop: "1px solid var(--n150, #f1f5f9)", fontSize: 13, alignItems: "center" };
 const ayAdi = (ay) => { if (!ay) return ""; const [y, m] = ay.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); };
 
 export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stock = [], customers = [], makinaMaliyet = null, canDo = () => true, showToast = () => {}, serverPermissions }) => {
@@ -26,6 +27,9 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
   const kilitli = !!(partiKilidi && kilitId != null);
   const kilitKapat = () => { setForm(null); setSil(null); };
   const ozet = new Map((makinaMaliyet?.partiler || []).map(p => [String(p.id), p]));
+  // Spec 0089 R11 (0022 R8, R15, AC-11): kapanmış partinin ayında ortak gider kapanıştan sonra değişti (anlık görüntü farkı).
+  // Kutu Giderler › Makina ve Model'den buraya taşındı; metin, başlık ve testId aynı, veri aynı motor sonucundan.
+  const partiDegisimleri = (makinaMaliyet?.partiler || []).filter(p => p.degisimler.length);
   const yetki = canDo("gider_tanim");
 
   const ac = (p) => { setHatalar({}); setForm(p ? { ...BOS, ...p } : { ...BOS }); };
@@ -94,6 +98,18 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
               })}
             </tbody>
           </table>
+        </KartBolum>
+      )}
+
+      {partiDegisimleri.length > 0 && (
+        <KartBolum varyant="kart" baslikStili="baslik" title="Kapanmış partilerin aylarında değişen ortak gider" altBaslik="Parti kapandıktan sonra bu aylara gider eklendi, değişti ya da silindi. Paylar bugünkü veriyle yeniden hesaplandı." baslikBosluk={10} baslikRengi="inherit" testId="parti-degisimleri">
+          {partiDegisimleri.flatMap(p => p.degisimler.map(d => (
+            <div key={`${p.id}-${d.ay}`} style={satirStil}>
+              <span style={{ color: "var(--n600, #475569)" }}>{d.ay}</span>
+              <span><b>{p.ad}</b> <span style={{ color: "var(--amb700, #b45309)", fontSize: 12 }}>· kapanışta {tl2(d.kapanista)}, bugün {tl2(d.bugun)}</span></span>
+              <b style={{ textAlign: "right" }}>{d.bugun >= d.kapanista ? "+ " : "− "}{tl2(Math.abs(d.bugun - d.kapanista))}</b>
+            </div>
+          )))}
         </KartBolum>
       )}
 

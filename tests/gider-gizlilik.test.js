@@ -39,7 +39,8 @@ describe("AC-56 / spec 0047 AC-25: personel tutarı yazdırma ve dışa aktarmay
 });
 
 // Spec 0020 AC-10 / R6: personel kalemi artık makinaya ve modele atanabilir; atama ve makina maliyeti çıktısı da
-// hiçbir yazdırma, e-posta veya dışa aktarma üreticisine girmez. Maliyet yalnız ekranda (MakinaMaliyetDetay) çizilir.
+// hiçbir yazdırma, e-posta veya dışa aktarma üreticisine girmez. Spec 0089 ile maliyet detayı ekranı kalktı; bugünkü maliyet
+// motorunun tek tüketicisi Makina Maliyeti › Üretim Partileri'dir. Tarama gevşetilmedi.
 describe("Spec 0020 AC-10: atanmış personel kalemi ve makina maliyeti çıktılara girmez", () => {
   const MALIYET = /makinaMaliyet|hesaplaMakinaMaliyetleri|makinaKarlilik|karlilikOzeti|dogrudanKalemler|malzemePaylari|kalemGorunenAd|PERSONEL_ETIKETI|Personel gideri|atamaTur|modelSatirlari|kovaDagilimi|kalemKovalariKurus/;
   it.each(["src/lib/printTemplates.js", "src/lib/raporSunumu.js", "src/lib/aylikRapor.js", "src/lib/mailTemplates.js", "src/components/settings/SettingsExport.jsx",

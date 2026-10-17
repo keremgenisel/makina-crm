@@ -2,7 +2,7 @@
 // Spec 0062: paylaşılan sayfalama kancası (R27) ve kaynak taramaları (R11, R12, R15, R21, R26).
 import { describe, it, expect, afterEach } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { usePagination } from "../src/hooks/usePagination";
 import { giderKalemDogrula } from "../src/lib/gider";
@@ -62,11 +62,10 @@ describe("Spec 0062 R27: usePagination", () => {
 
 // Hangi liste hangi dosyada, hangi boyutla (R11, R12, R26; plan §3). Spec 0080 R9: Gider Kalemleri (DonemRaporu.jsx) ve
 // Tedarikçiler (Tedarikciler.jsx) tablodan çıktı, sayfalanmazlar; useFilteredList yasakları tests/sayfalama-kalkar-0080.test.js'te.
+// Spec 0089 ile (C7 0062 R11, R12; 0089 AC-26): Makina Kârlılığı ve Makina ve Model dosyalarıyla kalktı; beş dosya, dokuz çağrı.
 const LISTELER = [
   ["src/components/Kasa.jsx", 10, 4],
   ["src/components/cek/CekPortfoyu.jsx", 10, 2],
-  ["src/components/gider/MakinaKarliligi.jsx", 10, 1],
-  ["src/components/gider/MakinaModelGorunumu.jsx", 10, 1],
   ["src/components/gider/AcikKalemler.jsx", 10, 1],
   ["src/components/gider/EkstrePenceresi.jsx", 5, 1],
   ["src/components/gider/OdemeHatirlatma.jsx", 5, 1],
@@ -74,7 +73,10 @@ const LISTELER = [
 const KLASORLER = ["src/components/gider", "src/components/kasa", "src/components/cek"];
 
 describe("Spec 0062: kaynak taramaları", () => {
-  it("AC-12 / AC-26 / AC-39 (spec 0080 AC-11): listeler paylaşılan kanca ve Pagination ile sayfalanır, kalan yedi dosyada on bir çağrı; useFilteredList yok (R26)", () => {
+  it("AC-12 / AC-26 / AC-39 (spec 0080 AC-11): listeler paylaşılan kanca ve Pagination ile sayfalanır, kalan beş dosyada dokuz çağrı (spec 0089 ile); useFilteredList yok (R26)", () => {
+    expect(LISTELER).toHaveLength(5);
+    expect(LISTELER.reduce((t, [, , n]) => t + n, 0)).toBe(9);
+    for (const f of ["src/components/gider/MakinaKarliligi.jsx", "src/components/gider/MakinaModelGorunumu.jsx"]) expect(existsSync(resolve(kok, f)), f).toBe(false);
     for (const [f, , adet] of LISTELER) {
       const s = oku(f);
       expect(s, f).toMatch(/import \{ usePagination \} from "\.\.\/(\.\.\/)?hooks\/usePagination"/);

@@ -17,6 +17,9 @@ const Rakam = ({ etiket, deger, alt, testId }) => (
   </div>
 );
 
+// Spec 0089 R16: kalkan Makina Kârlılığı ekranının düzeltme cümlesi (tarihsiz makina sayısı burada zaten vardı).
+export const URETIM_TARIHI_DUZELTME = "Makina düzenleme formundan üretim tarihi girilebilir.";
+
 export const PayOzeti = ({ pay, gercek }) => {
   if (BOS[pay.durum]) {
     const [baslik, metin] = BOS[pay.durum];
@@ -33,7 +36,7 @@ export const PayOzeti = ({ pay, gercek }) => {
         <Rakam testId="pay-gercek" etiket="Dönemde gerçekte üretilen" deger={`${gercek.adet} makina`} alt={gercekAlt} />
       </div>
       <Ipucu>{HAVUZ_KDV_NOTU} Hesapta varsayılan adet kullanılır; gerçek adet yalnız kıyastır.</Ipucu>
-      {gercek.cozulemeyen > 0 && <Ipucu>{`${gercek.cozulemeyen} makinanın üretim tarihi çözülemediği için gerçek adede girmedi.`}</Ipucu>}
+      {gercek.cozulemeyen > 0 && <Ipucu>{`${gercek.cozulemeyen} makinanın üretim tarihi çözülemediği için gerçek adede girmedi. ${URETIM_TARIHI_DUZELTME}`}</Ipucu>}
       {pay.roller.rolsuzTurSayisi > 0 && <Ipucu>{`${pay.roller.rolsuzTurSayisi} gider türünün rolü belirtilmedi; bu türler maliyete girmez.`}</Ipucu>}
       {pay.havuz?.tursuzAdet > 0 && <Ipucu>{`Türü seçilmemiş ${pay.havuz.tursuzAdet} gider kalemi hiçbir havuza girmez.`}</Ipucu>}
     </KartBolum>

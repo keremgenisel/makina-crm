@@ -78,6 +78,8 @@ describe("Spec 0088: sekme ve izin", () => {
   });
 });
 
+// Spec 0089 ile (C7 0088 R24, AC-37): Giderler maliyet sonucunu artık almaz; bu ekran motorun tek tüketicisidir, prop ve üç
+// sütun bugünkü rakamla kalır (0089 R4, X6). Memo kapısı maliyetYetki (yerel kipte açık).
 describe("Spec 0088: taşınan Üretim Partileri gerçek App'te", () => {
   it("AC-34, AC-37: parti yeni ekranda kapatılır; App'in maliyet sonucuyla kapanış anlık görüntüsü dolu yazılır, üç sütun rakam gösterir", async () => {
     const { kayitlar } = await baslat();

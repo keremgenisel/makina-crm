@@ -110,9 +110,14 @@ describe("sözlük belgesi", () => {
   it("AC-18: bilinen borç listesi kapsam dışı ve yakın kopyaları adıyla sayar; kapsam dışı kopyalar yerinde", () => {
     const borc = doc.slice(doc.indexOf("## Bilinen borç"));
     for (const ad of ["Analiz.jsx", "Chip", "Finance.jsx", "Customers.jsx", "YedekParcaSatisTab.jsx", "ui.jsx", "Warn", "Belge Detayları", "FaturaFormModal.jsx",
-      "GiderForm.jsx", "SettingsGider.jsx", "GiderAlanlari.jsx", "KdvKarsilastirmaKarti.jsx", "MakinaMaliyetDetay.jsx", "MakinaKarliligi.jsx", "Hatırlatma kapsamı", "2.56"]) {
+      "GiderForm.jsx", "SettingsGider.jsx", "GiderAlanlari.jsx", "KdvKarsilastirmaKarti.jsx", "Hatırlatma kapsamı", "2.56"]) {
       expect(borc, ad).toContain(ad);
     }
+    // Spec 0089 R15 (AC-24): Makina Kârlılığı ve maliyet detayının iki yakın kopyası dosyalarıyla kalktı; "Ödenen borç"ta durur,
+    // "Kapsam içindeki yakın kopyalar" listesinde yoktur.
+    expect(doc).toMatch(/### Ödenen borç \(spec 0089\)[\s\S]*MakinaMaliyetDetay\.jsx[\s\S]*MakinaKarliligi\.jsx/);
+    const yakin = doc.slice(doc.indexOf("### Kapsam içindeki yakın kopyalar"), doc.indexOf("### Erişilebilirlik borcu"));
+    expect(yakin).not.toMatch(/MakinaMaliyetDetay|MakinaKarliligi/);
     // Spec 0014 R4 (C3 istisnası): Analiz'in Chip kopyası 0014'te ödendi; artık sözlüğün "Ödenen borç" bölümünde durur.
     expect(doc).toMatch(/### Ödenen borç[\s\S]*Analiz\.jsx[\s\S]*Chip/);
     // Spec 0015 F2 (C3 istisnası): Warn 0015'te kaldırıldı; artık sözlüğün "Ödenen borç" bölümünde durur.

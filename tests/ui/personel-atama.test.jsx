@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 // Spec 0020: personel giderinin atanabilmesi, arayüz tarafı (form, Makina ve Model, dönem raporu kalem listesi,
 // maliyet detayı, kârlılık listesi). Gizlilik: makina bazlı ekranlarda çalışan adı ve resmi/elden kırılımı yok (AC-9).
+// Spec 0089 ile (C7 0020 AC-9, AC-15; R10, R11): Makina ve Model, maliyet detayı ve kârlılık listesi ekrandan kalktı. Etiket ve
+// gizlilik iddiaları onları besleyen motor çıktılarında ölçülür (rapor ve makina maliyeti); kopmuş atama Dönem Raporu'nun kovalar
+// kutusunda sayı olarak kalır (0089 R12).
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { GiderForm } from "../../src/components/GiderForm";
-import { MakinaModelGorunumu } from "../../src/components/gider/MakinaModelGorunumu";
-import { KalemListesi } from "../../src/components/gider/DonemRaporu";
-import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
-import { MakinaKarliligi } from "../../src/components/gider/MakinaKarliligi";
+import { KalemListesi, KovaKarti } from "../../src/components/gider/DonemRaporu";
 import { hesaplaGiderRaporu, turHaritasi, canliModelSeti } from "../../src/lib/gider";
 import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
 
@@ -101,28 +101,22 @@ const rapor = () => hesaplaGiderRaporu({ giderler: GIDERLER, turler: TUR, tedari
 const maliyet = () => hesaplaMakinaMaliyetleri({ customers: CUSTOMERS, stock: [], partStockLog: [], giderler: GIDERLER, giderTurleri: TUR,
   standardModels: MOD, customModels: [], giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-09-24" });
 
-describe("Makina ve Model görünümü (R8, R9, R10)", () => {
-  it("AC-15: atanmış personel kalemi 'Personel gideri' etiketiyle; boş açıklamada '—' yok, çalışan adı yok", () => {
-    render(<MakinaModelGorunumu rapor={rapor()} turMap={turMap} />);
-    const govde = document.body.textContent;
-    expect(govde).not.toMatch(AD);
-    // makina ×2, model satırı, dağıtılmasın, düşen atama, kısmi dağıtım metni
-    expect(govde.match(/Personel gideri/g)).toHaveLength(6);
-    expect(screen.queryByText("—")).toBeNull();
+describe("Makina ve Model'i besleyen rapor çıktısı (R8, R9; spec 0089 ile motor düzeyinde)", () => {
+  it("AC-15 (spec 0089 ile): model kırılımı satırı 'Personel gideri' etiketiyle; rapor çıktısının görünen adlarında çalışan adı yok", () => {
+    const r = rapor();
+    expect(r.modelBazli.flatMap(m => m.satirlar).map(x => x.aciklama)).toEqual(["Personel gideri"]);
+    expect(JSON.stringify(r.modelBazli)).not.toMatch(AD);
   });
-  it("AC-14: makinası silinmiş personel kalemi 'Ortak gidere düşen atamalar' kutusunda görünür", () => {
-    render(<MakinaModelGorunumu rapor={rapor()} turMap={turMap} />);
-    const tam = (metin) => (_, el) => el?.tagName === "SPAN" && el.textContent === metin;
-    expect(screen.getByText(tam("Personel gideri · makina silinmiş veya takip edilemiyor"))).toBeTruthy();
+  it("AC-14 (spec 0089 ile): makinası silinmiş personel kalemi kovalar kutusunda kopmuş atama sayısına girer; ad yazılmaz", () => {
+    render(<KovaKarti rapor={rapor()} turMap={turMap} />);
+    expect(screen.getByTestId("dusen-atama-sayisi").textContent).toMatch(/^1 kalemin ataması ortak gidere düştü/);
+    expect(document.body.textContent).not.toMatch(AD);
   });
-  it("R10: 'Ortak gider' kartının alt yazısı yeni kurala uyar", () => {
-    render(<MakinaModelGorunumu rapor={rapor()} turMap={turMap} />);
-    expect(screen.getByText("Kira ve atanmamış personel dahil")).toBeTruthy();
-    expect(screen.queryByText("Kira ve personel dahil")).toBeNull();
-  });
-  it("AC-9: kısmi dağıtım metninde personel kalemi etiketle yazılır", () => {
-    render(<MakinaModelGorunumu rapor={rapor()} turMap={turMap} />);
-    expect(screen.getByText(/Kısmi dağıtım:/).parentElement.textContent).toMatch(/Personel gideri \(30\.000/);
+  it("AC-9 (spec 0089 ile): kısmi dağıtım kaydı rapor çıktısında; kovalar kutusu çalışan adı yazmaz", () => {
+    const r = rapor();
+    expect(r.kismiOrtak.map(x => x.kalem.id)).toEqual([3]);
+    render(<KovaKarti rapor={r} turMap={turMap} />);
+    expect(document.body.textContent).not.toMatch(AD);
   });
 });
 
@@ -140,26 +134,15 @@ describe("Dönem raporu kalem listesi (R10)", () => {
   });
 });
 
-describe("Makina maliyeti ekranları (R6, R8, R11)", () => {
-  it("AC-8: makinaya atanmış personel kalemi maliyet detayının doğrudan gider satırında görünür", () => {
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(maliyet(), "musteri:1")} />);
-    const satir = screen.getByText("Doğrudan giderler").parentElement;
-    expect(satir.textContent).toMatch(/15\/03\/2026 Personel gideri, 15\/03\/2026 Personel gideri/);
-    expect(satir.textContent).toMatch(/100\.000/);
+describe("Makina maliyeti motoru (R6, R8, R11; spec 0089 ile ekranlar kalktı)", () => {
+  it("AC-8 (spec 0089 ile): makinaya atanmış personel kalemi doğrudan gider satırında 'Personel gideri' adıyla", () => {
+    const d = makinaKarlilik(maliyet(), "musteri:1");
+    expect(d.dogrudanKalemler.map(x => [x.tarih, x.aciklama])).toEqual([["2026-03-15", "Personel gideri"], ["2026-03-15", "Personel gideri"]]);
+    expect(d.dogrudanKalemler.reduce((t, x) => t + x.tutar, 0)).toBe(100000);
   });
-  it("R11: model havuzu satırının etiketi işçiliği de kapsar", () => {
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(maliyet(), "musteri:1")} />);
-    expect(screen.getByText("Model havuzu payları (malzeme ve işçilik)")).toBeTruthy();
-    expect(screen.queryByText("Malzeme payları (model havuzları)")).toBeNull();
-  });
-  it("AC-9: maliyet detayı ve kârlılık listesinde çalışan adı ve resmi/elden kırılımı yok", () => {
+  it("AC-9 (spec 0089 ile): makina maliyeti sonucunda çalışan adı yok", () => {
     const s = maliyet();
-    render(<MakinaMaliyetDetay detay={makinaKarlilik(s, "musteri:1")} />);
-    expect(document.body.textContent).not.toMatch(AD);
-    expect(document.body.textContent).not.toMatch(/resmi|elden/i);
-    cleanup();
-    render(<MakinaKarliligi sonuc={s} baslangic="2026-03-01" bitis="2026-03-31" bugun="2026-09-24" modeller={MOD} />);
-    expect(document.body.textContent).not.toMatch(AD);
-    expect(document.body.textContent).not.toMatch(/resmi|elden/i);
+    expect(JSON.stringify(makinaKarlilik(s, "musteri:1"))).not.toMatch(AD);
+    expect(JSON.stringify(s)).not.toMatch(AD);
   });
 });

@@ -32,12 +32,23 @@ export const StatKart = ({ etiket, deger, alt, renk }) => (
   </div>
 );
 
+// Spec 0089 R12 (K3, K4): bağı kopmuş atama Makina ve Model görünümüyle birlikte kalktığı için sayısı kovalar kutusunun
+// gövdesinde tek satırdır. Benzersiz kalem sayar (iki modeli silinmiş tek kalem dusenAtamalar'da iki kayıt üretir); kalem adı,
+// tutarı ve nedeni yazılmaz. Sıfırsa satır yok. Triyaj: motor bu listeye makinanın kovasına hiçbir şey düşmeyen her makina
+// atamasını koyar (gider.js, kv.makina === 0); tutarı sıfır kalem (makina atamalı tanımın "Tutar girilmedi" kalemi) makinası
+// yerindeyken de girer. Ortak gidere yazılan tutarı olmadığı için burada sayılmaz; motor değişmez (C4, kıyas fikstürü).
+// Davranış kalem türünden gelir (personelin tutarı resmi + elden), bu yüzden tür haritası gerekir.
+export const dusenAtamaKalemSayisi = (rapor, turMap) => new Set((rapor?.dusenAtamalar || [])
+  .filter(d => !tutarGirilmediMi(d.kalem, davranisOf(d.kalem, turMap))).map(d => String(d.kalem?.id))).size;
+export const dusenAtamaMetni = (n) => `${n} kalemin ataması ortak gidere düştü: atandığı makina ya da model silinmiş ya da makina takip edilemiyor (ör. seri numarası elle girilerek satıldı). Makina ya da özel model çöpten geri alınırsa atama kendiliğinden döner.`;
+
 // Dört kova (R8, AC-82): tutar bazlı tam bölme.
 // Spec 0081 R15: Dönem Raporu'nun beş yan kutusu `katlanir` ile kapalı başlar (KartBolum'un kendi iç durumu; denetimli
 // acik/onAcikDegis kullanılmaz, R6/2). Karar çağıranda (C2): yalnız Giderler geçirir, varsayılan katlanmaz. Ad `acik`
 // olamaz: TurKirilimi ve YontemKirilimi'nde `acik` personel ayrıntısının aç/kapasıdır (K21).
-export const KovaKarti = ({ rapor, katlanir = false }) => {
+export const KovaKarti = ({ rapor, turMap, katlanir = false }) => {
   const k = rapor.kovalar, top = rapor.toplam || 0;
+  const dusen = dusenAtamaKalemSayisi(rapor, turMap);
   const dilimler = [
     { ad: "Makinaya atanmış", v: k.makina, renk: "#c2410c", n: rapor.kovaKatki.makina },
     { ad: "Modele atanmış", v: k.model, renk: "#1d4ed8", n: rapor.kovaKatki.model },
@@ -60,6 +71,7 @@ export const KovaKarti = ({ rapor, katlanir = false }) => {
           </div>
         ))}
       </div>
+      {dusen > 0 && <div data-testid="dusen-atama-sayisi" style={{ marginTop: 12, fontSize: 12.5, color: "var(--amb700, #b45309)" }}>{dusenAtamaMetni(dusen)}</div>}
     </KartBolum>
   );
 };

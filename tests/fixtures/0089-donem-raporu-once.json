@@ -1,0 +1,650 @@
+{
+  "rapor": {
+    "yururlukOncesi": false,
+    "kapsamDisi": null,
+    "bos": false,
+    "kalemler": [
+      {
+        "id": 1,
+        "tarih": "2026-10-01",
+        "turId": 1,
+        "tutar": 1000,
+        "kdvOrani": 20,
+        "tedarikciId": 11,
+        "aciklama": "Sac",
+        "sonOdemeTarihi": "2026-10-20",
+        "kdvYonu": "haric",
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "resmiTutar": null,
+        "eldenTutar": null,
+        "sgkTutar": null,
+        "yolParasi": null,
+        "calisanId": null,
+        "calisanAd": null,
+        "ekOdemeler": [],
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [],
+        "atamaTur": "model",
+        "makinaTur": null,
+        "makinaId": null,
+        "modelSatirlari": [
+          {
+            "modelAd": "AK100",
+            "birimMaliyet": 300,
+            "adet": 1
+          },
+          {
+            "modelAd": "COP",
+            "birimMaliyet": 100,
+            "adet": 1
+          },
+          {
+            "modelAd": "SILINEN",
+            "birimMaliyet": 50,
+            "adet": 2
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "tarih": "2026-10-02",
+        "turId": 1,
+        "tutar": 400,
+        "kdvOrani": 20,
+        "tedarikciId": 11,
+        "aciklama": "Rulman",
+        "kdvYonu": "haric",
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "resmiTutar": null,
+        "eldenTutar": null,
+        "sgkTutar": null,
+        "yolParasi": null,
+        "calisanId": null,
+        "calisanAd": null,
+        "ekOdemeler": [],
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [],
+        "atamaTur": "makina",
+        "makinaTur": "stok",
+        "makinaId": 999,
+        "modelSatirlari": []
+      },
+      {
+        "id": 3,
+        "tarih": "2026-10-03",
+        "turId": 1,
+        "tutar": 600,
+        "kdvOrani": 20,
+        "tedarikciId": 11,
+        "aciklama": "Motor",
+        "kdvYonu": "haric",
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "resmiTutar": null,
+        "eldenTutar": null,
+        "sgkTutar": null,
+        "yolParasi": null,
+        "calisanId": null,
+        "calisanAd": null,
+        "ekOdemeler": [],
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [],
+        "atamaTur": "makina",
+        "makinaTur": "stok",
+        "makinaId": 501,
+        "modelSatirlari": []
+      },
+      {
+        "id": 4,
+        "tarih": "2026-10-04",
+        "turId": 4,
+        "tutar": 2000,
+        "kdvOrani": 20,
+        "tedarikciId": 12,
+        "aciklama": "Binek yakıt",
+        "kdvYonu": "haric",
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "resmiTutar": null,
+        "eldenTutar": null,
+        "sgkTutar": null,
+        "yolParasi": null,
+        "calisanId": null,
+        "calisanAd": null,
+        "ekOdemeler": [],
+        "kisitliGider": true,
+        "indirilebilirOran": 70,
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [],
+        "atamaTur": "",
+        "makinaTur": null,
+        "makinaId": null,
+        "modelSatirlari": []
+      },
+      {
+        "id": 5,
+        "tarih": "2026-10-05",
+        "turId": 1,
+        "tutar": 1200,
+        "kdvOrani": 20,
+        "tedarikciId": 11,
+        "aciklama": "Yıllık sigorta",
+        "dagitimAy": 12,
+        "kdvYonu": "haric",
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "resmiTutar": null,
+        "eldenTutar": null,
+        "sgkTutar": null,
+        "yolParasi": null,
+        "calisanId": null,
+        "calisanAd": null,
+        "ekOdemeler": [],
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [],
+        "atamaTur": "",
+        "makinaTur": null,
+        "makinaId": null,
+        "modelSatirlari": []
+      },
+      {
+        "id": 6,
+        "tarih": "2026-10-01",
+        "turId": 2,
+        "tutar": 20000,
+        "stopajOrani": 20,
+        "girisYonu": "brut",
+        "kdvOrani": 0,
+        "tedarikciId": 11,
+        "aciklama": "Ekim kira",
+        "kdvYonu": "haric",
+        "netTutar": 16000,
+        "resmiTutar": null,
+        "eldenTutar": null,
+        "sgkTutar": null,
+        "yolParasi": null,
+        "calisanId": null,
+        "calisanAd": null,
+        "ekOdemeler": [],
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [
+          {
+            "id": 8901,
+            "hedef": "ana",
+            "sira": 1,
+            "vade": null,
+            "tutar": 16000,
+            "odendi": false,
+            "odemeTarihi": null
+          },
+          {
+            "id": 8902,
+            "hedef": "stopaj",
+            "sira": 1,
+            "vade": null,
+            "tutar": 4000,
+            "odendi": false,
+            "odemeTarihi": null
+          }
+        ],
+        "sonOdemeTarihi": null,
+        "atamaTur": "",
+        "makinaTur": null,
+        "makinaId": null,
+        "modelSatirlari": []
+      },
+      {
+        "id": 7,
+        "tarih": "2026-10-01",
+        "turId": 3,
+        "calisanId": 21,
+        "calisanAd": "Hasan Çelik",
+        "resmiTutar": 30000,
+        "eldenTutar": 0,
+        "sonOdemeTarihi": "2026-10-05",
+        "kdvYonu": null,
+        "yolParasi": null,
+        "ekOdemeler": [],
+        "tutar": null,
+        "kdvOrani": 0,
+        "tedarikciId": null,
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [],
+        "atamaTur": "",
+        "makinaTur": null,
+        "makinaId": null,
+        "modelSatirlari": []
+      },
+      {
+        "id": 8,
+        "tarih": "2026-10-06",
+        "turId": 1,
+        "tutar": 300,
+        "kdvOrani": 20,
+        "tedarikciId": 11,
+        "aciklama": "Bağış",
+        "kdvYonu": "haric",
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "resmiTutar": null,
+        "eldenTutar": null,
+        "sgkTutar": null,
+        "yolParasi": null,
+        "calisanId": null,
+        "calisanAd": null,
+        "ekOdemeler": [],
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [],
+        "atamaTur": "dagitma",
+        "makinaTur": null,
+        "makinaId": null,
+        "modelSatirlari": []
+      }
+    ],
+    "toplam": 55620,
+    "odenen": 0,
+    "odenmeyen": 55620,
+    "odenmeyenAdet": 8,
+    "stopajToplam": 4000,
+    "stopajSatirlari": [
+      {
+        "kalemId": 6,
+        "tarih": "2026-10-01",
+        "aciklama": "Ekim kira",
+        "brut": 20000,
+        "stopajOrani": 20,
+        "stopaj": 4000,
+        "girisYonu": "brut"
+      }
+    ],
+    "indirilecekKdv": 980,
+    "kisitli": {
+      "adet": 1,
+      "indirilebilirKdv": 280,
+      "indirilemeyenKdv": 120,
+      "kkegMatrah": 600,
+      "kkegKdv": 120,
+      "kkegToplam": 720
+    },
+    "kovalar": {
+      "makina": 600,
+      "model": 300,
+      "dagitma": 300,
+      "ortak": 54420
+    },
+    "kovaKatki": {
+      "makina": 1,
+      "model": 1,
+      "dagitma": 1,
+      "ortak": 6
+    },
+    "makinaBazli": [
+      {
+        "anahtar": "stok:501",
+        "makina": {
+          "tur": "stok",
+          "id": 501,
+          "model": "AK100",
+          "seri": "T1",
+          "ad": "Makina Stoğu"
+        },
+        "toplam": 600,
+        "kalemler": [
+          {
+            "id": 3,
+            "tarih": "2026-10-03",
+            "turId": 1,
+            "tutar": 600,
+            "kdvOrani": 20,
+            "tedarikciId": 11,
+            "aciklama": "Motor",
+            "kdvYonu": "haric",
+            "stopajOrani": null,
+            "girisYonu": null,
+            "netTutar": null,
+            "resmiTutar": null,
+            "eldenTutar": null,
+            "sgkTutar": null,
+            "yolParasi": null,
+            "calisanId": null,
+            "calisanAd": null,
+            "ekOdemeler": [],
+            "odendi": false,
+            "odemeTarihi": null,
+            "taksitler": [],
+            "atamaTur": "makina",
+            "makinaTur": "stok",
+            "makinaId": 501,
+            "modelSatirlari": []
+          }
+        ]
+      }
+    ],
+    "modelBazli": [
+      {
+        "model": "AK100",
+        "toplam": 300,
+        "satirlar": [
+          {
+            "kalemId": 1,
+            "tarih": "2026-10-01",
+            "aciklama": "Sac",
+            "birimMaliyet": 300,
+            "adet": 1,
+            "tutar": 300
+          }
+        ]
+      }
+    ],
+    "dagitmaKalemleri": [
+      {
+        "id": 8,
+        "tarih": "2026-10-06",
+        "turId": 1,
+        "tutar": 300,
+        "kdvOrani": 20,
+        "tedarikciId": 11,
+        "aciklama": "Bağış",
+        "kdvYonu": "haric",
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "resmiTutar": null,
+        "eldenTutar": null,
+        "sgkTutar": null,
+        "yolParasi": null,
+        "calisanId": null,
+        "calisanAd": null,
+        "ekOdemeler": [],
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [],
+        "atamaTur": "dagitma",
+        "makinaTur": null,
+        "makinaId": null,
+        "modelSatirlari": []
+      }
+    ],
+    "kismiOrtak": [
+      {
+        "kalem": {
+          "id": 1,
+          "tarih": "2026-10-01",
+          "turId": 1,
+          "tutar": 1000,
+          "kdvOrani": 20,
+          "tedarikciId": 11,
+          "aciklama": "Sac",
+          "sonOdemeTarihi": "2026-10-20",
+          "kdvYonu": "haric",
+          "stopajOrani": null,
+          "girisYonu": null,
+          "netTutar": null,
+          "resmiTutar": null,
+          "eldenTutar": null,
+          "sgkTutar": null,
+          "yolParasi": null,
+          "calisanId": null,
+          "calisanAd": null,
+          "ekOdemeler": [],
+          "odendi": false,
+          "odemeTarihi": null,
+          "taksitler": [],
+          "atamaTur": "model",
+          "makinaTur": null,
+          "makinaId": null,
+          "modelSatirlari": [
+            {
+              "modelAd": "AK100",
+              "birimMaliyet": 300,
+              "adet": 1
+            },
+            {
+              "modelAd": "COP",
+              "birimMaliyet": 100,
+              "adet": 1
+            },
+            {
+              "modelAd": "SILINEN",
+              "birimMaliyet": 50,
+              "adet": 2
+            }
+          ]
+        },
+        "tutar": 700
+      }
+    ],
+    "dusenAtamalar": [
+      {
+        "kalem": {
+          "id": 1,
+          "tarih": "2026-10-01",
+          "turId": 1,
+          "tutar": 1000,
+          "kdvOrani": 20,
+          "tedarikciId": 11,
+          "aciklama": "Sac",
+          "sonOdemeTarihi": "2026-10-20",
+          "kdvYonu": "haric",
+          "stopajOrani": null,
+          "girisYonu": null,
+          "netTutar": null,
+          "resmiTutar": null,
+          "eldenTutar": null,
+          "sgkTutar": null,
+          "yolParasi": null,
+          "calisanId": null,
+          "calisanAd": null,
+          "ekOdemeler": [],
+          "odendi": false,
+          "odemeTarihi": null,
+          "taksitler": [],
+          "atamaTur": "model",
+          "makinaTur": null,
+          "makinaId": null,
+          "modelSatirlari": [
+            {
+              "modelAd": "AK100",
+              "birimMaliyet": 300,
+              "adet": 1
+            },
+            {
+              "modelAd": "COP",
+              "birimMaliyet": 100,
+              "adet": 1
+            },
+            {
+              "modelAd": "SILINEN",
+              "birimMaliyet": 50,
+              "adet": 2
+            }
+          ]
+        },
+        "neden": "model",
+        "modelAd": "COP",
+        "tutar": 100
+      },
+      {
+        "kalem": {
+          "id": 1,
+          "tarih": "2026-10-01",
+          "turId": 1,
+          "tutar": 1000,
+          "kdvOrani": 20,
+          "tedarikciId": 11,
+          "aciklama": "Sac",
+          "sonOdemeTarihi": "2026-10-20",
+          "kdvYonu": "haric",
+          "stopajOrani": null,
+          "girisYonu": null,
+          "netTutar": null,
+          "resmiTutar": null,
+          "eldenTutar": null,
+          "sgkTutar": null,
+          "yolParasi": null,
+          "calisanId": null,
+          "calisanAd": null,
+          "ekOdemeler": [],
+          "odendi": false,
+          "odemeTarihi": null,
+          "taksitler": [],
+          "atamaTur": "model",
+          "makinaTur": null,
+          "makinaId": null,
+          "modelSatirlari": [
+            {
+              "modelAd": "AK100",
+              "birimMaliyet": 300,
+              "adet": 1
+            },
+            {
+              "modelAd": "COP",
+              "birimMaliyet": 100,
+              "adet": 1
+            },
+            {
+              "modelAd": "SILINEN",
+              "birimMaliyet": 50,
+              "adet": 2
+            }
+          ]
+        },
+        "neden": "model",
+        "modelAd": "SILINEN",
+        "tutar": 100
+      },
+      {
+        "kalem": {
+          "id": 2,
+          "tarih": "2026-10-02",
+          "turId": 1,
+          "tutar": 400,
+          "kdvOrani": 20,
+          "tedarikciId": 11,
+          "aciklama": "Rulman",
+          "kdvYonu": "haric",
+          "stopajOrani": null,
+          "girisYonu": null,
+          "netTutar": null,
+          "resmiTutar": null,
+          "eldenTutar": null,
+          "sgkTutar": null,
+          "yolParasi": null,
+          "calisanId": null,
+          "calisanAd": null,
+          "ekOdemeler": [],
+          "odendi": false,
+          "odemeTarihi": null,
+          "taksitler": [],
+          "atamaTur": "makina",
+          "makinaTur": "stok",
+          "makinaId": 999,
+          "modelSatirlari": []
+        },
+        "neden": "makina"
+      }
+    ],
+    "turKirilimi": [
+      {
+        "turId": 3,
+        "ad": "Personel",
+        "davranis": "personel",
+        "toplam": 30000,
+        "adet": 1,
+        "calisanlar": [
+          {
+            "calisanId": 21,
+            "ad": "Hasan Çelik",
+            "resmi": 30000,
+            "elden": 0,
+            "yol": 0,
+            "ek": 0,
+            "toplam": 30000,
+            "ekSatirlari": []
+          }
+        ]
+      },
+      {
+        "turId": 2,
+        "ad": "Fabrika kirası",
+        "davranis": "kira",
+        "toplam": 20000,
+        "adet": 1,
+        "calisanlar": null
+      },
+      {
+        "turId": 1,
+        "ad": "Hammadde",
+        "davranis": "normal",
+        "toplam": 3500,
+        "adet": 5,
+        "calisanlar": null
+      },
+      {
+        "turId": 4,
+        "ad": "Yakıt",
+        "davranis": "normal",
+        "toplam": 2120,
+        "adet": 1,
+        "calisanlar": null
+      }
+    ],
+    "tedarikciKirilimi": {
+      "satirlar": [
+        {
+          "tedarikciId": "11",
+          "ad": "Demir Bant",
+          "harcama": 23500,
+          "acikBorc": 20200,
+          "vadesiGecti": false
+        },
+        {
+          "tedarikciId": "12",
+          "ad": "Akaryakıt AŞ",
+          "harcama": 2120,
+          "acikBorc": 2400,
+          "vadesiGecti": false
+        }
+      ],
+      "secilmemis": {
+        "harcama": 0,
+        "adet": 0,
+        "acikBorc": 0
+      },
+      "toplamHarcama": 25620,
+      "tedarikciBorcu": 22600,
+      "toplamBorc": 22600
+    },
+    "mukerrerUyari": []
+  },
+  "ekran": {
+    "tam": "GiderlerTüm tutarlar TL. Gider toplamlarına KDV hariç tutar girer; kısıtlı kalemlerde indirilemeyen KDV de eklenir. Uygulamanın gider toplamı vergi matrahı değildir: uygulama harcanan parayı ölçer; kanunen kabul edilmeyen gider (KKEG), amortisman ve benzeri vergi kavramları matrahı ayrıca belirler. Yeni GiderDönem RaporuTedarikler ve EkstreHatırlatma kapsamı (2)Açık kalemler (tüm dönemler)Kira stopajı (1 dönem açık)AyTarih Aralığı‹›Toplam gider55.620 ₺8 kalem · ödenmemiş dahilÖdenmemiş gider55.620 ₺8 kalem · seçili dönemTedarikçilere açık borç (KDV dâhil)22.100 ₺Tüm dönemler, bugüne kadarİndirilecek KDV980 ₺Ödeme durumundan bağımsızGider Kalemleri · 8 kalemTüm türlerHammaddeFabrika kirasıPersonelYakıtTüm tedarikçilerTedarikçi seçilmemişDemir BantAkaryakıt AŞTüm ödemelerÖdenmemişÖdenmişVadesi geçmişTutar girilmedi (0)Hatırlatma kapsamıTarihTürAçıklama · TedarikçiAtamaTutarKDVÖdenecekÖdeme01/10/2026PersonelPersonel · 1 çalışan Ayrıntı kapalı▸ Çalışanları göster30.000 ₺KDV yok30.000 ₺1 ödenmemiş01/10/2026Hammadde SacDemir BantModel AK100 · 1 × 300 ₺Model COP · 1 × 100 ₺Model SILINEN · 2 × 50 ₺Silinmiş model: tutarı ortak gidere düşer1.000 ₺200 ₺%201.200 ₺Kısmen ödendiÖdenen 500 ₺ · kalan 700 ₺Havale · vade 20/10/202601/10/2026Fabrika kirası KiraEkim kiraDemir BantBrüt girildiStopaj %20: 4.000 ₺ · Net 16.000 ₺Ortak gider20.000 ₺0 ₺%016.000 ₺Kiraya veren: ÖdenmediVergi dairesi: ÖdenmediÖdeme planı02/10/2026Hammadde RulmanDemir BantOrtak giderAtandığı makina silinmiş veya takip edilemiyor400 ₺80 ₺%20480 ₺Ödenmedi03/10/2026Hammadde MotorDemir BantAK100 · T1Makina Stoğu600 ₺120 ₺%20720 ₺Ödenmedi04/10/2026Yakıt Binek yakıtAkaryakıt AŞOrtak gider2.120 ₺%70 indirilebilir · indirilemeyen KDV 120,00400 ₺%20indirilebilir 280 ₺2.400 ₺Ödenmedi05/10/2026Hammadde Yıllık sigortaDemir BantOrtak gider12 aya dağıtılmış · 10.2026 – 09.20271.200 ₺240 ₺%201.440 ₺Ödenmedi06/10/2026Hammadde BağışDemir BantDağıtılmasın300 ₺60 ₺%20360 ₺ÖdenmediToplam55.620 ₺1.100 ₺indirilebilir 980 ₺“Ödenecek”: normal kalemde tutar + KDV, kirada net + KDV (stopaj hariç), personelde resmi + eldenKime Ne Kadar BorçluyuzSeçili dönemden bağımsız: yürürlük ayından bugüne kadarki tüm ödenmemiş kalemlerÇalışanlar · 1 kişi ÇalışanVadesi geçti▸ Adları göster30.000 ₺Demir Bant Tedarikçi6 kalem19.700 ₺Vergi dairesi Kira stopajı1 kalem4.000 ₺Akaryakıt AŞ Tedarikçi1 kalem2.400 ₺Toplam borç56.100 ₺“Vadesi geçti” yalnız görsel işarettir; ödeme hatırlatması Anasayfa'daki Gider Ödemeleri kartındadır. Borcu sıfırlanan taraf bu listeden düşer.▾Makina Maliyeti KovalarıMakina maliyeti hesabının girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı 55.620 ₺.Makinaya atanmış600 ₺1 kalem katkı · %1,1Modele atanmış300 ₺1 kalem katkı · %0,5Makina maliyetine girmeyen giderler300 ₺1 kalem katkı · %0,5Ortak gider54.420 ₺6 kalem katkı · %97,8▾Gider Türü KırılımıTahakkuk esası: kalemin gider tarihine görePersonel (1 çalışan)▸ Aç30.000 ₺Fabrika kirası (1)20.000 ₺Hammadde (5)3.500 ₺Yakıt (1)2.120 ₺Kırılım toplamı = genel toplam (ödenmemiş dahil; KDV hariç, kısıtlı kalemlerde indirilemeyen KDV dahil)55.620 ₺▾KDV KarşılaştırmasıSatış KDV'si Aylık Faaliyet Raporu motorundanSatışlardan hesaplanan KDV (TL)0 ₺Giderlerden indirilecek KDV− 980 ₺Sonraki döneme devreden KDV980 ₺İndirilemeyen KDV (kısıtlı giderler)120 ₺Kanunen kabul edilmeyen gider (KKEG) · matrah600 ₺KKEG · KDV120 ₺KKEG · toplam720 ₺Bilgi: farka ve gider toplamına eklenmez. KKEG muhasebeciye verilir; indirilemeyen KDV gider tutarının içindedir.İndirilecek KDV, kalemin ödenip ödenmediğinden bağımsız olarak gider tarihine göre sayılır.▾Tedarikçi KırılımıHarcamaya göre çoktan aza. Personel kalemleri bu kırılıma girmez.TedarikçiHarcamaseçili dönemAçık borç (KDV dâhil)tüm dönemler, bugüne kadarDemir Bant23.500 ₺19.700 ₺Akaryakıt AŞ2.120 ₺2.400 ₺Personel dışı toplam25.620 ₺22.100 ₺▾Ödeme Yöntemi KırılımıBu dönemin giderlerine yapılan ödemeler, ödeme tarihinden bağımsızHavale500 ₺Toplam ödenen500 ₺",
+    "kutular": {
+      "kova": "▾Makina Maliyeti KovalarıMakina maliyeti hesabının girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı 55.620 ₺.Makinaya atanmış600 ₺1 kalem katkı · %1,1Modele atanmış300 ₺1 kalem katkı · %0,5Makina maliyetine girmeyen giderler300 ₺1 kalem katkı · %0,5Ortak gider54.420 ₺6 kalem katkı · %97,8",
+      "tur": "▾Gider Türü KırılımıTahakkuk esası: kalemin gider tarihine görePersonel (1 çalışan)▸ Aç30.000 ₺Fabrika kirası (1)20.000 ₺Hammadde (5)3.500 ₺Yakıt (1)2.120 ₺Kırılım toplamı = genel toplam (ödenmemiş dahil; KDV hariç, kısıtlı kalemlerde indirilemeyen KDV dahil)55.620 ₺",
+      "kdv": "▾KDV KarşılaştırmasıSatış KDV'si Aylık Faaliyet Raporu motorundanSatışlardan hesaplanan KDV (TL)0 ₺Giderlerden indirilecek KDV− 980 ₺Sonraki döneme devreden KDV980 ₺İndirilemeyen KDV (kısıtlı giderler)120 ₺Kanunen kabul edilmeyen gider (KKEG) · matrah600 ₺KKEG · KDV120 ₺KKEG · toplam720 ₺Bilgi: farka ve gider toplamına eklenmez. KKEG muhasebeciye verilir; indirilemeyen KDV gider tutarının içindedir.İndirilecek KDV, kalemin ödenip ödenmediğinden bağımsız olarak gider tarihine göre sayılır.",
+      "tedarikci": "▾Tedarikçi KırılımıHarcamaya göre çoktan aza. Personel kalemleri bu kırılıma girmez.TedarikçiHarcamaseçili dönemAçık borç (KDV dâhil)tüm dönemler, bugüne kadarDemir Bant23.500 ₺19.700 ₺Akaryakıt AŞ2.120 ₺2.400 ₺Personel dışı toplam25.620 ₺22.100 ₺",
+      "yontem": "▾Ödeme Yöntemi KırılımıBu dönemin giderlerine yapılan ödemeler, ödeme tarihinden bağımsızHavale500 ₺Toplam ödenen500 ₺"
+    },
+    "kalemListesi": "Gider Kalemleri · 8 kalemTüm türlerHammaddeFabrika kirasıPersonelYakıtTüm tedarikçilerTedarikçi seçilmemişDemir BantAkaryakıt AŞTüm ödemelerÖdenmemişÖdenmişVadesi geçmişTutar girilmedi (0)Hatırlatma kapsamıTarihTürAçıklama · TedarikçiAtamaTutarKDVÖdenecekÖdeme01/10/2026PersonelPersonel · 1 çalışan Ayrıntı kapalı▸ Çalışanları göster30.000 ₺KDV yok30.000 ₺1 ödenmemiş01/10/2026Hammadde SacDemir BantModel AK100 · 1 × 300 ₺Model COP · 1 × 100 ₺Model SILINEN · 2 × 50 ₺Silinmiş model: tutarı ortak gidere düşer1.000 ₺200 ₺%201.200 ₺Kısmen ödendiÖdenen 500 ₺ · kalan 700 ₺Havale · vade 20/10/202601/10/2026Fabrika kirası KiraEkim kiraDemir BantBrüt girildiStopaj %20: 4.000 ₺ · Net 16.000 ₺Ortak gider20.000 ₺0 ₺%016.000 ₺Kiraya veren: ÖdenmediVergi dairesi: ÖdenmediÖdeme planı02/10/2026Hammadde RulmanDemir BantOrtak giderAtandığı makina silinmiş veya takip edilemiyor400 ₺80 ₺%20480 ₺Ödenmedi03/10/2026Hammadde MotorDemir BantAK100 · T1Makina Stoğu600 ₺120 ₺%20720 ₺Ödenmedi04/10/2026Yakıt Binek yakıtAkaryakıt AŞOrtak gider2.120 ₺%70 indirilebilir · indirilemeyen KDV 120,00400 ₺%20indirilebilir 280 ₺2.400 ₺Ödenmedi05/10/2026Hammadde Yıllık sigortaDemir BantOrtak gider12 aya dağıtılmış · 10.2026 – 09.20271.200 ₺240 ₺%201.440 ₺Ödenmedi06/10/2026Hammadde BağışDemir BantDağıtılmasın300 ₺60 ₺%20360 ₺ÖdenmediToplam55.620 ₺1.100 ₺indirilebilir 980 ₺“Ödenecek”: normal kalemde tutar + KDV, kirada net + KDV (stopaj hariç), personelde resmi + elden"
+  }
+}

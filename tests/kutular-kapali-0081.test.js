@@ -9,7 +9,7 @@ import { girdi } from "./fixtures/0059-veri";
 const kok = resolve(__dirname, "..");
 const oku = (f) => readFileSync(resolve(kok, f), "utf8");
 const BES = [
-  ["src/components/gider/DonemRaporu.jsx", "KovaKarti", "{ rapor, katlanir = false }"],
+  ["src/components/gider/DonemRaporu.jsx", "KovaKarti", "{ rapor, turMap, katlanir = false }"], // spec 0089 ile (triyaj): sayı satırı tür haritası ister
   ["src/components/gider/DonemRaporu.jsx", "TurKirilimi", "{ rapor, katlanir = false }"],
   ["src/components/gider/DonemRaporu.jsx", "TedarikciKirilimi", "{ rapor, katlanir = false }"],
   ["src/components/gider/DonemRaporu.jsx", "YontemKirilimi", "{ kirilim, katlanir = false }"],
@@ -44,7 +44,7 @@ describe("Spec 0081: tek katlama mekanizması (R15, C1, C2)", () => {
     expect(kdv).toMatch(/kisitli = null, katlanir = false \}\) => \{/);
     expect((kdv.match(/collapsible=\{katlanir\}/g) || []).length).toBe(1); // yalnız normal dal (R4/2)
     const g = oku("src/components/Giderler.jsx");
-    for (const c of ["<KovaKarti rapor={rapor} katlanir />", "<TurKirilimi rapor={rapor} katlanir />", "<KdvKarsilastirmaKarti katlanir ",
+    for (const c of ["<KovaKarti rapor={rapor} turMap={turMap} katlanir />", "<TurKirilimi rapor={rapor} katlanir />", "<KdvKarsilastirmaKarti katlanir ",
       "<TedarikciKirilimi rapor={rapor} katlanir />", "<YontemKirilimi kirilim={donemKirilimi} katlanir />"]) expect(g, c).toContain(c);
     const f = oku("src/components/Finance.jsx");
     expect(f).toMatch(/<KdvKarsilastirmaKarti /);

@@ -928,10 +928,14 @@ export default function App() {
   // arası önceki ayı verir) ve memo tarihe bağlı değildi; uygulama ay dönümünde açık kalınca yeni ayın dağıtım payı (ve açık
   // partinin yeni ayı) bir veri değişene kadar girmiyordu. useBugun gün değişince yeniden çizer, memo günde bir yeniden hesaplar.
   const maliyetBugun = useBugun();
-  const makinaMaliyet = useMemo(() => (giderYetki ? hesaplaMakinaMaliyetleri({
+  // Spec 0089 R4, R4/2: bugünkü maliyet motorunun tek tüketicisi Makina Maliyeti › Üretim Partileri'dir (parti kapanışı
+  // `kapanisOrtaklari` anlık görüntüsünü bu sonuçtan yazar, 0022 R15). Kapı maliyet sekmesidir: gider kullanıcısında ağır
+  // hesap hiç çalışmaz. Giderler bu sonucu artık almaz. Sunucu ayarı okunmadan (serverMode null) izinler bilinmez ve bütün
+  // sekmeler görünür sayılır; o ilk çizimde de hesaplanmaz (AC-8).
+  const makinaMaliyet = useMemo(() => (maliyetYetki && serverMode !== null ? hesaplaMakinaMaliyetleri({
     customers, stock, partStockLog, giderler, giderTurleri, standardModels, customModels, uretimPartileri,
     giderAyarlari: appSettings.giderAyarlari,
-  }, { bugun: maliyetBugun }) : null), [giderYetki, customers, stock, partStockLog, giderler, giderTurleri, standardModels, customModels, uretimPartileri, appSettings.giderAyarlari, maliyetBugun]);
+  }, { bugun: maliyetBugun }) : null), [maliyetYetki, serverMode, customers, stock, partStockLog, giderler, giderTurleri, standardModels, customModels, uretimPartileri, appSettings.giderAyarlari, maliyetBugun]);
 
   // ── Uygulama geneli yeni-servis bildirimi ──────────────────────────────────
   // Servis ve Kargo Panosu DIŞINDAki bir sekmedeyken, uzaktan (başka bilgisayardan) yeni bir
@@ -1705,7 +1709,7 @@ export default function App() {
           giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} setTedarikciler={setTedarikciler}
           calisanlar={liveCalisanlar} stock={liveStock} customers={liveCustomers} standardModels={standardModels} customModels={liveCustomModels}
           appSettings={appSettings} kdvRates={appSettings.kdvRates} factory={factory} rates={rates} serverPermissions={effectivePermissions} showToast={showToast}
-          satisVerisi={giderSatisVerisi} makinaMaliyet={makinaMaliyet} key={`gider-${giderOdemeFiltresi}-${giderAcilis?.no || 0}`} baslangicOdemeFiltresi={giderOdemeFiltresi}
+          satisVerisi={giderSatisVerisi} key={`gider-${giderOdemeFiltresi}-${giderAcilis?.no || 0}`} baslangicOdemeFiltresi={giderOdemeFiltresi}
           baslangicGorunum={giderAcilis?.gorunum || "rapor"} baslangicAy={giderAcilis?.ay || null} baslangicKalemFiltresi={giderAcilis?.kalemFiltresi || null}
           hesapHareketleri={odemeHareketleri} setHesapHareketleri={hareketYazici} hareketBolumuYok={!hareketBolumuVar} kasaHesaplari={kasaYetki ? canliKasaHesaplari : []} kasaYetki={kasaYetki}
           cekler={kasaYetki ? ceklerBagli : []} setCekler={kasaYetki ? setCekler : null} payments={kasaYetki ? livePayments : []}

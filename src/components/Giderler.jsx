@@ -23,9 +23,7 @@ import { StatKart, KovaKarti, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemLi
 import { AcikKalemler } from "./gider/AcikKalemler";
 import { yontemKirilimlari, donemYontemKirilimi } from "../lib/odemeYontemi";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
-import { MakinaModelGorunumu } from "./gider/MakinaModelGorunumu";
 import { Tedarikciler } from "./gider/Tedarikciler";
-import { MakinaKarliligi } from "./gider/MakinaKarliligi";
 import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { StopajDonemleri } from "./gider/StopajDonemleri";
@@ -36,10 +34,11 @@ import { useKilitListesi } from "../hooks/useKilitListesi";
 // Hesaplar saf motorda (lib/gider.js); bu bileşen yalnız gösterir ve kayıtları yazar. Satış KDV'si
 // aylık rapor motorundan alınır, yeniden hesaplanmaz (C10, lib/giderKdv.js).
 const ayAdi = (ay) => { const [y, m] = ay.split("-").map(Number); const s = new Date(y, m - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" }); return s.charAt(0).toLocaleUpperCase("tr") + s.slice(1); };
-const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "tedarikci", label: "Tedarikler ve Ekstre" }, { value: "karlilik", label: "Makina Kârlılığı" }, { value: "makina", label: "Makina ve Model" }];
+const GORUNUMLER = [{ value: "rapor", label: "Dönem Raporu" }, { value: "tedarikci", label: "Tedarikler ve Ekstre" }];
 
-// Spec 0082 R1, R12: "Tedarikler ve Ekstre" görünümün adıdır, kayıt türü "Tedarikçi" kalır (R14). Spec 0088 R23/2: dört görünüm;
-// Üretim Partileri Makina Maliyeti ekranına taşındı, dönem seçicisi olmayan görünüm kalmadı.
+// Spec 0082 R1, R12: "Tedarikler ve Ekstre" görünümün adıdır, kayıt türü "Tedarikçi" kalır (R14). Spec 0088 R23/2: Üretim
+// Partileri Makina Maliyeti ekranına taşındı, dönem seçicisi olmayan görünüm kalmadı. Spec 0089 R1: iki görünüm; Makina
+// Kârlılığı ve Makina ve Model kalktı (maliyet sorusunun cevabı Makina Maliyeti sekmesinde).
 const DONEMSIZ = new Set();
 // Spec 0082 R10: bilinmeyen başlangıç görünümü (ör. kaldırılan "standart") sessizce Dönem Raporu açar.
 const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "rapor");
@@ -48,9 +47,6 @@ export const Giderler = ({
   giderler: giderlerHam = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
   calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
   appSettings = {}, kdvRates, factory = null, rates = null, satisVerisi = {}, serverPermissions = null, showToast = () => {},
-  // Spec 0002: App'te bir kez hesaplanan makina maliyetleri (C9). Tek kaynak: burada yedek hesap yapılmaz,
-  // yoksa App yolundan farklı girdiyle (stok hareketleri olmadan) farklı üretim tarihi çözülürdü.
-  makinaMaliyet = null,
   // Spec 0003: Anasayfa'daki "Giderlerde Görüntüle" ile gelinirse ödeme süzgeci "hatirlatma" açık başlar.
   baslangicOdemeFiltresi = "",
   // Spec 0026 R3, R18: genel aramadan gelinirse görünüm, dönem ayı ve kalem süzgecinin ilk değeri (vurgu/odak yok, X8).
@@ -106,9 +102,6 @@ export const Giderler = ({
   const baslangic = mod === "ay" ? `${ay}-01` : aralik.bas;
   const bitis = mod === "ay" ? ayinSonGunu(ay) : aralik.bit;
   const aralikGecerli = !!baslangic && !!bitis && baslangic <= bitis;
-  // Spec 0062 R13 (AC-28): dönem (Ay ↔ Tarih Aralığı dahil) değişince sayfalı listeler 1. sayfaya döner. Spec 0080 R11:
-  // Gider Kalemleri artık sayfalanmadığı için anahtar yalnız Makina ve Model görünümüne gider.
-  const donemAnahtari = `${mod}|${baslangic}|${bitis}`;
   const donemEtiketi = mod === "ay" ? ayAdi(ay) : `${fmtTR(aralik.bas)} – ${fmtTR(aralik.bit)}`;
 
   const rapor = useMemo(() => (aralikGecerli ? hesaplaGiderRaporu(
@@ -385,7 +378,7 @@ export const Giderler = ({
                 <BorcOzeti ozet={borc} />
                 {/* Spec 0081 R4, R15: beş yan kutu kapalı başlar (katlanir; durum kartın kendi iç durumu, saklanmaz). Tür ve KDV
                     satırı flex-start: biri açık biri kapalıyken kapalı kart açığın boyuna uzamaz (R4/3). */}
-                <KovaKarti rapor={rapor} katlanir />
+                <KovaKarti rapor={rapor} turMap={turMap} katlanir />
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <TurKirilimi rapor={rapor} katlanir />
                   {kdv && <KdvKarsilastirmaKarti katlanir durum={kdv.durum} sonuc={kdv.sonuc} aralikEtiketi={donemEtiketi} kaynak="Satış KDV'si Aylık Faaliyet Raporu motorundan" kisitli={rapor.kisitli || null} style={{ flex: "2 1 300px", minWidth: 0 }} />}
@@ -400,17 +393,10 @@ export const Giderler = ({
           </>
         )
       )}
-      {gorunum === "makina" && rapor && (rapor.yururlukOncesi
-        ? <BosDurum testId="gider-bos-durum" baslik="Gider verisi girilmemiş" metin={`Seçili dönem (${donemEtiketi}) yürürlük ayından önce.`} />
-        : <MakinaModelGorunumu rapor={rapor} turMap={turMap} donemAnahtari={donemAnahtari} partiDegisimleri={(makinaMaliyet?.partiler || []).filter(p => p.degisimler.length)}
-          makinaMaliyet={makinaMaliyet} giderler={giderler} baslangic={baslangic} bitis={bitis} />)}
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
           hesapHareketleri={hesapHareketleri} giderTurleri={giderTurleri} yururlukAy={yururlukAy} bugun={bugun} kasaHesaplari={kasaHesaplari}
           rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
-      )}
-      {gorunum === "karlilik" && aralikGecerli && makinaMaliyet && (
-        <MakinaKarliligi sonuc={makinaMaliyet} baslangic={baslangic} bitis={bitis} rates={rates} bugun={bugun} modeller={modeller} />
       )}
 
       {giderKilidi && kilitKalemId != null ? (

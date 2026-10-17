@@ -25,8 +25,7 @@ import { PartSaleForm } from "../../src/components/PartSaleForm";
 import { YedekParcaSatisForm } from "../../src/components/YedekParcaSatisForm";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
 import { TANIM_UZUN, TANIM_TURLERI, TANIM_TEDARIKCI, TANIM_CALISAN } from "../tests/layout/gider-tanim-veri.js";
-import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
-import { MakinaMaliyetDetay } from "../../src/components/gider/MakinaMaliyetDetay";
+import { hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
 import * as Tasarim from "../../src/components/tasarim";
 import { Kasa } from "../../src/components/Kasa";
 import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
@@ -202,7 +201,6 @@ const TANIM_0075 = { id: 75, ad: "Aylık nakliye", turId: 4, tutar: 12000, kdvOr
 // "önce" çekiminde eski kodla da çizilir (eski kod alanları yok sayar).
 const KIS_0076 = { id: 761, tarih: "2026-09-08", turId: 4, tutar: 1000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, aciklama: "Binek araç yakıtı", sonOdemeTarihi: "2026-09-30",
   odendi: false, kisitliGider: true, indirilebilirOran: 70, dagitimAy: 3, ekOdemeler: [], modelSatirlari: [], atamaTur: "", taksitler: [] };
-const KIS_AGU_0076 = { ...KIS_0076, id: 762, tarih: "2026-08-14", tutar: 6000, dagitimAy: undefined, aciklama: "Binek araç bakımı" };
 const TANIM_0076 = { id: 76, ad: "Araç yakıtı (binek)", turId: 4, tutar: 3000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, baslangicAy: "2026-06", uretilenAylar: [], kisitliGider: true };
 const TANIMLAR = [{ id: 71, ad: "Fabrika kirası", turId: 1, tutar: 25000, kdvOrani: 0, tedarikciId: 11, baslangicAy: "2026-06", uretilenAylar: ["2026-09"] }];
 const AYAR = { giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 } };
@@ -246,12 +244,10 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
   const [partiler, setPartiler] = useState(p0);
   const [tanimlar, setTanimlar] = useState(t0);
   const [ted, setTed] = useState(tedler);
-  const makinaMaliyet = hesaplaMakinaMaliyetleri({ customers: musteriler, stock: stok, partStockLog: [], giderler, giderTurleri: turler,
-    standardModels: MODELLER, customModels: [], giderAyarlari: ayar.giderAyarlari, uretimPartileri: partiler }, { bugun: "2026-09-23" });
   return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={tanimlar} setGiderTanimlari={setTanimlar}
     giderTurleri={turler} tedarikciler={ted} setTedarikciler={setTed}
     calisanlar={CAL} standardModels={MODELLER} customModels={[]} appSettings={ayar} serverPermissions={null}
-    satisVerisi={satis} makinaMaliyet={makinaMaliyet} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
+    satisVerisi={satis} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
     uretimPartileri={partiler} setUretimPartileri={setPartiler}
     setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})}
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})}
@@ -376,14 +372,6 @@ const PERSONEL_ATAMALI = [
   per(8, { calisanId: 22, calisanAd: "Zeynep Arslan", aciklama: "Zeynep Arslan", resmiTutar: 28000, eldenTutar: 12000, atamaTur: "makina", makinaTur: "musteri", makinaId: 501 }),
   per(9, { calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "", resmiTutar: 20000, eldenTutar: 10000, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 10000, adet: 2 }] }),
 ];
-const maliyetDetayi = (ek = []) => {
-  // Model havuzu kalem tarihinden sonra üretilen makinaya pay verir; 501 Ağustos'ta üretildi.
-  const giderler = [...GIDERLER, ...PERSONEL_ATAMALI.map(x => ({ ...x, tarih: "2026-08-01" })), ...ek];
-  const s = hesaplaMakinaMaliyetleri({ customers: MUSTERILER, stock: [], partStockLog: [], giderler, giderTurleri: TURLER,
-    standardModels: MODELLER, customModels: [], giderAyarlari: AYAR.giderAyarlari }, { bugun: "2026-09-23" });
-  return <div style={{ maxWidth: 620, margin: 24, padding: 18, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12 }}>
-    <MakinaMaliyetDetay detay={makinaKarlilik(s, "musteri:501")} /></div>;
-};
 
 // Spec 0021: taksitli kalem (6 taksit, 2'si ödenmiş) ve iki hedefli kira (stopaj 4 taksit, biri ödenmiş).
 const tks = (id, hedef, sira, vade, tutar, odendi = false) => ({ id, hedef, sira, vade, tutar, odendi, odemeTarihi: odendi ? vade : null });
@@ -531,7 +519,6 @@ const P_ACIK = { id: 902, ad: "2026-2", baslangicAy: "2026-09", bitisAy: null, a
 const PARTI_MUSTERI = MUSTERILER.map(c => ({ ...c, partiId: 901 }));
 const PARTI_STOK = [{ id: 9201, model: "AK100", serialNo: "S-3", addedDate: "2026-09-10", partiId: 902 }, { id: 9202, model: "AK120_DSC", serialNo: "S-4", addedDate: "2026-09-15", partiId: 902 },
   { id: 9203, model: "AK100", serialNo: "S-5", addedDate: "2026-09-18" }];
-const partiEkrani = (adimlar) => [<GiderEkrani p0={[P_KAPALI, P_ACIK]} musteriler={PARTI_MUSTERI} stok={PARTI_STOK} />, adimlar];
 
 // Spec 0088: Makina Maliyeti (dört görünüm). Veri tests/fixtures/0088-veri.js (motor ve ekran testleriyle aynı); `p0`/`musteriler`/`stok`
 // verilirse taşınan Üretim Partileri görünümü 0022'nin kanıt verisiyle çizilir (R23/4).
@@ -549,12 +536,6 @@ function MaliyetEkrani({ ayar = M88.AYAR, turler = M88.TURLER, p0 = M88.PARTILER
 }
 const maliyetEkrani = (o, adimlar = []) => [<MaliyetEkrani {...o} />, adimlar];
 const maliyetPartiEkrani = (adimlar) => maliyetEkrani({ p0: [P_KAPALI, P_ACIK], musteriler: PARTI_MUSTERI, stok: PARTI_STOK, giderler: GIDERLER, turler: TURLER }, ["Üretim Partileri", ...adimlar]);
-const partiMaliyetDetayi = (anahtar) => {
-  const s = hesaplaMakinaMaliyetleri({ customers: PARTI_MUSTERI, stock: PARTI_STOK, partStockLog: [], giderler: GIDERLER, giderTurleri: TURLER,
-    standardModels: MODELLER, customModels: [], giderAyarlari: AYAR.giderAyarlari, uretimPartileri: [P_KAPALI, P_ACIK] }, { bugun: "2026-09-23" });
-  return <div style={{ maxWidth: 620, margin: 24, padding: 18, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12 }}>
-    <MakinaMaliyetDetay detay={makinaKarlilik(s, anahtar)} /></div>;
-};
 
 // Spec 0023: çalışan ek ödemeleri (aynı türden iki prim ve bir fazla mesai).
 const EK_ODEMELI = k(41, { turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, tutar: null, kdvOrani: 0, tarih: "2026-09-05",
@@ -631,8 +612,6 @@ const EKRANLAR = {
     "tikla:Tedarikçi Kırılımı", "tikla:Ödeme Yöntemi Kırılımı", "kaydir:Makina Maliyeti Kovaları"]],
   "giderler-bos-tursuz": [<GiderEkrani g0={[]} turler={[]} />, []],
   "giderler-yururluk-oncesi": [<GiderEkrani ayar={{ giderAyarlari: { yururlukAy: "2026-12" } }} />, []],
-  "giderler-model": [<GiderEkrani />, ["Makina ve Model"]],
-  "giderler-karlilik": [<GiderEkrani />, ["Makina Kârlılığı"]],
   "giderler-tedarikciler": [<GiderEkrani />, ["Tedarikler ve Ekstre"]],
   "giderler-aralik": [<GiderEkrani />, ["Tarih Aralığı"]],
   "gider-formu": [<GiderEkrani />, ["Yeni Gider"]],
@@ -725,8 +704,6 @@ const EKRANLAR = {
   // Spec 0020: personel kaleminin makina ataması (uyarı), Makina ve Model kırılımı, maliyet detayı.
   "gider-formu-personel-makina": [<GiderForm kalem={{ turId: 3, calisanId: 21, tarih: "2026-09-10", resmiTutar: "30000", eldenTutar: "20000", atamaTur: "makina", makinaTur: "musteri", makinaId: 501 }}
     giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} modeller={MODELLER} stock={[]} customers={MUSTERILER} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Makina maliyeti ataması"]],
-  "giderler-model-personel": [<GiderEkrani g0={[...GIDERLER, ...PERSONEL_ATAMALI]} />, ["Makina ve Model"]],
-  "maliyet-detay-personel": [maliyetDetayi(), []],
   // Triyaj bulgu 1: dönem raporu kalem listesi, personel grubu açık; atanmış personel kaleminin atama sütunu makinayı,
   // model dağılımı modeli gösterir (eskiden ikisi de "Ortak gider").
   "giderler-rapor-personel-acik": [<GiderEkrani g0={[...GIDERLER, ...PERSONEL_ATAMALI]} />, ["dugme:Çalışanları göster", "kaydir:Zeynep Arslan"]],
@@ -747,6 +724,12 @@ const EKRANLAR = {
   // Spec 0022: üretim partisi.
   // Spec 0088 R23/4: parti yönetimi Makina Maliyeti ekranına taşındı (aynı parti verisi, makinaMaliyet verilir).
   "maliyet-uretim-partileri": maliyetPartiEkrani([]),
+  // Spec 0089 R11, R12: parti değişim kutusunun yeni yeri (Makina Maliyeti › Üretim Partileri) ve kovalar kutusunda kopmuş
+  // atama sayısı (iki modeli silinmiş tek kalem: "1 kalem").
+  "maliyet-0089-parti-degisim": maliyetPartiEkrani(["kaydir:Kapanmış partilerin aylarında"]),
+  "giderler-0089-kova-dusen": [<GiderEkrani g0={[...GIDERLER, { ...KIS_0076, id: 891, kisitliGider: false, indirilebilirOran: undefined, dagitimAy: undefined, aciklama: "Eski model kalıbı",
+    atamaTur: "model", modelSatirlari: [{ modelAd: "ESKI_A", birimMaliyet: 100, adet: 1 }, { modelAd: "ESKI_B", birimMaliyet: 50, adet: 2 }] }]} />,
+    ["tikla:Makina Maliyeti Kovaları", "kaydir:Makina Maliyeti Kovaları"]],
   "maliyet-uretim-partisi-formu": maliyetPartiEkrani(["~Yeni Üretim Partisi"]),
   "maliyet-modeller": maliyetEkrani({}),
   "maliyet-modeller-dokum": maliyetEkrani({}, ["dugme:▸ AK100"]),
@@ -763,10 +746,6 @@ const EKRANLAR = {
   "maliyet-ayarlar-rol-uyari": maliyetEkrani({ turler: M88.TURLER.map(t => (t.id === 3 ? { ...t, maliyetRolu: "urunAgaci" } : t)) }, ["Hesap Ayarları", "kaydir:Gider türlerinin maliyet rolü"]),
   "gider-tur-sil-rol": [<GiderTurManager giderTurleri={[{ id: 1, ad: "Genel", davranis: "normal", maliyetRolu: "genel" }, { id: 2, ad: "Tedarik", davranis: "normal", maliyetRolu: "urunAgaci" }]}
     setGiderTurleri={bos} giderler={[{ id: 9, tarih: "2026-02-01", turId: 1, tutar: 100 }]} setGiderler={bos} giderTanimlari={[]} setGiderTanimlari={bos} />, ["baslik:Sil"]],
-  "giderler-karlilik-parti": partiEkrani(["Makina Kârlılığı"]),
-  "giderler-model-parti-degisim": partiEkrani(["Makina ve Model", "kaydir:Kapanmış partilerin aylarında"]),
-  "maliyet-detay-parti-acik": [partiMaliyetDetayi("stok:9201"), []],
-  "maliyet-detay-parti-kapali": [partiMaliyetDetayi("musteri:500"), []],
   "stok-makina-parti": [<Stock factory={{ name: "Altuntaş Makina" }} stock={PARTI_STOK} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[]} dealers={DEALERS}
     yedekParcaSatislar={[]} defaultSubTab="makina" showToast={bos} uretimPartileri={[P_KAPALI, P_ACIK]} giderYetki models={MODELLER} />, ["~Stoğa Makina Ekle", "kaydir:Üretim partisi"]],
   // Spec 0023: ek ödemeler.
@@ -891,9 +870,6 @@ const EKRANLAR = {
   "gider-formu-0072-kira": [<GiderEkrani />, ["Yeni Gider", "sec:Gider türü *=1", "kaydir:Maliyete dağıtım"]],
   "ayarlar-gidertanim-0072": [ayarlar("gidertanim"), ["dugme:Yeni Tanım", "doldur:Maliyete dağıtım (ay)=12", "kaydir:Maliyete dağıtım"]],
   "giderler-0072-liste": [<GiderEkrani g0={G_0072} />, ["kaydir:İnternet aboneliği"]],
-  "giderler-0072-model": [<GiderEkrani g0={G_0072} />, ["Makina ve Model", "kaydir:Bu dönemde makina maliyetine"]],
-  "giderler-0072-karlilik": [<GiderEkrani g0={G_0072} />, ["Makina Kârlılığı", "kaydir:Aylara dağıtılmış kalemlerin"]], // spec 0082: kaynak satırı kalktı
-  "giderler-0072-detay": [<GiderEkrani g0={G_0072} />, ["Makina Kârlılığı", "~Ege Köfte", "kaydir:Ortak gidere aylık"]],
   // Spec 0051: başlangıç tarihiyle süzülmüş hesapsız liste, "Hepsini göster", hareket listesinde ve ekstrede ödemenin hedefi.
   "kasa-hesapsiz-esik": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
   "kasa-hesapsiz-hepsi": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Hepsini göster", "dugme:Listeyi göster", "kaydir:Hesap ata"]],
@@ -953,10 +929,6 @@ const EKRANLAR = {
   "kasa-0062-cek-verilen": [kasaCek({ cekler: CEK62 }), ["Çek Portföyü", "Verilen çekler"]],
   "kasa-0062-cek-verilen-sayfa2": [kasaCek({ cekler: CEK62 }), sayfa2(["Çek Portföyü", "Verilen çekler"])],
   "giderler-0062-kalemler": [gider62(), ["kaydir:Gider Kalemleri"]],
-  "giderler-0062-karlilik": [gider62(), ["Makina Kârlılığı"]],
-  "giderler-0062-karlilik-sayfa2": [gider62(), sayfa2(["Makina Kârlılığı"])],
-  "giderler-0062-makina-model": [gider62(), ["Makina ve Model"]],
-  "giderler-0062-makina-model-sayfa2": [gider62(), sayfa2(["Makina ve Model"])],
   "giderler-0062-tedarikciler": [gider62({ tedler: TED62 }), ["Tedarikler ve Ekstre"]],
   // Spec 0080: Gider Kalemleri ve Tedarikçiler sayfalanmaz; 0062'nin iki "-sayfa2" ekranı kaldırıldı (düğme yokken adım
   // sessizce sayfa 1'i çekiyordu). Tam liste ekranları listenin sonunu gösterir (son kalem, alt toplam, ardından borç özeti).
@@ -976,7 +948,6 @@ const EKRANLAR = {
   "ayarlar-guvenlik-gecmisi": [ayarlar("securitylog"), []],
   "ayarlar-0068-export-cek": [ayarlar("export", { kasaVeriYetki: true, cekler: CEK68 }), ["tikla:Müşteri & Servis (5)"]],
   "giderler-0068-tedarikci-sil": [<GiderEkrani tedler={[{ id: 14, ad: "Akın Hırdavat" }, ...TED]} />, ["Tedarikler ve Ekstre", "baslik:Sil"]],
-  "giderler-0068-parti-sil": partiEkrani(["Üretim Partileri", "baslik:Sil"]),
   "anasayfa-0062-hatirlatma": [hatirlatma62, ["Gider Ödemeleri"]],
   "anasayfa-0062-hatirlatma-sayfa2": [hatirlatma62, [...sayfa2(["Gider Ödemeleri"]), "kaydir:Yaklaşan ("]], // son "Sonraki ›" yaklaşan bölümün
   "giderler-acik-kalemler": [<GiderEkrani g0={G0061} h0={H0060} />, ["dugme:Açık kalemler (tüm dönemler)"]],
@@ -1094,8 +1065,6 @@ const EKRANLAR = {
     kisitliGider: true, indirilebilirOran: 70, tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10 }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
   "giderler-0076-liste": [<GiderEkrani g0={[...GIDERLER, KIS_0076]} h0={[]} />, []],
   "giderler-0076-kdv": [<GiderEkrani g0={[...GIDERLER, KIS_0076]} h0={[]} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0081: kutu kapalı başlar
-  "giderler-0076-karlilik": [<GiderEkrani g0={[...GIDERLER, KIS_AGU_0076]} h0={[]} />, ["Makina Kârlılığı"]],
-  "maliyet-detay-0076": [maliyetDetayi([KIS_AGU_0076]), []],
   "ayarlar-gidertanim-0076": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0076, ...TANIMLAR] }), []],
   "ayarlar-gidertanim-0076-form": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0076, ...TANIMLAR] }), ["baslik:Düzenle"]],
   // Spec 0079: tevkifatlı satış faturası. Dört formda kutu açık (oran, üç not, mevcut KDV kutusunda beş satır), kart yansıtmalı

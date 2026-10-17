@@ -199,7 +199,8 @@ describe("Spec 0072 D: tek hesap ve kapsam (kaynak taraması)", () => {
     const motor = readFileSync("src/lib/makinaMaliyeti.js", "utf8");
     expect(motor).toMatch(/dagitimPaylari\(k, dav,/);
     expect(motor).not.toMatch(/esitBol/);
-    for (const f of ["src/components/gider/MakinaModelGorunumu.jsx", "src/components/gider/MakinaMaliyetDetay.jsx", "src/components/gider/DonemRaporu.jsx",
+    // Spec 0089 ile: MakinaModelGorunumu ve MakinaMaliyetDetay kalktı (dosyaları yok); kalan ekranlar taranır.
+    for (const f of ["src/components/gider/DonemRaporu.jsx", "src/components/gider/UretimPartileri.jsx",
       "src/components/GiderForm.jsx", "src/components/gider/GiderAlanlari.jsx", "src/components/settings/SettingsGiderTanimlari.jsx"]) {
       const s = readFileSync(f, "utf8");
       expect(s, f).not.toMatch(/esitBol|\/\s*\(?\s*(k|x|form)\.dagitimAy|dagitimPaylari\(/);

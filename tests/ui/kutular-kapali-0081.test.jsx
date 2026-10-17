@@ -137,11 +137,13 @@ describe("Spec 0081 R10–R12: katlanmayan yerler", () => {
     expect(within(kart).queryByRole("button", { name: /^KDV Karşılaştırması/ })).toBeNull();
     expect(kart.querySelector("[aria-expanded]")).toBeNull();
   });
-  it("AC-14 / R11: Makina ve Model'in dört kova kartı içeriğiyle görünür", () => {
+  // Spec 0089 ile (C7 0081 AC-14, R11): Makina ve Model görünümü kalktı; dört kova kartı yalnız Dönem Raporu'nun katlanan
+  // "Makina Maliyeti Kovaları" kutusunda durur (0089 envanteri: "kaybolmuyor").
+  it("AC-14 / R11 (spec 0089 ile): Makina ve Model görünümü yok; dört kova kartı Dönem Raporu kutusunda, açılınca görünür", () => {
     render(<GH />);
-    fireEvent.click(screen.getByText("Makina ve Model"));
-    for (const e of ["Makinaya atanmış", "Modele atanmış", "Makina maliyetine girmeyen", "Ortak gider"]) expect(screen.getByText(e)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /^Makina Maliyeti Kovaları/ })).toBeNull();
+    expect(screen.queryByText("Makina ve Model")).toBeNull();
+    const kova = kutuAc("Makina Maliyeti Kovaları");
+    for (const e of ["Makinaya atanmış", "Modele atanmış", "Makina maliyetine girmeyen", "Ortak gider"]) expect(within(kova).getByText(new RegExp(`^${e}`))).toBeTruthy();
   });
   it("AC-15: Açık kalemler kipinde beş kutu çizilmez; borç özeti açık", () => {
     render(<GH />);

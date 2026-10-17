@@ -5,7 +5,7 @@ process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach, beforeAll } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { Giderler } from "../../src/components/Giderler";
 import { Customers } from "../../src/components/Customers";
@@ -135,7 +135,9 @@ describe("Spec 0067 B: müşteri detayında maliyet kutusu yok (R6–R10, R17, R
     const oz = karlilikOzeti(hesapla(), { baslangic: "2026-03-01", bitis: "2026-03-31", rates: null });
     expect(oz.toplam).toMatchObject({ satisBedeli: 500000, toplamMaliyet: 95000, kar: 405000 });
   });
-  it("AC-18 / AC-19 / AC-20 / AC-21 / AC-34: prop zinciri temizlendi, rates Customers'ta, App memo ve Giderler geçişi, MakinaKarliligi çağrısı yerinde", () => {
+  // Spec 0089 ile (C7 0067 AC-18…AC-21, AC-34): memo kapısı maliyetYetki (0089 R4/2), prop tek yere (Makina Maliyeti) gider,
+  // MakinaKarliligi.jsx dosyası yok. Müşteri detayının temizliği aynen.
+  it("AC-18 / AC-19 / AC-20 / AC-21 / AC-34 (spec 0089 ile): prop zinciri temizlendi, rates Customers'ta, App memo maliyetYetki ile, tek geçiş", () => {
     const cdm = oku("src/components/customers/CustomerDetailModal.jsx");
     expect(cdm).not.toMatch(/MakinaMaliyetDetay|makinaKarlilik|\bmakinaMaliyet\b|\brates\b/);
     const cus = oku("src/components/Customers.jsx");
@@ -143,19 +145,21 @@ describe("Spec 0067 B: müşteri detayında maliyet kutusu yok (R6–R10, R17, R
     expect(cus).toMatch(/satisKuruUygula\(null, clean, rates, today\(\)\)/);
     expect(cus).not.toMatch(/<CustomerDetailModal[\s\S]{0,4000}rates=\{rates\}/);
     const app = oku("src/App.jsx");
-    expect(app).toMatch(/const makinaMaliyet = useMemo\(\(\) => \(giderYetki \? hesaplaMakinaMaliyetleri/);
-    // Spec 0088 ile: Giderler ve Makina Maliyeti (taşınan Üretim Partileri görünümü, R24); müşteri detayı hâlâ yok.
-    expect(app.match(/makinaMaliyet=\{makinaMaliyet\}/g)).toHaveLength(2);
+    expect(app).toMatch(/const makinaMaliyet = useMemo\(\(\) => \(maliyetYetki && serverMode !== null \? hesaplaMakinaMaliyetleri/);
+    // Spec 0088 ile Makina Maliyeti (taşınan Üretim Partileri görünümü, R24); spec 0089 ile Giderler almaz: tek geçiş.
+    expect(app.match(/makinaMaliyet=\{makinaMaliyet\}/g)).toHaveLength(1);
     expect(app).not.toMatch(/<Customers [^\n]*makinaMaliyet=/);
-    expect(oku("src/components/gider/MakinaKarliligi.jsx")).toContain("<MakinaMaliyetDetay detay={makinaKarlilik(sonuc, detayAnahtar, rates)} />");
+    expect(existsSync(resolve(kok, "src/components/gider/MakinaKarliligi.jsx"))).toBe(false);
   });
-  it("AC-11 / AC-12 / AC-32: 'maliyetKutusuAcik' kaynakta yok; görüntü aracında maliyet-detay-* var, musteri-detay-maliyet-* ve MALIYET_0050 yok, musteri-detay-0067 var", () => {
+  // Spec 0089 ile (C7 0067 AC-11, AC-12, AC-32; 0089 R10): üç maliyet-detay-* adı araçtan bilinçli olarak düştü.
+  it("AC-11 / AC-12 / AC-32 (spec 0089 ile): 'maliyetKutusuAcik' kaynakta yok; görüntü aracında maliyet-detay-* yok, musteri-detay-maliyet-* ve MALIYET_0050 yok, musteri-detay-0067 var", () => {
     const tara = (d) => readdirSync(resolve(kok, d), { withFileTypes: true })
       .flatMap(e => (e.isDirectory() ? tara(`${d}/${e.name}`) : /\.(jsx?|cjs|mjs)$/.test(e.name) ? [`${d}/${e.name}`] : []));
     const bulunan = [...tara("src"), ...tara("scripts"), ...tara("tests")].filter(f => !f.endsWith("kutu-duzeni-0067.test.jsx") && oku(f).includes("maliyetKutusuAcik"));
     expect(bulunan).toEqual([]);
     const arac = oku("scripts/evidence/0009-sayfa.jsx");
-    for (const e of ["maliyet-detay-personel", "maliyet-detay-parti-acik", "maliyet-detay-parti-kapali", "musteri-detay-0067"]) expect(arac).toContain(`"${e}":`);
+    expect(arac).toContain(`"musteri-detay-0067":`);
+    for (const e of ["maliyet-detay-personel", "maliyet-detay-parti-acik", "maliyet-detay-parti-kapali", "maliyet-detay-0076"]) expect(arac).not.toContain(`"${e}"`);
     expect(arac).not.toMatch(/"musteri-detay-maliyet-|MALIYET_0050/);
   });
 });

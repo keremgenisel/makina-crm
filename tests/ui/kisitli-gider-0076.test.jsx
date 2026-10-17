@@ -11,9 +11,8 @@ import { GiderForm } from "../../src/components/GiderForm";
 import { Giderler } from "../../src/components/Giderler";
 import { SettingsGider } from "../../src/components/settings/SettingsGider";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
-import { MaliyetNotlari } from "../../src/components/gider/MakinaMaliyetDetay";
 import { KISIT_KAPSAM_IPUCU } from "../../src/components/gider/GiderAlanlari";
-import { KISITLI_NOTU } from "../../src/lib/makinaMaliyeti";
+import { KISITLI_NOTU, hesaplaMakinaMaliyetleri } from "../../src/lib/makinaMaliyeti";
 import { giderKalemDogrula, turHaritasi, KISIT_KUTU_ETIKETI, KISIT_ORAN_HATASI, KISIT_FORM_NOTU, KKEG_ETIKETI, VERGI_MATRAHI_NOTU, GIDER_TOPLAMI_CUMLESI } from "../../src/lib/gider";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -211,13 +210,14 @@ describe("Spec 0076 C, D: Giderler ve Dönem Raporu", () => {
 });
 
 describe("Spec 0076 R27: maliyet notları", () => {
-  // Spec 0082 ile güncellendi: standart kaynak yarısı kalktı; MaliyetNotlari `kaynak` prop'u almaz (R4/2).
-  it("AC-28: not yalnız kısıtlı kalem varken", () => {
-    render(<MaliyetNotlari />);
-    expect(screen.queryByTestId("kisitli-maliyet-notu")).toBeNull();
-    cleanup();
-    render(<MaliyetNotlari kisitliVar />);
-    expect(screen.getByTestId("kisitli-maliyet-notu").textContent).toBe(KISITLI_NOTU);
+  // Spec 0082 ile güncellendi: standart kaynak yarısı kalktı. Spec 0089 ile (C7 0076): MaliyetNotlari ekranla birlikte kalktı;
+  // notun koşulu motorun işaretidir ve metni motorun sabiti olarak durur (0089 R5), kova kuralı aynen (C3).
+  it("AC-28 (spec 0089 ile): motor işareti yalnız kısıtlı kalem varken; notun metni motorda", () => {
+    const hesapla = (g) => hesaplaMakinaMaliyetleri({ customers: [], stock: [], giderler: g, giderTurleri: [{ id: 1, ad: "Yakıt", davranis: "normal" }], standardModels: [], customModels: [],
+      giderAyarlari: { yururlukAy: "2026-01" } }, { bugun: "2026-10-08" });
+    expect(hesapla([{ id: 1, tarih: "2026-10-01", turId: 1, tutar: 1000, kdvOrani: 20 }]).kisitliVar).toBeFalsy();
+    expect(hesapla([{ id: 1, tarih: "2026-10-01", turId: 1, tutar: 1000, kdvOrani: 20, kisitliGider: true, indirilebilirOran: 70 }]).kisitliVar).toBe(true);
+    expect(KISITLI_NOTU).toMatch(/\S/);
   });
 });
 

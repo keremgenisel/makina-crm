@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Spec 0082: Standart Genel Giderler kalkar, Tedarikçiler görünümü "Tedarikler ve Ekstre" olur. Gerçek bileşenler: Giderler,
-// SettingsGider, MaliyetNotlari, MakinaKarliligi, MakinaModelGorunumu (Giderler içinde), GlobalSearch, SettingsBackup, App.
+// SettingsGider, GlobalSearch, SettingsBackup, App. Spec 0089 ile: MaliyetNotlari, MakinaKarliligi ve MakinaModelGorunumu kalktı;
+// R4'ün ekran iddiaları (AC-11…AC-15) motor düzeyine indi.
 // Bu dosya eski veriyi (standart bölümlü yedek, eski ayar) taklit ettiği için C9 taramasında gerekçeli istisnadır (plan P1).
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
@@ -11,11 +12,9 @@ import { resolve } from "node:path";
 import { Giderler } from "../../src/components/Giderler";
 import { SettingsGider } from "../../src/components/settings/SettingsGider";
 import { SettingsBackup } from "../../src/components/settings/SettingsBackup";
-import { MaliyetNotlari } from "../../src/components/gider/MakinaMaliyetDetay";
-import { MakinaKarliligi } from "../../src/components/gider/MakinaKarliligi";
 import { GlobalSearch, KAT, KAT_SIRA, genelAramaSonuclari } from "../../src/components/GlobalSearch";
 import { giderKalemDogrula, turHaritasi } from "../../src/lib/gider";
-import { hesaplaMakinaMaliyetleri, MALZEME_HARIC_NOTU, BUGUNKU_VERI_NOTU, DAGITIM_NOTU, KISITLI_NOTU } from "../../src/lib/makinaMaliyeti";
+import { hesaplaMakinaMaliyetleri, fiyatOnerisi, MALZEME_HARIC_NOTU, BUGUNKU_VERI_NOTU, DAGITIM_NOTU, KISITLI_NOTU } from "../../src/lib/makinaMaliyeti";
 const { default: App } = await import("../../src/App");
 
 afterEach(() => { cleanup(); vi.useRealTimers(); delete window.crmStorage; delete window.appMail; vi.unstubAllGlobals(); try { localStorage.clear(); } catch { /* yok */ } });
@@ -40,15 +39,15 @@ const cubuk = () => within(screen.getByRole("radiogroup", { name: "Görünüm" }
 const gorunum = (ad) => fireEvent.click(screen.getByRole("radio", { name: ad }));
 
 describe("Spec 0082: görünüm çubuğu ve ad (R1, R10, R12–R15)", () => {
-  // Spec 0083 ile güncellendi (C4), spec 0088 ile dört sekme (Üretim Partileri Makina Maliyeti'ne taşındı, R23/2);
-  // 0082'nin kaldırma kanıtı olan ikinci iddia aynen korunur.
-  it("AC-1 (spec 0083 AC-22, spec 0088 ile): çubukta dört sekme; 'Standart Genel Gider' metni ekranda hiç yok", () => {
+  // Spec 0083 ile güncellendi (C4), spec 0088 ile dört sekme (Üretim Partileri Makina Maliyeti'ne taşındı, R23/2), spec 0089 ile
+  // iki sekme (Makina Kârlılığı ve Makina ve Model kalktı); 0082'nin kaldırma kanıtı olan ikinci iddia aynen korunur.
+  it("AC-1 (spec 0083 AC-22, spec 0089 ile): çubukta iki sekme; 'Standart Genel Gider' metni ekranda hiç yok", () => {
     render(<GH />);
-    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre", "Makina Kârlılığı", "Makina ve Model"]);
+    expect(cubuk().map(r => r.textContent)).toEqual(["Dönem Raporu", "Tedarikler ve Ekstre"]);
     expect(document.body.textContent).not.toMatch(/Standart Genel Gider/);
   });
-  // Spec 0083 ile güncellendi (C4): "Tedarikler ve Ekstre" artık ikinci sekme.
-  it("AC-2 (spec 0083 AC-22): ikinci sekmenin adı 'Tedarikler ve Ekstre'", () => {
+  // Spec 0083 ile güncellendi (C4): "Tedarikler ve Ekstre" artık ikinci sekme (spec 0089 ile son sekme).
+  it("AC-2 (spec 0083 AC-22, spec 0089 ile): ikinci sekmenin adı 'Tedarikler ve Ekstre'", () => {
     render(<GH />);
     expect(cubuk()[1].textContent).toBe("Tedarikler ve Ekstre");
   });
@@ -79,7 +78,7 @@ describe("Spec 0082: görünüm çubuğu ve ad (R1, R10, R12–R15)", () => {
   // Spec 0088 ile (AC-42/2): dönemsiz görünüm kalmadı, dönem seçicisi her görünümde.
   it("AC-6 (spec 0088 ile): dönem seçicisi bütün görünümlerde çizilir", () => {
     render(<GH />);
-    for (const ad of ["Dönem Raporu", "Makina ve Model", "Tedarikler ve Ekstre", "Makina Kârlılığı"]) {
+    for (const ad of ["Dönem Raporu", "Tedarikler ve Ekstre"]) { // spec 0089 ile iki görünüm
       gorunum(ad);
       expect(screen.queryByLabelText("Dönem ayı"), ad).toBeTruthy();
     }
@@ -138,49 +137,37 @@ describe("Spec 0082: Gider Ayarları (R2)", () => {
   });
 });
 
-describe("Spec 0082: maliyet notları ve ekranlar (R4)", () => {
+// Spec 0089 ile (C7 0082 AC-11…AC-15): maliyet notlarını ve kârlılık listesini çizen ekranlar kalktı. 0082 R4'ün asıl iddiası
+// (gerçekleşen kaynak tek; standart kaynak, fark satırı ve sürüm uyarısı yok) motor düzeyinde aynen ölçülür; notların metinleri
+// motorun sabitlerinde durur (spec 0089 R5).
+describe("Spec 0082: maliyet notları (R4; spec 0089 ile motor düzeyinde)", () => {
   const mus = { id: 1, name: "Firma", model: "AK100", serialNo: "S1", installDate: "2026-09-10", uretimTarihi: "2026-09-10", currency: "TRY", fabrikaSatisBedeli: 500000 };
   const hesapla = (giderler, ayar = {}) => hesaplaMakinaMaliyetleri({ customers: [mus], stock: [], giderler, giderTurleri: TURLER, standardModels: [{ model: "AK100" }], customModels: [],
     giderAyarlari: { yururlukAy: "2026-01", ...ayar } }, { bugun: "2026-10-02" });
-  const karlilik = (sonuc) => render(<MakinaKarliligi sonuc={sonuc} baslangic="2026-09-01" bitis="2026-09-30" bugun="2026-10-02" modeller={[{ model: "AK100" }]} />);
-  it("AC-11: 'Ortak gider kaynağı' satırı yok; maliyetin neyi içermediğini söyleyen dört not ve 'yaklaşık kur' satırı duruyor", () => {
-    render(<MaliyetNotlari yaklasik dagitimVar kisitliVar />);
-    const n = screen.getByTestId("maliyet-notlari").textContent;
-    expect(n).not.toMatch(/Ortak gider kaynağı/);
-    for (const x of [MALZEME_HARIC_NOTU, BUGUNKU_VERI_NOTU, DAGITIM_NOTU, KISITLI_NOTU]) expect(n).toContain(x);
-    expect(n).toMatch(/yaklaşık/);
+  it("AC-11 (spec 0089 ile): notların metni motorda; hiçbiri 'Ortak gider kaynağı' demez", () => {
+    for (const x of [MALZEME_HARIC_NOTU, BUGUNKU_VERI_NOTU, DAGITIM_NOTU, KISITLI_NOTU]) { expect(typeof x).toBe("string"); expect(x).not.toMatch(/Ortak gider kaynağı/); }
   });
-  it("AC-12: dağıtılmış kalemde dağıtım notu gerçekleşen kaynağın metnidir (eski 'standart' ayarlı veride de)", () => {
-    karlilik(hesapla([{ id: 5, tarih: "2026-09-01", turId: 1, tutar: 12000, kdvOrani: 20, dagitimAy: 12 }], { ortakGiderKaynagi: "standart" }));
-    expect(screen.getByTestId("dagitim-notu").textContent).toBe(DAGITIM_NOTU);
+  it("AC-12 (spec 0089 ile): dağıtılmış kalemde eski 'standart' ayarlı veride de motor dağıtımı işaretler, kaynak alanı yok", () => {
+    const s = hesapla([{ id: 5, tarih: "2026-09-01", turId: 1, tutar: 12000, kdvOrani: 20, dagitimAy: 12 }], { ortakGiderKaynagi: "standart" });
+    expect(s.dagitimVar).toBe(true);
+    expect(JSON.stringify(s)).not.toMatch(/"kaynak"|ortakStandart|standartFark|standartEksik/);
   });
-  it("AC-13: kısıtlı kalemde maliyet notu gerçekleşen kaynağın metnidir", () => {
-    karlilik(hesapla([{ id: 6, tarih: "2026-09-01", turId: 1, tutar: 1000, kdvOrani: 20, kisitliGider: true, indirilebilirOran: 70 }], { ortakGiderKaynagi: "standart" }));
-    expect(screen.getAllByTestId("kisitli-maliyet-notu")[0].textContent).toBe(KISITLI_NOTU);
+  it("AC-13 (spec 0089 ile): kısıtlı kalemde motor işareti var, kaynak alanı yok", () => {
+    const s = hesapla([{ id: 6, tarih: "2026-09-01", turId: 1, tutar: 1000, kdvOrani: 20, kisitliGider: true, indirilebilirOran: 70 }], { ortakGiderKaynagi: "standart" });
+    expect(s.kisitliVar).toBe(true);
+    expect(JSON.stringify(s)).not.toMatch(/"kaynak"/);
   });
-  it("AC-14: Makina Kârlılığı özetinde fark satırı ve sürüm uyarısı hiç çizilmez", () => {
-    karlilik(hesapla([{ id: 7, tarih: "2026-09-15", turId: 1, tutar: 300000, kdvOrani: 0 }], { ortakGiderKaynagi: "standart" }));
-    expect(screen.queryByTestId("ozet-standart-fark")).toBeNull();
-    expect(screen.queryByTestId("ozet-standart-eksik")).toBeNull();
-    expect(document.body.textContent).not.toMatch(/standart/i);
+  it("AC-14 (spec 0089 ile): motor sonucunda standart fark ve eksik alanı yok", () => {
+    const s = hesapla([{ id: 7, tarih: "2026-09-15", turId: 1, tutar: 300000, kdvOrani: 0 }], { ortakGiderKaynagi: "standart" });
+    expect(JSON.stringify(s)).not.toMatch(/standart/i);
   });
-  it("AC-15: fiyat önerisi kaynak ibaresi taşımaz, ikinci yarısı durur; Makina ve Model'in dağıtım kutusu kaynak ibaresi taşımaz", () => {
-    karlilik(hesapla([{ id: 8, tarih: "2026-09-01", turId: 1, tutar: 12000, kdvOrani: 20, dagitimAy: 12 }]));
-    expect(document.body.textContent).toContain("Stoktan çekilen parçaların maliyeti hariç.");
-    expect(document.body.textContent).not.toMatch(/Ortak gider kaynağı/);
-    cleanup();
-    const g = [{ id: 8, tarih: "2026-09-01", turId: 1, tutar: 12000, kdvOrani: 20, dagitimAy: 12 }];
-    function MM() {
-      const [giderler, setGiderler] = useState(g);
-      return <Giderler giderler={giderler} setGiderler={setGiderler} hesapHareketleri={[]} setHesapHareketleri={vi.fn()} giderTanimlari={[]} setGiderTanimlari={vi.fn()}
-        giderTurleri={TURLER} tedarikciler={TED} setTedarikciler={vi.fn()} calisanlar={[]} standardModels={[{ model: "AK100" }]} customModels={[]} customers={[mus]} stock={[]}
-        appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} kasaHesaplari={[]} satisVerisi={SATIS} showToast={vi.fn()} baslangicAy="2026-09" makinaMaliyet={hesapla(g)} />;
-    }
-    render(<MM />);
-    gorunum("Makina ve Model");
-    const kutu = screen.getByTestId("dagitim-kutusu");
-    expect(kutu.textContent).toMatch(/Ortak gider \(aylık paylarla\)/);
-    expect(kutu.textContent).not.toMatch(/standart/i);
+  it("AC-15 (spec 0089 ile): fiyat önerisi kaynak ibaresi taşımaz; Giderler'de Makina ve Model görünümü yok", () => {
+    const s = hesapla([{ id: 8, tarih: "2026-09-01", turId: 1, tutar: 12000, kdvOrani: 20, dagitimAy: 12 }]);
+    const o = fiyatOnerisi(s, { model: "AK100", baslangic: "2026-09-01", bitis: "2026-09-30", yontem: "kat", deger: "2" });
+    expect(JSON.stringify(o)).not.toMatch(/Ortak gider kaynağı|standart/i);
+    render(<GH />);
+    expect(screen.queryByRole("radio", { name: "Makina ve Model" })).toBeNull();
+    expect(screen.queryByTestId("dagitim-kutusu")).toBeNull();
   });
 });
 
