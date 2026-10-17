@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (revizyon 3, plan onayı 2026-10-17) |
+| **Durum** | Tamamlandı (commit `58175b5`) |
 | **Sahip** | Analist (spec) · Geliştirici (uygulama) |
 | **Etkilenen alanlar** | Gider formu ve tekrarlayan tanım formu (iki kutu), tekrarlayan tanım listesinin atama sütunu, Dönem Raporu (kovalar kutusu ve kalem listesinin atama sütunu), yazdırılan Aylık Gider ve Kasa Raporu (bir kutu), üç silme onayının atama cümlesi, Makina Maliyeti › Üretim Partileri (iki sütun, adet sütununun kaynağı, kapanış anlık görüntüsü, değişim kutusu, başlık ve boş durum metni), Makina Maliyeti › Parti Hesabı (ayrım ibaresi), yeni maliyet motoru (aylık genel gider havuzu ve parti satırı), bugünkü maliyet motorunun son çağrısı, üretim partisinde bir kalıcı alan, silinen üç paylaşılan bileşen ve ölü prop'lar, tasarım sözlüğü (bir örnek satırı ve bir borç satırı), kullanıcı rehberinin atama ve dağıtım atıfları ile iki PDF, görsel kanıt aracının altı ekranı ve kanıt eşlemesi |
 | **Onaylayan** | Takım Yöneticisi |
@@ -388,31 +388,31 @@ partilerde kutu tam çalışır. Bedeli, 0090 öncesi kapanmış partilerin bu k
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Aylık havuz ve parti payı React'sız saf motorda yazıldı ve kendi testi var; ekran yalnız gösteriyor.
-- [ ] Aylık havuz **tek yoldan** hesaplanıyor (ay aralığıyla tür kırılımı); ikinci bir toplama yolu açılmadı (C15, tarama ile gösterildi) ve çağrı sayısı AC-52'nin çıktısında yazılı.
-- [ ] Parti satırı motorun tek nesnesinden okunuyor; adet ile bölünmedeki ağırlığın aynı sayı olduğu testle sabitlendi (R31, R32).
-- [ ] Aylık havuzların toplamı ile 0088'in dönem havuzunun eşitliği çapraz testle sabitlendi (C3).
-- [ ] Spec öncesi kodla üretilmiş kıyas fikstürü eklendi ve AC-36 onunla ölçüldü.
-- [ ] Sürüm notu 0090 öncesi kapanmış partilerin değişim kutusunun susduğunu söylüyor (R25; revizyon 3, K9).
-- [ ] **Hiçbir altın dosya yeniden üretilmedi:** 0059'un rapor nesnesi ve iki özeti aynen (R11/2, C17), 0089'un iki altını yenilenmedi, karşılaştırmanın ayıklama listesi genişletildi (C16), Aylık Faaliyet Raporu'nun altın dizesi aynen (C12).
-- [ ] Yeni kalıcı alan dört nokta kuralıyla eklendi ve gidiş dönüş testine girdi; boş değer gövdeye yazılmıyor.
-- [ ] Yeni veri bölümü yok; bölüm eşlemeleri ve birleştirme kuralları değişmedi (tarama ile gösterildi).
-- [ ] Yeni eylem izni yok; bu durum açıkça yazıldı.
-- [ ] Çöp kutusu simetrisi korundu (parti çöp kutusuna gider, geri alma ve temizleme değişmedi).
-- [ ] Silinen ekran ve kutuların testleri ters çevrildi; ters çevrilen her kriterin yanına "spec 0090 ile" notu yazıldı. Context'teki iki tablo (kırılan yerler, ters çevrilen kriterler) baştan sona gezildi ve hiçbiri atlanmadı.
-- [ ] Çizilmeyen bileşen bırakılmadı: üç paylaşılan alan, kova kartı ve kopmuş atama yardımcıları silindi; ölü prop ve memolar kaldırıldı (R38, R40).
-- [ ] Üç silme onayının atama cümlesi kalktı; model adı taşıma zinciri duruyor (R39).
-- [ ] Tasarım sözlüğünün örnek satır atfı güncellendi ve atama kutusunun borcu "Ödenen borç (spec 0090)" bölümüne taşındı (R41).
-- [ ] Kullanıcıya görünen bütün metinler Türkçe. Yazdırılan rapor çeviri sözlüğü kullanmaz (metinler gömülü Türkçe), bu yüzden artık çeviri anahtarı yok; bunun yerine kalkan kutunun başlığını **dilim sınırı** olarak kullanan üç test güncellendi (`gider-gizlilik.test.js:227`, `gider-kasa-raporu-0059.test.js:50`, `gider-kasa-raporu-0061.test.js:12`).
-- [ ] Para gösterimi tek para birimi kuralına uyuyor (AC-38).
-- [ ] Görsel kanıt eklendi (gider formu, tanım formu ve tanım tablosu, Dönem Raporu, kalem listesi, Üretim Partileri, Parti Hesabı, boş ve neden durumları); Context'teki kanıt tablosunun her satırı uygulandı; atama ya da dağıtım adımı taşıyan ekran kalmadı ve kanıt eşlemesi `beklenen: "degisti"` + `Takım Yöneticisi · YYYY-AA-GG · spec 0090 R42` onay dizesiyle güncellendi. **Bu tablo atlanırsa kanıt sahte "0 fark" raporlar.**
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] Kullanıcı rehberinin altı atfı ve atama bölümü kalktı (Context'teki tablo), yaşlandırma kovalarını anlatan üç satıra dokunulmadı, iki PDF yeniden üretildi (R43).
-- [ ] `CLAUDE.md` güncellendi: tek maliyet modeli, ölü alanlar (atama, model satırları, dağıtım ayı, eski kapanış alanı ve gider raporu motorunun kova alanları), parti payının yeni kaynağı ve yeni kalıcı alan.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Aylık havuz ve parti payı React'sız saf motorda yazıldı ve kendi testi var; ekran yalnız gösteriyor.
+- [x] Aylık havuz **tek yoldan** hesaplanıyor (ay aralığıyla tür kırılımı); ikinci bir toplama yolu açılmadı (C15, tarama ile gösterildi) ve çağrı sayısı AC-52'nin çıktısında yazılı.
+- [x] Parti satırı motorun tek nesnesinden okunuyor; adet ile bölünmedeki ağırlığın aynı sayı olduğu testle sabitlendi (R31, R32).
+- [x] Aylık havuzların toplamı ile 0088'in dönem havuzunun eşitliği çapraz testle sabitlendi (C3).
+- [x] Spec öncesi kodla üretilmiş kıyas fikstürü eklendi ve AC-36 onunla ölçüldü.
+- [x] Sürüm notu 0090 öncesi kapanmış partilerin değişim kutusunun susduğunu söylüyor (R25; revizyon 3, K9).
+- [x] **Hiçbir altın dosya yeniden üretilmedi:** 0059'un rapor nesnesi ve iki özeti aynen (R11/2, C17), 0089'un iki altını yenilenmedi, karşılaştırmanın ayıklama listesi genişletildi (C16), Aylık Faaliyet Raporu'nun altın dizesi aynen (C12).
+- [x] Yeni kalıcı alan dört nokta kuralıyla eklendi ve gidiş dönüş testine girdi; boş değer gövdeye yazılmıyor.
+- [x] Yeni veri bölümü yok; bölüm eşlemeleri ve birleştirme kuralları değişmedi (tarama ile gösterildi).
+- [x] Yeni eylem izni yok; bu durum açıkça yazıldı.
+- [x] Çöp kutusu simetrisi korundu (parti çöp kutusuna gider, geri alma ve temizleme değişmedi).
+- [x] Silinen ekran ve kutuların testleri ters çevrildi; ters çevrilen her kriterin yanına "spec 0090 ile" notu yazıldı. Context'teki iki tablo (kırılan yerler, ters çevrilen kriterler) baştan sona gezildi ve hiçbiri atlanmadı.
+- [x] Çizilmeyen bileşen bırakılmadı: üç paylaşılan alan, kova kartı ve kopmuş atama yardımcıları silindi; ölü prop ve memolar kaldırıldı (R38, R40).
+- [x] Üç silme onayının atama cümlesi kalktı; model adı taşıma zinciri duruyor (R39).
+- [x] Tasarım sözlüğünün örnek satır atfı güncellendi ve atama kutusunun borcu "Ödenen borç (spec 0090)" bölümüne taşındı (R41).
+- [x] Kullanıcıya görünen bütün metinler Türkçe. Yazdırılan rapor çeviri sözlüğü kullanmaz (metinler gömülü Türkçe), bu yüzden artık çeviri anahtarı yok; bunun yerine kalkan kutunun başlığını **dilim sınırı** olarak kullanan üç test güncellendi (`gider-gizlilik.test.js:227`, `gider-kasa-raporu-0059.test.js:50`, `gider-kasa-raporu-0061.test.js:12`).
+- [x] Para gösterimi tek para birimi kuralına uyuyor (AC-38).
+- [x] Görsel kanıt eklendi (gider formu, tanım formu ve tanım tablosu, Dönem Raporu, kalem listesi, Üretim Partileri, Parti Hesabı, boş ve neden durumları); Context'teki kanıt tablosunun her satırı uygulandı; atama ya da dağıtım adımı taşıyan ekran kalmadı ve kanıt eşlemesi `beklenen: "degisti"` + `Takım Yöneticisi · YYYY-AA-GG · spec 0090 R42` onay dizesiyle güncellendi. **Bu tablo atlanırsa kanıt sahte "0 fark" raporlar.**
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] Kullanıcı rehberinin altı atfı ve atama bölümü kalktı (Context'teki tablo), yaşlandırma kovalarını anlatan üç satıra dokunulmadı, iki PDF yeniden üretildi (R43).
+- [x] `CLAUDE.md` güncellendi: tek maliyet modeli, ölü alanlar (atama, model satırları, dağıtım ayı, eski kapanış alanı ve gider raporu motorunun kova alanları), parti payının yeni kaynağı ve yeni kalıcı alan.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -467,10 +467,14 @@ Yirmi üç bulgunun hepsi Takım Yöneticisi tarafından onaylandı ve spec'e i�
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | 1 ilk taslak, 2 QA turu (23 bulgu), 3 uygulama planı onayı (K1–K9) |
+| **Düzeltme turu sayısı** | 1 | Triyaj 2026-10-17 |
+| **Bulgu gerçek/gürültü oranı** | 4/0 | Görsel kanıt ve plan ölçümleri eksik; kapanış haritası kaydedilen partiyi kapsamıyordu (olağan kayıt reddi); "tüm çalışanlar" yolu boş atama yazıyordu; ölü prop ve yardımcılar |
+| **Regresyon sayısı** | 1 | Kapanış haritası: yürürlük boşken ya da bitiş haritanın dışındayken parti kapatılamıyordu (eski kod eksik ayı atlıyordu); triyajda düzeltildi |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** "Harita yoksa sessizce yazma" kuralı reddi doğru yere koydu ama haritanın kapsamını yanlış
+kaynaktan aldı: ay tablosu kayıtlı partilerden kuruluyordu, kaydedilen parti ise henüz o listede değildi. Bir doğrulamanın girdisi,
+doğrulanan kaydın kendisini kapsamalı; kapsam testi var olan veriyle değil, yeni kaydın sınır hâlleriyle (yürürlük boş, gelecek
+bitiş, öne çekilen başlangıç) yazılmalı. Ayrıca bir kaydı "tek kural" yoluna almak, aynı kaydı üreten bütün yazma noktalarının
+taranmasını gerektirir: formun yolu kurala girdi, toplu oluşturma düğmesi eski boş değerleri yazmaya devam etti.

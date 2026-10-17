@@ -165,16 +165,21 @@ describe("Spec 0090: görsel kanıt aracı ve kriter kapsamı (R42, AC-57)", () 
     expect(arac).not.toMatch(/"(tikla|kaydir|doldur|dugme|sec):(Makina Maliyeti Kovaları|Maliyete dağıtım|Makina maliyeti ataması)/);
     expect(arac).not.toMatch(/\["Yeni Gider", "(Makina|Model|Dağıtılmasın)"/);
   });
-  it("AC-57: değişen ekranların kanıt kaydı 'degisti' ve spec 0090 R42 onayını taşır", () => {
+  // Kapanışta (AC-11c) "degisti" kayıtları onaylı görüntülere karşı yeniden çekilen 0090-taban raporuna "ayni" olarak çevrildi.
+  it("AC-57: değişen ekranların kanıtı onaylı (kapanışta 0090-taban'a 'ayni'); iki yeni ekran kayıtlı", () => {
     const e = JSON.parse(readFileSync("docs/evidence/kanit-eslemesi.json", "utf8"));
-    const kayitlar = Object.values(e.dosyalar).flat().filter(x => /\/0090-piksel-raporu\.json$/.test(x.rapor || ""));
-    expect(kayitlar.length).toBeGreaterThan(0);
-    expect(kayitlar.some(x => x.beklenen === "degisti")).toBe(true);
-    for (const x of kayitlar) if (x.beklenen === "degisti") expect(x.onay, x.ekran).toMatch(/^Takım Yöneticisi · \d{4}-\d{2}-\d{2} · spec 0090 R42/);
-    for (const e of ["maliyet-0090-parti-neden", "giderler-0090-rapor"]) expect(kayitlar.some(x => x.ekran === e), e).toBe(true);
+    const hepsi = Object.values(e.dosyalar).flat();
+    const kayitlar = hepsi.filter(x => /\/0090-(taban-)?piksel-raporu\.json$/.test(x.rapor || ""));
+    const taban = kayitlar.filter(x => /0090-taban-/.test(x.rapor));
+    expect(taban.length).toBeGreaterThan(100);
+    for (const x of kayitlar) {
+      if (x.beklenen === "degisti") expect(x.onay, x.ekran).toMatch(/^Takım Yöneticisi · \d{4}-\d{2}-\d{2} · spec 0090 R42/);
+      else expect(x.beklenen ?? "ayni", x.ekran).toBe("ayni");
+    }
+    for (const e2 of ["maliyet-0090-parti-neden", "giderler-0090-rapor"]) expect(kayitlar.some(x => x.ekran === e2), e2).toBe(true);
   });
   it("DoD: spec'teki her kabul kriterinin adıyla bir testi var", () => {
-    const spec = existsSync("specs/0090-gider-atamasi-kalkar-parti-payi-rolden.md") ? "specs/0090-gider-atamasi-kalkar-parti-payi-rolden.md" : "specs/done/0090-gider-atamasi-kalkar-parti-payi-rolden.md";
+    const spec = "specs/done/0090-gider-atamasi-kalkar-parti-payi-rolden.md";
     const ac = [...new Set([...readFileSync(spec, "utf8").matchAll(/^- \*\*(AC-[\d/]+)\.\*\*/gm)].map(m => m[1]))];
     expect(ac.length).toBeGreaterThan(60);
     const testler = tara("tests").filter(f => /0090/.test(f)).map(f => readFileSync(f, "utf8")).join("\n");

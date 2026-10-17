@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0090-gider-atamasi-kalkar-parti-payi-rolden.md` (revizyon 3) |
+| **Spec** | `specs/done/0090-gider-atamasi-kalkar-parti-payi-rolden.md` (revizyon 3) · Tamamlandı: commit `58175b5` |
 | **Dal** | `feat/0090-atama-kalkar` (taban `26779e0`, 0089 kapanışı) |
 | **Onay** | Takım Yöneticisi · 2026-10-17 · bütün öneriler (K1–K9) kabul |
 
