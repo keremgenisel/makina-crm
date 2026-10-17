@@ -120,7 +120,7 @@ describe("Spec 0089: kanıt ve kayıtlar (R10, R14, R15, C9)", () => {
   });
   it("triyaj (bulgu 2): README satırı 'iki' görünüm der; CLAUDE.md'nin 0083 maddesi iki sırayı ayrı ayrı yazar", () => {
     const satir = oku("specs/README.md").split("\n").find(l => l.startsWith("| **0089** |"));
-    expect(satir).toMatch(/^\| \*\*0089\*\* \| Giderler'deki iki maliyet görünümü kalkar \|/);
+    expect(satir).toMatch(/^\| \*\*0089\*\* \| Giderler'deki iki maliyet görünümü kalkar( \(Tamamlandı\))? \|/);
     const madde = oku("CLAUDE.md").split("\n").find(l => l.startsWith("- **Giderler çubuğu"));
     expect(madde).toMatch(/^- \*\*Giderler çubuğu:\*\* 0083'te Dönem Raporu · Tedarikler ve Ekstre · Üretim Partileri · Makina Kârlılığı · Makina ve Model \(0088 ile/);
     expect(madde).toMatch(/spec 0089'dan beri yalnız Dönem Raporu · Tedarikler ve Ekstre\)/);

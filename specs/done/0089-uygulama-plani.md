@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0089-gider-maliyet-gorunumleri-kalkar.md` (revizyon 3) |
+| **Spec** | `specs/done/0089-gider-maliyet-gorunumleri-kalkar.md` (revizyon 3) · Tamamlandı: commit `82f0d49` |
 | **Dal** | `feat/0089-gorunumler-kalkar` (taban `0874b26`, 0088 kapanışı) |
 | **Onay** | Takım Yöneticisi · 2026-10-17 · bütün öneriler (K1–K10) kabul |
 

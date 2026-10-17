@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (revizyon 3, plan onayı 2026-10-17) |
+| **Durum** | Tamamlandı (commit `82f0d49`) |
 | **Sahip** | Analist (spec) · Geliştirici (uygulama) |
 | **Etkilenen alanlar** | Giderler sekmesi (görünüm çubuğu ve iki görünüm), bugünkü maliyet motorunun kapısı, parti değişim kutusunun Makina Maliyeti ekranına taşınması, Dönem Raporu'nun kovalar kutusuna tek uyarı satırı, kilit kapsam listesi, tasarım sözlüğünün iki örneği, kullanıcı rehberinin beş atfı, görsel kanıt ve kanıt eşlemesi |
 | **Onaylayan** | Takım Yöneticisi |
@@ -440,32 +440,32 @@ da burada: dört `maliyet-detay-*` adı eski detay bileşenine ait, 0088'in `mal
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hiçbir kalıcı alan, tablo ya da veri kaldırılmadı; bu açıkça yazıldı (C2).
-- [ ] Dönem Raporu ve Aylık Gider ve Kasa Raporu'nun değişmediği kıyas fikstürüyle ölçüldü
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hiçbir kalıcı alan, tablo ya da veri kaldırılmadı; bu açıkça yazıldı (C2).
+- [x] Dönem Raporu ve Aylık Gider ve Kasa Raporu'nun değişmediği kıyas fikstürüyle ölçüldü
       (AC-9, AC-18); fikstür R12'nin satırını bilinen tek fark olarak taşıyor.
-- [ ] Motorun Giderler'de çağrılmadığı ve kapısının `maliyetYetki` olduğu kaynak taramasıyla
+- [x] Motorun Giderler'de çağrılmadığı ve kapısının `maliyetYetki` olduğu kaynak taramasıyla
       sabitlendi; motorun kendi testleri dokunulmadan yeşil (AC-6, AC-8).
-- [ ] Parti kapanışı gerçek verinin **kopyasıyla** denendi (geçici `userData`; gerçek klasöre
+- [x] Parti kapanışı gerçek verinin **kopyasıyla** denendi (geçici `userData`; gerçek klasöre
       yazılmaz, revizyon 3, K7): `kapanisOrtaklari` dolu yazıldı ve üç sütun rakam
       gösterdi (AC-15). **Bu adım atlanırsa 0022 R15'in sessiz kaybı ölçülmemiş olur.**
-- [ ] C8 tablosundaki yirmi altı yerin hepsi elden geçti (iki satır bilerek dokunulmaz); C7'deki on yedi kriterin ters çevrildiği
+- [x] C8 tablosundaki yirmi altı yerin hepsi elden geçti (iki satır bilerek dokunulmaz); C7'deki on yedi kriterin ters çevrildiği
       test yorumlarında yazılı (AC-30).
-- [ ] Yeni veri bölümü, yeni alan ve yeni izin yok; üçü de açıkça yazıldı.
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı değişmedi.
-- [ ] Görsel kanıt alındı ve `docs/evidence/kanit-eslemesi.json` güncellendi: üç kayıt çıkarıldı,
+- [x] Yeni veri bölümü, yeni alan ve yeni izin yok; üçü de açıkça yazıldı.
+- [x] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı değişmedi.
+- [x] Görsel kanıt alındı ve `docs/evidence/kanit-eslemesi.json` güncellendi: üç kayıt çıkarıldı,
       değişen ekranlar `beklenen: "degisti"` ve onay dizesiyle girildi
       (`Takım Yöneticisi · YYYY-AA-GG · spec 0089 R10`), 0088'in `maliyet-*` kayıtlarına
       dokunulmadı (C9).
-- [ ] `npm test` yeşil (çıktısıyla, Electron testleri dâhil), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi (iki görünümün kalktığı, motorun tek tüketicisinin parti ekranı
+- [x] `npm test` yeşil (çıktısıyla, Electron testleri dâhil), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi (iki görünümün kalktığı, motorun tek tüketicisinin parti ekranı
       olduğu, seri bazında kârlılığın ekrandan kalktığı, parti değişim kutusunun yeni yeri).
-- [ ] Sürüm notu metni yazıldı: kullanıcı maliyet rakamını artık Makina Maliyeti sekmesinde bulur;
+- [x] Sürüm notu metni yazıldı: kullanıcı maliyet rakamını artık Makina Maliyeti sekmesinde bulur;
       kayıp envanterindeki satırlar (stokta taşınan maliyet, dağıtılmamış ortak gider, marj ve ekle
       yöntemleri, seri bazında kâr) adlarıyla sayıldı.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -473,10 +473,14 @@ da burada: dört `maliyet-detay-*` adı eski detay bileşenine ait, 0088'in `mal
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | 1 ilk taslak (0088 öncesi koda yazılmıştı), 2 QA turu (21 bulgu), 3 uygulama planı onayı (K1–K10) |
+| **Düzeltme turu sayısı** | 1 | Triyaj 2026-10-17 |
+| **Bulgu gerçek/gürültü oranı** | 2/0 | Kopmuş atama satırının dar nedeni ve tutarı sıfır kalemi sayması; iki belge tutarsızlığı |
+| **Regresyon sayısı** | 0 | Dönem Raporu ve Aylık Gider ve Kasa Raporu taban koddan üretilmiş kıyas fikstürüyle birebir aynı |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir listeyi ekrandan kaldırıp yerine yalnız sayısını koyarken listenin motordaki kümesi yeniden
+okunmalı: eski kutu kalemi tarihiyle ve "takip edilemiyor" ibaresiyle gösterdiği için geniş kümeyi taşıyabiliyordu, tek bir sayı
+ve kesin bir neden cümlesi aynı kümeyi yanlış anlattı (tutarı sıfır kalem de "koptu" sayıldı). Ayrıca "hiç çalışmaz" türünden
+bir kriter casusla ölçülmeli: kaynak taraması memonun kapısını doğru gösterdi, ama izinler okunmadan önceki ilk çizimde motor yine
+bir kez çalışıyordu.
