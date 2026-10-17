@@ -380,6 +380,7 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 
 - `src/components/Customers.jsx` → "Firmaya Göre Grupla" aç/kapa düğmesi (mavi pil): süzgeç değil, tekil aç/kapa; sözlükte karşılığı yok (spec 0014 R1).
 - `src/components/Finance.jsx` → tutar göster/gizle düğmesi (pil): süzgeç değil, tekil aç/kapa.
+- `src/components/maliyet/ModelMaliyetleri.jsx:82` → "Üretimde olmayanları da göster" düğmesi (hayalet `Btn`, `aria-pressed`): süzgeç çubuğu değil, tekil aç/kapa; `Segment`'ten gelmez (spec 0091 C16, emsal `Kasa.jsx`'in "Hepsini göster"i).
 - `src/components/Documents.jsx` → Belge Detayları, Ürünler ve Teklif Koşulları kartları: aynı `kart` görünümü, satır içi. **İlk dönüşüm adayları.**
 - `src/components/documents/FaturaFormModal.jsx` → beş kart (Alıcı Bilgileri, Fatura Bilgileri, Ürünler, Paketleme, Banka / Hesap Bilgileri): aynı `kart` görünümü, satır içi. **İlk dönüşüm adayları.**
 - `src/components/settings/SettingsDocuments.jsx` → `Accordion`: katlanabilir bölümün ayrı bir biçimi.

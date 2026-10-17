@@ -637,6 +637,24 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0090 AC-45: kapanisGenelHavuzlari birebir geri gelir", esit(d.uretimPartileri[0].kapanisGenelHavuzlari, { "2026-01": 123456, "2026-02": 0 }));
   check("spec 0090 AC-44: eski kapanisOrtaklari korunur", esit(d.uretimPartileri[0].kapanisOrtaklari, { "2026-01": 5000 }));
   check("spec 0090 AC-45: alanı olmayan partinin gövdesinde anahtar yok (null da değil)", d.uretimPartileri.slice(1).every(p => !("kapanisGenelHavuzlari" in p)) && !("kapanisGenelHavuzlari" in b.uretimPartileri[0]));
+
+  // Spec 0091 AC-9, AC-9/2, AC-9/3 (R24/2, R24/4): üretimde olmayan model listesi birebir geri gelir; boş liste ya da
+  // undefined (son işaret kalkınca bellekteki değer) gövdeye yazılmaz, anahtar okunan gövdede hiç yoktur.
+  check("spec 0091 AC-9/2: alan hiç verilmemişken okunan appSettings gövdesinde anahtar yok", !("uretimdeOlmayanModeller" in b.appSettings));
+  const u = structuredClone(GOVDE_GIRDISI);
+  u.appSettings.uretimdeOlmayanModeller = ["AK100_DS", "OZEL_1"];
+  dbmod.writeBlobToDb(u);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const e = dbmod.readBlobFromDb();
+  check("spec 0091 AC-9: uretimdeOlmayanModeller birebir geri gelir", esit(e.appSettings.uretimdeOlmayanModeller, ["AK100_DS", "OZEL_1"]));
+  for (const [ad, deger] of [["boş dizi", []], ["undefined (son işaret kalktı)", undefined], ["null", null]]) {
+    const v = structuredClone(GOVDE_GIRDISI);
+    v.appSettings.uretimdeOlmayanModeller = deger;
+    dbmod.writeBlobToDb(v);
+    dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+    const f = dbmod.readBlobFromDb();
+    check(`spec 0091 AC-9/2, AC-9/3: ${ad} gövdeye yazılmaz, okunan gövdede anahtar yok`, !("uretimdeOlmayanModeller" in f.appSettings) && esit(f.appSettings, once.appSettings));
+  }
 }
 
 fs.rmSync(tmpDir, { recursive: true, force: true });

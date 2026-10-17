@@ -525,11 +525,12 @@ const PARTI_STOK = [{ id: 9201, model: "AK100", serialNo: "S-3", addedDate: "202
 // verilirse taşınan Üretim Partileri görünümü 0022'nin kanıt verisiyle çizilir (R23/4).
 // Spec 0090 R27, R37/3: yeni kod parti hesabını ekranda kendi kurar (`tumMusteriler`) ve `makinaMaliyet`'i okumaz; prop yalnız
 // spec öncesi koddan (taban çekimi) aynı ekranın çizilebilmesi için verilir (AC-46'nın gerekçeli istisnası).
-function MaliyetEkrani({ ayar = M88.AYAR, turler = M88.TURLER, p0 = M88.PARTILER, musteriler = M88.CUSTOMERS, stok = M88.STOCK, giderler = M88.GIDERLER }) {
+// Spec 0091: `a0` uygulama ayarlarına eklenir (üretimde olmayan model listesi).
+function MaliyetEkrani({ ayar = M88.AYAR, turler = M88.TURLER, p0 = M88.PARTILER, musteriler = M88.CUSTOMERS, stok = M88.STOCK, giderler = M88.GIDERLER, a0 = {} }) {
   const [giderTurleri, setGiderTurleri] = useState(turler);
   const [standardModels, setStandardModels] = useState(M88.MODELLER);
   const [uretimPartileri, setUretimPartileri] = useState(p0);
-  const [appSettings, setAppSettings] = useState({ giderAyarlari: { yururlukAy: "2026-01" }, ...(ayar ? { maliyetAyarlari: ayar } : {}) });
+  const [appSettings, setAppSettings] = useState({ giderAyarlari: { yururlukAy: "2026-01" }, ...(ayar ? { maliyetAyarlari: ayar } : {}), ...a0 });
   const makinaMaliyet = hesaplaMakinaMaliyetleri({ customers: musteriler, stock: stok, partStockLog: [], giderler, giderTurleri, standardModels: MODELLER, customModels: [],
     giderAyarlari: { yururlukAy: "2026-01" }, uretimPartileri }, { bugun: "2026-09-23" });
   return <MakinaMaliyeti aktifKullanici="kerem" giderler={giderler} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={[]} stock={stok} customers={musteriler}
@@ -664,6 +665,8 @@ const EKRANLAR = {
   "not-formu": [<Notes notes={NOTLAR} setNotes={bos} aktifKullanici="kerem" />, ["~Yeni Not"]],
   "eposta-formu": [<EpostaEkrani />, []],
   "katalog-model": [ayarlar("models"), ["~Yeni Model Ekle"]],
+  // Spec 0091 R1, R28: bir model "Üretimde" işaretinden çıkarılmış panel ve kapsam ipucusu.
+  "katalog-model-uretimde": [ayarlar("models", { appSettings: { ...AYAR, uretimdeOlmayanModeller: [MODELLER[0].model] } }), []],
   // Spec 0087 R18: parça formu (maliyetli düzenleme ve maliyetsiz yeni kayıt), maliyeti girilmemiş ibaresi, adetli kit ve ek kalem.
   "katalog-parca": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Kullanıldığı Modeller ve Kit Adetleri"]],
   "katalog-parca-yeni": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["~Parça/Yedek Parça Ekle"]],
@@ -748,6 +751,12 @@ const EKRANLAR = {
   "maliyet-katsayi-formu": maliyetEkrani({}, ["baslik:Katsayı ve liste fiyatı"]),
   "maliyet-bos-rol": maliyetEkrani({ turler: M88.TURLER.map(({ maliyetRolu: _r, ...t }) => t) }),
   "maliyet-bos-ayar": maliyetEkrani({ ayar: null }),
+  // Spec 0091 R7–R16: üretimde olmayan modeller. 0088 verisinde AK100 dönemde üretilmiş, AK120 ve AK200 üretilmemiş.
+  "maliyet-modeller-uretimde-kapali": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK120"] } }),
+  "maliyet-modeller-uretimde-acik": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK120"] } }, ["dugme:Üretimde olmayanları da göster"]),
+  "maliyet-modeller-isaret-bilgi": maliyetEkrani({}),
+  "maliyet-modeller-isaret-uyari": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK100"] } }, ["dugme:Üretimde olmayanları da göster"]),
+  "maliyet-modeller-bos-uretimde": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK100", "AK120", "AK200"] } }),
   "maliyet-parti": maliyetEkrani({}, ["Parti Hesabı"]),
   "maliyet-parti-planli": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803"]),
   "maliyet-parti-plan-formu": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803", "dugme:Planlanan adetler"]),

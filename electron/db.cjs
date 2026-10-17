@@ -335,7 +335,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
 );
 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT, haritaKonum TEXT);
-CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT, giderAyarlari TEXT, maliyetAyarlari TEXT);
+CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT, giderAyarlari TEXT, maliyetAyarlari TEXT, uretimdeOlmayanModeller TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
   id INTEGER PRIMARY KEY,
@@ -471,6 +471,8 @@ const URETIM_PARTI_GENEL_HAVUZ_COLUMN = [["kapanisGenelHavuzlari", "TEXT"]];
 const planYaz = (v) => (v && typeof v === "object" && Object.keys(v).length ? JSON.stringify(v) : null);
 // Spec 0088 R29: Makina Maliyeti hesap ayarları (dönem, varsayılan adet); kendi JSON sütunu, boşsa gövdeye yazılmaz.
 const APP_SETTINGS_MALIYET_COLUMN = [["maliyetAyarlari", "TEXT"]];
+// Spec 0091 R24, R24/2: üretimde olmayan model adları (JSON liste); boş liste yazılmaz ve okumada gövdeye konmaz.
+const APP_SETTINGS_URETIM_MODEL_COLUMN = [["uretimdeOlmayanModeller", "TEXT"]];
 const KALIP_DEFS_NEW_COLUMNS = [["kod", "TEXT"], ["urunAdi", "TEXT"], ["urunAdiEN", "TEXT"], ["tanim", "TEXT"], ["tanimEN", "TEXT"]];
 const KALIP_DEFS_RESIM_COLUMN = [["resim", "TEXT"]];
 const TEKLIFLER_NEW_COLUMNS = [["email", "TEXT"], ["authority", "TEXT"], ["forwarder", "TEXT"], ["kurRate", "TEXT"], ["parentTeklifId", "INTEGER"]];
@@ -992,8 +994,8 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.appSettings && !skip.has("appSettings")) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []), json(s.giderAyarlari ?? null), s.maliyetAyarlari ? json(s.maliyetAyarlari) : null);
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari, uretimdeOlmayanModeller) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []), json(s.giderAyarlari ?? null), s.maliyetAyarlari ? json(s.maliyetAyarlari) : null, s.uretimdeOlmayanModeller?.length ? json(s.uretimdeOlmayanModeller) : null);
   }
 
   if (Array.isArray(data.faturalar) && !skip.has("faturalar")) {
@@ -1098,6 +1100,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "uretim_partileri", URETIM_PARTI_PLAN_COLUMN);
   ensureColumns(conn, "uretim_partileri", URETIM_PARTI_GENEL_HAVUZ_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_MALIYET_COLUMN);
+  ensureColumns(conn, "app_settings", APP_SETTINGS_URETIM_MODEL_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_KASE_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_PINNED_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_EVRAK_COLUMN);
@@ -1493,8 +1496,9 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []), giderAyarlari: parseJsonCol(giderAyarlari, null), ...(maliyetAyarlari ? { maliyetAyarlari: parseJsonCol(maliyetAyarlari, null) } : {}) };
+    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari, uretimdeOlmayanModeller, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []), giderAyarlari: parseJsonCol(giderAyarlari, null), ...(maliyetAyarlari ? { maliyetAyarlari: parseJsonCol(maliyetAyarlari, null) } : {}),
+      ...(uretimdeOlmayanModeller ? { uretimdeOlmayanModeller: parseJsonCol(uretimdeOlmayanModeller, []) } : {}) };
   }
 
   const nextIdRow = db.prepare(`SELECT value FROM meta WHERE key = 'nextId'`).get();

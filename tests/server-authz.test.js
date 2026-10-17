@@ -349,6 +349,31 @@ describe("appSettings alan düzeyi denetimi (bölüm iki sahipli)", () => {
     expect(yazmaYetkisiVar(ayarKull, "user", ["appSettings"], eski, yeni).ok).toBe(true);
   });
 
+  // Spec 0091 C4, R24/4: üretimde olmayan model listesi Ayarlar sekmesine bağlıdır; son işaret kalkınca bellekte kalan
+  // undefined değer sunucu karşılaştırmasında "değişmiş" sayılmaz (anahtar JSON'da da yok).
+  it("spec 0091 AC-11: Ayarlar sekmesi olmayan kısıtlı kullanıcının uretimdeOlmayanModeller yazması reddedilir, reddedilen alan bu alandır", () => {
+    const yeni = { appSettings: { ...eski.appSettings, uretimdeOlmayanModeller: ["AK-100"] } };
+    const r = yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, yeni);
+    expect(r.ok).toBe(false);
+    expect(r.reddedilenAlan).toBe("uretimdeOlmayanModeller");
+  });
+  it("spec 0091 AC-11/2: Ayarlar sekmesi açık kullanıcı alanı yazabilir", () => {
+    const yeni = { appSettings: { ...eski.appSettings, uretimdeOlmayanModeller: ["AK-100"] } };
+    expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["settings"] }), "user", ["appSettings"], eski, yeni).ok).toBe(true);
+  });
+  it("spec 0091 R24/4: anahtarı olmayan kayıtlı gövde ile undefined değerli yeni gövde aynı sayılır (kısıtlı kullanıcı 403 almaz)", () => {
+    const yeni = { appSettings: { ...eski.appSettings, uretimdeOlmayanModeller: undefined } };
+    expect(yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, yeni).ok).toBe(true);
+  });
+
+  // Triyaj (bulgu 1): Ayarlar sekmesi olmayan kullanıcının istemcisi bayat listeyi tutarsa (sunucuda anahtar yokken) her kaydı
+  // 403 alır; istemci yükleme yolunda alanı gövdeden aldığı için bu gövde artık oluşmaz (ui/uretimdeki-modeller-0091-app).
+  it("spec 0091 triyaj bulgu 1: sunucuda anahtar yokken bayat listeyi gönderen ayarsız kullanıcı reddedilir; anahtarsız gövde geçer", () => {
+    const bayat = { appSettings: { ...eski.appSettings, uretimdeOlmayanModeller: ["AK160"] } };
+    expect(yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, bayat).reddedilenAlan).toBe("uretimdeOlmayanModeller");
+    expect(yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, { appSettings: { ...eski.appSettings } }).ok).toBe(true);
+  });
+
   it("settings grubu tümden engelliyse alan denetimine bakılmadan reddedilir", () => {
     const yeni = { appSettings: { ...eski.appSettings, pinnedPartIds: ["7"] } };
     expect(yazmaYetkisiVar(READONLY, "user", ["appSettings"], eski, yeni).ok).toBe(false);

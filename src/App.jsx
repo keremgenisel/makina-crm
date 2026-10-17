@@ -5,6 +5,7 @@ import {
   DEFAULT_KDV_RATES, DEFAULT_KK_KOMISYONLARI, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
   ALTUNMAK_MODELS, INIT_CUSTOMERS, INIT_DEALERS, INIT_SERVICES, INIT_STOCK, INIT_KALIPLAR, INIT_PART_TYPES,
 } from "./lib/constants";
+import { URETIM_ALANI } from "./lib/uretimdekiModeller";
 import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, yerelYedekAyariOku, yerelYedekAyariYaz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
 import { odemeleriUygula, turHaritasi, canliModelSeti } from "./lib/gider";
 import { hatirlatmaEsigi } from "./lib/odemeHatirlatma";
@@ -1208,7 +1209,10 @@ export default function App() {
       if (Array.isArray(data.uretimFormlari)) setUretimFormlari(data.uretimFormlari);
       // Makinaya özgü alanlar (yedek klasörü/zamanlama) sunucudan gelirse YOK SAYILIR, yerel
       // değer korunur — bkz. disAppSettingsSuz. Yedekten geri yükleme yolu da aynı ayıklamayı yapar.
-      setAppSettings(s => ({ ...s, ...disAppSettingsSuz(data.appSettings), kdvRates, krediKartiKomisyonlari }));
+      // Spec 0091 triyajı (bulgu 1): boş listede okunan gövdede anahtar hiç yoktur (R24/2); spread yokluğu taşımadığı için
+      // bellekteki eski liste kalır, sonraki kayıt onu geri yazar (Ayarlar sekmesi olmayan kullanıcıda her kayıt 403 alır).
+      // Bu yüzden alan gövdeden AÇIKÇA alınır: yoksa undefined.
+      setAppSettings(s => ({ ...s, ...disAppSettingsSuz(data.appSettings), ...(data.appSettings ? { [URETIM_ALANI]: data.appSettings[URETIM_ALANI] } : {}), kdvRates, krediKartiKomisyonlari }));
       if (typeof data.nextId === "number") setIdCounter(data.nextId);
       if (typeof data.dataVersion === "number") dataVersionRef.current = data.dataVersion;
       return data; // çakışma birleştirmesi (mergeLocalIntoReloaded) sunucu verisini buradan alır

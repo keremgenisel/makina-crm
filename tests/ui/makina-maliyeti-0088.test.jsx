@@ -52,14 +52,15 @@ describe("Spec 0088: Model Maliyetleri", () => {
 
   it("AC-18, AC-19, AC-22, AC-23: model satırında direkt, pay ve toplam ayrı; öneri fiyat, katsayı ve Extra Kalıp liste fiyatı", () => {
     render(<H />);
-    expect(hucreler(modelSatiri("AK100")).slice(1, 7)).toEqual(["726,20 ₺", "375,00 ₺", "1.101,20 ₺", "2,19498", "2.417,11 ₺", "4.500,00 ₺"]);
+    // Spec 0091 R13 ile: Model'in sağına "Dönemde üretilen" sütunu girdi, para hücreleri bir kaydı.
+    expect(hucreler(modelSatiri("AK100")).slice(2, 8)).toEqual(["726,20 ₺", "375,00 ₺", "1.101,20 ₺", "2,19498", "2.417,11 ₺", "4.500,00 ₺"]);
   });
 
   it("AC-20, AC-20/2, AC-21: eksik işareti sayıyla; ürün ağacı boş modelde ibare; katsayısız modelde öneri \"—\"", () => {
     render(<H />);
     expect(within(modelSatiri("AK120")).getByTestId("eksik-isareti").textContent).toBe("eksik · 3 parçanın maliyeti yok");
     expect(within(modelSatiri("AK200")).getByTestId("urun-agaci-yok")).toBeTruthy();
-    expect(hucreler(modelSatiri("AK200"))[5]).toBe("—");
+    expect(hucreler(modelSatiri("AK200"))[6]).toBe("—"); // spec 0091 R13: bir sütun kaydı
   });
 
   it("AC-22/3: öneri fiyatın KDV hariç olduğu yazar; AC-25: çöpteki model listede yok", () => {
@@ -181,7 +182,7 @@ describe("Spec 0088: Parti Hesabı", () => {
 
   it("AC-29/4: parti satırındaki birim toplam Model Maliyetleri ile aynı", () => {
     render(<H />);
-    const model = hucreler(modelSatiri("AK100"))[3];
+    const model = hucreler(modelSatiri("AK100"))[4]; // spec 0091 R13: bir sütun kaydı
     git("Parti Hesabı");
     expect(hucreler(screen.getByTestId("parti-satiri-AK100"))[4]).toBe(model);
   });

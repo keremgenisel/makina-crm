@@ -154,15 +154,31 @@ export const genelGiderPayi = (veri, ayarlar, bugun) => {
 };
 // R9/2 (AC-15/2–4): gerçek adedin kümesi canlı stok + canlı müşteri makinaları, üretim tarihi dönem içinde; partili olup
 // olmadığına bakılmaz. Üretim tarihi çözümü TEK zincirden: `makinaMaliyeti.makinaListesi` (R9/3, AC-49).
-export const gercekUretim = ({ customers = [], stock = [], partStockLog = [] } = {}, ayarlar, havuzK = 0) => {
+// Spec 0091 R25, R25/3, R27 (C12): model kırılımı YALNIZ seçenekle istenir; seçeneksiz çıktı birebir eskisidir.
+// `{ modelKirilimi: true, katalog }` → `modelAdetleri` (dönemde üretilen adet, anahtar makinanın Türkçe küçültülmüş modeli,
+// C14b) ve `modelYokAdet` (modeli kataloğun hiçbir satırıyla eşleşmeyen dönem makinası). Dönem tanımsızken ikisi de null (R16).
+export const gercekUretim = ({ customers = [], stock = [], partStockLog = [] } = {}, ayarlar, havuzK = 0, secenek = null) => {
   const d = maliyetAyarDogrula(ayarlar || {});
   const liste = makinaListesi({ customers, stock, partStockLog });
   const cozulemeyen = liste.filter(m => !m.uretimTarihi).length;
-  if (!d.gecerli) return { adet: 0, cozulemeyen, payK: null, neden: "ayarsiz" };
+  const kirilim = (donemdekiler) => {
+    if (!secenek?.modelKirilimi) return {};
+    if (!donemdekiler) return { modelAdetleri: null, modelYokAdet: null };
+    const katalog = new Set((secenek.katalog || []).map(ad => trLower(ad || "")));
+    const modelAdetleri = {};
+    let modelYokAdet = 0;
+    for (const m of donemdekiler) {
+      if (!katalog.has(m.modelKey)) { modelYokAdet++; continue; }
+      modelAdetleri[m.modelKey] = (modelAdetleri[m.modelKey] || 0) + 1;
+    }
+    return { modelAdetleri, modelYokAdet };
+  };
+  if (!d.gecerli) return { adet: 0, cozulemeyen, payK: null, neden: "ayarsiz", ...kirilim(null) };
   const { baslangic, bitis } = donemAraligi(d.deger.baslangicAy, d.deger.bitisAy);
-  const adet = liste.filter(m => m.uretimTarihi && m.uretimTarihi >= baslangic && m.uretimTarihi <= bitis).length;
-  if (adet === 0) return { adet, cozulemeyen, payK: null, neden: "uretimYok" };
-  return { adet, cozulemeyen, payK: Math.floor(havuzK / adet), neden: null };
+  const donemdekiler = liste.filter(m => m.uretimTarihi && m.uretimTarihi >= baslangic && m.uretimTarihi <= bitis);
+  const adet = donemdekiler.length;
+  if (adet === 0) return { adet, cozulemeyen, payK: null, neden: "uretimYok", ...kirilim(donemdekiler) };
+  return { adet, cozulemeyen, payK: Math.floor(havuzK / adet), neden: null, ...kirilim(donemdekiler) };
 };
 
 // ── Model maliyeti (R11–R16) ─────────────────────────────────────────────────
@@ -188,9 +204,31 @@ export const modelMaliyeti = (model, partMap, payK = 0) => {
   };
 };
 // R16, AC-25: bütün canlı modeller (önce standart, sonra özel).
-export const modelMaliyetleri = ({ standardModels = [], customModels = [], parts = [] } = {}, payK = 0) => {
+// Spec 0091 R25/2, R26 (C6): seçenek verilince her satır işaretini (`uretimde`), dönem adedini (`donemAdet`), adet nedenini
+// (`adetNeden`: null | "ayarsiz") ve işaret durumunu (`isaret`: null | "eskimis" | "yanlis") taşır; hesap bütün canlı
+// modeller içindir, hangi satırın çizileceğine ekran karar verir. Seçeneksiz çıktı birebir eskisidir (AC-41).
+export const MODEL_ISARET = { ESKIMIS: "eskimis", YANLIS: "yanlis" };
+export const modelMaliyetleri = ({ standardModels = [], customModels = [], parts = [] } = {}, payK = 0, secenek = null) => {
   const partMap = parcaHaritasi(parts);
-  return [...standardModels, ...customModels].filter(m => m && !m.deletedAt).map(m => modelMaliyeti(m, partMap, payK));
+  const satirlar = [...standardModels, ...customModels].filter(m => m && !m.deletedAt).map(m => modelMaliyeti(m, partMap, payK));
+  if (!secenek) return satirlar;
+  const disi = new Set(secenek.uretimdeDisi || []);
+  const adetler = secenek.uretim?.modelAdetleri || null;
+  const ayarsiz = !adetler;
+  return satirlar.map(m => {
+    const uretimde = !disi.has(m.model); // R24/3: birebir
+    const donemAdet = ayarsiz ? null : (adetler[trLower(m.model)] || 0); // C14b: makina eşlemesi Türkçe küçültmeyle
+    const isaret = donemAdet == null ? null
+      : uretimde && donemAdet === 0 ? MODEL_ISARET.ESKIMIS
+      : !uretimde && donemAdet > 0 ? MODEL_ISARET.YANLIS : null;
+    return { ...m, uretimde, donemAdet, adetNeden: ayarsiz ? "ayarsiz" : null, isaret };
+  });
+};
+// R26/2 (K4): sayı satırının üç sayısı motordan; ekran sayım yapmaz (C7).
+export const modelSayilari = (satirlar = []) => {
+  const uretimde = satirlar.filter(m => m.uretimde !== false).length;
+  return { tanimli: satirlar.length, uretimde, uretimdeDisi: satirlar.length - uretimde,
+    yanlis: satirlar.filter(m => m.isaret === MODEL_ISARET.YANLIS).length };
 };
 
 // ── Parti hesabı (R17–R22, R28) ──────────────────────────────────────────────

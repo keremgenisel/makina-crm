@@ -31,8 +31,12 @@ export const MakinaMaliyeti = ({
   const veri = useMemo(() => ({ giderler, giderTurleri, tedarikciler, stock, customers, partStockLog, uretimPartileri, yururlukAy: appSettings?.giderAyarlari?.yururlukAy || null }),
     [giderler, giderTurleri, tedarikciler, stock, customers, partStockLog, uretimPartileri, appSettings?.giderAyarlari?.yururlukAy]);
   const pay = useMemo(() => genelGiderPayi(veri, ayarlar, bugun), [veri, ayarlar, bugun]);
-  const gercek = useMemo(() => gercekUretim(veri, ayarlar, pay.havuzK), [veri, ayarlar, pay.havuzK]);
-  const modeller = useMemo(() => modelMaliyetleri({ standardModels, customModels, parts }, pay.payK), [standardModels, customModels, parts, pay.payK]);
+  // Spec 0091 R25/3, R26: model kırılımı (dönem adedi, modeli bulunamayan makina) ve satırların üretim işareti; süzme ekranda (C6).
+  const katalog = useMemo(() => [...standardModels, ...customModels].filter(m => m && !m.deletedAt).map(m => m.model), [standardModels, customModels]);
+  const gercek = useMemo(() => gercekUretim(veri, ayarlar, pay.havuzK, { modelKirilimi: true, katalog }), [veri, ayarlar, pay.havuzK, katalog]);
+  const uretimdeDisi = appSettings?.uretimdeOlmayanModeller;
+  const modeller = useMemo(() => modelMaliyetleri({ standardModels, customModels, parts }, pay.payK, { uretimdeDisi, uretim: gercek }),
+    [standardModels, customModels, parts, pay.payK, uretimdeDisi, gercek]);
   // Spec 0090 R12–R37, R37/3 (K8): parti payı burada kurulur (App'te ağır hesap yok). Üretim tarihi zinciri çöpteki müşteriyi de
   // okur (stoğa dönen makinanın özgün tarihi); bu yüzden müşteriler ham dizidir (bugünkü motorun girdisiyle aynı).
   const partiSonucu = useMemo(() => partiGenelPaylari({ ...veri, customers: tumMusteriler || customers }, bugun), [veri, tumMusteriler, customers, bugun]);
@@ -47,7 +51,7 @@ export const MakinaMaliyeti = ({
         <div style={{ minWidth: 0, flex: "0 0 auto", maxWidth: "100%" }}><Segment ariaLabel="Görünüm" options={GORUNUMLER} value={gorunum} onChange={setGorunum} /></div>
       </div>
       <div style={{ marginBottom: 12 }}><UyariSeridi aile="bilgi" testId="bugunku-ayar-ibaresi">{BUGUNKU_AYAR_IBARESI}</UyariSeridi></div>
-      {gorunum === "modeller" && <ModelMaliyetleri {...ortak} standardModels={standardModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels} onAyarlar={() => setGorunum("ayarlar")} />}
+      {gorunum === "modeller" && <ModelMaliyetleri {...ortak} standardModels={standardModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels} />}
       {gorunum === "parti" && <PartiHesabi {...ortak} veri={veri} rates={rates} bugun={bugun} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers} />}
       {gorunum === "partiler" && <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
         partiSonucu={partiSonucu} kapanisHavuzu={kapanisHavuzu} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />}

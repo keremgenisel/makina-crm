@@ -7,7 +7,8 @@ import { KalipManager } from "./KalipManager";
 import { PartManager } from "./PartManager";
 import { CalisanManager } from "./CalisanManager";
 import { PartTypeManager } from "./PartTypeManager";
-import { KartBolum } from "./tasarim";
+import { KartBolum, Ipucu } from "./tasarim";
+import { URETIM_ISARETI_IPUCU } from "../lib/uretimdekiModeller";
 import { SettingsApp } from "./settings/SettingsApp";
 import { SettingsMusteri } from "./settings/SettingsMusteri";
 import { SettingsServisPanosu } from "./settings/SettingsServisPanosu";
@@ -246,6 +247,8 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
             Buradaki modeller, Yeni Müşteri ve Makina Geçmişi ekranlarındaki model seçiminde görünür.
             Standart modeller düzenlenebilir ama silinemez; özel modeller hem düzenlenip hem silinebilir.
           </div>
+          {/* Spec 0091 R28: "Üretimde" işaretinin neyi etkilediği. */}
+          <Ipucu><span data-testid="uretim-isareti-ipucu">{URETIM_ISARETI_IPUCU}</span></Ipucu>
           <ModelsManager showToast={showToast} standardModels={standardModels} setStandardModels={setStandardModels}
             customModels={customModels} setCustomModels={setCustomModels} setCustomers={setCustomers} setStock={setStock} parts={parts} setParts={setParts}
             baskasiKilitli={baskasiKilitli} appSettings={appSettings} setAppSettings={setAppSettings}

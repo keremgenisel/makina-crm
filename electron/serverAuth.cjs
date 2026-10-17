@@ -163,6 +163,7 @@ const AYAR_ALAN_SEKMELERI = {
   analizGizliModeller: ["settings"], // Ayarlar > Katalog > Makina Modelleri ("Analiz'de Göster")
   giderAyarlari:  ["settings"], // Ayarlar > Giderler > Gider Ayarları + Firma Çalışanları varsayılan resmi maliyet
   maliyetAyarlari: ["settings", "maliyet"], // spec 0088 R29: Makina Maliyeti › Hesap Ayarları (dönem, varsayılan adet)
+  uretimdeOlmayanModeller: ["settings"], // spec 0091 C4: Ayarlar > Katalog > Makina Modelleri ("Üretimde"); haritada olmasa da AYAR_VARSAYILAN_SEKMELER aynısını verirdi
 };
 // Hiçbir sekmeye ait olmayan alanlar: otomatik yedekleme her istemcide App.jsx'te çalışır ve
 // başarılı yedek sonrası lastBackup yazar — sekmesi olmayan bu yazma engellenirse Ayarlar

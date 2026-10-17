@@ -3188,6 +3188,18 @@
         "rapor": "docs/evidence/0078-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertur",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "ayarlar-models",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R28"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "katalog-model-uretimde",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R28"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -6461,6 +6473,30 @@
         "rapor": "docs/evidence/0087-piksel-raporu.json",
         "ekran": "ayarlar-models",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "katalog-model",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R1"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "katalog-model-ekmaliyet",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R1"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "ayarlar-models",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R1"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "katalog-model-uretimde",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R1"
       }
     ],
     "src/components/KalipManager.jsx": [
@@ -8698,6 +8734,18 @@
         "rapor": "docs/evidence/0090-taban-piksel-raporu.json",
         "ekran": "maliyet-0090-parti-neden",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R8"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller-uretimde-kapali",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R7"
       }
     ],
     "src/components/maliyet/PayOzeti.jsx": [
@@ -8715,6 +8763,24 @@
         "rapor": "docs/evidence/0088-taban-piksel-raporu.json",
         "ekran": "maliyet-bos-ayar",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R8"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-bos-ayar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R16"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-bos-rol",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R8"
       }
     ],
     "src/components/maliyet/ModelMaliyetleri.jsx": [
@@ -8732,6 +8798,54 @@
         "rapor": "docs/evidence/0088-taban-piksel-raporu.json",
         "ekran": "maliyet-katsayi-formu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R8"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller-dokum",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R13"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-katsayi-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R13"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller-uretimde-kapali",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R7"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller-uretimde-acik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R9"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller-isaret-bilgi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R14"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller-isaret-uyari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R15"
+      },
+      {
+        "rapor": "docs/evidence/0091-piksel-raporu.json",
+        "ekran": "maliyet-modeller-bos-uretimde",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0091 R11"
       }
     ],
     "src/components/maliyet/PartiHesabi.jsx": [

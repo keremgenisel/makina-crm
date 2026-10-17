@@ -7,6 +7,7 @@ import { tutarMetni } from "../lib/tutarGirdisi";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { EK_MALIYET_IPUCU, ekMaliyetDogrula, kitAdediDogrula, modelAdiParcalardaTasi, modelAdiParcalaraDokunurMu } from "../lib/urunAgaci";
 import { useFilteredList } from "../hooks/useFilteredList";
+import { uretimdeMi, uretimIsaretiDegistir, uretimIsaretiTasi, uretimIsaretiDusur } from "../lib/uretimdekiModeller";
 
 const PER_PAGE = 10;
 
@@ -24,6 +25,8 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       return { ...p, analizGizliModeller: [...cur] };
     });
   };
+  // Spec 0091 R1–R5: "Üretimde" işareti; saklama ve boş liste kuralı tek yerde (lib/uretimdekiModeller).
+  const toggleUretim = (model) => setAppSettings?.(p => uretimIsaretiDegistir(p, model));
   const empty = { model: "", urunAdi: "", urunAdiEN: "", sogutma: "Soğutmalı", kapasite: "", kalip: "", tanim: "", tanimEN: "", defaultParcalar: [] };
   const [modelModal, setModelModal] = useState(null); // null | { mode: "add" | "edit-std" | "edit-custom", data }
   const [mForm, setMForm] = useState(empty);
@@ -79,6 +82,8 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
         const arr = p?.analizGizliModeller || [];
         return arr.includes(oldName) ? { ...p, analizGizliModeller: arr.map(x => x === oldName ? name : x) } : p;
       });
+      // Spec 0091 R4: üretim işareti de yeni adı taşır.
+      setAppSettings?.(p => uretimIsaretiTasi(p, oldName, name));
       // Gider model satırları modele ADLA bağlıdır (spec 0001 R21, plan K35): ad taşınmazsa atama kopardı.
       setGiderler?.(p => modelAdiTasi(p, oldName, name));
       setGiderTanimlari?.(p => modelAdiTasi(p, oldName, name));
@@ -120,7 +125,12 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       </td>
       <td style={{ padding: "10px 12px", textAlign: "center" }}>
         <input type="checkbox" checked={analizGoster(m.model)} onChange={() => toggleAnaliz(m.model)}
-          title="Analiz > Model Servis Yoğunluğu'nda göster"
+          title="Analiz > Model Servis Yoğunluğu'nda göster" aria-label={`${m.model} · Analiz'de göster`}
+          style={{ width: 16, height: 16, accentColor: "var(--brand, #e85d1a)", cursor: "pointer", margin: 0 }} />
+      </td>
+      <td style={{ padding: "10px 12px", textAlign: "center" }}>
+        <input type="checkbox" checked={uretimdeMi(appSettings, m.model)} onChange={() => toggleUretim(m.model)}
+          title="Makina Maliyeti › Model Maliyetleri'nde üretimdeki modeller arasında göster" aria-label={`${m.model} · üretimde`}
           style={{ width: 16, height: 16, accentColor: "var(--brand, #e85d1a)", cursor: "pointer", margin: 0 }} />
       </td>
       <td style={{ padding: "10px 12px" }}>
@@ -153,8 +163,8 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
-                {[["", "img"], ["Model", "model"], ["Soğutma", "sog"], ["Kapasite", "kap"], ["Kalıp Çapı", "cap"], ["Tanım", "tanim"], ["Analiz", "analiz"], ["", "act"]].map(([h, k]) => (
-                  <th key={k} style={{ padding: "8px 12px", textAlign: k === "analiz" ? "center" : (h === "" ? "right" : "left"), fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", whiteSpace: "nowrap" }}>{h}</th>
+                {[["", "img"], ["Model", "model"], ["Soğutma", "sog"], ["Kapasite", "kap"], ["Kalıp Çapı", "cap"], ["Tanım", "tanim"], ["Analiz", "analiz"], ["Üretimde", "uretim"], ["", "act"]].map(([h, k]) => (
+                  <th key={k} style={{ padding: "8px 12px", textAlign: k === "analiz" || k === "uretim" ? "center" : (h === "" ? "right" : "left"), fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -172,7 +182,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
       {confirmDelModel && (
         <ConfirmDialog
           message={`"${confirmDelModel}" modeli Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`} // spec 0090 R39: atama cümlesi kalktı
-          onConfirm={() => { setCustomModels(p => withDeleted(p, x => x.model === confirmDelModel)); setAppSettings?.(p => { const arr = p?.analizGizliModeller || []; return arr.includes(confirmDelModel) ? { ...p, analizGizliModeller: arr.filter(x => x !== confirmDelModel) } : p; }); setConfirmDelModel(null); showToast("Model silindi."); }}
+          onConfirm={() => { setCustomModels(p => withDeleted(p, x => x.model === confirmDelModel)); setAppSettings?.(p => { const arr = p?.analizGizliModeller || []; return arr.includes(confirmDelModel) ? { ...p, analizGizliModeller: arr.filter(x => x !== confirmDelModel) } : p; }); setAppSettings?.(p => uretimIsaretiDusur(p, confirmDelModel)); setConfirmDelModel(null); showToast("Model silindi."); }}
           onCancel={() => setConfirmDelModel(null)}
         />
       )}
