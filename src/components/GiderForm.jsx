@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { today, getKdvRateForDate, yerelBugun, fmtTR } from "../lib/utils";
 import { stopajOdemeTarihi, stopajBeyanAyari } from "../lib/stopajDonemi";
-import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, atanabilirMi, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula,
+import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula,
   kdvAyir, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, kalemKdv, KDV_YONU, kurus, tl, kdvliMi, tedarikciSecilirMi, sgkDavranisiMi, calisanSgkToplami, SGK_TOPLAM_YOK_NEDENI,
   tevkifatliMi, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kalemTevkifat, odenecekTutar,
   kisitliGiderMi, kisitHesabi, kisitOranCoz, varsayilanIndirilebilirOran, KKEG_ETIKETI } from "../lib/gider";
@@ -10,7 +10,7 @@ import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorc
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
-import { AtamaAlani, DagitimAlani, DavranisRozeti, tl2, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, KisitAlani, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi, tutarMetni } from "./gider/GiderAlanlari";
+import { DavranisRozeti, tl2, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, KisitAlani, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi, tutarMetni } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
@@ -31,8 +31,8 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     return { id: null, tarih, turId: "", aciklama: "", tedarikciId: "", tutar: "", netTutar: "", girisYonu: "brut",
       kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)), stopajOrani: tutarMetni(giderAyarlari?.stopajOrani ?? 20),
       calisanId: "", resmiTutar: "", eldenTutar: "", yolParasi: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
-      atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC,
-      taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [], dagitimAy: "",
+      tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC, // spec 0090 R5: atama ve dağıtım alanı yok
+      taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [],
       tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", tevkifatTaksitSayisi: "1", tevkifatVade: "", // spec 0075 R1
       kisitliGider: false, indirilebilirOran: "" }; // spec 0076 R1
   }
@@ -68,7 +68,7 @@ const KisitOzetSatirlari = ({ kh, cizgi = null }) => (
   </div>
 );
 
-export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [], stock = [], customers = [], modeller = [],
+export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisanlar = [],
   giderler = [], giderAyarlari = {}, kdvRates, odemeDegistirebilir = true, onSave, onCancel,
   // Spec 0046 + 0053 R15: yeni kalemde ve düzenlemede hedef bazlı ödeme (hesap yalnız kasa yetkisiyle); çek yöntemleri yalnız
   // kasa yetkisi ve çek yazıcısıyla (R14).
@@ -99,8 +99,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   const hata = (alan) => hatalar.find(h => h.alan === alan)?.mesaj;
 
   const turDegis = (turId) => {
-    const yeniDav = turMap.get(String(turId))?.davranis || DAVRANIS.NORMAL;
-    set({ turId, ...(!atanabilirMi(yeniDav) ? { atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [] } : {}) });
+    // Spec 0090 R5/3: atanamayan davranışta eski atamayı doğrulayıcı düşürür (kayıtta tek kural).
+    set({ turId });
   };
   const tarihDegis = (tarih) => set({ tarih, ...(form._kdvElle ? {} : { kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)) }) });
   // AC-37 / AC-54 (K14): çalışan seçilince bileşenler YALNIZ boş alana ön doldurulur; tanımsızsa boş kalır.
@@ -557,17 +557,6 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
         </div>
       )}
 
-      {atanabilirMi(dav) && (
-        <Field label="Makina maliyeti ataması">
-          {/* Spec 0071 R25 (triyaj): önizlemenin sınırı KDV hariç tutar (normalTutar), kayıt doğrulamasıyla aynı. */}
-          <AtamaAlani value={form} onChange={p => set(p)} stock={stock} customers={customers} modeller={modeller}
-            tutar={dav === DAVRANIS.PERSONEL ? personelToplam : normalTutar} davranis={dav} kisitli={kh.etkili && kh.indirilemeyenK > 0} />
-          <HataMetni>{hatalar.filter(h => h.alan === "modelSatirlari" || h.alan === "makinaId").map(h => h.mesaj).find(Boolean)}</HataMetni>
-        </Field>
-      )}
-      {/* Spec 0072 R25 (S3): atama bölümünden bağımsız, bütün davranışlarda (kira dahil). */}
-      <DagitimAlani value={form.dagitimAy} onChange={v => set({ dagitimAy: v })} atamaTur={atanabilirMi(dav) ? form.atamaTur : ""} tarih={form.tarih}
-        hata={hatalar.find(h => h.alan === "dagitimAy")?.mesaj} />
     </Modal>
   );
 };

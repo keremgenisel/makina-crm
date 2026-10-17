@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Spec 0030 AC-15 / AC-22 (R10): Tekrarlayan Giderler tablosu sığdırılırken hiçbir bilgi kaybolmaz. Tanım, tür, tedarikçi,
 // tutar, başlangıç, bitiş, atama ve üretilen aylar ya doğrudan ya da ipucunda erişilebilir; "üretilen aylar" sayıya iner.
+// Spec 0090 R12 ile: Atama sütunu kalktı (yedi başlık); satırda atama metni yok.
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
@@ -12,12 +13,12 @@ const ciz = () => render(<SettingsGiderTanimlari giderTanimlari={TANIM_UZUN} set
 const satir = (ad) => screen.getByText(ad).closest("tr");
 
 describe("Tekrarlayan giderler tablosu: bilgi kaybı yok", () => {
-  it("AC-15: sütun başlıkları; başlangıç ve bitiş birleşik sütunda", () => {
+  it("AC-15 (spec 0090 ile yedi başlık): sütun başlıkları; başlangıç ve bitiş birleşik sütunda", () => {
     ciz();
     const b = [...document.querySelectorAll("thead th")].map(th => th.textContent.trim());
-    expect(b).toEqual(["Tanım", "Tür", "Tedarikçi", "Tutar", "Başlangıç – Bitiş", "Atama", "Üretilen aylar", ""]);
+    expect(b).toEqual(["Tanım", "Tür", "Tedarikçi", "Tutar", "Başlangıç – Bitiş", "Üretilen aylar", ""]);
   });
-  it("AC-15: her satırda tanım, tür, tedarikçi, tutar, başlangıç, bitiş ve atama doğrudan görünür", () => {
+  it("AC-15 (spec 0090 ile): her satırda tanım, tür, tedarikçi, tutar, başlangıç ve bitiş doğrudan görünür; atama metni yok", () => {
     ciz();
     const kira = within(satir("Fabrika binası kirası (Organize Sanayi Bölgesi)"));
     expect(kira.getByText("Fabrika kirası")).toBeTruthy();
@@ -25,9 +26,9 @@ describe("Tekrarlayan giderler tablosu: bilgi kaybı yok", () => {
     expect(kira.getByText("125.000 ₺")).toBeTruthy();
     expect(kira.getByText(/2025-06/)).toBeTruthy();
     expect(kira.getByText(/– 2027-05/)).toBeTruthy();
-    expect(kira.getByText("Ortak")).toBeTruthy();
+    expect(kira.queryByText("Ortak")).toBeNull();
     const model = within(satir("Sac levha tedarik sözleşmesi"));
-    expect(model.getByText("AK120_DSC")).toBeTruthy();
+    expect(model.queryByText("AK120_DSC")).toBeNull();
     expect(model.getByText(/– —/)).toBeTruthy(); // bitişsiz tanım
   });
   it("AC-22: üretilen aylar sayı olarak görünür, tam liste ipucunda; hiç üretilmemişse bugünkü metin", () => {

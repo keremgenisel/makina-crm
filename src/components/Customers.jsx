@@ -4,7 +4,6 @@ import { logAction, snapshotOnceki } from "../lib/audit";
 import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { servisParcaGeriAl } from "../lib/servisStok";
 import { netDusumleri, IADE_TIPI } from "../lib/stokHareketi";
-import { makinaGiderSayisi } from "../lib/gider";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
@@ -25,8 +24,7 @@ export const Customers = ({
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
   partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null,
-  // Gider kaydı (spec 0001 R7): yalnız gider yetkisi varsa dolu gelir; silme onayında bağlı gider sayısı.
-  giderler = [],
+  // Gider kaydı (spec 0001 R7): giderYetki formdaki maliyet alanlarını açar; spec 0090 R39 ile silme onayında bağlı gider sayısı yok.
   // rates satış kuru içindir (spec 0002 R12). Spec 0067 R8: makina maliyeti müşteri ekranına artık gelmez.
   giderYetki = false, rates = null,
   // Spec 0024 C6/C7: tahsilata hesap seçimi yalnız kasa yetkisiyle (gider + Finans sekmesi, perde kalkık).
@@ -693,7 +691,6 @@ export const Customers = ({
               (ozet ? `Birlikte taşınacak: ${ozet}. ` : "Bağlı kayıt yok. ") +
               (sayilar.tahsis > 0 ? `Bayinin bu makinaya tahsis ettiği ${sayilar.tahsis} yedek parça satışı silinmez, tahsis notu olarak kalır. ` : "") +
               (makinaVar ? "Makina, Makina Stoğu'na geri döner. " : "") +
-              (() => { const n = makinaGiderSayisi(giderler, { musteriId: confirmId, sourceStockId: silinecek?.sourceStockId }); return n > 0 ? `Bu makinaya atanmış ${n} gider kalemi var: silinmez, ortak gidere düşer; müşteri çöpten geri alınırsa atama geri döner. ` : ""; })() +
               "Ayarlar'dan 30 gün içinde geri alabilirsiniz."
             }
             onConfirm={confirmDel}

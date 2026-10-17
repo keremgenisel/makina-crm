@@ -626,6 +626,17 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
     c.standardModels[0].karKatsayisi === 2.19498 && c.standardModels[0].kalipListeFiyati === 4500.5 && c.customModels[0].karKatsayisi === 1.97 && !("kalipListeFiyati" in c.customModels[0]));
   check("spec 0088 AC-43: planlanan adetler korunur", esit(c.uretimPartileri[0].planlananAdetler, { AK100_DS: 40, OZEL_1: 5 }));
   check("spec 0088 AC-43: maliyet ayarları kendi anahtarında korunur", esit(c.appSettings.maliyetAyarlari, { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 120 }));
+
+  // Spec 0090 AC-45, AC-44: kapanıştaki genel gider havuzları (yeni alan) birebir geri gelir; boşken gövdeye yazılmaz (null da
+  // değil). Eski kapanış alanı (kapanisOrtaklari) yerinde ve dokunulmadan kalır.
+  const h = structuredClone(GOVDE_GIRDISI);
+  h.uretimPartileri[0] = { ...h.uretimPartileri[0], bitisAy: h.uretimPartileri[0].baslangicAy, kapanisOrtaklari: { "2026-01": 5000 }, kapanisGenelHavuzlari: { "2026-01": 123456, "2026-02": 0 } };
+  dbmod.writeBlobToDb(h);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const d = dbmod.readBlobFromDb();
+  check("spec 0090 AC-45: kapanisGenelHavuzlari birebir geri gelir", esit(d.uretimPartileri[0].kapanisGenelHavuzlari, { "2026-01": 123456, "2026-02": 0 }));
+  check("spec 0090 AC-44: eski kapanisOrtaklari korunur", esit(d.uretimPartileri[0].kapanisOrtaklari, { "2026-01": 5000 }));
+  check("spec 0090 AC-45: alanı olmayan partinin gövdesinde anahtar yok (null da değil)", d.uretimPartileri.slice(1).every(p => !("kapanisGenelHavuzlari" in p)) && !("kapanisGenelHavuzlari" in b.uretimPartileri[0]));
 }
 
 fs.rmSync(tmpDir, { recursive: true, force: true });

@@ -58,10 +58,10 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:295`
+**Örnek:** `src/components/Giderler.jsx:294`
 **Örnek:** `src/components/Documents.jsx:1112`
-**Örnek:** `src/components/Customers.jsx:491` (düğme kipi, içerik genişliği, sayı rozeti)
-**Örnek:** `src/components/Stock.jsx:55` (sekme kipi)
+**Örnek:** `src/components/Customers.jsx:489` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Stock.jsx:54` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:332` (form içi, düğme kipi, eşit genişlik)
 
@@ -125,7 +125,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
 **Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
-**Örnek:** `src/components/gider/DonemRaporu.jsx:85` (kart, başlık + alt satır)
+**Örnek:** `src/components/gider/DonemRaporu.jsx:44` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
@@ -173,8 +173,8 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:363`
-**Örnek:** `src/components/Customers.jsx:525` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Giderler.jsx:361`
+**Örnek:** `src/components/Customers.jsx:523` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
@@ -200,7 +200,7 @@ nedeninin önüne geçiyorsa **bölümüyle birlikte** sayfa sonuna alınabilir.
 sırası korunur ve şeridin metni yerine göre yeniden yazılmaz. Örnek: Kasa › Hesaplar'da deneme dönemi şeridi ve hesapsız
 notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avanslarının altında durur; kullanıcı Kasa'ya bakiyeler için gelir.
 
-**Örnek:** `src/components/Giderler.jsx:330`
+**Örnek:** `src/components/Giderler.jsx:329`
 **Örnek:** `src/components/Kasa.jsx:573` (sayfa sonundaki şerit, spec 0083)
 **Örnek:** `src/components/stock/PartStokTab.jsx:140` (hata ailesi)
 
@@ -365,6 +365,11 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
   karta; görüşme, dosya ve geçmiş boş durumları `BosDurum`'a; farklı para birimi borcu, çevrimdışı dosya uyarısı ve Yeni Sahip
   penceresinin iki mesajı `UyariSeridi`'ye geçti.
 
+### Ödenen borç (spec 0090)
+
+- `src/components/gider/GiderAlanlari.jsx` → atama alanının gri bilgi kutusu (nötr aile yok): atama alanı bileşeniyle birlikte
+  kalktı (gider formunda makina maliyeti ataması ve aylara dağıtım yok, spec 0090).
+
 ### Ödenen borç (spec 0089)
 
 - `src/components/gider/MakinaMaliyetDetay.jsx` → "Gider verisi girilmemiş" kesikli bilgi kutusu ve
@@ -388,7 +393,6 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 - `src/components/GiderForm.jsx` → mükerrer personel uyarısı (amber, 12.5 punto, başlık satır içi) ve kırmızı
   "Kayıt yapılmadı" kutusu (`role="alert"`; kırmızı aile yok).
 - `src/components/settings/SettingsGider.jsx` → eşik uyarısı (amber, `role="alert"`).
-- `src/components/gider/GiderAlanlari.jsx` → atama alanının gri bilgi kutusu (nötr aile yok).
 - `src/components/gider/KdvKarsilastirmaKarti.jsx` → "karşılaştırma yapılamıyor" kesikli kutusu (10 köşe, gri zemin).
 - `src/components/Giderler.jsx` → "Hatırlatma kapsamı" aç/kapa düğmesi (`aria-pressed`).
 - `src/components/stock/PartStokTab.jsx` → "Stoğa Parça Ekle" penceresinin eylem satırı gövde içinde kalır: pencere

@@ -72,8 +72,7 @@ const atamalar = [
   { atamaTur: "" },
 ];
 const ATAMALI = [...normal(atamalar.length).map((x, i) => ({ ...x, ...atamalar[i] })), ...personel];
-const kalemListesiCiz = () => render(<KalemListesi kalemler={ATAMALI} giderTurleri={TURLER} tedarikciler={TED} stock={STOK} customers={MUSTERI}
-  standardModels={[{ model: "AM-100" }]} customModels={[]} bugun="2026-10-02" canDo={() => true} onDuzenle={vi.fn()} onSil={vi.fn()} />);
+const kalemListesiCiz = () => render(<KalemListesi kalemler={ATAMALI} giderTurleri={TURLER} tedarikciler={TED} bugun="2026-10-02" canDo={() => true} onDuzenle={vi.fn()} onSil={vi.fn()} />);
 // Sayfalı eski kodda bütün sayfaları gezer; sayfasız kodda tek okumadır.
 const tumSatirlar = (kap) => {
   const satirlar = [...kap.querySelectorAll("tbody tr")].map(metin);
@@ -93,20 +92,18 @@ const ozet = () => {
 };
 
 describe("Spec 0080 R10: makina çözümü tek kez kurulur, çıktı birebir aynı", () => {
-  it("AC-16 / AC-3: atama hücreleri, başlıktaki kalem sayısı ve alt toplam spec 0080 öncesiyle aynı", () => {
+  // Spec 0090 R10 ile: atama sütunu kalktı (makina çözümü artık yapılmaz). Başlıktaki kalem sayısı, alt toplam ve satır sayısı
+  // spec 0080 öncesiyle aynı; satırların atama metni yok. Tam satır metninin kıyası 0090'ın hücre düzeyinde ayıklanmış altınında.
+  it("AC-16 / AC-3 (spec 0090 ile): başlıktaki kalem sayısı, alt toplam ve satır sayısı aynı; atama hücresi yok", () => {
     kalemListesiCiz();
     const simdi = ozet();
-    if (process.env.YAZ_0080 === "1") { fs.writeFileSync(DOSYA, JSON.stringify(simdi, null, 1)); return; }
     const once = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
     expect(simdi.baslik).toBe(once.baslik);
     expect(simdi.altToplam).toBe(once.altToplam);
-    expect(simdi.satirlar).toEqual(once.satirlar);
-    // Fikstür gerçekten bütün çözüm dallarını taşıyor (silinmiş/takip edilemeyen, stoktan satılan, stok, müşteri).
-    expect(once.satirlar.some(s => s.includes("(stoktan satıldı)"))).toBe(true);
-    expect(once.satirlar.some(s => s.includes("Atandığı makina silinmiş veya takip edilemiyor"))).toBe(true);
-    expect(once.satirlar.some(s => s.includes("Makina Stoğu"))).toBe(true);
-    expect(once.satirlar.some(s => s.includes("Örnek Gıda"))).toBe(true);
-    expect(once.satirlar.length).toBeGreaterThan(10); // eski kodda en az iki sayfa
+    expect(simdi.satirlar).toHaveLength(once.satirlar.length);
+    for (const atamaMetni of ["(stoktan satıldı)", "Atandığı makina silinmiş veya takip edilemiyor", "Makina Stoğu", "Örnek Gıda", "Ortak gider", "Dağıtılmasın"])
+      expect(simdi.satirlar.some(x => x.includes(atamaMetni)), atamaMetni).toBe(false);
+    expect(once.satirlar.some(x => x.includes("Örnek Gıda"))).toBe(true); // altın atamalıydı
   });
 });
 

@@ -1,16 +1,14 @@
-import { useState } from "react";
-import { Icon, Select, Field, Input, TutarInput } from "../ui";
-import { Segment, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
-import { ATAMA, DAVRANIS, HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, modelSatirlariDogrula, modelSatirTutari, tutarCoz, odemeHedefleri, tl,
-  dagitimSecilebilirMi, dagitimAySayisiCoz, dagitimRozetMetni, DAGITIM_AY_MAX, DAGITIM_MAKINA_NEDENI, DAGITIM_DAGITMA_NEDENI, DAGITIM_MODEL_IPUCU, DAGITIM_TANIM_IPUCU, KISIT_KUTU_ETIKETI, KISIT_FORM_NOTU } from "../../lib/gider";
-import { fmtCur, fmtTR, trLower } from "../../lib/utils";
+import { Icon, Select, Field, TutarInput } from "../ui";
+import { HataMetni, Ipucu } from "../tasarim";
+import { HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, KISIT_KUTU_ETIKETI, KISIT_FORM_NOTU } from "../../lib/gider";
+import { fmtCur, fmtTR } from "../../lib/utils";
 // Spec 0059 R20, R31: hedef ad zinciri ve tutar biçimi saf kitaplıkta (rapor React almadan kullanır); burada aynı adlarla
 // yeniden dışa verilir, çağıranlar değişmez. TEK tanım odemeYontemi.js'tedir.
 import { tl2, HEDEF_AD, HEDEF_ADLARI, hedefAdi, hedefBasligi, taksitAdi, cokHedefliSatirlar, cokHedefliMi, hedefEtiketi } from "../../lib/odemeYontemi";
 export { tl2, HEDEF_AD, HEDEF_ADLARI, hedefAdi, hedefBasligi, taksitAdi, cokHedefliSatirlar, cokHedefliMi, hedefEtiketi };
 
 // Gider kalemi ve tekrarlayan tanım formlarının paylaştığı alanlar (spec 0001). İki form aynı
-// atama/tutar bileşenlerini kullanır ki kalem ile tanım birbirinden ayrışmasın.
+// tutar ve kısıt bileşenlerini kullanır ki kalem ile tanım birbirinden ayrışmasın.
 
 // Spec 0087 R3 (revizyon 3): kuruşlu `TutarInput` ui.jsx'e, `tutarMetni` lib/tutarGirdisi.js'e taşındı (katalog paneli
 // gider bileşeni içe almasın); burada aynı adlarla yeniden dışa verilir, gider/ klasörünün çağrıları değişmez.
@@ -21,122 +19,7 @@ export const AyInput = ({ value, onChange, id, ariaLabel }) => (
   <input type="month" id={id} aria-label={ariaLabel} className="input" value={value || ""} onChange={e => onChange(e.target.value || null)} />
 );
 
-// Makina seçici (R7): Makina Stoğu ve müşteri makinaları; değer "stok:ID" / "musteri:ID".
-export const MakinaSecici = ({ makinaTur, makinaId, onChange, stock = [], customers = [], id }) => {
-  const deger = makinaId != null && makinaTur ? `${makinaTur}:${makinaId}` : "";
-  const etiket = (m) => [m.model, m.serialNo].filter(Boolean).join(" · ") || "Makina";
-  return (
-    <Select id={id} aria-label="Makina" value={deger} onChange={e => {
-      const v = e.target.value;
-      if (!v) { onChange({ makinaTur: null, makinaId: null }); return; }
-      const i = v.indexOf(":");
-      const tur = v.slice(0, i), raw = v.slice(i + 1);
-      onChange({ makinaTur: tur, makinaId: /^\d+$/.test(raw) ? Number(raw) : raw });
-    }}>
-      <option value="">Makina seçin</option>
-      <optgroup label="Makina Stoğu">
-        {stock.filter(s => !s.deletedAt).map(s => <option key={`s${s.id}`} value={`stok:${s.id}`}>{etiket(s)}</option>)}
-      </optgroup>
-      <optgroup label="Müşteri Makinaları">
-        {customers.filter(c => !c.deletedAt).map(c => <option key={`m${c.id}`} value={`musteri:${c.id}`}>{etiket(c)} · {c.name || ""}</option>)}
-      </optgroup>
-    </Select>
-  );
-};
-
-// Çok satırlı model dağılımı (R21, K31, K32): model + birim maliyet + adet; satır toplamı gösterimdir.
-export const ModelSatirlari = ({ satirlar = [], onChange, modeller = [], tutar, personel = false, kisitli = false }) => {
-  const d = modelSatirlariDogrula(tutarCoz(tutar).deger, satirlar);
-  const set = (i, patch) => onChange(satirlar.map((s, j) => (j === i ? { ...s, ...patch } : s)));
-  const hataOf = (i, alan) => d.hatalar.find(h => h.satir === i && h.alan === alan)?.mesaj;
-  const kullanilan = new Set(satirlar.map(s => trLower(s.modelAd)));
-  return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr) 90px 110px 34px", gap: 8, fontSize: 11, fontWeight: 700, color: "var(--n500, #64748b)", textTransform: "uppercase", letterSpacing: .4, marginBottom: 6 }}>
-        <span>Model</span><span>Makina başına</span><span>Adet</span><span style={{ textAlign: "right" }}>Satır toplamı</span><span />
-      </div>
-      {satirlar.map((s, i) => (
-        <div key={i} style={{ marginBottom: 8 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr) 90px 110px 34px", gap: 8, alignItems: "center" }}>
-            <Select aria-label={`Model ${i + 1}`} value={s.modelAd || ""} onChange={e => set(i, { modelAd: e.target.value })}>
-              <option value="">Model seçin</option>
-              {modeller.map(m => (
-                <option key={m.model} value={m.model} disabled={m.model !== s.modelAd && kullanilan.has(trLower(m.model))}>{m.model}</option>
-              ))}
-            </Select>
-            <TutarInput ariaLabel={`Birim maliyet ${i + 1}`} value={s.birimMaliyet} onChange={v => set(i, { birimMaliyet: v })} invalid={!!hataOf(i, "birimMaliyet")} />
-            <input aria-label={`Adet ${i + 1}`} className="input" inputMode="numeric" value={s.adet ?? ""} onChange={e => set(i, { adet: e.target.value })}
-              style={{ textAlign: "right", ...(hataOf(i, "adet") ? { borderColor: "var(--red500, #ef4444)" } : {}) }} />
-            <div style={{ textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: 13 }}>{tl2(modelSatirTutari(s))}</div>
-            <button type="button" aria-label={`Satır ${i + 1} sil`} onClick={() => onChange(satirlar.filter((_, j) => j !== i))}
-              style={{ border: "1px solid var(--n200, #e2e8f0)", background: "var(--surface, #ffffff)", borderRadius: 7, height: 32, cursor: "pointer", color: "var(--red600, #dc2626)" }}>
-              <Icon name="trash" size={13} />
-            </button>
-          </div>
-          <HataMetni>{hataOf(i, "modelAd") || hataOf(i, "birimMaliyet") || hataOf(i, "adet")}</HataMetni>
-        </div>
-      ))}
-      <button type="button" onClick={() => onChange([...satirlar, { modelAd: "", birimMaliyet: "", adet: "" }])}
-        style={{ border: "1px dashed var(--n300, #cbd5e1)", background: "transparent", borderRadius: 8, padding: "7px 12px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", color: "var(--n600, #475569)", display: "inline-flex", gap: 6, alignItems: "center" }}>
-        <Icon name="plus" size={13} /> Model satırı ekle
-      </button>
-      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, fontSize: 12.5 }}>
-        <div><div style={{ color: "var(--n500, #64748b)" }}>Dağıtılan</div><b>{tl2(d.dagitilan)}</b></div>
-        <div><div style={{ color: "var(--n500, #64748b)" }}>Kalem tutarı</div><b>{tl2(tutarCoz(tutar).deger)}</b></div>
-        <div><div style={{ color: "var(--n500, #64748b)" }}>{d.asim > 0 ? "Aşım" : "Fark → ortak gider"}</div>
-          <b style={{ color: d.asim > 0 ? "var(--red700, #b91c1c)" : d.fark > 0 ? "var(--amb700, #b45309)" : "inherit" }}>{tl2(d.asim > 0 ? d.asim : d.fark)}</b></div>
-      </div>
-      {personel && <Ipucu>Personel kaleminde birim maliyet, o modelin bir makinasına düşen işçiliktir; adet, kaç makina.</Ipucu>}
-      {d.asim > 0 && <HataMetni>Satır toplamı kalem tutarını {tl2(d.asim)} aşıyor. Kayıt yapılamaz.</HataMetni>}
-      {/* Spec 0076 R15/2: sınır matrahtır; kısıtlı kalemde indirilemeyen KDV de ortak kovaya düşer, ipucu bunu söyler. */}
-      {d.asim === 0 && d.fark > 0 && satirlar.length > 0 && <Ipucu>Dağıtılmayan {tl2(d.fark)}{kisitli ? " ve indirilemeyen KDV" : ""} ortak gidere yazılır. Bu bir uyarıdır, kaydı engellemez.</Ipucu>}
-      {d.asim === 0 && d.fark === 0 && kisitli && satirlar.length > 0 && <Ipucu>İndirilemeyen KDV ortak gidere yazılır.</Ipucu>}
-    </div>
-  );
-};
-
-const ATAMA_SECENEKLERI = [
-  { value: ATAMA.ORTAK, label: "Ortak gider" },
-  { value: ATAMA.MAKINA, label: "Makina" },
-  { value: ATAMA.MODEL, label: "Model" },
-  { value: ATAMA.DAGITMA, label: "Dağıtılmasın" },
-];
-const ATAMA_AD = { makina: "Makina", model: "Model", dagitma: "Dağıtılmasın" };
-
-// Atama seçici (R7, R20, R21, K25): üç seçenek birbirini dışlar. Seçim değişince önceki atama
-// temizlenir ve tek satırlık bilgi gösterilir (AC-76, AC-77). Kira kaleminde çizilmez (K38; spec 0020 R5).
-// Personelde makina seçilince kalemin tamamının o makinaya yükleneceği söylenir, kayıt engellenmez (spec 0020 R3).
-export const AtamaAlani = ({ value, onChange, stock, customers, modeller, tutar, davranis = DAVRANIS.NORMAL, kisitli = false }) => {
-  const [bilgi, setBilgi] = useState("");
-  const at = value.atamaTur || "";
-  const degistir = (yeni) => {
-    if (yeni === at) return;
-    const doluMu = (at === ATAMA.MAKINA && value.makinaId != null) || (at === ATAMA.MODEL && (value.modelSatirlari || []).length > 0) || at === ATAMA.DAGITMA;
-    setBilgi(doluMu ? `${ATAMA_AD[at]} seçimi kaldırıldı. Bir kalemde makina, model veya “dağıtılmasın” seçimlerinden yalnız biri olabilir.` : "");
-    onChange({ atamaTur: yeni, makinaTur: null, makinaId: null, modelSatirlari: yeni === ATAMA.MODEL ? [{ modelAd: "", birimMaliyet: "", adet: "" }] : [] });
-  };
-  return (
-    <div>
-      <Segment ariaLabel="Makina maliyeti ataması" options={ATAMA_SECENEKLERI} value={at} onChange={degistir} />
-      {bilgi && <div role="status" style={{ fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "7px 10px", marginTop: 8 }}>{bilgi}</div>}
-      {at === ATAMA.ORTAK && <Ipucu>Ortak gider, makina maliyeti hesabında makinalara dağıtılır.</Ipucu>}
-      {at === ATAMA.DAGITMA && <Ipucu>Makina maliyetine hiç girmez (ör. satılmak üzere yedek parça stoğuna alınan mal). Gider toplamında ve borç özetinde normal görünür.</Ipucu>}
-      {at === ATAMA.MAKINA && (
-        <div style={{ marginTop: 10 }}>
-          {davranis === DAVRANIS.PERSONEL && <div style={{ marginBottom: 10 }}><UyariSeridi aile="uyari" baslik="Bu kalemin tamamı seçilen makinaya yüklenecek." testId="personel-makina-uyari" /></div>}
-          <MakinaSecici makinaTur={value.makinaTur} makinaId={value.makinaId} stock={stock} customers={customers}
-            onChange={p => onChange({ ...p })} />
-          <Ipucu>Stoktaki makinaya yapılan atama, makina stoktan seçilerek satıldığında o satışa takip edilir.</Ipucu>
-        </div>
-      )}
-      {at === ATAMA.MODEL && (
-        <div style={{ marginTop: 10 }}>
-          <ModelSatirlari satirlar={value.modelSatirlari || []} onChange={m => onChange({ modelSatirlari: m })} modeller={modeller} tutar={tutar} personel={davranis === DAVRANIS.PERSONEL} kisitli={kisitli} />
-        </div>
-      )}
-    </div>
-  );
-};
+// Spec 0090 R38: makina seçici, model satırları ve atama alanı kalktı (gider formunda atama yok, tek maliyet modeli).
 
 // Spec 0076 R1, R2, R6, R30, R35: gider kısıtlaması (binek araç) kutusu ve indirilebilir oran. Kalem formu ve tekrarlayan
 // tanım formu aynı alanı kullanır (tanımda oran boş bırakılabilir: "ayardaki oran", R8/3). Kutu açılınca oran ayardaki
@@ -166,29 +49,7 @@ export const KisitAlani = ({ acik, oran, onChange, varsayilanOran, hata = null, 
   </div>
 );
 
-// Spec 0072 R1, R17, R25 (S3): maliyete dağıtım alanı. Atama bölümünden bağımsızdır (kirada atama bölümü yok) ve
-// bütün davranışlarda çizilir; makina ve "dağıtılmasın" atamasında pasif, nedeniyle. Gider formu ve tekrarlayan tanım
-// formu aynı alanı kullanır (tanımda R4 ipucu). Önizleme metni rozetle aynı yardımcıdan (dagitimRozetMetni).
-export const DagitimAlani = ({ value, onChange, atamaTur = "", tarih = null, hata = null, tanim = false }) => {
-  const secilebilir = dagitimSecilebilirMi(atamaTur);
-  const coz = dagitimAySayisiCoz(value);
-  const onizleme = secilebilir && !coz.hata && tarih ? dagitimRozetMetni({ dagitimAy: coz.deger, tarih, atamaTur }) : "";
-  return (
-    <Field label="Maliyete dağıtım (ay)">
-      <div data-testid="dagitim-alani">
-        <Input aria-label="Maliyete dağıtım (ay)" type="number" min="1" max={String(DAGITIM_AY_MAX)} placeholder="1" disabled={!secilebilir}
-          value={secilebilir ? (value ?? "") : ""} onChange={e => onChange(e.target.value)} />
-        <HataMetni>{hata}</HataMetni>
-        {!secilebilir
-          ? <div data-testid="dagitim-pasif-neden"><Ipucu>{atamaTur === ATAMA.MAKINA ? DAGITIM_MAKINA_NEDENI : DAGITIM_DAGITMA_NEDENI}</Ipucu></div>
-          : <Ipucu>Peşin ödenen giderin makina maliyetine aylık payı girer (boş ya da 1: dağıtım yok). Ödeme, dönem raporu ve KDV değişmez.</Ipucu>}
-        {secilebilir && atamaTur === ATAMA.MODEL && <div data-testid="dagitim-model-ipucu"><Ipucu>{DAGITIM_MODEL_IPUCU}</Ipucu></div>}
-        {secilebilir && tanim && !coz.hata && coz.deger > 1 && <div data-testid="dagitim-tanim-ipucu"><Ipucu>{DAGITIM_TANIM_IPUCU}</Ipucu></div>}
-        {onizleme && <div data-testid="dagitim-onizleme" style={{ fontSize: 12, color: "var(--n700)", marginTop: 4 }}>{onizleme}</div>}
-      </div>
-    </Field>
-  );
-};
+// Spec 0090 R38: aylara dağıtım alanı kalktı.
 
 export const ODEME_SECENEKLERI = [
   { value: "", label: "Belirtilmemiş" }, { value: "Nakit", label: "Nakit" }, { value: "Havale", label: "Havale" },

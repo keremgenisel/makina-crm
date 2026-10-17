@@ -32,7 +32,8 @@ describe("Spec 0089: kaldırılan yüzey (R2, R2/2, R4, R5)", () => {
   });
   it("AC-6: src'de hesaplaMakinaMaliyetleri yalnız App'te; karlilikOzeti, makinaKarlilik, fiyatOnerisi hiç çağrılmaz; scripts'te iki gerekçeli istisna (C10)", () => {
     const src = gez("src").filter(f => f !== "src/lib/makinaMaliyeti.js");
-    expect(src.filter(f => /hesaplaMakinaMaliyetleri\(/.test(yorumsuz(oku(f))))).toEqual(["src/App.jsx"]);
+    // Spec 0090 ile (C7 0089 AC-6; 0090 R27, AC-46): motor src'de hiç çağrılmaz (App'teki memo da kalktı).
+    expect(src.filter(f => /hesaplaMakinaMaliyetleri\(/.test(yorumsuz(oku(f))))).toEqual([]);
     expect(src.filter(f => /\b(karlilikOzeti|makinaKarlilik|fiyatOnerisi)\(/.test(yorumsuz(oku(f))))).toEqual([]);
     // R5, X1: motorun dosyası ve testleri yerinde (motor testleri bu işte dokunulmadı).
     for (const f of ["src/lib/makinaMaliyeti.js", "tests/makina-maliyeti.test.js", "tests/uretim-partisi.test.js"]) expect(existsSync(resolve(kok, f)), f).toBe(true);
@@ -41,21 +42,21 @@ describe("Spec 0089: kaldırılan yüzey (R2, R2/2, R4, R5)", () => {
     const ISTISNA = ["scripts/evidence/0009-sayfa.jsx", "scripts/tests/0088-kiyas-fikstur.mjs"];
     expect(gez("scripts").filter(f => /hesaplaMakinaMaliyetleri|karlilikOzeti|makinaKarlilik\(|fiyatOnerisi\(/.test(oku(f))).sort()).toEqual(ISTISNA);
   });
-  it("AC-7: Giderler makinaMaliyet prop'unu almaz, donemAnahtari kaynakta yok; App prop'u yalnız Makina Maliyeti'ne verir", () => {
+  // Spec 0090 ile (C7 0089 AC-7, AC-8; 0090 R27, R28, AC-47): App'te maliyet memosu ve `makinaMaliyet` prop'u hiç yok; Makina
+  // Maliyeti parti payını yeni motordan kendi kurar. 0089'un "Giderler almaz" yarısı aynen.
+  it("AC-7 (spec 0090 ile): Giderler makinaMaliyet prop'unu almaz, donemAnahtari kaynakta yok; App hiçbir ekrana makinaMaliyet vermez", () => {
     const g = yorumsuz(oku("src/components/Giderler.jsx"));
     expect(g).not.toMatch(/\bmakinaMaliyet\b/);
     expect(g).not.toMatch(/donemAnahtari/);
     const app = oku("src/App.jsx");
-    expect(app.match(/makinaMaliyet=\{makinaMaliyet\}/g)).toHaveLength(1);
-    const giderCagri = app.slice(app.indexOf("<Giderler "), app.indexOf("/>", app.indexOf("<Giderler ")));
-    expect(giderCagri).not.toMatch(/makinaMaliyet/);
+    expect(app).not.toMatch(/makinaMaliyet=\{makinaMaliyet\}/);
     const maliyetCagri = app.slice(app.indexOf("<MakinaMaliyeti "), app.indexOf("/>", app.indexOf("<MakinaMaliyeti ")));
-    expect(maliyetCagri).toMatch(/makinaMaliyet=\{makinaMaliyet\}/);
+    expect(maliyetCagri).toMatch(/tumMusteriler=\{customers\}/);
   });
-  it("AC-8 (kaynak): App'in maliyet memosu maliyetYetki ile kapılı ve ona bağlı (R4/2)", () => {
+  it("AC-8 (kaynak, spec 0090 ile): App'te maliyet memosu yok; motor hiçbir kullanıcıda App tarafından çalıştırılmaz", () => {
     const app = oku("src/App.jsx");
-    expect(app).toMatch(/const makinaMaliyet = useMemo\(\(\) => \(maliyetYetki && serverMode !== null \? hesaplaMakinaMaliyetleri\(/);
-    expect(app).toMatch(/: null\), \[maliyetYetki, serverMode, customers, stock, partStockLog, giderler,/);
+    expect(app).not.toMatch(/const makinaMaliyet = useMemo/);
+    expect(app).not.toMatch(/from "\.\/lib\/makinaMaliyeti"/);
     expect(app).toMatch(/const maliyetYetki = useMemo\(\(\) => giderYetki && visibleTabs\.some\(t => t\.id === "maliyet"\)/);
   });
   it("AC-20: sunucu, izin, birleştirme ve veritabanı bu spec'i bilmez; maliyet sekmesinin önkoşulu aynen (R8)", () => {

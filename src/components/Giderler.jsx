@@ -19,7 +19,7 @@ import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { GiderForm } from "./GiderForm";
 import { tl2 } from "./gider/GiderAlanlari";
 import { Segment, BosDurum, UyariSeridi } from "./tasarim";
-import { StatKart, KovaKarti, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemListesi, YontemKirilimi } from "./gider/DonemRaporu";
+import { StatKart, TurKirilimi, TedarikciKirilimi, BorcOzeti, KalemListesi, YontemKirilimi } from "./gider/DonemRaporu";
 import { AcikKalemler } from "./gider/AcikKalemler";
 import { yontemKirilimlari, donemYontemKirilimi } from "../lib/odemeYontemi";
 import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
@@ -84,7 +84,6 @@ export const Giderler = ({
   // Spec 0041 R3, R4: kalemin yöntemi ödemelerden türetilir (bir kez; hareket bölümü yoksa boş, yöntem yazılmaz).
   const kirilimlar = useMemo(() => yontemKirilimlari(giderlerHam.filter(k => !k.deletedAt), hesapHareketleri, turMap), [giderlerHam, hesapHareketleri, turMap]);
   const canliModeller = useMemo(() => canliModelSeti(standardModels, customModels), [standardModels, customModels]);
-  const modeller = useMemo(() => [...standardModels, ...customModels.filter(m => !m.deletedAt)], [standardModels, customModels]);
 
   // Ödeme hatırlatıcısı (spec 0003 R8, C2): Anasayfa kartıyla AYNI saf hesap, aynı bugün ve eşik.
   const hatirlatma = useMemo(() => odemeHatirlatmalari(giderler, { turler: giderTurleri, tedarikciler, yururlukAy, esikGun: hatirlatmaEsigi(giderAyarlari), beyanAyari: beyan }, bugun),
@@ -334,8 +333,7 @@ export const Giderler = ({
       {hatirlatmaModu && (
         <>
           <UyariSeridi aile="uyari" baslik={`Hatırlatma kapsamı: ${hatirlatma.kalemIdleri.size} kalem (${hatirlatma.sayilar.gecmis} vadesi geçmiş, ${hatirlatma.sayilar.yaklasan} yaklaşan)`} metin={`Hatırlatma kapsamı dönemden bağımsızdır: dönem filtresi devre dışı, tüm zamanlardaki kalemler gösteriliyor. Eşik ${hatirlatma.esikGun} gün.`} testId="hatirlatma-modu" />
-          <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
-            standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
+          <KalemListesi kalemler={hatirlatmaKalemleri} giderTurleri={giderTurleri} tedarikciler={tedarikciler} bugun={bugun} canDo={canDo}
             onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
             odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} />
         </>
@@ -371,14 +369,13 @@ export const Giderler = ({
                 </div>
                 {/* Spec 0067 R1, R2: kalem listesi özet kartlarının hemen altında, borç özeti onun altında tam genişlik; kovalar
                     ve kırılım kartları sonra (açık kalemler kipinin sırası). KalemListesi props'u değişmedi (R16). */}
-                <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
-                  standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
+                <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
                   odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} baslangicFiltre={baslangicKalemFiltresi} />
                 <BorcOzeti ozet={borc} />
-                {/* Spec 0081 R4, R15: beş yan kutu kapalı başlar (katlanir; durum kartın kendi iç durumu, saklanmaz). Tür ve KDV
+                {/* Spec 0081 R4, R15: yan kutular kapalı başlar (katlanir; durum kartın kendi iç durumu, saklanmaz); spec 0090 R7, R9 ile
+                    Makina Maliyeti Kovaları kalktı, dört kutu kaldı. Tür ve KDV
                     satırı flex-start: biri açık biri kapalıyken kapalı kart açığın boyuna uzamaz (R4/3). */}
-                <KovaKarti rapor={rapor} turMap={turMap} katlanir />
                 <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "flex-start" }}>
                   <TurKirilimi rapor={rapor} katlanir />
                   {kdv && <KdvKarsilastirmaKarti katlanir durum={kdv.durum} sonuc={kdv.sonuc} aralikEtiketi={donemEtiketi} kaynak="Satış KDV'si Aylık Faaliyet Raporu motorundan" kisitli={rapor.kisitli || null} style={{ flex: "2 1 300px", minWidth: 0 }} />}
@@ -409,8 +406,8 @@ export const Giderler = ({
           odemeYetkisi={canDo("gider_odeme")} onIsaretle={satirIsaretle} onClose={() => setPlanKalemId(null)} />
       )}
       {form && (
-        <GiderForm kalem={form.kalemId != null ? giderler.find(k => k.id === form.kalemId) || null : null} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar} stock={stock} customers={customers}
-          modeller={modeller} giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme") && !!setHesapHareketleri}
+        <GiderForm kalem={form.kalemId != null ? giderler.find(k => k.id === form.kalemId) || null : null} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
+          giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme") && !!setHesapHareketleri}
           hesaplar={kasaHesaplari} hareketler={hesapHareketleri || []} hareketBolumu={Array.isArray(hesapHareketleri)} hesapSecimi={kasaYetki}
           cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler}
           onSave={kaydet} onCancel={() => setForm(null)} />

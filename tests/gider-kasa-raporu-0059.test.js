@@ -47,7 +47,7 @@ describe("Spec 0059: ortak sunum dili (R1–R3)", () => {
     const basliklar = [...h.matchAll(/<div style="background:#211d19;color:#fff;padding:7px 12px;[^"]*">\s*<span style="font-weight:700;font-size:11.5px;letter-spacing:.4px;">([^<]*)<\/span>/g)].map(m => m[1]);
     // Spec 0060 ile güncellendi: tür bazında ek ödeme (R11) ve stopaj (R12) kutuları eklendi; spec 0061 R31 ile açık kalemler
     // yaşlandırması ödeme durumundan sonra; diğer şeritler ve sıraları aynı.
-    expect(basliklar).toEqual(["GİDER · ÖZET", "GİDER · TÜR KIRILIMI", "GİDER · EK ÖDEMELER (TÜR BAZINDA)", "GİDER · TEDARİKÇİ KIRILIMI", "GİDER · ÖDEME DURUMU", "GİDER · AÇIK KALEMLER YAŞLANDIRMASI", "GİDER · STOPAJ", "GİDER · MALİYET DAĞILIMI",
+    expect(basliklar).toEqual(["GİDER · ÖZET", "GİDER · TÜR KIRILIMI", "GİDER · EK ÖDEMELER (TÜR BAZINDA)", "GİDER · TEDARİKÇİ KIRILIMI", "GİDER · ÖDEME DURUMU", "GİDER · AÇIK KALEMLER YAŞLANDIRMASI", "GİDER · STOPAJ", // spec 0090 ile (R11): "GİDER · MALİYET DAĞILIMI" basılmaz
       "GİDER · KDV KARŞILAŞTIRMASI", "GİDER · ÖDEME YÖNTEMİ KIRILIMI", "GİDER · KALEM LİSTESİ", "KASA · ÖZET", "KASA · HESAPLAR", "KASA · HAREKET ÖZETİ",
       "KASA · AYIN ÖDEME HAREKETLERİ", "KASA · AYIN TAHSİLAT HAREKETLERİ", "KASA · ÖDEME YÖNTEMİ KIRILIMI", "KASA · HESABI BELİRTİLMEMİŞ HAREKETLER",
       "KASA · ÇEK PORTFÖYÜ", "KASA · AÇIK ÇALIŞAN AVANSI"]);

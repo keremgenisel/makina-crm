@@ -1,6 +1,7 @@
 // Spec 0030 R8 (plan B8): tekrarlayan giderler tablosunun yerleşim ve kanıt verisi. Uzun adlar, uzun tedarikçi, model
 // ataması ve her üretimle büyüyen "üretilen aylar" (14 ay) bilerek en zor hâli temsil eder. Yerleşim testi ve kanıt
-// düzeneği aynı veriyi kullanır.
+// düzeneği aynı veriyi kullanır. Spec 0090 R10/2 ile atama sütunu kalktı; 93'ün model ataması eski veri olarak durur ve
+// tabloda hiçbir hücre çizmez (veri korunur, C7).
 const aylar = (bas, n) => Array.from({ length: n }, (_, i) => { const [y, a] = bas.split("-").map(Number); const t = y * 12 + (a - 1) + i; return `${Math.floor(t / 12)}-${String(t % 12 + 1).padStart(2, "0")}`; });
 export const TANIM_TURLERI = [
   { id: 1, ad: "Fabrika kirası", davranis: "kira" }, { id: 3, ad: "Personel", davranis: "personel" },

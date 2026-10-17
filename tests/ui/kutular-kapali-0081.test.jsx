@@ -40,9 +40,8 @@ function GH({ g0 = KALEMLER, h0 = HAREKET, yururlukAy = "2026-01" }) {
     appSettings={{ giderAyarlari: { yururlukAy }, kdvRates: KDV }} kdvRates={KDV} kasaHesaplari={[]} satisVerisi={SATIS} showToast={vi.fn()} />;
 }
 
-// Beş kutu: başlık, kabın test kimliği, açıkken görünen gövde metni.
+// Spec 0090 R11 ile dört kutu (Makina Maliyeti Kovaları kalktı): başlık, kabın test kimliği, açıkken görünen gövde metni.
 const KUTULAR = [
-  ["Makina Maliyeti Kovaları", "kova-karti", /Ortak gider/],
   ["Gider Türü Kırılımı", "tur-kirilimi", /Fabrika kirası/],
   ["KDV Karşılaştırması", "kdv-karsilastirma", /Giderlerden indirilecek KDV/],
   ["Tedarikçi Kırılımı", "tedarikci-kirilimi", /Demir Bant/],
@@ -74,7 +73,7 @@ describe("Spec 0081 R1–R3: özet kartları", () => {
 });
 
 describe("Spec 0081 R4–R9, R15: yan kutular kapalı başlar", () => {
-  it("AC-6 / AC-7: çizilen beş kutunun gövdesi yok; başlık ve alt başlık görünür", () => {
+  it("AC-6 / AC-7 (spec 0090 ile dört kutu): çizilen kutuların gövdesi yok; başlık ve alt başlık görünür", () => {
     render(<GH />);
     for (const [ad, id, govde] of KUTULAR) {
       kapali(ad, id);
@@ -116,9 +115,9 @@ describe("Spec 0081 R4–R9, R15: yan kutular kapalı başlar", () => {
     expect(screen.getByTestId("kalem-listesi").textContent).toMatch(/Sac/);
     expect(screen.getByTestId("borc-ozeti").textContent).toMatch(/Toplam borç/);
   });
-  it("AC-33 / R4/1: hareket bölümü yokken dört kutu çizilir, dördü kapalı, yöntem kutusu başlığı hiç yok", () => {
+  it("AC-33 / R4/1 (spec 0090 ile üç kutu): hareket bölümü yokken üç kutu çizilir, üçü kapalı, yöntem kutusu başlığı hiç yok", () => {
     render(<GH h0={null} />);
-    for (const [ad, id] of KUTULAR.slice(0, 4)) kapali(ad, id);
+    for (const [ad, id] of KUTULAR.slice(0, 3)) kapali(ad, id);
     expect(screen.queryByText("Ödeme Yöntemi Kırılımı")).toBeNull();
   });
   it("AC-28 / R4/3: tür ve KDV satırı flex-start (biri açıkken kapalı kart uzamaz)", () => {
@@ -137,15 +136,15 @@ describe("Spec 0081 R10–R12: katlanmayan yerler", () => {
     expect(within(kart).queryByRole("button", { name: /^KDV Karşılaştırması/ })).toBeNull();
     expect(kart.querySelector("[aria-expanded]")).toBeNull();
   });
-  // Spec 0089 ile (C7 0081 AC-14, R11): Makina ve Model görünümü kalktı; dört kova kartı yalnız Dönem Raporu'nun katlanan
-  // "Makina Maliyeti Kovaları" kutusunda durur (0089 envanteri: "kaybolmuyor").
-  it("AC-14 / R11 (spec 0089 ile): Makina ve Model görünümü yok; dört kova kartı Dönem Raporu kutusunda, açılınca görünür", () => {
+  // Spec 0089 ile (C7 0081 AC-14, R11): Makina ve Model görünümü kalktı. Spec 0090 R11 ile dört kova kartının durduğu
+  // "Makina Maliyeti Kovaları" kutusu da kalktı: hiçbir yerde yok.
+  it("AC-14 / R11 (spec 0090 ile): Makina ve Model görünümü ve Makina Maliyeti Kovaları kutusu yok", () => {
     render(<GH />);
     expect(screen.queryByText("Makina ve Model")).toBeNull();
-    const kova = kutuAc("Makina Maliyeti Kovaları");
-    for (const e of ["Makinaya atanmış", "Modele atanmış", "Makina maliyetine girmeyen", "Ortak gider"]) expect(within(kova).getByText(new RegExp(`^${e}`))).toBeTruthy();
+    expect(baslik("Makina Maliyeti Kovaları")).toBeNull();
+    for (const e of ["Makinaya atanmış", "Modele atanmış", "Makina maliyetine girmeyen"]) expect(screen.queryByText(new RegExp(`^${e}`)), e).toBeNull();
   });
-  it("AC-15: Açık kalemler kipinde beş kutu çizilmez; borç özeti açık", () => {
+  it("AC-15: Açık kalemler kipinde yan kutular çizilmez; borç özeti açık", () => {
     render(<GH />);
     fireEvent.click(screen.getByText("Açık kalemler (tüm dönemler)"));
     // Açık kalemlerin kendi yaş kovası düğmeleri de "kova-karti" kimliğini taşır; kutular başlıklarıyla aranır.
@@ -153,7 +152,7 @@ describe("Spec 0081 R10–R12: katlanmayan yerler", () => {
     expect(screen.getByTestId("borc-ozeti").textContent).toMatch(/Toplam borç/);
     expect(baslik("Kime Ne Kadar Borçluyuz")).toBeNull(); // katlanmaz (içindeki "Adları göster" ayrı bir aç/kapa)
   });
-  it("AC-16: hatırlatma kipinde beş kutu çizilmez", () => {
+  it("AC-16: hatırlatma kipinde yan kutular çizilmez", () => {
     render(<GH />);
     fireEvent.click(screen.getAllByText(/^Hatırlatma kapsamı/).find(e => e.tagName === "BUTTON"));
     for (const [, id] of KUTULAR) expect(screen.queryByTestId(id)).toBeNull();

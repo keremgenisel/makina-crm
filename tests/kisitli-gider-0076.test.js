@@ -162,16 +162,16 @@ describe("Spec 0076 maliyet tarafı (R14, R15, R18, R23–R25)", () => {
     expect(kurus(makina) + kurus(model) + kurus(dagitma) + kurus(ortak)).toBe(kurus(r.toplam));
     expect(r.toplam).toBe(4 * 1060);
   });
-  it("R15/2: model dağılımının doğrulama sınırı matrah; uyarı indirilemeyen KDV'nin de ortağa yazıldığını söyler", () => {
+  // Spec 0090 ile (R5/3, K1): atama taşıyan kalemde doğrulayıcı uyarı ve hata üretmez; matrah sınırı kova motorunda kalır (C9).
+  it("R15/2 (spec 0090 ile): model satırları uyarısız ve hatasız korunur; model kovasının sınırı matrah (motor)", () => {
     const f = { ...yakit(), indirilebilirOran: "70", atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: "200", adet: "3" }] };
     const r = giderKalemDogrula(f, { turMap, tedarikciler: TED });
-    expect(r.uyarilar.map(u => u.mesaj)).toEqual(["Dağıtılmayan 400 ₺ ve indirilemeyen KDV ortak gidere yazılacak."]);
+    expect(r.uyarilar).toEqual([]);
     const asim = giderKalemDogrula({ ...f, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: "1050", adet: "1" }] }, { turMap, tedarikciler: TED });
-    expect(asim.kayit).toBeNull(); // sınır gider tutarı (1.060) değil, matrah (1.000)
+    expect(asim.hatalar).toEqual([]);
+    expect(kovaDagilimi(asim.kayit, { davranis: DAVRANIS.NORMAL, canliModeller: new Set(["ak100"]) }).model).toBe(1000); // matrah sınırı (TL)
     const tam = giderKalemDogrula({ ...f, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: "1000", adet: "1" }] }, { turMap, tedarikciler: TED });
-    expect(tam.uyarilar.map(u => u.mesaj)).toEqual(["İndirilemeyen KDV ortak gidere yazılacak."]);
-    const bayraksizUyari = giderKalemDogrula({ ...f, kisitliGider: false }, { turMap, tedarikciler: TED });
-    expect(bayraksizUyari.uyarilar.map(u => u.mesaj)).toEqual(["Dağıtılmayan 400 ₺ ortak gidere yazılacak."]);
+    expect(tam.uyarilar).toEqual([]);
   });
   it("AC-17 (motor): 0072 dağıtımı gider tutarının ortak kovasını böler", () => {
     expect(dagitimPaylari(yakit({ dagitimAy: 2 }), DAVRANIS.NORMAL).map(p => p.payK)).toEqual([K(530), K(530)]);

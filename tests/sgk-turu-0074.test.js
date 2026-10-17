@@ -45,7 +45,7 @@ describe("Spec 0074 A: davranış ve kalem şekli", () => {
   it("AC-9: SGK atanamaz, kovası her zaman ortak (atama alanları doğrulamada temizlenir)", () => {
     expect(atanabilirMi(DAVRANIS.SGK)).toBe(false);
     const k = sgk({ atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 4 });
-    expect(k.atamaTur).toBe("");
+    expect("atamaTur" in k).toBe(false); // spec 0090 ile (R5/2): atanamayan davranışta anahtar hiç yazılmaz
     const kv = kalemKovalariKurus({ ...k, atamaTur: ATAMA.MODEL, modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 100, adet: 1 }] }, { davranis: DAVRANIS.SGK, canliModeller: new Set(["ak100"]) });
     expect([kv.ortak, kv.model, kv.makina]).toEqual([1600000, 0, 0]);
   });
@@ -70,7 +70,7 @@ describe("Spec 0074 A: davranış ve kalem şekli", () => {
     expect(tutarGirilmediMi(k, DAVRANIS.SGK)).toBe(true);
     // R8: tanımda kalmış eski atama (tür sonradan SGK'ya çevrildi) kaleme taşınmaz; kalem ortak kovada.
     const atamali = tekrarlayanUret([{ ...t[0], id: 92, atamaTur: "makina", makinaTur: "stok", makinaId: 4 }], [], "2026-09", { turMap, uid }).yeniKalemler[0];
-    expect(atamali).toMatchObject({ atamaTur: "", makinaTur: null, makinaId: null });
+    for (const a of ["atamaTur", "makinaTur", "makinaId"]) expect(a in atamali, a).toBe(false); // spec 0090 ile (R5, R6)
     // Üretilen kalemin sıfır tutarı doğrulamadan geçer (tanimKalemi kapısı).
     expect(dogrula({ ...k, tutar: "" }).hatalar).toEqual([]);
     // Personel tanımı kartın SGK'sını kaleme kopyalamaz (R34).

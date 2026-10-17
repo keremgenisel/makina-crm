@@ -270,7 +270,7 @@ CREATE TABLE IF NOT EXISTS gider_tanimlari (
 -- stock.partiId / customers.partiId (satışta damgalanır). kapanisOrtaklari: kapanıştaki ay ortakları (JSON, R15).
 CREATE TABLE IF NOT EXISTS uretim_partileri (
   id INTEGER PRIMARY KEY,
-  ad TEXT, baslangicAy TEXT, bitisAy TEXT, aciklama TEXT, kapanmaZamani TEXT, kapanisOrtaklari TEXT, deletedAt TEXT, planlananAdetler TEXT
+  ad TEXT, baslangicAy TEXT, bitisAy TEXT, aciklama TEXT, kapanmaZamani TEXT, kapanisOrtaklari TEXT, deletedAt TEXT, planlananAdetler TEXT, kapanisGenelHavuzlari TEXT
 );
 -- Kasa (spec 0024 A): hesaplar ve hesap hareketleri. Bakiye saklanmaz, hareketlerden türetilir (C1).
 -- Hareket türleri: "odeme" (gider ödemesi: giderId, taksitId?; tamKapatir = göçten gelen tam kapatma) ve "virman".
@@ -465,6 +465,9 @@ const ekMaliyetYaz = (v) => (Array.isArray(v) && v.length ? JSON.stringify(v) : 
 const MODELS_MALIYET_0088_COLUMNS = [["karKatsayisi", "REAL"], ["kalipListeFiyati", "REAL"]];
 // Spec 0088 R18: üretim partisinin planlanan adetleri ({ model: adet } JSON); boşsa NULL.
 const URETIM_PARTI_PLAN_COLUMN = [["planlananAdetler", "TEXT"]];
+// Spec 0090 R36: kapanıştaki ayların genel gider havuzu (JSON { "YYYY-AA": kuruş }). Boşken okumada blob'a hiç yazılmaz (null da
+// değil). Eski `kapanisOrtaklari` (kova tabanlı) yerinde kalır, okunmayan ölü alandır (C7).
+const URETIM_PARTI_GENEL_HAVUZ_COLUMN = [["kapanisGenelHavuzlari", "TEXT"]];
 const planYaz = (v) => (v && typeof v === "object" && Object.keys(v).length ? JSON.stringify(v) : null);
 // Spec 0088 R29: Makina Maliyeti hesap ayarları (dönem, varsayılan adet); kendi JSON sütunu, boşsa gövdeye yazılmaz.
 const APP_SETTINGS_MALIYET_COLUMN = [["maliyetAyarlari", "TEXT"]];
@@ -958,8 +961,8 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.uretimPartileri) && !skip.has("uretimPartileri")) {
     conn.prepare(`DELETE FROM uretim_partileri`).run();
-    const stmt = conn.prepare(`INSERT INTO uretim_partileri (id, ad, baslangicAy, bitisAy, aciklama, kapanmaZamani, kapanisOrtaklari, deletedAt, planlananAdetler) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const p of data.uretimPartileri) stmt.run(p.id, p.ad ?? null, p.baslangicAy ?? null, p.bitisAy ?? null, p.aciklama ?? null, p.kapanmaZamani ?? null, p.kapanisOrtaklari ? json(p.kapanisOrtaklari) : null, p.deletedAt ?? null, planYaz(p.planlananAdetler));
+    const stmt = conn.prepare(`INSERT INTO uretim_partileri (id, ad, baslangicAy, bitisAy, aciklama, kapanmaZamani, kapanisOrtaklari, deletedAt, planlananAdetler, kapanisGenelHavuzlari) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const p of data.uretimPartileri) stmt.run(p.id, p.ad ?? null, p.baslangicAy ?? null, p.bitisAy ?? null, p.aciklama ?? null, p.kapanmaZamani ?? null, p.kapanisOrtaklari ? json(p.kapanisOrtaklari) : null, p.deletedAt ?? null, planYaz(p.planlananAdetler), p.kapanisGenelHavuzlari && Object.keys(p.kapanisGenelHavuzlari).length ? json(p.kapanisGenelHavuzlari) : null);
   }
   if (Array.isArray(data.tedarikciler) && !skip.has("tedarikciler")) {
     conn.prepare(`DELETE FROM tedarikciler`).run();
@@ -1093,6 +1096,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "standard_models", MODELS_MALIYET_0088_COLUMNS);
   ensureColumns(conn, "custom_models", MODELS_MALIYET_0088_COLUMNS);
   ensureColumns(conn, "uretim_partileri", URETIM_PARTI_PLAN_COLUMN);
+  ensureColumns(conn, "uretim_partileri", URETIM_PARTI_GENEL_HAVUZ_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_MALIYET_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_KASE_COLUMN);
   ensureColumns(conn, "app_settings", APP_SETTINGS_PINNED_COLUMN);
@@ -1542,7 +1546,7 @@ function readBlobFromDb() {
   const cekler = db.prepare(`SELECT * FROM cekler`).all().map(({ gecmis, ...rest }) => ({
     ...Object.fromEntries(Object.entries(rest).filter(([k, v]) => v != null || !cek0049.has(k))), gecmis: parseJsonCol(gecmis, []) }));
   // Spec 0088 C8/2: planlanan adet boşsa gövdeye yazılmaz (alanları yayan okuma `null` yazar, sunucu sahte fark görürdü).
-  const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, planlananAdetler, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null), ...(planlananAdetler ? { planlananAdetler: parseJsonCol(planlananAdetler, {}) } : {}) }));
+  const uretimPartileri = db.prepare(`SELECT * FROM uretim_partileri`).all().map(({ kapanisOrtaklari, planlananAdetler, kapanisGenelHavuzlari, ...rest }) => ({ ...rest, kapanisOrtaklari: parseJsonCol(kapanisOrtaklari, null), ...(kapanisGenelHavuzlari ? { kapanisGenelHavuzlari: parseJsonCol(kapanisGenelHavuzlari, null) } : {}), ...(planlananAdetler ? { planlananAdetler: parseJsonCol(planlananAdetler, {}) } : {}) }));
 
   const faturalar = db.prepare(`SELECT * FROM faturalar`).all().map(({ notField, satirlar, ...rest }) => ({
     ...rest,

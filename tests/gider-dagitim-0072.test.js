@@ -3,7 +3,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import {
-  dagitimPaylari, dagitimAySayisiCoz, dagitimAyOf, dagitimAraligi, dagitimRozetMetni, dagitimSecilebilirMi, esitBol,
+  dagitimPaylari, dagitimAySayisiCoz, dagitimAyOf, dagitimAraligi, dagitimSecilebilirMi, esitBol,
   giderKalemDogrula, tekrarlayanUret, turHaritasi, kalemKovalariKurus, hesaplaGiderRaporu, borcOzeti, canliModelSeti,
   DAGITIM_AY_HATASI, DAVRANIS, ATAMA,
 } from "../src/lib/gider";
@@ -65,7 +65,9 @@ describe("Spec 0072 A: dağıtım payları", () => {
     expect("dagitimAy" in d({ dagitimAy: "12", atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 4 }).kayit).toBe(false);
     // Makina atamasında geçersiz değer hata değil (alan pasif, temizlenir).
     expect(d({ dagitimAy: "99", atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 4 }).hatalar).toEqual([]);
-    expect(d({ dagitimAy: "99" }).hatalar).toEqual([{ alan: "dagitimAy", mesaj: DAGITIM_AY_HATASI }]);
+    // Spec 0090 ile (R5/3): formda dağıtım alanı yok; geçersiz değer hata üretmez, saklanmaz.
+    expect(d({ dagitimAy: "99" }).hatalar).toEqual([]);
+    expect("dagitimAy" in d({ dagitimAy: "99" }).kayit).toBe(false);
     // Kira ve personel de dağıtılabilir (S3).
     const kira = giderKalemDogrula({ tarih: "2026-03-15", turId: 2, tutar: "20000", kdvOrani: "20", stopajOrani: "20", girisYonu: "brut", dagitimAy: "12" }, { turMap });
     expect(kira.kayit.dagitimAy).toBe(12);
@@ -78,9 +80,8 @@ describe("Spec 0072 A: dağıtım payları", () => {
     expect(u.yeniKalemler.find(k => k.tanimId === 9).dagitimAy).toBe(12);
     expect("dagitimAy" in u.yeniKalemler.find(k => k.tanimId === 8)).toBe(false);
   });
-  it("AC-15: rozet kapsam aralığını yazar, kaçıncı ay yazmaz", () => {
-    expect(dagitimRozetMetni(INTERNET)).toBe("12 aya dağıtılmış · 03.2026 – 02.2027");
-    expect(dagitimRozetMetni(gid(1))).toBe("");
+  it("AC-15 (spec 0090 triyajı ile): rozet kalktı; kapsam aralığı motorda durur", () => {
+    // Spec 0090 triyajı (bulgu 4): rozet metni (`dagitimRozetMetni`) ekranla birlikte silindi; aralık hesabı durur.
     expect(dagitimAraligi(INTERNET)).toEqual({ aySayisi: 12, ilkAy: "2026-03", sonAy: "2027-02" });
     expect(dagitimSecilebilirMi(ATAMA.MODEL)).toBe(true);
     expect(dagitimAyOf({ dagitimAy: 12, atamaTur: ATAMA.MAKINA })).toBe(1);
@@ -237,13 +238,13 @@ describe("Spec 0072 triyaj: ay dönümü yerel gündür (TZ=Europe/Istanbul)", (
     // Motorun yedek "bugün"ü de yereldir.
     expect(hesaplaMakinaMaliyetleri(veri({ giderler: g })).aylar.get("2026-10")?.ortakGercek).toBe(100000);
   });
-  it("App maliyet memosu useBugun'un yerel gününü verir ve ona bağlıdır (today() kullanılmaz)", () => {
-    const s = readFileSync("src/App.jsx", "utf8");
-    const memo = s.slice(s.indexOf("const makinaMaliyet = useMemo"), s.indexOf("const makinaMaliyet = useMemo") + 700);
-    expect(s).toMatch(/const maliyetBugun = useBugun\(\);/);
-    expect(memo).toMatch(/\{ bugun: maliyetBugun \}/);
-    expect(memo).toMatch(/appSettings\.giderAyarlari, maliyetBugun\]\)/);
-    expect(memo).not.toMatch(/today\(\)/);
+  // Spec 0090 ile (R27, K8): App'teki maliyet memosu kalktı; ay dönümü dersi parti hesabını kuran ekranda korunur.
+  it("Parti hesabı useBugun'un yerel gününü verir ve ona bağlıdır (today() kullanılmaz; spec 0090 ile Makina Maliyeti ekranında)", () => {
+    expect(readFileSync("src/App.jsx", "utf8")).not.toMatch(/const makinaMaliyet = useMemo/);
+    const s = readFileSync("src/components/MakinaMaliyeti.jsx", "utf8");
+    expect(s).toMatch(/const bugun = useBugun\(\);/);
+    expect(s).toMatch(/partiGenelPaylari\(\{ \.\.\.veri, customers: tumMusteriler \|\| customers \}, bugun\), \[veri, tumMusteriler, customers, bugun\]\)/);
+    expect(s).not.toMatch(/today\(\)/);
   });
 });
 

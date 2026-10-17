@@ -8,6 +8,7 @@ import { hesaplaMakinaMaliyetleri } from "../src/lib/makinaMaliyeti";
 import { cokKalemOdemeleri, hesapBakiyeleri, tedarikciEkstresi } from "../src/lib/kasa";
 import { odemeHatirlatmalari } from "../src/lib/odemeHatirlatma";
 import { stopajBeyanAyari, stopajBeyanDogrula, stopajDonemi, stopajOdemeTarihi, stopajDonemleri, stopajAdaylari, BEYAN_DONEMI } from "../src/lib/stopajDonemi";
+import { bosAtamaAyikla } from "./fixtures/0090-bos-atama";
 import { GIDERLER, TURLER, TEDARIKCILER, HAREKETLER, HESAPLAR, BUGUN, turMap, uid, K2, K3, K5, stopajSatirlari, ana } from "./fixtures/0084-veri";
 
 beforeAll(() => { process.env.TZ = "Europe/Istanbul"; });
@@ -34,7 +35,8 @@ describe("Spec 0084: değişmeyen katmanlar (R23, C1)", () => {
   it("AC-35: stopajlı veride dönem raporu, kova dağılımı ve makina maliyeti bu spec'ten önceki kodla birebir aynı", () => {
     const simdi = motorCiktisi();
     if (process.env.YAZ_0084 === "1") { fs.writeFileSync(resolve(kok, DOSYA), JSON.stringify(simdi, null, 1)); return; }
-    expect(simdi).toEqual(JSON.parse(oku(DOSYA)));
+    // Spec 0090 ile (R5/2): altın yenilenmez; spec öncesi kalemlerin boş atama anahtarları karşılaştırmadan önce ayıklanır.
+    expect(simdi).toEqual(bosAtamaAyikla(JSON.parse(oku(DOSYA))));
   });
 });
 

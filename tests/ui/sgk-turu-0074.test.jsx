@@ -82,7 +82,8 @@ describe("Spec 0074 B: gider formu", () => {
     expect(screen.queryByRole("radiogroup", { name: "Makina maliyeti ataması" })).toBeNull();
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "16000" } });
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave.mock.calls[0][0]).toMatchObject({ turId: 5, tutar: 16000, kdvOrani: 0, kdvYonu: null, tedarikciId: null, atamaTur: "" });
+    expect(onSave.mock.calls[0][0]).toMatchObject({ turId: 5, tutar: 16000, kdvOrani: 0, kdvYonu: null, tedarikciId: null });
+    expect(onSave.mock.calls[0][0]).not.toHaveProperty("atamaTur"); // spec 0090 R5/2: boş atama anahtarı yazılmaz
   });
   it("AC-15, AC-46: 'Çalışanların SGK toplamını kullan' canlı ve dolu değerleri toplar, kişi sayısını yazar; tutar sonra düzeltilir", () => {
     formAc();

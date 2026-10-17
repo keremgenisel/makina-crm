@@ -136,13 +136,13 @@ describe.each([
     await waitFor(() => expect(screen.getByText("GİDERLİ FİRMA")).toBeTruthy());
     sonDugme("GİDERLİ FİRMA");
     const musteriOnay = screen.getByText(/Çöp Kutusu'na taşınacak/).textContent;
-    if (inik) expect(musteriOnay).not.toMatch(/gider/); else expect(musteriOnay).toMatch(/atanmış 1 gider kalemi/);
+    expect(musteriOnay).not.toMatch(/gider/); // spec 0090 R13: perde kalkıkken de atama cümlesi yok
     fireEvent.click(screen.getByText("Vazgeç"));
     menu("Stok");
     await waitFor(() => expect(screen.getByText("2026-121")).toBeTruthy());
     sonDugme("2026-121");
     const stokOnay = screen.getByText(/stoktan silinecek/).textContent;
-    if (inik) expect(stokOnay).not.toMatch(/gider/); else expect(stokOnay).toMatch(/atanmış 1 gider kalemi/);
+    expect(stokOnay).not.toMatch(/gider/); // spec 0090 R13
   });
 
   it("R2 (K5): müşteri formundaki üretim tarihi alanı da perdeyle kapanır", async () => {

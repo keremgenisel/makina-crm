@@ -223,13 +223,14 @@ describe("Tekrarlayan Giderler (R3, K8, K28)", () => {
     fireEvent.click(screen.getByText("Kaydet"));
     expect(st.find(t => t.id === 91).odemeYontemi).toBe("Havale");
   });
-  it("AC-16 (spec 0020 X5): tekrarlayan personel tanımında atama seçenekleri görünmez; normal tanımda görünür", () => {
+  // Spec 0090 R1 ile: normal tanımda da atama seçenekleri yok (yarısı ters çevrildi).
+  it("AC-16 (spec 0020 X5; spec 0090 ile): tekrarlayan personel ve normal tanımda atama seçenekleri görünmez", () => {
     render(<TanimHarness calisanlar={[{ id: 7, ad: "Ali" }]} />);
     fireEvent.click(screen.getByText("Yeni Tanım"));
     fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "3" } });
     expect(screen.queryByText("Makina maliyeti ataması")).toBeNull();
     fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "4" } });
-    expect(screen.getByText("Makina maliyeti ataması")).toBeTruthy();
+    expect(screen.queryByText("Makina maliyeti ataması")).toBeNull();
   });
 });
 
@@ -326,26 +327,17 @@ describe("Spec 0071: tekrarlayan tanımda KDV dâhil giriş ve sıfır tutar", (
     fireEvent.click(screen.getByText("Kaydet"));
     expect(st[0]).toMatchObject({ girisYonu: "net", kdvYonu: "haric" });
   });
-  it("AC-41: dâhil tanımda model satırları KDV hariç tutarla sınanır; sıfır tanımda model dağılımı reddedilir", () => {
+  // Spec 0090 R1 ile ters çevrildi: tanım formunda model dağılımı yok; dâhil ve sıfır tutarlı tanım atama anahtarı taşımadan kaydedilir.
+  it("AC-41 (spec 0090 ile): dâhil tanımda model dağılımı alanı yok; tanım atama anahtarı yazmaz", () => {
     let st;
     render(<TanimHarness onState={s => { st = s; }} />);
     yeni(4, "Sac");
     fireEvent.click(within(yon()).getByRole("radio", { name: "KDV dâhil" }));
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1200" } });
-    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Makina maliyeti ataması" })).getByRole("radio", { name: "Model" }));
-    fireEvent.change(screen.getByLabelText("Model 1"), { target: { value: "AK100_DS" } });
-    fireEvent.change(screen.getByLabelText("Birim maliyet 1"), { target: { value: "1100" } });
-    fireEvent.change(screen.getByLabelText("Adet 1"), { target: { value: "1" } });
-    // Triyaj: önizleme kayıtla aynı sınırı (KDV hariç 1.000) kullanır; kaydetmeden önce aşım görünür.
-    expect(screen.getByText("Kalem tutarı").nextSibling.textContent).toBe("1.000 ₺");
-    expect(screen.getByText("Aşım").nextSibling.textContent).toBe("100 ₺");
+    expect(screen.queryByRole("radiogroup", { name: "Makina maliyeti ataması" })).toBeNull();
+    expect(screen.queryByLabelText("Model 1")).toBeNull();
     fireEvent.click(screen.getByText("Kaydet"));
-    // 1.200 dâhil → 1.000 hariç (bugünün oranı %20); 1.100 aşar.
-    expect(screen.getAllByText(/Satır toplamı kalem tutarını 100 ₺ aşıyor/).length).toBeGreaterThan(0);
-    expect(st).toEqual([]);
-    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "" } });
-    fireEvent.click(screen.getByText("Kaydet"));
-    expect(screen.getByText("Tutarı sonra girilecek tanımda model dağılımı yapılamaz.")).toBeTruthy();
-    expect(st).toEqual([]);
+    expect(st).toHaveLength(1);
+    for (const k of ["atamaTur", "makinaTur", "makinaId", "modelSatirlari", "dagitimAy"]) expect(st[0]).not.toHaveProperty(k);
   });
 });

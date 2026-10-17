@@ -9,8 +9,6 @@ import { GiderForm } from "../../src/components/GiderForm";
 import { Giderler } from "../../src/components/Giderler";
 import { SettingsGiderTanimlari } from "../../src/components/settings/SettingsGiderTanimlari";
 import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
-import { kutuAc } from "./kutuAc";
-import { DAGITIM_MAKINA_NEDENI, DAGITIM_DAGITMA_NEDENI, DAGITIM_MODEL_IPUCU, DAGITIM_TANIM_IPUCU } from "../../src/lib/gider";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-24T10:00:00")); });
@@ -18,92 +16,39 @@ beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new 
 const TURLER = [{ id: 1, ad: "Fabrika kirası", davranis: "kira" }, { id: 3, ad: "Personel", davranis: "personel" }, { id: 4, ad: "Genel", davranis: "normal" }];
 const CAL = [{ id: 21, ad: "Hasan Çelik", resmiMaliyet: 30000, eldenMaliyet: 0 }];
 const MOD = [{ model: "AK100" }];
-const alan = () => screen.getByLabelText("Maliyete dağıtım (ay)");
 const formAc = (props = {}) => {
   const onSave = vi.fn();
-  render(<GiderForm giderTurleri={TURLER} tedarikciler={[{ id: 11, ad: "Telekom" }]} calisanlar={CAL} modeller={[{ model: "AK100" }]}
-    stock={[{ id: 501, model: "AK100", serialNo: "2026-121" }]} customers={[]} giderAyarlari={{ stopajOrani: 20 }} onSave={onSave} onCancel={vi.fn()} {...props} />);
+  render(<GiderForm giderTurleri={TURLER} tedarikciler={[{ id: 11, ad: "Telekom" }]} calisanlar={CAL} giderAyarlari={{ stopajOrani: 20 }} onSave={onSave} onCancel={vi.fn()} {...props} />);
   return onSave;
 };
 const tur = (id) => fireEvent.change(screen.getByLabelText("Gider türü *"), { target: { value: String(id) } });
-const atama = (ad) => fireEvent.click(screen.getByRole("radio", { name: ad }));
 
-describe("Spec 0072: gider formu", () => {
-  it("AC-1 / AC-2: dağıtım ay sayısı girilir, önizleme kalemin ayından başlayan aralığı yazar ve kayda girer", () => {
+// Spec 0090 ile (R2, R3, R4, R5/2; C7 0072 AC-1/2/6/22/35, AC-5/21, AC-15): gider ve tanım formunda dağıtım alanı yok; eski
+// kaydın dağıtım ayı düzenlenip kaydedilince birebir korunur, yeni kayıt alanı taşımaz. Dağıtım kuralı motorda (C3) aynen.
+describe("Spec 0072: gider ve tanım formu (spec 0090 ile alan kalktı)", () => {
+  it("AC-1 / AC-2 / AC-6 / AC-22 / AC-35 (spec 0090 ile): gider formunda dağıtım alanı hiçbir davranışta yok; yeni kalem dagitimAy taşımaz", () => {
     const onSave = formAc();
+    for (const id of [4, 1, 3]) { tur(id); expect(screen.queryByLabelText("Maliyete dağıtım (ay)"), String(id)).toBeNull(); }
     tur(4);
     fireEvent.change(screen.getByLabelText("Tarih *"), { target: { value: "2026-03-30" } });
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "12000" } });
-    fireEvent.change(alan(), { target: { value: "12" } });
-    expect(screen.getByTestId("dagitim-onizleme").textContent).toBe("12 aya dağıtılmış · 03.2026 – 02.2027");
-    fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave.mock.calls[0][0]).toMatchObject({ dagitimAy: 12, tutar: 12000 });
-  });
-  it("AC-1: boş bırakılınca dağıtım yok ve alan kayda yazılmaz", () => {
-    const onSave = formAc();
-    tur(4);
-    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "100" } });
     fireEvent.click(screen.getByText("Kaydet"));
     expect("dagitimAy" in onSave.mock.calls[0][0]).toBe(false);
   });
-  it("AC-6: geçersiz ay sayısı alanın altında tek hata metniyle reddedilir", () => {
-    const onSave = formAc();
-    tur(4);
-    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "100" } });
-    fireEvent.change(alan(), { target: { value: "61" } });
+  it("AC-1 (spec 0090 ile): düzenlemede kayıtlı dağıtım görünmez ama kayıtta birebir korunur", () => {
+    const onSave = formAc({ kalem: { id: 5, tarih: "2026-03-30", turId: 4, tutar: 12000, kdvOrani: 20, dagitimAy: 12 } });
+    expect(screen.queryByTestId("dagitim-alani")).toBeNull();
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave).not.toHaveBeenCalled();
-    expect(within(screen.getByTestId("dagitim-alani")).getByRole("alert").textContent).toBe("Dağıtım ay sayısı 1 ile 60 arasında tam sayı olmalı.");
+    expect(onSave.mock.calls[0][0]).toMatchObject({ dagitimAy: 12, tutar: 12000 });
   });
-  it("AC-22: makina ve 'dağıtılmasın' atamasında alan pasif ve nedeni yazılı", () => {
-    formAc();
-    tur(4);
-    atama("Makina");
-    expect(alan().disabled).toBe(true);
-    expect(screen.getByTestId("dagitim-pasif-neden").textContent).toBe(DAGITIM_MAKINA_NEDENI);
-    atama("Dağıtılmasın");
-    expect(alan().disabled).toBe(true);
-    expect(screen.getByTestId("dagitim-pasif-neden").textContent).toBe(DAGITIM_DAGITMA_NEDENI);
-  });
-  it("AC-35: kira ve personel kaleminde alan vardır; modele atanmış kalemde ipucu görünür", () => {
-    formAc();
-    tur(1);
-    expect(alan().disabled).toBe(false);
-    tur(3);
-    expect(alan().disabled).toBe(false);
-    tur(4);
-    atama("Model");
-    expect(screen.getByTestId("dagitim-model-ipucu").textContent).toBe(DAGITIM_MODEL_IPUCU);
-  });
-  it("AC-1: düzenlemede kayıtlı dağıtım alanda görünür", () => {
-    formAc({ kalem: { id: 9, tarih: "2026-03-30", turId: 4, tutar: 12000, kdvOrani: 20, dagitimAy: 12 } });
-    expect(alan().value).toBe("12");
-  });
-});
-
-describe("Spec 0072: tekrarlayan tanım formu", () => {
-  it("AC-5 / AC-21: dağıtımlı tanım kaydedilir ve 'her ay kalem üretir' ipucu görünür", () => {
+  it("AC-5 / AC-21 / AC-22 / AC-35 (spec 0090 ile): tanım formunda dağıtım alanı yok; eski tanımın dağıtımı düzenlemede korunur", () => {
     const set = vi.fn();
-    render(<SettingsGiderTanimlari giderTanimlari={[]} setGiderTanimlari={set} giderTurleri={TURLER} calisanlar={CAL} showToast={vi.fn()} />);
-    fireEvent.click(screen.getByText("Yeni Tanım"));
-    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "4" } });
-    fireEvent.change(screen.getByLabelText("Tanım adı *"), { target: { value: "Yazılım" } });
-    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1200" } });
-    expect(screen.queryByTestId("dagitim-tanim-ipucu")).toBeNull();
-    fireEvent.change(alan(), { target: { value: "12" } });
-    expect(screen.getByTestId("dagitim-tanim-ipucu").textContent).toBe(DAGITIM_TANIM_IPUCU);
+    const eski = { id: 7, ad: "Yazılım", turId: 4, tutar: 1200, kdvOrani: 20, kdvYonu: "haric", baslangicAy: "2026-01", bitisAy: null, uretilenAylar: [], dagitimAy: 12 };
+    render(<SettingsGiderTanimlari giderTanimlari={[eski]} setGiderTanimlari={set} giderTurleri={TURLER} calisanlar={CAL} showToast={vi.fn()} />);
+    fireEvent.click(within(screen.getByText("Yazılım").closest("tr")).getByTitle("Düzenle"));
+    expect(screen.queryByLabelText("Maliyete dağıtım (ay)")).toBeNull();
     fireEvent.click(screen.getByText("Kaydet"));
-    const kayit = set.mock.calls[0][0]([]);
-    expect(kayit[0]).toMatchObject({ ad: "Yazılım", dagitimAy: 12 });
-  });
-  it("AC-22 / AC-35: tanımda makina atamasında alan pasif; tür kiraya dönünce atama kalkar ve alan etkinleşir", () => {
-    render(<SettingsGiderTanimlari giderTanimlari={[]} setGiderTanimlari={vi.fn()} giderTurleri={TURLER} calisanlar={CAL} showToast={vi.fn()} />);
-    fireEvent.click(screen.getByText("Yeni Tanım"));
-    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "4" } });
-    atama("Makina");
-    expect(alan().disabled).toBe(true);
-    fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: "1" } });
-    expect(alan().disabled).toBe(false);
+    expect(set.mock.calls[0][0]([eski])[0]).toMatchObject({ id: 7, dagitimAy: 12 });
   });
 });
 
@@ -118,19 +63,17 @@ const giderlerAc = (giderler) => render(<Giderler giderler={giderler} setGiderle
   satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} />);
 
 describe("Spec 0072: kalem listesi ve Makina ve Model", () => {
-  it("AC-15: dağıtılmış kalem rozetle ayırt edilir; rozet kapsam aralığını yazar, tutar tam tutardır", () => {
+  // Spec 0090 ile (R7, R10, R13): atama sütunu, dağıtım rozeti ve kovalar kutusu kalktı; tutar sütunu tam tutarı yazar.
+  it("AC-15 (spec 0090 ile): dağıtılmış kalemde rozet yok; tutar tam tutardır", () => {
     giderlerAc([INTERNET, NORMAL]);
-    const rozetler = screen.getAllByTestId("dagitim-rozeti");
-    expect(rozetler).toHaveLength(1);
-    expect(rozetler[0].textContent).toBe("12 aya dağıtılmış · 09.2026 – 08.2027");
-    const satir = rozetler[0].closest("tr");
+    expect(screen.queryByTestId("dagitim-rozeti")).toBeNull();
+    expect(screen.queryByText(/aya dağıtılmış/)).toBeNull();
+    const satir = screen.getByText("İnternet aboneliği").closest("tr");
     expect(satir.textContent).toMatch(/12\.000 ₺/);
-    expect(satir.textContent).not.toMatch(/(?<!\d)1\.000 ₺/);
   });
-  it("AC-18 / AC-30 / AC-38 (spec 0089 ile): kova cümlesi Dönem Raporu'nda aynı; Makina ve Model ve dağıtım kutusu yok", () => {
+  it("AC-18 / AC-30 / AC-38 (spec 0089 ile, spec 0090 ile): Makina Maliyeti Kovaları kutusu, Makina ve Model ve dağıtım kutusu yok", () => {
     giderlerAc([INTERNET, NORMAL]);
-    const kova = kutuAc("Makina Maliyeti Kovaları");
-    expect(kova.textContent).toMatch(/dört kovanın toplamı = dönem toplamı 12\.500 ₺/i);
+    expect(screen.queryByRole("button", { name: /^Makina Maliyeti Kovaları/ })).toBeNull();
     expect(screen.queryByText("Makina ve Model")).toBeNull();
     expect(screen.queryByTestId("dagitim-kutusu")).toBeNull();
   });

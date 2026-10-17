@@ -102,7 +102,8 @@ describe("Müşteri silme kaskadı", () => {
 });
 
 describe("Müşteri silme — bağlı gider sayısı (spec 0001 R7, AC-28)", () => {
-  it("makinaya atanmış gider sayısı onayda görünür (müşteri id'si ve kaynak stok id'si üzerinden); kalem silinmez", () => {
+  // Spec 0090 R13 ile ters çevrildi: atama kavramı kalktığı için silme onayı atanmış gider sayısını yazmaz; kalem yine silinmez.
+  it("(spec 0090 ile) makinaya atanmış gider olsa da onayda gider cümlesi yok; kalem silinmez", () => {
     const setGiderler = vi.fn();
     const m = { id: 700, name: "GİDERLİ FİRMA", model: "AK120", serialNo: "S-9", sourceStockId: 88 };
     const giderler = [
@@ -116,7 +117,7 @@ describe("Müşteri silme — bağlı gider sayısı (spec 0001 R7, AC-28)", () 
     const satir = screen.getByText("GİDERLİ FİRMA").closest("tr");
     const dugmeler = within(satir).getAllByRole("button");
     fireEvent.click(dugmeler[dugmeler.length - 1]);
-    expect(screen.getByText(/Çöp Kutusu'na taşınacak/).textContent).toContain("Bu makinaya atanmış 2 gider kalemi var: silinmez, ortak gidere düşer");
+    expect(screen.getByText(/Çöp Kutusu'na taşınacak/).textContent).not.toMatch(/gider/);
     expect(setGiderler).not.toHaveBeenCalled();
   });
   it("gider yetkisi yoksa (giderler boş gelir) sayı yazılmaz", () => {

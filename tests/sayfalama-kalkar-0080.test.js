@@ -26,11 +26,10 @@ describe("Spec 0080: kaynak taramaları", () => {
       expect(s, f).not.toMatch(/‹ Önceki|Sonraki ›/);
     }
   });
-  it("AC-16: kalem listesi makina çözümünü bir kez kurar; satır başına makinaGideriCoz çağrısı yok (R10)", () => {
+  // Spec 0090 ile (R10, R40): atama sütunu kalktığı için kalem listesi makina çözmez; satır başına çözüm de yok.
+  it("AC-16 (spec 0090 ile): kalem listesi makina çözmez (atama sütunu yok); satır başına makinaGideriCoz çağrısı yok (R10)", () => {
     const s = oku("src/components/gider/DonemRaporu.jsx");
-    expect(s).not.toMatch(/makinaGideriCoz\(/);
-    expect(s).toMatch(/const makinaCoz = useMemo\(\(\) => makinaCozucuOlustur\(\{ stock, customers \}\), \[stock, customers\]\);/);
-    expect(s).toMatch(/const cz = makinaCoz\(k\);/);
+    expect(s).not.toMatch(/makinaGideriCoz\(|makinaCozucuOlustur|makinaCoz\(/);
   });
   // Spec 0089 ile (C7 0080 AC-17; 0089 R2, AC-7): tek tüketicisi Makina ve Model kalktığı için donemAnahtari de kalktı.
   it("AC-17 (spec 0089 ile): donemAnahtari KalemListesi'ne geçmez ve Giderler'de hiç yok (R11)", () => {

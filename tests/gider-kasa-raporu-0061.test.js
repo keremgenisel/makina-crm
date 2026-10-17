@@ -9,7 +9,7 @@ import { girdi, AD } from "./fixtures/0059-veri";
 afterEach(() => vi.useRealTimers());
 const R = (o, ay = "2026-09") => giderKasaRaporu(girdi(o), ay);
 const HTML = (o, ay) => buildGiderKasaRaporuHtml(R(o, ay));
-const kutu = (h) => { const i = h.indexOf("GİDER · AÇIK KALEMLER YAŞLANDIRMASI"); return i < 0 ? "" : h.slice(i, h.indexOf("GİDER · STOPAJ", i) > 0 ? h.indexOf("GİDER · STOPAJ", i) : h.indexOf("GİDER · MALİYET DAĞILIMI", i)); };
+const kutu = (h) => { const i = h.indexOf("GİDER · AÇIK KALEMLER YAŞLANDIRMASI"); return i < 0 ? "" : h.slice(i, h.indexOf("GİDER · STOPAJ", i) > 0 ? h.indexOf("GİDER · STOPAJ", i) : h.indexOf("GİDER · KDV KARŞILAŞTIRMASI", i)); }; // spec 0090 ile (R11): maliyet dağılımı kutusu yok
 const kod = () => readFileSync("src/lib/giderRaporu.js", "utf8").split("\n").filter(l => !l.trim().startsWith("//")).join("\n");
 
 describe("Spec 0061 rapor yaşlandırması", () => {

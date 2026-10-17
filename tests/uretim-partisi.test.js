@@ -169,18 +169,29 @@ describe("Spec 0022: geçici ibare, kapanış ve dönem özeti (R7, R8, R15, AC-
   it("AC-11 / R15: kapanış anlık görüntüsünden farklı ay 'değişti' satırı üretir", () => {
     const g = [gid(1, "2026-01-10", 1000), gid(2, "2026-02-10", 1000)];
     const s = hesapla({ stock: partili(2), giderler: g, uretimPartileri: [] });
-    const kapali = partiKapanisUygula(null, { ...PARTI_Q1 }, s.aylar, "2026-04-01T10:00:00");
+    // Spec 0090 ile (R23, R25): kapanış yardımcısı artık eski alanı yazmaz; bugünkü motorun (dokunulmadı, C10) değişim kuralı
+    // eski alanla kurulmuş partiyle sınanır. Yeni anlık görüntünün kuralı tests/parti-genel-payi-0090.test.js'te.
+    const kapali = { ...PARTI_Q1, kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: Object.fromEntries(["2026-01", "2026-02", "2026-03"].map(ay => [ay, s.aylar.get(ay)?.ortak ?? 0])) };
     expect(kapali.kapanisOrtaklari).toEqual({ "2026-01": 100000, "2026-02": 100000, "2026-03": 0 });
     const sAyni = hesapla({ stock: partili(2), giderler: g, uretimPartileri: [kapali] });
     expect(sAyni.partiler[0].degisimler).toEqual([]);
     const sYeni = hesapla({ stock: partili(2), giderler: [...g, gid(3, "2026-02-20", 500)], uretimPartileri: [kapali] });
     expect(sYeni.partiler[0].degisimler).toEqual([{ ay: "2026-02", kapanista: 1000, bugun: 1500 }]);
   });
-  it("R15: parti yeniden açılınca anlık görüntü silinir; aralık aynı kalan kapalı parti görüntüsünü korur", () => {
-    const k = { ...PARTI_Q1, kapanmaZamani: "t1", kapanisOrtaklari: { "2026-01": 1 } };
-    expect(partiKapanisUygula(k, { ...k, bitisAy: null }, new Map(), "t2")).toMatchObject({ kapanmaZamani: null, kapanisOrtaklari: null });
-    expect(partiKapanisUygula(k, { ...k, aciklama: "x" }, new Map(), "t2")).toMatchObject({ kapanmaZamani: "t1", kapanisOrtaklari: { "2026-01": 1 } });
-    expect(partiKapanisUygula(k, { ...k, bitisAy: "2026-04" }, new Map(), "t2").kapanmaZamani).toBe("t2");
+  // Spec 0090 ile (R26, R36, AC-40, AC-41, AC-44): yeni alan (kapanisGenelHavuzlari) yeniden açılınca silinir, aralık aynı kalan
+  // kapalı parti görüntüsünü ve kapanış zamanını korur; eski alan (kapanisOrtaklari) hiçbir dalda değişmez.
+  it("R15 (spec 0090 ile): parti yeniden açılınca yeni anlık görüntü silinir; aralık aynı kalan kapalı parti görüntüsünü korur; eski alan dokunulmaz", () => {
+    const aylar = new Map([["2026-01", 10], ["2026-02", 20], ["2026-03", 30], ["2026-04", 40]]);
+    const k = { ...PARTI_Q1, kapanmaZamani: "t1", kapanisOrtaklari: { "2026-01": 1 }, kapanisGenelHavuzlari: { "2026-01": 9 } };
+    const ac = partiKapanisUygula(k, { ...k, bitisAy: null }, { aylar }, "t2").kayit;
+    expect(ac.kapanmaZamani).toBeNull();
+    expect("kapanisGenelHavuzlari" in ac).toBe(false);
+    expect(ac.kapanisOrtaklari).toEqual({ "2026-01": 1 });
+    expect(partiKapanisUygula(k, { ...k, aciklama: "x" }, { aylar }, "t2").kayit).toMatchObject({ kapanmaZamani: "t1", kapanisGenelHavuzlari: { "2026-01": 9 }, kapanisOrtaklari: { "2026-01": 1 } });
+    const uzat = partiKapanisUygula(k, { ...k, bitisAy: "2026-04" }, { aylar }, "t2").kayit;
+    expect(uzat.kapanmaZamani).toBe("t2");
+    expect(uzat.kapanisGenelHavuzlari).toEqual({ "2026-01": 10, "2026-02": 20, "2026-03": 30, "2026-04": 40 });
+    expect(uzat.kapanisOrtaklari).toEqual({ "2026-01": 1 });
   });
   it("AC-16: 'stokta taşınan maliyet' satırı parti kırılımıyla; açık parti stokta makinası olmasa da görünür", () => {
     const acik = { id: 80, ad: "Açık parti", baslangicAy: "2026-08" };

@@ -1,21 +1,21 @@
 import { useState } from "react";
-import { uid, today, getKdvRateForDate } from "../../lib/utils";
-import { turHaritasi, tutarCoz, modelSatirlariDogrula, ATAMA, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, sifirTutarSerbestMi, dagitimAySayisiCoz, dagitimSecilebilirMi, kdvliMi, tedarikciSecilirMi, kurumTarafAdi,
+import { uid, today } from "../../lib/utils";
+import { turHaritasi, tutarCoz, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, sifirTutarSerbestMi, kdvliMi, atamaVerisiKoru, tedarikciSecilirMi, kurumTarafAdi,
   tevkifatliMi, tevkifatDogrula, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kisitliGiderMi, kisitDogrula, varsayilanIndirilebilirOran } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, TutarInput } from "../ui";
 import { KartBolum } from "../tasarim";
-import { AyInput, AtamaAlani, DagitimAlani, DavranisRozeti, KisitAlani, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { AyInput, DavranisRozeti, KisitAlani, tl2, tutarMetni } from "../gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "../tasarim";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
 // sekmesindeki "tekrarlayan kalemleri oluştur" ile üretilir. uretilenAylar salt görünür: bir ayın kalemi
 // silinse bile o ay listede kalır ve yeniden üretilmez. Silinen tanım çöp kutusuna gider (spec 0078).
-const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [], dagitimAy: "", tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", kisitliGider: false, indirilebilirOran: "" }); // spec 0075 R26, 0076 R35
+const bosForm = (buAy) => ({ id: null, turId: "", ad: "", calisanId: "", girisYonu: "brut", kdvYonu: KDV_YONU.HARIC, tutar: "", kdvOrani: "", tedarikciId: "", odemeYontemi: "", baslangicAy: buAy, bitisAy: null, uretilenAylar: [], tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", kisitliGider: false, indirilebilirOran: "" }); // spec 0075 R26, 0076 R35
 
 export const SettingsGiderTanimlari = ({
   giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], calisanlar = [],
-  stock = [], customers = [], modeller = [], showToast = () => {}, canDo = () => true, serverPermissions, kdvRates, giderAyarlari = {},
+  showToast = () => {}, canDo = () => true, serverPermissions, giderAyarlari = {},
 }) => {
   const buAy = ayOf(today());
   const [form, setForm] = useState(null);
@@ -35,14 +35,6 @@ export const SettingsGiderTanimlari = ({
       kisitliGider: !!t.kisitliGider, indirilebilirOran: t.kisitliGider && t.indirilebilirOran != null ? String(t.indirilebilirOran) : "" } : bosForm(buAy));
   };
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
-  // Spec 0071 R25 (Q5, triyaj): model dağılımının sınırı KDV hariç tutardır; kayıt doğrulaması ve atama önizlemesi AYNI değeri
-  // kullanır (oran "tarihe göre" ise bugünün oranı).
-  const modelTabani = (f, tutarDeger) => {
-    const d = davOf(f.turId);
-    const yon = d === DAVRANIS.PERSONEL || !kdvYonuSecilebilirMi(d, f.girisYonu) ? KDV_YONU.HARIC : kdvYonuOf(f);
-    const k = tutarCoz(f.kdvOrani);
-    return girilenHaric(tutarDeger, yon, k.bos || k.gecersiz ? getKdvRateForDate(today(), kdvRates) : k.deger);
-  };
 
   const kaydet = () => {
     const h = {};
@@ -67,21 +59,8 @@ export const SettingsGiderTanimlari = ({
     const kdvYonu = !kdvliMi(dav) ? null : (kdvYonuSecilebilirMi(dav, form.girisYonu) ? kdvYonuOf(form) : KDV_YONU.HARIC);
     const k = tutarCoz(form.kdvOrani);
     if (kdvliMi(dav) && !k.bos && (k.gecersiz || k.deger < 0 || k.deger > 100)) h.kdvOrani = "KDV oranı 0 ile 100 arasında olmalı.";
-    // Bilinçli: tanımda atama yalnız normal davranışta (spec 0020 X5). Personel tanımına atama açılırsa her ayın maaşı
-    // aynı makinaya yüklenirdi; kalem formundaki atanabilirMi kapısı buraya taşınmaz (AC-16).
-    const atamaVar = dav === DAVRANIS.NORMAL;
-    if (atamaVar && form.atamaTur === ATAMA.MAKINA && form.makinaId == null) h.atama = "Makina seçilmedi.";
-    if (atamaVar && form.atamaTur === ATAMA.MODEL) {
-      // R25 (Q5): sınır KDV hariç tutardır (oran "tarihe göre" ise bugünün oranı); sıfır tanımda model dağılımı yok.
-      const d = modelSatirlariDogrula(modelTabani(form, tutar ?? 0), form.modelSatirlari);
-      if (tutar === 0) h.atama = "Tutarı sonra girilecek tanımda model dağılımı yapılamaz.";
-      else if (!form.modelSatirlari.length) h.atama = "En az bir model satırı girin.";
-      else if (d.hatalar.length) h.atama = d.hatalar[0].mesaj;
-    }
-    // Spec 0072 R4, R5, R17: dağıtım ay sayısı (taksit emsali); makina ve "dağıtılmasın" atamasında saklanmaz.
-    const atamaSon = atamaVar ? (form.atamaTur || "") : "";
-    const dg = dagitimAySayisiCoz(form.dagitimAy);
-    if (dg.hata && dagitimSecilebilirMi(atamaSon)) h.dagitimAy = dg.hata;
+    // Spec 0090 R3, R5/2, R5/3: tanımda atama ve dağıtım çizilmez; eski tanımın verisi kalemle aynı tek kuralla korunur
+    // (atama yalnız normal davranışta, spec 0020 X5), hata üretilmez.
     // Spec 0075 R26, R39 (S4, S5): tanımda yalnız kutu ve oran; kural kalemle aynı saf fonksiyon. Boş KDV oranı "tarihe göre"dir.
     const tv = tevkifatDogrula(form, dav, { kdvBosSerbest: true });
     for (const x of tv.hatalar) if (!h[x.alan]) h[x.alan] = x.mesaj;
@@ -102,13 +81,9 @@ export const SettingsGiderTanimlari = ({
       tedarikciId: tedarikciSecilirMi(dav) ? numId(form.tedarikciId) : null,
       odemeYontemi: form.odemeYontemi || "",
       baslangicAy: form.baslangicAy, bitisAy: form.bitisAy || null,
-      atamaTur: atamaVar ? (form.atamaTur || "") : "",
-      makinaTur: atamaVar && form.atamaTur === ATAMA.MAKINA ? form.makinaTur : null,
-      makinaId: atamaVar && form.atamaTur === ATAMA.MAKINA ? form.makinaId : null,
-      modelSatirlari: atamaVar && form.atamaTur === ATAMA.MODEL ? form.modelSatirlari.map(s => ({ modelAd: s.modelAd, birimMaliyet: tutarCoz(s.birimMaliyet).deger, adet: Number(s.adet) })) : [],
+      ...atamaVerisiKoru(form, dav === DAVRANIS.NORMAL),
       uretilenAylar: form.uretilenAylar || [], kapatildi: form.kapatildi && !!form.bitisAy,
     };
-    if (!dg.hata && dg.deger > 1 && dagitimSecilebilirMi(atamaSon)) kayit.dagitimAy = dg.deger; // R19 (S4): 1 ya da boş saklanmaz
     if (tv.alanlar) Object.assign(kayit, tv.alanlar); // spec 0075 R10 (S6): kapalıyken alan hiç yazılmaz
     if (ks.alanlar) Object.assign(kayit, ks.alanlar); // spec 0076 R33: kapalıyken alan hiç yazılmaz
     const yeni = form.id == null;
@@ -120,7 +95,7 @@ export const SettingsGiderTanimlari = ({
 
   const tumCalisanlar = () => {
     if (!personelTuru) { showToast("Önce Gider Türleri'nde Personel davranışlı bir tür tanımlayın.", "err"); return; }
-    const yeni = tanimsizCalisanlar.map(c => ({ id: uid(), turId: personelTuru.id, ad: c.ad, calisanId: c.id, tutar: null, kdvOrani: null, girisYonu: null, kdvYonu: null, tedarikciId: null, odemeYontemi: "", baslangicAy: buAy, bitisAy: null, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], uretilenAylar: [], kapatildi: false }));
+    const yeni = tanimsizCalisanlar.map(c => ({ id: uid(), turId: personelTuru.id, ad: c.ad, calisanId: c.id, tutar: null, kdvOrani: null, girisYonu: null, kdvYonu: null, tedarikciId: null, odemeYontemi: "", baslangicAy: buAy, bitisAy: null, uretilenAylar: [], kapatildi: false })); // spec 0090 R5: atama anahtarı yazılmaz
     if (!yeni.length) { showToast("Tüm çalışanların açık bir personel tanımı zaten var."); return; }
     setGiderTanimlari(p => [...p, ...yeni]);
     yeni.forEach(t => logAction({ serverPermissions, action: "olusturuldu", entity: "gider_tanim", entityId: t.id, entityName: t.ad }));
@@ -148,12 +123,6 @@ export const SettingsGiderTanimlari = ({
       {/* Spec 0076 R35 (AC-34): kısıtlı tanım listede görünür (0075 "Tevkifat 5/10" emsali). */}
       {kisitliGiderMi(dav) && t.kisitliGider && <div data-testid="tanim-kisitli" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>{t.indirilebilirOran != null ? `Kısıtlı %${t.indirilebilirOran}` : "Kısıtlı (ayardaki oran)"}</div>}</>;
   };
-  const atamaHucre = (t) => {
-    if (t.atamaTur === ATAMA.MODEL) return (t.modelSatirlari || []).map((s, i) => <div key={i} style={{ fontSize: 12 }}><b>{s.modelAd}</b> · {s.adet} adet × {tl2(s.birimMaliyet)}</div>);
-    if (t.atamaTur === ATAMA.DAGITMA) return <span style={{ fontSize: 12 }}>Dağıtılmasın</span>;
-    if (t.atamaTur === ATAMA.MAKINA) return <span style={{ fontSize: 12 }}>Makina</span>;
-    return <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>Ortak</span>;
-  };
   const sirali = [...giderTanimlari].sort((a, b) => (a.bitisAy && a.bitisAy < buAy ? 1 : 0) - (b.bitisAy && b.bitisAy < buAy ? 1 : 0) || String(a.ad).localeCompare(String(b.ad), "tr"));
 
   const dav = form ? davOf(form.turId) : null;
@@ -176,7 +145,7 @@ export const SettingsGiderTanimlari = ({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead><tr style={{ background: "var(--n100, #f8fafc)", textAlign: "left", fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase" }}>
               {/* Spec 0030 R8/R10: başlıklar sarar; başlangıç ile bitiş tek sütun; "üretilen aylar" sayıya iner (tam liste ipucunda). */}
-              {["Tanım", "Tür", "Tedarikçi", "Tutar", "Başlangıç – Bitiş", "Atama", "Üretilen aylar", ""].map(h => <th key={h} style={{ padding: "9px 6px", verticalAlign: "bottom" }}>{h}</th>)}
+              {["Tanım", "Tür", "Tedarikçi", "Tutar", "Başlangıç – Bitiş", "Üretilen aylar", ""].map(h => <th key={h} style={{ padding: "9px 6px", verticalAlign: "bottom" }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {sirali.map(t => {
@@ -193,7 +162,6 @@ export const SettingsGiderTanimlari = ({
                     <td style={{ padding: "10px 6px", fontSize: 12.5 }}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : (kurumTarafAdi(d) || tedAd(t.tedarikciId) || <span style={{ color: "var(--n500, #64748b)" }}>seçilmemiş</span>)}</td>
                     <td style={{ padding: "10px 6px", textAlign: "right" }}>{tutarHucre(t)}</td>
                     <td style={{ padding: "10px 6px", whiteSpace: "nowrap" }}>{t.baslangicAy}<div style={{ color: "var(--n500, #64748b)" }}>– {t.bitisAy || "—"}</div></td>
-                    <td style={{ padding: "10px 6px" }}>{atamaHucre(t)}</td>
                     <td style={{ padding: "10px 6px", fontSize: 12 }}>{u.length ? <span title={u.join(", ")} style={{ whiteSpace: "nowrap", cursor: "help", borderBottom: "1px dotted var(--n400, #94a3b8)" }}>{u.length} ay</span> : <span style={{ color: "var(--n500, #64748b)" }}>Henüz üretilmedi</span>}</td>
                     <td style={{ padding: "8px 6px", textAlign: "right", whiteSpace: "nowrap" }}>
                       {yonetebilir && <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -214,9 +182,7 @@ export const SettingsGiderTanimlari = ({
         <Modal title={form.id == null ? "Yeni Tekrarlayan Tanım" : "Tekrarlayan Tanımı Düzenle"} onClose={() => setForm(null)} maxWidth={640}
           footer={<><Btn variant="ghost" onClick={() => setForm(null)}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn></>}>
           <Field label="Gider türü *">
-            <Select value={form.turId} onChange={e => set({ turId: e.target.value,
-              // Spec 0072 (S3): atama yalnız normal davranışta kaydedilir; tür değişince eski atama dağıtım alanını yanlışlıkla pasif bırakmasın.
-              ...(davOf(e.target.value) !== DAVRANIS.NORMAL ? { atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [] } : {}) })}>
+            <Select value={form.turId} onChange={e => set({ turId: e.target.value })}>
               <option value="">Tür seçin</option>
               {/* Spec 0078 R11: çöpteki tür seçicide görünmez (kaydın kendi türü hariç); davranış çözümü ham listeden. */}
               {giderTurleri.filter(t => !t.deletedAt || String(t.id) === String(form.turId)).map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
@@ -293,14 +259,6 @@ export const SettingsGiderTanimlari = ({
             <div style={{ flex: 1 }}><Field label="Başlangıç ayı *"><AyInput ariaLabel="Başlangıç ayı" value={form.baslangicAy} onChange={v => set({ baslangicAy: v })} /><HataMetni>{hatalar.baslangicAy}</HataMetni></Field></div>
             <div style={{ flex: 1 }}><Field label="Bitiş ayı"><AyInput ariaLabel="Bitiş ayı" value={form.bitisAy} onChange={v => set({ bitisAy: v })} /><HataMetni>{hatalar.bitisAy}</HataMetni><Ipucu>Opsiyonel, boşsa süresiz.</Ipucu></Field></div>
           </div>
-          {/* spec 0020 X5: tanımda atama yalnız normal davranışta, personelde kapalı (bkz. yukarıdaki doğrulama notu). */}
-          {dav === DAVRANIS.NORMAL && (
-            <Field label="Makina maliyeti ataması">
-              <AtamaAlani value={form} onChange={p => set(p)} stock={stock} customers={customers} modeller={modeller} tutar={modelTabani(form, tutarCoz(form.tutar).deger || 0)} />
-              <HataMetni>{hatalar.atama}</HataMetni>
-            </Field>
-          )}
-          <DagitimAlani value={form.dagitimAy} onChange={v => set({ dagitimAy: v })} atamaTur={form.atamaTur || ""} hata={hatalar.dagitimAy} tanim />
           {(form.uretilenAylar || []).length > 0 && <Ipucu>Bu tanımdan üretilen aylar: {form.uretilenAylar.join(", ")}. Tanımı değiştirmek üretilmiş kalemleri değiştirmez.</Ipucu>}
         </Modal>
       )}

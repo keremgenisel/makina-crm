@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  kiraHesapla, tutarCoz, giderKalemDogrula, modelSatirlariDogrula, turHaritasi, kalemTutari, odenecekTutar,
+  kiraHesapla, tutarCoz, giderKalemDogrula, turHaritasi, kalemTutari, odenecekTutar,
   kovaDagilimi, makinaGideriCoz, canliModelSeti, hesaplaGiderRaporu, borcOzeti, kdvKarsilastir, tekrarlayanUret,
   tanimKapat, personelMukerrer, turKullanim, tedarikciKullanim, tedarikciAdHatasi, vadesiGectiMi, yururlukKapsami,
-  esikAltiKalemSayisi, tamAylar, modelAdiTasi, modelKullanim, DAVRANIS, makinaCozucuOlustur,
+  esikAltiKalemSayisi, tamAylar, modelAdiTasi, DAVRANIS, makinaCozucuOlustur,
 } from "../src/lib/gider";
 
 const turler = [
@@ -94,52 +94,30 @@ describe("gider motoru: doğrulama", () => {
     expect(g.kayit).not.toBeNull();
     expect(vadesiGectiMi(g.kayit, "2026-12-01")).toBe(false);
   });
-  it("AC-78: kira ve personel kaleminde atama alanları temizlenir", () => {
+  // Spec 0090 ile (R5/2, R5/3): atanamayan davranışta atama düşer ve anahtarlar hiç yazılmaz (boş değerle de).
+  it("AC-78 (spec 0090 ile): kira kaleminde atama alanları yazılmaz", () => {
     const { kayit } = giderKalemDogrula({ tarih: "2026-09-01", turId: 2, girisYonu: "brut", tutar: 20000, stopajOrani: 20, kdvOrani: 20, atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 1, adet: 1 }] }, { turMap });
-    expect(kayit.atamaTur).toBe("");
-    expect(kayit.modelSatirlari).toEqual([]);
+    expect("atamaTur" in kayit).toBe(false);
+    expect("modelSatirlari" in kayit).toBe(false);
   });
 });
 
+// Spec 0090 triyajı (bulgu 4) ile: formdaki model satırı doğrulayıcısı (`modelSatirlariDogrula`) alanla birlikte silindi;
+// AC-79/87/88/89/91 ve K32 onunla kalktı. Atama taşıyan eski kalemin doğrulayıcıdan geçişi ve kova kuralı aşağıda (C9).
 describe("gider motoru: model satırları (R21)", () => {
-  it("AC-79: 4.000 TL birim × 35 adet = 140.000", () => {
-    const d = modelSatirlariDogrula(140000, [{ modelAd: "AK120_DSC", birimMaliyet: "4.000", adet: 35 }]);
-    expect(d.dagitilan).toBe(140000);
-    expect(d.hatalar).toEqual([]);
-  });
-  it("AC-87: iki farklı model satırı eklenebilir", () => {
-    const d = modelSatirlariDogrula(100000, [{ modelAd: "AK120_DSC", birimMaliyet: 1000, adet: 50 }, { modelAd: "AK100_DS", birimMaliyet: 2000, adet: 25 }]);
-    expect(d.hatalar).toEqual([]);
-  });
-  it("AC-88: aynı model ikinci kez eklenemez (harf farkı dahil)", () => {
-    const d = modelSatirlariDogrula(100000, [{ modelAd: "AK120_DSC", birimMaliyet: 1000, adet: 5 }, { modelAd: "ak120_dsc", birimMaliyet: 1000, adet: 5 }]);
-    expect(d.hatalar.some(h => /zaten bir satır/.test(h.mesaj))).toBe(true);
-  });
-  it("AC-89: 1.000 × (5 + 40 + 25) = 70.000, fark yok", () => {
-    const d = modelSatirlariDogrula(70000, [5, 40, 25].map((a, i) => ({ modelAd: `M${i}`, birimMaliyet: 1000, adet: a })));
-    expect(d).toMatchObject({ dagitilan: 70000, fark: 0, asim: 0 });
-  });
-  it("AC-90: eksik dağıtım uyarıdır, kayıt yapılır, fark ortağa yazılır", () => {
+  // Spec 0090 ile (R5/3, K1): atama taşıyan kalemde doğrulayıcı uyarı ve hata üretmez (formda alan yok); kova kuralı aynen (C9).
+  it("AC-90 (spec 0090 ile): eksik dağıtımda uyarı yok, kayıt yapılır, fark ortağa yazılır", () => {
     const g = giderKalemDogrula({ tarih: "2026-09-10", turId: 4, tutar: 100000, kdvOrani: 20, atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 1000, adet: 60 }] }, { turMap });
     expect(g.kayit).not.toBeNull();
-    expect(g.uyarilar[0].mesaj).toMatch(/40\.000/);
+    expect(g.uyarilar).toEqual([]);
     const kv = kovaDagilimi(g.kayit, { canliModeller: modeller });
     expect(kv).toMatchObject({ model: 60000, ortak: 40000 });
   });
-  it("AC-90b: aşımda kayıt yapılmaz ve aşan tutar gösterilir", () => {
+  it("AC-90b (spec 0090 ile): aşımda da kayıt yapılır, hata yok; model kovası matrahla sınırlı (C9)", () => {
     const g = giderKalemDogrula({ tarih: "2026-09-10", turId: 4, tutar: 50000, kdvOrani: 20, atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 1000, adet: 60 }] }, { turMap });
-    expect(g.kayit).toBeNull();
-    expect(g.hatalar.find(h => /aşıyor/.test(h.mesaj)).mesaj).toMatch(/10\.000/);
-  });
-  it("AC-91: adet 0, boş, negatif ve kesirli reddedilir", () => {
-    for (const adet of [0, "", -3, 2.5]) {
-      expect(modelSatirlariDogrula(1000, [{ modelAd: "AK120_DSC", birimMaliyet: 10, adet }]).hatalar.length).toBeGreaterThan(0);
-    }
-  });
-  it("K32: kuruş hesabı sahte aşım üretmez (3 × 33.333,33 ≤ 100.000)", () => {
-    const d = modelSatirlariDogrula(100000, [1, 2, 3].map(i => ({ modelAd: `M${i}`, birimMaliyet: "33.333,33", adet: 1 })));
-    expect(d.asim).toBe(0);
-    expect(d.fark).toBe(0.01);
+    expect(g.hatalar).toEqual([]);
+    expect(g.kayit.modelSatirlari).toEqual([{ modelAd: "AK120_DSC", birimMaliyet: 1000, adet: 60 }]);
+    expect(kovaDagilimi(g.kayit, { canliModeller: modeller })).toMatchObject({ model: 50000, ortak: 0 });
   });
 });
 
@@ -207,7 +185,7 @@ describe("gider motoru: dört kova ve rapor (R8, R20, R21)", () => {
   it("AC-83: model yeniden adlandırılınca satırlar taşınır", () => {
     const k = kalem({ atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 1, adet: 1 }] });
     expect(modelAdiTasi([k], "AK120_DSC", "AK120_YENI")[0].modelSatirlari[0].modelAd).toBe("AK120_YENI");
-    expect(modelKullanim("AK120_DSC", giderler, [])).toMatchObject({ kalem: 1 });
+    // Spec 0090 triyajı (bulgu 4): silme onayının sayımı (`modelKullanim`) cümlesiyle kalktı; taşıma zinciri durur.
   });
   it("AC-12: tür kırılımı toplamı genel toplama eşit (ödenmemiş dahil)", () => {
     expect(r.turKirilimi.reduce((a, t) => a + t.toplam, 0)).toBe(r.toplam);
@@ -437,8 +415,9 @@ describe("Spec 0072: dağıtım ay sayısı doğrulaması", () => {
       expect(!!dagitimAySayisiCoz(v).hata).toBe(!!taksitSayisiCoz(v).hata);
       if (dagitimAySayisiCoz(v).hata) expect(dagitimAySayisiCoz(v).hata).toBe(DAGITIM_AY_HATASI);
     }
+    // Spec 0090 ile (R5/3): formda dağıtım alanı yok; geçersiz değer hata üretmez, saklanmaz.
     const r = dogrula0072({ tarih: "2026-03-01", turId: 1, tutar: "100", kdvOrani: "20", dagitimAy: "61" }, { turMap: turHaritasi0072([{ id: 1, ad: "G", davranis: "normal" }]) });
-    expect(r.kayit).toBeNull();
-    expect(r.hatalar).toContainEqual({ alan: "dagitimAy", mesaj: DAGITIM_AY_HATASI });
+    expect(r.hatalar).toEqual([]);
+    expect("dagitimAy" in r.kayit).toBe(false);
   });
 });

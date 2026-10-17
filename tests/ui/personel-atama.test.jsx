@@ -4,11 +4,13 @@
 // Spec 0089 ile (C7 0020 AC-9, AC-15; R10, R11): Makina ve Model, maliyet detayı ve kârlılık listesi ekrandan kalktı. Etiket ve
 // gizlilik iddiaları onları besleyen motor çıktılarında ölçülür (rapor ve makina maliyeti); kopmuş atama Dönem Raporu'nun kovalar
 // kutusunda sayı olarak kalır (0089 R12).
+// Spec 0090 ile (R1, R10, R11): formda atama bölümü, kovalar kutusu ve kalem listesinin atama sütunu kalktı. Form blokları
+// "alan yok, eski atama korunur" iddiasına, kutu ve sütun blokları yokluk iddiasına çevrildi; motor blokları aynen durur.
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { GiderForm } from "../../src/components/GiderForm";
-import { KalemListesi, KovaKarti } from "../../src/components/gider/DonemRaporu";
-import { hesaplaGiderRaporu, turHaritasi, canliModelSeti } from "../../src/lib/gider";
+import { KalemListesi } from "../../src/components/gider/DonemRaporu";
+import { hesaplaGiderRaporu, canliModelSeti } from "../../src/lib/gider";
 import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -29,62 +31,28 @@ describe("GiderForm: personel ataması (R1, R2, R3, R5)", () => {
   };
   const tur = (id) => fireEvent.change(screen.getByLabelText("Gider türü *"), { target: { value: String(id) } });
   const personel = () => { tur(3); fireEvent.change(screen.getByLabelText("Çalışan *"), { target: { value: "21" } }); };
-  const secenekler = () => within(screen.getByRole("radiogroup", { name: "Makina maliyeti ataması" })).getAllByRole("radio").map(r => r.textContent);
 
-  it("AC-1: personel kaleminde ortak, makina, model ve dağıtılmasın seçenekleri görünür", () => {
-    ac(); personel();
-    expect(screen.getByText("Makina maliyeti ataması")).toBeTruthy();
-    expect(secenekler()).toEqual(["Ortak gider", "Makina", "Model", "Dağıtılmasın"]);
-  });
-  it("AC-3: makinaya atama seçilince sabit uyarı gösterilir ve kayıt engellenmez", () => {
+  it("AC-1 / AC-3 / AC-13 (spec 0090 ile): personel kaleminde atama bölümü, uyarı ve işçilik ipucu yok; yeni kalem atama yazmaz", () => {
     const onSave = ac(); personel();
+    expect(screen.queryByText("Makina maliyeti ataması")).toBeNull();
     expect(screen.queryByText(UYARI)).toBeNull();
-    fireEvent.click(screen.getByRole("radio", { name: "Makina" }));
-    expect(screen.getByText(UYARI)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Makina"), { target: { value: "musteri:601" } });
+    expect(screen.queryByText(/birim maliyet, o modelin bir makinasına düşen işçiliktir/)).toBeNull();
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave).toHaveBeenCalledTimes(1);
-    expect(onSave.mock.calls[0][0]).toMatchObject({ atamaTur: "makina", makinaTur: "musteri", makinaId: 601, resmiTutar: 30000, eldenTutar: 20000 });
-    fireEvent.click(screen.getByRole("radio", { name: "Model" }));
-    expect(screen.queryByText(UYARI)).toBeNull();
+    expect(onSave.mock.calls[0][0]).toMatchObject({ resmiTutar: 30000, eldenTutar: 20000 });
+    expect(onSave.mock.calls[0][0]).not.toHaveProperty("atamaTur");
   });
-  it("AC-3: uyarı normal kalemde çıkmaz", () => {
-    ac(); tur(4);
-    fireEvent.click(screen.getByRole("radio", { name: "Makina" }));
-    expect(screen.queryByText(UYARI)).toBeNull();
-  });
-  it("AC-13: model dağılımında kalem tutarı resmi + elden; eksik kısım ortak gider bilgisi, aşımda kayıt yok; personel ipucu", () => {
+  it("AC-6 (spec 0090 ile): personelden kiraya geçişte de atama bölümü yok; kira kalemi atama anahtarı taşımaz", () => {
     const onSave = ac(); personel();
-    fireEvent.click(screen.getByRole("radio", { name: "Model" }));
-    expect(screen.getByText(/birim maliyet, o modelin bir makinasına düşen işçiliktir/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Model 1"), { target: { value: "AK120_DSC" } });
-    fireEvent.change(screen.getByLabelText("Birim maliyet 1"), { target: { value: "20.000" } });
-    fireEvent.change(screen.getByLabelText("Adet 1"), { target: { value: "2" } });
-    expect(screen.getAllByText("50.000 ₺").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Dağıtılmayan 10\.000 ₺ ortak gidere yazılır/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Adet 1"), { target: { value: "3" } });
-    expect(screen.getByText(/aşıyor/)).toBeTruthy();
-    fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText("Birim maliyet 1"), { target: { value: "25.000" } });
-    fireEvent.change(screen.getByLabelText("Adet 1"), { target: { value: "2" } });
-    fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave.mock.calls[0][0]).toMatchObject({ atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 25000, adet: 2 }] });
-  });
-  it("AC-6: kira türünde atama bölümü çizilmez; personelden kiraya geçince atama temizlenir (regresyon koruması)", () => {
-    const onSave = ac(); personel();
-    fireEvent.click(screen.getByRole("radio", { name: "Dağıtılmasın" }));
     tur(1);
     expect(screen.queryByText("Makina maliyeti ataması")).toBeNull();
     fireEvent.change(screen.getByLabelText("Brüt kira"), { target: { value: "20.000" } });
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave.mock.calls[0][0]).toMatchObject({ atamaTur: "", makinaId: null, modelSatirlari: [] });
+    for (const a of ["atamaTur", "makinaTur", "makinaId"]) expect(onSave.mock.calls[0][0]).not.toHaveProperty(a);
   });
 });
 
 // ── Makina bazlı ekranlar ───────────────────────────────────────────────────
 const TUR = [{ id: 1, ad: "Genel", davranis: "normal" }, { id: 2, ad: "Kira", davranis: "kira" }, { id: 3, ad: "Personel", davranis: "personel" }];
-const turMap = turHaritasi(TUR);
 const MOD = [{ model: "AK100" }, { model: "AK200" }];
 const per = (id, o = {}) => ({ id, tarih: "2026-03-15", turId: 3, calisanId: 7, calisanAd: "Hasan Yılmaz", aciklama: "Hasan Yılmaz", resmiTutar: 30000, eldenTutar: 20000, tutar: null, kdvOrani: 0, odendi: false, ...o });
 const mus = (id, o = {}) => ({ id, name: `Firma ${id}`, model: "AK100", serialNo: `S${id}`, installDate: "2026-03-20", fabrikaSatisBedeli: 500000, currency: "TRY", uretimTarihi: "2026-03-05", ...o });
@@ -107,30 +75,23 @@ describe("Makina ve Model'i besleyen rapor çıktısı (R8, R9; spec 0089 ile mo
     expect(r.modelBazli.flatMap(m => m.satirlar).map(x => x.aciklama)).toEqual(["Personel gideri"]);
     expect(JSON.stringify(r.modelBazli)).not.toMatch(AD);
   });
-  it("AC-14 (spec 0089 ile): makinası silinmiş personel kalemi kovalar kutusunda kopmuş atama sayısına girer; ad yazılmaz", () => {
-    render(<KovaKarti rapor={rapor()} turMap={turMap} />);
-    expect(screen.getByTestId("dusen-atama-sayisi").textContent).toMatch(/^1 kalemin ataması ortak gidere düştü/);
-    expect(document.body.textContent).not.toMatch(AD);
-  });
-  it("AC-9 (spec 0089 ile): kısmi dağıtım kaydı rapor çıktısında; kovalar kutusu çalışan adı yazmaz", () => {
+  it("AC-14 / AC-9 (spec 0090 ile): kovalar kutusu kalktı; kopmuş atama ve kısmi dağıtım rapor çıktısında kalır, ad yazmaz", () => {
     const r = rapor();
     expect(r.kismiOrtak.map(x => x.kalem.id)).toEqual([3]);
-    render(<KovaKarti rapor={r} turMap={turMap} />);
-    expect(document.body.textContent).not.toMatch(AD);
+    expect(JSON.stringify(r.kismiOrtak.map(x => ({ id: x.kalem.id, tutar: x.ortak })))).not.toMatch(AD);
   });
 });
 
-describe("Dönem raporu kalem listesi (R10)", () => {
-  it("atanmış personel kaleminin atama sütunu makinayı gösterir; kira ortak kalır", () => {
+describe("Dönem raporu kalem listesi (R10; spec 0090 ile atama sütunu kalktı)", () => {
+  it("R10 (spec 0090 ile): atanmış personel ve kira kaleminde atama sütunu ve makina adı yok", () => {
     const kira = { id: 8, tarih: "2026-03-15", turId: 2, tutar: 30000, kdvOrani: 20, stopajOrani: 20, girisYonu: "brut", aciklama: "Fabrika kirası", atamaTur: "makina", makinaTur: "musteri", makinaId: 1, odendi: false };
-    render(<KalemListesi kalemler={[GIDERLER[0], kira]} giderTurleri={TUR} tedarikciler={[]} stock={[]} customers={CUSTOMERS} standardModels={MOD} customModels={[]}
+    render(<KalemListesi kalemler={[GIDERLER[0], kira]} giderTurleri={TUR} tedarikciler={[]}
       bugun="2026-09-24" canDo={() => true} onDuzenle={vi.fn()} onSil={vi.fn()} onOdendi={vi.fn()} />);
-    const kiraSatir = screen.getByText("Fabrika kirası", { selector: "div" }).closest("tr");
-    expect(within(kiraSatir).getByText("Ortak gider")).toBeTruthy();
+    expect(screen.queryByRole("columnheader", { name: "Atama" })).toBeNull();
     fireEvent.click(screen.getByText(/Çalışanları göster/));
-    const perSatir = screen.getByText("Hasan Yılmaz", { selector: "div" }).closest("tr");
-    expect(within(perSatir).getByText("AK100 · S1")).toBeTruthy();
-    expect(within(perSatir).queryByText("Ortak gider")).toBeNull();
+    expect(screen.getByText("Hasan Yılmaz", { selector: "div" })).toBeTruthy();
+    expect(screen.queryByText("AK100 · S1")).toBeNull();
+    expect(screen.queryByText("Ortak gider")).toBeNull();
   });
 });
 

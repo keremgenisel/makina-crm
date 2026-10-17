@@ -9,7 +9,7 @@ import { girdi } from "./fixtures/0059-veri";
 const kok = resolve(__dirname, "..");
 const oku = (f) => readFileSync(resolve(kok, f), "utf8");
 const BES = [
-  ["src/components/gider/DonemRaporu.jsx", "KovaKarti", "{ rapor, turMap, katlanir = false }"], // spec 0089 ile (triyaj): sayı satırı tür haritası ister
+  // Spec 0090 ile (R7, R9): Makina Maliyeti Kovaları (KovaKarti) kalktı; Dönem Raporu dört katlanan kutu.
   ["src/components/gider/DonemRaporu.jsx", "TurKirilimi", "{ rapor, katlanir = false }"],
   ["src/components/gider/DonemRaporu.jsx", "TedarikciKirilimi", "{ rapor, katlanir = false }"],
   ["src/components/gider/DonemRaporu.jsx", "YontemKirilimi", "{ kirilim, katlanir = false }"],
@@ -36,15 +36,17 @@ describe("Spec 0081: stopaj rakamı raporda kalır (R2, R3, C5, C6)", () => {
 });
 
 describe("Spec 0081: tek katlama mekanizması (R15, C1, C2)", () => {
-  it("AC-29: beş bileşen katlanir prop'unu alır ve KartBolum'un collapsible'ına geçirir; Dönem Raporu beşine geçirir, Finans geçirmez", () => {
+  it("AC-29 (spec 0090 ile dört): beş bileşen katlanir prop'unu alır ve KartBolum'un collapsible'ına geçirir; Dönem Raporu beşine geçirir, Finans geçirmez", () => {
     const d = oku("src/components/gider/DonemRaporu.jsx");
     for (const [, ad, imza] of BES) expect(d, ad).toContain(`export const ${ad} = (${imza}) => {`);
-    expect((d.match(/collapsible=\{katlanir\}/g) || []).length).toBe(4);
+    expect((d.match(/collapsible=\{katlanir\}/g) || []).length).toBe(3); // spec 0090 ile (kova kutusu kalktı)
+    expect(d).not.toMatch(/export const KovaKarti/);
     const kdv = oku("src/components/gider/KdvKarsilastirmaKarti.jsx");
     expect(kdv).toMatch(/kisitli = null, katlanir = false \}\) => \{/);
     expect((kdv.match(/collapsible=\{katlanir\}/g) || []).length).toBe(1); // yalnız normal dal (R4/2)
     const g = oku("src/components/Giderler.jsx");
-    for (const c of ["<KovaKarti rapor={rapor} turMap={turMap} katlanir />", "<TurKirilimi rapor={rapor} katlanir />", "<KdvKarsilastirmaKarti katlanir ",
+    expect(oku("src/components/Giderler.jsx")).not.toMatch(/<KovaKarti\b/); // spec 0090 ile
+    for (const c of ["<TurKirilimi rapor={rapor} katlanir />", "<KdvKarsilastirmaKarti katlanir ",
       "<TedarikciKirilimi rapor={rapor} katlanir />", "<YontemKirilimi kirilim={donemKirilimi} katlanir />"]) expect(g, c).toContain(c);
     const f = oku("src/components/Finance.jsx");
     expect(f).toMatch(/<KdvKarsilastirmaKarti /);
@@ -91,7 +93,8 @@ describe("Spec 0081 R16, C7: kutu içeriğini okuyan testler önce kutuyu açar"
     // yöntem özeti) kutu içi sayılmaz.
     const govde = (dosya, ad) => { const k = oku(dosya); const i = k.indexOf(`export const ${ad} = `); expect(i, ad).toBeGreaterThan(-1); return k.slice(i, k.indexOf("\n};", i)); };
     const D = "src/components/gider/DonemRaporu.jsx";
-    const kaynaklar = [govde(D, "KovaKarti"), govde(D, "TurKirilimi"), govde(D, "TedarikciKirilimi"), govde(D, "YontemKirilimi"),
+    const kaynaklar = [govde(D, "TurKirilimi"), // spec 0090 ile KovaKarti kalktı
+      govde(D, "TedarikciKirilimi"), govde(D, "YontemKirilimi"),
       oku("src/components/gider/KdvKarsilastirmaKarti.jsx")];
     // Kimlikler doğrudan (data-testid="…") ya da satır yardımcısına argüman olarak ("yontem-kirilimi-personel" gibi) geçer; çok
     // kelimeli her dize literali aday sayılır (stil değerleri de girer, zararsız: testlerde kimlik olarak aranmazlar).

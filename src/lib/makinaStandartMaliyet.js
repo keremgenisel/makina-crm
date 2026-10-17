@@ -8,7 +8,8 @@
 // gider motorunun tür kırılımından okunur, ikinci bir süzme ya da toplama yazılmaz (C2). Gider türünün maliyet ROLÜ
 // (`maliyetRolu`) ile DAVRANIŞI (`davranis`) ayrı kavramlardır (C15): rol maliyete girişi, davranış kira/personel/SGK alanlarını
 // belirler. Personel çalışan ayrıntısı bu motordan geçmez (R26, C3).
-import { kurus, tl, ayEkle, ayinSonGunu, hesaplaGiderRaporu, turHaritasi, DAVRANIS, tutarCoz } from "./gider";
+import { kurus, tl, ayEkle, ayOf, ayinSonGunu, hesaplaGiderRaporu, turHaritasi, DAVRANIS, tutarCoz } from "./gider";
+import { partiAylari, canliPartiler } from "./uretimPartisi";
 import { makinaListesi, satisKurBilgisi, katDegeriDogrula } from "./makinaMaliyeti";
 import { gercekSatisBedeli, trLower } from "./utils";
 
@@ -266,6 +267,116 @@ export const partiHesabi = (parti, veri, { payK = 0, modeller = [], rates = null
 // R22 (AC-33): partisiz makina sayısı (canlı stok + canlı müşteri).
 export const partisizMakinaSayisi = ({ customers = [], stock = [] } = {}) =>
   [...stock, ...customers].filter(x => x && !x.deletedAt && x.partiId == null).length;
+
+// ── Spec 0090: aylık genel gider havuzu ve üretim partisi payı ───────────────
+// Parti payı bugünkü maliyet motorundan (makinaMaliyeti.js, kova tabanlı "ortak gider") değil bu hesaptan gelir: ayın havuzu
+// rolü "genel gidere girer" olan türlerin o aydaki gider tutarıdır (R13). TEK YOL (C15): her ay için 0088'in `rolHavuzlari`'
+// (gider motorunun tür kırılımı) çağrılır; yürürlük kırpması, çöpteki tür, kısıtlı gider tabanı ve türsüz kalem kuralları
+// ikinci kez yazılmaz ve dönemin aylık toplamı 0088'in dönem havuzuna kuruş kuruş eşittir (C3).
+// Hesap ayarlarının dönemi ve varsayılan adedi burada KULLANILMAZ (R20); parti kendi aylarını ve kendi makina adedini kullanır.
+export const aylikGenelHavuzlar = (veri, aylar, bugun) => new Map(aylar.map(ay => [ay, rolHavuzlari(veri, ay, ay, bugun).genelK]));
+
+export const PARTI_DURUM = { TAMAM: "tamam", MAKINA_YOK: "makinaYok", BASLAMADI: "baslamadi", ROL_YOK: "rolYok", YURURLUK_ONCESI: "yururlukOncesi" };
+export const PARTI_NEDEN = {
+  makinaYok: "Bağlı makina yok; ayların gideri makinalar bağlanınca paylaştırılır.",
+  baslamadi: "Parti henüz başlamadı; havuz başlangıç ayından itibaren oluşur.",
+  rolYok: "Hiçbir gider türünün rolü “Genel gidere girer” değil; rol Makina Maliyeti › Hesap Ayarları'nda verilir.",
+  yururlukOncesi: "Partinin bütün ayları gider takibinin yürürlük ayından önce.",
+};
+// R22: havuzun kaynağı satırda yazılır.
+export const PARTI_KAYNAK_IBARESI = "Partinin aylarındaki genel gider";
+
+// Üretim sırası (0022 R13 ve R3'ün "en önce üretilen" kuralı): tarih, seri (sayısal), tür, kimlik; tarihsiz makina sona.
+// Kural bugünkü motordakinin aynısıdır ve burada yazılır (revizyon 3, K3): eski dosya bir sürüm sonra silineceği için ona
+// bağlanılmaz; eşdeğerlik AC-36'nın kıyas fikstürüyle sabittir.
+const idKarsilastir = (a, b) => (Number.isFinite(Number(a)) && Number.isFinite(Number(b)) ? Number(a) - Number(b) : String(a).localeCompare(String(b)));
+const uretimSirasi = (a, b) => {
+  if (!!a.uretimTarihi !== !!b.uretimTarihi) return a.uretimTarihi ? -1 : 1;
+  if (a.uretimTarihi !== b.uretimTarihi) return a.uretimTarihi < b.uretimTarihi ? -1 : 1;
+  if (a.seri && b.seri && a.seri !== b.seri) return a.seri.localeCompare(b.seri, "tr", { numeric: true });
+  if (!!a.seri !== !!b.seri) return a.seri ? -1 : 1;
+  if (a.tur !== b.tur) return a.tur < b.tur ? -1 : 1;
+  return idKarsilastir(a.id, b.id);
+};
+
+// R31: parti başına TEK nesne { id, adet, havuzK, makinaBasiK, durum, neden, kaynak, degisimler }. Ekran satırın dört hücresini
+// (adet, ipucu, havuz, makina başı pay) yalnız buradan okur. R32: adet, bölünmedeki ağırlığı üreten AYNI makina kümesinden
+// (`makinaListesi`: canlı müşteri makinaları + canlı stok satırları; üretim tarihi tek zincir, C4).
+// R36/2 (K4): ay haritası yürürlük ayından max(içinde bulunulan ay, en geç parti bitişi)'ne kadar her ayı kapsar; kapanış
+// anlık görüntüsü bu haritadan yazılır.
+export const partiGenelPaylari = (veri = {}, bugun) => {
+  const buAy = ayOf(bugun);
+  const yurAy = veri.yururlukAy || null;
+  const partiler = canliPartiler(veri.uretimPartileri);
+  const partiMap = new Map(partiler.map(p => [String(p.id), p]));
+  const makinalar = makinaListesi({ customers: veri.customers || [], stock: veri.stock || [], partStockLog: veri.partStockLog || [] }).sort(uretimSirasi);
+  const uyeler = new Map(partiler.map(p => [String(p.id), []]));
+  const partisizAy = new Map();
+  for (const m of makinalar) {
+    const pid = m.kayit?.partiId != null && partiMap.has(String(m.kayit.partiId)) ? String(m.kayit.partiId) : null;
+    if (pid) { uyeler.get(pid).push(m); continue; }
+    if (!m.uretimTarihi) continue; // tarihsiz partisiz makina hiçbir ayın hak sahibi değildir
+    const ay = ayOf(m.uretimTarihi);
+    if (!partisizAy.has(ay)) partisizAy.set(ay, []);
+    partisizAy.get(ay).push(m);
+  }
+  const partiAylariYur = new Map(partiler.map(p => [String(p.id), partiAylari(p, buAy).filter(a => !yurAy || a >= yurAy)]));
+  // Ay haritası (R36/2).
+  const baslar = [yurAy, ...partiler.map(p => p.baslangicAy)].filter(Boolean).sort();
+  const ilk = yurAy || baslar[0] || buAy;
+  const son = [buAy, ...partiler.map(p => p.bitisAy).filter(Boolean)].sort().pop();
+  const aylar = [];
+  for (let a = ilk; a <= son; a = ayEkle(a, 1)) aylar.push(a);
+  const havuzlar = aylikGenelHavuzlar(veri, aylar, bugun);
+  // R14 (0022 R13): ayın hak sahipleri = o ay açık ve makinası olan partiler (ağırlık = adet) + o ay üretilmiş partisiz makinalar
+  // (ağırlık 1). Kuruşla, aşağı yuvarlanarak bölünür; artık en önce üretilmiş makinası olan hak sahibine.
+  const partiHavuz = new Map(partiler.map(p => [String(p.id), 0]));
+  for (const ay of aylar) {
+    const havuz = havuzlar.get(ay) || 0;
+    if (!havuz) continue;
+    const sahipler = [
+      ...(partisizAy.get(ay) || []).map(m => ({ ilk: m, agirlik: 1 })),
+      ...partiler.filter(p => (partiAylariYur.get(String(p.id)) || []).includes(ay) && uyeler.get(String(p.id)).length)
+        .map(p => ({ pid: String(p.id), ilk: uyeler.get(String(p.id))[0], agirlik: uyeler.get(String(p.id)).length })),
+    ].sort((x, y) => uretimSirasi(x.ilk, y.ilk));
+    const agirlik = sahipler.reduce((t, x) => t + x.agirlik, 0);
+    if (!agirlik) continue; // X9: hak sahibi olmayan ayın havuzu dağıtılmaz (bilinen sınır)
+    const paylar = sahipler.map(x => Math.floor(havuz * x.agirlik / agirlik));
+    paylar[0] += havuz - paylar.reduce((t, v) => t + v, 0);
+    sahipler.forEach((x, i) => { if (x.pid) partiHavuz.set(x.pid, partiHavuz.get(x.pid) + paylar[i]); });
+  }
+  const roller = rolOzeti(veri.giderTurleri);
+  const sonuc = partiler.map(p => {
+    const pid = String(p.id);
+    const adet = uyeler.get(pid).length;
+    const havuzK = partiHavuz.get(pid);
+    // R37/2 (K5): durum önceliği baslamadi → makinaYok → yururlukOncesi → rolYok → tamam.
+    const durum = p.baslangicAy > buAy ? PARTI_DURUM.BASLAMADI
+      : !adet ? PARTI_DURUM.MAKINA_YOK
+      : !(partiAylariYur.get(pid) || []).length ? PARTI_DURUM.YURURLUK_ONCESI
+      : (havuzK === 0 && roller.genelTurSayisi === 0) ? PARTI_DURUM.ROL_YOK : PARTI_DURUM.TAMAM;
+    // R24, R25: değişim yalnız yeni anlık görüntüden (`kapanisGenelHavuzlari`); eski alan (`kapanisOrtaklari`) okunmaz.
+    const anlik = p.bitisAy && p.kapanisGenelHavuzlari && typeof p.kapanisGenelHavuzlari === "object" ? p.kapanisGenelHavuzlari : null;
+    const degisimler = !anlik ? [] : Object.entries(anlik)
+      .map(([ay, k]) => ({ ay, kapanistaK: Number(k) || 0, bugunK: havuzlar.get(ay) ?? 0 }))
+      .filter(d => d.kapanistaK !== d.bugunK).map(d => ({ ...d, farkK: d.bugunK - d.kapanistaK, farkMutlakK: Math.abs(d.bugunK - d.kapanistaK), artti: d.bugunK > d.kapanistaK }))
+      .sort((a, b) => (a.ay < b.ay ? -1 : 1));
+    // R15 (0022 R3): makina başı pay aşağı yuvarlanır, artık kuruş en önce üretilen makinaya; paylar toplamı = havuz.
+    const makinaBasiK = adet ? Math.floor(havuzK / adet) : null;
+    const makinaPaylari = uyeler.get(pid).map((m, i) => ({ anahtar: m.anahtar, payK: makinaBasiK + (i === 0 ? havuzK - makinaBasiK * adet : 0) }));
+    return { id: p.id, adet, havuzK, makinaBasiK, durum, neden: PARTI_NEDEN[durum] || null,
+      kaynak: PARTI_KAYNAK_IBARESI, acik: !p.bitisAy, degisimler, makinaPaylari };
+  });
+  return { partiler: sonuc, aylar: havuzlar, yururlukAy: yurAy, roller };
+};
+
+// Triyaj (bulgu 2): kapanış anlık görüntüsünün haritası KAYDEDİLEN partinin bütün aralığını kapsar (yürürlük boş, gelecek
+// bitiş, başlangıcı öne çekilen parti). Tek yol aylikGenelHavuzlar (C15); kalemsiz ay 0'dır, yürürlük öncesi ay görüntüye
+// girmez (kapanisAnlikGoruntusu atlar).
+export const partiKapanisHavuzu = (veri = {}, parti, bugun) => ({
+  aylar: aylikGenelHavuzlar(veri, partiAylari(parti, ayOf(bugun)).filter(a => !veri.yururlukAy || a >= veri.yururlukAy), bugun),
+  yururlukAy: veri.yururlukAy || null,
+});
 
 // Ekran yardımcıları (biçim yalnız burada): kuruş → TL.
 export const tlOf = (k) => (k == null ? null : tl(k));

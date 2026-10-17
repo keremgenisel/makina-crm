@@ -80,8 +80,10 @@ describe("Spec 0088: sekme ve izin", () => {
 
 // Spec 0089 ile (C7 0088 R24, AC-37): Giderler maliyet sonucunu artık almaz; bu ekran motorun tek tüketicisidir, prop ve üç
 // sütun bugünkü rakamla kalır (0089 R4, X6). Memo kapısı maliyetYetki (yerel kipte açık).
+// Spec 0090 ile (R21, R27, C7): App memosu kalktı; parti hesabı yeni hesaptan (partiGenelPaylari), kapanış anlık görüntüsü
+// kapanisGenelHavuzlari'na yazılır, eski kapanisOrtaklari yazılmaz.
 describe("Spec 0088: taşınan Üretim Partileri gerçek App'te", () => {
-  it("AC-34, AC-37: parti yeni ekranda kapatılır; App'in maliyet sonucuyla kapanış anlık görüntüsü dolu yazılır, üç sütun rakam gösterir", async () => {
+  it("AC-34, AC-37 (spec 0090 ile): parti yeni ekranda kapatılır; yeni hesabın kapanış anlık görüntüsü dolu yazılır, sütunlar rakam gösterir", async () => {
     const { kayitlar } = await baslat();
     menu("Makina Maliyeti");
     fireEvent.click(screen.getByRole("radio", { name: "Üretim Partileri" }));
@@ -92,9 +94,11 @@ describe("Spec 0088: taşınan Üretim Partileri gerçek App'te", () => {
     fireEvent.click(screen.getByText("Kaydet"));
     await waitFor(() => expect(kayitlar.some(k => k.uretimPartileri?.[0]?.bitisAy === "2026-01")).toBe(true));
     const son = kayitlar.filter(k => k.uretimPartileri?.[0]?.bitisAy === "2026-01").pop();
-    expect(son.uretimPartileri[0].kapanisOrtaklari).toEqual({ "2026-01": 100000 });
+    expect(son.uretimPartileri[0].kapanisGenelHavuzlari).toEqual({ "2026-01": 100000 });
+    expect(son.uretimPartileri[0]).not.toHaveProperty("kapanisOrtaklari");
     expect(within(satir()).getByText("Kapalı")).toBeTruthy();
-    expect(within(satir()).getAllByText("1.000 ₺").length).toBeGreaterThan(0);
+    expect(within(satir()).getByTestId("parti-havuz").textContent).toMatch(/1\.000,00 ₺/);
+    expect(within(satir()).getByTestId("parti-makina-basi").textContent).toMatch(/1\.000,00 ₺/);
   });
 
   it("AC-41: ekranda gezinip rol ve ayar değiştirmek gider kayıtlarının gövdesini değiştirmez", async () => {

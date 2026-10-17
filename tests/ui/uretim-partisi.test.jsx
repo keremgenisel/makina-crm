@@ -3,6 +3,9 @@
 // detayı, kârlılık listesi, Makina ve Model uyarısı). Spec 0089 ile (C7 0022 AC-11, AC-16; 0088 R24/2): parti değişim kutusu
 // Makina Maliyeti › Üretim Partileri'ne taşındı (0089 R11); maliyet detayı ve kârlılık listesi ekrandan kalktı, parti ve geçici
 // bilgisi motorun makina sonucunda ölçülür; stokta taşınan maliyetin parti kırılımı kalktı (0089 envanteri).
+// Spec 0090 ile (R21, R27, C7): ekran parti payını kendi kurduğu yeni hesaptan (partiGenelPaylari) gösterir, makinaMaliyet prop'u
+// yok; kapanış anlık görüntüsü kapanisGenelHavuzlari'na yazılır, kapanisOrtaklari yazılmaz; para kuruşlu. Türe "genel" rolü
+// verildi (rolsüz tür yeni hesapta maliyete girmez); bugünkü motorun testleri (son blok) bu rolü okumaz.
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";
@@ -13,11 +16,12 @@ import { Customers } from "../../src/components/Customers";
 import { MakinaStokTab } from "../../src/components/stock/MakinaStokTab";
 import { hesaplaMakinaMaliyetleri, makinaKarlilik } from "../../src/lib/makinaMaliyeti";
 import { partiKapanisUygula } from "../../src/lib/uretimPartisi";
+import { partiGenelPaylari } from "../../src/lib/makinaStandartMaliyet";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-09-23T10:00:00")); });
 
-const TUR = [{ id: 4, ad: "Elektrik", davranis: "normal" }];
+const TUR = [{ id: 4, ad: "Elektrik", davranis: "normal", maliyetRolu: "genel" }];
 const AYAR = { giderAyarlari: { yururlukAy: "2026-01" } };
 const maliyet = ({ stock = [], customers = [], giderler = [], uretimPartileri = [] }) => hesaplaMakinaMaliyetleri({ customers, stock, partStockLog: [], giderler, giderTurleri: TUR,
   standardModels: [{ model: "AK100" }], customModels: [], giderAyarlari: AYAR.giderAyarlari, uretimPartileri }, { bugun: "2026-09-23" });
@@ -30,7 +34,7 @@ function GiderHarness({ p0 = [], stock = [], customers = [], giderler = [], perm
   return <MakinaMaliyeti giderler={giderler} giderTurleri={TUR} setGiderTurleri={vi.fn()} tedarikciler={[]}
     uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers} parts={[]}
     standardModels={[{ model: "AK100" }]} customModels={[]} setStandardModels={vi.fn()} setCustomModels={vi.fn()} appSettings={AYAR} setAppSettings={vi.fn()}
-    serverPermissions={perms} showToast={vi.fn()} makinaMaliyet={maliyet({ stock, customers, giderler, uretimPartileri })} />;
+    serverPermissions={perms} showToast={vi.fn()} tumMusteriler={customers} />;
 }
 const partilerSekmesi = () => fireEvent.click(screen.getByRole("radio", { name: "Üretim Partileri" }));
 const yeniParti = (ad, bas, bit) => {
@@ -52,7 +56,9 @@ describe("Makina Maliyeti › Üretim Partileri (R1, R11, C5; spec 0088 AC-34, A
     fireEvent.change(screen.getByLabelText("Başlangıç ayı"), { target: { value: "2026-07" } });
     fireEvent.change(screen.getByLabelText("Açıklama"), { target: { value: "70 makina" } });
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(st.uretimPartileri).toEqual([expect.objectContaining({ ad: "2026 Bahar", baslangicAy: "2026-07", bitisAy: null, aciklama: "70 makina", kapanisOrtaklari: null })]);
+    expect(st.uretimPartileri).toEqual([expect.objectContaining({ ad: "2026 Bahar", baslangicAy: "2026-07", bitisAy: null, aciklama: "70 makina" })]);
+    expect(st.uretimPartileri[0]).not.toHaveProperty("kapanisOrtaklari"); // spec 0090 C7
+    expect(st.uretimPartileri[0]).not.toHaveProperty("kapanisGenelHavuzlari"); // açık parti görüntü taşımaz
     const satir = screen.getByTestId("parti-satiri");
     expect(within(satir).getByText("Açık · geçici")).toBeTruthy();
     expect(within(satir).getByText(/Bağlı makina yok/)).toBeTruthy(); // P5
@@ -70,7 +76,7 @@ describe("Makina Maliyeti › Üretim Partileri (R1, R11, C5; spec 0088 AC-34, A
     expect(screen.getByText("Bitiş ayı başlangıç ayından önce olamaz.")).toBeTruthy();
     expect(st.uretimPartileri).toHaveLength(1);
   });
-  it("R8 / R15: bitiş ayı girilince parti kapanır, kapanıştaki ay ortakları yazılır; listede havuz ve makina başı pay", () => {
+  it("R8 / R15 (spec 0090 ile): bitiş ayı girilince parti kapanır, kapanıştaki aylık genel havuzlar yazılır; listede havuz ve makina başı pay", () => {
     let st;
     const stock = [stk(1, { partiId: 1 }), stk(2, { partiId: 1 })];
     render(<GiderHarness p0={[{ id: 1, ad: "Q1", baslangicAy: "2026-01", bitisAy: null }]} stock={stock} giderler={[gid(1, "2026-01-10", 1000), gid(2, "2026-02-10", 3000)]} onState={s => { st = s; }} />);
@@ -80,10 +86,11 @@ describe("Makina Maliyeti › Üretim Partileri (R1, R11, C5; spec 0088 AC-34, A
     fireEvent.click(within(satir()).getByTitle("Düzenle"));
     fireEvent.change(screen.getByLabelText("Bitiş ayı"), { target: { value: "2026-02" } });
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(st.uretimPartileri[0]).toMatchObject({ bitisAy: "2026-02", kapanmaZamani: "2026-09-23T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 300000 } });
+    expect(st.uretimPartileri[0]).toMatchObject({ bitisAy: "2026-02", kapanmaZamani: "2026-09-23T10:00:00", kapanisGenelHavuzlari: { "2026-01": 100000, "2026-02": 300000 } });
+    expect(st.uretimPartileri[0]).not.toHaveProperty("kapanisOrtaklari");
     expect(within(satir()).getByText("Kapalı")).toBeTruthy();
-    expect(within(satir()).getByText("4.000 ₺")).toBeTruthy();
-    expect(within(satir()).getByText("2.000 ₺")).toBeTruthy();
+    expect(within(satir()).getByTestId("parti-havuz").textContent).toMatch(/^4\.000,00 ₺/);
+    expect(within(satir()).getByTestId("parti-makina-basi").textContent).toBe("2.000,00 ₺");
   });
   it("AC-14: silme onayında etkilenen makina sayısı yazar; silinince liste boşalır (spec 0068 R9 ile güncellendi: çöp kutusuna taşınır)", () => {
     let st;
@@ -104,15 +111,16 @@ describe("Makina Maliyeti › Üretim Partileri (R1, R11, C5; spec 0088 AC-34, A
     expect(within(screen.getByTestId("parti-satiri")).queryByTitle("Düzenle")).toBeNull();
     expect(within(screen.getByTestId("parti-satiri")).queryByTitle("Sil")).toBeNull();
   });
-  it("AC-11 (spec 0089 ile, 0089 R11): kapanmış partinin ayında ortak gider değişince Makina Maliyeti › Üretim Partileri'nde satır görünür (pencere yok)", () => {
+  it("AC-11 (spec 0089 ile, 0089 R11; spec 0090 ile yeni hesap): kapanmış partinin ayında genel gider değişince Makina Maliyeti › Üretim Partileri'nde satır görünür (pencere yok)", () => {
     const stock = [stk(1, { partiId: 1 })];
-    const kapanis = maliyet({ stock, giderler: [gid(1, "2026-01-10", 1000)], uretimPartileri: [] });
-    const kapali = partiKapanisUygula(null, { id: 1, ad: "Q1", baslangicAy: "2026-01", bitisAy: "2026-01" }, kapanis.aylar, "2026-02-01T10:00:00");
+    const kapanis = partiGenelPaylari({ giderler: [gid(1, "2026-01-10", 1000)], giderTurleri: TUR, tedarikciler: [], stock, customers: [], partStockLog: [], uretimPartileri: [], yururlukAy: "2026-01" }, "2026-09-23");
+    const { kayit: kapali } = partiKapanisUygula(null, { id: 1, ad: "Q1", baslangicAy: "2026-01", bitisAy: "2026-01" }, { aylar: kapanis.aylar, yururlukAy: kapanis.yururlukAy }, "2026-02-01T10:00:00");
+    expect(kapali.kapanisGenelHavuzlari).toEqual({ "2026-01": 100000 });
     render(<GiderHarness p0={[kapali]} stock={stock} giderler={[gid(1, "2026-01-10", 1000), gid(2, "2026-01-20", 250)]} />);
     partilerSekmesi();
     const kutu = screen.getByTestId("parti-degisimleri");
     expect(kutu.textContent).toMatch(/Kapanmış partilerin aylarında değişen ortak gider/);
-    expect(kutu.textContent).toMatch(/Q1.*kapanışta 1\.000 ₺, bugün 1\.250 ₺/);
+    expect(kutu.textContent).toMatch(/Q1.*kapanışta 1\.000,00 ₺, bugün 1\.250,00 ₺/);
   });
 });
 

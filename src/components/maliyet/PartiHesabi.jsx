@@ -11,6 +11,9 @@ export const KAR_KUMELERI_NOTU = "Öneriye göre kâr partinin bütün adedinden
 export const TEDARIK_FARK_CUMLESI = "Fark bir hata değildir: dönemde \"Ürün ağacından gelir\" rolündeki türlere girilen gider ile partinin ürün ağacından hesaplanan direkt maliyeti arasındaki farktır.";
 export const TEDARIK_TABAN_CUMLESI = "Taban farkı: standart direkt maliyet KDV hariç matrahtır, gerçekleşen tutar indirilemeyen KDV'yi de içerir; farkın sıfır olmaması normaldir.";
 const donemCumlesi = (n) => `Dönem farkı: parti başlamadan önce alınmış tedarik kapsam dışıdır${n > 0 ? `; bu dönemin ayları ${n} partiyle daha paylaşılıyor ve tedarik partilere bölünmez` : ""}.`;
+// Spec 0090 R34 (AC-38/5): bu sütunun payı hesap ayarlarının döneminden ve varsayılan adedinden gelir; Üretim Partileri'ndeki pay
+// partinin kendi aylarından. İki rakam ayrı soruları cevaplar ve toplanmaz (X8).
+export const PAY_AYRIM_IBARESI = "Hesap ayarlarının dönemi ve varsayılan adediyle; Üretim Partileri'ndeki pay partinin kendi aylarından gelir, ikisi toplanmaz.";
 const th = { padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", textAlign: "right", whiteSpace: "nowrap" };
 const td = { padding: "9px 12px", fontSize: 13, textAlign: "right", whiteSpace: "nowrap" };
 const Rakam = ({ etiket, deger, alt, testId }) => (
@@ -74,7 +77,7 @@ export const PartiHesabi = ({ pay, modeller, canDo, baskasiKilitli, showToast, v
           <KartBolum varyant="kart" style={{ padding: 0, overflow: "auto", marginBottom: 16 }} testId="parti-tablosu">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead><tr style={{ background: "var(--n100, #f8fafc)" }}>
-                <th style={{ ...th, textAlign: "left" }}>Model</th><th style={th}>Adet</th><th style={th}>Direkt (birim)</th><th style={th}>Genel gider payı (birim)</th>
+                <th style={{ ...th, textAlign: "left" }}>Model</th><th style={th}>Adet</th><th style={th}>Direkt (birim)</th><th style={th}>Genel gider payı (birim)<div data-testid="pay-ayrim-ibaresi" style={{ fontSize: 10.5, fontWeight: 400, whiteSpace: "normal", maxWidth: 220, marginLeft: "auto" }}>{PAY_AYRIM_IBARESI}</div></th>
                 <th style={th}>Toplam (birim)</th><th style={th}>Önerilen satış (birim)</th><th style={th}>Toplam maliyet</th><th style={th}>Önerilen ciro</th>
               </tr></thead>
               <tbody>

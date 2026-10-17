@@ -607,35 +607,31 @@ export const odemeSatirlariKur = (kayit, dav, plan = {}, { uid = varsayilanUid, 
   return { satirlar };
 };
 
-// ── Model satırları (R21, K31, K32) ──────────────────────────────────────────
-export const modelSatirlariDogrula = (tutar, satirlar = []) => {
-  const hatalar = [];
-  const gorulen = new Set();
-  let dagitilan = 0;
-  (satirlar || []).forEach((s, i) => {
-    const ad = String(s?.modelAd || "").trim();
-    const birim = tutarCoz(s?.birimMaliyet);
-    const adetRaw = s?.adet;
-    const adet = typeof adetRaw === "number" ? adetRaw : Number(String(adetRaw ?? "").trim());
-    if (!ad) hatalar.push({ satir: i, alan: "modelAd", mesaj: "Model seçilmedi." });
-    else if (gorulen.has(trLower(ad))) hatalar.push({ satir: i, alan: "modelAd", mesaj: `“${ad}” modeli için zaten bir satır var. Bir modelden yalnız bir satır olabilir.` });
-    if (ad) gorulen.add(trLower(ad));
-    if (birim.gecersiz) hatalar.push({ satir: i, alan: "birimMaliyet", mesaj: "Birim maliyet sayıya çevrilemedi." });
-    else if (birim.bos || birim.deger <= 0) hatalar.push({ satir: i, alan: "birimMaliyet", mesaj: "Birim maliyet sıfırdan büyük olmalı." });
-    if (adetRaw === "" || adetRaw == null || !Number.isFinite(adet) || adet <= 0) hatalar.push({ satir: i, alan: "adet", mesaj: "Kaç makinalık olduğu sıfırdan büyük olmalı." });
-    else if (!Number.isInteger(adet)) hatalar.push({ satir: i, alan: "adet", mesaj: "Makina adedi tam sayı olmalı." });
-    if (!birim.gecersiz && birim.deger > 0 && Number.isInteger(adet) && adet > 0) dagitilan += kurus(birim.deger) * adet;
-  });
-  const tutarK = kurus(tutar);
-  const asim = Math.max(0, dagitilan - tutarK);
-  const fark = Math.max(0, tutarK - dagitilan);
-  if (asim > 0) hatalar.push({ satir: null, alan: "toplam", mesaj: `Satır toplamı kalem tutarını ${tl(asim).toLocaleString("tr-TR")} ₺ aşıyor.` });
-  return { hatalar, dagitilan: tl(dagitilan), fark: tl(fark), asim: tl(asim) };
-};
+// ── Model satırları (R21) ── spec 0090 triyajı (bulgu 4): formdaki satırları doğrulayan `modelSatirlariDogrula` alanla birlikte silindi.
 export const modelSatirTutari = (s) => tl(kurus(tutarCoz(s?.birimMaliyet).deger) * (Number(s?.adet) || 0));
 
 // ── Kalem doğrulama ve normalleştirme ─────────────────────────────────────────
 // form: formdaki ham değerler (tutarlar metin olabilir). Dönen `kayit` saklanacak biçimdir; hata varsa null.
+// Spec 0090 R4, R5/2, R5/3 (TEK kural; kalem doğrulayıcısı ve tanım formunun kayıt kurucusu çağırır): atama ve aylara dağıtım
+// verisi yalnız kayıt onları TAŞIYORSA (atama türü boş değil ya da dağıtım ayı birden büyük) birebir geri yazılır; sayı biçimi
+// çözülür (formdaki metin → sayı), hata ve uyarı üretilmez. Atanamayan davranışta atama, makina ve "dağıtılmasın" atamasında
+// dağıtım düşer. Taşımıyorsa dönen nesne boştur: anahtarlar boş değerle de yazılmaz.
+export const ATAMA_ANAHTARLARI = ["atamaTur", "makinaTur", "makinaId", "modelSatirlari", "dagitimAy"];
+export const atamaVerisiKoru = (form, atamaAcik) => {
+  const r = {};
+  const at = atamaAcik ? (form?.atamaTur || "") : "";
+  if (at) {
+    r.atamaTur = at;
+    if (at === ATAMA.MAKINA) { r.makinaTur = form.makinaTur ?? null; r.makinaId = form.makinaId ?? null; }
+    if (at === ATAMA.MODEL) {
+      r.modelSatirlari = (form.modelSatirlari || []).map(s => ({ modelAd: String(s.modelAd || "").trim(), birimMaliyet: tutarCoz(s.birimMaliyet).deger, adet: Number(s.adet) }));
+    }
+  }
+  const dg = dagitimAySayisiCoz(form?.dagitimAy);
+  if (!dg.hata && dg.deger > 1 && dagitimSecilebilirMi(at)) r.dagitimAy = dg.deger;
+  return r;
+};
+
 export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsayilanUid } = {}) => {
   const hatalar = [];
   const uyarilar = [];
@@ -780,34 +776,13 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
     }
   }
 
-  // Atama (K25, K38; spec 0020 R1, R5): kira her zaman ortak; personel normal kalemle aynı atamaları alır.
-  if (!atanabilirMi(dav)) {
-    kayit.atamaTur = ""; kayit.makinaTur = null; kayit.makinaId = null; kayit.modelSatirlari = [];
-  } else {
-    const at = form.atamaTur || "";
-    kayit.atamaTur = at;
-    if (at !== ATAMA.MAKINA) { kayit.makinaTur = null; kayit.makinaId = null; }
-    if (at !== ATAMA.MODEL) kayit.modelSatirlari = [];
-    if (at === ATAMA.MAKINA && !form.makinaId) hata("makinaId", "Makina seçilmedi.");
-    if (at === ATAMA.MODEL) {
-      const satirlar = form.modelSatirlari || [];
-      if (!satirlar.length) hata("modelSatirlari", "En az bir model satırı girin.");
-      // Dağıtım tabanı kalem tutarıdır; personelde resmi + elden (spec 0020 R2).
-      const d = modelSatirlariDogrula(dav === DAVRANIS.PERSONEL ? tl(kalemKurus(kayit, dav)) : (kayit.tutar ?? 0), satirlar);
-      d.hatalar.forEach(h => hatalar.push({ alan: "modelSatirlari", satir: h.satir, mesaj: h.mesaj }));
-      // Spec 0076 R15/2: kısıtlı kalemde indirilemeyen KDV de ortak kovaya düşer; uyarı ortak kovanın gerçeğini söyler.
-      const kisitli = kisitEtkiliMi(kayit, dav) && kisitHesabi(kayit, dav).indirilemeyenK > 0;
-      if (!d.hatalar.length && d.fark > 0) uyarilar.push({ alan: "modelSatirlari", mesaj: `Dağıtılmayan ${d.fark.toLocaleString("tr-TR")} ₺${kisitli ? " ve indirilemeyen KDV" : ""} ortak gidere yazılacak.` });
-      else if (!d.hatalar.length && kisitli) uyarilar.push({ alan: "modelSatirlari", mesaj: "İndirilemeyen KDV ortak gidere yazılacak." });
-      kayit.modelSatirlari = satirlar.map(s => ({ modelAd: String(s.modelAd || "").trim(), birimMaliyet: tutarCoz(s.birimMaliyet).deger, adet: Number(s.adet) }));
-    }
-  }
-  // Spec 0072 R5, R17, R19 (S4): dağıtım ay sayısı. Bir ya da boş değer saklanmaz (okumada da blob'a yazılmaz); makina ve
-  // "dağıtılmasın" atamasında alan temizlenir.
-  const dg = dagitimAySayisiCoz(form.dagitimAy);
-  if (dg.hata && dagitimSecilebilirMi(kayit.atamaTur)) hata("dagitimAy", dg.hata);
-  if (!dg.hata && dg.deger > 1 && dagitimSecilebilirMi(kayit.atamaTur)) kayit.dagitimAy = dg.deger;
-  else delete kayit.dagitimAy;
+  // Spec 0090 R4, R5, R5/2, R5/3: atama ve aylara dağıtım formda çizilmez (tek maliyet modeli, tür rolü). Kalem bunları
+  // TAŞIYORSA (atama türü boş değil ya da dağıtım ayı birden büyük) değer birebir geri yazılır: yalnız sayı biçimi çözülür
+  // (formdaki metin → sayı), hata ve uyarı ÜRETİLMEZ (kullanıcının düzeltecek alanı yok) ve bugünkü iki tutarlılık kuralı kalır:
+  // atanamayan davranışta (kira, SGK) atama düşer; makina ya da "dağıtılmasın" atamasında dağıtım düşer. Taşımıyorsa anahtarlar
+  // hiç yazılmaz (boş değerle de). Kova motoru (kalemKovalariKurus) değişmedi ve kayıtlı alanları okumaya devam eder (C9).
+  for (const a of ATAMA_ANAHTARLARI) delete kayit[a];
+  Object.assign(kayit, atamaVerisiKoru(form, atanabilirMi(dav)));
   return { hatalar, uyarilar, kayit: hatalar.length ? null : kayit };
 };
 
@@ -909,11 +884,7 @@ export const dagitimAraligi = (k) => {
   const ilkAy = ayOf(k.tarih);
   return { aySayisi: n, ilkAy, sonAy: ayEkle(ilkAy, n - 1) };
 };
-const ayNokta = (ay) => `${ay.slice(5, 7)}.${ay.slice(0, 4)}`;
-export const dagitimRozetMetni = (k) => {
-  const a = dagitimAraligi(k);
-  return a ? `${a.aySayisi} aya dağıtılmış · ${ayNokta(a.ilkAy)} – ${ayNokta(a.sonAy)}` : "";
-};
+// Spec 0090 triyajı (bulgu 4): kalem listesinin dağıtım rozeti (`dagitimRozetMetni`) ekranla birlikte silindi.
 // R20 (S5), C1, C2: aylık payların TEK kaynağı. Yalnız ortak kova bölünür (kova kuralı 0001'den okunur); bölme esitBol
 // ile, artık kuruş son aya. Dağıtımsız kalemde tek giriş (kalemin ayı, ortak kova); ortak kovası sıfır olan kalemde
 // (çözülen makina ataması, "dağıtılmasın", tam model dağılımı) boş liste. Dönen: [{ ay, payK }].
@@ -973,7 +944,7 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
       // Spec 0053 R26: yöntem ödemenin alanıdır; tanımdaki eski değer kopyalanmaz (veride kalır, okunmaz).
       odendi: false, odemeTarihi: null, odemeYontemi: "", sonOdemeTarihi: null,
       tedarikciId: tedarikciSecilirMi(dav) ? (t.tedarikciId ?? null) : null, // spec 0074 R8
-      atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [],
+      // Spec 0090 R5, R6: atama anahtarları yalnız tanım onları taşıyorsa yazılır (aşağıda); boş değerle yazılmaz.
     };
     if (dav === DAVRANIS.PERSONEL) {
       const c = calisanlar.find(x => String(x.id) === String(t.calisanId) && !x.deletedAt);
@@ -1053,20 +1024,8 @@ export const tedarikciAdHatasi = (ad, tedarikciler = [], haricId = null) => {
   const var_ = tedarikciler.find(t => String(t.id) !== String(haricId) && trLower(String(t.ad).trim()) === trLower(a));
   return var_ ? `Bu adda bir tedarikçi zaten var: “${var_.ad}”.` : null;
 };
-export const modelKullanim = (modelAd, giderler = [], tanimlar = []) => {
-  const m = trLower(modelAd);
-  const has = (x) => (x.modelSatirlari || []).some(s => trLower(s.modelAd) === m);
-  return { kalem: giderler.filter(k => !k.deletedAt && has(k)).length, tanim: tanimlar.filter(has).length };
-};
-// Silme onayı için: bu makinaya atanmış canlı gider kalemi sayısı (R7). Müşteri makinası hem kendi id'si
-// hem de stoktan satıldıysa kaynak stok satırının id'si üzerinden bağlanmış olabilir (K3).
-export const makinaGiderSayisi = (giderler = [], { musteriId = null, stokId = null, sourceStockId = null } = {}) => {
-  const e = (a, b) => a != null && b != null && String(a) === String(b);
-  return giderler.filter(g => !g.deletedAt && g.atamaTur === ATAMA.MAKINA && (
-    (g.makinaTur === "musteri" && e(g.makinaId, musteriId)) ||
-    (g.makinaTur === "stok" && (e(g.makinaId, stokId) || e(g.makinaId, sourceStockId)))
-  )).length;
-};
+// Spec 0090 triyajı (bulgu 4): silme onaylarının sayımları (`modelKullanim`, `makinaGiderSayisi`) cümleleriyle birlikte silindi;
+// model adı taşıma zinciri kalır (C7).
 export const modelAdiTasi = (liste = [], eski, yeni) =>
   liste.map(x => ((x.modelSatirlari || []).some(s => s.modelAd === eski)
     ? { ...x, modelSatirlari: x.modelSatirlari.map(s => (s.modelAd === eski ? { ...s, modelAd: yeni } : s)) } : x));

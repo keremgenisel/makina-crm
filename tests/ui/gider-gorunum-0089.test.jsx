@@ -2,6 +2,8 @@
 // Spec 0089: Giderler'in iki görünümü kalkar, gerçek bileşenler. Çubuk ve açılış (AC-1–AC-4), Dönem Raporu'nun kutuları ve
 // kopmuş atama satırı (AC-10, AC-13), Tedarikler ve Ekstre (AC-11), gider formunun atama alanları (AC-12), dağıtım rozeti
 // (AC-17) ve yeni ekranın tarihsiz makina ipucu (AC-27). Veri tests/fixtures/0089-veri.js (kıyas testiyle ortak).
+// Spec 0090 ile (R1, R10, R11): kovalar kutusu, kopmuş atama satırı, dağıtım rozeti ve formun atama/dağıtım alanları kalktı;
+// AC-10 dört kutu, AC-13/AC-17/AC-12 yokluk ve "eski veri korunur" iddiasına çevrildi.
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
@@ -9,10 +11,8 @@ import { useState } from "react";
 import { kutuAc } from "./kutuAc";
 import { Giderler } from "../../src/components/Giderler";
 import { GiderForm } from "../../src/components/GiderForm";
-import { dusenAtamaKalemSayisi, dusenAtamaMetni } from "../../src/components/gider/DonemRaporu";
 import { PayOzeti, URETIM_TARIHI_DUZELTME } from "../../src/components/maliyet/PayOzeti";
 import { hesaplaGiderRaporu } from "../../src/lib/gider";
-import { turHaritasi, ATAMA } from "../../src/lib/gider";
 import { TURLER, TED, STANDART, OZEL, STOCK, KALEMLER, HAREKET, KDV, SATIS, DONEM, BUGUN, raporGirdisi } from "../fixtures/0089-veri";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -30,7 +30,7 @@ function GH({ g0 = KALEMLER, baslangicGorunum }) {
 const cubuk = () => within(screen.getByRole("radiogroup", { name: "Görünüm" })).getAllByRole("radio");
 const KALKAN = ["Makina Kârlılığı", "Makina ve Model", "Üretim Partileri"];
 const yok = () => { for (const ad of KALKAN) expect(screen.queryByRole("radio", { name: ad }), ad).toBeNull(); };
-const KUTULAR = ["Makina Maliyeti Kovaları", "Gider Türü Kırılımı", "KDV Karşılaştırması", "Tedarikçi Kırılımı", "Ödeme Yöntemi Kırılımı"];
+const KUTULAR = ["Gider Türü Kırılımı", "KDV Karşılaştırması", "Tedarikçi Kırılımı", "Ödeme Yöntemi Kırılımı"];
 
 describe("Spec 0089: görünüm çubuğu (R1, R3)", () => {
   it("AC-1: çubukta iki düğme, sırayla Dönem Raporu ve Tedarikler ve Ekstre", () => {
@@ -65,7 +65,7 @@ describe("Spec 0089: görünüm çubuğu (R1, R3)", () => {
 });
 
 describe("Spec 0089: Dönem Raporu (R7, R12, C4)", () => {
-  it("AC-10: beş yan kutu kapalı başlar ve açılır; kalem listesi, borç özeti ve özet kartları çizilir; süzgeç çalışır", () => {
+  it("AC-10 (spec 0090 ile dört kutu): yan kutular kapalı başlar ve açılır; kalem listesi, borç özeti ve özet kartları çizilir; süzgeç çalışır", () => {
     render(<GH />);
     for (const ad of KUTULAR) expect(screen.getByRole("button", { name: new RegExp(`^${ad}`) }).getAttribute("aria-expanded"), ad).toBe("false");
     for (const ad of KUTULAR) kutuAc(ad);
@@ -77,54 +77,19 @@ describe("Spec 0089: Dönem Raporu (R7, R12, C4)", () => {
     expect(within(liste).queryByText("Rulman")).toBeNull();
     expect(within(liste).getByText("Motor")).toBeTruthy();
   });
-  it("AC-13: kopmuş atama kovalar kutusunda tek satır; benzersiz kalem sayar; kalem adı, tutar ve neden yazılmaz", () => {
-    render(<GH />);
-    const kova = kutuAc("Makina Maliyeti Kovaları");
-    const satirlar = within(kova).getAllByTestId("dusen-atama-sayisi");
-    expect(satirlar).toHaveLength(1);
-    // Veride üç kayıt (iki silinmiş model satırı tek kalemde + takip edilemeyen makina), iki kalem.
+  it("AC-13 (spec 0090 ile): kovalar kutusu ve kopmuş atama satırı yok; motor listesi değişmedi (C4)", () => {
     const r = hesaplaGiderRaporu(raporGirdisi(), DONEM, { bugun: BUGUN });
     expect(r.dusenAtamalar).toHaveLength(3);
-    expect(dusenAtamaKalemSayisi(r, turHaritasi(TURLER))).toBe(2);
-    expect(satirlar[0].textContent).toBe(dusenAtamaMetni(2));
-    expect(satirlar[0].textContent).not.toMatch(/Sac|Rulman|COP|SILINEN|₺|\d+[.,]\d/);
-  });
-  it("AC-13: kopmuş atama yoksa satır çizilmez (kutu açıkken ölçülür, spec 0081 C7)", () => {
-    const g0 = KALEMLER.filter(k => k.id !== 1 && k.id !== 2);
-    expect(dusenAtamaKalemSayisi(hesaplaGiderRaporu(raporGirdisi({ giderler: g0 }), DONEM, { bugun: BUGUN }), turHaritasi(TURLER))).toBe(0);
-    render(<GH g0={g0} />);
-    kutuAc("Makina Maliyeti Kovaları");
-    expect(screen.queryByTestId("dusen-atama-sayisi")).toBeNull();
-  });
-  // Triyaj (bulgu 1): motor kv.makina === 0 olan her makina atamasını listeye koyar. Metin dar bir neden iddia etmez; tutarı
-  // sıfır kalem (makina atamalı tanımın "Tutar girilmedi" kalemi) makinası yerindeyken sayılmaz.
-  it("AC-13 (triyaj): canlı makinaya atanmış tutarı sıfır kalem 'düştü' sayılmaz ve satır çizilmez", () => {
-    const sifir = { ...KALEMLER[2], id: 30, tanimId: 77, tutar: 0, aciklama: "Bakım (tutar girilmedi)", atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 501 };
-    const g0 = [...KALEMLER.filter(k => k.id !== 1 && k.id !== 2), sifir];
-    const r = hesaplaGiderRaporu(raporGirdisi({ giderler: g0 }), DONEM, { bugun: BUGUN });
-    expect(r.dusenAtamalar.map(d => [d.kalem.id, d.neden])).toEqual([[30, "makina"]]); // motor değişmedi (C4)
-    expect(dusenAtamaKalemSayisi(r, turHaritasi(TURLER))).toBe(0);
-    render(<GH g0={g0} />);
-    kutuAc("Makina Maliyeti Kovaları");
-    expect(screen.queryByTestId("dusen-atama-sayisi")).toBeNull();
-  });
-  it("AC-13 (triyaj): takip edilemeyen makinaya atanmış kalem sayılır; metin bu nedeni ve çöpten geri almayı söyler", () => {
-    const g0 = KALEMLER.filter(k => k.id !== 1); // yalnız takip edilemeyen makinaya (999) atanmış kalem
-    const r = hesaplaGiderRaporu(raporGirdisi({ giderler: g0 }), DONEM, { bugun: BUGUN });
-    expect(r.dusenAtamalar.map(d => d.neden)).toEqual(["makina"]);
-    expect(dusenAtamaKalemSayisi(r, turHaritasi(TURLER))).toBe(1);
-    render(<GH g0={g0} />);
-    const satir = within(kutuAc("Makina Maliyeti Kovaları")).getByTestId("dusen-atama-sayisi").textContent;
-    expect(satir).toBe(dusenAtamaMetni(1));
-    expect(satir).toMatch(/silinmiş ya da makina takip edilemiyor/);
-    expect(satir).toMatch(/çöpten geri alınırsa atama kendiliğinden döner/);
-    expect(satir).not.toMatch(/koptu \(atandığı makina ya da model silinmiş\)/);
-  });
-  it("AC-17: aylara dağıtılmış kalemin rozeti ve tam tutarı listede değişmez", () => {
     render(<GH />);
-    const rozet = screen.getByTestId("dagitim-rozeti");
-    expect(rozet.textContent).toBe("12 aya dağıtılmış · 10.2026 – 09.2027");
-    expect(rozet.closest("tr").textContent).toMatch(/1\.200 ₺/);
+    expect(screen.queryByRole("button", { name: /^Makina Maliyeti Kovaları/ })).toBeNull();
+    expect(screen.queryByTestId("kova-karti")).toBeNull();
+    expect(screen.queryByTestId("dusen-atama-sayisi")).toBeNull();
+  });
+  it("AC-17 (spec 0090 ile): aylara dağıtılmış kalemde rozet yok; tam tutarı listede değişmez", () => {
+    render(<GH />);
+    expect(screen.queryByTestId("dagitim-rozeti")).toBeNull();
+    const satir = within(screen.getByTestId("kalem-listesi")).getByText("Yıllık sigorta", { exact: false }).closest("tr");
+    expect(satir.textContent).toMatch(/1\.200 ₺/);
   });
 });
 
@@ -137,14 +102,13 @@ describe("Spec 0089: değişmeyen ekranlar (R6, R8)", () => {
     fireEvent.click(within(screen.getByText("Demir Bant").closest("tr")).getByText("Ekstre"));
     expect(screen.getByText("Tedarikçi Ekstresi")).toBeTruthy();
   });
-  it("AC-12: gider formunda makina ataması, model satırları ve aylara dağıtım alanı çizilir ve kaydedilir", () => {
+  it("AC-12 (spec 0090 ile): gider formunda atama ve dağıtım alanı yok; eski kalemin dağıtımı kayıtta korunur", () => {
     const onSave = vi.fn();
-    render(<GiderForm giderTurleri={TURLER} tedarikciler={TED} calisanlar={[]} modeller={STANDART} stock={STOCK} customers={[]} giderAyarlari={{}} onSave={onSave} onCancel={vi.fn()}
-      kalem={{ turId: 1, tarih: "2026-10-05", tutar: "1200", kdvOrani: "20", tedarikciId: 11, aciklama: "Yıllık sigorta" }} />);
-    for (const ad of ["Makina", "Model", "Dağıtılmasın"]) expect(screen.getByRole("radio", { name: ad }), ad).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Maliyete dağıtım (ay)"), { target: { value: "12" } });
+    render(<GiderForm giderTurleri={TURLER} tedarikciler={TED} calisanlar={[]} giderAyarlari={{}} onSave={onSave} onCancel={vi.fn()}
+      kalem={{ id: 40, turId: 1, tarih: "2026-10-05", tutar: 1200, kdvOrani: 20, tedarikciId: 11, aciklama: "Yıllık sigorta", dagitimAy: 12 }} />);
+    for (const ad of ["Makina", "Model", "Dağıtılmasın"]) expect(screen.queryByRole("radio", { name: ad }), ad).toBeNull();
+    expect(screen.queryByLabelText("Maliyete dağıtım (ay)")).toBeNull();
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave).toHaveBeenCalled();
     expect(onSave.mock.calls[0][0]).toMatchObject({ dagitimAy: 12, tutar: 1200 });
   });
 });

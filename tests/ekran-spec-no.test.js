@@ -16,9 +16,10 @@ describe("Ekran metinlerinde spec numarası", () => {
     const bulunan = dosyalar(KOK).filter(f => /\(\s*0\d{3}\s*\)/.test(yorumsuz(fs.readFileSync(f, "utf8")))).map(f => path.relative(KOK, f));
     expect(bulunan).toEqual([]);
   });
-  it("üç metin spec numarasız hâliyle duruyor", () => {
-    expect(fs.readFileSync(path.join(KOK, "gider/GiderAlanlari.jsx"), "utf8")).toContain("Ortak gider, makina maliyeti hesabında makinalara dağıtılır.");
-    expect(fs.readFileSync(path.join(KOK, "gider/DonemRaporu.jsx"), "utf8")).toContain("Makina maliyeti hesabının girdisi. Her tutar tek kovadadır;");
+  // Spec 0090 ile (R38): atama alanı ve kovalar kutusu silindi; iki metni de kaynakta yok (spec numarası taşıyamazlar).
+  it("üç metin spec numarasız hâliyle duruyor (spec 0090 ile ikisi bileşenleriyle kalktı)", () => {
+    expect(fs.readFileSync(path.join(KOK, "gider/GiderAlanlari.jsx"), "utf8")).not.toContain("Ortak gider, makina maliyeti hesabında makinalara dağıtılır.");
+    expect(fs.readFileSync(path.join(KOK, "gider/DonemRaporu.jsx"), "utf8")).not.toContain("Makina maliyeti hesabının girdisi. Her tutar tek kovadadır;");
     expect(fs.readFileSync(path.join(KOK, "gider/DonemRaporu.jsx"), "utf8")).toContain("“Vadesi geçti” yalnız görsel işarettir; ödeme hatırlatması Anasayfa'daki Gider Ödemeleri kartındadır.");
   });
 });

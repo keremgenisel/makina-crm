@@ -43,7 +43,8 @@ app.whenReady().then(async () => {
       if (!s) { check(`${ad}: tablo çizildi`, false); continue; }
       console.log(`OLCUM ${genislik}: ` + JSON.stringify({ kaydirma: s.kaydirma, sar: s.sar, basliklar: s.basliklar.map(b => [b.ad, Math.round(b.width)]) }));
       if (yalnizOlc) continue;
-      check(`${ad}: dört satır ve sekiz başlık çizildi`, s.satirSayisi === 4 && s.basliklar.length === 8, `${s.satirSayisi} satır, ${s.basliklar.length} başlık`);
+      // Spec 0090 R10/2 (AC-12/2): atama sütunu kalktı, yedi başlık.
+      check(`${ad}: dört satır ve yedi başlık çizildi, atama başlığı yok`, s.satirSayisi === 4 && s.basliklar.length === 7 && !s.basliklar.some(b => b.ad === "Atama"), `${s.satirSayisi} satır, ${s.basliklar.length} başlık`);
       check(`${ad}: içerik Ayarlar menüsünün yanında (alta sarmadı)`, s.icerikMenununYaninda);
       check(`${ad}: hiçbir sütun ezilmedi (24 px altı hücre yok)`, s.darHucre === 0 && s.basliklar.every(b => b.width >= 24), JSON.stringify(s.basliklar));
       check(`${ad}: düzenle/sil düğmeleri yan yana`, s.dugmelerYanYana);

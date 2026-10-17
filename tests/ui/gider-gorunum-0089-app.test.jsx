@@ -2,6 +2,9 @@
 // Spec 0089: gerçek App. Bugünkü maliyet motorunun kapısı maliyetYetki (AC-8, motor casusuyla), parti değişim kutusunun yeni
 // yeri (AC-14), parti kapanışının kapanış anlık görüntüsünü dolu yazması (AC-15), üretim partisinin yönetimi (AC-19) ve maliyet
 // sekmesi olmayan gider kullanıcısının bugünkü maliyet rakamına ulaşamaması (AC-21).
+// Spec 0090 ile (R27, C7, R21, R11): App'teki eski motor memosu kalktı (motor hiçbir kullanıcıda çalışmaz, AC-8'in ikinci
+// yarısı ters çevrildi); parti payı ve değişim kutusu yeni hesaptan, kapanış anlık görüntüsü `kapanisGenelHavuzlari`'na yazılır
+// (eski `kapanisOrtaklari` okunmaz, dokunulmaz); kovalar kutusu Dönem Raporu'ndan kalktı.
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, cleanup, waitFor, screen, fireEvent, within } from "@testing-library/react";
 
@@ -22,7 +25,7 @@ const veri = () => ({
   giderler: [{ id: 1, tarih: "2026-01-10", turId: 1, tutar: 500, kdvOrani: 0, modelSatirlari: [], taksitler: [] },
     { id: 2, tarih: "2026-01-20", turId: 1, tutar: 500, kdvOrani: 0, modelSatirlari: [], taksitler: [] },
     { id: 3, tarih: "2026-02-10", turId: 1, tutar: 2000, kdvOrani: 0, modelSatirlari: [], taksitler: [] }],
-  uretimPartileri: [{ id: 801, ad: "Ocak Partisi", baslangicAy: "2026-01", bitisAy: "2026-01", kapanmaZamani: "2026-01-31T10:00:00", kapanisOrtaklari: { "2026-01": 50000 } },
+  uretimPartileri: [{ id: 801, ad: "Ocak Partisi", baslangicAy: "2026-01", bitisAy: "2026-01", kapanmaZamani: "2026-01-31T10:00:00", kapanisOrtaklari: { "2026-01": 50000 }, kapanisGenelHavuzlari: { "2026-01": 50000 } },
     { id: 802, ad: "Şubat Partisi", baslangicAy: "2026-02", bitisAy: null }],
   giderTanimlari: [], tedarikciler: [], hesapHareketleri: [],
   appSettings: { giderAyarlari: { yururlukAy: "2026-01" }, maliyetAyarlari: { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 10 } },
@@ -60,9 +63,12 @@ describe("Spec 0089: motorun kapısı (R4, R4/2)", () => {
     gorunum("Dönem Raporu");
     expect(casus.n).toBe(0);
   });
-  it("AC-8: Makina Maliyeti sekmesi olan kullanıcıda motor çalışır (parti ekranı için)", async () => {
+  it("AC-8 (spec 0090 R27 ile ters çevrildi): Makina Maliyeti sekmesi olan kullanıcıda da motor çalışmaz; parti ekranı yeni hesaptan", async () => {
     await baslat({ sunucu: { tabs: ["dashboard", "gider", "finance", "maliyet"] } });
-    expect(casus.n).toBeGreaterThan(0);
+    menu("Makina Maliyeti");
+    gorunum("Üretim Partileri");
+    expect(screen.getAllByTestId("parti-satiri")).toHaveLength(2);
+    expect(casus.n).toBe(0);
   });
 });
 
@@ -74,7 +80,7 @@ describe("Spec 0089: parti değişim kutusu ve kapanış (R11, R4)", () => {
     const kutu = screen.getByTestId("parti-degisimleri");
     expect(kutu.textContent).toMatch(/Kapanmış partilerin aylarında değişen ortak gider/);
     expect(kutu.textContent).toMatch(/Parti kapandıktan sonra bu aylara gider eklendi, değişti ya da silindi\. Paylar bugünkü veriyle yeniden hesaplandı\./);
-    expect(kutu.textContent).toMatch(/Ocak Partisi.*kapanışta 500 ₺, bugün 1\.000 ₺/);
+    expect(kutu.textContent).toMatch(/Ocak Partisi.*kapanışta 500,00 ₺, bugün 1\.000,00 ₺/); // spec 0090: kapanisGenelHavuzlari, kuruşlu
     menu("Giderler");
     await waitFor(() => expect(screen.getByRole("radio", { name: "Dönem Raporu" })).toBeTruthy());
     expect(screen.queryByTestId("parti-degisimleri")).toBeNull();
@@ -84,7 +90,7 @@ describe("Spec 0089: parti değişim kutusu ve kapanış (R11, R4)", () => {
     gorunum("Tedarikler ve Ekstre");
     expect(screen.queryByTestId("parti-degisimleri")).toBeNull();
   });
-  it("AC-15: açık parti kapatılınca kapanisOrtaklari dolu yazılır; üç sütun ve rozet rakam gösterir", async () => {
+  it("AC-15 (spec 0090 ile): açık parti kapatılınca kapanisGenelHavuzlari dolu yazılır, kapanisOrtaklari yazılmaz; sütunlar rakam gösterir", async () => {
     const { kayitlar } = await baslat();
     menu("Makina Maliyeti");
     gorunum("Üretim Partileri");
@@ -95,9 +101,12 @@ describe("Spec 0089: parti değişim kutusu ve kapanış (R11, R4)", () => {
     fireEvent.click(screen.getByText("Kaydet"));
     await waitFor(() => expect(kayitlar.some(k => k.uretimPartileri?.find(p => p.id === 802)?.bitisAy === "2026-02")).toBe(true));
     const son = kayitlar.filter(k => k.uretimPartileri?.find(p => p.id === 802)?.bitisAy === "2026-02").pop();
-    expect(son.uretimPartileri.find(p => p.id === 802).kapanisOrtaklari).toEqual({ "2026-02": 200000 });
+    const p802 = son.uretimPartileri.find(p => p.id === 802);
+    expect(p802.kapanisGenelHavuzlari).toEqual({ "2026-02": 200000 });
+    expect(p802).not.toHaveProperty("kapanisOrtaklari");
+    expect(son.uretimPartileri.find(p => p.id === 801).kapanisOrtaklari).toEqual({ "2026-01": 50000 }); // C7: eski alana dokunulmaz
     expect(within(satir()).getByText("Kapalı")).toBeTruthy();
-    expect(within(satir()).getAllByText("2.000 ₺").length).toBeGreaterThan(0);
+    expect(within(satir()).getByTestId("parti-havuz").textContent).toMatch(/2\.000,00 ₺/);
   });
   it("AC-19: üretim partisi yönetimi Makina Maliyeti'nde; Giderler'de parti görünümü yok", async () => {
     await baslat();
@@ -123,10 +132,10 @@ describe("Spec 0089: maliyet sekmesi olmayan gider kullanıcısı (R4/2, X5)", (
       expect(document.body.textContent, ad).not.toMatch(/Makina Kârlılığı|Makina ve Model|Marj|Toplam maliyet|Makina başı pay/);
       for (const id of ["makina-karliligi", "maliyet-detay", "karlilik-tablosu", "fiyat-onerisi"]) expect(screen.queryByTestId(id), `${ad} ${id}`).toBeNull();
     }
-    // "Makina Maliyeti Kovaları" gider kaydının kendi kırılımıdır ve adıyla kalır.
+    // Spec 0090 R11 ile: "Makina Maliyeti Kovaları" kutusu da kalktı (kalemli ayda da yok).
     gorunum("Dönem Raporu");
     fireEvent.change(screen.getByLabelText("Dönem ayı"), { target: { value: "2026-01" } }); // kalemli ay
-    expect(document.body.textContent).not.toMatch(/Makina Kârlılığı|Makina ve Model|Marj|Makina başı pay/);
-    expect(within(screen.getByTestId("kova-karti")).getByRole("button", { name: /^Makina Maliyeti Kovaları/ })).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/Makina Kârlılığı|Makina ve Model|Marj|Makina başı pay|Makina Maliyeti Kovaları/);
+    expect(screen.queryByTestId("kova-karti")).toBeNull();
   });
 });

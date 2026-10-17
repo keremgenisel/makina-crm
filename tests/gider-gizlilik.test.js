@@ -224,7 +224,10 @@ describe("Spec 0061: yaşlandırma tablosu gizliliği", () => {
     const html = buildGiderKasaRaporuHtml(giderKasaRaporu({ giderler: [a, b], hareketler: [], turler, yururlukAy: "2026-01", hesaplar: [] }, "2026-09"));
     const i = html.indexOf("GİDER · AÇIK KALEMLER YAŞLANDIRMASI");
     expect(i).toBeGreaterThan(0);
-    const kutu = html.slice(i, html.indexOf("GİDER · MALİYET DAĞILIMI", i));
+    // Spec 0090 ile (R11): maliyet dağılımı kutusu basılmaz; dilimin sınırı sonraki kutu (KDV karşılaştırması).
+    const son = html.indexOf("GİDER · KDV KARŞILAŞTIRMASI", i);
+    expect(son).toBeGreaterThan(i);
+    const kutu = html.slice(i, son);
     for (const yasak of ["Behiye", "Sarıkamışlıoğlu", "Yusuf", "Demirkazık", "43.219", "18.765", "25.000", "6.543", "Resmi", "Elden"]) expect(kutu, yasak).not.toContain(yasak);
     expect((kutu.match(/>Çalışanlar</g) || []).length).toBe(1);
     for (const yasak of ["Behiye", "Yusuf"]) expect(html, yasak).not.toContain(yasak);

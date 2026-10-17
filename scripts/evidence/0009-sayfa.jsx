@@ -514,7 +514,8 @@ const mahsupPenceresi = () => (
 // Spec 0022: üretim partileri. Kapalı parti (Haz–Ağu, iki satılmış makina; Ağustos anlık görüntüsü bugünkünden
 // küçük: kapanıştan sonra gider eklenmiş) ve açık parti (Eylül, stokta iki makina).
 const P_KAPALI = { id: 901, ad: "2026-1", baslangicAy: "2026-06", bitisAy: "2026-08", aciklama: "Yaz üretimi", kapanmaZamani: "2026-09-01T10:00:00",
-  kapanisOrtaklari: { "2026-06": 0, "2026-07": 0, "2026-08": 1500000 } };
+  kapanisOrtaklari: { "2026-06": 0, "2026-07": 0, "2026-08": 1500000 }, kapanisGenelHavuzlari: { "2026-06": 0, "2026-07": 0, "2026-08": 1500000 } };
+// Spec 0090 R24: değişim kutusu yalnız yeni alandan (kapanisGenelHavuzlari) okunur; eski alan (kapanisOrtaklari) taban çekimi için durur.
 const P_ACIK = { id: 902, ad: "2026-2", baslangicAy: "2026-09", bitisAy: null, aciklama: "Sonbahar üretimi" };
 const PARTI_MUSTERI = MUSTERILER.map(c => ({ ...c, partiId: 901 }));
 const PARTI_STOK = [{ id: 9201, model: "AK100", serialNo: "S-3", addedDate: "2026-09-10", partiId: 902 }, { id: 9202, model: "AK120_DSC", serialNo: "S-4", addedDate: "2026-09-15", partiId: 902 },
@@ -522,6 +523,8 @@ const PARTI_STOK = [{ id: 9201, model: "AK100", serialNo: "S-3", addedDate: "202
 
 // Spec 0088: Makina Maliyeti (dört görünüm). Veri tests/fixtures/0088-veri.js (motor ve ekran testleriyle aynı); `p0`/`musteriler`/`stok`
 // verilirse taşınan Üretim Partileri görünümü 0022'nin kanıt verisiyle çizilir (R23/4).
+// Spec 0090 R27, R37/3: yeni kod parti hesabını ekranda kendi kurar (`tumMusteriler`) ve `makinaMaliyet`'i okumaz; prop yalnız
+// spec öncesi koddan (taban çekimi) aynı ekranın çizilebilmesi için verilir (AC-46'nın gerekçeli istisnası).
 function MaliyetEkrani({ ayar = M88.AYAR, turler = M88.TURLER, p0 = M88.PARTILER, musteriler = M88.CUSTOMERS, stok = M88.STOCK, giderler = M88.GIDERLER }) {
   const [giderTurleri, setGiderTurleri] = useState(turler);
   const [standardModels, setStandardModels] = useState(M88.MODELLER);
@@ -532,10 +535,17 @@ function MaliyetEkrani({ ayar = M88.AYAR, turler = M88.TURLER, p0 = M88.PARTILER
   return <MakinaMaliyeti aktifKullanici="kerem" giderler={giderler} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} tedarikciler={[]} stock={stok} customers={musteriler}
     partStockLog={[]} parts={M88.PARCALAR} standardModels={standardModels} customModels={[]} setStandardModels={setStandardModels} setCustomModels={bos}
     uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} appSettings={appSettings} setAppSettings={setAppSettings} rates={{ usd: 41 }}
-    makinaMaliyet={makinaMaliyet} serverPermissions={null} showToast={bos} />;
+    makinaMaliyet={makinaMaliyet} tumMusteriler={musteriler} serverPermissions={null} showToast={bos} />;
 }
 const maliyetEkrani = (o, adimlar = []) => [<MaliyetEkrani {...o} />, adimlar];
-const maliyetPartiEkrani = (adimlar) => maliyetEkrani({ p0: [P_KAPALI, P_ACIK], musteriler: PARTI_MUSTERI, stok: PARTI_STOK, giderler: GIDERLER, turler: TURLER }, ["Üretim Partileri", ...adimlar]);
+// Spec 0090 R13: parti havuzu yalnız rolü "Genel gidere girer" türlerden; kanıt verisinde bütün türlere bu rol verilir.
+const GENEL_TURLER = TURLER.map(t => ({ ...t, maliyetRolu: "genel" }));
+const maliyetPartiEkrani = (adimlar) => maliyetEkrani({ p0: [P_KAPALI, P_ACIK], musteriler: PARTI_MUSTERI, stok: PARTI_STOK, giderler: GIDERLER, turler: GENEL_TURLER }, ["Üretim Partileri", ...adimlar]);
+// Spec 0090 R17, R18, R21 (AC-31, AC-32, AC-34): neden hücreleri. Türlerin rolü yok (rolYok), gelecek ayda başlayan ve makinası
+// olmayan parti.
+const maliyetPartiNedenEkrani = () => maliyetEkrani({ p0: [P_KAPALI, P_ACIK, { id: 903, ad: "2026-3", baslangicAy: "2026-12", bitisAy: null, aciklama: "Kış üretimi" },
+  { id: 904, ad: "Deneme", baslangicAy: "2026-07", bitisAy: "2026-07" }], musteriler: PARTI_MUSTERI, stok: [...PARTI_STOK, { id: 9204, model: "AK100", serialNo: "S-6", addedDate: "2026-09-20", partiId: 903 }],
+  giderler: GIDERLER, turler: TURLER }, ["Üretim Partileri"]);
 
 // Spec 0023: çalışan ek ödemeleri (aynı türden iki prim ve bir fazla mesai).
 const EK_ODEMELI = k(41, { turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, tutar: null, kdvOrani: 0, tarih: "2026-09-05",
@@ -608,8 +618,9 @@ const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
   // Spec 0081: Dönem Raporu'nun beş yan kutusu kapalı başlar (giderler-rapor kapalı hâldir); bir kutu açık ve hepsi açık hâl.
   "giderler-0081-bir-acik": [<GiderEkrani />, ["tikla:Gider Türü Kırılımı", "kaydir:Gider Türü Kırılımı"]],
-  "giderler-0081-hepsi-acik": [<GiderEkrani h0={[]} />, ["tikla:Makina Maliyeti Kovaları", "tikla:Gider Türü Kırılımı", "tikla:KDV Karşılaştırması",
-    "tikla:Tedarikçi Kırılımı", "tikla:Ödeme Yöntemi Kırılımı", "kaydir:Makina Maliyeti Kovaları"]],
+  // Spec 0090 R9, R42: kovalar kutusu kalktı, dört kutu açılır.
+  "giderler-0081-hepsi-acik": [<GiderEkrani h0={[]} />, ["tikla:Gider Türü Kırılımı", "tikla:KDV Karşılaştırması",
+    "tikla:Tedarikçi Kırılımı", "tikla:Ödeme Yöntemi Kırılımı", "kaydir:Gider Türü Kırılımı"]],
   "giderler-bos-tursuz": [<GiderEkrani g0={[]} turler={[]} />, []],
   "giderler-yururluk-oncesi": [<GiderEkrani ayar={{ giderAyarlari: { yururlukAy: "2026-12" } }} />, []],
   "giderler-tedarikciler": [<GiderEkrani />, ["Tedarikler ve Ekstre"]],
@@ -701,11 +712,9 @@ const EKRANLAR = {
   // Spec 0030 (plan B10). "kaydir:metin" o metni içeren öğeyi görünür alana kaydırır (pencere içi kutular için).
   "gider-formu-personel": [<GiderForm kalem={{ turId: 3, calisanId: 21, tarih: "2026-09-10" }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL}
     giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],
-  // Spec 0020: personel kaleminin makina ataması (uyarı), Makina ve Model kırılımı, maliyet detayı.
-  "gider-formu-personel-makina": [<GiderForm kalem={{ turId: 3, calisanId: 21, tarih: "2026-09-10", resmiTutar: "30000", eldenTutar: "20000", atamaTur: "makina", makinaTur: "musteri", makinaId: 501 }}
-    giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} modeller={MODELLER} stock={[]} customers={MUSTERILER} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Makina maliyeti ataması"]],
-  // Triyaj bulgu 1: dönem raporu kalem listesi, personel grubu açık; atanmış personel kaleminin atama sütunu makinayı,
-  // model dağılımı modeli gösterir (eskiden ikisi de "Ortak gider").
+  // Spec 0090 R1, R42: "gider-formu-personel-makina" silindi (formda atama bölümü yok).
+  // Triyaj bulgu 1: dönem raporu kalem listesi, personel grubu açık. Spec 0090 R10 ile atama sütunu kalktı; ekran personel
+  // grubunun açık hâlini göstermeye devam eder.
   "giderler-rapor-personel-acik": [<GiderEkrani g0={[...GIDERLER, ...PERSONEL_ATAMALI]} />, ["dugme:Çalışanları göster", "kaydir:Zeynep Arslan"]],
   // Spec 0021: taksit ve vergi dairesi (stopaj) ödemesi.
   "gider-formu-taksit": [<GiderForm kalem={TAKSITLI_K} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ödeme planı"]],
@@ -727,9 +736,12 @@ const EKRANLAR = {
   // Spec 0089 R11, R12: parti değişim kutusunun yeni yeri (Makina Maliyeti › Üretim Partileri) ve kovalar kutusunda kopmuş
   // atama sayısı (iki modeli silinmiş tek kalem: "1 kalem").
   "maliyet-0089-parti-degisim": maliyetPartiEkrani(["kaydir:Kapanmış partilerin aylarında"]),
-  "giderler-0089-kova-dusen": [<GiderEkrani g0={[...GIDERLER, { ...KIS_0076, id: 891, kisitliGider: false, indirilebilirOran: undefined, dagitimAy: undefined, aciklama: "Eski model kalıbı",
+  // Spec 0090 R7, R8, R42: "giderler-0089-kova-dusen" silindi (kovalar kutusu ve kopmuş atama satırı yok). Yerine aynı veriyle
+  // Dönem Raporu: atama sütunu ve dağıtım rozeti olmayan kalem listesi, dört yan kutu.
+  "giderler-0090-rapor": [<GiderEkrani g0={[...GIDERLER, { ...KIS_0076, id: 891, kisitliGider: false, indirilebilirOran: undefined, dagitimAy: undefined, aciklama: "Eski model kalıbı",
     atamaTur: "model", modelSatirlari: [{ modelAd: "ESKI_A", birimMaliyet: 100, adet: 1 }, { modelAd: "ESKI_B", birimMaliyet: 50, adet: 2 }] }]} />,
-    ["tikla:Makina Maliyeti Kovaları", "kaydir:Makina Maliyeti Kovaları"]],
+    ["kaydir:Gider Kalemleri"]],
+  "maliyet-0090-parti-neden": maliyetPartiNedenEkrani(),
   "maliyet-uretim-partisi-formu": maliyetPartiEkrani(["~Yeni Üretim Partisi"]),
   "maliyet-modeller": maliyetEkrani({}),
   "maliyet-modeller-dokum": maliyetEkrani({}, ["dugme:▸ AK100"]),
@@ -865,10 +877,7 @@ const EKRANLAR = {
   "kasa-0073-hesapsiz-liste": [kasaB(), ["dugme:Ödemeleri göster", "kaydir:Hesabı belirtilmemiş ödemeler"]],
   "kasa-0073-goc-duzenle": [kasaEkrani(), ["dugme:Ödemeleri göster", "etiket:Hareketi düzenle: Sac levha"]],
   // Spec 0072: maliyete dağıtım (form alanı etkin/pasif/kira, tanım, kalem rozeti, Makina ve Model kutusu, kârlılık notu ve detay).
-  "gider-formu-0072": [<GiderEkrani />, ["Yeni Gider", "doldur:Maliyete dağıtım (ay)=12", "kaydir:Maliyete dağıtım"]],
-  "gider-formu-0072-makina": [<GiderEkrani />, ["Yeni Gider", "Makina", "kaydir:Maliyete dağıtım"]],
-  "gider-formu-0072-kira": [<GiderEkrani />, ["Yeni Gider", "sec:Gider türü *=1", "kaydir:Maliyete dağıtım"]],
-  "ayarlar-gidertanim-0072": [ayarlar("gidertanim"), ["dugme:Yeni Tanım", "doldur:Maliyete dağıtım (ay)=12", "kaydir:Maliyete dağıtım"]],
+  // Spec 0090 R2, R3, R42: "gider-formu-0072", "-makina", "-kira" ve "ayarlar-gidertanim-0072" silindi (alan yok).
   "giderler-0072-liste": [<GiderEkrani g0={G_0072} />, ["kaydir:İnternet aboneliği"]],
   // Spec 0051: başlangıç tarihiyle süzülmüş hesapsız liste, "Hepsini göster", hareket listesinde ve ekstrede ödemenin hedefi.
   "kasa-hesapsiz-esik": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],

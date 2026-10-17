@@ -1,7 +1,7 @@
 // Üretim partisi (spec 0022, plan P1–P10): saf yardımcılar. React'sız.
 // Parti yalnız maliyet dağıtımının tabanıdır (C7): kapsadığı ayların ortak gideri partinin makinalarına bölünür.
-// Bölme makinaMaliyeti.js'dedir (C1, tek motor); bu dosya tanım doğrulaması, ay aralığı, kapanış anlık görüntüsü
-// ve silme onayı sayısını tutar.
+// Spec 0090'dan beri bölme `makinaStandartMaliyet.partiGenelPaylari`'ndadır (genel gider havuzu, tür rolü kapısı); bu dosya tanım
+// doğrulaması, ay aralığı, kapanış anlık görüntüsü ve silme onayı sayısını tutar.
 import { ayEkle } from "./gider";
 import { trLower } from "./utils";
 
@@ -35,19 +35,37 @@ export const partiDogrula = (form, partiler = []) => {
   return { hatalar, kayit: { ...form, ad, baslangicAy: bas, bitisAy: bit || null, aciklama: String(form?.aciklama || "").trim() } };
 };
 
-// R15 (P3): kapanışta partinin her ayının o anki ortak gideri (kuruş) yazılır. aylar = makina maliyeti ay tablosu.
-export const kapanisAnlikGoruntusu = (p, aylar) => {
+// Spec 0090 R23–R26, R36, R36/2, R37: kapanış anlık görüntüsü yeni alana (`kapanisGenelHavuzlari`, { "YYYY-AA": kuruş }) yazılır;
+// girdi yeni motorun ay haritasıdır (`partiGenelPaylari(...).aylar`, ayın genel gider havuzu). Yürürlük öncesi ay hesaba girmediği
+// için anlık görüntüye de girmez. Haritada olmayan bir ay (ya da harita yoksa) kayıt YAPILMAZ: sessizce boş görüntü yazılsaydı
+// değişim kutusu o parti için sonsuza dek susardı. Eski alan (`kapanisOrtaklari`, kova tabanlı ortak gider) hiç okunmaz ve
+// yazılmaz; kayıtta olduğu gibi kalır (C7, AC-44).
+export const KAPANIS_HARITA_YOK = "Kapanış için ayların genel gider havuzu hesaplanamadı; parti kaydedilmedi.";
+export const kapanisAnlikGoruntusu = (p, havuz) => {
+  const aylar = havuz?.aylar, yururlukAy = havuz?.yururlukAy || null; // havuz null olabilir (R37: ret, çökme değil)
+  if (!aylar?.has) return null;
   const r = {};
-  for (const ay of partiAylari(p, p.bitisAy)) { const a = aylar?.get?.(ay); if (a) r[ay] = a.ortak; }
+  for (const ay of partiAylari(p, p.bitisAy)) {
+    if (yururlukAy && ay < yururlukAy) continue;
+    if (!aylar.has(ay)) return null;
+    r[ay] = aylar.get(ay);
+  }
   return r;
 };
-// Kayıt anında kapanış durumunu kurar: bitiş yeni girildiyse ya da aralık değiştiyse anlık görüntü yeniden alınır;
-// bitiş silinirse (yeniden açma) anlık görüntü silinir. Aralık aynı kalan kapalı partide görüntü korunur.
-export const partiKapanisUygula = (eski, yeni, aylar, simdi) => {
-  if (!yeni.bitisAy) return { ...yeni, kapanmaZamani: null, kapanisOrtaklari: null };
-  const ayniKapanis = eski && eski.bitisAy === yeni.bitisAy && eski.baslangicAy === yeni.baslangicAy && eski.kapanisOrtaklari;
-  if (ayniKapanis) return { ...yeni, kapanmaZamani: eski.kapanmaZamani || null, kapanisOrtaklari: eski.kapanisOrtaklari };
-  return { ...yeni, kapanmaZamani: simdi, kapanisOrtaklari: kapanisAnlikGoruntusu(yeni, aylar) };
+// Kayıt anında kapanış durumunu kurar ({ kayit } ya da { hata }). Bitiş yeni girildiyse ya da aralık değiştiyse anlık görüntü
+// alınır; aralığı değişmeyen kapalı parti kapanış zamanını ve (varsa) görüntüsünü korur (R26; 0090 öncesi kapanmış partiye
+// düzenlemede yeni görüntü yazılmaz, R25); bitiş silinirse (yeniden açma) yeni alanın anahtarı silinir, null yazılmaz (R36).
+export const partiKapanisUygula = (eski, yeni, havuz, simdi) => {
+  const { kapanisGenelHavuzlari: _g, ...temel } = yeni;
+  if (!yeni.bitisAy) return { kayit: { ...temel, kapanmaZamani: null } };
+  const ayniAralik = eski && eski.bitisAy && eski.bitisAy === yeni.bitisAy && eski.baslangicAy === yeni.baslangicAy;
+  if (ayniAralik) {
+    return { kayit: { ...temel, kapanmaZamani: eski.kapanmaZamani || null, ...(eski.kapanisGenelHavuzlari ? { kapanisGenelHavuzlari: eski.kapanisGenelHavuzlari } : {}) } };
+  }
+  const goruntu = kapanisAnlikGoruntusu(yeni, havuz);
+  if (!goruntu) return { hata: KAPANIS_HARITA_YOK };
+  // Bütün ayları yürürlük öncesi olan partide görüntü boştur; boş nesne gövdeye yazılmaz (okuma onu geri getirmez, C8).
+  return { kayit: { ...temel, kapanmaZamani: simdi, ...(Object.keys(goruntu).length ? { kapanisGenelHavuzlari: goruntu } : {}) } };
 };
 
 // AC-14: silme onayında etkilenecek canlı makina sayısı (stok + satılmış).

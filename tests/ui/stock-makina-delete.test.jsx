@@ -16,10 +16,11 @@ const sil = () => {
 };
 
 describe("Makina Stoğu silme — bağlı gider sayısı", () => {
-  it("AC-28: atanmış gider sayısı yazılır, kalemin silinmediği söylenir", () => {
+  // Spec 0090 R13 ile ters çevrildi: atanmış gider sayısı yazılmaz.
+  it("AC-28 (spec 0090 ile): atanmış gider olsa da onayda gider cümlesi yok", () => {
     ciz([{ id: 1, atamaTur: "makina", makinaTur: "stok", makinaId: 501 }, { id: 2, atamaTur: "model", makinaTur: "stok", makinaId: 501 }]);
     sil();
-    expect(screen.getByText(/stoktan silinecek/).textContent).toContain("Bu makinaya atanmış 1 gider kalemi var: silinmez, ortak gidere düşer.");
+    expect(screen.getByText(/stoktan silinecek/).textContent).not.toMatch(/gider/);
   });
   it("bağlı gider yoksa ek metin yok", () => {
     ciz([]);

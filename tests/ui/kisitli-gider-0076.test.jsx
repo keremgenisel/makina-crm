@@ -155,13 +155,14 @@ describe("Spec 0076 C, D: Giderler ve Dönem Raporu", () => {
       satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} showToast={vi.fn()} />;
   }
   const satir = (aciklama) => screen.getByText(aciklama).closest("tr");
-  it("AC-18: tutar sütunu gider tutarı (1.060), tutar hücresinde oran ve indirilemeyen KDV rozeti; dağıtım rozeti atama hücresinde birlikte", () => {
+  // Spec 0090 R10 ile: atama sütunu ve dağıtım rozeti kalktı; kısıt rozeti tutar hücresinde kalır.
+  it("AC-18 (spec 0090 ile): tutar sütunu gider tutarı (1.060), tutar hücresinde oran ve indirilemeyen KDV rozeti; dağıtım rozeti yok", () => {
     render(<GH />);
     const tr = satir("Binek yakıt");
     const roz = within(tr).getByTestId("kisitli-rozeti");
     expect(roz.textContent).toBe("%70 indirilebilir · indirilemeyen KDV 60,00");
     expect(roz.closest("td").textContent).toMatch(/^1\.060 ₺/);
-    expect(within(tr).getByTestId("dagitim-rozeti").closest("td")).not.toBe(roz.closest("td"));
+    expect(within(tr).queryByTestId("dagitim-rozeti")).toBeNull();
     expect(within(satir("Kamyonet yakıt")).queryByTestId("kisitli-rozeti")).toBeNull();
   });
   it("AC-18 / AC-43: alt toplam gider tutarlarının toplamı; KDV hücresi tam KDV + indirilebilir, alt toplam iki rakam", () => {

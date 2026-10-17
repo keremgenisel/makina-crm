@@ -38,15 +38,16 @@ function GiderH({ g0 = EKIM, yururlukAy = "2026-01" }) {
 }
 
 describe("Spec 0067 A: Dönem Raporu'nun kutu sırası (R1–R5)", () => {
-  it("AC-1 / AC-2 / AC-3 / AC-23: özet kartları → kalem listesi → borç özeti (tam genişlik) → kovalar → kırılım kartları", () => {
+  // Spec 0090 R11 ile: kovalar kutusu kalktı; sıra özet → kalem listesi → borç özeti → kırılım kartları.
+  it("AC-1 / AC-2 / AC-3 / AC-23 (spec 0090 ile): özet kartları → kalem listesi → borç özeti (tam genişlik) → kırılım kartları; kovalar yok", () => {
     render(<GiderH />);
     // Spec 0076 R22 ile güncellendi: kart etiketi artık "KDV hariç" demez (kısıtlı kalemde indirilemeyen KDV de girer).
     const ozet = screen.getByText("Toplam gider"), liste = screen.getByTestId("kalem-listesi"), borc = screen.getByTestId("borc-ozeti");
-    const kova = screen.getByText("Makina Maliyeti Kovaları"), tedarikci = screen.getByTestId("tedarikci-kirilimi");
+    const tedarikci = screen.getByTestId("tedarikci-kirilimi");
+    expect(screen.queryByText("Makina Maliyeti Kovaları")).toBeNull();
     expect(once(ozet, liste)).toBe(true);
     expect(once(liste, borc)).toBe(true);
-    expect(once(borc, kova)).toBe(true);
-    expect(once(kova, tedarikci)).toBe(true);
+    expect(once(borc, tedarikci)).toBe(true);
     // Borç özeti bir kart satırının içinde değil: kalem listesiyle aynı sütun kabının doğrudan çocuğu, flex tabanı yok.
     expect(borc.parentElement).toBe(liste.parentElement);
     expect(borc.style.flex).toBe("");
@@ -75,9 +76,9 @@ describe("Spec 0067 A: Dönem Raporu'nun kutu sırası (R1–R5)", () => {
     // Spec 0026 R18 ile güncellendi: genel aramadan gelen ilk süzgeç için `baslangicFiltre` eklendi (diğer props aynı).
     // Spec 0080 R11 ile güncellendi: Gider Kalemleri sayfalanmadığı için sayfa sıfırlama anahtarı `donemAnahtari` artık
     // geçmez (yalnız Makina ve Model görünümüne gider). Diğer props aynı.
+    // Spec 0090 R10 ile güncellendi: atama sütunu kalktığı için stock, customers, standardModels, customModels geçmez.
     const g = oku("src/components/Giderler.jsx");
-    expect(g).toContain(`<KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} stock={stock} customers={customers}
-                  standardModels={standardModels} customModels={customModels} bugun={bugun} canDo={canDo}
+    expect(g).toContain(`<KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
                   odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} baslangicFiltre={baslangicKalemFiltresi} />`);
     render(<GiderH />);
@@ -137,7 +138,7 @@ describe("Spec 0067 B: müşteri detayında maliyet kutusu yok (R6–R10, R17, R
   });
   // Spec 0089 ile (C7 0067 AC-18…AC-21, AC-34): memo kapısı maliyetYetki (0089 R4/2), prop tek yere (Makina Maliyeti) gider,
   // MakinaKarliligi.jsx dosyası yok. Müşteri detayının temizliği aynen.
-  it("AC-18 / AC-19 / AC-20 / AC-21 / AC-34 (spec 0089 ile): prop zinciri temizlendi, rates Customers'ta, App memo maliyetYetki ile, tek geçiş", () => {
+  it("AC-18 / AC-19 / AC-20 / AC-21 / AC-34 (spec 0089, 0090 ile): prop zinciri temizlendi, rates Customers'ta, App'te maliyet memosu yok", () => {
     const cdm = oku("src/components/customers/CustomerDetailModal.jsx");
     expect(cdm).not.toMatch(/MakinaMaliyetDetay|makinaKarlilik|\bmakinaMaliyet\b|\brates\b/);
     const cus = oku("src/components/Customers.jsx");
@@ -145,9 +146,8 @@ describe("Spec 0067 B: müşteri detayında maliyet kutusu yok (R6–R10, R17, R
     expect(cus).toMatch(/satisKuruUygula\(null, clean, rates, today\(\)\)/);
     expect(cus).not.toMatch(/<CustomerDetailModal[\s\S]{0,4000}rates=\{rates\}/);
     const app = oku("src/App.jsx");
-    expect(app).toMatch(/const makinaMaliyet = useMemo\(\(\) => \(maliyetYetki && serverMode !== null \? hesaplaMakinaMaliyetleri/);
-    // Spec 0088 ile Makina Maliyeti (taşınan Üretim Partileri görünümü, R24); spec 0089 ile Giderler almaz: tek geçiş.
-    expect(app.match(/makinaMaliyet=\{makinaMaliyet\}/g)).toHaveLength(1);
+    // Spec 0090 R27 ile: App'teki eski motor memosu ve prop geçişi kalktı (parti hesabı Makina Maliyeti ekranında kurulur).
+    expect(app).not.toMatch(/hesaplaMakinaMaliyetleri|makinaMaliyet=\{/);
     expect(app).not.toMatch(/<Customers [^\n]*makinaMaliyet=/);
     expect(existsSync(resolve(kok, "src/components/gider/MakinaKarliligi.jsx"))).toBe(false);
   });

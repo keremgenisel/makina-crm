@@ -112,22 +112,18 @@ describe("Spec 0071 A: gider formunda KDV dâhil giriş", () => {
   });
 });
 
-describe("Spec 0071 R25 (triyaj): model dağılımı önizlemesi KDV hariç tutarla", () => {
-  it("1.200 KDV dâhil, %20, model satırı 1.100: önizleme kalem tutarını 1.000 yazar ve 100 aşım gösterir; kayıt da reddeder", () => {
+// Spec 0090 R1 ile ters çevrildi: formda model dağılımı yok; R25'in önizleme sınırı ölçülecek alan kalmadı.
+describe("Spec 0071 R25 (triyaj; spec 0090 ile alan kalktı)", () => {
+  it("KDV dâhil 1.200 kalemde model dağılımı alanı yok; kayıt KDV hariç 1.000 ile yapılır", () => {
     const onSave = ac({ modeller: [{ model: "AK100_DS" }] });
     tur(4);
     yonSec("KDV dâhil");
     yaz("Tutar", "1200");
     yaz("KDV oranı", "20");
-    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Makina maliyeti ataması" })).getByRole("radio", { name: "Model" }));
-    fireEvent.change(screen.getByLabelText("Model 1"), { target: { value: "AK100_DS" } });
-    yaz("Birim maliyet 1", "1100");
-    yaz("Adet 1", "1");
-    const kalemTutari = screen.getByText("Kalem tutarı").nextSibling;
-    expect(kalemTutari.textContent).toBe("1.000 ₺");
-    expect(screen.getByText("Aşım").nextSibling.textContent).toBe("100 ₺");
+    expect(screen.queryByRole("radiogroup", { name: "Makina maliyeti ataması" })).toBeNull();
     kaydet();
-    expect(onSave).not.toHaveBeenCalled();
+    expect(onSave.mock.calls[0][0]).toMatchObject({ tutar: 1000 });
+    expect(onSave.mock.calls[0][0]).not.toHaveProperty("modelSatirlari");
   });
 });
 

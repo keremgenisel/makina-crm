@@ -58,7 +58,8 @@ describe("AC-10: Kapsam içindeki ekranlarda aynı yapı taşının ikinci bir b
   });
   it("role=\"status\" yalnız bilinen borçtaki yakın kopyalarda kalır (sözlükte listeli)", () => {
     const kalan = KAPSAM.flatMap(f => (oku(f).match(/role="status"/g) || []).map(() => f)).sort();
-    expect(kalan).toEqual(["src/components/GiderForm.jsx", "src/components/gider/GiderAlanlari.jsx"]);
+    // Spec 0090 ile (R41): atama alanının gri kutusu bileşeniyle kalktı; yalnız gider formunun kopyası kalır.
+    expect(kalan).toEqual(["src/components/GiderForm.jsx"]);
   });
 });
 

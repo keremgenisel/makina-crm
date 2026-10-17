@@ -331,8 +331,7 @@ export const buildGiderKasaRaporuHtml = (r) => {
       ${tablo("KOVALAR", ["Yaş aralığı", "Kalem", "Kalan", "Pay"], Y.kovalar.map(x => [esc(x.ad), String(x.kalemAdet), kp(x.kalanK), yasPay(x.kalanK)]), [SOL, R, R, R])}
       ${tablo("TARAFLAR", ["Taraf", ...YAS_SIRA, "Toplam"], Y.gruplar.map(x => [esc(x.ad), ...x.kovalarK.map(k => (k ? kp(k) : "—")), kp(x.toplamK)]), [SOL, R, R, R, R, R])}
       ${not(esc(NOT_YASLANDIRMA))}`) : "";
-    const kovaKutu = bolum("GİDER · MALİYET DAĞILIMI", donem, stTablo([st("Makinaya", tlp(G.kovalar.makina)), st("Modele", tlp(G.kovalar.model)),
-      st("Dağıtılmayan", tlp(G.kovalar.dagitma)), st("Ortak", tlp(G.kovalar.ortak)), st("Toplam", tlp(G.ozet.toplam))]));
+    // Spec 0090 R11, R11/2: maliyet dağılımı (dört kova) kutusu basılmaz; rapor nesnesindeki `kovalar` alanı ölü alan olarak kalır.
     // Spec 0076 R24, R25, R28 (AC-25): kısıtlı kalemlerin indirilemeyen KDV'si ve KKEG bilgi rakamları KDV kutusunun içinde
     // (yeni kutu yok); kısıtlı kalem yoksa basılmaz. KKEG gider toplamına eklenmez.
     const KS = G.kisitli;
@@ -366,7 +365,7 @@ export const buildGiderKasaRaporuHtml = (r) => {
         [SOL, SOL, SOL, SOL, R, SOL]) || bosSatir);
       // Spec 0055 R2, R11: koşul içeriğe bakar; kalemsiz ay zaten yukarıda bütün bölümüyle "Bu ayda kayıt yok" satırına iner
       // (G.bos), bu dal savunmadır ve aynı satırı kullanır (boş tablo basılmaz).
-    gider = [ozetKutu, turKutu, ekKutu, tedKutu, durumKutu, yasKutu, stopajKutu, tevkifatKutu, sgkKutu, kovaKutu, kdvKutu, yontemKutu, kalemKutu].join("");
+    gider = [ozetKutu, turKutu, ekKutu, tedKutu, durumKutu, yasKutu, stopajKutu, tevkifatKutu, sgkKutu, kdvKutu, yontemKutu, kalemKutu].join("");
   }
   // Spec 0076 R26 (plan Q1): gider bölümünün dipnotu; kısıtlı kalem olmasa da basılır (tek sabit, ekranla aynı).
   if (!G.yururlukOncesi) gider += not(esc(VERGI_MATRAHI_NOTU));

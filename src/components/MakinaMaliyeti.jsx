@@ -3,15 +3,15 @@ import { Segment, UyariSeridi } from "./tasarim";
 import { makeCanDo } from "../lib/permissions";
 import { useBugun } from "../hooks/useBugun";
 import { useKilitListesi } from "../hooks/useKilitListesi";
-import { genelGiderPayi, gercekUretim, modelMaliyetleri } from "../lib/makinaStandartMaliyet";
+import { genelGiderPayi, gercekUretim, modelMaliyetleri, partiGenelPaylari, partiKapanisHavuzu } from "../lib/makinaStandartMaliyet";
 import { ModelMaliyetleri } from "./maliyet/ModelMaliyetleri";
 import { PartiHesabi } from "./maliyet/PartiHesabi";
 import { HesapAyarlari } from "./maliyet/HesapAyarlari";
 import { UretimPartileri } from "./gider/UretimPartileri";
 
 // Spec 0088: Makina Maliyet Hesabı (Mali İşler altında, sekme `maliyet`). Ürün ağacı + genel gider payı × kâr katsayısı;
-// bütün hesap saf motorda (`lib/makinaStandartMaliyet.js`), ekran yalnız gösterir (R25). Bugünkü maliyet modeli
-// (Giderler › Makina Kârlılığı, Makina ve Model) 0089'a kadar yan yana yaşar; iki hesap toplanmaz.
+// bütün hesap saf motorda (`lib/makinaStandartMaliyet.js`), ekran yalnız gösterir (R25). Spec 0090'dan beri uygulamada tek
+// maliyet modeli budur: Üretim Partileri'nin payı da bu motordan (aylık genel gider havuzu, `partiGenelPaylari`) gelir.
 // R3: dört görünüm bu sırayla. Üretim Partileri yönetimi Giderler'den buraya taşındı (R23); bileşen gider/'de kalır (plan P7).
 export const GORUNUMLER = [{ value: "modeller", label: "Model Maliyetleri" }, { value: "parti", label: "Parti Hesabı" }, { value: "partiler", label: "Üretim Partileri" }, { value: "ayarlar", label: "Hesap Ayarları" }];
 const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "modeller");
@@ -21,7 +21,7 @@ export const BUGUNKU_AYAR_IBARESI = "Rakamlar bugünkü ayarlarla hesaplanır: g
 export const MakinaMaliyeti = ({
   aktifKullanici = "", giderler = [], giderTurleri = [], setGiderTurleri, tedarikciler = [], stock = [], customers = [], partStockLog = [],
   parts = [], standardModels = [], customModels = [], setStandardModels, setCustomModels, uretimPartileri = [], setUretimPartileri,
-  appSettings = {}, setAppSettings, rates = null, makinaMaliyet = null, serverPermissions = null, showToast = () => {}, baslangicGorunum = "modeller",
+  appSettings = {}, setAppSettings, rates = null, tumMusteriler = null, serverPermissions = null, showToast = () => {}, baslangicGorunum = "modeller",
 }) => {
   const [gorunum, setGorunum] = useState(() => gecerliGorunum(baslangicGorunum));
   const bugun = useBugun();
@@ -33,6 +33,11 @@ export const MakinaMaliyeti = ({
   const pay = useMemo(() => genelGiderPayi(veri, ayarlar, bugun), [veri, ayarlar, bugun]);
   const gercek = useMemo(() => gercekUretim(veri, ayarlar, pay.havuzK), [veri, ayarlar, pay.havuzK]);
   const modeller = useMemo(() => modelMaliyetleri({ standardModels, customModels, parts }, pay.payK), [standardModels, customModels, parts, pay.payK]);
+  // Spec 0090 R12–R37, R37/3 (K8): parti payı burada kurulur (App'te ağır hesap yok). Üretim tarihi zinciri çöpteki müşteriyi de
+  // okur (stoğa dönen makinanın özgün tarihi); bu yüzden müşteriler ham dizidir (bugünkü motorun girdisiyle aynı).
+  const partiSonucu = useMemo(() => partiGenelPaylari({ ...veri, customers: tumMusteriler || customers }, bugun), [veri, tumMusteriler, customers, bugun]);
+  // Triyaj (bulgu 2): kapanış haritası kaydedilen partinin aralığından (tek yol, C15).
+  const kapanisHavuzu = (parti) => partiKapanisHavuzu(veri, parti, bugun);
   const ortak = { pay, gercek, modeller, canDo, baskasiKilitli, showToast };
 
   return (
@@ -45,7 +50,7 @@ export const MakinaMaliyeti = ({
       {gorunum === "modeller" && <ModelMaliyetleri {...ortak} standardModels={standardModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels} onAyarlar={() => setGorunum("ayarlar")} />}
       {gorunum === "parti" && <PartiHesabi {...ortak} veri={veri} rates={rates} bugun={bugun} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers} />}
       {gorunum === "partiler" && <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
-        makinaMaliyet={makinaMaliyet} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />}
+        partiSonucu={partiSonucu} kapanisHavuzu={kapanisHavuzu} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />}
       {gorunum === "ayarlar" && <HesapAyarlari {...ortak} ayarlar={ayarlar} setAppSettings={setAppSettings} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} bugun={bugun} />}
     </div>
   );

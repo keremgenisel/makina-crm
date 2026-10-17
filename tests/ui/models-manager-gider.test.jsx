@@ -10,13 +10,14 @@ afterEach(cleanup);
 
 describe("Makina Modelleri: gider zinciri (R21, K35)", () => {
   const std = [{ model: "AK-100" }];
-  it("AC-84: özel model silme onayında bağlı gider sayısı görünür", () => {
+  // Spec 0090 R13 ile ters çevrildi: model silme onayı bağlı gider sayısını yazmaz (yeniden adlandırma zinciri AC-83 durur).
+  it("AC-84 (spec 0090 ile): özel model silme onayında gider cümlesi yok", () => {
     render(<ModelsManager standardModels={std} setStandardModels={vi.fn()} customModels={[{ model: "AK150_X" }]} setCustomModels={vi.fn()}
       setCustomers={vi.fn()} setStock={vi.fn()} showToast={vi.fn()} appSettings={{}} setAppSettings={vi.fn()}
       giderler={[{ id: 1, modelSatirlari: [{ modelAd: "AK150_X", birimMaliyet: 1, adet: 1 }] }]} giderTanimlari={[{ id: 2, modelSatirlari: [{ modelAd: "AK150_X" }] }]} />);
     const satirEl = screen.getByText("AK150_X").closest("tr");
     fireEvent.click(satirEl.querySelector("button.btn--danger"));
-    expect(screen.getByText(/1 gider kalemi ve 1 tekrarlayan tanım var/)).toBeTruthy();
+    expect(screen.queryByText(/gider kalemi|tekrarlayan tanım/)).toBeNull();
   });
   function ModHarness({ g0, t0, onState }) {
     const [customModels, setCustomModels] = useState([{ model: "AK150_X" }]);

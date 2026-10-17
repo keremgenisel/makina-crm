@@ -101,12 +101,10 @@ describe("GiderForm: kira (R6)", () => {
     fireEvent.click(screen.getByText("Kaydet"));
     expect(onSave.mock.calls[0][0]).toMatchObject({ id: 7, girisYonu: "net", tutar: 20000, netTutar: 16000 });
   });
-  it("AC-78: kira ve personelde atama bölümü çizilmez", () => {
+  // Spec 0090 R1 ile ters çevrildi: atama bölümü hiçbir davranışta çizilmez.
+  it("AC-78 (spec 0090 ile): kira, personel ve normalde atama bölümü çizilmez", () => {
     ac();
-    tur(1);
-    expect(screen.queryByText("Makina maliyeti ataması")).toBeNull();
-    tur(4);
-    expect(screen.getByText("Makina maliyeti ataması")).toBeTruthy();
+    for (const id of [1, 3, 4]) { tur(id); expect(screen.queryByText("Makina maliyeti ataması")).toBeNull(); }
   });
 });
 
@@ -137,50 +135,24 @@ describe("GiderForm: ödeme yöntemi ve vade (R1, R18)", () => {
   });
 });
 
-describe("GiderForm: atama (R7, R20, R21)", () => {
-  it("AC-76 / AC-77: seçim değişince önceki atama temizlenir ve bilgi satırı çıkar", () => {
+describe("GiderForm: atama (spec 0090 ile alan kalktı)", () => {
+  // Spec 0090 R1, R3 ile ters çevrildi (eski AC-76/77/79/87/88/90/90b): atama ve model satırı alanı yok; yeni kalem atama
+  // anahtarı taşımaz, eski kalemin ataması düzenlemede birebir korunur.
+  it("AC-76…90b (spec 0090 ile): formda atama denetimi yok, yeni kalem atama anahtarı yazmaz", () => {
     const onSave = ac();
     tur(4);
-    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "140.000" } });
-    fireEvent.click(screen.getByRole("radio", { name: "Makina" }));
-    fireEvent.change(screen.getByLabelText("Makina"), { target: { value: "stok:501" } });
-    fireEvent.click(screen.getByRole("radio", { name: "Model" }));
-    expect(screen.getByText(/Makina seçimi kaldırıldı/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Model 1"), { target: { value: "AK120_DSC" } });
-    fireEvent.change(screen.getByLabelText("Birim maliyet 1"), { target: { value: "4.000" } });
-    fireEvent.change(screen.getByLabelText("Adet 1"), { target: { value: "35" } });
-    fireEvent.click(screen.getByRole("radio", { name: "Dağıtılmasın" }));
-    expect(screen.getByText(/Model seçimi kaldırıldı/)).toBeTruthy();
-    fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave.mock.calls[0][0]).toMatchObject({ atamaTur: "dagitma", makinaId: null, modelSatirlari: [] });
-  });
-  it("AC-79 / AC-87 / AC-88 / AC-90b: çok satırlı model; aynı model seçilemez, aşımda kayıt yok", () => {
-    const onSave = ac();
-    tur(4);
+    expect(screen.queryByRole("radio", { name: "Model" })).toBeNull();
+    expect(screen.queryByLabelText("Model 1")).toBeNull();
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "100.000" } });
-    fireEvent.click(screen.getByRole("radio", { name: "Model" }));
-    fireEvent.change(screen.getByLabelText("Model 1"), { target: { value: "AK120_DSC" } });
-    fireEvent.change(screen.getByLabelText("Birim maliyet 1"), { target: { value: "4.000" } });
-    fireEvent.change(screen.getByLabelText("Adet 1"), { target: { value: "35" } });
-    expect(screen.getAllByText("140.000 ₺").length).toBeGreaterThan(0);
-    expect(screen.getByText(/aşıyor/)).toBeTruthy();
-    fireEvent.click(screen.getByText("Model satırı ekle"));
-    const ikinci = screen.getByLabelText("Model 2");
-    expect([...ikinci.querySelectorAll("option")].find(o => o.value === "AK120_DSC").disabled).toBe(true);
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave).not.toHaveBeenCalled();
+    const k = onSave.mock.calls[0][0];
+    for (const a of ["atamaTur", "makinaTur", "makinaId", "dagitimAy"]) expect(k).not.toHaveProperty(a);
   });
-  it("AC-90: eksik dağıtım bilgi verir ve kaydedilir", () => {
-    const onSave = ac();
-    tur(4);
-    fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "100.000" } });
-    fireEvent.click(screen.getByRole("radio", { name: "Model" }));
-    fireEvent.change(screen.getByLabelText("Model 1"), { target: { value: "AK120_DSC" } });
-    fireEvent.change(screen.getByLabelText("Birim maliyet 1"), { target: { value: "1.000" } });
-    fireEvent.change(screen.getByLabelText("Adet 1"), { target: { value: "60" } });
-    expect(screen.getByText(/Dağıtılmayan 40\.000 ₺ ortak gidere yazılır/)).toBeTruthy();
+  it("R3 (spec 0090): eski kalemin model ataması düzenlemede birebir korunur", () => {
+    const satir = [{ modelAd: "AK120_DSC", birimMaliyet: 1000, adet: 60 }];
+    const onSave = ac({ kalem: { id: 8, tarih: "2026-09-01", turId: 4, tutar: 100000, kdvOrani: 20, atamaTur: "model", modelSatirlari: satir } });
     fireEvent.click(screen.getByText("Kaydet"));
-    expect(onSave.mock.calls[0][0].modelSatirlari).toEqual([{ modelAd: "AK120_DSC", birimMaliyet: 1000, adet: 60 }]);
+    expect(onSave.mock.calls[0][0]).toMatchObject({ atamaTur: "model", modelSatirlari: satir });
   });
   it("AC-9: tanımdan üretilmiş kalem düzenlenirken bilgi gösterilir", () => {
     ac({ kalem: { id: 9, tarih: "2026-09-01", turId: 4, tutar: 1250, kdvOrani: 20, tanimId: 3, donem: "2026-09", odendi: false } });

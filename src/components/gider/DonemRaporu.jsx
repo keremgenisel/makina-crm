@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
-import { kurus, tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, makinaCozucuOlustur, canliModelSeti, DAVRANIS, ATAMA, atanabilirMi, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, dagitimRozetMetni, kurumTarafAdi, vergiRozetleri,
+import { tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, DAVRANIS, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, kurumTarafAdi, vergiRozetleri,
   kalemGiderTutari, kalemIndirilebilirKdv, kisitEtkiliMi, kisitliRozetMetni } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
@@ -32,49 +32,8 @@ export const StatKart = ({ etiket, deger, alt, renk }) => (
   </div>
 );
 
-// Spec 0089 R12 (K3, K4): bağı kopmuş atama Makina ve Model görünümüyle birlikte kalktığı için sayısı kovalar kutusunun
-// gövdesinde tek satırdır. Benzersiz kalem sayar (iki modeli silinmiş tek kalem dusenAtamalar'da iki kayıt üretir); kalem adı,
-// tutarı ve nedeni yazılmaz. Sıfırsa satır yok. Triyaj: motor bu listeye makinanın kovasına hiçbir şey düşmeyen her makina
-// atamasını koyar (gider.js, kv.makina === 0); tutarı sıfır kalem (makina atamalı tanımın "Tutar girilmedi" kalemi) makinası
-// yerindeyken de girer. Ortak gidere yazılan tutarı olmadığı için burada sayılmaz; motor değişmez (C4, kıyas fikstürü).
-// Davranış kalem türünden gelir (personelin tutarı resmi + elden), bu yüzden tür haritası gerekir.
-export const dusenAtamaKalemSayisi = (rapor, turMap) => new Set((rapor?.dusenAtamalar || [])
-  .filter(d => !tutarGirilmediMi(d.kalem, davranisOf(d.kalem, turMap))).map(d => String(d.kalem?.id))).size;
-export const dusenAtamaMetni = (n) => `${n} kalemin ataması ortak gidere düştü: atandığı makina ya da model silinmiş ya da makina takip edilemiyor (ör. seri numarası elle girilerek satıldı). Makina ya da özel model çöpten geri alınırsa atama kendiliğinden döner.`;
-
-// Dört kova (R8, AC-82): tutar bazlı tam bölme.
-// Spec 0081 R15: Dönem Raporu'nun beş yan kutusu `katlanir` ile kapalı başlar (KartBolum'un kendi iç durumu; denetimli
-// acik/onAcikDegis kullanılmaz, R6/2). Karar çağıranda (C2): yalnız Giderler geçirir, varsayılan katlanmaz. Ad `acik`
-// olamaz: TurKirilimi ve YontemKirilimi'nde `acik` personel ayrıntısının aç/kapasıdır (K21).
-export const KovaKarti = ({ rapor, turMap, katlanir = false }) => {
-  const k = rapor.kovalar, top = rapor.toplam || 0;
-  const dusen = dusenAtamaKalemSayisi(rapor, turMap);
-  const dilimler = [
-    { ad: "Makinaya atanmış", v: k.makina, renk: "#c2410c", n: rapor.kovaKatki.makina },
-    { ad: "Modele atanmış", v: k.model, renk: "#1d4ed8", n: rapor.kovaKatki.model },
-    { ad: "Makina maliyetine girmeyen giderler", v: k.dagitma, renk: "#0f766e", n: rapor.kovaKatki.dagitma },
-    { ad: "Ortak gider", v: k.ortak, renk: "#94a3b8", n: rapor.kovaKatki.ortak },
-  ];
-  const yuzde = (v) => (top ? `%${(v / top * 100).toFixed(1).replace(".", ",")}` : "%0");
-  return (
-    <KartBolum varyant="kart" baslikStili="baslik" collapsible={katlanir} title="Makina Maliyeti Kovaları" altBaslik={`Makina maliyeti hesabının girdisi. Her tutar tek kovadadır; dört kovanın toplamı = dönem toplamı ${tl2(top)}.`} testId="kova-karti">
-      <div style={{ display: "flex", borderRadius: 999, overflow: "hidden", gap: 2, marginBottom: 14, background: "var(--n150, #f1f5f9)", height: 12 }}>
-        {dilimler.filter(d => d.v > 0).map(d => <div key={d.ad} style={{ width: `${(d.v / (top || 1)) * 100}%`, background: d.renk }} />)}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14 }}>
-        {dilimler.map(d => (
-          <div key={d.ad} style={{ display: "flex", gap: 8 }}>
-            <span style={{ width: 11, height: 11, borderRadius: 3, background: d.renk, marginTop: 4, flexShrink: 0 }} />
-            <div><div style={{ fontSize: 12.5, color: "var(--n600, #475569)", fontWeight: 600 }}>{d.ad}</div>
-              <div style={{ fontSize: 17, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{tl2(d.v)}</div>
-              <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{d.n} kalem katkı · {yuzde(d.v)}</div></div>
-          </div>
-        ))}
-      </div>
-      {dusen > 0 && <div data-testid="dusen-atama-sayisi" style={{ marginTop: 12, fontSize: 12.5, color: "var(--amb700, #b45309)" }}>{dusenAtamaMetni(dusen)}</div>}
-    </KartBolum>
-  );
-};
+// Spec 0090 R7, R8, R38: Makina Maliyeti Kovaları kutusu (KovaKarti) ve kopmuş atama satırı kalktı. Kova alanları gider
+// raporu motorunda kalır, çağıranı yok (C9).
 
 // Tür kırılımı (R8, AC-12). Personel satırı kapalı; açılınca çalışan başına resmi/elden (AC-51).
 const PERSONEL_IZGARA = "minmax(96px, 1.4fr) repeat(4, minmax(64px, 1fr)) minmax(76px, 1fr)", AD_HUCRE = { fontWeight: 600, overflowWrap: "anywhere" }, TUTAR_HUCRE = { textAlign: "right", whiteSpace: "nowrap" }; // spec 0070 R29: + yol parası; spec 0074 R16: SGK sütunu kalktı; yarım genişlik kartta sabit tutar sütunları ad sütununu sıfıra indirip adı Resmi'nin üstüne bindiriyordu, ad sütununun alt sınırı var
@@ -251,7 +210,7 @@ const YontemOzeti = ({ y, vade }) => {
 // Kalem listesi. Personel kalemleri tek kapalı grup satırında (K21).
 // Spec 0003 R8: ödeme süzgeci üst bileşenden yönetilebilir (odemeFiltre/onOdemeFiltre); "Hatırlatma kapsamı"
 // seçeneği ve kapsamdaki satırların vurgusu odemeHatirlatmalari çıktısından (hatirlatma) gelir.
-export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, customers, standardModels, customModels, bugun, canDo, onDuzenle, onSil, onOdendi,
+export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, bugun, canDo, onDuzenle, onSil, onOdendi,
   odemeFiltre, onOdemeFiltre, hatirlatma = null, onOdemePlani, onHedefDegistir, yontemKirilimlari = null, baslangicFiltre = null }) => {
   const [personelAcik, setPersonelAcik] = useState(false);
   // Spec 0026 R18: genel aramadan gelinirse ilk değer (açıklama/tedarikçi metni ya da tür); süzgecin kuralı aynı (C7).
@@ -266,7 +225,6 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   const hatDurum = (k) => (!hatirlatma?.kalemIdleri?.has(String(k.id)) ? null : hatGecmis.has(String(k.id)) ? "gecmis" : "yaklasan");
   const turMap = useMemo(() => new Map(giderTurleri.map(t => [String(t.id), t])), [giderTurleri]);
   const tedMap = useMemo(() => new Map(tedarikciler.map(t => [String(t.id), t])), [tedarikciler]);
-  const canliModeller = useMemo(() => canliModelSeti(standardModels, customModels), [standardModels, customModels]);
   const dav = (k) => davranisOf(k, turMap);
   // Spec 0071 R11, R12: ölçüt ödenecek tutarın sıfır olmasıdır (tanım bağı değil; eski ve içe aktarılmış sıfır kalem de).
   // Spec 0071 R11: "Tutar girilmedi" ölçütü kalem tutarının sıfır olmasıdır (spec 0074 R10: SGK tanımından üretilen kalem dahil).
@@ -294,28 +252,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
   // Çizilen satırlar (personel grup satırı, açıksa çalışan satırları, diğer kalemler; spec 0062 R20, R32). Spec 0080 R1:
   // sayfalanmaz, bütün süzülmüş satırlar tek seferde çizilir (0062 ile gelen sayfalama ve sıfırlama anahtarı geri alındı).
   const cizim = [...(personel.length ? [{ tip: "grup" }] : []), ...(personelAcik ? personel : []).map(k => ({ tip: "kalem", k })), ...diger.map(k => ({ tip: "kalem", k }))];
-  // Spec 0080 R10: makina çözümü bir kez kurulur (stok ve müşteriler haritaya alınır); satır başına tekil çözüm her
-  // çağrıda iki diziyi doğrusal tarıyordu. Sonuç aynıdır (yinelenen kimlik dışında, plan P2).
-  const makinaCoz = useMemo(() => makinaCozucuOlustur({ stock, customers }), [stock, customers]);
-
-  const atamaIcerik = (k) => {
-    if (!atanabilirMi(dav(k)) || !k.atamaTur) return <span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span>;
-    if (k.atamaTur === ATAMA.DAGITMA) return <Rozet renk="camgobegi">Dağıtılmasın</Rozet>;
-    if (k.atamaTur === ATAMA.MODEL) {
-      const satirlar = k.modelSatirlari || [];
-      const olu = satirlar.filter(s => !canliModeller.has(trLower(s.modelAd)));
-      return <div>{satirlar.map((s, i) => <div key={i} style={{ fontSize: 12 }}><Rozet renk="mavi">Model</Rozet> <b>{s.modelAd}</b> · {s.adet} × {tl2(s.birimMaliyet)}</div>)}
-        {olu.length > 0 && <div style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 3 }}>Silinmiş model: tutarı ortak gidere düşer</div>}</div>;
-    }
-    const cz = makinaCoz(k);
-    if (!cz) return <div><span style={{ color: "var(--n500, #64748b)" }}>Ortak gider</span><div style={{ fontSize: 11.5, color: "var(--amb700, #b45309)", marginTop: 3 }}>Atandığı makina silinmiş veya takip edilemiyor</div></div>;
-    return <div><div style={{ fontWeight: 600 }}>{[cz.model, cz.seri].filter(Boolean).join(" · ")}</div><div style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{cz.tur === "stok" ? "Makina Stoğu" : `${cz.ad}${cz.stoktanTakip ? " (stoktan satıldı)" : ""}`}</div></div>;
-  };
-  // Spec 0072 R13 (S7): dağıtılmış kalemin rozeti atama hücresinde, dönemden bağımsız kapsam aralığıyla; tutar sütunu tam tutar.
-  const atamaHucre = (k) => {
-    const r = dagitimRozetMetni(k);
-    return r ? <div>{atamaIcerik(k)}<div data-testid="dagitim-rozeti" style={{ marginTop: 4 }}><Rozet renk="mor">{r}</Rozet></div></div> : atamaIcerik(k);
-  };
+  // Spec 0090 R10, R38, R40: atama sütunu ve dağıtım rozeti kalktı (makina çözücü ve canlı model seti de).
   // Spec 0021: ödeme satırı olan kalemde durum satırlardan gelir (AC-6). Spec 0060 R1, R2 (AC-1, AC-4, AC-24): birden çok
   // ödeme hedefi olan kalemde (stopajlı kira, çok hedefli personel) taksitli olsa da hedef başına rozet çizilir; ölçüt
   // taksit sayısı değil hedef sayısıdır (cokHedefliMi). Tek hedefli kalem bugünkü toplu rozetini korur.
@@ -412,7 +349,6 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
             {tutarsiz(k) && <span data-testid="tutar-girilmedi"><Rozet renk="turuncu" title="Fatura gelince kalemi düzenleyip tutarı girin">Tutar girilmedi</Rozet></span>}
           </div>
         </td>
-        <td style={td}>{atamaHucre(k)}</td>
         {/* Spec 0076 R19 (AC-18): tutar hücresi gider tutarı; kısıtlı kalemde altında oran ve indirilemeyen KDV rozeti. */}
         <td style={{ ...tdR, fontWeight: 700 }}>{tl2(kalemGiderTutari(k, d))}
           {kisitEtkiliMi(k, d) && <div data-testid="kisitli-rozeti" style={{ marginTop: 4, fontWeight: 400 }}><Rozet renk="turuncu">{kisitliRozetMetni(k, d)}</Rozet></div>}</td>
@@ -442,14 +378,14 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 980 }}>
           <thead><tr style={{ background: "var(--n100, #f8fafc)", fontSize: 11, color: "var(--n500, #64748b)", textTransform: "uppercase", textAlign: "left" }}>
-            {["Tarih", "Tür", "Açıklama · Tedarikçi", "Atama", "Tutar", "KDV", "Ödenecek", "Ödeme", ""].map((h, i) => <th key={i} style={{ padding: "9px 10px", textAlign: i >= 4 && i <= 6 ? "right" : "left" }}>{h}</th>)}
+            {["Tarih", "Tür", "Açıklama · Tedarikçi", "Tutar", "KDV", "Ödenecek", "Ödeme", ""].map((h, i) => <th key={i} style={{ padding: "9px 10px", textAlign: i >= 3 && i <= 5 ? "right" : "left" }}>{h}</th>)}
           </tr></thead>
           <tbody>
             {cizim.map(x => (x.tip === "kalem" ? satir(x.k) : (
               <tr key="personel-grup" style={{ background: "var(--purBg3)" }}>
                 <td style={{ ...td, color: "var(--n600, #475569)" }}>{personel.length === 1 ? fmtTR(personel[0].tarih) : ""}</td>
                 <td style={td}><DavranisRozeti davranis="personel" /></td>
-                <td style={td} colSpan={2}>
+                <td style={td}>
                   <b>Personel · {new Set(personel.map(k => String(k.calisanId))).size} çalışan</b> <Rozet>{personelAcik ? "Ayrıntı açık" : "Ayrıntı kapalı"}</Rozet>
                   <div style={{ marginTop: 4 }}><AcKapa acik={personelAcik} onClick={() => setPersonelAcik(a => !a)}>{personelAcik ? "Çalışanları gizle" : "Çalışanları göster"}</AcKapa></div>
                 </td>
@@ -460,10 +396,10 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, stock, cust
                 <td style={td} />
               </tr>
             )))}
-            {suz.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: "center", color: "var(--n500, #64748b)", padding: 20 }}>Filtreye uyan kalem yok.</td></tr>}
+            {suz.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: "center", color: "var(--n500, #64748b)", padding: 20 }}>Filtreye uyan kalem yok.</td></tr>}
           </tbody>
           <tfoot><tr style={{ background: "var(--n100, #f8fafc)" }}>
-            <td colSpan={4} style={{ ...td, fontWeight: 700 }}>Toplam</td>
+            <td colSpan={3} style={{ ...td, fontWeight: 700 }}>Toplam</td>
             <td style={{ ...tdR, fontWeight: 800 }}>{tl2(toplam)}</td><td style={{ ...tdR, fontWeight: 700 }}>{tl2(kdvTop)}
               {kisitliVar && <div data-testid="kdv-indirilebilir-toplam" style={{ fontSize: 11, fontWeight: 600, color: "var(--n500, #64748b)" }}>indirilebilir {tl2(indKdvTop)}</div>}</td>
             <td colSpan={3} style={{ ...td, fontSize: 11.5, color: "var(--n500, #64748b)" }}>“Ödenecek”: normal kalemde tutar + KDV, kirada net + KDV (stopaj hariç), personelde resmi + elden</td>

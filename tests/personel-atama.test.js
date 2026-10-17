@@ -54,7 +54,8 @@ describe("Spec 0020: personel kaleminin kovaları (R1, R4, R5, C1)", () => {
     expect(kovaDagilimi(kira, { davranis: DAVRANIS.KIRA, customers: [mus(1)] })).toMatchObject({ makina: 0, ortak: 30000 });
     expect(kar(hesapla({ customers: [mus(1)], giderler: [kira] }), 1)).toMatchObject({ dogrudan: 0, ortakPay: 30000 });
     const { kayit } = giderKalemDogrula({ ...kira, atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 1, adet: 1 }] }, { turMap });
-    expect(kayit).toMatchObject({ atamaTur: "", makinaId: null, modelSatirlari: [] });
+    // Spec 0090 ile (R5/2): atanamayan davranışta atama anahtarları hiç yazılmaz.
+    for (const a of ["atamaTur", "makinaId", "modelSatirlari"]) expect(a in kayit, a).toBe(false);
   });
   it("AC-11: personel kalemi makinaya atanmışken makina silinirse kalem ortak gidere döner", () => {
     expect(kovaDagilimi(per(MAKINA), { davranis: DAVRANIS.PERSONEL, customers: [mus(1, { deletedAt: "2026-04-01" })] })).toMatchObject({ makina: 0, ortak: 50000 });
@@ -72,27 +73,32 @@ describe("Spec 0020: personel kaleminin kovaları (R1, R4, R5, C1)", () => {
 describe("Spec 0020: doğrulama (R2, R5, X5)", () => {
   const form = (birim, o = {}) => ({ tarih: "2026-03-15", turId: 3, calisanId: 7, resmiTutar: "30.000", eldenTutar: "20.000",
     atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: birim, adet: 1 }], ...o });
-  it("AC-13: personelde model dağılımının tabanı resmi + elden; 50.000'e kadar hata yok, üstü hata, eksik kısım bilgisi", () => {
+  // Spec 0090 ile (R5/3, K1): model satırları birebir korunur (biçim çözülür), aşım ve eksik dağıtım hata/uyarı üretmez.
+  it("AC-13 (spec 0090 ile): personelde model satırları birebir korunur; aşım ve eksik dağıtım hata ya da uyarı üretmez", () => {
     const tam = giderKalemDogrula(form("50.000"), { turMap });
     expect(tam.hatalar).toEqual([]);
     expect(tam.kayit).toMatchObject({ atamaTur: "model", modelSatirlari: [{ modelAd: "AK100", birimMaliyet: 50000, adet: 1 }] });
-    expect(giderKalemDogrula(form("50.000,01"), { turMap }).hatalar.some(h => h.alan === "modelSatirlari" && /aşıyor/.test(h.mesaj))).toBe(true);
+    const asim = giderKalemDogrula(form("50.000,01"), { turMap });
+    expect(asim.hatalar).toEqual([]);
+    expect(asim.kayit.modelSatirlari).toEqual([{ modelAd: "AK100", birimMaliyet: 50000.01, adet: 1 }]);
     const eksik = giderKalemDogrula(form("40.000"), { turMap });
     expect(eksik.hatalar).toEqual([]);
-    expect(eksik.uyarilar.map(u => u.mesaj)).toContain("Dağıtılmayan 10.000 ₺ ortak gidere yazılacak.");
+    expect(eksik.uyarilar).toEqual([]);
   });
-  it("AC-2 / AC-3: personel kaleminde makina ataması kaydedilir (uyarı engel değildir); makina seçilmezse hata", () => {
+  it("AC-2 / AC-3 (spec 0090 ile): personel kaleminde makina ataması korunur; makinası olmayan eski atama hata üretmez", () => {
     const g = giderKalemDogrula({ tarih: "2026-03-15", turId: 3, calisanId: 7, resmiTutar: 30000, eldenTutar: 20000, ...MAKINA }, { turMap });
     expect(g.hatalar).toEqual([]);
     expect(g.kayit).toMatchObject({ atamaTur: "makina", makinaTur: "musteri", makinaId: 1, tutar: null });
-    expect(giderKalemDogrula({ tarih: "2026-03-15", turId: 3, calisanId: 7, resmiTutar: 30000, atamaTur: "makina" }, { turMap }).hatalar.map(h => h.alan)).toContain("makinaId");
+    // Spec 0090 ile (R5/3): makinası seçilmemiş eski atama hata üretmez (formda alan yok); değer olduğu gibi yazılır.
+    expect(giderKalemDogrula({ tarih: "2026-03-15", turId: 3, calisanId: 7, resmiTutar: 30000, atamaTur: "makina" }, { turMap }).hatalar).toEqual([]);
   });
   it("AC-16: tekrarlayan personel tanımı atama taşısa bile üretilen kalem ortak gider olarak oluşur", () => {
     let n = 500;
     const u = tekrarlayanUret([{ id: 9, turId: 3, ad: "Hasan", calisanId: 7, baslangicAy: "2026-01", uretilenAylar: [], ...MAKINA }], [], "2026-03",
       { turMap, calisanlar: [{ id: 7, ad: "Hasan", resmiMaliyet: 30000, eldenMaliyet: 20000 }], uid: () => ++n });
     expect(u.yeniKalemler).toHaveLength(1);
-    expect(u.yeniKalemler[0]).toMatchObject({ atamaTur: "", makinaId: null, modelSatirlari: [] });
+    // Spec 0090 ile (R5, R6): atanamayan davranışta atama anahtarları hiç yazılmaz (ortak gider).
+    for (const a of ["atamaTur", "makinaId", "modelSatirlari"]) expect(a in u.yeniKalemler[0], a).toBe(false);
   });
 });
 
@@ -126,12 +132,11 @@ describe("Spec 0020: rapor ve etiket (R8, R9)", () => {
 });
 
 describe("Spec 0020 X5: tanım formunun atama kapısı bilinçli olarak yalnız normal", () => {
-  it("AC-16: SettingsGiderTanimlari iki kapısı da 'DAVRANIS.NORMAL' ve gerekçe yorumu taşıyor; atanabilirMi kullanılmıyor", () => {
+  // Spec 0090 ile (R3, R5/2): tanım formunda atama alanı yok; eski tanımın atamasını koruyan tek kapı da yalnız normal davranış.
+  it("AC-16 (spec 0090 ile): SettingsGiderTanimlari atama korumasında yalnız 'DAVRANIS.NORMAL' kapısı ve gerekçe yorumu; atanabilirMi kullanılmıyor", () => {
     const s = readFileSync(path.join(__dirname, "../src/components/settings/SettingsGiderTanimlari.jsx"), "utf-8");
-    const satirlar = s.split("\n");
-    const kapilar = satirlar.map((l, i) => [l, i]).filter(([l]) => /dav === DAVRANIS\.NORMAL/.test(l));
-    expect(kapilar).toHaveLength(2);
-    for (const [, i] of kapilar) expect(satirlar.slice(Math.max(0, i - 2), i).join("\n"), `satır ${i + 1}`).toMatch(/spec 0020 X5/);
+    expect(s).toMatch(/atamaVerisiKoru\(form, dav === DAVRANIS\.NORMAL\)/);
+    expect(s).toMatch(/spec 0020 X5/);
     expect(s).not.toMatch(/atanabilirMi\(|import[^;]*atanabilirMi/);
   });
 });

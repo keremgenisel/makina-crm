@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { trLower, aramaNormalize, withDeleted } from "../lib/utils";
-import { modelAdiTasi, modelKullanim } from "../lib/gider";
+import { modelAdiTasi } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, SearchPick, ImageUpload, TutarInput } from "./ui";
 import { HataMetni, Ipucu } from "./tasarim";
 import { tutarMetni } from "../lib/tutarGirdisi";
@@ -12,7 +12,7 @@ const PER_PAGE = 10;
 
 // Spec 0087 R8/1, R16: `setParts` ad taşıma zincirinin parça yarısı içindir (parçanın model işareti yeni ada taşınır);
 // `baskasiKilitli` Settings'in canlı kilit listesidir.
-export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [], setParts = null, appSettings = {}, setAppSettings = null, giderler = [], setGiderler = null, giderTanimlari = [], setGiderTanimlari = null, baskasiKilitli = null }) => {
+export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [], setParts = null, appSettings = {}, setAppSettings = null, setGiderler = null, setGiderTanimlari = null, baskasiKilitli = null }) => {
   // Analiz > Model Servis Yoğunluğu'nda gösterilecek modeller: appSettings.analizGizliModeller = GİZLENEN
   // model adları. Model adı bu listede YOKSA gösterilir → onay kutusu işaretli = göster (varsayılan: hepsi açık).
   const gizliSet = new Set(appSettings?.analizGizliModeller || []);
@@ -171,11 +171,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
 
       {confirmDelModel && (
         <ConfirmDialog
-          message={`"${confirmDelModel}" modeli Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.${(() => {
-            // AC-84: bağlı gider sayısı. Kalemler silinmez; yalnız bu modelin satır tutarı ortak gidere döner (K35).
-            const k = modelKullanim(confirmDelModel, giderler, giderTanimlari);
-            return k.kalem + k.tanim > 0 ? ` Bu modele atanmış ${k.kalem} gider kalemi${k.tanim ? ` ve ${k.tanim} tekrarlayan tanım` : ""} var: silinmez, bu modelin tutarı ortak gidere döner. Model geri alınırsa atama geri gelir.` : "";
-          })()}`}
+          message={`"${confirmDelModel}" modeli Çöp Kutusu'na taşınacak — Ayarlar'dan 30 gün içinde geri alabilirsiniz.`} // spec 0090 R39: atama cümlesi kalktı
           onConfirm={() => { setCustomModels(p => withDeleted(p, x => x.model === confirmDelModel)); setAppSettings?.(p => { const arr = p?.analizGizliModeller || []; return arr.includes(confirmDelModel) ? { ...p, analizGizliModeller: arr.filter(x => x !== confirmDelModel) } : p; }); setConfirmDelModel(null); showToast("Model silindi."); }}
           onCancel={() => setConfirmDelModel(null)}
         />
