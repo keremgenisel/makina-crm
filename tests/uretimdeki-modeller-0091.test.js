@@ -197,7 +197,7 @@ describe("Spec 0091: görsel kanıt kaydı (DoD, Context 'Görsel kanıtın bede
     ["src/components/MakinaMaliyeti.jsx", "maliyet-modeller"],
   ];
   const YENI = ["katalog-model-uretimde", "maliyet-modeller-uretimde-kapali", "maliyet-modeller-uretimde-acik", "maliyet-modeller-isaret-bilgi", "maliyet-modeller-isaret-uyari", "maliyet-modeller-bos-uretimde"];
-  it("DoD: tablodaki on kayıt 0091 raporunda; 'degisti' ise onay 'spec 0091'", () => {
+  it("DoD: tablodaki on kayıt 0091 raporunda (kapanışta 0091-taban'a 'ayni'); 'degisti' ise onay 'spec 0091'", () => {
     for (const [f, e] of TABLO) {
       const k = kayit(f, e);
       expect(k.length, `${f} ${e}`).toBeGreaterThan(0);

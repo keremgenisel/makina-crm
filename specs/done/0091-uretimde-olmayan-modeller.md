@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulanıyor (revizyon 3, plan onayı 2026-10-17) |
+| **Durum** | Tamamlandı (commit `297d7d7`) |
 | **Sahip** | Analist (spec) · Geliştirici (uygulama) |
 | **Etkilenen alanlar** | Ayarlar › Katalog › Makina Modelleri (satır başına yeni onay kutusu, panelin ipucusu, iki kutunun erişilebilir adı, dokuz sütun), Makina Maliyeti › Model Maliyetleri (sayı satırı, süzgeç, dönem adedi sütunu, iki denetim işareti, iki boş durum, dokuz sütun ve `colSpan`), `makinaStandartMaliyet.js` (`gercekUretim` seçeneği ve `modelMaliyetleri` satır alanları), yeni bir uygulama ayarı alanı (şema, sütun göçü, yazma, okuma, gidiş dönüş), sunucunun ayar alanı eşlemesi, tasarım sözlüğünün istisna listesi, konum tabanlı bir mevcut test dosyası, görsel kanıt ve kanıt eşlemesi |
 | **Onaylayan** | Takım Yöneticisi |
@@ -334,30 +334,30 @@ pakete not yazılmaz (C17); burada yazılması hatanın yeniden keşfedilmesini 
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Süzme görünüm katmanında; motor her modele işaretini, dönem adedini, adet nedenini ve işaret durumunu yazıyor ve kendi testi var (C6, C7 taramaları).
-- [ ] Dönem adedi tek üretim tarihi zincirinden çözülüyor; tarama **hem motoru hem ekran dosyalarını** kapsıyor.
-- [ ] `gercekUretim` ve `modelMaliyetleri` **geriye dönük uyumlu** genişletildi; 0088'in AC-15 ve AC-15/3 tam eşitlik testleri dokunulmadan yeşil (C12).
-- [ ] **Hiçbir altın dosya yeniden üretilmedi**; `tests/fixtures/0088-govde-once.json` ve onu okuyan gidiş dönüş denetimi dokunulmadı (C11).
-- [ ] Yeni kalıcı ayar alanı dört nokta kuralıyla eklendi ve gidiş dönüş testine girdi; **boş liste gövdeye yazılmıyor** ve anahtar son işaretle birlikte düşüyor (R24/2).
-- [ ] Sunucunun ayar alanı eşlemesine tek satır eklendi; yeni izin yok ve bu açıkça yazıldı. Eşleme olmasa da davranışın doğru olduğu (`AYAR_VARSAYILAN_SEKMELER`) yazıldı.
-- [ ] Ad taşıma ve silmede düşme zincirleri emsalle aynı yerde ve testli; işaret listesi birebir, makina eşlemesi Türkçe küçültmeyle (C14).
-- [ ] Yeni veri bölümü yok; birleştirme kuralları değişmedi ve nesne bütün birleştirmenin bilinen sınırı yazıldı (C15, X8).
-- [ ] Yedek paketi listesi, cümlesi ve notları değişmedi; kısmi geri yüklemenin bilinen sınırı Context'e yazıldı (C17).
-- [ ] İki onay kutusunun erişilebilir adı var ve `tests/ui/models-manager-analiz.test.jsx` konumdan okumayı bıraktı (C10).
-- [ ] İki tablonun sütun sayıları ve `colSpan` güncellendi; sayı kriteri var (AC-1/2, AC-23/2).
-- [ ] İki boş durum ayrı kimlik ve ayrı başlık taşıyor, kutularda düğme yok (R11, R12).
-- [ ] Yanlış işaretin sayısı varsayılan ekranda görünüyor (R8/2).
-- [ ] Panelde işaretin kapsamını söyleyen ipucu var (R28).
-- [ ] Ölü prop kalmadı (R30).
-- [ ] Tasarım sözlüğünün istisna listesine bu ekranın süzgeci için tek satır eklendi (C16).
-- [ ] Kullanıcıya görünen bütün metinler Türkçe.
-- [ ] Görsel kanıt eklendi (panelin iki kutulu satırı, süzgeç kapalı ve açık, iki denetim işareti, iki boş durum) ve kanıt eşlemesi güncellendi: Context'in "Görsel kanıtın bedeli" tablosundaki on kayıt `degisti` ve onaylı, altı yeni ekran kaydedildi.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi: ikinci model işareti, hangi soruyu cevapladığı, Analiz süzmesinden farkı, alanın boş değer kuralı ve motorun iki yeni seçeneği.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Süzme görünüm katmanında; motor her modele işaretini, dönem adedini, adet nedenini ve işaret durumunu yazıyor ve kendi testi var (C6, C7 taramaları).
+- [x] Dönem adedi tek üretim tarihi zincirinden çözülüyor; tarama **hem motoru hem ekran dosyalarını** kapsıyor.
+- [x] `gercekUretim` ve `modelMaliyetleri` **geriye dönük uyumlu** genişletildi; 0088'in AC-15 ve AC-15/3 tam eşitlik testleri dokunulmadan yeşil (C12).
+- [x] **Hiçbir altın dosya yeniden üretilmedi**; `tests/fixtures/0088-govde-once.json` ve onu okuyan gidiş dönüş denetimi dokunulmadı (C11).
+- [x] Yeni kalıcı ayar alanı dört nokta kuralıyla eklendi ve gidiş dönüş testine girdi; **boş liste gövdeye yazılmıyor** ve anahtar son işaretle birlikte düşüyor (R24/2).
+- [x] Sunucunun ayar alanı eşlemesine tek satır eklendi; yeni izin yok ve bu açıkça yazıldı. Eşleme olmasa da davranışın doğru olduğu (`AYAR_VARSAYILAN_SEKMELER`) yazıldı.
+- [x] Ad taşıma ve silmede düşme zincirleri emsalle aynı yerde ve testli; işaret listesi birebir, makina eşlemesi Türkçe küçültmeyle (C14).
+- [x] Yeni veri bölümü yok; birleştirme kuralları değişmedi ve nesne bütün birleştirmenin bilinen sınırı yazıldı (C15, X8).
+- [x] Yedek paketi listesi, cümlesi ve notları değişmedi; kısmi geri yüklemenin bilinen sınırı Context'e yazıldı (C17).
+- [x] İki onay kutusunun erişilebilir adı var ve `tests/ui/models-manager-analiz.test.jsx` konumdan okumayı bıraktı (C10).
+- [x] İki tablonun sütun sayıları ve `colSpan` güncellendi; sayı kriteri var (AC-1/2, AC-23/2).
+- [x] İki boş durum ayrı kimlik ve ayrı başlık taşıyor, kutularda düğme yok (R11, R12).
+- [x] Yanlış işaretin sayısı varsayılan ekranda görünüyor (R8/2).
+- [x] Panelde işaretin kapsamını söyleyen ipucu var (R28).
+- [x] Ölü prop kalmadı (R30).
+- [x] Tasarım sözlüğünün istisna listesine bu ekranın süzgeci için tek satır eklendi (C16).
+- [x] Kullanıcıya görünen bütün metinler Türkçe.
+- [x] Görsel kanıt eklendi (panelin iki kutulu satırı, süzgeç kapalı ve açık, iki denetim işareti, iki boş durum) ve kanıt eşlemesi güncellendi: Context'in "Görsel kanıtın bedeli" tablosundaki on kayıt `degisti` ve onaylı, altı yeni ekran kaydedildi.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi: ikinci model işareti, hangi soruyu cevapladığı, Analiz süzmesinden farkı, alanın boş değer kuralı ve motorun iki yeni seçeneği.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -414,10 +414,14 @@ Yirmi üç bulgunun hepsi Takım Yöneticisi tarafından onaylandı ve aşağıd
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | 1 ilk taslak, 2 QA turu (23 bulgu), 3 uygulama planı onayı (K1–K10) |
+| **Düzeltme turu sayısı** | 1 | Triyaj 2026-10-18 |
+| **Bulgu gerçek/gürültü oranı** | 3/0 | Yükleme yolunda bayat liste (işaret geri geliyor, Ayarlar'sız kullanıcıda 403); görsel kanıt ve ölçümler eksik; başlık hizası |
+| **Regresyon sayısı** | 1 | Yükleme yolu: boş listenin gövdeye yazılmaması öbür bilgisayarda bayat değeri bırakıyordu; triyajda düzeltildi |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir ayar alanını "boşken gövdeye yazma" kuralına almak, onu var olup olmama arasında gidip gelen
+ilk alan yaptı ve uygulamanın iki birleştirme yolunun ikisi de yokluğu taşımıyor: çakışma birleştirmesi (`mergeAppSettings`) plan
+aşamasında görülüp `undefined` ile çözüldü, ama yükleme ve yenileme yolunun spread'i aynı sebeple bayat değeri bırakıyordu. Yokluğu
+anlamlı bir alan, değeri okuyan ve birleştiren her yolda ayrı ayrı ele alınmalı; ölçüm yalnız yazma yönünde değil, başka bilgisayarın
+yazdığı yokluğun bu bilgisayara geri okunması yönünde de yapılmalı.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0091-uretimde-olmayan-modeller.md` (revizyon 3) |
+| **Spec** | `specs/done/0091-uretimde-olmayan-modeller.md` (revizyon 3) · Tamamlandı: commit `297d7d7` |
 | **Dal** | `feat/0091-uretimdeki-modeller` (taban `a272e5b`, 0090 kapanışı) |
 | **Onay** | Takım Yöneticisi · 2026-10-17 · bütün öneriler (K1–K10) kabul |
 
