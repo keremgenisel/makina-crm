@@ -2,13 +2,13 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, uygulamada (revizyon 3, plan onayı 2026-10-18) |
+| **Durum** | Tamamlandı (revizyon 3) · commit `99333c2` · plan `specs/done/0092-uygulama-plani.md` |
 | **Sahip** | Analist (spec) · Geliştirici (uygulama) |
 | **Etkilenen alanlar** | Gider formu ve tekrarlayan tanım formu (bir alan geri döner, ortak bileşen), tekrarlayan tanım listesinin Tanım hücresi (bir satır), Dönem Raporu'nun kalem listesi (tutar hücresinde bir rozet), gider raporu motorunun **opt-in seçeneği** (`hesaplaGiderRaporu`, kalem başına aylık pay), yeni maliyet motorunun aylık ve dönem havuzu ile havuz nesnesinin alanları (`makinaStandartMaliyet.js`: `rolHavuzlari`, `aylikGenelHavuzlar`, `partiHesabi`), Makina Maliyeti › Model Maliyetleri ve Hesap Ayarları'nın pay özeti (bir bilgi satırı), Hesap Ayarları'nın rol tablosu ("Dönemde tutar" sütunu ve kalemli tür kümesi), Makina Maliyeti › Üretim Partileri (bir bilgi satırı), Anasayfa'nın Gider Ödemeleri kartı (üçüncü sayı ve alt metin) ve hatırlatma penceresi (üçüncü bölüm, boş durum metni), Ayarlar › Giderler › Gider Ayarları (bir eşik alanı), yeni saf kitaplık (kapsam bitişi ve eşik), spec 0090'ın iki kaynak taraması, görüntü aracının üç mevcut ekranı ve yeni ekranları, kullanıcı rehberi |
 | **Onaylayan** | Takım Yöneticisi |
 | **Bağımlı spec'ler** | 0059 (motor genişlemesinin opt-in deseni: parametresiz çıktı birebir aynı; B-1'in yolu), 0075 (tanımın yeni alanı listede görünür, R43'ün dersi), 0082 (yenilenmeyecek altın: `0082-maliyet-once.json`), 0001 ve 0002 (yürürlük öncesi tarihli kalem hiçbir hesaba girmez değişmezi; B-3), 0090 (**önkoşul ve kısmen geri alınır:** dağıtım alanını kaldıran spec; X1'i bu spec'in kendisidir, AC-2, AC-3, AC-6, AC-7, AC-13 ve iki kaynak taraması ters çevrilir), 0072 (alanın kendisi, doğrulaması, `esitBol` bölmesi ve kapsam aralığı; kavramı değişir, kuralı korunur), 0088 (rol tablosu ve dönem havuzu; C3 eşitliği bu spec'in omurgası), 0022 (parti payının ağırlıklı aylık bölmesi; **değişmez**), 0076 (gider tutarı tabanı: matrah + indirilemeyen KDV), 0003 (ödeme hatırlatıcısının kartı, penceresi ve eşik ayarı deseni; kapsamı **değişmez**), 0084 (gider ayarlarına alan ekleme deseni: ilk durum ve kaydet listesi birlikte), 0071 (KDV dâhil giriş ve tutarı girilmemiş kalem), 0078 (çöpteki türün kalemi havuza girer), 0091 (taban), 0009 (görsel kanıt kaydı ve ekran metni taraması) |
 | **Taban** | 0091 kapanışı (`f6411c3`) |
-| **Revizyon** | · 1 · 2026-10-18 ilk taslak<br>· 2 · 2026-10-18 QA boşluk analizi: 27 bulgu işlendi. Beş bloklayıcı cevaplandı (yaymanın mekanizması ve rapor motorunun opt-in seçeneği, havuz nesnesinin yeni tanımı, yürürlük değişmezinin korunması, kapsamın bitiş günü, yaymanın davranış kapısı); on önemli ve on iki küçük bulgu maddeye çevrildi<br>· 3 · 2026-10-18 plan onayı (`specs/0092-uygulama-plani.md`): X9/2 eklendi (eski motorun dağıtım yardımcıları kendi semantiğiyle aynen kalır, yeni yol `kapsam*` ailesini kullanır; yalnız eski hata metni ve çözücüsü yeniden adlandırılır), R25/3 (kart ve pencere metinleri), R21/3 (`yayilanAdet` yalnız havuza giren rollerin kalemlerini sayar) |
+| **Revizyon** | · 1 · 2026-10-18 ilk taslak<br>· 2 · 2026-10-18 QA boşluk analizi: 27 bulgu işlendi. Beş bloklayıcı cevaplandı (yaymanın mekanizması ve rapor motorunun opt-in seçeneği, havuz nesnesinin yeni tanımı, yürürlük değişmezinin korunması, kapsamın bitiş günü, yaymanın davranış kapısı); on önemli ve on iki küçük bulgu maddeye çevrildi<br>· 3 · 2026-10-18 plan onayı (`specs/done/0092-uygulama-plani.md`): X9/2 eklendi (eski motorun dağıtım yardımcıları kendi semantiğiyle aynen kalır, yeni yol `kapsam*` ailesini kullanır; yalnız eski hata metni ve çözücüsü yeniden adlandırılır), R25/3 (kart ve pencere metinleri), R21/3 (`yayilanAdet` yalnız havuza giren rollerin kalemlerini sayar) |
 
 ---
 
@@ -447,33 +447,33 @@ Kalem listesini çizen ekran sayısı yaklaşık altmış; bunlardan **yalnız �
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap saf motorda yazıldı (havuz yayması ve kapsam bitişi ayrı ayrı), arayüz yalnız gösteriyor; ekranda çarpma ve bölme olmadığı taramayla sabitlendi.
-- [ ] **Yaymanın mekanizması R9/2'nin opt-in seçeneğiyle kuruldu:** gider raporu motorunun seçeneksiz çıktısı birebir eski, ay tablosu tek çağrıyla kuruluyor ve rapor çağrı sayısı spec öncesinden fazla değil (AC-32, AC-32/2).
-- [ ] Havuz nesnesinin üç parçası R13/2'ye göre tanımlandı ve rol tablosunun sütun toplamı dönem havuzuna eşit (AC-20/2, AC-20/3).
-- [ ] Yürürlük değişmezi korundu: gider tarihi yürürlükten önce olan kalem hiçbir aya pay vermiyor (AC-25, C19).
-- [ ] Yaymanın davranış kapısı yazıldı: personel ve SGK kalemi kapsam taşısa da yayılmıyor (AC-15/2, AC-15/3).
-- [ ] Kapsamın bitiş günü kapsamın son ayının son günü; iki uçlu pencerenin sınır değerleri testli (AC-13/2, AC-14/2, AC-45/2, AC-45/3).
-- [ ] Dönem havuzu ile ayların toplamı arasındaki eşitlik testle sabitlendi (C4).
-- [ ] Yayılmamış veride spec öncesi rakamlarla birebir eşitlik iki altın dosyayla gösterildi: aylık havuz tablosu (yeni altın) ve 0090'ın parti altını (**yenilenmedi**, C15).
-- [ ] 0088, 0082 ve 0089'un altınları da **yenilenmedi** ve testleri yeşil; ölçüm 6'nın tablosu hangi fikstürün kapsamlı kalem taşıdığını yazıyor (C18, AC-72).
-- [ ] Dönem Raporu'nun rapor nesnesi ve yazdırılan raporun HTML'i birebir aynı (AC-36, AC-37).
-- [ ] Yeni kalıcı alan **açılmadı**; bugünkü alanın dört noktası dokunulmadı ve `db-roundtrip` testi yeşil.
-- [ ] Yeni veri bölümü ve yeni eylem izni **yok**; bu açıkça yazıldı ve taramayla sabitlendi.
-- [ ] 0090'ın ters çevrilen kriterleri ve iki kaynak taraması güncellendi; atamaya ait satırların hepsi aynen kaldığı gösterildi (C14). "Silinen bileşenler ve adlar" taraması **değişmedi** ve AC-13'ün "aya dağıtılmış" yasağı korundu (C17, AC-71).
-- [ ] Bütün yeni adlar R5'te yazılan adlardır ve taramada pozitif aranıyor (AC-70); kalıcı alanın adı değişmedi (X10).
-- [ ] Ayar alanının kalıcı anahtarı R35/2'de yazılan anahtardır ve formun hem ilk durumunda hem kaydet listesinde (C12, AC-61).
-- [ ] Gizlilik güvencesi **iki yolla** verildi (R43): yeni kitaplığın kaynağında çalışan alanları geçmiyor (AC-74) ve personel ile SGK kalemi bulunan veride pencere ekran üstünde ölçüldü (AC-50/2). Yeni bilgi satırlarında da çalışan adı ve çalışan bazlı tutar yok.
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısına yeni metin girmedi.
-- [ ] Para kuruş tamsayısıyla; artık kuruş son aya yazılıyor ve ayların toplamı kalemin tutarına eşit.
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi (R42'nin dokuz ekranı, boş ve hata durumları dâhil) ve kanıt eşlemesi `beklenen: "degisti"` + `Takım Yöneticisi · YYYY-AA-GG · spec 0092 R42` onay dizesiyle güncellendi.
-- [ ] Ölçüm 7'nin üç mevcut ekranı kanıt kaydına girdi ve adı kaldırılan spec'e atıf yapan ekran yeniden adlandırıldı (R42/2, AC-73).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır. Electron testleri de koşuldu.
-- [ ] `CLAUDE.md` güncellendi: kapsam kavramı, gider raporu motorunun opt-in aylık payı, havuzun tek tablosu (dönem = ayların toplamı), havuz nesnesinin yeni alanları, kapsam bitişi hatırlatması ve eşiği, yaymanın davranış kapısı, 0072'nin kavramının nasıl değiştiği, adlandırma borcu (sütun adı) ve C16'nın kapanış sonucu.
-- [ ] Sürüm notu yazıldı: kapanmış partilerin değişim kutusunun konuşabileceği (C16), ilk yılın havuzunun taşan kapsamlar yüzünden küçülebileceği (karar 3) ve yürürlükten önce peşin ödenmiş faturanın havuza hiç girmediği (R15/2).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap saf motorda yazıldı (havuz yayması ve kapsam bitişi ayrı ayrı), arayüz yalnız gösteriyor; ekranda çarpma ve bölme olmadığı taramayla sabitlendi.
+- [x] **Yaymanın mekanizması R9/2'nin opt-in seçeneğiyle kuruldu:** gider raporu motorunun seçeneksiz çıktısı birebir eski, ay tablosu tek çağrıyla kuruluyor ve rapor çağrı sayısı spec öncesinden fazla değil (AC-32, AC-32/2).
+- [x] Havuz nesnesinin üç parçası R13/2'ye göre tanımlandı ve rol tablosunun sütun toplamı dönem havuzuna eşit (AC-20/2, AC-20/3).
+- [x] Yürürlük değişmezi korundu: gider tarihi yürürlükten önce olan kalem hiçbir aya pay vermiyor (AC-25, C19).
+- [x] Yaymanın davranış kapısı yazıldı: personel ve SGK kalemi kapsam taşısa da yayılmıyor (AC-15/2, AC-15/3).
+- [x] Kapsamın bitiş günü kapsamın son ayının son günü; iki uçlu pencerenin sınır değerleri testli (AC-13/2, AC-14/2, AC-45/2, AC-45/3).
+- [x] Dönem havuzu ile ayların toplamı arasındaki eşitlik testle sabitlendi (C4).
+- [x] Yayılmamış veride spec öncesi rakamlarla birebir eşitlik iki altın dosyayla gösterildi: aylık havuz tablosu (yeni altın) ve 0090'ın parti altını (**yenilenmedi**, C15).
+- [x] 0088, 0082 ve 0089'un altınları da **yenilenmedi** ve testleri yeşil; ölçüm 6'nın tablosu hangi fikstürün kapsamlı kalem taşıdığını yazıyor (C18, AC-72).
+- [x] Dönem Raporu'nun rapor nesnesi ve yazdırılan raporun HTML'i birebir aynı (AC-36, AC-37).
+- [x] Yeni kalıcı alan **açılmadı**; bugünkü alanın dört noktası dokunulmadı ve `db-roundtrip` testi yeşil.
+- [x] Yeni veri bölümü ve yeni eylem izni **yok**; bu açıkça yazıldı ve taramayla sabitlendi.
+- [x] 0090'ın ters çevrilen kriterleri ve iki kaynak taraması güncellendi; atamaya ait satırların hepsi aynen kaldığı gösterildi (C14). "Silinen bileşenler ve adlar" taraması **değişmedi** ve AC-13'ün "aya dağıtılmış" yasağı korundu (C17, AC-71).
+- [x] Bütün yeni adlar R5'te yazılan adlardır ve taramada pozitif aranıyor (AC-70); kalıcı alanın adı değişmedi (X10).
+- [x] Ayar alanının kalıcı anahtarı R35/2'de yazılan anahtardır ve formun hem ilk durumunda hem kaydet listesinde (C12, AC-61).
+- [x] Gizlilik güvencesi **iki yolla** verildi (R43): yeni kitaplığın kaynağında çalışan alanları geçmiyor (AC-74) ve personel ile SGK kalemi bulunan veride pencere ekran üstünde ölçüldü (AC-50/2). Yeni bilgi satırlarında da çalışan adı ve çalışan bazlı tutar yok.
+- [x] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısına yeni metin girmedi.
+- [x] Para kuruş tamsayısıyla; artık kuruş son aya yazılıyor ve ayların toplamı kalemin tutarına eşit.
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi (R42'nin dokuz ekranı, boş ve hata durumları dâhil) ve kanıt eşlemesi `beklenen: "degisti"` + `Takım Yöneticisi · YYYY-AA-GG · spec 0092 R42` onay dizesiyle güncellendi.
+- [x] Ölçüm 7'nin üç mevcut ekranı kanıt kaydına girdi ve adı kaldırılan spec'e atıf yapan ekran yeniden adlandırıldı (R42/2, AC-73).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır. Electron testleri de koşuldu.
+- [x] `CLAUDE.md` güncellendi: kapsam kavramı, gider raporu motorunun opt-in aylık payı, havuzun tek tablosu (dönem = ayların toplamı), havuz nesnesinin yeni alanları, kapsam bitişi hatırlatması ve eşiği, yaymanın davranış kapısı, 0072'nin kavramının nasıl değiştiği, adlandırma borcu (sütun adı) ve C16'nın kapanış sonucu.
+- [x] Sürüm notu yazıldı: kapanmış partilerin değişim kutusunun konuşabileceği (C16), ilk yılın havuzunun taşan kapsamlar yüzünden küçülebileceği (karar 3) ve yürürlükten önce peşin ödenmiş faturanın havuza hiç girmediği (R15/2).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -517,10 +517,10 @@ Yirmi yedi bulgu Takım Yöneticisi tarafından onaylandı ve aşağıdaki madde
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | Taslak, QA turu (27 bulgu), plan onayı (X9/2, R21/3, R25/3) |
+| **Düzeltme turu sayısı** | 1 | Tek triyaj turu, üç bulgu |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Görsel kanıt ve kanıt kaydı testi eksikti (orta); eski blok yorumu yeni davranışı yanlış anlatıyordu; türsüz kapsamlı kalemin hatırlatma başlığı boştu (düşük, ikisi) |
+| **Regresyon sayısı** | 0 | Electron dahil tam takım yeşil (362 dosya, 4666 test); 0088, 0082, 0089 ve 0090 altınları yenilenmedi |
+| **Kaçan hata** | 0 | Kanıt eşlemesinin yalnız biçimi denetlediği 0090'da da görülmüştü; bu kez kanıt kaydı testi kanıt çekiminden önce yazıldı ve kırmızı göründü |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Ölçüm 5'in yaptığı gibi "bugünkü yol bu sonucu üretebilir mi" sorusu kodla ölçülmeden yaymanın mekanizması yazılamazdı; rapor motorunun opt-in seçeneği ikinci bir havuz hesabı yazmadan sorunu çözdü ve parti payının rapor çağrısını 12'den 1'e indirdi. Kanıt kaydının testi, kanıt çekiminden önce yazılmalı: çekim uzun sürdüğü için takım yeşilken AC-73 açık kalabiliyordu.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0092-pesin-gider-kapsami-ve-yenileme-hatirlatmasi.md` (revizyon 3) |
+| **Spec** | `specs/done/0092-pesin-gider-kapsami-ve-yenileme-hatirlatmasi.md` (revizyon 3) · Tamamlandı: commit `99333c2` |
 | **Dal** | `feat/0092-pesin-gider-kapsami` (taban `f6411c3`, 0091 kapanışı) |
 | **Onay** | Takım Yöneticisi · 2026-10-18 · bütün öneriler (K1–K11) kabul |
 

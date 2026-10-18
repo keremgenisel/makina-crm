@@ -639,22 +639,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "gider-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "gider-formu-0092-dolu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "gider-formu-0092-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -4615,22 +4612,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "giderler-0092-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "giderler-0076-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "giderler-0076-kdv",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/GiderAlanlari.jsx": [
@@ -5090,16 +5084,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "gider-formu-0092-dolu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim-0092-form",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/KdvKarsilastirmaKarti.jsx": [
@@ -5608,16 +5600,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "ayarlar-giderayar-0092",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "ayarlar-giderayar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsGiderTanimlari.jsx": [
@@ -5726,16 +5716,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim-0092",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "ayarlar-gidertanim-0092-form",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsImport.jsx": [
@@ -6830,10 +6818,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "maliyet-0092-partiler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Kasa.jsx": [
@@ -8850,10 +8837,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0092-piksel-raporu.json",
+        "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "maliyet-0092-pay",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-18 · spec 0092 R42"
+        "beklenen": "ayni"
       }
     ],
     "src/components/maliyet/ModelMaliyetleri.jsx": [
