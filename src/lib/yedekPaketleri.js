@@ -8,7 +8,7 @@
 
 // R5: gider ayarları uygulama ayarlarının içindedir, yani "Firma ve ayarlar" paketinde taşınır.
 export const GIDER_AYAR_NOTU = "Gider ayarları (gider takibi yürürlük ayı, varsayılan kira stopaj oranı, kira stopajı beyan dönemi, "
-  + "stopaj ödeme günü, ödeme hatırlatma eşiği, binek araç giderlerinde indirilebilir oran, hesapsız kayıt başlangıç tarihi, "
+  + "stopaj ödeme günü, ödeme hatırlatma eşiği, kapsam bitişi hatırlatma eşiği, binek araç giderlerinde indirilebilir oran, hesapsız kayıt başlangıç tarihi, "
   + "deneme dönemi bitiş tarihi) bu pakette değil, \"Firma ve ayarlar\" paketinde geri yüklenir.";
 // R8 (0052 R19): Kasa yetkisi olmayan kullanıcıda Kasa'ya ait kayıtlara dokunulmaz.
 export const KASASIZ_NOTU = "Kasa yetkiniz olmadığı için kasa hesapları, kasa iş listesi, virman ve avans hareketleri ve verilen çekler "

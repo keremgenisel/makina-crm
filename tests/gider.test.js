@@ -408,16 +408,16 @@ describe("triyaj düzeltmeleri", () => {
 });
 
 // Spec 0072 AC-6: dağıtım ay sayısının doğrulaması taksit emsalini birebir izler (tek hata metni).
-import { dagitimAySayisiCoz, taksitSayisiCoz, DAGITIM_AY_HATASI, giderKalemDogrula as dogrula0072, turHaritasi as turHaritasi0072 } from "../src/lib/gider";
+import { kapsamAySayisiCoz as dagitimAySayisiCoz, taksitSayisiCoz, KAPSAM_AY_HATASI as DAGITIM_AY_HATASI, giderKalemDogrula as dogrula0072, turHaritasi as turHaritasi0072 } from "../src/lib/gider";
 describe("Spec 0072: dağıtım ay sayısı doğrulaması", () => {
   it("AC-6: 60'ın üstü, sıfır, negatif ve tam sayı olmayan değer tek metinle reddedilir; taksit çözücüsüyle aynı sınırlar", () => {
     for (const v of ["", "1", "12", "60", "61", "0", "-3", "2.5"]) {
       expect(!!dagitimAySayisiCoz(v).hata).toBe(!!taksitSayisiCoz(v).hata);
       if (dagitimAySayisiCoz(v).hata) expect(dagitimAySayisiCoz(v).hata).toBe(DAGITIM_AY_HATASI);
     }
-    // Spec 0090 ile (R5/3): formda dağıtım alanı yok; geçersiz değer hata üretmez, saklanmaz.
+    // Spec 0092 ile (R4, AC-6; çözücü kapsam adını aldı): alan yeniden çizilir, kullanıcının yazdığı geçersiz değer kaydı engeller.
     const r = dogrula0072({ tarih: "2026-03-01", turId: 1, tutar: "100", kdvOrani: "20", dagitimAy: "61" }, { turMap: turHaritasi0072([{ id: 1, ad: "G", davranis: "normal" }]) });
-    expect(r.hatalar).toEqual([]);
-    expect("dagitimAy" in r.kayit).toBe(false);
+    expect(r.hatalar.map(h => h.mesaj)).toEqual([DAGITIM_AY_HATASI]);
+    expect(r.kayit).toBe(null);
   });
 });

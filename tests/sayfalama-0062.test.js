@@ -68,14 +68,14 @@ const LISTELER = [
   ["src/components/cek/CekPortfoyu.jsx", 10, 2],
   ["src/components/gider/AcikKalemler.jsx", 10, 1],
   ["src/components/gider/EkstrePenceresi.jsx", 5, 1],
-  ["src/components/gider/OdemeHatirlatma.jsx", 5, 1],
+  ["src/components/gider/OdemeHatirlatma.jsx", 5, 2], // spec 0092 ile (R25): üçüncü bölüm (kapsam bitişi) kendi sayfasıyla
 ];
 const KLASORLER = ["src/components/gider", "src/components/kasa", "src/components/cek"];
 
 describe("Spec 0062: kaynak taramaları", () => {
-  it("AC-12 / AC-26 / AC-39 (spec 0080 AC-11): listeler paylaşılan kanca ve Pagination ile sayfalanır, kalan beş dosyada dokuz çağrı (spec 0089 ile); useFilteredList yok (R26)", () => {
+  it("AC-12 / AC-26 / AC-39 (spec 0080 AC-11): listeler paylaşılan kanca ve Pagination ile sayfalanır, kalan beş dosyada on çağrı (spec 0089 ile; spec 0092 ile kapsam bölümü); useFilteredList yok (R26)", () => {
     expect(LISTELER).toHaveLength(5);
-    expect(LISTELER.reduce((t, [, , n]) => t + n, 0)).toBe(9);
+    expect(LISTELER.reduce((t, [, , n]) => t + n, 0)).toBe(10);
     for (const f of ["src/components/gider/MakinaKarliligi.jsx", "src/components/gider/MakinaModelGorunumu.jsx"]) expect(existsSync(resolve(kok, f)), f).toBe(false);
     for (const [f, , adet] of LISTELER) {
       const s = oku(f);

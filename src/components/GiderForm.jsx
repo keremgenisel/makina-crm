@@ -4,13 +4,13 @@ import { stopajOdemeTarihi, stopajBeyanAyari } from "../lib/stopajDonemi";
 import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer, DAVRANIS, ayOf, odemeSatirlariKur, satirliMi, HEDEF, personelBolunmezMi, PERSONEL_BOLUNMEZ_NEDENI, odemeleriUygula,
   kdvAyir, kdvYonuOf, kdvYonuSecilebilirMi, girilenHaric, kalemKdv, KDV_YONU, kurus, tl, kdvliMi, tedarikciSecilirMi, sgkDavranisiMi, calisanSgkToplami, SGK_TOPLAM_YOK_NEDENI,
   tevkifatliMi, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kalemTevkifat, odenecekTutar,
-  kisitliGiderMi, kisitHesabi, kisitOranCoz, varsayilanIndirilebilirOran, KKEG_ETIKETI } from "../lib/gider";
+  kisitliGiderMi, kisitHesabi, kisitOranCoz, varsayilanIndirilebilirOran, KKEG_ETIKETI, kapsamSecilebilirMi, kapsamAySayisiCoz } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal, TutarInput } from "./ui";
 import { secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
 import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
-import { DavranisRozeti, tl2, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, KisitAlani, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi, tutarMetni } from "./gider/GiderAlanlari";
+import { DavranisRozeti, tl2, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, KisitAlani, KapsamAlani, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi, tutarMetni } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
 // Gider kalemi formu (spec 0001 R1, R5, R6, R14, R18, R20, R21; plan K14, K18, K19, K24, K25, K29, K38).
@@ -31,7 +31,7 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     return { id: null, tarih, turId: "", aciklama: "", tedarikciId: "", tutar: "", netTutar: "", girisYonu: "brut",
       kdvOrani: tutarMetni(getKdvRateForDate(tarih, kdvRates)), stopajOrani: tutarMetni(giderAyarlari?.stopajOrani ?? 20),
       calisanId: "", resmiTutar: "", eldenTutar: "", yolParasi: "", odemeYontemi: "", sonOdemeTarihi: "", odendi: false, odemeTarihi: "",
-      tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC, // spec 0090 R5: atama ve dağıtım alanı yok
+      tanimId: null, donem: null, _kdvElle: false, kdvYonu: KDV_YONU.HARIC, dagitimAy: "", // spec 0090 R5: atama yok; spec 0092 R1: kapsam
       taksitSayisi: "1", stopajTaksitSayisi: "1", stopajVade: "", eldenVade: "", taksitler: [], ekOdemeler: [],
       tevkifatli: false, tevkifatPay: "", tevkifatPayda: "", tevkifatTaksitSayisi: "1", tevkifatVade: "", // spec 0075 R1
       kisitliGider: false, indirilebilirOran: "" }; // spec 0076 R1
@@ -50,7 +50,8 @@ const formdanKalem = (k, { giderAyarlari, kdvRates }) => {
     modelSatirlari: (k.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })), _kdvElle: true,
     ekOdemeler: (k.ekOdemeler || []).map(e => ({ ...e, aciklama: e.aciklama || "", resmiTutar: tutarMetni(e.resmiTutar), eldenTutar: tutarMetni(e.eldenTutar) })),
     taksitler: k.taksitler || [], taksitSayisi: String(ana.length || 1), stopajTaksitSayisi: String(stp.length || 1), stopajVade: stp[0]?.vade || "", eldenVade: eld[0]?.vade || "",
-    dagitimAy: k.dagitimAy ? String(k.dagitimAy) : "", // spec 0072 R19
+    // Spec 0092 R4/2: saklı değer çözücüden geçer; geçersizse alan boş açılır (1 kabul edilir, eski kayıt kilitlenmez).
+    dagitimAy: (() => { const c = kapsamAySayisiCoz(k.dagitimAy); return !c.hata && c.deger > 1 ? String(c.deger) : ""; })(),
     // Spec 0075 R18 (B-2, AC-45): tevkifat taksit sayısı ve vadesi kendi satırlarından geri kurulur (sütun yok).
     tevkifatli: !!k.tevkifatli, tevkifatPay: k.tevkifatli ? k.tevkifatPay : "", tevkifatPayda: k.tevkifatli ? k.tevkifatPayda : "",
     tevkifatTaksitSayisi: String(tvs.length || 1), tevkifatVade: tvs[0]?.vade || "",
@@ -425,6 +426,8 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
           )}
           {/* Spec 0076 R1–R7, R30: kalemin bayrağı (tür davranışı değil); yalnız normal davranışta. Kapalıyken alan çizilmez. */}
           {kisitliGiderMi(dav) && <KisitAlani acik={kisitAcik} oran={form.indirilebilirOran} onChange={set} varsayilanOran={varsayilanIndirilebilirOran(giderAyarlari)} hata={hata("indirilebilirOran")} />}
+          {/* Spec 0092 R1, R2: kapsadığı ay sayısı yalnız normal ve kirada; ödemeyi bölmez (R38). */}
+          {kapsamSecilebilirMi(dav) && <KapsamAlani deger={form.dagitimAy} onChange={set} hata={hata("dagitimAy")} />}
           {yonSecilebilir && tutarCoz(form.kdvOrani).deger === 0 && !tutarCoz(form.kdvOrani).gecersiz && <Ipucu>KDV oranı sıfır olduğu için dâhil ve hariç aynı tutarı verir.</Ipucu>}
         </div>
         {dav === DAVRANIS.KIRA && kira && (

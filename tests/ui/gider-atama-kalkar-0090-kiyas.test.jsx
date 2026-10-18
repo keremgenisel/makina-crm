@@ -58,6 +58,9 @@ const ekranCiktisi = () => {
   c.querySelectorAll('[data-testid="kova-karti"]').forEach(x => x.remove());
   // 0089'un kıyasıyla aynı ayıklama: görünüm çubuğunun kalkan düğmeleri (bu altın 0089 sonrası koddan, çubuk zaten iki düğme).
   atamaSutunuCikar(c);
+  // Spec 0092 ile (R19, C18): bu veride kapsamı 12 olan "Yıllık sigorta" kalemi var; kapsam rozeti spec 0092'nin bilinen tek
+  // farkıdır ve karşılaştırmadan önce ayıklanır (altın yenilenmez). Rozet varlığı tests/ui/gider-kapsami-0092.test.jsx'te ölçülür.
+  c.querySelectorAll('[data-testid="kapsam-rozeti"]').forEach(x => x.remove());
   return { tam: metin(c), kalemListesi: metin(c.querySelector('[data-testid="kalem-listesi"]')) };
 };
 const partiOnce = () => {

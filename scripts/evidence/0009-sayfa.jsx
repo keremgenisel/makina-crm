@@ -613,6 +613,11 @@ const aramaEkrani = (ek = {}) => <GlobalSearch {...ARAMA_VERI} giderYetki kasaYe
 const G_0072 = [...GIDERLER,
   k(41, { tedarikciId: 12, aciklama: "İnternet aboneliği", tutar: 12000, tarih: "2026-09-02", dagitimAy: 12 }),
   k(42, { turId: 1, tutar: 60000, kdvOrani: 0, tedarikciId: 11, aciklama: "Depo kirası (yıllık peşin)", tarih: "2026-08-01", dagitimAy: 12 })];
+// Spec 0092: aracın sabit bugünü 2026-09-23; Haziran'da (yürürlük ayı) peşin ödenen dört aylık bakım sözleşmesinin kapsamı
+// 2026-09-30'da biter (Anasayfa'nın üçüncü sayısında). Maliyet ekranı için 0088 verisine Ocak tarihli yıllık sigorta eklenir.
+const K_0092 = k(43, { tedarikciId: 12, aciklama: "Bakım sözleşmesi (peşin)", tutar: 8000, tarih: "2026-06-05", dagitimAy: 4, odendi: true });
+const TANIM_0092 = { id: 92, ad: "Yazılım aboneliği (yıllık)", turId: 4, tutar: 6000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, baslangicAy: "2026-06", uretilenAylar: [], dagitimAy: 12 };
+const M88_KAPSAM = { id: 92, tarih: "2026-01-10", turId: 1, tutar: 12000, kdvOrani: 20, aciklama: "Yıllık sigorta", dagitimAy: 12 };
 const ARAMA_KUTU = "doldur:Müşteri, seri no, teklif no, servis, bayi, not ara...";
 
 const EKRANLAR = {
@@ -887,7 +892,21 @@ const EKRANLAR = {
   "kasa-0073-goc-duzenle": [kasaEkrani(), ["dugme:Ödemeleri göster", "etiket:Hareketi düzenle: Sac levha"]],
   // Spec 0072: maliyete dağıtım (form alanı etkin/pasif/kira, tanım, kalem rozeti, Makina ve Model kutusu, kârlılık notu ve detay).
   // Spec 0090 R2, R3, R42: "gider-formu-0072", "-makina", "-kira" ve "ayarlar-gidertanim-0072" silindi (alan yok).
-  "giderler-0072-liste": [<GiderEkrani g0={G_0072} />, ["kaydir:İnternet aboneliği"]],
+  // Spec 0092 R42/2: ekran bu spec'in adıyla yeniden adlandırıldı (iki peşin kalemin kapsam rozeti).
+  "giderler-0092-liste": [<GiderEkrani g0={G_0072} />, ["kaydir:İnternet aboneliği"]],
+  // Spec 0092 R42: kapsadığı ay sayısı (form alanı dolu ve hatalı, tanım formu ve listesi), pay özeti ve Üretim Partileri bilgi
+  // satırı, Anasayfa kartının üç sayısı ve pencerenin üçüncü bölümü, Gider Ayarları'nın eşik alanı.
+  "gider-formu-0092-dolu": [<GiderForm kalem={{ ...K_0092 }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Kapsadığı ay sayısı"]],
+  "gider-formu-0092-hata": [<GiderForm kalem={{ ...K_0092, id: null, dagitimAy: "61", taksitler: [] }} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["dugme:Kaydet", "kaydir:Kapsadığı ay sayısı"]],
+  "ayarlar-gidertanim-0092": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0092, ...TANIMLAR] }), []],
+  "ayarlar-gidertanim-0092-form": [ayarlar("gidertanim", { giderTanimlari: [TANIM_0092, ...TANIMLAR] }), ["baslik:Düzenle", "kaydir:Kapsadığı ay sayısı"]],
+  "maliyet-0092-pay": maliyetEkrani({ giderler: [...M88.GIDERLER, M88_KAPSAM] }),
+  "maliyet-0092-partiler": maliyetEkrani({ p0: [P_KAPALI, P_ACIK], musteriler: PARTI_MUSTERI, stok: PARTI_STOK, giderler: [...GIDERLER, K_0092], turler: GENEL_TURLER }, ["Üretim Partileri"]),
+  "anasayfa-0092-kart": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
+    giderYetki giderler={[...GIDERLER, K_0092]} setHesapHareketleri={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />, ["kaydir:Gider Ödemeleri"]],
+  "anasayfa-0092-hatirlatma": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
+    giderYetki giderler={[...GIDERLER, K_0092]} setHesapHareketleri={bos} giderTurleri={TURLER} tedarikciler={TED} giderAyarlari={AYAR.giderAyarlari} />, ["Gider Ödemeleri", "kaydir:Kapsamı doluyor ("]],
+  "ayarlar-giderayar-0092": [ayarlar("giderayar"), ["kaydir:Kapsam bitişi hatırlatma eşiği"]],
   // Spec 0051: başlangıç tarihiyle süzülmüş hesapsız liste, "Hepsini göster", hareket listesinde ve ekstrede ödemenin hedefi.
   "kasa-hesapsiz-esik": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Listeyi göster", "kaydir:Hesap ata"]],
   "kasa-hesapsiz-hepsi": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Hepsini göster", "dugme:Listeyi göster", "kaydir:Hesap ata"]],

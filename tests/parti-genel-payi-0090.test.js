@@ -275,12 +275,13 @@ describe("Spec 0090: süre, tek yol ve ekran (C5, C15, AC-51, AC-52)", () => {
     const sure = performance.now() - t0;
     console.log(`AC-52: ${Math.round(sure)} ms, hesaplaGiderRaporu çağrısı ${sayac.n} (ay haritası ${s.aylar.size} ay)`);
     expect(sure).toBeLessThan(2000);
-    expect(sayac.n).toBe(s.aylar.size); // ay başına tek çağrı: tek yol (C15)
+    expect(sayac.n).toBe(1); // spec 0092 ile (R18, AC-32): ay tablosu tek çağrıyla kurulur (eskiden ay başına bir çağrı)
     expect(s.partiler.reduce((t, p) => t + p.havuzK, 0)).toBeGreaterThan(0);
   });
-  it("C15: aylık havuz tek yoldan (rolHavuzlari → tür kırılımı); yeni motor kalemleri kendi toplamaz", () => {
+  it("C15: aylık havuz tek yoldan (spec 0092 ile tek ay tablosu: aylikRolTablosu → rapor motorunun aylık payı); yeni motor kalemleri kendi toplamaz", () => {
     const m = kod("src/lib/makinaStandartMaliyet.js");
-    expect(m).toMatch(/aylikGenelHavuzlar = \(veri, aylar, bugun\) => new Map\(aylar\.map\(ay => \[ay, rolHavuzlari\(veri, ay, ay, bugun\)\.genelK\]\)\)/);
+    expect(m).toMatch(/aylikGenelHavuzlar = \(veri, aylar, bugun\) => aylikGenelTablosu\(veri, aylar, bugun\)\.havuzlar/);
+    expect((m.match(/hesaplaGiderRaporu\(/g) || []).length).toBe(1);
     expect(m).not.toMatch(/kalemGiderTutari|kalemKurus|\.giderler\.(filter|reduce|forEach)/);
   });
   it("AC-51 (C5): parti ekranında çarpma, bölme ve yuvarlama yok", () => {

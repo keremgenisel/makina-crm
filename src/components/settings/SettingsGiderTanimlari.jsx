@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { uid, today } from "../../lib/utils";
 import { turHaritasi, tutarCoz, DAVRANIS, ayOf, KDV_YONU, kdvYonuOf, kdvYonuSecilebilirMi, sifirTutarSerbestMi, kdvliMi, atamaVerisiKoru, tedarikciSecilirMi, kurumTarafAdi,
-  tevkifatliMi, tevkifatDogrula, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kisitliGiderMi, kisitDogrula, varsayilanIndirilebilirOran } from "../../lib/gider";
+  tevkifatliMi, tevkifatDogrula, TEVKIFAT_ORANLARI, tevkifatOranEtiketi, kisitliGiderMi, kisitDogrula, varsayilanIndirilebilirOran,
+  kapsamSecilebilirMi, kapsamAySayisiCoz, kapsamVerisiKoru, kapsamAyOf, KAPSAM_ANAHTARI } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, TutarInput } from "../ui";
 import { KartBolum } from "../tasarim";
-import { AyInput, DavranisRozeti, KisitAlani, tl2, tutarMetni } from "../gider/GiderAlanlari";
+import { AyInput, DavranisRozeti, KisitAlani, KapsamAlani, tl2, tutarMetni } from "../gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu } from "../tasarim";
 
 // Tekrarlayan gider tanımları (spec 0001 R3/R4, plan K2/K8/K9/K17/K28/K36). Kalemler yalnız Giderler
@@ -32,7 +33,9 @@ export const SettingsGiderTanimlari = ({
     setHatalar({});
     setForm(t ? { ...bosForm(buAy), ...t, kdvYonu: kdvYonuOf(t), tutar: tutarMetni(t.tutar), kdvOrani: tutarMetni(t.kdvOrani), turId: String(t.turId ?? ""), calisanId: String(t.calisanId ?? ""), tedarikciId: String(t.tedarikciId ?? ""),
       modelSatirlari: (t.modelSatirlari || []).map(s => ({ ...s, birimMaliyet: tutarMetni(s.birimMaliyet), adet: String(s.adet ?? "") })),
-      kisitliGider: !!t.kisitliGider, indirilebilirOran: t.kisitliGider && t.indirilebilirOran != null ? String(t.indirilebilirOran) : "" } : bosForm(buAy));
+      kisitliGider: !!t.kisitliGider, indirilebilirOran: t.kisitliGider && t.indirilebilirOran != null ? String(t.indirilebilirOran) : "",
+      // Spec 0092 R4/2: saklı geçersiz kapsam boş açılır.
+      [KAPSAM_ANAHTARI]: (() => { const c = kapsamAySayisiCoz(t[KAPSAM_ANAHTARI]); return !c.hata && c.deger > 1 ? String(c.deger) : ""; })() } : bosForm(buAy));
   };
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
 
@@ -59,7 +62,7 @@ export const SettingsGiderTanimlari = ({
     const kdvYonu = !kdvliMi(dav) ? null : (kdvYonuSecilebilirMi(dav, form.girisYonu) ? kdvYonuOf(form) : KDV_YONU.HARIC);
     const k = tutarCoz(form.kdvOrani);
     if (kdvliMi(dav) && !k.bos && (k.gecersiz || k.deger < 0 || k.deger > 100)) h.kdvOrani = "KDV oranı 0 ile 100 arasında olmalı.";
-    // Spec 0090 R3, R5/2, R5/3: tanımda atama ve dağıtım çizilmez; eski tanımın verisi kalemle aynı tek kuralla korunur
+    // Spec 0090 R3, R5/2, R5/3: tanımda atama çizilmez; eski tanımın verisi kalemle aynı tek kuralla korunur
     // (atama yalnız normal davranışta, spec 0020 X5), hata üretilmez.
     // Spec 0075 R26, R39 (S4, S5): tanımda yalnız kutu ve oran; kural kalemle aynı saf fonksiyon. Boş KDV oranı "tarihe göre"dir.
     const tv = tevkifatDogrula(form, dav, { kdvBosSerbest: true });
@@ -67,6 +70,8 @@ export const SettingsGiderTanimlari = ({
     // Spec 0076 R35, R8/3: kalemle aynı doğrulayıcı; tanımda boş oran "ayardaki oran"dır, kayda yazılmaz.
     const ks = kisitDogrula(form, dav, { oranBosSerbest: true });
     for (const x of ks.hatalar) if (!h[x.alan]) h[x.alan] = x.mesaj;
+    // Spec 0092 R3, R4: kapsam yalnız normal ve kirada; kullanıcının yazdığı geçersiz değer kaydı engeller.
+    if (kapsamSecilebilirMi(dav)) { const c = kapsamAySayisiCoz(form[KAPSAM_ANAHTARI]); if (c.hata) h[KAPSAM_ANAHTARI] = c.hata; }
     setHatalar(h);
     if (Object.keys(h).length) return;
     const calisan = calisanlar.find(c => String(c.id) === String(form.calisanId));
@@ -82,6 +87,7 @@ export const SettingsGiderTanimlari = ({
       odemeYontemi: form.odemeYontemi || "",
       baslangicAy: form.baslangicAy, bitisAy: form.bitisAy || null,
       ...atamaVerisiKoru(form, dav === DAVRANIS.NORMAL),
+      ...kapsamVerisiKoru(form, kapsamSecilebilirMi(dav)), // spec 0092 R8/2: atama kapısından bağımsız (kira tanımı da korunur)
       uretilenAylar: form.uretilenAylar || [], kapatildi: form.kapatildi && !!form.bitisAy,
     };
     if (tv.alanlar) Object.assign(kayit, tv.alanlar); // spec 0075 R10 (S6): kapalıyken alan hiç yazılmaz
@@ -121,7 +127,9 @@ export const SettingsGiderTanimlari = ({
       {/* Spec 0075 R43 (S12): tevkifatlı tanım listede görünür (yoksa hiçbir yerde görünmezdi). */}
       {tevkifatliMi(dav) && t.tevkifatli && <div data-testid="tanim-tevkifat" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>Tevkifat {tevkifatOranEtiketi({ pay: t.tevkifatPay, payda: t.tevkifatPayda })}</div>}
       {/* Spec 0076 R35 (AC-34): kısıtlı tanım listede görünür (0075 "Tevkifat 5/10" emsali). */}
-      {kisitliGiderMi(dav) && t.kisitliGider && <div data-testid="tanim-kisitli" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>{t.indirilebilirOran != null ? `Kısıtlı %${t.indirilebilirOran}` : "Kısıtlı (ayardaki oran)"}</div>}</>;
+      {kisitliGiderMi(dav) && t.kisitliGider && <div data-testid="tanim-kisitli" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>{t.indirilebilirOran != null ? `Kısıtlı %${t.indirilebilirOran}` : "Kısıtlı (ayardaki oran)"}</div>}
+      {/* Spec 0092 R3/2 (AC-5/2): kapsamı birden çok ay olan tanım listede görünür; sütun sayısı değişmez. */}
+      {kapsamAyOf(t, dav) > 1 && <div data-testid="tanim-kapsam" style={{ fontSize: 11, color: "var(--blu700)" }}>{kapsamAyOf(t, dav)} ayı kapsar</div>}</>;
   };
   const sirali = [...giderTanimlari].sort((a, b) => (a.bitisAy && a.bitisAy < buAy ? 1 : 0) - (b.bitisAy && b.bitisAy < buAy ? 1 : 0) || String(a.ad).localeCompare(String(b.ad), "tr"));
 
@@ -245,6 +253,7 @@ export const SettingsGiderTanimlari = ({
                 </div>
               )}
               {kisitliGiderMi(dav) && <KisitAlani tanim acik={!!form.kisitliGider} oran={form.indirilebilirOran} onChange={set} varsayilanOran={varsayilanIndirilebilirOran(giderAyarlari)} hata={hatalar.indirilebilirOran} />}
+              {kapsamSecilebilirMi(dav) && <KapsamAlani deger={form[KAPSAM_ANAHTARI]} onChange={set} hata={hatalar[KAPSAM_ANAHTARI]} />}
               {tedarikciSecilirMi(dav) && <Field label="Tedarikçi">
                 <Select value={form.tedarikciId} onChange={e => set({ tedarikciId: e.target.value })}>
                   <option value="">Seçilmemiş</option>

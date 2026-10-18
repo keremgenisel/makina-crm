@@ -5,6 +5,7 @@ import { esikAltiKalemSayisi, tutarCoz, kisitOranCoz, varsayilanIndirilebilirOra
 import { AyInput, tutarMetni } from "../gider/GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
 import { hatirlatmaEsikDogrula, hatirlatmaEsigi } from "../../lib/odemeHatirlatma";
+import { kapsamBitisEsikDogrula, kapsamBitisEsigi, KAPSAM_BITIS_ESIK_ETIKETI, KAPSAM_BITIS_ESIK_VARSAYILAN } from "../../lib/giderKapsami";
 import { hesapsizBaslangicDogrula, denemeDonemiBitisi } from "../../lib/kasa";
 import { fmtTR, yerelBugun } from "../../lib/utils";
 import { stopajBeyanAyari, stopajBeyanDogrula, BEYAN_DONEMI, BEYAN_DONEMI_AD } from "../../lib/stopajDonemi";
@@ -20,6 +21,7 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
   const mevcut = appSettings?.giderAyarlari || {};
   const [form, setForm] = useState({ stopajOrani: tutarMetni(mevcut.stopajOrani ?? 20), yururlukAy: mevcut.yururlukAy || "",
     hatirlatmaEsikGun: String(hatirlatmaEsigi(mevcut)), hesapsizBaslangic: mevcut.hesapsizBaslangic || "",
+    kapsamBitisEsikGun: String(kapsamBitisEsigi(mevcut)), // spec 0092 R35, C12: ilk durum VE kaydet listesi birlikte
     indirilebilirOran: String(varsayilanIndirilebilirOran(mevcut)), // spec 0076 R34
     // Spec 0056 R1, R2 (Q5): alan hiç yoksa varsayılan tarih gösterilir ve kaydedilir; boş = deneme dönemi kapalı.
     denemeDonemiBitis: denemeDonemiBitisi(mevcut) || "",
@@ -35,6 +37,9 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     // Spec 0003 R5, AC-23: 0–365 tam sayı; geçersizse hiçbir alan kaydedilmez, neden yazılır.
     const e = hatirlatmaEsikDogrula(form.hatirlatmaEsikGun);
     if (e.hata) { setHata(e.hata); return; }
+    // Spec 0092 R36: kapsam bitişi eşiği ödeme eşiğinden ayrı alan; geçersizse hiçbir alan kaydedilmez.
+    const ke = kapsamBitisEsikDogrula(form.kapsamBitisEsikGun);
+    if (ke.hata) { setHata(ke.hata); return; }
     // Spec 0076 R34, AC-8, AC-41: 0–100 tam sayı; geçersizse kayıt yok ve neden yazılır. Boş = varsayılana (70) dönüş.
     const io = kisitOranCoz(form.indirilebilirOran);
     if (io.hata) { setHata(io.hata); return; }
@@ -48,7 +53,7 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
     const by = stopajBeyanDogrula({ donem: form.stopajBeyanDonemi, gun: form.stopajOdemeGunu });
     if (by.hata) { setHata(by.hata); return; }
     setHata("");
-    setAppSettings(p => ({ ...p, giderAyarlari: { ...ortakKaynaksiz(p?.giderAyarlari), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, hatirlatmaEsikGun: e.deger, indirilebilirOran: io.bos ? null : io.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme,
+    setAppSettings(p => ({ ...p, giderAyarlari: { ...ortakKaynaksiz(p?.giderAyarlari), stopajOrani: s.deger, yururlukAy: form.yururlukAy || null, hatirlatmaEsikGun: e.deger, kapsamBitisEsikGun: ke.deger, indirilebilirOran: io.bos ? null : io.deger, hesapsizBaslangic: b.deger, denemeDonemiBitis: deneme,
       stopajBeyanDonemi: by.deger.donem, stopajOdemeGunu: by.deger.gun } }));
     flash("ok", "Gider ayarları kaydedildi.");
   };
@@ -88,6 +93,14 @@ export const SettingsGider = ({ appSettings, setAppSettings, giderler = [], flas
             <input aria-label="Ödeme hatırlatma eşiği (gün)" className="input" inputMode="numeric" value={form.hatirlatmaEsikGun} disabled={!yonetebilir}
               onChange={e => setForm(p => ({ ...p, hatirlatmaEsikGun: e.target.value }))} style={{ width: 100 }} />
             <Ipucu>Vadesine bu kadar gün (bugün dahil) kalan ödenmemiş kalemler Anasayfa'da "yaklaşan" sayılır. 0 ile 365 arası; varsayılan 7.</Ipucu>
+          </Field>
+        </div>
+        {/* Spec 0092 R35–R37: peşin ödenen giderin kapsam bitişi hatırlatması (Anasayfa kartının üçüncü sayısı). */}
+        <div style={{ maxWidth: 260 }}>
+          <Field label={KAPSAM_BITIS_ESIK_ETIKETI}>
+            <input aria-label={KAPSAM_BITIS_ESIK_ETIKETI} className="input" inputMode="numeric" value={form.kapsamBitisEsikGun} disabled={!yonetebilir}
+              onChange={e => setForm(p => ({ ...p, kapsamBitisEsikGun: e.target.value }))} style={{ width: 100 }} />
+            <Ipucu>{`Kapsadığı süre bu kadar gün içinde dolacak ya da bu kadar gün önce dolmuş peşin ödenmiş kalemler Anasayfa'da gösterilir. 0 ile 365 arası; varsayılan ${KAPSAM_BITIS_ESIK_VARSAYILAN}.`}</Ipucu>
           </Field>
         </div>
         {/* Spec 0056 R1–R4: deneme döneminde kasa hesabı (hareketi olsa da) silinebilir, hareketleri taşınabilir. */}

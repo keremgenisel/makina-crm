@@ -32,9 +32,11 @@ describe("Spec 0090: giriş kapıları, motor (R4–R6)", () => {
       [3, { calisanId: 7, calisanAd: "A", resmiTutar: 100, eldenTutar: 0 }], [5, { tutar: 100, kdvOrani: 0 }]]) {
       const k = dogrula({ turId, ...ek, atamaTur: "", makinaTur: null, makinaId: null, modelSatirlari: [], dagitimAy: "" }).kayit;
       for (const a of ATAMA_ANAHTARLARI) expect(k, `${turId} ${a}`).not.toHaveProperty(a);
+      // Spec 0092 ile (R8/2): kapsam anahtarı atama listesinden çıktı; girilmemişse yine hiç yazılmaz.
+      expect(k, `${turId} dagitimAy`).not.toHaveProperty("dagitimAy");
     }
   });
-  it("R5/3 (K1): atama taşıyan kalemde hata ve uyarı yok; biçim çözülür; atanamayan davranışta atama, makina atamasında dağıtım düşer", () => {
+  it("R5/3 (K1; spec 0092 R7 ile ters çevrildi): atama taşıyan kalemde hata ve uyarı yok; biçim çözülür; atanamayan davranışta atama düşer, kapsam atamaya bakmaz", () => {
     // Bugün aşım hatası verecek model dağılımı: kullanıcının düzeltecek alanı yok, kayıt kilitlenmez.
     const asim = dogrula({ turId: 1, tutar: 100, atamaTur: ATAMA.MODEL, modelSatirlari: [{ modelAd: " AK100 ", birimMaliyet: "1.000", adet: "3" }] });
     expect(asim.hatalar).toEqual([]);
@@ -45,7 +47,9 @@ describe("Spec 0090: giriş kapıları, motor (R4–R6)", () => {
     expect(kira.kayit.dagitimAy).toBe(6); // kira ortak kovada kalır, dağıtım ortak payın kuralıdır
     const makina = dogrula({ turId: 1, tutar: 100, atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 5, dagitimAy: 6 });
     expect(makina.kayit).toMatchObject({ atamaTur: "makina", makinaTur: "stok", makinaId: 5 });
-    expect(makina.kayit).not.toHaveProperty("dagitimAy");
+    // Spec 0092 ile (R7): kapsam atamaya bakmaz; makina atamasında da korunur (eskiden düşüyordu).
+    expect(makina.kayit.dagitimAy).toBe(6);
+    // Spec 0092 ile (R8/2): atama koruyucusu kapsamı yazmaz (kendi koruyucusu var, kapsamVerisiKoru).
     expect(atamaVerisiKoru({ atamaTur: ATAMA.DAGITMA, dagitimAy: 12 }, true)).toEqual({ atamaTur: "dagitma" });
   });
   it("AC-8: atama ve dağıtım taşıyan eski tanımdan üretilen kalem bu veriyi bugünkü gibi taşır", () => {
@@ -106,11 +110,17 @@ describe("Spec 0090: kaynak taramaları", () => {
   });
   it("AC-54 (R38): silinen bileşenler, kova kartı, kopmuş atama yardımcıları ve ekran metinleri kaynakta yok", () => {
     const adlar = /\b(AtamaAlani|DagitimAlani|ModelSatirlari|KovaKarti|dusenAtamaKalemSayisi|dusenAtamaMetni|MakinaSecici|ATAMA_SECENEKLERI)\b/;
-    const metinler = /Makina maliyeti ataması|Maliyete dağıtım \(ay\)|Makina Maliyeti Kovaları|dusen-atama-sayisi|dagitim-rozeti|ataması ortak gidere düştü/;
+    // Spec 0092 ile (C14, C17): dağıtım alanının etiketi ve rozet kimliği bu yasaktan düştü (alan "Kapsadığı ay sayısı" adıyla
+    // döndü); atamaya ait ifadelerin hepsi aynen kalır. Yeni etiket ve rozet kimliği aşağıda POZİTİF aranır.
+    const metinler = /Makina maliyeti ataması|Makina Maliyeti Kovaları|dusen-atama-sayisi|ataması ortak gidere düştü/;
     // "kova-karti" kimliği açık kalemlerin yaşlandırma kovası düğmesinde de vardır (ayrı kavram, 0061; R43): taranmaz.
     const src = tara("src").filter(f => f.startsWith("src/components") || f === "src/App.jsx");
     expect(src.filter(f => adlar.test(kod(f)))).toEqual([]);
     expect(src.filter(f => metinler.test(kod(f)))).toEqual([]);
+    // Spec 0092 C17: eski etiket ve rozet kimliği geri gelmedi, yerinde kavramın adı var.
+    expect(src.filter(f => /Maliyete dağıtım \(ay\)|dagitim-rozeti/.test(kod(f)))).toEqual([]);
+    expect(kod("src/lib/gider.js")).toMatch(/KAPSAM_ETIKETI = "Kapsadığı ay sayısı"/);
+    expect(kod("src/components/gider/DonemRaporu.jsx")).toMatch(/data-testid="kapsam-rozeti"/);
   });
   it("R5/2 (triyaj bulgu 3): src altında boş atama değeri yazan yer yok (kural tek yerde, atamaVerisiKoru)", () => {
     expect(tara("src").filter(f => /atamaTur:\s*""/.test(kod(f)))).toEqual([]);
@@ -128,10 +138,13 @@ describe("Spec 0090: kaynak taramaları", () => {
     expect(app).not.toMatch(/<Stock [^\n]*\bgiderler=/);
     expect(kod("src/components/Stock.jsx")).not.toMatch(/\bgiderler\b/);
     const G = await import("../src/lib/gider");
-    for (const ad of ["dagitimRozetMetni", "makinaGiderSayisi", "modelKullanim", "modelSatirlariDogrula"]) {
+    // Spec 0092 ile (C17): `dagitimRozetMetni` satırı yerini yeni rozet yardımcısına bıraktı (pozitif); diğer üçü aynen yasak.
+    for (const ad of ["makinaGiderSayisi", "modelKullanim", "modelSatirlariDogrula"]) {
       expect(G[ad], ad).toBeUndefined();
       expect(tara("src").filter(f => new RegExp(`\\b${ad}\\b`).test(kod(f))), ad).toEqual([]);
     }
+    expect(G.dagitimRozetMetni).toBeUndefined();
+    expect(typeof G.kapsamRozetMetni).toBe("function");
   });
   it("AC-53 (R39): silme onaylarında atama cümlesi yok; model adı taşıma zinciri duruyor", () => {
     for (const f of ["src/components/Customers.jsx", "src/components/stock/MakinaStokTab.jsx", "src/components/ModelsManager.jsx"]) {

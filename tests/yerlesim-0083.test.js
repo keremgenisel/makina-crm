@@ -79,7 +79,8 @@ describe("Spec 0083: kaynak taramaları", () => {
     const arac = oku("scripts/evidence/0009-sayfa.jsx");
     const ekranlar = new Set(JSON.parse(oku("docs/evidence/0083-piksel-raporu.json")).map(x => x.ad.replace(/-(aydinlik|karanlik)\.png$/, "")));
     // Spec 0088 ile (R23/4): Giderler › Üretim Partileri ekranları Makina Maliyeti'ne taşındı ve araçta yeni adlarıyla durur.
-    const TASINAN = { "giderler-uretim-partileri": "maliyet-uretim-partileri", "giderler-uretim-partisi-formu": "maliyet-uretim-partisi-formu" };
+    // Spec 0092 ile (R42/2): giderler-0072-liste bu spec'in adıyla yeniden adlandırıldı.
+    const TASINAN = { "giderler-uretim-partileri": "maliyet-uretim-partileri", "giderler-uretim-partisi-formu": "maliyet-uretim-partisi-formu", "giderler-0072-liste": "giderler-0092-liste" };
     // Spec 0089 ile (R10, C7 0088 R23/4): kalkan iki görünümün ekranları araçtan bilinçli olarak düştü (tam ad listesi).
     const KALKAN = new Set(["giderler-model", "giderler-karlilik", "giderler-model-personel", "maliyet-detay-personel", "giderler-karlilik-parti",
       "giderler-model-parti-degisim", "maliyet-detay-parti-acik", "maliyet-detay-parti-kapali", "giderler-0072-model", "giderler-0072-karlilik",

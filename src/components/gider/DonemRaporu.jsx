@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
 import { tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, DAVRANIS, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, kurumTarafAdi, vergiRozetleri,
-  kalemGiderTutari, kalemIndirilebilirKdv, kisitEtkiliMi, kisitliRozetMetni } from "../../lib/gider";
+  kalemGiderTutari, kalemIndirilebilirKdv, kisitEtkiliMi, kisitliRozetMetni, kapsamliMi, kapsamRozetMetni } from "../../lib/gider";
 import { fmtTR, trLower } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
@@ -351,7 +351,9 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, bugun, canD
         </td>
         {/* Spec 0076 R19 (AC-18): tutar hücresi gider tutarı; kısıtlı kalemde altında oran ve indirilemeyen KDV rozeti. */}
         <td style={{ ...tdR, fontWeight: 700 }}>{tl2(kalemGiderTutari(k, d))}
-          {kisitEtkiliMi(k, d) && <div data-testid="kisitli-rozeti" style={{ marginTop: 4, fontWeight: 400 }}><Rozet renk="turuncu">{kisitliRozetMetni(k, d)}</Rozet></div>}</td>
+          {kisitEtkiliMi(k, d) && <div data-testid="kisitli-rozeti" style={{ marginTop: 4, fontWeight: 400 }}><Rozet renk="turuncu">{kisitliRozetMetni(k, d)}</Rozet></div>}
+          {/* Spec 0092 R19, R19/2 (AC-33/3): kapsam rozeti kısıtlı rozetin altında; kaçıncı ay yazılmaz. */}
+          {kapsamliMi(k, d) && <div data-testid="kapsam-rozeti" style={{ marginTop: 4, fontWeight: 400 }}><Rozet renk="mavi">{kapsamRozetMetni(k, d)}</Rozet></div>}</td>
         <td style={tdR}>{d === DAVRANIS.PERSONEL ? <span style={{ color: "var(--n500, #64748b)" }}>—</span> : <>{tl2(kalemKdv(k, d))}<div style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>%{k.kdvOrani ?? 0}</div>
           {/* Spec 0076 R20 (AC-43): tam KDV faturada yazandır; kısıtlı satırda altında indirilebilir tutar (0075 tevkifat hücresi deseni). */}
           {kisitEtkiliMi(k, d) && <div data-testid="kdv-indirilebilir" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>indirilebilir {tl2(kalemIndirilebilirKdv(k, d))}</div>}</>}</td>

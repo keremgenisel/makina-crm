@@ -28,6 +28,8 @@ const DAGITIM_YOK = () => {
   expect(screen.queryByLabelText("Maliyete dağıtım (ay)")).toBeNull();
   expect(screen.queryByText(/aya dağıt/i)).toBeNull();
 };
+// Spec 0092 ile (AC-1–AC-5, C14): alan "Kapsadığı ay sayısı" adıyla normal ve kirada geri döndü; personel ve SGK'da yok.
+const KAPSAM_VAR = (id) => (id === 1 || id === 2 ? expect(screen.getByLabelText("Kapsadığı ay sayısı")).toBeTruthy() : expect(screen.queryByLabelText("Kapsadığı ay sayısı")).toBeNull());
 const formAc = (o = {}) => {
   const onSave = vi.fn();
   render(<GiderForm giderTurleri={TURLER} tedarikciler={TED} calisanlar={[{ id: 21, ad: "Hasan", resmiMaliyet: 30000 }]} giderAyarlari={{ stopajOrani: 20 }}
@@ -37,17 +39,18 @@ const formAc = (o = {}) => {
 const tur = (id) => fireEvent.change(screen.getByLabelText("Gider türü *"), { target: { value: String(id) } });
 
 describe("Spec 0090: gider formu (R1, R2, R4, R5)", () => {
-  it("AC-1 / AC-2: yeni gider formunda atama bölümü ve dağıtım alanı normal, kira, personel ve SGK'da yok", () => {
+  it("AC-1 / AC-2 (spec 0092 ile ters çevrildi): yeni gider formunda atama bölümü yok; kapsam alanı normal ve kirada var, personel ve SGK'da yok", () => {
     formAc();
-    for (const id of [1, 2, 3, 5]) { tur(id); ATAMA_YOK(); DAGITIM_YOK(); }
+    for (const id of [1, 2, 3, 5]) { tur(id); ATAMA_YOK(); DAGITIM_YOK(); KAPSAM_VAR(id); }
   });
-  it("AC-6: yeni kalemin kaydedilen gövdesinde atama ve dağıtım anahtarları hiç yok", () => {
+  it("AC-6 (spec 0092 ile: kapsam girilmemişse anahtar yine yok): yeni kalemin kaydedilen gövdesinde atama ve dağıtım anahtarları hiç yok", () => {
     const onSave = formAc();
     tur(1);
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.000" } });
     fireEvent.click(screen.getByText("Kaydet"));
     const govde = onSave.mock.calls[0][0];
     for (const a of ATAMA_ANAHTARLARI) expect(govde, a).not.toHaveProperty(a);
+    expect(govde).not.toHaveProperty("dagitimAy");
   });
   it("AC-4: model ataması ve iki model satırı taşıyan eski kalem formda açılıp kaydedilince birebir korunur", () => {
     const satirlar = [{ modelAd: "AK100", birimMaliyet: 300, adet: 2 }, { modelAd: "AK200", birimMaliyet: 100, adet: 1 }];
@@ -76,10 +79,10 @@ describe("Spec 0090: tekrarlayan tanım formu ve tablosu (R3, R5, R10/2)", () =>
     fireEvent.change(screen.getByPlaceholderText("Örn. Fabrika binası kirası"), { target: { value: ad } });
     fireEvent.change(screen.getByLabelText("Başlangıç ayı"), { target: { value: "2026-10" } });
   };
-  it("AC-3: tanım formunda atama bölümü ve dağıtım alanı yok (normal, kira, SGK)", () => {
+  it("AC-3 (spec 0092 ile ters çevrildi): tanım formunda atama bölümü yok; kapsam alanı normal ve kirada var, SGK'da yok", () => {
     render(<TanimHarness />);
     fireEvent.click(screen.getByText("Yeni Tanım"));
-    for (const id of [1, 2, 5]) { fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: String(id) } }); ATAMA_YOK(); DAGITIM_YOK(); }
+    for (const id of [1, 2, 5]) { fireEvent.change(screen.getAllByRole("combobox")[0], { target: { value: String(id) } }); ATAMA_YOK(); DAGITIM_YOK(); KAPSAM_VAR(id); }
   });
   it("AC-7: yeni tanımın kaydedilen gövdesinde atama ve dağıtım anahtarları hiç yok; eski tanımın verisi düzenlemede korunur", () => {
     let st;
@@ -91,6 +94,7 @@ describe("Spec 0090: tekrarlayan tanım formu ve tablosu (R3, R5, R10/2)", () =>
     fireEvent.click(screen.getByText("Kaydet"));
     const yeni = st.find(t => t.ad === "İnternet");
     for (const a of ATAMA_ANAHTARLARI) expect(yeni, a).not.toHaveProperty(a);
+    expect(yeni).not.toHaveProperty("dagitimAy"); // spec 0092 ile: kapsam girilmemişse anahtar yok
     fireEvent.click(within(screen.getByText("Sigorta").closest("tr")).getByTitle("Düzenle"));
     fireEvent.click(screen.getByText("Kaydet"));
     expect(st.find(t => t.id === 70)).toMatchObject({ atamaTur: "model", modelSatirlari: eski.modelSatirlari, dagitimAy: 12 });
@@ -151,10 +155,11 @@ describe("Spec 0090: Dönem Raporu ve kalem listesi (R7–R10)", () => {
     expect(Number(bos.getAttribute("colspan"))).toBe(8);
     expect(satirSpan(container.querySelector("tfoot tr"))).toBe(8);
   });
-  it("AC-13: aylara dağıtılmış kalem varken dağıtım rozeti hiçbir yerde yok", () => {
+  it("AC-13 (spec 0092 ile ters çevrildi, ikinci yarısı korunur): kapsamlı kalemde kapsam rozeti çizilir; eski rozet ve 'aya dağıtılmış' metni yok", () => {
     render(<GH />);
     expect(KALEMLER.some(k => k.dagitimAy === 12)).toBe(true);
     expect(screen.queryByTestId("dagitim-rozeti")).toBeNull();
+    expect(screen.getAllByTestId("kapsam-rozeti").length).toBeGreaterThan(0);
     expect(document.body.textContent).not.toMatch(/aya dağıtılmış/);
   });
 });

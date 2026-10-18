@@ -3,9 +3,9 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import {
-  dagitimPaylari, dagitimAySayisiCoz, dagitimAyOf, dagitimAraligi, dagitimSecilebilirMi, esitBol,
+  dagitimPaylari, kapsamAySayisiCoz, dagitimAyOf, dagitimAraligi, dagitimSecilebilirMi, esitBol,
   giderKalemDogrula, tekrarlayanUret, turHaritasi, kalemKovalariKurus, hesaplaGiderRaporu, borcOzeti, canliModelSeti,
-  DAGITIM_AY_HATASI, DAVRANIS, ATAMA,
+  KAPSAM_AY_HATASI, DAVRANIS, ATAMA,
 } from "../src/lib/gider";
 import { hesaplaMakinaMaliyetleri, makinaKarlilik, karlilikOzeti, dagitimPayKapsami } from "../src/lib/makinaMaliyeti";
 import { odemeHatirlatmalari } from "../src/lib/odemeHatirlatma";
@@ -51,34 +51,33 @@ describe("Spec 0072 A: dağıtım payları", () => {
     expect(p.slice(0, 6).every(x => x.payK === 14285)).toBe(true);
   });
   it("AC-6: 60'ın üstü, sıfır, negatif ve tam sayı olmayan ay sayısı tek hata metniyle reddedilir", () => {
-    for (const v of ["61", "0", "-1", "1,5", "1.5", "abc"]) expect(dagitimAySayisiCoz(v)).toEqual({ hata: DAGITIM_AY_HATASI });
-    expect(DAGITIM_AY_HATASI).toBe("Dağıtım ay sayısı 1 ile 60 arasında tam sayı olmalı.");
-    expect(dagitimAySayisiCoz("")).toEqual({ deger: 1 });
-    expect(dagitimAySayisiCoz("60")).toEqual({ deger: 60 });
+    // Spec 0092 ile (R2/2, AC-69/2): çözücü ve hata metni kavrama döndü ("Kapsadığı ay sayısı"); sınırlar aynı.
+    for (const v of ["61", "0", "-1", "1,5", "1.5", "abc"]) expect(kapsamAySayisiCoz(v)).toEqual({ hata: KAPSAM_AY_HATASI });
+    expect(KAPSAM_AY_HATASI).toBe("Kapsadığı ay sayısı 1 ile 60 arasında tam sayı olmalı.");
+    expect(kapsamAySayisiCoz("")).toEqual({ deger: 1 });
+    expect(kapsamAySayisiCoz("60")).toEqual({ deger: 60 });
   });
   it("AC-36: bir ya da boş değer saklanmaz; makina ve 'dağıtılmasın' atamasında alan temizlenir", () => {
     const d = (o) => giderKalemDogrula({ tarih: "2026-03-15", turId: 1, tutar: "1000", kdvOrani: "20", ...o }, { turMap });
     expect(d({ dagitimAy: "12" }).kayit.dagitimAy).toBe(12);
     expect("dagitimAy" in d({ dagitimAy: "1" }).kayit).toBe(false);
     expect("dagitimAy" in d({ dagitimAy: "" }).kayit).toBe(false);
-    expect("dagitimAy" in d({ dagitimAy: "12", atamaTur: ATAMA.DAGITMA }).kayit).toBe(false);
-    expect("dagitimAy" in d({ dagitimAy: "12", atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 4 }).kayit).toBe(false);
-    // Makina atamasında geçersiz değer hata değil (alan pasif, temizlenir).
-    expect(d({ dagitimAy: "99", atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 4 }).hatalar).toEqual([]);
-    // Spec 0090 ile (R5/3): formda dağıtım alanı yok; geçersiz değer hata üretmez, saklanmaz.
-    expect(d({ dagitimAy: "99" }).hatalar).toEqual([]);
-    expect("dagitimAy" in d({ dagitimAy: "99" }).kayit).toBe(false);
+    // Spec 0092 ile (R7): kapsam atamaya bakmaz; makina ve "dağıtılmasın" atamasında da korunur.
+    expect(d({ dagitimAy: "12", atamaTur: ATAMA.DAGITMA }).kayit.dagitimAy).toBe(12);
+    expect(d({ dagitimAy: "12", atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 4 }).kayit.dagitimAy).toBe(12);
+    // Spec 0092 ile (R4): alan formda yeniden çizilir; kullanıcının yazdığı geçersiz değer kaydı engeller.
+    expect(d({ dagitimAy: "99" }).hatalar.map(h => h.mesaj)).toEqual([KAPSAM_AY_HATASI]);
     // Kira ve personel de dağıtılabilir (S3).
     const kira = giderKalemDogrula({ tarih: "2026-03-15", turId: 2, tutar: "20000", kdvOrani: "20", stopajOrani: "20", girisYonu: "brut", dagitimAy: "12" }, { turMap });
     expect(kira.kayit.dagitimAy).toBe(12);
   });
-  it("AC-5: tekrarlayan tanımdaki dağıtım üretilen kaleme taşınır; makina atamalı tanımda taşınmaz", () => {
+  it("AC-5: tekrarlayan tanımdaki dağıtım üretilen kaleme taşınır (spec 0092 ile makina atamalı tanımda da, R7)", () => {
     const t = [{ id: 9, turId: 1, ad: "Yazılım", tutar: 1200, kdvOrani: 20, baslangicAy: "2026-03", uretilenAylar: [], dagitimAy: 12 },
       { id: 8, turId: 1, ad: "Bakım", tutar: 100, kdvOrani: 20, baslangicAy: "2026-03", uretilenAylar: [], dagitimAy: 12, atamaTur: ATAMA.MAKINA, makinaTur: "stok", makinaId: 1 }];
     let n = 100;
     const u = tekrarlayanUret(t, [], "2026-03", { turMap, uid: () => ++n });
     expect(u.yeniKalemler.find(k => k.tanimId === 9).dagitimAy).toBe(12);
-    expect("dagitimAy" in u.yeniKalemler.find(k => k.tanimId === 8)).toBe(false);
+    expect(u.yeniKalemler.find(k => k.tanimId === 8).dagitimAy).toBe(12); // spec 0092 ile (R7)
   });
   it("AC-15 (spec 0090 triyajı ile): rozet kalktı; kapsam aralığı motorda durur", () => {
     // Spec 0090 triyajı (bulgu 4): rozet metni (`dagitimRozetMetni`) ekranla birlikte silindi; aralık hesabı durur.

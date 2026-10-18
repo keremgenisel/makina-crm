@@ -8,6 +8,7 @@ import { useLock } from "../../hooks/useLock";
 import { AyInput } from "./GiderAlanlari";
 import { KartBolum, BosDurum, HataMetni, Ipucu } from "../tasarim";
 import { Rozet } from "./DonemRaporu";
+import { yayilanKalemMetni } from "../maliyet/PayOzeti";
 
 // Makina Maliyeti › Üretim Partileri (spec 0088 ile Giderler'den taşındı; spec 0022 R1, R3, R7, R11; plan P5, P8). Parti yalnız
 // genel gider payının tabanıdır (C7). Spec 0090 R12–R37: rakamlar Makina Maliyeti ekranının kurduğu `partiGenelPaylari`
@@ -115,6 +116,8 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
               })}
             </tbody>
           </table>
+          {/* Spec 0092 R22: yayılmış kalem bilgisi tablonun altında bir kez (sayı motordan, parti başına tekrar edilmez). */}
+          {partiSonucu?.yayilanAdet > 0 && <div data-testid="parti-yayilan"><Ipucu>{yayilanKalemMetni(partiSonucu.yayilanAdet)}</Ipucu></div>}
         </KartBolum>
       )}
 

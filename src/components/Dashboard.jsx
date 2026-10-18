@@ -9,6 +9,7 @@ import { useBugun } from "../hooks/useBugun";
 import { teklifKaydedildiMi, teklifUretimDurumu } from "../lib/evrakUretim";
 import { stopajBeyanAyari } from "../lib/stopajDonemi";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
+import { kapsamHatirlatmalari, kapsamBitisEsigi } from "../lib/giderKapsami";
 import { turHaritasi, DAVRANIS } from "../lib/gider";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { odemeGirisiYaz } from "../lib/formOdemesi";
@@ -31,6 +32,10 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const hatirlatma = useMemo(() => (giderYetki ? odemeHatirlatmalari(giderler, {
     turler: giderTurleri, tedarikciler, yururlukAy: giderAyarlari?.yururlukAy || null, esikGun: hatirlatmaEsigi(giderAyarlari),
     beyanAyari: stopajBeyanAyari(giderAyarlari), // spec 0084 R20 (D3)
+  }, bugunYerel) : null), [giderYetki, giderler, giderTurleri, tedarikciler, giderAyarlari, bugunYerel]);
+  // Spec 0092 R25, C10: kapsam bitişi ayrı saf fonksiyon (ödeme hatırlatıcısına dokunmaz); aynı yetki kapısı (AC-57).
+  const kapsamHatirlatma = useMemo(() => (giderYetki ? kapsamHatirlatmalari(giderler, {
+    turler: giderTurleri, tedarikciler, yururlukAy: giderAyarlari?.yururlukAy || null, esikGun: kapsamBitisEsigi(giderAyarlari),
   }, bugunYerel) : null), [giderYetki, giderler, giderTurleri, tedarikciler, giderAyarlari, bugunYerel]);
   // R6, plan H8: Giderler ile aynı işlem geçmişi satırı. Spec 0024 R17: "Ödendi" tutarı kalanla, hesabı son
   // kullanılanla dolu ödeme penceresini açar (taksitli hedefte en yakın açık taksit).
@@ -371,7 +376,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       </div>
 
       {/* Ödeme hatırlatıcısı (spec 0003, plan H2): 5 × 2 ızgaranın altında kendi satırında, iki ayrı sayı. */}
-      {hatirlatma && <div style={{ marginBottom: 20 }}><OdemeHatirlatmaKarti sonuc={hatirlatma} onClick={() => setShowHatirlatma(true)} /></div>}
+      {hatirlatma && <div style={{ marginBottom: 20 }}><OdemeHatirlatmaKarti sonuc={hatirlatma} kapsam={kapsamHatirlatma} onClick={() => setShowHatirlatma(true)} /></div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
         {/* Son Satışlar */}
@@ -597,7 +602,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
 
       {/* Borçlu Firmalar */}
       {showHatirlatma && hatirlatma && (
-        <OdemeHatirlatmaPenceresi sonuc={hatirlatma} odendiYetkisi={canGider("gider_odeme") && !!setHesapHareketleri} onOdendi={hatirlatmaOdendi}
+        <OdemeHatirlatmaPenceresi sonuc={hatirlatma} kapsam={kapsamHatirlatma} odendiYetkisi={canGider("gider_odeme") && !!setHesapHareketleri} onOdendi={hatirlatmaOdendi}
           onGiderlereGit={onGoGiderHatirlatma ? () => { setShowHatirlatma(false); onGoGiderHatirlatma(); } : null} onClose={() => setShowHatirlatma(false)} />
       )}
       {hatOdemeKalemi && hatKilidi && (

@@ -80,13 +80,13 @@ describe("Gider Ayarları (R10)", () => {
     expect(screen.getByText("Eşiğin altında 2 gider kalemi kaldı.")).toBeTruthy();
     fireEvent.click(screen.getByText("Kaydet"));
     const yeni = setAppSettings.mock.calls[0][0]({ giderAyarlari: { varsayilanResmiMaliyet: 5 } });
-    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", hatirlatmaEsikGun: 7, indirilebilirOran: 70, hesapsizBaslangic: "", denemeDonemiBitis: "2027-01-01", stopajBeyanDonemi: "ucAylik", stopajOdemeGunu: 26 }); // spec 0084 ile güncellendi (R1, C9): beyan dönemi ve ödeme günü varsayılanla yazılır; 0051: boş = eşik yok; spec 0056 Q5: alan yoksa varsayılan yazılır; spec 0076 R34: indirilebilir oran varsayılanı (70) yazılır
+    expect(yeni.giderAyarlari).toEqual({ varsayilanResmiMaliyet: 5, stopajOrani: 20, yururlukAy: "2026-07", hatirlatmaEsikGun: 7, indirilebilirOran: 70, hesapsizBaslangic: "", denemeDonemiBitis: "2027-01-01", stopajBeyanDonemi: "ucAylik", stopajOdemeGunu: 26, kapsamBitisEsikGun: 30 }); // spec 0092 ile (R35, C12): kapsam bitişi eşiği varsayılanla yazılır; spec 0084 ile güncellendi (R1, C9): beyan dönemi ve ödeme günü varsayılanla yazılır; 0051: boş = eşik yok; spec 0056 Q5: alan yoksa varsayılan yazılır; spec 0076 R34: indirilebilir oran varsayılanı (70) yazılır
   });
   // Triyaj (spec 0076): oran alanı eklenirken başlangıç tarihi formun ilk durumundan düşmüş, başka bir alan kaydedilince
   // 0051 eşiği sessizce siliniyordu. Dolu ayarla açılan form yalnız oran değiştirilip kaydedilince bütün alanları korur.
   it("triyaj 0076: dolu ayarla açılan form yalnız oran değiştirilip kaydedilince diğer bütün alanları (hesapsız başlangıç dahil) korur", () => {
     const setAppSettings = vi.fn();
-    const dolu = { stopajOrani: 15, yururlukAy: "2026-03", hatirlatmaEsikGun: 12, hesapsizBaslangic: "2026-04-01", denemeDonemiBitis: "2026-12-15", indirilebilirOran: 70, stopajBeyanDonemi: "aylik", stopajOdemeGunu: 20 }; // spec 0084 ile güncellendi (C9)
+    const dolu = { stopajOrani: 15, yururlukAy: "2026-03", hatirlatmaEsikGun: 12, hesapsizBaslangic: "2026-04-01", denemeDonemiBitis: "2026-12-15", indirilebilirOran: 70, stopajBeyanDonemi: "aylik", stopajOdemeGunu: 20, kapsamBitisEsikGun: 45 }; // spec 0084 ile güncellendi (C9); spec 0092 C12 ile eşik
     render(<SettingsGider appSettings={{ giderAyarlari: dolu }} setAppSettings={setAppSettings} giderler={[]} />);
     expect(screen.getByLabelText("Hesapsız kayıt başlangıç tarihi").value).toBe("2026-04-01");
     fireEvent.change(screen.getByLabelText("Binek araç giderlerinde indirilebilir oran"), { target: { value: "88" } });
@@ -97,7 +97,7 @@ describe("Gider Ayarları (R10)", () => {
   // Spec 0084 C9 (Ö-8): 0076 triyaj korumasının genişletilmesi; yalnız beyan dönemi değişince diğer bütün alanlar korunur.
   it("spec 0084 AC-4: dolu ayarla açılan formda yalnız beyan dönemi değiştirilip kaydedilince diğer bütün gider ayarları korunur, iki yeni alan da yazılır", () => {
     const setAppSettings = vi.fn();
-    const dolu = { stopajOrani: 15, yururlukAy: "2026-03", hatirlatmaEsikGun: 12, hesapsizBaslangic: "2026-04-01", denemeDonemiBitis: "2026-12-15", indirilebilirOran: 65, stopajBeyanDonemi: "ucAylik", stopajOdemeGunu: 24 };
+    const dolu = { stopajOrani: 15, yururlukAy: "2026-03", hatirlatmaEsikGun: 12, hesapsizBaslangic: "2026-04-01", denemeDonemiBitis: "2026-12-15", indirilebilirOran: 65, stopajBeyanDonemi: "ucAylik", stopajOdemeGunu: 24, kapsamBitisEsikGun: 0 }; // spec 0092 C12 ile eşik (0 geçerli)
     render(<SettingsGider appSettings={{ giderAyarlari: dolu }} setAppSettings={setAppSettings} giderler={[]} />);
     expect(screen.getByLabelText("Stopaj ödeme günü").value).toBe("24");
     fireEvent.click(within(screen.getByRole("group", { name: "Kira stopajı beyan dönemi" })).getByRole("button", { name: "Aylık" }));

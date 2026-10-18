@@ -5,7 +5,7 @@
 // varsayılan üretim adedi) × kâr katsayısı. İkisi aynı soruyu cevaplamaz ve TOPLANMAZ; eski model 0089'a kadar yerinde durur.
 //
 // Kurallar: hesabın tamamı kuruş tamsayısıdır (R25/2); makina başına pay Math.floor ile, artık kuruş dağıtılmaz. Dönem havuzu
-// gider motorunun tür kırılımından okunur, ikinci bir süzme ya da toplama yazılmaz (C2). Gider türünün maliyet ROLÜ
+// gider motorunun kalem döngüsünün aylık payından (spec 0092 R9/2) tek ay tablosuyla okunur, ikinci bir süzme ya da toplama yazılmaz (C2). Gider türünün maliyet ROLÜ
 // (`maliyetRolu`) ile DAVRANIŞI (`davranis`) ayrı kavramlardır (C15): rol maliyete girişi, davranış kira/personel/SGK alanlarını
 // belirler. Personel çalışan ayrıntısı bu motordan geçmez (R26, C3).
 import { kurus, tl, ayEkle, ayOf, ayinSonGunu, hesaplaGiderRaporu, turHaritasi, DAVRANIS, tutarCoz } from "./gider";
@@ -105,13 +105,34 @@ export const planAdetleriYaz = (parti, adetler = {}) => {
 };
 
 // ── Genel gider havuzu (R8, R10, C2) ─────────────────────────────────────────
-// Dönem havuzu gider motorunun TÜR KIRILIMINDAN okunur (tutar `kalemGiderTutari` tabanı: matrah + indirilemeyen KDV, 0076).
-// Türsüz kalemler (turId tanımsız) hiçbir havuza girmez, yalnız sayılır (R6/2). Yürürlük öncesi dönem boş döner (C2/2).
+// Havuz gider motorunun kalem döngüsünden okunur (spec 0092 R9/2: opt-in aylık pay; tutar `kalemGiderTutari` tabanı: matrah +
+// indirilemeyen KDV, 0076). Türsüz kalemler (turId tanımsız) hiçbir havuza girmez, yalnız sayılır (R6/2). Yürürlük öncesi dönem
+// boş döner (C2/2). Spec 0092 R13: dönem havuzu ayların toplamıdır; dönem ve aylık havuz TEK tablodan (`aylikRolTablosu`), tek
+// rapor çağrısıyla kurulur (R18). Kapsamı birden çok ay olan kalem kapsadığı aylara eşit yayılır, rolü değişmez (R12).
 const donemAraligi = (bas, bit) => ({ baslangic: `${bas}-01`, bitis: ayinSonGunu(bit) });
-const turKirilimiOku = (veri, bas, bit, bugun) => {
+const HAVUZ_ROLLERI = [MALIYET_ROLU.GENEL, MALIYET_ROLU.URUN_AGACI];
+export const aylikRolTablosu = (veri, bas, bit, bugun) => {
+  const turMap = turHaritasi(veri.giderTurleri || []); // ham: çöpteki türün kalemi de türüyle okunur (0078 C2)
   const rapor = hesaplaGiderRaporu({ giderler: veri.giderler || [], turler: veri.giderTurleri || [], tedarikciler: veri.tedarikciler || [],
-    stock: veri.stock || [], customers: veri.customers || [], yururlukAy: veri.yururlukAy || null }, donemAraligi(bas, bit), { bugun });
-  return rapor.yururlukOncesi ? { yururlukOncesi: true, turKirilimi: [] } : { yururlukOncesi: false, turKirilimi: rapor.turKirilimi || [] };
+    stock: veri.stock || [], customers: veri.customers || [], yururlukAy: veri.yururlukAy || null }, donemAraligi(bas, bit), { bugun, aylikPay: true });
+  const aylar = new Map();
+  const turlar = new Map();
+  const tursuz = new Set(), yayilan = new Set();
+  if (!rapor.yururlukOncesi) for (const p of rapor.aylikPaylar || []) {
+    const tur = p.turId == null ? null : turMap.get(String(p.turId));
+    if (!tur) { tursuz.add(String(p.kalemId)); continue; }
+    const rol = maliyetRoluOf(tur);
+    if (!aylar.has(p.ay)) aylar.set(p.ay, { urunAgaci: 0, genel: 0, yok: 0 });
+    aylar.get(p.ay)[rol] += p.payK;
+    // R13/2 (a, b): satır tutarı pencereye düşen yayılmış tutar, adet pay veren kalem sayısı (aynı kalem ay başına sayılmaz).
+    const tk = String(p.turId);
+    if (!turlar.has(tk)) turlar.set(tk, { turId: p.turId, ad: tur.ad, rol, toplamK: 0, kalemler: new Set() });
+    const t = turlar.get(tk); t.toplamK += p.payK; t.kalemler.add(String(p.kalemId));
+    if (p.kapsamli && HAVUZ_ROLLERI.includes(rol)) yayilan.add(String(p.kalemId));
+  }
+  // R26, C3: personel türü tek satır; çalışan ayrıntısı bu tablodan geçmez. Sıra tür kırılımının sırası (toplam azalan, K4).
+  const satirlar = [...turlar.values()].map(({ kalemler, ...t }) => ({ ...t, adet: kalemler.size })).sort((x, y) => y.toplamK - x.toplamK);
+  return { yururlukOncesi: !!rapor.yururlukOncesi, aylar, satirlar, tursuzAdet: tursuz.size, yayilanAdet: yayilan.size };
 };
 export const rolOzeti = (giderTurleri = []) => {
   const canli = (giderTurleri || []).filter(t => !t.deletedAt);
@@ -121,20 +142,13 @@ export const rolOzeti = (giderTurleri = []) => {
     urunAgaciTurSayisi: canli.filter(t => maliyetRoluOf(t) === MALIYET_ROLU.URUN_AGACI).length,
   };
 };
+// R13/2 (c): yürürlük bayrağı bugünkü anlamıyla (pencerenin tamamı yürürlükten önce). Rol toplamları ayların toplamıdır (C4).
 export const rolHavuzlari = (veri, bas, bit, bugun) => {
-  const turMap = turHaritasi(veri.giderTurleri || []); // ham: çöpteki türün kalemi de türüyle okunur (0078 C2)
-  const { yururlukOncesi, turKirilimi } = turKirilimiOku(veri, bas, bit, bugun);
-  const satirlar = []; let tursuzAdet = 0;
+  const t = aylikRolTablosu(veri, bas, bit, bugun);
   const toplam = { urunAgaci: 0, genel: 0, yok: 0 };
-  for (const r of turKirilimi) {
-    if (r.turId == null || !turMap.has(String(r.turId))) { tursuzAdet += r.adet; continue; }
-    const rol = maliyetRoluOf(turMap.get(String(r.turId)));
-    const toplamK = kurus(r.toplam);
-    toplam[rol] += toplamK;
-    // R26, C3: personel türü tek satır; `calisanlar` kopyalanmaz.
-    satirlar.push({ turId: r.turId, ad: r.ad, rol, toplamK, adet: r.adet });
-  }
-  return { yururlukOncesi, satirlar, tursuzAdet, urunAgaciK: toplam.urunAgaci, genelK: toplam.genel, yokK: toplam.yok };
+  for (const ay of t.aylar.values()) for (const r of Object.keys(toplam)) toplam[r] += ay[r];
+  return { yururlukOncesi: t.yururlukOncesi, satirlar: t.satirlar, tursuzAdet: t.tursuzAdet, yayilanAdet: t.yayilanAdet,
+    urunAgaciK: toplam.urunAgaci, genelK: toplam.genel, yokK: toplam.yok };
 };
 
 // ── Makina başına pay ve gerçek üretim adedi (R8, R9) ────────────────────────
@@ -308,11 +322,19 @@ export const partisizMakinaSayisi = ({ customers = [], stock = [] } = {}) =>
 
 // ── Spec 0090: aylık genel gider havuzu ve üretim partisi payı ───────────────
 // Parti payı bugünkü maliyet motorundan (makinaMaliyeti.js, kova tabanlı "ortak gider") değil bu hesaptan gelir: ayın havuzu
-// rolü "genel gidere girer" olan türlerin o aydaki gider tutarıdır (R13). TEK YOL (C15): her ay için 0088'in `rolHavuzlari`'
-// (gider motorunun tür kırılımı) çağrılır; yürürlük kırpması, çöpteki tür, kısıtlı gider tabanı ve türsüz kalem kuralları
-// ikinci kez yazılmaz ve dönemin aylık toplamı 0088'in dönem havuzuna kuruş kuruş eşittir (C3).
+// rolü "genel gidere girer" olan türlerin o aydaki gider tutarıdır (R13). TEK YOL (C15; spec 0092 R9/2, R13): ay tablosu
+// `aylikRolTablosu` ile TEK rapor çağrısında, gider motorunun kalem döngüsünün aylık payından kurulur (kapsamlı kalem kapsadığı
+// aylara yayılır); yürürlük kırpması, çöpteki tür, kısıtlı gider tabanı ve türsüz kalem kuralları ikinci kez yazılmaz ve dönem
+// havuzu bu ayların toplamıdır, yani 0088'in dönem havuzuna kuruş kuruş eşittir (C3, 0092 C4).
 // Hesap ayarlarının dönemi ve varsayılan adedi burada KULLANILMAZ (R20); parti kendi aylarını ve kendi makina adedini kullanır.
-export const aylikGenelHavuzlar = (veri, aylar, bugun) => new Map(aylar.map(ay => [ay, rolHavuzlari(veri, ay, ay, bugun).genelK]));
+// Spec 0092 R13, R18: tek çağrı; ay tablosu istenen ayların en erkeninden en geçine kurulur, her ay o tablodan okunur.
+const aylikGenelTablosu = (veri, aylar, bugun) => {
+  if (!aylar.length) return { havuzlar: new Map(), yayilanAdet: 0 };
+  const sirali = [...aylar].sort();
+  const t = aylikRolTablosu(veri, sirali[0], sirali[sirali.length - 1], bugun);
+  return { havuzlar: new Map(aylar.map(ay => [ay, t.aylar.get(ay)?.genel || 0])), yayilanAdet: t.yayilanAdet };
+};
+export const aylikGenelHavuzlar = (veri, aylar, bugun) => aylikGenelTablosu(veri, aylar, bugun).havuzlar;
 
 export const PARTI_DURUM = { TAMAM: "tamam", MAKINA_YOK: "makinaYok", BASLAMADI: "baslamadi", ROL_YOK: "rolYok", YURURLUK_ONCESI: "yururlukOncesi" };
 export const PARTI_NEDEN = {
@@ -365,7 +387,7 @@ export const partiGenelPaylari = (veri = {}, bugun) => {
   const son = [buAy, ...partiler.map(p => p.bitisAy).filter(Boolean)].sort().pop();
   const aylar = [];
   for (let a = ilk; a <= son; a = ayEkle(a, 1)) aylar.push(a);
-  const havuzlar = aylikGenelHavuzlar(veri, aylar, bugun);
+  const { havuzlar, yayilanAdet } = aylikGenelTablosu(veri, aylar, bugun);
   // R14 (0022 R13): ayın hak sahipleri = o ay açık ve makinası olan partiler (ağırlık = adet) + o ay üretilmiş partisiz makinalar
   // (ağırlık 1). Kuruşla, aşağı yuvarlanarak bölünür; artık en önce üretilmiş makinası olan hak sahibine.
   const partiHavuz = new Map(partiler.map(p => [String(p.id), 0]));
@@ -405,7 +427,8 @@ export const partiGenelPaylari = (veri = {}, bugun) => {
     return { id: p.id, adet, havuzK, makinaBasiK, durum, neden: PARTI_NEDEN[durum] || null,
       kaynak: PARTI_KAYNAK_IBARESI, acik: !p.bitisAy, degisimler, makinaPaylari };
   });
-  return { partiler: sonuc, aylar: havuzlar, yururlukAy: yurAy, roller };
+  // Spec 0092 R22: haritanın aylarına pay veren yayılmış kalem sayısı (Üretim Partileri'nin tek bilgi satırı).
+  return { partiler: sonuc, aylar: havuzlar, yururlukAy: yurAy, roller, yayilanAdet };
 };
 
 // Triyaj (bulgu 2): kapanış anlık görüntüsünün haritası KAYDEDİLEN partinin bütün aralığını kapsar (yürürlük boş, gelecek

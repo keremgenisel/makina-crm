@@ -19,6 +19,8 @@ const Rakam = ({ etiket, deger, alt, testId }) => (
 
 // Spec 0089 R16: kalkan Makina Kârlılığı ekranının düzeltme cümlesi (tarihsiz makina sayısı burada zaten vardı).
 export const URETIM_TARIHI_DUZELTME = "Makina düzenleme formundan üretim tarihi girilebilir.";
+// Spec 0092 R21, R22: dönemde yayılmış kalem bilgisi (sayı motordan, `yayilanAdet`; ekran saymaz). Üretim Partileri de kullanır.
+export const yayilanKalemMetni = (n) => `${n} gider kalemi kapsadığı aylara yayıldı; havuza her aya düşen payı girer.`;
 
 export const PayOzeti = ({ pay, gercek }) => {
   if (BOS[pay.durum]) {
@@ -39,6 +41,7 @@ export const PayOzeti = ({ pay, gercek }) => {
       {gercek.cozulemeyen > 0 && <Ipucu>{`${gercek.cozulemeyen} makinanın üretim tarihi çözülemediği için gerçek adede girmedi. ${URETIM_TARIHI_DUZELTME}`}</Ipucu>}
       {pay.roller.rolsuzTurSayisi > 0 && <Ipucu>{`${pay.roller.rolsuzTurSayisi} gider türünün rolü belirtilmedi; bu türler maliyete girmez.`}</Ipucu>}
       {pay.havuz?.tursuzAdet > 0 && <Ipucu>{`Türü seçilmemiş ${pay.havuz.tursuzAdet} gider kalemi hiçbir havuza girmez.`}</Ipucu>}
+      {pay.havuz?.yayilanAdet > 0 && <div data-testid="pay-yayilan"><Ipucu>{yayilanKalemMetni(pay.havuz.yayilanAdet)}</Ipucu></div>}
     </KartBolum>
   );
 };

@@ -1,0 +1,867 @@
+{
+ "0088": {
+  "aylik": {
+   "2025-11": 0,
+   "2025-12": 0,
+   "2026-01": 4500000,
+   "2026-02": 0,
+   "2026-03": 0,
+   "2026-04": 0,
+   "2026-05": 0,
+   "2026-06": 0,
+   "2026-07": 0,
+   "2026-08": 0,
+   "2026-09": 0,
+   "2026-10": 0,
+   "2026-11": 0,
+   "2026-12": 0,
+   "2027-01": 0,
+   "2027-02": 0
+  },
+  "donemler": {
+   "2025-12|2027-01": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 3,
+      "ad": "Personel",
+      "rol": "genel",
+      "toplamK": 3500000,
+      "adet": 1
+     },
+     {
+      "turId": 4,
+      "ad": "Kira",
+      "rol": "yok",
+      "toplamK": 2000000,
+      "adet": 1
+     },
+     {
+      "turId": 1,
+      "ad": "Genel giderler",
+      "rol": "genel",
+      "toplamK": 1000000,
+      "adet": 1
+     },
+     {
+      "turId": 2,
+      "ad": "Tedarik",
+      "rol": "urunAgaci",
+      "toplamK": 500000,
+      "adet": 2
+     }
+    ],
+    "tursuzAdet": 1,
+    "urunAgaciK": 500000,
+    "genelK": 4500000,
+    "yokK": 2000000
+   },
+   "2026-01|2026-03": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 3,
+      "ad": "Personel",
+      "rol": "genel",
+      "toplamK": 3500000,
+      "adet": 1
+     },
+     {
+      "turId": 4,
+      "ad": "Kira",
+      "rol": "yok",
+      "toplamK": 2000000,
+      "adet": 1
+     },
+     {
+      "turId": 1,
+      "ad": "Genel giderler",
+      "rol": "genel",
+      "toplamK": 1000000,
+      "adet": 1
+     },
+     {
+      "turId": 2,
+      "ad": "Tedarik",
+      "rol": "urunAgaci",
+      "toplamK": 400000,
+      "adet": 1
+     }
+    ],
+    "tursuzAdet": 1,
+    "urunAgaciK": 400000,
+    "genelK": 4500000,
+    "yokK": 2000000
+   },
+   "2026-04|2026-06": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 2,
+      "ad": "Tedarik",
+      "rol": "urunAgaci",
+      "toplamK": 100000,
+      "adet": 1
+     }
+    ],
+    "tursuzAdet": 0,
+    "urunAgaciK": 100000,
+    "genelK": 0,
+    "yokK": 0
+   },
+   "2026-02|2026-02": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 2,
+      "ad": "Tedarik",
+      "rol": "urunAgaci",
+      "toplamK": 400000,
+      "adet": 1
+     }
+    ],
+    "tursuzAdet": 0,
+    "urunAgaciK": 400000,
+    "genelK": 0,
+    "yokK": 0
+   },
+   "2025-01|2025-06": {
+    "yururlukOncesi": true,
+    "satirlar": [],
+    "tursuzAdet": 0,
+    "urunAgaciK": 0,
+    "genelK": 0,
+    "yokK": 0
+   }
+  },
+  "partiPaylari": {
+   "partiler": [
+    {
+     "id": 801,
+     "adet": 5,
+     "havuzK": 4500000,
+     "makinaBasiK": 900000,
+     "durum": "tamam",
+     "neden": null,
+     "kaynak": "Partinin aylarındaki genel gider",
+     "acik": false,
+     "degisimler": [],
+     "makinaPaylari": [
+      {
+       "anahtar": "stok:501",
+       "payK": 900000
+      },
+      {
+       "anahtar": "musteri:601",
+       "payK": 900000
+      },
+      {
+       "anahtar": "musteri:602",
+       "payK": 900000
+      },
+      {
+       "anahtar": "musteri:603",
+       "payK": 900000
+      },
+      {
+       "anahtar": "musteri:604",
+       "payK": 900000
+      }
+     ]
+    },
+    {
+     "id": 802,
+     "adet": 0,
+     "havuzK": 0,
+     "makinaBasiK": null,
+     "durum": "makinaYok",
+     "neden": "Bağlı makina yok; ayların gideri makinalar bağlanınca paylaştırılır.",
+     "kaynak": "Partinin aylarındaki genel gider",
+     "acik": true,
+     "degisimler": [],
+     "makinaPaylari": []
+    },
+    {
+     "id": 803,
+     "adet": 0,
+     "havuzK": 0,
+     "makinaBasiK": null,
+     "durum": "makinaYok",
+     "neden": "Bağlı makina yok; ayların gideri makinalar bağlanınca paylaştırılır.",
+     "kaynak": "Partinin aylarındaki genel gider",
+     "acik": true,
+     "degisimler": [],
+     "makinaPaylari": []
+    }
+   ],
+   "aylar": {
+    "2026-01": 4500000,
+    "2026-02": 0,
+    "2026-03": 0,
+    "2026-04": 0,
+    "2026-05": 0,
+    "2026-06": 0,
+    "2026-07": 0,
+    "2026-08": 0,
+    "2026-09": 0,
+    "2026-10": 0
+   },
+   "yururlukAy": "2026-01",
+   "roller": {
+    "rolsuzTurSayisi": 1,
+    "genelTurSayisi": 2,
+    "urunAgaciTurSayisi": 1
+   }
+  },
+  "genelGiderPayi": {
+   "durum": "tamam",
+   "havuzK": 4500000,
+   "payK": 37500,
+   "varsayilanAdet": 120,
+   "baslangicAy": "2026-01",
+   "bitisAy": "2026-12",
+   "ayarHatalari": {},
+   "roller": {
+    "rolsuzTurSayisi": 1,
+    "genelTurSayisi": 2,
+    "urunAgaciTurSayisi": 1
+   },
+   "havuz": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 3,
+      "ad": "Personel",
+      "rol": "genel",
+      "toplamK": 3500000,
+      "adet": 1
+     },
+     {
+      "turId": 4,
+      "ad": "Kira",
+      "rol": "yok",
+      "toplamK": 2000000,
+      "adet": 1
+     },
+     {
+      "turId": 1,
+      "ad": "Genel giderler",
+      "rol": "genel",
+      "toplamK": 1000000,
+      "adet": 1
+     },
+     {
+      "turId": 2,
+      "ad": "Tedarik",
+      "rol": "urunAgaci",
+      "toplamK": 500000,
+      "adet": 2
+     }
+    ],
+    "tursuzAdet": 1,
+    "urunAgaciK": 500000,
+    "genelK": 4500000,
+    "yokK": 2000000
+   },
+   "aylik": 10
+  },
+  "partiHesabi": {
+   "801": {
+    "satirlar": [
+     {
+      "model": "AK100",
+      "adet": 5,
+      "planlanan": false,
+      "turetilenAdet": 5,
+      "direktK": 72620,
+      "payK": 37500,
+      "toplamK": 110120,
+      "oneriK": 241711,
+      "eksikSayisi": 0,
+      "toplamMaliyetK": 550600,
+      "oneriCiroK": 1208555
+     }
+    ],
+    "bulunamayan": [],
+    "bos": false,
+    "ozet": {
+     "toplamStandartK": 550600,
+     "onerilenCiroK": 1208555,
+     "katsayisiz": 0,
+     "satisK": 14000000,
+     "oneriyeGoreKarK": 657955,
+     "gercegeGoreKarK": 13779760,
+     "satilmisStandartK": 220240,
+     "kirilim": {
+      "satilmis": 2,
+      "stokta": 1,
+      "bedelsiz": 1,
+      "kursuz": 1,
+      "modelYok": 0
+     },
+     "kurDurumlari": {
+      "kayitli": 1,
+      "yaklasik": 0
+     }
+    },
+    "tedarik": {
+     "donem": {
+      "bas": "2026-01",
+      "bit": "2026-06"
+     },
+     "baslamadi": false,
+     "yururlukOncesi": false,
+     "tedarikK": 500000,
+     "standartDirektK": 363100,
+     "farkK": 136900,
+     "paylasanParti": 1
+    }
+   },
+   "802": {
+    "satirlar": [],
+    "bulunamayan": [],
+    "bos": true,
+    "ozet": {
+     "toplamStandartK": 0,
+     "onerilenCiroK": 0,
+     "katsayisiz": 0,
+     "satisK": 0,
+     "oneriyeGoreKarK": 0,
+     "gercegeGoreKarK": 0,
+     "satilmisStandartK": 0,
+     "kirilim": {
+      "satilmis": 0,
+      "stokta": 0,
+      "bedelsiz": 0,
+      "kursuz": 0,
+      "modelYok": 0
+     },
+     "kurDurumlari": {
+      "kayitli": 0,
+      "yaklasik": 0
+     }
+    },
+    "tedarik": {
+     "donem": {
+      "bas": "2026-05",
+      "bit": "2026-10"
+     },
+     "baslamadi": false,
+     "yururlukOncesi": false,
+     "tedarikK": 100000,
+     "standartDirektK": 0,
+     "farkK": 100000,
+     "paylasanParti": 2
+    }
+   },
+   "803": {
+    "satirlar": [
+     {
+      "model": "AK100",
+      "adet": 10,
+      "planlanan": true,
+      "turetilenAdet": 0,
+      "direktK": 72620,
+      "payK": 37500,
+      "toplamK": 110120,
+      "oneriK": 241711,
+      "eksikSayisi": 0,
+      "toplamMaliyetK": 1101200,
+      "oneriCiroK": 2417110
+     }
+    ],
+    "bulunamayan": [
+     {
+      "model": "ESKI_AD",
+      "adet": 4,
+      "planlanan": true
+     }
+    ],
+    "bos": false,
+    "ozet": {
+     "toplamStandartK": 1101200,
+     "onerilenCiroK": 2417110,
+     "katsayisiz": 0,
+     "satisK": 0,
+     "oneriyeGoreKarK": 1315910,
+     "gercegeGoreKarK": 0,
+     "satilmisStandartK": 0,
+     "kirilim": {
+      "satilmis": 0,
+      "stokta": 0,
+      "bedelsiz": 0,
+      "kursuz": 0,
+      "modelYok": 0
+     },
+     "kurDurumlari": {
+      "kayitli": 0,
+      "yaklasik": 0
+     }
+    },
+    "tedarik": {
+     "donem": {
+      "bas": "2026-09",
+      "bit": "2026-10"
+     },
+     "baslamadi": false,
+     "yururlukOncesi": false,
+     "tedarikK": 0,
+     "standartDirektK": 726200,
+     "farkK": -726200,
+     "paylasanParti": 1
+    }
+   }
+  }
+ },
+ "0090": {
+  "aylik": {
+   "2025-11": 0,
+   "2025-12": 0,
+   "2026-01": 0,
+   "2026-02": 300001,
+   "2026-03": 1500000,
+   "2026-04": 4200003,
+   "2026-05": 200000,
+   "2026-06": 99999,
+   "2026-07": 0,
+   "2026-08": 0,
+   "2026-09": 0,
+   "2026-10": 0,
+   "2026-11": 0,
+   "2026-12": 0,
+   "2027-01": 0,
+   "2027-02": 0
+  },
+  "donemler": {
+   "2025-12|2027-01": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 3,
+      "ad": "Personel",
+      "rol": "genel",
+      "toplamK": 3500000,
+      "adet": 1
+     },
+     {
+      "turId": 1,
+      "ad": "Genel",
+      "rol": "genel",
+      "toplamK": 1800003,
+      "adet": 5
+     },
+     {
+      "turId": 2,
+      "ad": "Kira",
+      "rol": "genel",
+      "toplamK": 1000000,
+      "adet": 1
+     }
+    ],
+    "tursuzAdet": 0,
+    "urunAgaciK": 0,
+    "genelK": 6300003,
+    "yokK": 0
+   },
+   "2026-01|2026-03": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 2,
+      "ad": "Kira",
+      "rol": "genel",
+      "toplamK": 1000000,
+      "adet": 1
+     },
+     {
+      "turId": 1,
+      "ad": "Genel",
+      "rol": "genel",
+      "toplamK": 800001,
+      "adet": 2
+     }
+    ],
+    "tursuzAdet": 0,
+    "urunAgaciK": 0,
+    "genelK": 1800001,
+    "yokK": 0
+   },
+   "2026-04|2026-06": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 3,
+      "ad": "Personel",
+      "rol": "genel",
+      "toplamK": 3500000,
+      "adet": 1
+     },
+     {
+      "turId": 1,
+      "ad": "Genel",
+      "rol": "genel",
+      "toplamK": 1000002,
+      "adet": 3
+     }
+    ],
+    "tursuzAdet": 0,
+    "urunAgaciK": 0,
+    "genelK": 4500002,
+    "yokK": 0
+   },
+   "2026-02|2026-02": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 1,
+      "ad": "Genel",
+      "rol": "genel",
+      "toplamK": 300001,
+      "adet": 1
+     }
+    ],
+    "tursuzAdet": 0,
+    "urunAgaciK": 0,
+    "genelK": 300001,
+    "yokK": 0
+   },
+   "2025-01|2025-06": {
+    "yururlukOncesi": true,
+    "satirlar": [],
+    "tursuzAdet": 0,
+    "urunAgaciK": 0,
+    "genelK": 0,
+    "yokK": 0
+   }
+  },
+  "partiPaylari": {
+   "partiler": [
+    {
+     "id": 901,
+     "adet": 3,
+     "havuzK": 3450003,
+     "makinaBasiK": 1150001,
+     "durum": "tamam",
+     "neden": null,
+     "kaynak": "Partinin aylarındaki genel gider",
+     "acik": false,
+     "degisimler": [],
+     "makinaPaylari": [
+      {
+       "anahtar": "stok:1",
+       "payK": 1150001
+      },
+      {
+       "anahtar": "musteri:11",
+       "payK": 1150001
+      },
+      {
+       "anahtar": "stok:2",
+       "payK": 1150001
+      }
+     ]
+    },
+    {
+     "id": 902,
+     "adet": 2,
+     "havuzK": 1700000,
+     "makinaBasiK": 850000,
+     "durum": "tamam",
+     "neden": null,
+     "kaynak": "Partinin aylarındaki genel gider",
+     "acik": true,
+     "degisimler": [],
+     "makinaPaylari": [
+      {
+       "anahtar": "stok:3",
+       "payK": 850000
+      },
+      {
+       "anahtar": "stok:4",
+       "payK": 850000
+      }
+     ]
+    },
+    {
+     "id": 903,
+     "adet": 0,
+     "havuzK": 0,
+     "makinaBasiK": null,
+     "durum": "makinaYok",
+     "neden": "Bağlı makina yok; ayların gideri makinalar bağlanınca paylaştırılır.",
+     "kaynak": "Partinin aylarındaki genel gider",
+     "acik": false,
+     "degisimler": [],
+     "makinaPaylari": []
+    },
+    {
+     "id": 904,
+     "adet": 1,
+     "havuzK": 0,
+     "makinaBasiK": 0,
+     "durum": "baslamadi",
+     "neden": "Parti henüz başlamadı; havuz başlangıç ayından itibaren oluşur.",
+     "kaynak": "Partinin aylarındaki genel gider",
+     "acik": true,
+     "degisimler": [],
+     "makinaPaylari": [
+      {
+       "anahtar": "stok:7",
+       "payK": 0
+      }
+     ]
+    }
+   ],
+   "aylar": {
+    "2026-02": 300001,
+    "2026-03": 1500000,
+    "2026-04": 4200003,
+    "2026-05": 200000,
+    "2026-06": 99999
+   },
+   "yururlukAy": "2026-02",
+   "roller": {
+    "rolsuzTurSayisi": 0,
+    "genelTurSayisi": 3,
+    "urunAgaciTurSayisi": 0
+   }
+  },
+  "genelGiderPayi": {
+   "durum": "tamam",
+   "havuzK": 6300003,
+   "payK": 900000,
+   "varsayilanAdet": 7,
+   "baslangicAy": "2026-02",
+   "bitisAy": "2026-06",
+   "ayarHatalari": {},
+   "roller": {
+    "rolsuzTurSayisi": 0,
+    "genelTurSayisi": 3,
+    "urunAgaciTurSayisi": 0
+   },
+   "havuz": {
+    "yururlukOncesi": false,
+    "satirlar": [
+     {
+      "turId": 3,
+      "ad": "Personel",
+      "rol": "genel",
+      "toplamK": 3500000,
+      "adet": 1
+     },
+     {
+      "turId": 1,
+      "ad": "Genel",
+      "rol": "genel",
+      "toplamK": 1800003,
+      "adet": 5
+     },
+     {
+      "turId": 2,
+      "ad": "Kira",
+      "rol": "genel",
+      "toplamK": 1000000,
+      "adet": 1
+     }
+    ],
+    "tursuzAdet": 0,
+    "urunAgaciK": 0,
+    "genelK": 6300003,
+    "yokK": 0
+   },
+   "aylik": 1.4
+  },
+  "partiHesabi": {
+   "901": {
+    "satirlar": [
+     {
+      "model": "AK100",
+      "adet": 3,
+      "planlanan": false,
+      "turetilenAdet": 3,
+      "direktK": 0,
+      "payK": 900000,
+      "toplamK": 900000,
+      "oneriK": null,
+      "eksikSayisi": 0,
+      "toplamMaliyetK": 2700000,
+      "oneriCiroK": null
+     }
+    ],
+    "bulunamayan": [],
+    "bos": false,
+    "ozet": {
+     "toplamStandartK": 2700000,
+     "onerilenCiroK": 0,
+     "katsayisiz": 1,
+     "satisK": 0,
+     "oneriyeGoreKarK": -2700000,
+     "gercegeGoreKarK": 0,
+     "satilmisStandartK": 0,
+     "kirilim": {
+      "satilmis": 0,
+      "stokta": 2,
+      "bedelsiz": 1,
+      "kursuz": 0,
+      "modelYok": 0
+     },
+     "kurDurumlari": {
+      "kayitli": 0,
+      "yaklasik": 0
+     }
+    },
+    "tedarik": {
+     "donem": {
+      "bas": "2026-01",
+      "bit": "2026-04"
+     },
+     "baslamadi": false,
+     "yururlukOncesi": false,
+     "tedarikK": 0,
+     "standartDirektK": 0,
+     "farkK": 0,
+     "paylasanParti": 2
+    }
+   },
+   "902": {
+    "satirlar": [
+     {
+      "model": "AK100",
+      "adet": 2,
+      "planlanan": false,
+      "turetilenAdet": 2,
+      "direktK": 0,
+      "payK": 900000,
+      "toplamK": 900000,
+      "oneriK": null,
+      "eksikSayisi": 0,
+      "toplamMaliyetK": 1800000,
+      "oneriCiroK": null
+     }
+    ],
+    "bulunamayan": [],
+    "bos": false,
+    "ozet": {
+     "toplamStandartK": 1800000,
+     "onerilenCiroK": 0,
+     "katsayisiz": 1,
+     "satisK": 0,
+     "oneriyeGoreKarK": -1800000,
+     "gercegeGoreKarK": 0,
+     "satilmisStandartK": 0,
+     "kirilim": {
+      "satilmis": 0,
+      "stokta": 2,
+      "bedelsiz": 0,
+      "kursuz": 0,
+      "modelYok": 0
+     },
+     "kurDurumlari": {
+      "kayitli": 0,
+      "yaklasik": 0
+     }
+    },
+    "tedarik": {
+     "donem": {
+      "bas": "2026-04",
+      "bit": "2026-06"
+     },
+     "baslamadi": false,
+     "yururlukOncesi": false,
+     "tedarikK": 0,
+     "standartDirektK": 0,
+     "farkK": 0,
+     "paylasanParti": 1
+    }
+   },
+   "903": {
+    "satirlar": [],
+    "bulunamayan": [],
+    "bos": true,
+    "ozet": {
+     "toplamStandartK": 0,
+     "onerilenCiroK": 0,
+     "katsayisiz": 0,
+     "satisK": 0,
+     "oneriyeGoreKarK": 0,
+     "gercegeGoreKarK": 0,
+     "satilmisStandartK": 0,
+     "kirilim": {
+      "satilmis": 0,
+      "stokta": 0,
+      "bedelsiz": 0,
+      "kursuz": 0,
+      "modelYok": 0
+     },
+     "kurDurumlari": {
+      "kayitli": 0,
+      "yaklasik": 0
+     }
+    },
+    "tedarik": {
+     "donem": {
+      "bas": "2026-03",
+      "bit": "2026-03"
+     },
+     "baslamadi": false,
+     "yururlukOncesi": false,
+     "tedarikK": 0,
+     "standartDirektK": 0,
+     "farkK": 0,
+     "paylasanParti": 1
+    }
+   },
+   "904": {
+    "satirlar": [
+     {
+      "model": "AK100",
+      "adet": 1,
+      "planlanan": false,
+      "turetilenAdet": 1,
+      "direktK": 0,
+      "payK": 900000,
+      "toplamK": 900000,
+      "oneriK": null,
+      "eksikSayisi": 0,
+      "toplamMaliyetK": 900000,
+      "oneriCiroK": null
+     }
+    ],
+    "bulunamayan": [],
+    "bos": false,
+    "ozet": {
+     "toplamStandartK": 900000,
+     "onerilenCiroK": 0,
+     "katsayisiz": 1,
+     "satisK": 0,
+     "oneriyeGoreKarK": -900000,
+     "gercegeGoreKarK": 0,
+     "satilmisStandartK": 0,
+     "kirilim": {
+      "satilmis": 0,
+      "stokta": 1,
+      "bedelsiz": 0,
+      "kursuz": 0,
+      "modelYok": 0
+     },
+     "kurDurumlari": {
+      "kayitli": 0,
+      "yaklasik": 0
+     }
+    },
+    "tedarik": {
+     "donem": {
+      "bas": "2026-09",
+      "bit": "2026-06"
+     },
+     "baslamadi": true,
+     "yururlukOncesi": false,
+     "tedarikK": 0,
+     "standartDirektK": 0,
+     "farkK": 0,
+     "paylasanParti": 0
+    }
+   }
+  }
+ }
+}

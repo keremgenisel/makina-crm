@@ -5,17 +5,21 @@ import { Btn, Icon, Modal, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
 import { tl2, hedefAdi } from "./GiderAlanlari";
 import { DAVRANIS } from "../../lib/gider";
+import { KAPSAM_KART_ALT_METNI, kapsamSayiEtiketi, kapsamBolumBasligi, KAPSAM_SUZGEC_IBARESI, kapsamBosEki, KAPSAM_BITIS_ESIK_VARSAYILAN } from "../../lib/giderKapsami";
 
 // Ödeme hatırlatıcısı arayüzü (spec 0003 R2–R4, R6, R9). Sessizdir: ses, açılışta pencere, bildirim yok.
 // Rakamlar odemeHatirlatmalari'ndan gelir; bu dosya yalnız gösterir.
 
-// Anasayfa kartı: StatCard görsel dili, iki ayrı sayı (R2, AC-25; plan H2).
-export const OdemeHatirlatmaKarti = ({ sonuc, onClick }) => (
+// Spec 0092 R25, R25/2, C10: kapsam bitişi ayrı saf fonksiyondan (giderKapsami.kapsamHatirlatmalari); kart iki sonucu birlikte alır.
+const BOS_KAPSAM = { satirlar: [], sayi: 0, esikGun: KAPSAM_BITIS_ESIK_VARSAYILAN };
+
+// Anasayfa kartı: StatCard görsel dili, üç ayrı sayı (R2, AC-25; plan H2; spec 0092 R25/2: üçüncüsü sıfırken de çizilir).
+export const OdemeHatirlatmaKarti = ({ sonuc, kapsam = BOS_KAPSAM, onClick }) => (
   <div onClick={onClick} data-testid="odeme-hatirlatma-karti" className="stat-card stat-card--clickable"
     style={{ borderLeft: "4px solid var(--red600, #dc2626)", display: "flex", alignItems: "center", gap: 28, flexWrap: "wrap" }}>
     <div style={{ minWidth: 180 }}>
       <div style={{ fontSize: 13, color: "var(--n500, #64748b)", fontWeight: 500 }}>Gider Ödemeleri</div>
-      <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", marginTop: 4 }}>Ödenmemiş, son ödeme tarihi girilmiş kalemler · Görmek için tıkla</div>
+      <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", marginTop: 4 }}>{KAPSAM_KART_ALT_METNI}</div>
     </div>
     <div data-testid="hatirlatma-gecmis-sayi">
       <div style={{ fontSize: 26, fontWeight: 700, color: sonuc.sayilar.gecmis ? "var(--red700, #b91c1c)" : "var(--n900, #0f172a)" }}>{sonuc.sayilar.gecmis}</div>
@@ -25,8 +29,44 @@ export const OdemeHatirlatmaKarti = ({ sonuc, onClick }) => (
       <div style={{ fontSize: 26, fontWeight: 700, color: sonuc.sayilar.yaklasan ? "var(--amb700, #b45309)" : "var(--n900, #0f172a)" }}>{sonuc.sayilar.yaklasan}</div>
       <div style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>Yaklaşan ({sonuc.esikGun} gün içinde)</div>
     </div>
+    <div data-testid="hatirlatma-kapsam-sayi">
+      <div style={{ fontSize: 26, fontWeight: 700, color: kapsam.sayi ? "var(--blu700)" : "var(--n900, #0f172a)" }}>{kapsam.sayi}</div>
+      <div style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{kapsamSayiEtiketi(kapsam.esikGun)}</div>
+    </div>
   </div>
 );
+
+// Spec 0092 R25, R30, R31, R33/2, R34: üçüncü bölüm. Satır: tür, açıklama ya da tedarikçi, kapsam aralığı, bitişe kalan (ya da
+// geçen) gün ve gider tutarı (kalem listesinin "Tutar" sütunu). Eylem düğmesi yok; personel ve SGK hiç gelmez (R29).
+const ayMetni = (ay) => `${ay.slice(5, 7)}.${ay.slice(0, 4)}`;
+const kapsamIzgara = { display: "grid", gridTemplateColumns: "minmax(0, 1.6fr) 130px 160px 110px", gap: 10, alignItems: "center" };
+const KapsamBolumu = ({ kapsam }) => {
+  const { page, setPage, paged, perPage } = usePagination(kapsam.satirlar, 5);
+  if (!kapsam.satirlar.length) return null;
+  return (
+    <div data-testid="hatirlatma-bolum-kapsam" style={{ background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 10, marginBottom: 14, overflow: "hidden" }}>
+      <div style={{ padding: "9px 12px 2px", fontSize: 12.5, fontWeight: 800, color: "var(--blu700)", textTransform: "uppercase", letterSpacing: .5 }}>{kapsamBolumBasligi(kapsam.sayi, kapsam.esikGun)}</div>
+      <div data-testid="kapsam-suzgec-ibaresi" style={{ padding: "0 12px 6px", fontSize: 11.5, color: "var(--n600, #475569)" }}>{KAPSAM_SUZGEC_IBARESI}</div>
+      <div style={{ ...kapsamIzgara, padding: "0 12px 6px", fontSize: 11, color: "var(--n500, #64748b)", fontWeight: 700 }}>
+        <span>Gider</span><span style={{ textAlign: "right" }}>Tutar</span><span>Kapsam</span><span>Gün</span>
+      </div>
+      <div style={{ background: "var(--surface, #ffffff)" }}>
+        {paged.map(o => (
+          <div key={o.anahtar} data-testid="hatirlatma-kapsam-satiri" style={{ ...kapsamIzgara, padding: "8px 12px", fontSize: 13, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+            <div style={{ minWidth: 0 }}>
+              <b>{o.turAd}</b>
+              {(o.aciklama || o.tedarikci) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.aciklama || o.tedarikci}</div>}
+            </div>
+            <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(o.tutar)}</b>
+            <span>{o.aySayisi} ay · {ayMetni(o.ilkAy)} – {ayMetni(o.sonAy)}<br /><span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>Bitiş {fmtTR(o.bitis)}</span></span>
+            <span style={{ fontWeight: 700, color: "var(--blu700)" }}>{gunFarkiMetni(o.gunFarki)}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ background: "var(--surface, #ffffff)" }}><Pagination total={kapsam.satirlar.length} page={page} setPage={setPage} perPage={perPage} /></div>
+    </div>
+  );
+};
 
 const renk = { gecmis: ["var(--redBg, #fef2f2)", "var(--redBr, #fecaca)", "var(--red700, #b91c1c)"], yaklasan: ["var(--ambBg, #fffbeb)", "var(--ambBr, #fde68a)", "var(--amb700, #b45309)"] };
 const izgara = { display: "grid", gridTemplateColumns: "minmax(0, 1.6fr) 130px 140px 110px 90px", gap: 10, alignItems: "center" };
@@ -101,8 +141,9 @@ const Bolum = ({ baslik, bolum, satirlar, odendiYetkisi, onOdendi }) => {
 };
 
 // Liste penceresi (R2–R4, R6; AC-13 boş durum). "Giderlerde Görüntüle" süzgeç açık hâlde Giderler'e götürür.
-export const OdemeHatirlatmaPenceresi = ({ sonuc, odendiYetkisi, onOdendi, onGiderlereGit, onClose }) => {
-  const bos = sonuc.sayilar.gecmis + sonuc.sayilar.yaklasan === 0;
+export const OdemeHatirlatmaPenceresi = ({ sonuc, kapsam = BOS_KAPSAM, odendiYetkisi, onOdendi, onGiderlereGit, onClose }) => {
+  // Spec 0092 R32/2: boş durum üç sayıya bakar.
+  const bos = sonuc.sayilar.gecmis + sonuc.sayilar.yaklasan + kapsam.sayi === 0;
   return (
     <Modal wide title="Gider Ödemeleri" onClose={onClose}
       footer={<div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
@@ -114,11 +155,13 @@ export const OdemeHatirlatmaPenceresi = ({ sonuc, odendiYetkisi, onOdendi, onGid
           <div data-testid="hatirlatma-bos" style={{ textAlign: "center", padding: "28px 12px", color: "var(--n600, #475569)", fontSize: 13 }}>
             <div style={{ fontWeight: 700, marginBottom: 4 }}>Hatırlatılacak ödeme yok</div>
             Vadesi geçmiş veya {sonuc.esikGun} gün içinde vadesi gelecek ödenmemiş gider kalemi bulunmuyor.
+            <div data-testid="hatirlatma-bos-kapsam">{kapsamBosEki(kapsam.esikGun)}</div>
           </div>
         ) : (
           <>
             <Bolum baslik={`Vadesi geçmiş (${sonuc.sayilar.gecmis})`} bolum="gecmis" satirlar={sonuc.gecmisSatirlar} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} />
             <Bolum baslik={`Yaklaşan (${sonuc.sayilar.yaklasan}) · ${sonuc.esikGun} gün içinde, bugün dahil`} bolum="yaklasan" satirlar={sonuc.yaklasanSatirlar} odendiYetkisi={odendiYetkisi} onOdendi={onOdendi} />
+            <KapsamBolumu kapsam={kapsam} />
           </>
         )}
       </div>

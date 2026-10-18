@@ -1,6 +1,6 @@
-import { Icon, Select, Field, TutarInput } from "../ui";
+import { Icon, Select, Field, TutarInput, Input } from "../ui";
 import { HataMetni, Ipucu } from "../tasarim";
-import { HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, KISIT_KUTU_ETIKETI, KISIT_FORM_NOTU } from "../../lib/gider";
+import { HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, KISIT_KUTU_ETIKETI, KISIT_FORM_NOTU, KAPSAM_ETIKETI, KAPSAM_IPUCU, KAPSAM_ANAHTARI } from "../../lib/gider";
 import { fmtCur, fmtTR } from "../../lib/utils";
 // Spec 0059 R20, R31: hedef ad zinciri ve tutar biçimi saf kitaplıkta (rapor React almadan kullanır); burada aynı adlarla
 // yeniden dışa verilir, çağıranlar değişmez. TEK tanım odemeYontemi.js'tedir.
@@ -49,7 +49,18 @@ export const KisitAlani = ({ acik, oran, onChange, varsayilanOran, hata = null, 
   </div>
 );
 
-// Spec 0090 R38: aylara dağıtım alanı kalktı.
+// Spec 0092 R1–R5: kalemin kapsadığı ay sayısı (kalem formu ve tanım formu aynı bileşeni çizer; KisitAlani emsali). Yalnız normal
+// ve kira davranışında çizilir (çağıran kapıyı `kapsamSecilebilirMi` ile verir). Metin alanıdır: harf de yazılabilsin ve kayıt
+// doğrulaması nedenini yazsın (R4). Kalıcı anahtar 0072'den kalma `dagitimAy` (X10).
+export const KapsamAlani = ({ deger, onChange, hata = null }) => (
+  <div data-testid="kapsam-alani" style={{ maxWidth: 260, marginBottom: 10 }}>
+    <Field label={KAPSAM_ETIKETI}>
+      <Input aria-label={KAPSAM_ETIKETI} inputMode="numeric" value={deger ?? ""} onChange={e => onChange({ [KAPSAM_ANAHTARI]: e.target.value })} aria-invalid={!!hata} />
+      <HataMetni>{hata}</HataMetni>
+    </Field>
+    <Ipucu>{KAPSAM_IPUCU}</Ipucu>
+  </div>
+);
 
 export const ODEME_SECENEKLERI = [
   { value: "", label: "Belirtilmemiş" }, { value: "Nakit", label: "Nakit" }, { value: "Havale", label: "Havale" },

@@ -612,11 +612,11 @@ export const modelSatirTutari = (s) => tl(kurus(tutarCoz(s?.birimMaliyet).deger)
 
 // ── Kalem doğrulama ve normalleştirme ─────────────────────────────────────────
 // form: formdaki ham değerler (tutarlar metin olabilir). Dönen `kayit` saklanacak biçimdir; hata varsa null.
-// Spec 0090 R4, R5/2, R5/3 (TEK kural; kalem doğrulayıcısı ve tanım formunun kayıt kurucusu çağırır): atama ve aylara dağıtım
-// verisi yalnız kayıt onları TAŞIYORSA (atama türü boş değil ya da dağıtım ayı birden büyük) birebir geri yazılır; sayı biçimi
-// çözülür (formdaki metin → sayı), hata ve uyarı üretilmez. Atanamayan davranışta atama, makina ve "dağıtılmasın" atamasında
-// dağıtım düşer. Taşımıyorsa dönen nesne boştur: anahtarlar boş değerle de yazılmaz.
-export const ATAMA_ANAHTARLARI = ["atamaTur", "makinaTur", "makinaId", "modelSatirlari", "dagitimAy"];
+// Spec 0090 R4, R5/2, R5/3 (TEK kural; kalem doğrulayıcısı ve tanım formunun kayıt kurucusu çağırır): atama verisi yalnız kayıt
+// onu TAŞIYORSA (atama türü boş değil) birebir geri yazılır; sayı biçimi çözülür (formdaki metin → sayı), hata ve uyarı
+// üretilmez. Atanamayan davranışta atama düşer. Taşımıyorsa dönen nesne boştur: anahtarlar boş değerle de yazılmaz.
+// Spec 0092 R8/2: kapsam anahtarı bu listeden çıktı, kendi koruyucusu var (kapsamVerisiKoru; iki bağımsız kapı).
+export const ATAMA_ANAHTARLARI = ["atamaTur", "makinaTur", "makinaId", "modelSatirlari"];
 export const atamaVerisiKoru = (form, atamaAcik) => {
   const r = {};
   const at = atamaAcik ? (form?.atamaTur || "") : "";
@@ -627,9 +627,52 @@ export const atamaVerisiKoru = (form, atamaAcik) => {
       r.modelSatirlari = (form.modelSatirlari || []).map(s => ({ modelAd: String(s.modelAd || "").trim(), birimMaliyet: tutarCoz(s.birimMaliyet).deger, adet: Number(s.adet) }));
     }
   }
-  const dg = dagitimAySayisiCoz(form?.dagitimAy);
-  if (!dg.hata && dg.deger > 1 && dagitimSecilebilirMi(at)) r.dagitimAy = dg.deger;
   return r;
+};
+
+// ── Kapsadığı ay sayısı (spec 0092) ──────────────────────────────────────────
+// Kalemin kaç aylık hizmeti karşıladığı (yıllık peşin internet, sigorta, aidat). Ödemeyi bölmez (R38); yalnız Makina Maliyeti'nin
+// genel gider havuzunda kalemin gider tutarı kapsadığı aylara eşit yayılır ve kapsam bitişi Anasayfa'da hatırlatılır.
+// Kalıcı alanın ve form durumunun anahtarı 0072'den kalma `dagitimAy`'dır (göç yok, X10). Değer 1–60 tam sayı; boş ya da 1
+// tek ay demektir ve gövdeye yazılmaz (C9). Yalnız normal ve kira davranışında etkilidir (R2, R5/2); kalemin atamasına bakmaz (R7).
+export const KAPSAM_ANAHTARI = "dagitimAy";
+export const KAPSAM_AY_MAX = 60;
+export const KAPSAM_AY_HATASI = `Kapsadığı ay sayısı 1 ile ${KAPSAM_AY_MAX} arasında tam sayı olmalı.`;
+export const KAPSAM_ETIKETI = "Kapsadığı ay sayısı";
+export const KAPSAM_IPUCU = "Yılda bir peşin ödenen giderde 12 yazın; boş ya da 1 tek ayı kapsar.";
+export const kapsamAySayisiCoz = (v) => {
+  const t = String(v ?? "").trim();
+  if (t === "") return { deger: 1 };
+  const n = Number(t);
+  if (!Number.isInteger(n) || n < 1 || n > KAPSAM_AY_MAX) return { hata: KAPSAM_AY_HATASI };
+  return { deger: n };
+};
+export const kapsamSecilebilirMi = (dav) => dav === DAVRANIS.NORMAL || dav === DAVRANIS.KIRA;
+// Saklı değerin geçerli ay sayısı (bozuk değer ya da başka davranış 1 sayılır, R4/2, R5/2).
+export const kapsamAyOf = (k, dav = DAVRANIS.NORMAL) => {
+  if (!kapsamSecilebilirMi(dav)) return 1;
+  const n = Number(k?.[KAPSAM_ANAHTARI]);
+  return Number.isInteger(n) && n > 1 && n <= KAPSAM_AY_MAX ? n : 1;
+};
+export const kapsamliMi = (k, dav = DAVRANIS.NORMAL) => kapsamAyOf(k, dav) > 1;
+// R6: kapsam gider tarihinin ayından başlar; "kaçıncı ay" tutulmaz. Kapsamsız ya da tarihsiz kalemde null.
+export const kapsamAraligi = (k, dav = DAVRANIS.NORMAL) => {
+  const n = kapsamAyOf(k, dav);
+  if (n <= 1 || !k?.tarih) return null;
+  const ilkAy = ayOf(k.tarih);
+  return { aySayisi: n, ilkAy, sonAy: ayEkle(ilkAy, n - 1) };
+};
+const ayMetni = (ay) => `${ay.slice(5, 7)}.${ay.slice(0, 4)}`;
+// R19/2: "12 ayı kapsıyor · 01.2026 – 12.2026"; kapsamsız kalemde boş.
+export const kapsamRozetMetni = (k, dav = DAVRANIS.NORMAL) => {
+  const a = kapsamAraligi(k, dav);
+  return a ? `${a.aySayisi} ayı kapsıyor · ${ayMetni(a.ilkAy)} – ${ayMetni(a.sonAy)}` : "";
+};
+// R8, R8/2: kayıt koruyucusu. Kapı kapalıysa (personel, SGK) anahtar yazılmaz; açıkken geçerli ve 1'den büyük değer birebir.
+export const kapsamVerisiKoru = (form, kapsamAcik) => {
+  if (!kapsamAcik) return {};
+  const c = kapsamAySayisiCoz(form?.[KAPSAM_ANAHTARI]);
+  return !c.hata && c.deger > 1 ? { [KAPSAM_ANAHTARI]: c.deger } : {};
 };
 
 export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsayilanUid } = {}) => {
@@ -783,6 +826,14 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
   // hiç yazılmaz (boş değerle de). Kova motoru (kalemKovalariKurus) değişmedi ve kayıtlı alanları okumaya devam eder (C9).
   for (const a of ATAMA_ANAHTARLARI) delete kayit[a];
   Object.assign(kayit, atamaVerisiKoru(form, atanabilirMi(dav)));
+  // Spec 0092 R4, R8/2: kapsam yalnız normal ve kirada; kullanıcının yazdığı geçersiz değer kaydı engeller (saklı geçersiz
+  // değeri form açılışta boşaltır, R4/2). Kapı kapalıyken anahtar yazılmaz.
+  delete kayit[KAPSAM_ANAHTARI];
+  if (kapsamSecilebilirMi(dav)) {
+    const c = kapsamAySayisiCoz(form?.[KAPSAM_ANAHTARI]);
+    if (c.hata) hata(KAPSAM_ANAHTARI, c.hata);
+    else Object.assign(kayit, kapsamVerisiKoru(form, true));
+  }
   return { hatalar, uyarilar, kayit: hatalar.length ? null : kayit };
 };
 
@@ -853,41 +904,22 @@ export const kalemKovalariKurus = (k, { davranis = DAVRANIS.NORMAL, makinaCoz, c
   const makina = atanabilirMi(davranis) && k.atamaTur === ATAMA.MAKINA && makinaCoz ? makinaCoz(k) : null;
   return { ...kovaKurus(k, davranis, !!makina, canliModeller), makinaCozum: makina };
 };
-// ── Maliyete dağıtım (spec 0072) ─────────────────────────────────────────────
-// Peşin ödenen giderin ORTAK kovası makina maliyetine aylara bölünerek girer (R6, R10). Taksitin tersidir: ödeme ve
-// dönem raporu bölünmez, yalnız maliyet payı bölünür. Ay sayısı taksit emsaliyle çözülür (R5); 1 ya da boş = dağıtım yok.
-export const DAGITIM_AY_MAX = 60;
-export const DAGITIM_AY_HATASI = `Dağıtım ay sayısı 1 ile ${DAGITIM_AY_MAX} arasında tam sayı olmalı.`;
-export const dagitimAySayisiCoz = (v) => {
-  const t = String(v ?? "").trim();
-  if (t === "") return { deger: 1 };
-  const n = Number(t);
-  if (!Number.isInteger(n) || n < 1 || n > DAGITIM_AY_MAX) return { hata: DAGITIM_AY_HATASI };
-  return { deger: n };
-};
-// R17 (S3): makinaya atanmış ve "dağıtılmasın" kalem dağıtılmaz (etkisi yok ya da anlamsız).
+// ── Maliyete dağıtım (spec 0072; spec 0092 X9/2 ile yalnız eski maliyet motoru için) ─────────────────────────────
+// Eski motor (makinaMaliyeti.js, bir sürüm daha yerinde) ortak kovayı bu üç yardımcıyla aylara böler; atama şartlı semantikleri
+// AYNEN kalır. Yeni yol (havuz, ekranlar, hatırlatma) yalnız yukarıdaki kapsam ailesini çağırır.
+// Makinaya atanmış ve "dağıtılmasın" kalem dağıtılmaz (0072 R17).
 export const dagitimSecilebilirMi = (atamaTur) => atamaTur !== ATAMA.MAKINA && atamaTur !== ATAMA.DAGITMA;
-export const DAGITIM_MAKINA_NEDENI = "Tek bir makinaya atanmış gider o makinanın maliyetine bir kez girer; aylara dağıtılmaz.";
-export const DAGITIM_DAGITMA_NEDENI = "Makina maliyetine girmeyen kalem aylara dağıtılmaz.";
-export const DAGITIM_MODEL_IPUCU = "Yalnız modellere dağıtılmayan kısım aylara bölünür.";
-export const DAGITIM_TANIM_IPUCU = "Bu tanım her ay kalem üretir; dağıtım genelde yılda bir girilen kalemler içindir.";
-// Saklı değerin geçerli ay sayısı (bozuk ya da seçilemez değer 1 sayılır).
 export const dagitimAyOf = (k) => {
   const n = Number(k?.dagitimAy);
-  return Number.isInteger(n) && n > 1 && n <= DAGITIM_AY_MAX && dagitimSecilebilirMi(k?.atamaTur) ? n : 1;
+  return Number.isInteger(n) && n > 1 && n <= KAPSAM_AY_MAX && dagitimSecilebilirMi(k?.atamaTur) ? n : 1;
 };
-export const dagitimliMi = (k) => dagitimAyOf(k) > 1;
-// Kapsam aralığı (R13): dönemden bağımsız, "kaçıncı ay" yok.
 export const dagitimAraligi = (k) => {
   const n = dagitimAyOf(k);
   if (n <= 1 || !k?.tarih) return null;
   const ilkAy = ayOf(k.tarih);
   return { aySayisi: n, ilkAy, sonAy: ayEkle(ilkAy, n - 1) };
 };
-// Spec 0090 triyajı (bulgu 4): kalem listesinin dağıtım rozeti (`dagitimRozetMetni`) ekranla birlikte silindi.
-// R20 (S5), C1, C2: aylık payların TEK kaynağı. Yalnız ortak kova bölünür (kova kuralı 0001'den okunur); bölme esitBol
-// ile, artık kuruş son aya. Dağıtımsız kalemde tek giriş (kalemin ayı, ortak kova); ortak kovası sıfır olan kalemde
-// (çözülen makina ataması, "dağıtılmasın", tam model dağılımı) boş liste. Dönen: [{ ay, payK }].
+// 0072 R20 (S5), C1, C2: yalnız ortak kova bölünür; bölme esitBol ile, artık kuruş son aya. Dönen: [{ ay, payK }].
 export const dagitimPaylari = (k, davranis = DAVRANIS.NORMAL, { makinaCoz, canliModeller = new Set() } = {}) => {
   if (!k?.tarih) return [];
   const { ortak } = kalemKovalariKurus(k, { davranis, makinaCoz, canliModeller });
@@ -983,8 +1015,8 @@ export const tekrarlayanUret = (tanimlar = [], giderler = [], ay, { turMap, cali
       else if (t.atamaTur === ATAMA.DAGITMA) kalem.atamaTur = t.atamaTur;
       else if (t.atamaTur === ATAMA.MODEL) Object.assign(kalem, { atamaTur: t.atamaTur, modelSatirlari: (t.modelSatirlari || []).map(s => ({ ...s })) });
     }
-    // Spec 0072 R4: tanımdaki dağıtım üretilen kaleme taşınır (makina ve "dağıtılmasın" atamasında taşınmaz, R17).
-    if (dagitimAyOf({ dagitimAy: t.dagitimAy, atamaTur: kalem.atamaTur }) > 1) kalem.dagitimAy = Number(t.dagitimAy);
+    // Spec 0092 R3, R7: tanımdaki kapsam üretilen kaleme taşınır (normal ve kirada; atamaya bakılmaz).
+    if (kapsamliMi(t, dav)) kalem[KAPSAM_ANAHTARI] = kapsamAyOf(t, dav);
     // Stopajlı kira iki ödeme hedefiyle doğar (spec 0021 R6); satırlar kalemle birlikte kurulur.
     const stopajVade = dav === DAVRANIS.KIRA && typeof stopajVadeOf === "function" ? stopajVadeOf(kalem.tarih) || null : null;
     const odeme = odemeSatirlariKur(kalem, dav, stopajVade ? { stopajVade } : {}, uid ? { uid } : {});
@@ -1036,17 +1068,40 @@ const tedAdi = (tedMap, id) => tedMap.get(String(id))?.ad || "";
 export const hesaplaGiderRaporu = (
   { giderler = [], turler = [], tedarikciler = [], stock = [], customers = [], canliModeller = new Set(), yururlukAy = null },
   { baslangic, bitis },
-  { bugun } = {},
+  { bugun, aylikPay = false } = {},
 ) => {
   const turMap = turHaritasi(turler);
   const tedMap = new Map(tedarikciler.map(t => [String(t.id), t]));
   const makinaCoz = makinaCozucuOlustur({ stock, customers });
   const kapsam = yururlukKapsami({ baslangic, bitis }, yururlukAy);
   const bos = { yururlukOncesi: kapsam.durum === "oncesi", kapsamDisi: kapsam.kapsamDisi, bos: true };
-  if (kapsam.durum === "oncesi") return { ...bos, kalemler: [] };
+  if (kapsam.durum === "oncesi") return { ...bos, kalemler: [], ...(aylikPay ? { aylikPaylar: [] } : {}) };
   const bas = kapsam.etkinBaslangic;
   const canli = giderler.filter(k => !k.deletedAt);
   const kalemler = canli.filter(k => k.tarih >= bas && k.tarih <= bitis);
+  // Spec 0092 R9/2 (opt-in, 0059 deseni): kalem başına aylık pay. Pencere yayma penceresidir: kapsamı pencereye uzanan kalem de
+  // girer (tarihi yürürlükten önce olan hiçbir zaman, R15/2, C19). Kapsamsız kalem bugünkü tarih süzgeciyle birebir (R10).
+  // Tutar tabanı bugünkü tür kırılımının aynısı (kisitHesabi().giderK, R11, C2); bölme esitBol, artık kuruş son aya (R9, C7);
+  // pencere dışındaki aylar yazılmaz (R14). Dönen: [{ kalemId, turId, ay, payK, kapsamli }].
+  const aylikPaylar = aylikPay ? [] : null;
+  if (aylikPay) {
+    const esikTarih = yururlukAy ? `${yururlukAy}-01` : "";
+    const ilkAy = ayOf(bas), sonAy = ayOf(bitis);
+    for (const k of canli) {
+      if (!k.tarih || k.tarih < esikTarih || k.tarih > bitis) continue;
+      const dav = davranisOf(k, turMap);
+      const aralik = kapsamAraligi(k, dav);
+      if (!aralik) {
+        if (k.tarih >= bas) aylikPaylar.push({ kalemId: k.id, turId: k.turId, ay: ayOf(k.tarih), payK: kisitHesabi(k, dav).giderK, kapsamli: false });
+        continue;
+      }
+      if (aralik.sonAy < ilkAy) continue;
+      esitBol(kisitHesabi(k, dav).giderK, aralik.aySayisi).forEach((payK, i) => {
+        const ay = ayEkle(aralik.ilkAy, i);
+        if (ay >= ilkAy && ay <= sonAy) aylikPaylar.push({ kalemId: k.id, turId: k.turId, ay, payK, kapsamli: true });
+      });
+    }
+  }
 
   const turKir = new Map();
   let toplam = 0, odenen = 0, odenmeyen = 0, odenmeyenAdet = 0, stopaj = 0, indKdv = 0;
@@ -1182,6 +1237,7 @@ export const hesaplaGiderRaporu = (
       toplamBorc: tl([...tedBorc.values()].reduce((a, b) => a + b, 0) + secilmemisBorc),
     },
     mukerrerUyari: [...mukerrer.values()].filter(v => v.length > 1).map(v => ({ tanimId: v[0].tanimId, donem: v[0].donem, aciklama: v[0].aciklama, kalemler: v })),
+    ...(aylikPay ? { aylikPaylar } : {}),
   };
 };
 

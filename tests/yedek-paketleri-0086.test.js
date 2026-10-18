@@ -70,9 +70,10 @@ describe("Spec 0086 R1, R2: paket listesi ve cümle", () => {
 });
 
 describe("Spec 0086 R5, R8, R11: notlar", () => {
-  it("AC-10: gider ayarları notu sekiz ayarı sayar ve Firma ve ayarlar paketini söyler", () => {
+  // Spec 0092 ile (R35): dokuzuncu ayar "kapsam bitişi hatırlatma eşiği" nota girdi (etiketi giderKapsami.js sabitinden).
+  it("AC-10: gider ayarları notu dokuz ayarı sayar ve Firma ve ayarlar paketini söyler", () => {
     for (const ad of ["gider takibi yürürlük ayı", "varsayılan kira stopaj oranı", "kira stopajı beyan dönemi", "stopaj ödeme günü",
-      "ödeme hatırlatma eşiği", "binek araç giderlerinde indirilebilir oran", "hesapsız kayıt başlangıç tarihi", "deneme dönemi bitiş tarihi"]) {
+      "ödeme hatırlatma eşiği", "kapsam bitişi hatırlatma eşiği", "binek araç giderlerinde indirilebilir oran", "hesapsız kayıt başlangıç tarihi", "deneme dönemi bitiş tarihi"]) {
       expect(GIDER_AYAR_NOTU, ad).toContain(ad);
     }
     expect(GIDER_AYAR_NOTU).toContain("\"Firma ve ayarlar\" paketinde");
@@ -80,6 +81,8 @@ describe("Spec 0086 R5, R8, R11: notlar", () => {
     const sg = oku("src/components/settings/SettingsGider.jsx");
     for (const e of ["Varsayılan kira stopaj oranı", "Kira stopajı beyan dönemi", "Stopaj ödeme günü", "Binek araç giderlerinde indirilebilir oran",
       "Gider takibi yürürlük ayı", "Ödeme hatırlatma eşiği", "Deneme dönemi bitiş tarihi", "Hesapsız kayıt başlangıç tarihi"]) expect(sg, e).toContain(`label="${e}`);
+    expect(sg).toContain("label={KAPSAM_BITIS_ESIK_ETIKETI}");
+    expect(oku("src/lib/giderKapsami.js")).toContain('KAPSAM_BITIS_ESIK_ETIKETI = "Kapsam bitişi hatırlatma eşiği (gün)"');
   });
   it("AC-11: makinaya özgü alanların notu YEREL_AYAR_ALANLARI'nın dördünü anlatır", () => {
     expect(YEREL_AYAR_ALANLARI).toEqual(["autoBackup", "backupFolder", "frequency", "lastBackup"]);
