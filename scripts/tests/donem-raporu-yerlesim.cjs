@@ -25,15 +25,19 @@ const olcUzun = `(() => {
     belgeYukseklik: document.documentElement.scrollHeight, belgeTasma: document.documentElement.scrollWidth > innerWidth + 1 };
 })()`;
 
+// Sayfaya gönderilen betik metnine değer gömerken JSON'u kaçışla: <, >, / ve satır ayraçları betiği kapatamasın
+// (girdiler sabit; CodeQL js/bad-code-sanitization uyarısı #47).
+const jsGom = (x) => JSON.stringify(x).replace(/[<>/\u2028\u2029]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+
 // Spec 0081: yan kutular kapalı başlar. Başlıklara tıklayan yardımcı (hepsi ya da verilen kimlikler) ve tür/KDV kart boyları.
 const ac = (idler) => `(() => {
-  const ids = ${JSON.stringify(idler)};
+  const ids = ${jsGom(idler)};
   let n = 0;
   for (const id of ids) { const b = document.querySelector('[data-testid="' + id + '"] [role="button"][aria-expanded="false"]'); if (b) { b.click(); n++; } }
   return n;
 })()`;
 const BES = ["tur-kirilimi", "kdv-karsilastirma", "tedarikci-kirilimi", "yontem-kirilimi"];
-const durum = `(() => ${JSON.stringify(BES)}.map(id => document.querySelector('[data-testid="' + id + '"] [aria-expanded]')?.getAttribute("aria-expanded") ?? "yok"))()`;
+const durum = `(() => ${jsGom(BES)}.map(id => document.querySelector('[data-testid="' + id + '"] [aria-expanded]')?.getAttribute("aria-expanded") ?? "yok"))()`;
 
 // Personel ayrıntısı: her satırda (başlık, çalışan, ek ödeme) hücreler soldan sağa sıralı ve üst üste binmiyor, hiçbir
 // hücrenin içeriği kendi kutusundan taşmıyor (yarım genişlik kartta ad sütunu sıfıra iniyor, ad Resmi sütununa biniyordu).
