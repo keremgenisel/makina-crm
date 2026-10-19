@@ -58,7 +58,8 @@ export const PartiHesabi = ({ pay, modeller, canDo, baskasiKilitli, showToast, v
             {canli.map(p => <option key={p.id} value={String(p.id)}>{p.ad}</option>)}
           </Select>
         </Field>
-        {yetki && <Btn variant="ghost" onClick={planAc}><Icon name="edit" size={14} /> Planlanan adetler</Btn>}
+        {/* Kullanıcı isteği 2026-10-18: düğme seçiciyle aynı hizada; Field'ın alt boşluğu (14 px) düğmeye de verilir. */}
+        {yetki && <div style={{ marginBottom: 14 }}><Btn variant="ghost" onClick={planAc}><Icon name="edit" size={14} /> Planlanan adetler</Btn></div>}
       </div>
       {partisiz > 0 && <Ipucu><span data-testid="partisiz-makina">{`${partisiz} makinanın partisi yok; parti hesabına girmezler.`}</span></Ipucu>}
       {/* Triyaj (bulgu 1): planlı ve partiye bağlı makinadan türeyen bulunamayan satırların metni ayrı. */}

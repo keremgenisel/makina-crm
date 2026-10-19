@@ -208,6 +208,8 @@ describe("Spec 0092: Makina Maliyeti (R13/2, R21, R22)", () => {
     render(<MM gorunum="partiler" />);
     expect(screen.getAllByTestId("parti-yayilan")).toHaveLength(1);
     expect(screen.getByTestId("parti-yayilan").textContent).toContain("1 gider kalemi kapsadığı aylara yayıldı");
+    // Kullanıcı isteği 2026-10-19: kap boşluksuz (padding 0), yazı kenara yapışmasın; tablo hücreleriyle aynı 12 px.
+    expect(screen.getByTestId("parti-yayilan").style.padding).toBe("0px 12px 10px");
     expect(screen.getAllByText("750,00 ₺").length).toBeGreaterThanOrEqual(4);
   });
   it("AC-20/2 / AC-20/3: rol tablosunun 'Dönemde tutar' sütunu yayılmış tutar; pencere dışında tarihli kalemin türü görünür ve rolü değiştirilebilir", () => {

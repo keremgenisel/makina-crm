@@ -116,8 +116,9 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
               })}
             </tbody>
           </table>
-          {/* Spec 0092 R22: yayılmış kalem bilgisi tablonun altında bir kez (sayı motordan, parti başına tekrar edilmez). */}
-          {partiSonucu?.yayilanAdet > 0 && <div data-testid="parti-yayilan"><Ipucu>{yayilanKalemMetni(partiSonucu.yayilanAdet)}</Ipucu></div>}
+          {/* Spec 0092 R22: yayılmış kalem bilgisi tablonun altında bir kez (sayı motordan, parti başına tekrar edilmez).
+              Kullanıcı isteği 2026-10-19: kap boşluksuz olduğu için yazı tablo hücreleriyle aynı yatay boşluğu alır. */}
+          {partiSonucu?.yayilanAdet > 0 && <div data-testid="parti-yayilan" style={{ padding: "0 12px 10px" }}><Ipucu>{yayilanKalemMetni(partiSonucu.yayilanAdet)}</Ipucu></div>}
         </KartBolum>
       )}
 

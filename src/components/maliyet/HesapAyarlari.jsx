@@ -49,7 +49,8 @@ export const HesapAyarlari = ({ pay, gercek, canDo, baskasiKilitli, showToast, a
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
               <Field label="Dönem başlangıcı"><AyInput value={form.baslangicAy} ariaLabel="Dönem başlangıcı" onChange={v => setForm(f => ({ ...f, baslangicAy: v || "" }))} /></Field>
               <Field label="Dönem bitişi"><AyInput value={form.bitisAy} ariaLabel="Dönem bitişi" onChange={v => setForm(f => ({ ...f, bitisAy: v || "" }))} /></Field>
-              <Field label={ADET_ETIKETI}>
+              {/* Kullanıcı isteği 2026-10-18: uzun etiket tek satırda kalır ki alan diğer ikisiyle aynı hizada dursun. */}
+              <Field label={<span style={{ whiteSpace: "nowrap" }}>{ADET_ETIKETI}</span>}>
                 <Input value={form.varsayilanAdet} inputMode="numeric" aria-label={ADET_ETIKETI} placeholder="ör. 120" onChange={e => setForm(f => ({ ...f, varsayilanAdet: e.target.value }))} />
                 {aylik != null && <Ipucu><span data-testid="aylik-karsilik">{`≈ ${String(aylik).replace(".", ",")} makina/ay`}</span></Ipucu>}
               </Field>
