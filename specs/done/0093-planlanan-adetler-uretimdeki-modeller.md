@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 4, uygulama planı onayı 2026-10-19) |
+| **Durum** | Tamamlandı (revizyon 4; commit `4061205`, kapanış 2026-10-19) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Mali İşler › Makina Maliyeti › Parti Hesabı ("Planlanan adetler" penceresi): ızgaranın süzülmesi, üretimde olmayan ama planlanan adedi girilmiş modellerin kendi bölümü, iki boş durum, süzgeç ibaresi ve pencerenin beş yeni metin sabiti; Ayarlar › Katalog › Makina Modelleri'nin kapsam ipucusu (`src/lib/uretimdekiModeller.js`) ve "üretimde değil" ibaresinin aynı kütüphaneye taşınması; 0091'in **üç** testi; üç yeni ve üç değişen görsel kanıt ekranı. Saf motor, veri ve izin tarafı değişmez. |
@@ -261,28 +261,28 @@ Yeni ekran adları: `maliyet-0093-plan-suzulmus`, `maliyet-0093-plan-gizli-adet`
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap içeren iş yok; süzme ekranda ve motorun çıktısı birebir aynı (AC-22) ölçüldü.
-- [ ] Aynı sayıyı üreten başka ekran etkilenmedi: parti hesabının rakamları önce/sonra birebir (AC-13).
-- [ ] Yeni kalıcı alan yok; dört nokta kuralı gerekmedi ve bu **açıkça yazıldı** (AC-21).
-- [ ] Yeni veri bölümü yok; `BLOB_SECTIONS` / `MERGE_KEYS` dokunulmadı (AC-21).
-- [ ] Yeni eylem izni yok; **salt görünüm tercihi olduğu açıkça yazıldı** (R9, AC-20, AC-21).
-- [ ] Soft-delete simetrisi: çöpe atılan ve geri alınan modelin işaret davranışı 0091'deki gibi kaldı.
-- [ ] Kullanıcıya görünen bütün yeni metinler Türkçe; yazdırma çıktısı yok, çeviri anahtarı gerekmedi.
-- [ ] Para gösterimi değişmedi (AC-13 birebir eşitlik).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: pencere süzülmüş hâli, üretimde olmayan ama adedi olan model bölümü, iki boş durum ve Ayarlar'ın yeni ipucusu. Ölçüm 4'ün üç yeni ekranı çekildi; değişen üç mevcut ekranın kaydı `beklenen: "degisti"` + `onay: "Takım Yöneticisi · 2026-10-19 · spec 0093 R1/R4/R8"` ile açıldı (AC-30).
-- [ ] 0091'in ters çevrilen kriterleri (R29, X9, AC-43) ve **üç** testi (Context'teki tablo: `test.js:147`, `ui:240`, `ui:102-106`) "spec 0093 ile" notuyla güncellendi; AC-12/2'nin ikinci ifadesi korundu (AC-24).
-- [ ] Kaldırma tek mekanizmadır: R3 satırı `kaldirilan` dizisine girmiyor, ölçüm 3'ün dördüncü satırındaki sessiz geri alma yeniden ölçülerek oluşmadığı gösterildi (AC-6/2).
-- [ ] Süzme tek yerde: `modeller` yeniden bağlanmadı, tam listeyle kalan beş yer kaynak taramasıyla sabitlendi, `MakinaMaliyeti.jsx` değişmedi (AC-1/2, C6).
-- [ ] C4'ün bekçisi kuruldu: `PartiHesabi.jsx` işareti okuyan dosyalar kümesine girmiyor (AC-23, C7).
-- [ ] Pencerenin beş metni dosyadan dışa verildi ve testler sabitten okudu (AC-25, R11); "üretimde değil" ibaresi kütüphaneye taşındı ve `URETIM_METIN` yeniden dışa verdi (AC-17/2, R12).
-- [ ] Testler iki dosyada: arayüz (`tests/ui/plan-adetler-0093.test.jsx`, AC-1…AC-20, AC-26…AC-28) ve tarama (`tests/plan-adetler-0093.test.js`, AC-21…AC-25, AC-29, AC-30). **Yeni motor testi yok**, çünkü motor değişmiyor (C5, AC-22).
-- [ ] Dokunulmayan testler koşuldu ve yeşil: 0088'in pencere testleri ve Electron yerleşim testi (AC-29).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin 0091 bölümündeki kapsam cümlesi ("yalnız Model Maliyetleri'ni süzer") güncellendi.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap içeren iş yok; süzme ekranda ve motorun çıktısı birebir aynı (AC-22) ölçüldü.
+- [x] Aynı sayıyı üreten başka ekran etkilenmedi: parti hesabının rakamları önce/sonra birebir (AC-13).
+- [x] Yeni kalıcı alan yok; dört nokta kuralı gerekmedi ve bu **açıkça yazıldı** (AC-21).
+- [x] Yeni veri bölümü yok; `BLOB_SECTIONS` / `MERGE_KEYS` dokunulmadı (AC-21).
+- [x] Yeni eylem izni yok; **salt görünüm tercihi olduğu açıkça yazıldı** (R9, AC-20, AC-21).
+- [x] Soft-delete simetrisi: çöpe atılan ve geri alınan modelin işaret davranışı 0091'deki gibi kaldı.
+- [x] Kullanıcıya görünen bütün yeni metinler Türkçe; yazdırma çıktısı yok, çeviri anahtarı gerekmedi.
+- [x] Para gösterimi değişmedi (AC-13 birebir eşitlik).
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: pencere süzülmüş hâli, üretimde olmayan ama adedi olan model bölümü, iki boş durum ve Ayarlar'ın yeni ipucusu. Ölçüm 4'ün üç yeni ekranı çekildi; değişen üç mevcut ekranın kaydı `beklenen: "degisti"` + `onay: "Takım Yöneticisi · 2026-10-19 · spec 0093 R1/R4/R8"` ile açıldı (AC-30).
+- [x] 0091'in ters çevrilen kriterleri (R29, X9, AC-43) ve **üç** testi (Context'teki tablo: `test.js:147`, `ui:240`, `ui:102-106`) "spec 0093 ile" notuyla güncellendi; AC-12/2'nin ikinci ifadesi korundu (AC-24).
+- [x] Kaldırma tek mekanizmadır: R3 satırı `kaldirilan` dizisine girmiyor, ölçüm 3'ün dördüncü satırındaki sessiz geri alma yeniden ölçülerek oluşmadığı gösterildi (AC-6/2).
+- [x] Süzme tek yerde: `modeller` yeniden bağlanmadı, tam listeyle kalan beş yer kaynak taramasıyla sabitlendi, `MakinaMaliyeti.jsx` değişmedi (AC-1/2, C6).
+- [x] C4'ün bekçisi kuruldu: `PartiHesabi.jsx` işareti okuyan dosyalar kümesine girmiyor (AC-23, C7).
+- [x] Pencerenin beş metni dosyadan dışa verildi ve testler sabitten okudu (AC-25, R11); "üretimde değil" ibaresi kütüphaneye taşındı ve `URETIM_METIN` yeniden dışa verdi (AC-17/2, R12).
+- [x] Testler iki dosyada: arayüz (`tests/ui/plan-adetler-0093.test.jsx`, AC-1…AC-20, AC-26…AC-28) ve tarama (`tests/plan-adetler-0093.test.js`, AC-21…AC-25, AC-29, AC-30). **Yeni motor testi yok**, çünkü motor değişmiyor (C5, AC-22).
+- [x] Dokunulmayan testler koşuldu ve yeşil: 0088'in pencere testleri ve Electron yerleşim testi (AC-29).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin 0091 bölümündeki kapsam cümlesi ("yalnız Model Maliyetleri'ni süzer") güncellendi.
 - [x] Takım Yöneticisi spec'i ve üç kararı onayladı (2026-10-19). **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -338,10 +338,10 @@ Takım Yöneticisi planın §4'teki dokuz önerisini kabul etti.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 4 | Taslak, TY'nin üç kararı, QA turu (23 bulgu), plan onayı (dokuz öneri: R7/5, R11/2, R12/2, C7/2, AC-19/3, AC-21/3) |
+| **Düzeltme turu sayısı** | 1 | Tek triyaj turu, bir bulgu |
+| **Bulgu gerçek/gürültü oranı** | 1 / 0 | README'nin 0093 paragrafı eskimişti (düşük); iki not bulgu sayılmadı (açılışta bir kez dolan alanlar bugünkü sınıf, görsel kanıtın tahminden sapması kayıtlı) |
+| **Regresyon sayısı** | 0 | Electron dahil tam takım yeşil (Electron'suz 352 dosya, 4688 test; Electron 13 dosya); 0088 pencere testleri ve Electron yerleşim testi dokunulmadı |
+| **Kaçan hata** | 0 | Mutasyonla ölçüldü: süzgeç kaldırılınca 5, motora süzülmüş liste verilince 3, gizli satıra "Kaldır" konunca 1 test kırıldı |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Spec'in iki maddesi (R12 tek tanım, C7 bekçi) ayrı ayrı doğruydu ama birlikte çelişiyordu, çünkü 0091'in taraması işareti okuyan dosyayı **modül yolundan** tanıyordu; plan yazılırken kodla karşılaştırınca görüldü ve tarama okuyan adlara çevrildi. Görsel kanıt tahmini ekranın kadrajına bakılmadan yazılmıştı (`katalog-model` penceresi ipucuyu örtüyor); kanıt tablosu yazılırken ekranın görüntüsüne bakmak tahmini ölçüme çevirir.

@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Spec** | `specs/0093-planlanan-adetler-uretimdeki-modeller.md` (revizyon 3) |
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-10-19; §4'ün dokuz önerisi kabul) |
+| **Durum** | Tamamlandı (onay 2026-10-19; commit `4061205`) |
 | **Dal** | `feat/0093-plan-uretimdeki` (`bf74e10` üstünde) |
 
 Bu iş yalnız çizim, metin sabitleri ve bir kütüphane sabitidir. Saf motor, veri, sunucu, izin ve birleştirme değişmez.
