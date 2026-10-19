@@ -826,11 +826,12 @@ function buildApp() {
     } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
   });
 
-  // Global hata yakalayıcı (Express 4 fallback)
-   
+  // Global hata yakalayıcı. Gövde çözücüsünün hataları kendi kodunu taşır (bozuk JSON 400, sınır aşımı 413): istemciye
+  // o kod gider, iç ayrıntı gitmez; eskiden hepsi 500'dü. Diğer her hata 500.
   app.use((err, _req, res, _next) => {
-    console.error("[server] Beklenmeyen hata:", err);
-    res.status(500).json({ error: "Sunucu hatası" });
+    const kod = Number.isInteger(err?.status) && err.status >= 400 && err.status < 500 ? err.status : 500;
+    if (kod === 500) console.error("[server] Beklenmeyen hata:", err);
+    res.status(kod).json({ error: kod === 413 ? "İstek çok büyük" : kod === 500 ? "Sunucu hatası" : "Geçersiz istek" });
   });
 
   return app;

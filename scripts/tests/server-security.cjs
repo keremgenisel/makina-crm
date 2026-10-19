@@ -124,6 +124,14 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
 
   const { port } = await server.start(0, dbmod);
   const base = `http://127.0.0.1:${port}`;
+  // Uç kapsamı: sunucuya giden her istek "METOT /yol" olarak izlenir; sonda server.cjs'teki her uç en az bir kez
+  // çağrılmış olmalı (Express 5 geçişi: hiçbir uç testsiz kalmasın, yeni uç da kalamasın).
+  const istekIzi = new Set();
+  const fetchAsil = globalThis.fetch;
+  globalThis.fetch = (url, opts = {}) => {
+    try { const u = new URL(String(url)); if (u.hostname === "127.0.0.1") istekIzi.add(`${String(opts.method || "GET").toUpperCase()} ${u.pathname}`); } catch { /* izleme isteği bozmasın */ }
+    return fetchAsil(url, opts);
+  };
   const api = (p, opts = {}, token) => fetch(base + p, {
     ...opts,
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) },
@@ -738,6 +746,16 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("geçerli POST /api/audit → 200 ve satır yazar",
     (await api("/api/audit", { method: "POST", body: JSON.stringify({ action: "eklendi", entity: "musteri", entity_name: "Denetim" }) }, adminTok)).status === 200 && (await auditSayi()) === auditOnce + 1);
 
+  // ── Express 5 hazırlığı: genel davranışlar (bilinmeyen yol, bozuk JSON, gövde sınırı, gövdesiz dosya yükleme) ──
+  check("bilinmeyen /api yolu → 404", (await api("/api/yok-boyle-bir-uc", {}, adminTok)).status === 404);
+  check("bilinmeyen kök yol → 404", (await fetch(base + "/yok-boyle-bir-yol")).status === 404);
+  const bozuk = await api("/api/audit", { method: "POST", body: "{bozuk" }, adminTok);
+  check("bozuk JSON gövde → 400 (500 değil), Türkçe hata", bozuk.status === 400 && (await bozuk.json().catch(() => ({}))).error === "Geçersiz istek");
+  const iri = await api("/api/audit", { method: "POST", body: JSON.stringify({ action: "eklendi", entity: "musteri", detail: "x".repeat(1100000) }) }, adminTok);
+  check("1 MB sınırını aşan JSON gövde → 413 (500 değil)", iri.status === 413 && (await iri.json().catch(() => ({}))).error === "İstek çok büyük");
+  check("sunucu bozuk ve iri gövdeden sonra çalışmaya devam eder", (await api("/api/version", {}, adminTok)).status === 200);
+  check("gövdesiz dosya yükleme → 400", (await fetch(base + "/api/files/upload", { method: "POST", headers: { Authorization: `Bearer ${adminTok}`, "X-Dosya-Adi": "x.pdf" } })).status === 400);
+
   // ── Admin-gating ────────────────────────────────────────────────────────────
   check("salt-okunur GET /api/users → 403", (await api("/api/users", {}, roTok)).status === 403);
   check("salt-okunur GET /api/audit → 403", (await api("/api/audit", {}, roTok)).status === 403);
@@ -811,6 +829,43 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("admin 2fa sıfırla: yanlış admin şifresi → 401", (await api(`/api/users/${tfaId}/2fa`, { method: "DELETE", body: JSON.stringify({ password: "yanlis" }) }, adminTok)).status === 401);
   check("admin 2fa sıfırla: doğru admin şifresi → 200", (await api(`/api/users/${tfaId}/2fa`, { method: "DELETE", body: JSON.stringify({ password: "admin123" }) }, adminTok)).status === 200);
   check("sıfırlama sonrası kodsuz login çalışır", (await login("tfa", "tfapass1")).status === 200);
+
+  // ── Express 5 hazırlığı: önceden testsiz uçlar (2FA durumu ve kapatma, kilit listesi, toplu kilit bırakma, kullanıcı silme) ──
+  {
+    const kul = await api("/api/users", { method: "POST", body: JSON.stringify({ username: "tfa2", password: "tfa2pass", role: "user" }) }, adminTok);
+    const kulId = (await kul.json()).id;
+    let tok = (await login("tfa2", "tfa2pass")).body.token;
+    check("token'sız GET /auth/2fa/status → 401", (await api("/auth/2fa/status")).status === 401);
+    check("2fa/status kurulumdan önce kapalı", (await (await api("/auth/2fa/status", {}, tok)).json()).enabled === false);
+    const kur = await (await api("/auth/2fa/setup", { method: "POST" }, tok)).json();
+    tok = (await (await api("/auth/2fa/enable", { method: "POST", body: JSON.stringify({ code: totp.currentToken(kur.secret) }) }, tok)).json()).token;
+    check("2fa/status açıldıktan sonra açık", (await (await api("/auth/2fa/status", {}, tok)).json()).enabled === true);
+    const bosKapat = await fetch(base + "/auth/2fa/disable", { method: "POST", headers: { Authorization: `Bearer ${tok}` } });
+    check("2fa/disable gövdesiz → 401 (şifre hatalı; oturum geçerli)", bosKapat.status === 401 && (await bosKapat.json()).error === "Şifre hatalı");
+    check("2fa/disable yanlış şifre → 401", (await api("/auth/2fa/disable", { method: "POST", body: JSON.stringify({ password: "yanlis" }) }, tok)).status === 401);
+    const kapat = await api("/auth/2fa/disable", { method: "POST", body: JSON.stringify({ password: "tfa2pass" }) }, tok);
+    const kapatGovde = await kapat.json();
+    check("2fa/disable doğru şifre → 200 ve taze jeton", kapat.status === 200 && !!kapatGovde.token);
+    tok = kapatGovde.token;
+    check("2fa/disable sonrası durum kapalı", (await (await api("/auth/2fa/status", {}, tok)).json()).enabled === false);
+    const yeniGiris = await login("tfa2", "tfa2pass");
+    check("2fa/disable sonrası kodsuz login çalışır", yeniGiris.status === 200);
+    tok = yeniGiris.body.token; // tek oturum: admin olmayan kullanıcının girişi eski jetonu düşürür
+
+    check("token'sız GET /api/locks → 401", (await api("/api/locks")).status === 401);
+    check("gövdesiz POST /api/lock → 400", (await fetch(base + "/api/lock", { method: "POST", headers: { Authorization: `Bearer ${tok}` } })).status === 400);
+    check("gövdesiz DELETE /api/lock → 400", (await fetch(base + "/api/lock", { method: "DELETE", headers: { Authorization: `Bearer ${tok}` } })).status === 400);
+    for (const id of ["1", "2"]) await api("/api/lock", { method: "POST", body: JSON.stringify({ entityType: "ex5", entityId: id }) }, tok);
+    const kilitler = async () => (await (await api("/api/locks", {}, tok)).json()).filter(l => l.entity_type === "ex5" && l.locked_by === "tfa2").length;
+    check("GET /api/locks alınan iki kilidi listeler", (await kilitler()) === 2);
+    check("DELETE /api/locks/all → 200", (await api("/api/locks/all", { method: "DELETE" }, tok)).status === 200);
+    check("DELETE /api/locks/all kullanıcının bütün kilitlerini bırakır", (await kilitler()) === 0);
+
+    check("kullanıcı silme: salt-okunur → 403", (await api(`/api/users/${kulId}`, { method: "DELETE" }, roTok)).status === 403);
+    check("kullanıcı silme: admin kendini silemez → 400", (await api(`/api/users/${adminId}`, { method: "DELETE" }, adminTok)).status === 400);
+    check("kullanıcı silme: admin → 200", (await api(`/api/users/${kulId}`, { method: "DELETE" }, adminTok)).status === 200);
+    check("silinen kullanıcının jetonu düşer (401)", (await api("/api/version", {}, tok)).status === 401);
+  }
 
   // ── Sunucu KURULUM yolu login korumalarını atlayamaz (ortak authenticateLogin) ──
   // REGRESYON: setupAdmin eskiden bcrypt.compare + refresh-internal ile doğruluyordu; bu yol
@@ -1056,6 +1111,16 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   // okuma istekleri (genel 600/dk) bu sırada etkilenmez.
   check("spec 0077 AC-35: /api/data sınırı tam 60 (61. yazma ilk 429)", rlIlk === 61);
   check("spec 0077 AC-35: yazma sınırı dolmuşken genel /api okuması 200", (await api("/api/version", {}, yeniTok)).status === 200);
+
+  // ── Uç kapsamı (Express 5 hazırlığı): server.cjs'teki her uç bu testte en az bir kez çağrıldı ──
+  {
+    const kaynak = fs.readFileSync(path.join(root, "electron", "server.cjs"), "utf8");
+    const uclar = [...kaynak.matchAll(/\bapp\.(get|post|put|patch|delete)\(\s*"([^"]+)"/g)].map(m => ({ metot: m[1].toUpperCase(), yol: m[2] }));
+    const desen = (yol) => new RegExp("^" + yol.replace(/:[A-Za-z]+/g, "[^/]+") + "$");
+    const eksik = uclar.filter(u => ![...istekIzi].some(iz => { const [m, p] = iz.split(" "); return m === u.metot && desen(u.yol).test(p); }));
+    if (eksik.length) console.log("  DBG çağrılmayan uçlar:", eksik.map(u => `${u.metot} ${u.yol}`).join(", "));
+    check(`server.cjs'teki ${uclar.length} ucun hepsi testte çağrıldı`, uclar.length >= 30 && eksik.length === 0);
+  }
 
   // ── Kaba kuvvet: kademeli (artan) kilit — en son (IP+kullanıcı sayacını tüketir) ──
   // İlk 2 yanlış serbest (401). 3. yanlış kilidi kurar (yine 401 döner ama bundan sonrası
