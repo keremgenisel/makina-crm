@@ -18,8 +18,10 @@ const bolgeYukle = (kod) => {
   const yukleyici = bolgeYukleyiciler["../lib/map/regions/" + kod + ".js"];
   return yukleyici ? yukleyici() : Promise.resolve(null);
 };
-// İlçe kırılımı olan iller (şimdilik 14) — ile tıklanınca yalnız o ilin dosyası yüklenir.
+// İlçe kırılımı olan iller (19; liste scripts/gen-map-paths.cjs ILCE_ILLERI) — ile tıklanınca yalnız o ilin dosyası yüklenir.
 const ilceYukleyiciler = import.meta.glob("../lib/map/ilce/*.js");
+// Spec 0094 R5/2: ilçesi üretilen listede karşılığı olmayan kayıtların panel satırı (testler buradan okur).
+export const ilceEslesmeyenMetni = (n) => `${n} makinanın ilçesi haritada bulunamadı; müşteri kaydından ilçeyi yeniden seçin.`;
 const ilceYukle = (il) => {
   const yukleyici = ilceYukleyiciler["../lib/map/ilce/" + sadeAd(il) + ".js"];
   return yukleyici ? yukleyici() : Promise.resolve(null);
@@ -127,7 +129,10 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
   }, [seciliIl]);
 
   const ulkeModul = seciliUlke ? bolgeler[seciliUlke] : null;
-  const ilVerisi = useMemo(() => (seciliIl ? ilOzeti(customers, seciliIl) : null), [customers, seciliIl]);
+  // Spec 0094 R5/2, R5/3: eşleşme kümesi açılışta hazır form listesi (ILCELER[il]); il dosyası sonradan yüklenir ve
+  // AC-4 ikisinin aynı küme olduğunu sabitler. Boyama, pin ve il kartı bu tek kümeyle eşleşir.
+  const ilceAdlari = seciliIl ? ILCELER[seciliIl] || null : null;
+  const ilVerisi = useMemo(() => (seciliIl ? ilOzeti(customers, seciliIl, ilceAdlari) : null), [customers, seciliIl, ilceAdlari]);
   // Seçili ülkenin şehir -> firma kırılımı (yan panelde her şehrin altında gösterilir)
   const firmaKirilim = useMemo(() => (seciliUlke ? sehirFirmaKirilim(customers, seciliUlke) : {}), [customers, seciliUlke]);
   // Seçili ilin ilçe -> firma kırılımı (ilçe panelinde her ilçenin altında)
@@ -148,7 +153,7 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
       for (const c of customers) {
         if (String(c?.country ?? "").trim() !== "Türkiye" || String(c?.city ?? "").trim() !== seciliIl) continue;
         const ilce = String(c?.ilce ?? "").trim();
-        const k = ilce && ilceMerkezleri[sadeAd(ilce)];
+        const k = ilce && (!ilceAdlari || ilceAdlari.includes(ilce)) && ilceMerkezleri[sadeAd(ilce)]; // R5/5
         if (k) out.push({ x: k[0], y: k[1], ad: c.name || "(isimsiz)", id: c.id });
       }
       return out;
@@ -176,7 +181,7 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
       if (m) out.push({ x: m.x, y: m.y, ad, sayi: v.makina }); // ülke başına tek pin
     }
     return out;
-  }, [dunya, seciliUlke, seciliIl, customers, ozet, konumlar, ilceMerkezleri]);
+  }, [dunya, seciliUlke, seciliIl, customers, ozet, konumlar, ilceMerkezleri, ilceAdlari]);
 
   // Çizilecek şekiller: dünyada ülkeler, ülke görünümünde bölgeler
   const gorunum = useMemo(() => {
@@ -219,8 +224,8 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
   }, [sekilHalkalar]);
 
   const pinler = useMemo(
-    () => pinleriTopla({ factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari, ayniSekilde }),
-    [factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari, ayniSekilde],
+    () => pinleriTopla({ factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari, ayniSekilde, ilceAdlari }),
+    [factory, dealers, seciliUlke, seciliIl, konumlar, ilceMerkezleri, satisNoktalari, ayniSekilde, ilceAdlari],
   );
 
   // Satışsız yerlerin adları: her seviyede çizilen şekillerden satışı OLMAYANLAR, şekil
@@ -364,7 +369,8 @@ export const Harita = ({ customers = [], dealers = [], factory = null, onAyriPen
 };
 
 const IlKartlari = ({ il, veri, toplamMakina }) => {
-  const makina = Object.values(veri.ilceler).reduce((a, b) => a + b, 0) + veri.ilcesiz;
+  // Spec 0094 R5/4: eşleşmeyen kayıtlar da toplama girer (sayıları kaybolmaz).
+  const makina = Object.values(veri.ilceler).reduce((a, b) => a + b, 0) + veri.ilcesiz + (veri.eslesmeyen || 0);
   const enCok = Object.entries(veri.ilceler).sort((a, b) => b[1] - a[1])[0];
   return (
     <>
@@ -397,7 +403,9 @@ const IlPaneli = ({ il, veri, firmaKirilim = {}, onGeri, onFirmaSec }) => {
             <FirmaListesi firmalar={firmaKirilim[ad] || []} onFirmaSec={onFirmaSec} />
           </div>
         ))}
-        {!ilceler.length && !veri.ilcesiz && <div className="harita-bos">Bu ilde makina kaydı yok.</div>}
+        {!ilceler.length && !veri.ilcesiz && !veri.eslesmeyen && <div className="harita-bos">Bu ilde makina kaydı yok.</div>}
+        {/* Spec 0094 R5/2: listede karşılığı olmayan ilçe yazımı (genelde Excel içe aktarması) boyanmaz, pin almaz, burada sayılır. */}
+        {!!veri.eslesmeyen && <div className="harita-bos" data-testid="ilce-eslesmeyen">{ilceEslesmeyenMetni(veri.eslesmeyen)}</div>}
         {/* Eski kayıtların çoğunda ilçe yok: sayıları kaybolmasın, kullanıcı zamanla doldursun */}
         {!!veri.ilcesiz && (
           <div className="harita-bos">

@@ -523,3 +523,43 @@ describe("ulkeSatisPinleri — yurt dışı ülke görünümünde makina başın
     expect(pins).toHaveLength(0);
   });
 });
+
+// Spec 0094 R5/2, R5/5: listede karşılığı olmayan dolu ilçe değeri yarım çizilmez. Opt-in: liste verilmezse çıktı eski.
+describe("Spec 0094: eşleşmeyen ilçe değeri (ilOzeti üçüncü argüman, pin süzmesi)", () => {
+  const ADLAR = ["Kadıköy", "Şişli", "Tuzla"];
+  const musteriler = [
+    { name: "A", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+    { name: "B", country: "Türkiye", city: "İstanbul", ilce: "Kadikoy" },  // içe aktarmadan ASCII yazım
+    { name: "C", country: "Türkiye", city: "İstanbul", ilce: "Yok Böyle" },
+    { name: "D", country: "Türkiye", city: "İstanbul" },
+  ];
+  it("AC-30: liste verilmeden çağrılınca çıktı birebir eski (eslesmeyen anahtarı yok)", () => {
+    const o = ilOzeti(musteriler, "İstanbul");
+    expect(o).toEqual({ ilceler: { "Kadıköy": 1, "Kadikoy": 1, "Yok Böyle": 1 }, ilcesiz: 1 });
+    expect("eslesmeyen" in o).toBe(false);
+  });
+  it("AC-20 / AC-20/2: liste verilince eşleşmeyen dolu değer ilçe de ilçesiz de sayılmaz, eslesmeyen'e gider", () => {
+    expect(ilOzeti(musteriler, "İstanbul", ADLAR)).toEqual({ ilceler: { "Kadıköy": 1 }, ilcesiz: 1, eslesmeyen: 2 });
+    expect(ilOzeti([], "İstanbul", ADLAR)).toEqual({ ilceler: {}, ilcesiz: 0, eslesmeyen: 0 });
+  });
+  it("AC-20/3: liste verilince fabrika ve bayi pini yalnız listedeki (tam) adda; verilmezse bugünkü sadeleştirilmiş eşleşme", () => {
+    const ilceMerkezleri = { kadikoy: [400, 300] };
+    const f = { name: "F", country: "Türkiye", city: "İstanbul", ilce: "Kadikoy" };
+    const d = [{ name: "Bayi", country: "Türkiye", city: "İstanbul", ilce: "Kadikoy" }, { name: "Bayi2", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" }];
+    const eski = pinleriTopla({ factory: f, dealers: d, seciliUlke: "Türkiye", seciliIl: "İstanbul", konumlar: {}, ilceMerkezleri });
+    expect(eski.filter(p => p.tur !== "satis")).toHaveLength(3);
+    const yeni = pinleriTopla({ factory: f, dealers: d, seciliUlke: "Türkiye", seciliIl: "İstanbul", konumlar: {}, ilceMerkezleri, ilceAdlari: ADLAR });
+    expect(yeni.map(p => p.ad)).toEqual(["Bayi2"]);
+  });
+  it("AC-20/3: elle yerleştirilmiş fabrika konumu ad listesinden bağımsız (ilçe merkezi aranmaz)", () => {
+    const f = { name: "F", country: "Türkiye", city: "İstanbul", ilce: "Kadikoy", haritaKonum: { il: "İstanbul", x: 1, y: 2 } };
+    const p = pinleriTopla({ factory: f, dealers: [], seciliUlke: "Türkiye", seciliIl: "İstanbul", konumlar: {}, ilceMerkezleri: {}, ilceAdlari: ADLAR });
+    expect(p.find(x => x.tur === "fabrika")).toMatchObject({ x: 1, y: 2 });
+  });
+  it("AC-18/2: teslimat ilçesi (teslimatIlce) hiçbir pine ve il özetine girmez; pinler yalnız fabrika, bayi ve satış noktası okur", () => {
+    const teslimat = [{ name: "T", country: "Türkiye", city: "İstanbul", teslimatIlce: "Kadıköy" }];
+    expect(ilOzeti(teslimat, "İstanbul", ADLAR)).toEqual({ ilceler: {}, ilcesiz: 1, eslesmeyen: 0 });
+    const p = pinleriTopla({ factory: null, dealers: [], seciliUlke: "Türkiye", seciliIl: "İstanbul", konumlar: {}, ilceMerkezleri: { kadikoy: [4, 3] }, ilceAdlari: ADLAR });
+    expect(p).toEqual([]);
+  });
+});

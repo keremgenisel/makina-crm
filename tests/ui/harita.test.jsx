@@ -7,7 +7,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 
 afterEach(cleanup);
-import { Harita } from "../../src/components/Harita";
+import { Harita, ilceEslesmeyenMetni } from "../../src/components/Harita";
 
 const musteriler = [
   { name: "Alfa Ltd.", country: "Türkiye", city: "Konya" },
@@ -189,3 +189,75 @@ describe("Harita", () => {
     expect(screen.getByText(/Henüz ülke bilgisi olan bir müşteri kaydı yok/)).toBeTruthy();
   });
 });
+
+// Spec 0094: beş yeni ilin ilçe kırılımı ve eşleşmeyen ilçe değeri (İstanbul/Kadıköy deseni).
+describe("Spec 0094: beş ilin ilçe görünümü (R5, R5/2–R5/5)", () => {
+  const tikla = (ad) => { const e = document.querySelector(`[data-ad="${ad}"]`); fireEvent.pointerDown(e); fireEvent.pointerUp(e); };
+  const turkiyeyeIn = async () => {
+    await dunyaBekle();
+    fireEvent.click(screen.getByRole("button", { name: /Türkiye/ }));
+    await waitFor(() => expect(document.querySelector('[data-ad="Aydın"]')).toBeTruthy(), { timeout: 10000 });
+  };
+  const satisPinleri = () => [...document.querySelectorAll('[data-pin="satis"]')].map(e => e.getAttribute("data-ad"));
+
+  it("AC-13 / AC-21: Aydın'a tıklanınca ilçe görünümü açılır; ilçesi girilmiş kayıt o ilçeyi boyar ve panelde firma adıyla görünür", async () => {
+    render(<Harita customers={[{ id: 1, name: "Kuşadası Fırın", country: "Türkiye", city: "Aydın", ilce: "Kuşadası" }]} dealers={[]} factory={null} />);
+    await turkiyeyeIn();
+    tikla("Aydın");
+    await waitFor(() => expect(document.querySelector('[data-ad="Kuşadası"]')).toBeTruthy(), { timeout: 10000 });
+    expect(document.querySelector('[data-ad="Kuşadası"]').getAttribute("data-adet")).toBe("1");
+    expect(document.querySelector('[data-ad="Didim"]').getAttribute("data-adet")).toBe("0");
+    expect(screen.getByText(/Aydın — ilçeler \(1\)/)).toBeTruthy();
+    expect(screen.getAllByText("Kuşadası Fırın").length).toBeGreaterThan(0);
+    expect(satisPinleri()).toEqual(["Kuşadası Fırın"]);
+  });
+
+  it("AC-14: listede olmayan il (Kayseri) tıklanınca ilçe görünümü açılmaz", async () => {
+    render(<Harita customers={[{ id: 1, name: "K", country: "Türkiye", city: "Kayseri" }]} dealers={[]} factory={null} />);
+    await turkiyeyeIn();
+    tikla("Kayseri");
+    await new Promise(r => setTimeout(r, 300));
+    expect(screen.queryByText(/Kayseri — ilçeler/)).toBeNull();
+    expect(document.querySelector('[data-ad="Talas"]')).toBeNull();
+    expect(document.querySelector('[data-ad="Aydın"]')).toBeTruthy(); // hâlâ ülke görünümü
+  });
+
+  it("AC-13: beş ilin hepsinde ilçe görünümü açılır (bilinen bir ilçe çizilir)", async () => {
+    for (const [il, ilce] of [["Sakarya", "Sapanca"], ["Eskişehir", "Tepebaşı"], ["Gaziantep", "Şahinbey"], ["Yalova", "Çınarcık"]]) {
+      render(<Harita customers={[]} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl={il} />);
+      await waitFor(() => expect(document.querySelector(`[data-ad="${ilce}"]`), il).toBeTruthy(), { timeout: 10000 });
+      if (il === "Yalova") expect(document.querySelector('[data-ad="Yalova"]')).toBeTruthy(); // AC-6/7: merkez ilçe "Yalova"
+      cleanup();
+    }
+  });
+
+  it("AC-20: ilçesi boş kayıt il kartında ilçesiz sayılır, hiçbir ilçeye yazılmaz", async () => {
+    render(<Harita customers={[{ id: 1, name: "Eski", country: "Türkiye", city: "Sakarya" }]} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Sakarya" />);
+    await waitFor(() => expect(document.querySelector('[data-ad="Adapazarı"]')).toBeTruthy(), { timeout: 10000 });
+    expect([...document.querySelectorAll("[data-adet]")].every(e => e.getAttribute("data-adet") === "0")).toBe(true);
+    expect(screen.getByText(/1 makinanın ilçesi girilmemiş/)).toBeTruthy();
+    expect(screen.queryByTestId("ilce-eslesmeyen")).toBeNull();
+  });
+
+  it("AC-20/2 / AC-20/3 / AC-20/4: eşleşmeyen ilçe değeri boyanmaz, pin almaz, panelde sayılır; toplam makina üç kümeyi içerir", async () => {
+    render(<Harita customers={[
+      { id: 1, name: "Doğru", country: "Türkiye", city: "Aydın", ilce: "Kuşadası" },
+      { id: 2, name: "Ascii", country: "Türkiye", city: "Aydın", ilce: "Kusadasi" },
+      { id: 3, name: "Eski", country: "Türkiye", city: "Aydın" },
+    ]} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Aydın" />);
+    await waitFor(() => expect(document.querySelector('[data-ad="Kuşadası"]')).toBeTruthy(), { timeout: 10000 });
+    expect(document.querySelector('[data-ad="Kuşadası"]').getAttribute("data-adet")).toBe("1");
+    expect(screen.getByTestId("ilce-eslesmeyen").textContent).toBe(ilceEslesmeyenMetni(1));
+    expect(screen.getByText(/1 makinanın ilçesi girilmemiş/)).toBeTruthy();
+    await waitFor(() => expect(satisPinleri()).toEqual(["Doğru"]));
+    expect(screen.getByText("Makina").parentElement.textContent).toContain("3");
+  });
+
+  it("AC-20/4: yalnız eşleşmeyen kaydı olan ilde 'makina kaydı yok' yazılmaz", async () => {
+    render(<Harita customers={[{ id: 2, name: "Ascii", country: "Türkiye", city: "Yalova", ilce: "Yalova merkez" }]} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Yalova" />);
+    await waitFor(() => expect(document.querySelector('[data-ad="Çınarcık"]')).toBeTruthy(), { timeout: 10000 });
+    expect(screen.getByTestId("ilce-eslesmeyen").textContent).toBe(ilceEslesmeyenMetni(1));
+    expect(screen.queryByText("Bu ilde makina kaydı yok.")).toBeNull();
+  });
+});
+

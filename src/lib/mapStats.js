@@ -165,21 +165,26 @@ export const bolgeToplami = (sehirler = {}, dizin = {}) => {
  * Bir ilin ilçe kırılımı. Müşterinin `city` alanı il, `ilce` alanı ilçedir.
  * @param customers ham müşteri kayıtları
  * @param il {string} örn. "İstanbul"
- * @returns {{ ilceler: Record<string, number>, ilcesiz: number }}
+ * @param ilceAdlari {string[]|null} spec 0094 R5/2 (opt-in): ilin çizilen ilçe adları. Verilince listede
+ *        karşılığı olmayan dolu değer (tek kaynağı XLSX içe aktarma) ilçe sayılmaz, `eslesmeyen`'e gider.
+ *        Verilmezse çıktı birebir eskidir (`eslesmeyen` anahtarı da yok).
+ * @returns {{ ilceler: Record<string, number>, ilcesiz: number, eslesmeyen?: number }}
  *          ilcesiz: bu ilde olup ilçesi girilmemiş makina sayısı. Eski kayıtların çoğu
  *          böyle; haritada hiçbir ilçeyi boyayamazlar ama sayıları kaybolmamalı.
  */
-export const ilOzeti = (customers = [], il = "") => {
+export const ilOzeti = (customers = [], il = "", ilceAdlari = null) => {
   const ilceler = {};
-  let ilcesiz = 0;
+  let ilcesiz = 0, eslesmeyen = 0;
+  const adlar = ilceAdlari ? new Set(ilceAdlari) : null;
   for (const c of customers || []) {
     if (String(c?.country ?? "").trim() !== "Türkiye") continue;
     if (String(c?.city ?? "").trim() !== il) continue;
     const i = String(c?.ilce ?? "").trim();
     if (!i) { ilcesiz++; continue; }
+    if (adlar && !adlar.has(i)) { eslesmeyen++; continue; }
     ilceler[i] = (ilceler[i] || 0) + 1;
   }
-  return { ilceler, ilcesiz };
+  return adlar ? { ilceler, ilcesiz, eslesmeyen } : { ilceler, ilcesiz };
 };
 
 /**
@@ -363,9 +368,12 @@ export const bayiTuru = (d) => {
 /** İlçe görünümünün pinleri: konum ilçe merkezinden gelir, ilçesi girilmemiş kayıt pin almaz.
  *  Bu görünümde tek bir ile yakınlaşılmış olduğu için pinler daha büyük çizilir; ülke
  *  ölçeğindeki boylarıyla kaybolup gidiyorlardı. Bayi yine fabrikadan küçük kalır. */
-const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = [], ayniSekilde = null }) => {
+const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = [], ayniSekilde = null, ilceAdlari = null }) => {
   const liste = [];
-  const konum = (ilce) => ilceMerkezleri[sadeAd(ilce)] || null;
+  // Spec 0094 R5/5 (opt-in): ad listesi verilince pin yalnız boyamayla aynı (tam) adda çizilir; listede olmayan
+  // yazım (ör. "Kadikoy") sadeleştirilmiş eşleşmeyle pin almaz. Verilmezse bugünkü davranış.
+  const adlar = ilceAdlari ? new Set(ilceAdlari) : null;
+  const konum = (ilce) => (adlar && !adlar.has(ilce) ? null : ilceMerkezleri[sadeAd(ilce)] || null);
   const uygun = (x) => String(x?.country ?? "").trim() === "Türkiye"
     && String(x?.city ?? "").trim() === seciliIl && String(x?.ilce ?? "").trim();
 
@@ -394,8 +402,9 @@ const ilcePinleri = ({ factory, dealers, seciliIl, ilceMerkezleri, satisPin = []
  *        çizilir, yani ülke koordinatları burada geçersizdir (bayiler yanlış yerde çıkıyordu).
  *        Konum ilçe merkezinden alınır; ilçesi girilmemiş kayıt pin almaz.
  * @param ilceMerkezleri {Record<string, number[]>} sadeAd(ilçe) -> [x, y] (ilin projeksiyonunda)
+ * @param ilceAdlari {string[]|null} spec 0094 R5/5: ilçe görünümünde fabrika ve bayi pini yalnız bu listedeki adda
  */
-export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliIl = null, konumlar = {}, ilceMerkezleri = null, satisNoktalari = [], ayniSekilde = null } = {}) => {
+export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliIl = null, konumlar = {}, ilceMerkezleri = null, satisNoktalari = [], ayniSekilde = null, ilceAdlari = null } = {}) => {
   // Satış konum pinleri (nötr, adıyla): görünüm seviyesine göre boyutlanır. Konum çağıran
   // tarafça hesaplanmış gelir (dünyada ülke centroid'i, ülke/ilçede şehir/ilçe merkezi).
   const seviye = seciliIl ? "ilce" : seciliUlke ? "ulke" : "dunya";
@@ -405,7 +414,7 @@ export const pinleriTopla = ({ factory, dealers = [], seciliUlke = null, seciliI
     x: s.x, y: s.y, tur: "satis", ad: s.ad, id: s.id ?? null,
     olcek: PIN_BOY[seviye].satis, alt: s.sayi ? (s.sayi + " makina") : "",
   }));
-  if (seciliIl) return ilcePinleri({ factory, dealers, seciliIl, ilceMerkezleri: ilceMerkezleri || {}, satisPin, ayniSekilde });
+  if (seciliIl) return ilcePinleri({ factory, dealers, seciliIl, ilceMerkezleri: ilceMerkezleri || {}, satisPin, ayniSekilde, ilceAdlari });
   const konum = (ulke, sehir, ulkeGorunumu) => {
     const d = konumlar[ulke];
     const k = d && d[sehirAnahtar(sehir)];

@@ -44,6 +44,7 @@ import { SettingsTrash } from "../../src/components/settings/SettingsTrash";
 import LOGO from "../../src/assets/logo.avif?inline";
 import { UserManager } from "../../src/components/settings/UserManager";
 import { GlobalSearch } from "../../src/components/GlobalSearch";
+import { Harita } from "../../src/components/Harita";
 
 const q = new URLSearchParams(location.hash.slice(1));
 const ekran = q.get("ekran") || "giderler-rapor";
@@ -552,6 +553,22 @@ const maliyetPartiNedenEkrani = () => maliyetEkrani({ p0: [P_KAPALI, P_ACIK, { i
 const EK_ODEMELI = k(41, { turId: 3, calisanId: 21, calisanAd: "Hasan Çelik", aciklama: "Hasan Çelik", resmiTutar: 30000, eldenTutar: 20000, tutar: null, kdvOrani: 0, tarih: "2026-09-05",
   ekOdemeler: [{ tur: "fazlaCalisma", aciklama: "Eylül yoğunluğu", resmiTutar: 4000, eldenTutar: 1000 }, { tur: "prim", aciklama: "Teslim primi", resmiTutar: 2500, eldenTutar: null },
     { tur: "prim", aciklama: "Kalite primi", resmiTutar: null, eldenTutar: 1500 }] });
+
+// Spec 0094: harita müşterileri (iki ilçeli, bir ilçesiz kayıt).
+const HARITA_0094 = [
+  { id: 9401, name: "Kadıköy Fırın", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+  { id: 9402, name: "Moda Pastane", country: "Türkiye", city: "İstanbul", ilce: "Kadıköy" },
+  { id: 9403, name: "Eski Kayıt", country: "Türkiye", city: "İstanbul" },
+];
+
+const HARITA_0094_IL = [
+  { id: 9411, name: "Kuşadası Fırın", country: "Türkiye", city: "Aydın", ilce: "Kuşadası" },
+  { id: 9412, name: "Didim Pastane", country: "Türkiye", city: "Aydın", ilce: "Didim" },
+  { id: 9413, name: "Sakarya Eski", country: "Türkiye", city: "Sakarya" },
+  { id: 9414, name: "Eskişehir Eski", country: "Türkiye", city: "Eskişehir" },
+  { id: 9415, name: "Antep Eski", country: "Türkiye", city: "Gaziantep" },
+  { id: 9416, name: "Yalova Eski", country: "Türkiye", city: "Yalova" },
+];
 
 // Formu hazır bir durumla çizer (ör. "ödendi" işaretli, ödeme ayrıntı kutusu açık).
 function FormEkrani({ Bilesen, ilk, ...props }) {
@@ -1134,6 +1151,20 @@ const EKRANLAR = {
   "giderler-0079-kdv": [<GiderEkrani satis={SATIS_0079} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0081: kutu kapalı başlar
   "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],
   "servis-formu-yazdir-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0079[0], MUSTERI_0079, undefined, {}) }} />, []],
+  // Spec 0094: Faaliyet Haritası ilçe görünümü. Mevcut il (İstanbul) taban kanıtıdır: kod değişmeden önce ve sonra 0 fark.
+  "harita-0094-istanbul": [<div style={{ height: 820 }}><Harita customers={HARITA_0094} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="İstanbul" /></div>, ['bekle:[data-ad="Kadıköy"]']],
+  // Beş yeni il (R5): Aydın'da ilçeli iki kayıt boyanır ve panelde firma adlarıyla; diğer dördünde ilçesi boş kayıtlar.
+  "harita-0094-aydin": [<div style={{ height: 820 }}><Harita customers={HARITA_0094_IL} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Aydın" /></div>, ['bekle:[data-ad="Kuşadası"]']],
+  "harita-0094-sakarya": [<div style={{ height: 820 }}><Harita customers={HARITA_0094_IL} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Sakarya" /></div>, ['bekle:[data-ad="Sapanca"]']],
+  "harita-0094-eskisehir": [<div style={{ height: 820 }}><Harita customers={HARITA_0094_IL} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Eskişehir" /></div>, ['bekle:[data-ad="Tepebaşı"]']],
+  "harita-0094-gaziantep": [<div style={{ height: 820 }}><Harita customers={HARITA_0094_IL} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Gaziantep" /></div>, ['bekle:[data-ad="Şahinbey"]']],
+  "harita-0094-yalova": [<div style={{ height: 820 }}><Harita customers={HARITA_0094_IL} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Yalova" /></div>, ['bekle:[data-ad="Çınarcık"]']],
+  // R7: ilçesi boş kayıtlar il kartında "ilçesi girilmemiş" (Sakarya'da yalnız ilçesiz kayıt).
+  "harita-0094-ilcesiz": [<div style={{ height: 820 }}><Harita customers={HARITA_0094_IL.filter(c => c.city === "Sakarya")} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Sakarya" /></div>, ['bekle:[data-ad="Sapanca"]']],
+  // R5/2: listede karşılığı olmayan ilçe yazımı ("Kusadasi") boyanmaz, pin almaz, panelde sayılır.
+  "harita-0094-eslesmeyen": [<div style={{ height: 820 }}><Harita customers={[...HARITA_0094_IL, { id: 9419, name: "Excel Kaydı", country: "Türkiye", city: "Aydın", ilce: "Kusadasi" }]} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Aydın" /></div>, ['bekle:[data-ad="Kuşadası"]']],
+  // R6: müşteri formunda Sakarya seçiliyken İlçe alanı.
+  "musteri-formu-0094-ilce": [<Customers customers={[{ ...MUSTERI_LISTE[0], country: "Türkiye", city: "Sakarya", ilce: "Sapanca" }]} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS} initialDetailId={MUSTERI_LISTE[0].id} />, ["~Düzenle", "kaydir:İlçe"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);
@@ -1200,6 +1231,14 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       const hedef = [...document.querySelectorAll("button")].find(e => e.title === metin.slice(7));
       if (hedef) hedef.click(); else console.warn("başlıklı düğme yok: " + metin);
       await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("bekle:")) {
+      // Spec 0094: eşzamansız yüklenen içerik (harita verisi) için seçici çıkana kadar yoklar (en çok 20 sn).
+      const secici = metin.slice(6);
+      for (let i = 0; i < 200 && !document.querySelector(secici); i++) await bekle(100);
+      if (!document.querySelector(secici)) console.warn("beklenen öğe gelmedi: " + secici);
+      await bekle(500);
       continue;
     }
     if (metin.startsWith("tikla:")) {

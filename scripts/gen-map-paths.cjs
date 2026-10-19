@@ -40,10 +40,15 @@ const COUNTRIESNOW = "https://countriesnow.space/api/v0.1/countries";
 const GB_IL = "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TUR/ADM1/geoBoundaries-TUR-ADM1.geojson";
 const GB_ILCE = "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TUR/ADM2/geoBoundaries-TUR-ADM2.geojson";
 
-// Müşterinin ilçe kırılımı istediği iller. Yalnız bunlar ilçelere bölünür; kalan 70 il
-// olduğu gibi kalır. Buraya il eklemek için üreticiyi yeniden çalıştırmak yeterli.
+// Müşterinin ilçe kırılımı istediği iller (19). Yalnız bunlar ilçelere bölünür; kalan 62 il
+// olduğu gibi kalır. Aynı liste formların İlçe alanını da besler (src/lib/map/ilceler.js).
+// Buraya il eklemek için üreticiyi yeniden çalıştırmak yeterli; ad üç sözlükte de birebir olmalı
+// (CITIES_TR, geoBoundaries shapeName, çalışma anı şehir listesi; "Hakkari"/"Hakkâri" ayrışır).
+// DİKKAT: ilçe klasörü il adı doğrulanmadan önce silinir; hata hâlinde git checkout -- src/lib/map/ilce.
+// Spec 0094: son beş il (Aydın … Yalova) Hatay'dan sonra eklendi.
 const ILCE_ILLERI = ["İstanbul", "Ankara", "İzmir", "Manisa", "Antalya", "Tekirdağ",
-  "Bursa", "Balıkesir", "Konya", "Kocaeli", "Muğla", "Samsun", "Çanakkale", "Hatay"];
+  "Bursa", "Balıkesir", "Konya", "Kocaeli", "Muğla", "Samsun", "Çanakkale", "Hatay",
+  "Aydın", "Sakarya", "Eskişehir", "Gaziantep", "Yalova"];
 
 // world-atlas'ın ülke adları COUNTRY_EN ile birebir tutmuyor; bu 4'ü elle bağlanır.
 const DUNYA_ISTISNA = {
@@ -81,7 +86,8 @@ const ADMIN_ISTISNA = {
 const ISO2_ISTISNA = { "Kuzey Kıbrıs Türk Cumhuriyeti": "CY" };
 // geoBoundaries ADM2 bazı ilçeleri eski/İngilizce ya da ASCII yazıyor; Türkçe resmî adıyla düzelt.
 // (Form listesi ile harita aynı kaynaktan üretildiğinden düzeltme ikisine de yansır.)
-const ILCE_ISIM_DUZELT = { "Imbros": "Gökçeada", "Ayvacik": "Ayvacık", "Prince Islands": "Adalar" };
+// Spec 0094: "Yalova merkez" → "Yalova". "Çanakkale merkez" bilinçli olarak düzeltilmez (kayıtlarda bu ad olabilir).
+const ILCE_ISIM_DUZELT = { "Imbros": "Gökçeada", "Ayvacik": "Ayvacık", "Prince Islands": "Adalar", "Yalova merkez": "Yalova" };
 const duzeltIlce = (ad) => ILCE_ISIM_DUZELT[ad] || ad;
 
 const log = (...a) => console.log(...a);

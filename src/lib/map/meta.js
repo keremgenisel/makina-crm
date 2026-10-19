@@ -15,7 +15,7 @@ export const META = {
     "Tanzanya",
     "Vatikan"
   ],
-  "ilceIlleri": 14,
+  "ilceIlleri": 19,
   "W": 1000,
   "H": 444
 };
