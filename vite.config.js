@@ -10,6 +10,7 @@ const ELECTRON_TESTLERI = [
   "tests/security-flush.test.js", "tests/setup-admin-lockout.test.js", "tests/bayi-modal-layout.test.js",
   "tests/suzgec-yerlesim.test.js", "tests/gider-tanim-yerlesim.test.js", "tests/form-pencere-yerlesim.test.js",
   "tests/donem-raporu-yerlesim.test.js", "tests/ensure-native.test.js", "tests/calisan-yerlesim.test.js", "tests/maliyet-yerlesim.test.js",
+  "tests/istemci-sunucu.test.js",
 ];
 const electronModu = process.env.VITEST_ELECTRON || "";
 const testAyari = {
