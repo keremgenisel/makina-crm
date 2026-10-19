@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Spec** | `specs/0094-harita-bes-il-ilce-kirilimi.md` (revizyon 2) |
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-10-19; §4'ün on önerisi kabul) |
+| **Durum** | Tamamlandı (onay 2026-10-19; commit `4b60c02`) |
 | **Dal** | `feat/0094-harita-ilce` (`8aa5248` üstünde) |
 
 İş iki parçadır: (1) üretilmiş veri (üretici listesine beş il ve sözlüğe bir satır, sonra üretici çalıştırılır), (2) eşleşmeyen ilçe değerinin görünür olması (R5/2: `ilOzeti` üçüncü sayı, panel satırı, pin eşleştirmesi). Formlar kod değişikliği almaz; listeyi `ilceler.js`'ten okudukları için yeni veriyle kendiliğinden genişler.

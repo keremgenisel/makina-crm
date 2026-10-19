@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, uygulama planı onayı 2026-10-19) |
+| **Durum** | Tamamlandı (revizyon 3; commit `4b60c02`, kapanış 2026-10-19) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Faaliyet Haritası (`src/components/Harita.jsx` ilçe kırılımı, ilçe paneli, ilçe pini); `src/lib/mapStats.js` `ilOzeti` (eşleşmeyen ilçe değeri için üçüncü sayı, opt-in; QA B-1); üretilmiş harita verisi (`src/lib/map/ilce/`, `src/lib/map/ilceler.js`, `src/lib/map/meta.js`); üretici (`scripts/gen-map-paths.cjs` `ILCE_ILLERI` ve `ILCE_ISIM_DUZELT`); ilçe alanı çizen beş form (müşteri, bayi, Extra Kalıp teslimat adresi, yedek parça teslimat adresi, fabrika adresi); eskiyen üç yorum ve `CLAUDE.md`'nin harita bölümü. Veri bölümü, izin, sunucu tarafı ve diğer saf motorlar değişmez. (Revizyon 1 "saf motor değişmez" diyordu; QA B-1 ile `ilOzeti` bir sayı kazanıyor, parametresiz çıktısı birebir eski kalıyor.) |
@@ -236,29 +236,29 @@ Beş yeni ilin diğer dördünün merkez ilçesi kendi adını taşıyor (Efeler
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor; **tek istisna AC-10, AC-11 ve AC-22'dir** (ölçüm kriteri, AC-32) ve testler R10/2'nin üç yerine yazıldı (AC-33).
-- [ ] Hesap içeren iş yok; üretilen veri üretici tarafından yazıldı, elle düzenlenen üretilmiş dosya yok (C1).
-- [ ] Form listesi ile harita verisi aynı kaynaktan geliyor ve birebir eşleştiği testle sabitlendi (AC-4).
-- [ ] Yeni kalıcı alan yok; dört nokta kuralı gerekmedi ve bu **açıkça yazıldı** (AC-23).
-- [ ] Yeni veri bölümü yok; `MERGE_KEYS` ve `BLOB_SECTIONS` dokunulmadı (AC-23).
-- [ ] Yeni eylem izni yok; **salt veri genişlemesi olduğu açıkça yazıldı** (R12, AC-23).
-- [ ] Soft-delete ve çöp kutusu simetrisi: bu işte kayıt silinmesi yok, etkilenmedi.
-- [ ] Kullanıcıya görünen bütün adlar Türkçe resmî yazımıyla (AC-6, AC-8); yazdırma çıktısı yok, çeviri anahtarı gerekmedi.
-- [ ] Para gösterimi yok.
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: beş ilin ilçe görünümü, müşteri formunda İlçe alanı, ilçesi boş kayıtlı il kartı.
-- [ ] **Taban turu ölçüldü (R13 aşama 1, AC-26):** listeye dokunmadan yapılan üretimden sonra `git status --short src/lib/map` boş çıktı; çıktısı plana yazıldı.
-- [ ] R9 ölçülerek doğrulandı (R13 aşama 2): beş il eklendikten sonra değişen dosya listesi yalnız `ilce/*`, `ilceler.js` ve `meta.js`.
-- [ ] Üretici önbelleği duran makinede çalıştırıldı (C2) ve geoBoundaries sabitlenmiş sürümü değişmedi (C3); `gen-arkaplan-adlar.cjs` çalıştırılmadı (AC-31).
-- [ ] Beş ilin adı üç sözlükte de arandı ve üretim öncesi doğrulandı (C5, AC-27); yanlış ad hâlinde kurtarma yolu spec'te yazılı (C7).
-- [ ] Eşleşmeyen ilçe değerinin davranışı kuruldu: `ilOzeti`'nin üçüncü sayısı, panel satırı ve pin eşleştirmesi (R5/2, AC-20/2, AC-20/3) ve parametresiz çıktının birebir eski kaldığı ölçüldü (AC-30).
-- [ ] "Çanakkale merkez" adına dokunulmadı ve nedeni spec'te yazılı (R3/2, AC-6/2, X7).
-- [ ] Ölçüm 2'ye beş ilin **gerçekleşen** dosya boyutu yazıldı (QA K-10).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin Faaliyet Haritası bölümüne kırılımın on dokuz ili kapsadığını, listenin `ILCE_ILLERI`'nde durduğunu ve formları da beslediğini söyleyen cümle eklendi; `ATTRIBUTION.md` atfı düzeltildi (R15, AC-29). Üç eskiyen yorum da güncellendi.
-- [ ] Sürüm notunda beş ilin eklendiği, mevcut kayıtların ilçesinin elle doldurulacağı (R7, karar 2), Çanakkale'nin merkez ilçe adının bilinçli olarak değişmediği (R3/2) ve "ilçesi haritada bulunamadı" uyarısının ne anlama geldiği (R5/2) yazıldı (QA K-9).
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor; **tek istisna AC-10, AC-11 ve AC-22'dir** (ölçüm kriteri, AC-32) ve testler R10/2'nin üç yerine yazıldı (AC-33).
+- [x] Hesap içeren iş yok; üretilen veri üretici tarafından yazıldı, elle düzenlenen üretilmiş dosya yok (C1).
+- [x] Form listesi ile harita verisi aynı kaynaktan geliyor ve birebir eşleştiği testle sabitlendi (AC-4).
+- [x] Yeni kalıcı alan yok; dört nokta kuralı gerekmedi ve bu **açıkça yazıldı** (AC-23).
+- [x] Yeni veri bölümü yok; `MERGE_KEYS` ve `BLOB_SECTIONS` dokunulmadı (AC-23).
+- [x] Yeni eylem izni yok; **salt veri genişlemesi olduğu açıkça yazıldı** (R12, AC-23).
+- [x] Soft-delete ve çöp kutusu simetrisi: bu işte kayıt silinmesi yok, etkilenmedi.
+- [x] Kullanıcıya görünen bütün adlar Türkçe resmî yazımıyla (AC-6, AC-8); yazdırma çıktısı yok, çeviri anahtarı gerekmedi.
+- [x] Para gösterimi yok.
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: beş ilin ilçe görünümü, müşteri formunda İlçe alanı, ilçesi boş kayıtlı il kartı.
+- [x] **Taban turu ölçüldü (R13 aşama 1, AC-26):** listeye dokunmadan yapılan üretimden sonra `git status --short src/lib/map` boş çıktı; çıktısı plana yazıldı.
+- [x] R9 ölçülerek doğrulandı (R13 aşama 2): beş il eklendikten sonra değişen dosya listesi yalnız `ilce/*`, `ilceler.js` ve `meta.js`.
+- [x] Üretici önbelleği duran makinede çalıştırıldı (C2) ve geoBoundaries sabitlenmiş sürümü değişmedi (C3); `gen-arkaplan-adlar.cjs` çalıştırılmadı (AC-31).
+- [x] Beş ilin adı üç sözlükte de arandı ve üretim öncesi doğrulandı (C5, AC-27); yanlış ad hâlinde kurtarma yolu spec'te yazılı (C7).
+- [x] Eşleşmeyen ilçe değerinin davranışı kuruldu: `ilOzeti`'nin üçüncü sayısı, panel satırı ve pin eşleştirmesi (R5/2, AC-20/2, AC-20/3) ve parametresiz çıktının birebir eski kaldığı ölçüldü (AC-30).
+- [x] "Çanakkale merkez" adına dokunulmadı ve nedeni spec'te yazılı (R3/2, AC-6/2, X7).
+- [x] Ölçüm 2'ye beş ilin **gerçekleşen** dosya boyutu yazıldı (QA K-10).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin Faaliyet Haritası bölümüne kırılımın on dokuz ili kapsadığını, listenin `ILCE_ILLERI`'nde durduğunu ve formları da beslediğini söyleyen cümle eklendi; `ATTRIBUTION.md` atfı düzeltildi (R15, AC-29). Üç eskiyen yorum da güncellendi.
+- [x] Sürüm notunda beş ilin eklendiği, mevcut kayıtların ilçesinin elle doldurulacağı (R7, karar 2), Çanakkale'nin merkez ilçe adının bilinçli olarak değişmediği (R3/2) ve "ilçesi haritada bulunamadı" uyarısının ne anlama geldiği (R5/2) yazıldı (QA K-9).
 - [x] Takım Yöneticisi işi istedi ve iki kararı onayladı (2026-10-19). **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -314,10 +314,10 @@ Takım Yöneticisi planın §4'teki on önerisini kabul etti.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | Taslak (TY'nin iki kararı), QA turu (22 bulgu), plan onayı (on öneri: R5/3, R5/4, R5/5, C8, C9, AC-20/4, AC-27/2) |
+| **Düzeltme turu sayısı** | 1 | Tek triyaj turu, bir bulgu |
+| **Bulgu gerçek/gürültü oranı** | 1 / 0 | README'nin sıra paragrafı, 0094 paragrafı ve tablo satırı eskimişti (düşük); elle yerleştirilmiş fabrika konumunun pin kuralı dışında kalması bulgu sayılmadı (bilinçli, testle sabit) |
+| **Regresyon sayısı** | 0 | Electron dahil tam takım yeşil (Electron'suz 354 dosya, 4722 test; Electron 13 dosya); mevcut 14 ilin dosyaları, dünya ve bölge verisi bayt eşit; `map-stats` eski beklentileri dokunulmadı |
+| **Kaçan hata** | 0 | Mutasyonla ölçüldü: liste verilmeyince 2, toplamdan eşleşmeyen çıkarılınca 1, satış pini süzülmeyince 1, fabrika/bayi pin süzmesi kaldırılınca 1 test kırıldı |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Üretilmiş verinin işi "iki tur" kuralıyla güvenli oldu: listeye dokunmadan yapılan ilk üretimin boş `git status`'u, ikinci turdaki farkın yalnız bu işten geldiğini kanıtladı ve 8 MB'lık verinin elle incelenmesine gerek bırakmadı. Spec'in yazmadığı bir sonuç (eşleşmeyen değer ilçe sayısından çıkınca il kartının toplamının düşmesi) kodu okuyarak plan aşamasında görüldü; bir sayıyı bir kümeden başka kümeye taşıyan her değişiklikte o kümelerin toplandığı yerler aranmalı.
