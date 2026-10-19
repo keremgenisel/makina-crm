@@ -726,6 +726,18 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("tam yetkili admin yazması da sunucu-tarafı veri_kaydedildi ÜRETİR",
     auditRows.rows.some(r => r.action === "veri_kaydedildi" && r.username === "admin"));
 
+  // ── POST /api/audit gövdesiz ya da eksik: 400, satır yazılmaz (Express 5 hazırlığı: gövdesiz istekte req.body undefined) ──
+  const auditSayi = async () => (await (await api("/api/audit?limit=1", {}, adminTok)).json()).total;
+  const auditOnce = await auditSayi();
+  const bosGovde = await fetch(base + "/api/audit", { method: "POST", headers: { Authorization: `Bearer ${adminTok}` } });
+  check("gövdesiz POST /api/audit → 400 (500 değil)", bosGovde.status === 400);
+  check("eylemi boş POST /api/audit → 400", (await api("/api/audit", { method: "POST", body: JSON.stringify({ action: "", entity: "musteri" }) }, adminTok)).status === 400);
+  check("türü eksik POST /api/audit → 400", (await api("/api/audit", { method: "POST", body: JSON.stringify({ action: "eklendi" }) }, adminTok)).status === 400);
+  check("dizi gövdeli POST /api/audit → 400", (await api("/api/audit", { method: "POST", body: JSON.stringify([1]) }, adminTok)).status === 400);
+  check("reddedilen işlem kayıtları satır yazmadı", (await auditSayi()) === auditOnce);
+  check("geçerli POST /api/audit → 200 ve satır yazar",
+    (await api("/api/audit", { method: "POST", body: JSON.stringify({ action: "eklendi", entity: "musteri", entity_name: "Denetim" }) }, adminTok)).status === 200 && (await auditSayi()) === auditOnce + 1);
+
   // ── Admin-gating ────────────────────────────────────────────────────────────
   check("salt-okunur GET /api/users → 403", (await api("/api/users", {}, roTok)).status === 403);
   check("salt-okunur GET /api/audit → 403", (await api("/api/audit", {}, roTok)).status === 403);

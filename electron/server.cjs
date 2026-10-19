@@ -756,7 +756,10 @@ function buildApp() {
   // POST /api/audit — istemci tarafından çağrılır; username JWT'den alınır
   app.post("/api/audit", requireAuth, writeLimiter(300), (req, res) => {
     try {
-      const { action, entity, entity_id, entity_name, detail } = req.body;
+      // Gövdesiz istekte Express 5 req.body'yi undefined verir (4'te {}): açmadan önce yedekle. Eylemi ya da türü boş
+      // kayıt anlamsız satır olur (istemcinin bütün logAction çağrıları ikisini de taşır), yazılmadan 400.
+      const { action, entity, entity_id, entity_name, detail } = req.body || {};
+      if (typeof action !== "string" || !action || typeof entity !== "string" || !entity) return res.status(400).json({ error: "Eksik işlem kaydı" });
       db.writeAuditEntry({ ts: new Date().toISOString(), username: req.user.username, role: req.user.role, action, entity, entity_id, entity_name, detail });
       res.json({ ok: true });
     } catch (err) { res.status(500).json({ error: "Sunucu hatası" }); }
