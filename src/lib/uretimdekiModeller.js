@@ -4,8 +4,11 @@
 // Liste boşalınca anahtar SİLİNMEZ, değeri `undefined` yapılır (R24/4): mergeAppSettings `{ ...yeniden, ...yerel }` ile
 // bindirdiği için silinmiş anahtar sunucudan gelen eski listeyi ezemezdi. JSON gövdesinde anahtar oluşmaz, veritabanı null yazar.
 export const URETIM_ALANI = "uretimdeOlmayanModeller";
-// R28: panelin ipucusu, işaretin kapsamını söyler.
-export const URETIM_ISARETI_IPUCU = "\"Üretimde\" işareti yalnız Makina Maliyeti › Model Maliyetleri'ni süzer; model seçicileri, Analiz, Parti Hesabı ve makina kayıtları etkilenmez.";
+// R28: panelin ipucusu, işaretin kapsamını söyler. Spec 0093 R8/2: işaret planlanan adetler penceresini de süzer; Parti
+// Hesabı'nın tablosu süzülmediği için etkilenmeyenler arasında ayrıca sayılır.
+export const URETIM_ISARETI_IPUCU = "\"Üretimde\" işareti Makina Maliyeti › Model Maliyetleri'ni ve Parti Hesabı'nın planlanan adetler penceresini süzer; Parti Hesabı'nın model-adet tablosu, model seçicileri, Analiz ve makina kayıtları etkilenmez.";
+// Spec 0093 R12: "üretimde değil" ibaresinin tek tanımı (Model Maliyetleri ve planlanan adetler penceresi buradan okur).
+export const URETIM_DEGIL_IBARESI = "üretimde değil";
 
 const liste = (ayar) => (Array.isArray(ayar?.[URETIM_ALANI]) ? ayar[URETIM_ALANI] : []);
 const yaz = (ayar, yeni) => ({ ...(ayar || {}), [URETIM_ALANI]: yeni.length ? yeni : undefined });

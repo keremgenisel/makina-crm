@@ -5,6 +5,7 @@ import { tutarMetni } from "../../lib/tutarGirdisi";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { kurusMetni, katsayiDogrula, kalipFiyatDogrula, modelFiyatAlanlariYaz, tlOf, modelSayilari, MODEL_ISARET } from "../../lib/makinaStandartMaliyet";
 import { PayOzeti } from "./PayOzeti";
+import { URETIM_DEGIL_IBARESI } from "../../lib/uretimdekiModeller";
 
 // Spec 0088 R11–R16: her canlı modelin direkt maliyeti (ürün ağacı), genel gider payı ve toplamı AYRI sütunlarda (R7, AC-18);
 // kâr katsayısı ile önerilen satış bedeli (KDV hariç, R14/3) ve Extra Kalıp liste fiyatı (maliyete girmez, R15).
@@ -15,7 +16,7 @@ export const URETIM_METIN = {
   yanlisEki: (n) => ` · ${n} model üretimde değil ama dönemde üretilmiş`,
   suzgecKapali: (n) => `Üretimde olmayanları da göster (${n})`,
   suzgecAcik: "Yalnız üretimdekiler",
-  uretimdeDegil: "üretimde değil",
+  uretimdeDegil: URETIM_DEGIL_IBARESI, // spec 0093 R12: kütüphaneden yeniden dışa verilir
   eskimis: "dönemde üretilmedi, işaret eskimiş olabilir",
   yanlis: "üretimde değil ama dönemde üretilmiş",
   modelYok: (n) => `${n} makinanın modeli katalogda bulunamadı; model adetlerine girmedi.`,

@@ -37,4 +37,10 @@ describe("Spec durum satırları (0070 ve sonrası)", () => {
     }
     expect(yanlis).toEqual([]);
   });
+  // Triyaj (spec 0093 bulgu 1): README'nin sıra paragrafı plan yazılıp uygulandıktan sonra da "plan henüz yazılmadı" diyordu.
+  it("planı yazılmış spec'in README paragrafı \"uygulama planı henüz yazılmadı\" demez", () => {
+    const yanlis = numaralar("specs").filter(no => existsSync(path.join(KOK, "specs", `${no}-uygulama-plani.md`)))
+      .filter(no => (README.match(new RegExp(`^\\*\\*${no}\\*\\* \\(.*$`, "m")) || [""])[0].match(/planı henüz yazılmadı/));
+    expect(yanlis).toEqual([]);
+  });
 });

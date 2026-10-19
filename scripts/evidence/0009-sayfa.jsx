@@ -766,6 +766,12 @@ const EKRANLAR = {
   "maliyet-parti-planli": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803"]),
   "maliyet-parti-plan-formu": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803", "dugme:Planlanan adetler"]),
   "maliyet-parti-bos": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=802"]),
+  // Spec 0093 R1, R3, R7: planlanan adetler penceresi yalnız üretimdeki modelleri listeler. 803'ün kayıtlı adetleri AK100: 10 ve
+  // modeli bulunamayan ESKI_AD: 4. Süzülmüş ızgara (AK120 gizli, kayıtlı adedi yok); gizli ama adedi kayıtlı model (AK100);
+  // hepsi gizli (boş durum, gizli bölüm ve bulunamayan bölümü birlikte).
+  "maliyet-0093-plan-suzulmus": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK120"] } }, ["Parti Hesabı", "sec:Üretim partisi=803", "dugme:Planlanan adetler"]),
+  "maliyet-0093-plan-gizli-adet": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK100"] } }, ["Parti Hesabı", "sec:Üretim partisi=803", "dugme:Planlanan adetler"]),
+  "maliyet-0093-plan-bos": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK100", "AK120", "AK200"] } }, ["Parti Hesabı", "sec:Üretim partisi=803", "dugme:Planlanan adetler"]),
   "maliyet-ayarlar": maliyetEkrani({}, ["Hesap Ayarları"]),
   "maliyet-ayarlar-oneri": maliyetEkrani({ ayar: null }, ["Hesap Ayarları"]),
   "maliyet-ayarlar-hata": maliyetEkrani({ ayar: { baslangicAy: "2026-12", bitisAy: "2026-01", varsayilanAdet: 0 } }, ["Hesap Ayarları", "dugme:Kaydet"]),

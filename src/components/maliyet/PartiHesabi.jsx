@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { Btn, Field, Input, Modal, Select, Icon } from "../ui";
 import { KartBolum, BosDurum, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
-import { kurusMetni, partiHesabi, partisizMakinaSayisi, planAdediDogrula, planAdetleriYaz } from "../../lib/makinaStandartMaliyet";
+import { kurusMetni, partiHesabi, partisizMakinaSayisi, planAdediDogrula, planAdetleriYaz, modelSayilari } from "../../lib/makinaStandartMaliyet";
+import { URETIM_DEGIL_IBARESI } from "../../lib/uretimdekiModeller";
 
 // Spec 0088 R17–R22, R28: seçilen partinin model-adet tablosu (partiye bağlı makinalardan ya da planlanan adetten), özet
 // (standart maliyet, önerilen ciro, gerçekleşen satış, iki kâr) ve gerçekleşen tedarik karşılaştırması. Pay hesap
@@ -14,6 +15,15 @@ const donemCumlesi = (n) => `Dönem farkı: parti başlamadan önce alınmış t
 // Spec 0090 R34 (AC-38/5): bu sütunun payı hesap ayarlarının döneminden ve varsayılan adedinden gelir; Üretim Partileri'ndeki pay
 // partinin kendi aylarından. İki rakam ayrı soruları cevaplar ve toplanmaz (X8).
 export const PAY_AYRIM_IBARESI = "Hesap ayarlarının dönemi ve varsayılan adediyle; Üretim Partileri'ndeki pay partinin kendi aylarından gelir, ikisi toplanmaz.";
+// Spec 0093 R11, R11/2: planlanan adetler penceresinin metinleri (testler buradan okur). Pencerenin ızgarası yalnız üretimdeki
+// modelleri çizer (R1); işaret satırın kendi `uretimde` alanından okunur, uygulama ayarına bakılmaz (C4, C7).
+export const PLAN_SUZGEC_CUMLESI = "Liste yalnız Ayarlar › Katalog › Makina Modelleri'nde \"Üretimde\" işaretli modelleri gösterir.";
+export const planGizliEki = (n) => `Üretimde olmayan ${n} model listede yok.`;
+export const PLAN_GERI_KOYMA_CUMLESI = "Üretimden kalkmış bir modele adet girmek gerekiyorsa işaret Ayarlar'da geri konur.";
+export const PLAN_GIZLI_BASLIK = "Üretimde olmayan ama planlanan adedi girilmiş modeller:";
+export const PLAN_GIZLI_KALDIRMA = "Kaldırmak için alanı boşaltın.";
+export const PLAN_BOS_MODEL = { baslik: "Tanımlı makina modeli yok", metin: "Modeller Ayarlar › Katalog › Makina Modelleri'nde tanımlanır." };
+export const PLAN_BOS_URETIMDE = { baslik: "Üretimde işaretli model yok", metin: (n) => `${n} model üretimde değil olarak işaretli. İşaret Ayarlar › Katalog › Makina Modelleri'nde değiştirilir.` };
 const th = { padding: "8px 12px", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", textAlign: "right", whiteSpace: "nowrap" };
 const td = { padding: "9px 12px", fontSize: 13, textAlign: "right", whiteSpace: "nowrap" };
 const Rakam = ({ etiket, deger, alt, testId }) => (
@@ -49,6 +59,16 @@ export const PartiHesabi = ({ pay, modeller, canDo, baskasiKilitli, showToast, v
     setPlan(null);
   };
   const o = hesap.ozet; const t = hesap.tedarik;
+  // Spec 0093 R1/2: süzme yalnız çizim anında; `modeller` tam kalır (motor, planAc, planBulunamayan, planKaydet tam listeyle).
+  const cizilen = modeller.filter(m => m.uretimde !== false); // R1/3: alanı olmayan satır üretimde sayılır
+  // R3, R3/3, R3/4: kayıtlı (saklı) adedi olan gizli modeller, katalog sırasıyla. Ölçüt saklı değerdir ki alan boşaltılınca satır
+  // kaybolmasın; kaldırma kayıtta olur (alan boş = sil, R3/2). Satır `kaldirilan`'a girmez (X8).
+  const gizliKayitli = modeller.filter(m => m.uretimde === false && parti.planlananAdetler?.[m.model]);
+  const say = modelSayilari(modeller); // R7/3: sayı motordan
+  const adetAlani = (m, ad) => (
+    <Input value={plan.adetler[m.model] ?? ""} inputMode="numeric" aria-label={ad} placeholder="—"
+      onChange={e => setPlan(p => ({ ...p, adetler: { ...p.adetler, [m.model]: e.target.value } }))} />
+  );
 
   return (
     <div>
@@ -130,15 +150,36 @@ export const PartiHesabi = ({ pay, modeller, canDo, baskasiKilitli, showToast, v
         <Modal wide title={`${parti.ad} · planlanan adetler`} onClose={() => setPlan(null)}
           footer={<><Btn variant="ghost" onClick={() => setPlan(null)}>İptal</Btn><Btn onClick={planKaydet}><Icon name="check" size={14} /> Kaydet</Btn></>}>
           <Ipucu>Planlanan adet girilen model hesapta bu adetle kullanılır; boş bırakılan model partiye bağlı makinalardan sayılır.</Ipucu>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginTop: 8 }}>
-            {modeller.map(m => (
-              <Field key={m.model} label={m.model}>
-                <Input value={plan.adetler[m.model] ?? ""} inputMode="numeric" aria-label={`${m.model} planlanan adedi`} placeholder="—"
-                  onChange={e => setPlan(p => ({ ...p, adetler: { ...p.adetler, [m.model]: e.target.value } }))} />
-                <HataMetni>{plan.hatalar[m.model] || ""}</HataMetni>
-              </Field>
-            ))}
+          {/* Spec 0093 R4/2, R4/3: süzgeç satırı alan anlamı ipucusunun hemen altında; sayı eki yalnız gizli model varken. */}
+          <div data-testid="plan-suzgec-ibaresi">
+            <Ipucu>{PLAN_SUZGEC_CUMLESI}{say.uretimdeDisi > 0 ? ` ${planGizliEki(say.uretimdeDisi)}` : ""} {PLAN_GERI_KOYMA_CUMLESI}</Ipucu>
           </div>
+          {/* R7/2, R7/4: iki boş durum yalnız ızgaranın yerine geçer. */}
+          {modeller.length === 0 ? <BosDurum testId="bos-plan-model" baslik={PLAN_BOS_MODEL.baslik} metin={PLAN_BOS_MODEL.metin} />
+          : cizilen.length === 0 ? <BosDurum testId="bos-plan-uretimde" baslik={PLAN_BOS_URETIMDE.baslik} metin={PLAN_BOS_URETIMDE.metin(say.uretimdeDisi)} /> : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginTop: 8 }}>
+              {cizilen.map(m => (
+                <Field key={m.model} label={m.model}>
+                  {adetAlani(m, `${m.model} planlanan adedi`)}
+                  <HataMetni>{plan.hatalar[m.model] || ""}</HataMetni>
+                </Field>
+              ))}
+            </div>
+          )}
+          {gizliKayitli.length > 0 && (
+            <div data-testid="plan-gizli-listesi" style={{ marginTop: 12 }}>
+              <Ipucu>{PLAN_GIZLI_BASLIK}</Ipucu>
+              <Ipucu>{PLAN_GIZLI_KALDIRMA}</Ipucu>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginTop: 4 }}>
+                {gizliKayitli.map(m => (
+                  <Field key={m.model} label={<>{m.model} <span style={{ fontWeight: 400, color: "var(--n500, #64748b)" }}>· {URETIM_DEGIL_IBARESI}</span></>}>
+                    {adetAlani(m, `${m.model} planlanan adedi (${URETIM_DEGIL_IBARESI})`)}
+                    <HataMetni>{plan.hatalar[m.model] || ""}</HataMetni>
+                  </Field>
+                ))}
+              </div>
+            </div>
+          )}
           {planBulunamayan.length > 0 && (
             <div data-testid="plan-bulunamayan-listesi" style={{ marginTop: 12 }}>
               <Ipucu>Modeli bulunamayan planlanan adetler (model silinmiş ya da adı değişmiş):</Ipucu>

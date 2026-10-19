@@ -1,0 +1,526 @@
+[
+  {
+    "ad": "katalog-model-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-model-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-model-uretimde-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 19371
+  },
+  {
+    "ad": "katalog-model-uretimde-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 19241
+  },
+  {
+    "ad": "katalog-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-model-ekmaliyet-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-model-ekmaliyet-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-calisan-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-calisan-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-uretim-partileri-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-uretim-partileri-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0089-parti-degisim-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0089-parti-degisim-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0090-parti-neden-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0090-parti-neden-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-uretim-partisi-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-uretim-partisi-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-dokum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-dokum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-katsayi-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-katsayi-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-bos-rol-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-bos-rol-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-bos-ayar-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-bos-ayar-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-kapali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-kapali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-acik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-acik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-isaret-bilgi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-isaret-bilgi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-isaret-uyari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-isaret-uyari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-bos-uretimde-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-bos-uretimde-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-planli-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-planli-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-plan-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 839006
+  },
+  {
+    "ad": "maliyet-parti-plan-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 806271
+  },
+  {
+    "ad": "maliyet-parti-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0093-plan-suzulmus-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "maliyet-0093-plan-suzulmus-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "maliyet-0093-plan-gizli-adet-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "maliyet-0093-plan-gizli-adet-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "maliyet-0093-plan-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "maliyet-0093-plan-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "maliyet-ayarlar-aydinlik.png",
+    "boyut": "2880x1940",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-karanlik.png",
+    "boyut": "2880x1940",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-oneri-aydinlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-oneri-karanlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-hata-aydinlik.png",
+    "boyut": "2880x1838",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-hata-karanlik.png",
+    "boyut": "2880x1838",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-rol-uyari-aydinlik.png",
+    "boyut": "2880x1940",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-rol-uyari-karanlik.png",
+    "boyut": "2880x1940",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0092-pay-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0092-pay-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0092-partiler-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0092-partiler-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üre"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-katalog-paneli-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-katalog-paneli-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

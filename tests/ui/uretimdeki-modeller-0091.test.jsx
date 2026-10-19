@@ -102,7 +102,8 @@ describe("Spec 0091: Makina Modelleri paneli (R1–R5, R28)", () => {
   it("AC-12/2 (R28): panelde işaretin kapsamını söyleyen ipucu", () => {
     render(<Katalog />);
     expect(screen.getByTestId("uretim-isareti-ipucu").textContent).toBe(URETIM_ISARETI_IPUCU);
-    expect(URETIM_ISARETI_IPUCU).toMatch(/yalnız Makina Maliyeti › Model Maliyetleri/);
+    // Spec 0093 ile (R8/2): kapsam planlanan adetler penceresini de sayar; ikinci ifade aynen (0093 AC-16'nın "söylemeye devam eder" yarısı).
+    expect(URETIM_ISARETI_IPUCU).toMatch(/Makina Maliyeti › Model Maliyetleri'ni ve Parti Hesabı'nın planlanan adetler penceresini süzer/);
     expect(URETIM_ISARETI_IPUCU).toMatch(/model seçicileri, Analiz/);
   });
 });
@@ -237,12 +238,14 @@ describe("Spec 0091: Model Maliyetleri (R7–R16, R27/2, R31)", () => {
     render(<MH />);
     expect(adet("İNOX")).toBe("1");
   });
-  it("AC-32 / AC-43 (R20, R29): Parti Hesabı üretimde olmayan modelin makinasını sayar; planlanan adetler penceresi onu listeler", () => {
+  // Spec 0093 ile (0091 R29, AC-43 ters çevrildi): pencere yalnız üretimdeki modelleri listeler; AC-32'nin tablo yarısı aynen.
+  it("AC-32 / AC-43 (R20, R29; spec 0093 ile): Parti Hesabı üretimde olmayan modelin makinasını sayar; planlanan adetler penceresi onu listelemez", () => {
     render(<MH gorunum="parti" />);
     expect(screen.getByTestId("parti-satiri-AK160")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Planlanan adetler/ }));
-    expect(screen.getByLabelText("AK160 planlanan adedi")).toBeTruthy();
-    expect(screen.getByLabelText("AK240 planlanan adedi")).toBeTruthy();
+    expect(screen.queryByLabelText("AK160 planlanan adedi")).toBeNull();
+    expect(screen.queryByLabelText("AK240 planlanan adedi")).toBeNull();
+    expect(screen.getByLabelText("AK100 planlanan adedi")).toBeTruthy();
   });
 });
 
