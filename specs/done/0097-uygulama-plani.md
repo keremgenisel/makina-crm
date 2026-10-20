@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0097-uretim-tarihindeki-parca-maliyeti.md` (revizyon 4) |
-| **Commit** | henüz yok (açık talimat bekleniyor) |
+| **Spec** | `specs/done/0097-uretim-tarihindeki-parca-maliyeti.md` (revizyon 5) |
+| **Commit** | uygulama `c80186d`; kapanış (SCORECARD, kanıt, taşıma) ayrı commit |
 | **Dal** | `feat/0097-parca-maliyet-gecmisi`, `main` (`47549d1`) üstünde, çalışma kopyası `../wt-0097` |
 | **Onay** | Takım Yöneticisi, 2026-10-20: planın on dört önerisi (P1–P14) kabul edildi |
 

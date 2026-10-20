@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 4, uygulama planı onayı 2026-10-20) |
+| **Durum** | Tamamlandı (revizyon 5; uygulama `c80186d`, 2026-10-20) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog › Yedek Parça (maliyet alanı, hammadde kırılımı, yeni geçerlilik tarihi ve geçmiş listesi), Makina Maliyeti › Parti Hesabı (satırlar, satır anahtarı, genel gider payı sütunu ve sütunun ayrım ibaresi, özet, tedarik karşılaştırması), Makina Maliyeti'nin üst ibaresi (dört görünümün hepsinde çizilir); saf motorlar `urunAgaci`, `makinaStandartMaliyet`, `parcaAktarma` (içe aktarma); `electron/db.cjs` parça okuma ve yazma yolu; `docs/evidence/kanit-eslemesi.json` (parça kartı ve bütün `maliyet-*` ekranları) |
@@ -785,31 +785,49 @@ bu spec'in düzelttiği kaymanın yarısı geri gelir. R17'ye bağlandı.
 
 - [x] Takım Yöneticisi işi istedi ve yedi kararı onayladı (2026-10-20).
       **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] Bütün kabul kriterleri karşılandı.
-- [ ] Maliyetin tek okuma yolu korundu: kaynak taraması `parts[].maliyet`'in ve kırılım tutarlarının
+- [x] Bütün kabul kriterleri karşılandı.
+- [x] Maliyetin tek okuma yolu korundu: kaynak taraması `parts[].maliyet`'in ve kırılım tutarlarının
       okuma yolu dışında okunmadığını, tarihli okumanın ikinci bir çözücüye kopyalanmadığını gösterir.
-- [ ] Kıyas turu: geçmişi olmayan veride Model Maliyetleri, parça listesi, "girilmemiş" sayacı, dışa
+- [x] Kıyas turu: geçmişi olmayan veride Model Maliyetleri, parça listesi, "girilmemiş" sayacı, dışa
       aktarma satırı ve `modelMaliyetleri`'nin seçeneksiz çıktısı spec öncesi altınla birebir aynı.
-- [ ] Parti toplamı denetimi: **türetilen** satırların genel gider payı toplamı, o satırlarda yer alan
+- [x] Parti toplamı denetimi: **türetilen** satırların genel gider payı toplamı, o satırlarda yer alan
       makinaların `makinaPaylari` toplamına eşit; planlanan ve modeli bulunamayan makinalar dışarıdaysa
       fark ekranda görünür bir nedenle açıklanıyor (AC-27, AC-27/2).
-- [ ] Tek girdi denetimi: parti payı ile parti hesabı aynı müşteri dizisinden kuruldu ve stoğa dönen
+- [x] Tek girdi denetimi: parti payı ile parti hesabı aynı müşteri dizisinden kuruldu ve stoğa dönen
       makina iki hesapta da gerçek üretim tarihine çözülüyor (AC-47).
-- [ ] Dört nokta kuralı ve boş değer denetimi `db-roundtrip.cjs` ve `db-clean-install.cjs` ile ölçüldü.
-- [ ] Görsel kanıt alındı; `docs/evidence/kanit-eslemesi.json` kayıtları ölçüm 8'in tablosuna göre
+- [x] Dört nokta kuralı ve boş değer denetimi `db-roundtrip.cjs` ve `db-clean-install.cjs` ile ölçüldü.
+- [x] Görsel kanıt alındı; `docs/evidence/kanit-eslemesi.json` kayıtları ölçüm 8'in tablosuna göre
       güncellendi: parça **kart** ekranları ve **bütün** `maliyet-*` ekranları `beklenen: "degisti"` + onay
       satırı (üst ibare dört görünümün hepsinde çizildiği için `maliyet-modeller*` de dahil), parça
       **liste** ekranları (`ayarlar-yedekparca*`) `"ayni"` kaldı ve R15'in piksel kanıtını taşıyor;
       Model Maliyetleri ekranlarının farkı yalnız ibare şeridi (AC-57, AC-58).
-- [ ] Ters çevrilen kriterler bölümünün beş satırı uygulandı ve test yorumlarına "spec 0097 ile" notu
+- [x] Ters çevrilen kriterler bölümünün beş satırı uygulandı ve test yorumlarına "spec 0097 ile" notu
       düşüldü; `tests/fixtures/0092-havuz-once.json`'un `partiHesabi` bloğu yeniden üretildi (AC-59).
-- [ ] `npm test` ve `npm run lint` yeşil (Electron testleri dahil).
-- [ ] `CLAUDE.md`'ye bölüm eklendi: maliyetin tarihli okunması, değişmezlik kuralı (bugünkü değer =
+- [x] `npm test` ve `npm run lint` yeşil (Electron testleri dahil).
+- [x] `CLAUDE.md`'ye bölüm eklendi: maliyetin tarihli okunması, değişmezlik kuralı (bugünkü değer =
       son kayıt), gelecek tarih yasağı, Parti Hesabı'nın payının dönem bağı ve tarihlenmeyenler (kit,
       ek maliyet, kâr katsayısı, parça kaydının çöp durumu); 0090'dan kalan `PAY_AYRIM_IBARESI` cümlesi
       (`CLAUDE.md:451`) düzeltildi (AC-60).
-- [ ] Sürüm notu metni uygulama planında: parça maliyeti güncellenirken artık tarih soruluyor, eski
+- [x] Sürüm notu metni uygulama planında: parça maliyeti güncellenirken artık tarih soruluyor, eski
       partilerin rakamı bundan sonra değişmiyor, bu spec'ten önceki zamlar geriye dönük bilinmiyor.
+
+---
+
+## SCORECARD
+
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Spec revizyon sayısı** | 5 | 1 taslak, 2 Karar 7 onayı, 3 QA turu (28 bulgu), 4 plan turu (P1–P14), 5 triyaj |
+| **Düzeltme turu sayısı** | 1 | Triyaj: beş bulgu (bir orta, iki düşük, iki not) |
+| **Bulgu gerçek/gürültü oranı** | 5/0 | İletilen beş bulgunun hepsi gerçekti; biri (gruplama, bulgu 5) bilinçli davranış olarak yazıya geçirildi |
+| **Regresyon sayısı** | 0 | Tam takım Electron dahil yeşil; geçmişi olmayan veride tarihsiz çağıranlar ve gövde spec öncesiyle birebir; 0092 altınında yalnız parti hesabı blokları değişti |
+| **Kaçan hata** | 3 (bir orta, iki düşük) | Eşit tarihli düzeltme, kapanmış partide planlanan satırın 0 payı, boş tarih alanının ilgisiz düzenlemeyi engellemesi |
+
+**Bu spec'ten çıkarılan ders:** Bir sınır kuralı iki dala (tutar değişti / yalnız tarih düzeltildi) farklı eşik verdiğinde eşitlik
+de her dal için ayrı yazılmalı: "önce olamaz" düzeltme dalında aynı güne iki kayıt bıraktı (triyaj bulgu 1). Görsel kanıtta
+"fark yalnız şeritte" gibi bir iddia ancak şerit yüksekliği değişmezse ölçülebilir; metni tek satıra sığdırmak ve sınır kutusunu
+ölçmek iddiayı sayıya çevirdi (AC-58). Bozma denemesi yakalanmadığında önce korumanın yedekli olup olmadığına bakmak, sonra
+testi gerçek tehlike senaryosuna genişletmek gerekti (AC-45).
 
 ---
 
@@ -883,3 +901,5 @@ kalıcı kayıt olarak tutar.
 5. 2026-10-20, triyaj. Beş bulgu düzeltildi: R7/3 (eşit tarih düzeltmesi reddedilir, boş tarih alanı tutar değişmiyorsa yok
    sayılır), R18/2 eki (kapanmış partide durum tamam değilse planlanan satırın payı da yok, nedenli), R12/6 eki (gruplama dönem
    ardışıklığına bakmaz, bilinçli), C13/3 (hata dalında kayıt değişmez).
+6. 2026-10-20, uygulandı (`c80186d`, triyajın beş bulgusu dahil) ve kapandı. Kanıt kayıtları `0097-taban-piksel-raporu.json`
+   (son kod ↔ uygulama, 84 görüntü, 0 fark) ile `ayni`ye çevrildi.
