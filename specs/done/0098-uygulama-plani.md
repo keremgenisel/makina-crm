@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0098-tahsilat-hesabi-kendi-izni.md` (revizyon 3) |
-| **Commit** | henüz yok (açık talimat bekleniyor) |
+| **Spec** | `specs/done/0098-tahsilat-hesabi-kendi-izni.md` (revizyon 4) |
+| **Commit** | uygulama `4477d2c`; kapanış (SCORECARD, taşıma) ayrı commit |
 | **Dal** | `feat/0098-tahsilat-hesap-izni`, `main` (`b53d94d`) üstünde, çalışma kopyası `../wt-0098` |
 | **Onay** | Takım Yöneticisi, 2026-10-20: planın on önerisi (P1–P10) kabul edildi |
 

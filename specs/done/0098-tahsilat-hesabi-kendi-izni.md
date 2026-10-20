@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 4, triyaj 2026-10-20) |
+| **Durum** | Tamamlandı (revizyon 4; uygulama `4477d2c`, 2026-10-20) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Sunucu › Sunucu Bağlantısı › Kullanıcı Yönetimi (Kasa işlemleri akordeonu), servis formu, Extra Kalıp satışı formu, yedek parça satışı formu, müşteri detayının tahsilat formu ve "Ödendi" anahtarları, yeni müşteri formunun ilk ödeme satırları, Stok › Yedek Parça Satışı satırının "Ödendi" anahtarı, **bayi detayının iki satış formu**, **Servis ve Kargo Panosu'nun servis ve yedek parça formları (ana pencere sekmesi ve kiosk)**; `src/App.jsx`'in tahsilat hesabı kapısı; izin tanımları (`src/components/settings/serverPermissionDefs.js`) ve `src/components/settings/UserManager.jsx` |
@@ -306,25 +306,25 @@ Takım Yöneticisi planın on önerisini kabul etti (`specs/0098-uygulama-plani.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap içeren iş yok; yetkinin kapısı tek yerde ve R12/2'deki bileşimle hesaplanıyor, iki kaynak taramasıyla sabitlendi (kimlik dizesi yalnız `App.jsx` ve `serverPermissionDefs.js`'te; `kasaYetki` adı tahsilat zincirinin dört bileşeninde yok). Sekiz giriş noktasından hiçbiri kendi izin koşulunu yazmıyor; formların `kasaHesaplari` koşulu prop okumasıdır ve taramaya girmez (C11).
-- [ ] Aynı sayıyı üreten başka ekran/rapor etkilenmedi; bakiye, gelir ve rapor kıyası birebir aynı.
-- [ ] Yeni kalıcı alan **yok**; dört nokta kuralı uygulanacak bir şey olmadığı açıkça yazıldı.
-- [ ] Yeni veri bölümü **yok**; `BLOB_SECTIONS` ve `MERGE_KEYS` dokunulmadı (tarama).
-- [ ] Yeni eylem izni **var**: izin tanımları ve kullanıcı yönetimi ekranı birlikte güncellendi; **sunucu tarafına denetim eklenmediği ve nedeni** spec C4'te ve kodda yazılı. Sunucuda kimlik beyaz listesi olmadığı ölçüldü (ölçüm 11).
-- [ ] Servis ve Kargo Panosu'nun iki formu kapsama alındı (sekme ve kiosk, R4/2); ayrı pencere bilinen sınır olarak kodda ve spec'te yazılı (X8).
-- [ ] Soft-delete ve çöp kutusu simetrisi etkilenmedi (bu iş kayıt silmiyor).
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı yok.
-- [ ] Para gösterimi değişmedi; çoklu para birimi ve bilinmeyen para birimi kriterleri (AC-33, AC-34) karşılandı.
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: yetkili ve yetkisiz kullanıcıda üç form ve panonun servis formu, izin ekranının Kasa akordeonu (ipuculu ve ipucusuz hâl).
-- [ ] Kanıt beklentisi iki ayrı satır olarak yazıldı: izin ekranının üç ekranı (`kullanici-izin-kasa`, `-ipucu`, `-0066`) **bilinçli değişti** (yeni grup, yeni kutu, yeni not); tahsilat formlarının kanıt ekranları **değişmedi**, çünkü kanıt aracı yerel modda çiziyor ve orada izin null, yani alan bugünkü gibi görünüyor (`tests/ui/tahsilat-hesap-0063.test.jsx:416`, iki temada 0 piksel, yeşil).
-- [ ] Ters çevrilen beş test "spec 0098 ile" notuyla güncellendi (0024 `kasa-app.test.jsx:147`, 0052 `kasa-sekme-izni.test.jsx:177`'nin tahsilat yarısı, 0044 `tahsilat-hesap.test.jsx:152`, 0066 AC-20 ve AC-21) ve yeni adları bu spec'in kriterine bağlandı; korunan iki perde testi (0024 AC-35, 0044 AC-20) yeşil.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi (yeni izin kimliği ve tahsilat hesabı kapısının Kasa sekmesinden ayrıldığı).
-- [ ] Sürüm notu yazıldı: yetki varsayılan açık, ama işlem izinleri daha önce özelleştirilmiş kullanıcılarda kutu işaretlenmeli; **Kasa sekmesi olanlar dahil** bu kullanıcılar alanı kutu işaretlenene kadar kaybeder ve bu bir regresyondur (R7/2). Ayrı pencereli Servis Panosu'nda alanın olmadığı da notta yazılı (X8).
-- [ ] Takım Yöneticisi onayladı (dört karar 2026-10-20). **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap içeren iş yok; yetkinin kapısı tek yerde ve R12/2'deki bileşimle hesaplanıyor, iki kaynak taramasıyla sabitlendi (kimlik dizesi yalnız `App.jsx` ve `serverPermissionDefs.js`'te; `kasaYetki` adı tahsilat zincirinin dört bileşeninde yok). Sekiz giriş noktasından hiçbiri kendi izin koşulunu yazmıyor; formların `kasaHesaplari` koşulu prop okumasıdır ve taramaya girmez (C11).
+- [x] Aynı sayıyı üreten başka ekran/rapor etkilenmedi; bakiye, gelir ve rapor kıyası birebir aynı.
+- [x] Yeni kalıcı alan **yok**; dört nokta kuralı uygulanacak bir şey olmadığı açıkça yazıldı.
+- [x] Yeni veri bölümü **yok**; `BLOB_SECTIONS` ve `MERGE_KEYS` dokunulmadı (tarama).
+- [x] Yeni eylem izni **var**: izin tanımları ve kullanıcı yönetimi ekranı birlikte güncellendi; **sunucu tarafına denetim eklenmediği ve nedeni** spec C4'te ve kodda yazılı. Sunucuda kimlik beyaz listesi olmadığı ölçüldü (ölçüm 11).
+- [x] Servis ve Kargo Panosu'nun iki formu kapsama alındı (sekme ve kiosk, R4/2); ayrı pencere bilinen sınır olarak kodda ve spec'te yazılı (X8).
+- [x] Soft-delete ve çöp kutusu simetrisi etkilenmedi (bu iş kayıt silmiyor).
+- [x] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı yok.
+- [x] Para gösterimi değişmedi; çoklu para birimi ve bilinmeyen para birimi kriterleri (AC-33, AC-34) karşılandı.
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: yetkili ve yetkisiz kullanıcıda üç form ve panonun servis formu, izin ekranının Kasa akordeonu (ipuculu ve ipucusuz hâl).
+- [x] Kanıt beklentisi iki ayrı satır olarak yazıldı: izin ekranının üç ekranı (`kullanici-izin-kasa`, `-ipucu`, `-0066`) **bilinçli değişti** (yeni grup, yeni kutu, yeni not); tahsilat formlarının kanıt ekranları **değişmedi**, çünkü kanıt aracı yerel modda çiziyor ve orada izin null, yani alan bugünkü gibi görünüyor (`tests/ui/tahsilat-hesap-0063.test.jsx:416`, iki temada 0 piksel, yeşil).
+- [x] Ters çevrilen beş test "spec 0098 ile" notuyla güncellendi (0024 `kasa-app.test.jsx:147`, 0052 `kasa-sekme-izni.test.jsx:177`'nin tahsilat yarısı, 0044 `tahsilat-hesap.test.jsx:152`, 0066 AC-20 ve AC-21) ve yeni adları bu spec'in kriterine bağlandı; korunan iki perde testi (0024 AC-35, 0044 AC-20) yeşil.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi (yeni izin kimliği ve tahsilat hesabı kapısının Kasa sekmesinden ayrıldığı).
+- [x] Sürüm notu yazıldı: yetki varsayılan açık, ama işlem izinleri daha önce özelleştirilmiş kullanıcılarda kutu işaretlenmeli; **Kasa sekmesi olanlar dahil** bu kullanıcılar alanı kutu işaretlenene kadar kaybeder ve bu bir regresyondur (R7/2). Ayrı pencereli Servis Panosu'nda alanın olmadığı da notta yazılı (X8).
+- [x] Takım Yöneticisi onayladı (dört karar 2026-10-20). **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -374,23 +374,28 @@ On dokuz boşluk çıkarıldı, Takım Yöneticisi 2026-10-20'de tümünü onayl
 
 ---
 
+
+## SCORECARD
+
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Spec revizyon sayısı** | 4 | 1 taslak (dört karar), 2 QA turu (19 bulgu), 3 plan turu (P1–P10), 4 triyaj |
+| **Düzeltme turu sayısı** | 1 | Triyaj: dört düşük bulgu (üç kriterin yarım ölçümü, üç adsız kriter, dört eski yorum, ipucu metni bilinen sınır) |
+| **Bulgu gerçek/gürültü oranı** | 4/0 | İletilen dört bulgunun hepsi gerçekti; dördüncüsü bilinen sınır olarak kayda geçti (C12/2) |
+| **Regresyon sayısı** | 0 | Tam takım Electron dahil yeşil; tahsilat formlarının ve panonun bütün kanıt ekranları 0 piksel. Spec'in kabul ettiği gerileme (R7/2) ayrıca testli |
+| **Kaçan hata** | 0 | Triyaj bulguları test boşluğu ve yorumdu; davranış hatası yok |
+
+**Bu spec'ten çıkarılan ders:** Bir kapıyı taşırken onu okuyan her kanalı (dizi prop'u, boolean prop, kayıt dalı, düzenleme kipi)
+ayrı ayrı ölçmek gerekiyor: ilk testler yalnız ekleme kipine baktı ve düzenleme kipinin kapısı eski hâlinde kalsa yeşil kalırdı
+(triyaj bulgu 1). DoD'nin "her kriterin AC adlı testi" maddesi, davranışı değişmeyen kriterlerde de geçerli. Görüntü aracında
+bilinmeyen küçük bir fark çıktığında önce spec öncesi kodla tabanı yeniden çekmek, kodu suçlamaktan önce geliyor.
+
+---
+
 ## Revizyonlar
 
 1. 2026-10-20, ilk taslak; dört karar onaylı.
 2. 2026-10-20, QA turu (19 bulgu, dört karar daha).
 3. 2026-10-20, uygulama planı onayı (P1–P10): R8/3, R12/3 ve plan kararları tablosu.
 4. 2026-10-20, triyaj: dört düşük bulgu; C12/2 (ipucu metni bilinen sınır) eklendi, testler ve yorumlar düzeltildi.
-
----
-
-## SCORECARD
-
-| Ölçüt | Değer | Not |
-|---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
-
-**Bu spec'ten çıkarılan ders:**
+5. 2026-10-20, uygulandı (`4477d2c`, triyajın dört bulgusu dahil) ve kapandı.

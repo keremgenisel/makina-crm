@@ -125,7 +125,7 @@ describe("Spec 0098: kaynak taramaları", () => {
     const k = readFileSync("src/components/kasa/TahsilatHesap.jsx", "utf8");
     expect(k).toMatch(/boş bırakılırsa Kasa'da hesabı belirtilmemiş tahsilatlar arasında bekler\./);
     expect(k).toMatch(/Spec 0098 C12\/2/);
-    expect(readFileSync("specs/0098-tahsilat-hesabi-kendi-izni.md", "utf8")).toMatch(/\*\*C12\/2\.\*\*/);
+    expect(readFileSync("specs/done/0098-tahsilat-hesabi-kendi-izni.md", "utf8")).toMatch(/\*\*C12\/2\.\*\*/);
   });
   it("AC-58 / X1: makina tahsilatı hesapsız da olsa iş listesinde görünmez (satisTahsilat payments okumaz)", () => {
     expect(kod("src/lib/satisTahsilat.js")).not.toMatch(/payments/);
