@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 4, plan turu 2026-10-20) |
+| **Durum** | Tamamlandı (revizyon 4; uygulama `6826f29`, 2026-10-20) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Giderler › Tedarikler ve Ekstre, Ayarlar › Katalog › Parça/Yedek Parça, Ayarlar › Çöp Kutusu (tedarikçi koruması), Ayarlar › Dışa ve İçe Aktar (parça şablonu), Makina Maliyeti › Model Maliyetleri (okuyucu); saf motorlar `urunAgaci`, `makinaStandartMaliyet`, `parcaAktarma`, `gider` (tedarikçi kullanımı); `electron/db.cjs` okuma yolu |
@@ -584,13 +584,16 @@ Yirmi yedi bulgunun hepsi onaylandı ve aşağıdaki maddelere işlendi.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 4 | 1 taslak, 2 karar onayı, 3 QA turu (27 bulgu), 4 plan turu (P1–P8) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: üç düşük bulgu (Excel gidiş dönüşü bildirimi, yetkisiz kartta tedarikçi sayısı, liste başına harita) |
+| **Bulgu gerçek/gürültü oranı** | 3/0 | Triyajın bana iletilen üç bulgusu gerçekti; gürültü işaretlenenler iletilmedi |
+| **Regresyon sayısı** | 0 | Tam takım Electron dahil yeşil; kırılımsız parçada dışa aktarma, maliyet hesabı ve gövde spec öncesiyle birebir |
+| **Kaçan hata** | 3 (düşük) | Triyajın üç bulgusu |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir prop'u "gizlilik için kapat" kuralı, o prop'un başka bir tüketicisine (burada yedek)
+bakılmadan yazılırsa veri kaybı doğurur; kapı veriyi taşıyan hatta değil, çizen bileşenin girişinde olmalı (P1). Kimlikle
+bağlanan her yeni alan birleştirmenin kimlik taşıma geçişine de girmeli (P2). Dışa aktarılan bir değerin içe aktarmada
+"değişiklik" sayılmaması için gidiş dönüş testi baştan yazılmalı (triyaj bulgu 1).
 
 ---
 
@@ -614,3 +617,6 @@ Yirmi yedi bulgunun hepsi onaylandı ve aşağıdaki maddelere işlendi.
   taşınır (R26, AC-49). P3: koruma çöpteki parçayı da sayar, "çöpü boşalt" istisnası (R13/5, AC-50). P4: kırılım
   formda hep form biçiminde (R17/3). P5: tedarikçi okumasının `deletedAt` davranışı değişmez (C3 notu). P6: işaret
   alanı `hammadde` (R25/2). P7: kuruş biçimleyici `urunAgaci.js`'te (C9). P8: testler satır numarasıyla değil adla arar.
+- 5 · 2026-10-20 · Uygulandı (`6826f29`, triyajın üç düşük bulgusu dahil: Excel gidiş dönüşünde aynı toplam bildirim
+  üretmez ve içe aktarma özeti "uyarı" der; gider yetkisi olmayan kullanıcıda kart da tedarikçi sayısını yazmaz; tedarikçi
+  listesi kırılım haritasını bir kez kurar) ve kapandı.

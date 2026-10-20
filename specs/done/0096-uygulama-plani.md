@@ -2,7 +2,8 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0096-hammadde-tedarikcisi-ve-parca-maliyet-kirilimi.md` (revizyon 4) |
+| **Spec** | `specs/done/0096-hammadde-tedarikcisi-ve-parca-maliyet-kirilimi.md` (revizyon 4) |
+| **Commit** | uygulama `6826f29`; kapanış (SCORECARD, kanıt, taşıma) ayrı commit |
 | **Dal** | `feat/0096-hammadde-kirilimi`, `origin/main` (`d6f5a83`) üstünde, çalışma kopyası `../wt-0096` |
 | **Onay** | Takım Yöneticisi, 2026-10-20: plan turunun bütün maddeleri (P1–P8) onaylandı |
 
@@ -69,7 +70,7 @@ Ters çevrilen mevcut test ("spec 0096 ile" notlu): `tests/cop-kutusu-0068.test.
 ## 5. Ölçümler
 
 - **Bozma denemeleri** (her biri yedek kopyayla geri alındı): tek yolun kırılımı yok sayması (19 test kırıldı), `maliyet`'in silinmemesi (2), boşaltmanın eskiyi geri getirmesi (2), motorun eski ölçüte dönmesi (4), Kalıcı Sil kapısı (1), "çöpü boşalt" kapısı (1), otuz günlük temizlik (1), silme düğmesinin parçayı saymaması (2), birleştirmede kimlik taşınmaması (1), Ayarlar'daki yetki kapısı (2), içe aktarma kapısı (1), süzgeçte sayfa sıfırlaması (2), DB okumasının koşulsuz yazımı (Electron: 3 kontrol).
-- **Görsel kanıt** (`0096-piksel-raporu.json`: spec öncesi ↔ uygulama; taban `0096-taban-piksel-raporu.json`): 16 mevcut ekran × 2 tema; değişen parça listesi (süzgeç), parça kartı (yeni bölüm) ve tedarikçi formu (yeni kutu). Tedarikçiler listesi (işaretsiz veride), Çöp Kutusu, Dışa/İçe Aktar ve ekstre 0 piksel. Yeni ekranlar: `katalog-parca-0096-kirilim`, `-tutarsiz`, `-bos`, `-hata`, `ayarlar-yedekparca-0096-suzgec`, `-yetkisiz`, `giderler-0096-tedarikciler`, `giderler-0096-tedarikci-sil`.
+- **Görsel kanıt** (`0096-piksel-raporu.json`: spec öncesi ↔ uygulama; `0096-taban-piksel-raporu.json`: kapanışta son kod ↔ uygulama, 48 görüntü 0 fark, kanıt eşlemesi buna `ayni` bakar): 16 mevcut ekran × 2 tema; değişen parça listesi (süzgeç), parça kartı (yeni bölüm) ve tedarikçi formu (yeni kutu). Tedarikçiler listesi (işaretsiz veride), Çöp Kutusu, Dışa/İçe Aktar ve ekstre 0 piksel. Yeni ekranlar: `katalog-parca-0096-kirilim`, `-tutarsiz`, `-bos`, `-hata`, `ayarlar-yedekparca-0096-suzgec`, `-yetkisiz`, `giderler-0096-tedarikciler`, `giderler-0096-tedarikci-sil`.
 - Uygulamada görülen ve düzeltilen: kırılımla birlikte eski elle maliyet taşıyan kayıtta pasif alan eski değeri gösteriyordu ve "kırılımdan geliyor" satırıyla çelişiyordu; pasifken alan boş çizilir (kayıtta R7 gereği silinir).
 
 - **Triyaj (üç düşük bulgu, düzeltildi):** dışa aktarılan dosya aynen geri yüklenince kırılımlı parça bildirim üretmez, yalnız farklı rakamda üretir; parça içe aktarma özeti bildirimleri "uyarı" diye sayar ("satır atlandı" değil); gider yetkisi olmayan kullanıcıda kart da tedarikçi sayısını yazmaz (`KAYNAK_KIRILIM_YETKISIZ`, listeyle aynı karar); tedarikçi listesi kırılım haritasını bir kez kurar (`tedarikciKullanim` beşinci parametre).
