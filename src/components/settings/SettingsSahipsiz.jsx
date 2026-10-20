@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { fmtTR, fmtCur, parseMoney, parcaAdi, withDeleted, aramaNormalize } from "../../lib/utils";
+import { fmtTR, fmtCur, parseMoney, parcaAdi, withDeleted, aramaNormalize, yedekParcaBedeli, satisUcretsizMi, UCRETSIZ_IBARESI } from "../../lib/utils";
 import { sahipsizKayitlar } from "../../lib/sahipsiz";
 import { yedekParcaGeriAl } from "../../lib/yedekParcaStok";
 import { servisParcaGeriAl } from "../../lib/servisStok";
@@ -45,7 +45,7 @@ export const SettingsSahipsiz = ({
     if (tur === "kalip") return `${r.ad || "Kalıp"}${r.olcu ? " " + r.olcu : ""}${r.tarih ? " · " + fmtTR(r.tarih) : ""}${parseMoney(r.ucret) ? " · " + fmtCur(parseMoney(r.ucret), r.currency) : ""}`;
     if (tur === "yedekParca" || tur === "yedekParcaBayi") {
       const p = rawParts.find(x => String(x.id) === String(r.partId));
-      return `${parcaAdi(p) || "(parça)"} × ${r.miktar || 0}${r.tarih ? " · " + fmtTR(r.tarih) : ""}${parseMoney(r.birimFiyat) ? " · " + fmtCur((parseInt(r.miktar) || 0) * parseMoney(r.birimFiyat), r.currency) : " · 0"}`;
+      return `${parcaAdi(p) || "(parça)"} × ${r.miktar || 0}${r.tarih ? " · " + fmtTR(r.tarih) : ""}${satisUcretsizMi(r) ? " · " + UCRETSIZ_IBARESI : parseMoney(r.birimFiyat) ? " · " + fmtCur(yedekParcaBedeli(r), r.currency) : " · 0"}`;
     }
     return `${fmtCur(parseMoney(r.tutar), r.currency)}${r.tarih ? " · " + fmtTR(r.tarih) : ""}${r.yontem ? " · " + r.yontem : ""}`;
   };

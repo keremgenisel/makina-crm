@@ -7,6 +7,7 @@ import {
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, satisKdvBolumu,
   calcKalanBorc, stripAutoPrint, simdiYerel,
   withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi, servisParcaSatirTutari, faturaBedeliOf, getKdvRateForDate,
+  satisUcretsizMi,
 } from "../../lib/utils";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim, yansitilanKomisyon, makinaKartOdemesi } from "../../lib/krediKarti";
 import {
@@ -299,6 +300,11 @@ export const CustomerDetailModal = ({
         kargoFirma: rec.kargoFirma, kargoTakipNo: rec.kargoTakipNo, kargoTarih: rec.kargoTarih, kargoDurum: rec.kargoDurum,
         kargoSorumlusu: rec.kargoSorumlusu, panoDusmeZamani: rec.panoDusmeZamani, notlar: rec.notlar,
         satirlar: grup.map(s => ({ partId: s.partId, miktar: String(s.miktar), birimFiyat: ypKalemBirim(s) })),
+        // Spec 0095 R13, R23: işaret form düzeyindedir. Karışık partide (düzenlemeyle oluşur) işaret yalnız bütün satırlar
+        // ücretsizse gelir: yeniden kayıt ücretli bir satırın borcunu sessizce silmesin, tersine ücretsiz satır görünür borç olur.
+        ...(grup.length > 0 && grup.every(satisUcretsizMi) ? { ucretsizMi: true } : {}),
+        // Karışık partide formda uyarı şeridi (yalnız gösterim; kayda yazılmaz, yedekParcaRec alanları tek tek kurar).
+        ...(grup.some(satisUcretsizMi) && !grup.every(satisUcretsizMi) ? { _karisikUcretsiz: true } : {}),
       });
       return;
     }
@@ -361,6 +367,8 @@ export const CustomerDetailModal = ({
   };
   // Toplu satış (aynı batchId) tek olay → sil/ödeme TÜM gruba uygulanır (batchId yoksa yalnız o kayıt).
   const ypGrupIdleri = (rec) => (rec.batchId != null ? (yedekParcaSatislar || []).filter(s => s.batchId === rec.batchId && !s.deletedAt).map(s => s.id) : [rec.id]);
+  // Spec 0095 R23: ödeme işlemleri partinin yalnız ÜCRETLİ satırlarına yazar (ücretsiz satırda ödeme durumu yoktur, R7/2).
+  const ypOdemeIdleri = (rec) => { const idler = new Set(ypGrupIdleri(rec)); return (yedekParcaSatislar || []).filter(s => idler.has(s.id) && !satisUcretsizMi(s)).map(s => s.id); };
   const deleteYedekParca = (rec) => {
     if (!canDo("cust_yedek_parca_delete") || !setYedekParcaSatislar) return;
     const idler = ypGrupIdleri(rec);
@@ -375,7 +383,8 @@ export const CustomerDetailModal = ({
     if (!canDo("cust_yedek_parca_payment") || !setYedekParcaSatislar) return;
     const yeni = !rec.odendi;
     const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
-    const idler = new Set(ypGrupIdleri(rec));
+    const idler = new Set(ypOdemeIdleri(rec));
+    if (!idler.size) return;
     const uygula = (h) => {
       setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null, ...hesapAlani(h) } : s));
       [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
@@ -386,7 +395,8 @@ export const CustomerDetailModal = ({
   const toggleYedekParcaCekTahsil = (rec) => {
     if (!canDo("cust_yedek_parca_payment") || !setYedekParcaSatislar) return;
     const yeni = !rec.tahsilEdildi;
-    const idler = new Set(ypGrupIdleri(rec));
+    const idler = new Set(ypOdemeIdleri(rec));
+    if (!idler.size) return;
     setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, tahsilEdildi: yeni, tahsilatTarihi: yeni ? today() : null } : s));
     [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "cek_tahsil_edildi" : "cek_tahsil_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
   };

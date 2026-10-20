@@ -1,12 +1,13 @@
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
-import { Ipucu, Segment } from "./tasarim";
+import { Ipucu, Segment, UyariSeridi } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
 import { satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
+import { garantiDurumu, GARANTI_UYARISI, KARISIK_PARTI_UYARISI } from "../lib/yedekParcaSatis";
 
 // Bayiye yedek parça (kargo) satışı ekleme/düzenleme formu. Bir kayıt = bir parça kalemi (partId +
 // miktar). Alıcı her zaman bir bayi. Makina tahsisi burada YAPILMAZ — satış listesinden (YedekParcaSatisTab)
@@ -55,6 +56,10 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
     : satirlar.reduce((s, r) => s + (parseInt(r.miktar) || 0) * parseMoney(r.birimFiyat), 0);
   // Spec 0044: hesap sorulur mu (satırların toplamı tek tahsilattır).
   const hesapDurumu = kasaHesaplari ? tahsilatHesapDurumu(SATIS_KAYNAK.YEDEK, { ...form, miktar: 1, birimFiyat: toplam }, { kdvRates }) : null;
+  // Spec 0095: garanti içi ücretsiz verme. İşaret form düzeyinde (R13); ödeme, toplam, tevkifat, tahsilat hesabı ve fatura
+  // tipi ücretsizde çizilmez (R18b, R18c). Garanti durumu yalnız alıcı müşteriyken (R4, R4/3), "bugün" yerel gündür (R4/2).
+  const ucretsiz = !!form.ucretsizMi;
+  const garanti = aliciTipi === "musteri" ? garantiDurumu(selectedCust) : null;
 
   return (
     <Modal title={title} onClose={onCancel} wide
@@ -146,15 +151,20 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
             <option value="EUR">€ Euro (EUR)</option>
           </Select>
         </Field>
-        <Field label="Fatura Tipi">
-          <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
-            {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
-          </Select>
-        </Field>
+        {!ucretsiz && (
+          <Field label="Fatura Tipi">
+            <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
+              {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
+            </Select>
+          </Field>
+        )}
       </div>
-      {/* Spec 0079 R1, R2, R7: tevkifat kutusu (yalnız faturalı yurtiçi); toplu satışın bütün satırlarına aynı yazılır. */}
-      <SatisTevkifatAlani form={form} setForm={setForm} saleType={form.faturaTipi || "Faturalı Yurtiçi"}
-        kartUyarisi={kartTabaniEskiMi(form, form.faturaTipi || "Faturalı Yurtiçi")} onYeniTaban={() => setForm(p => ({ ...p, _kartYeniTaban: true }))} />
+      {/* Spec 0079 R1, R2, R7: tevkifat kutusu (yalnız faturalı yurtiçi); toplu satışın bütün satırlarına aynı yazılır.
+          Spec 0095 R7, R18b: ücretsizde çizilmez. */}
+      {!ucretsiz && (
+        <SatisTevkifatAlani form={form} setForm={setForm} saleType={form.faturaTipi || "Faturalı Yurtiçi"}
+          kartUyarisi={kartTabaniEskiMi(form, form.faturaTipi || "Faturalı Yurtiçi")} onYeniTaban={() => setForm(p => ({ ...p, _kartYeniTaban: true }))} />
+      )}
 
       {isEdit ? (<>
         <Field label="Yedek Parça">
@@ -226,9 +236,26 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
       )}
 
 
+      {/* Spec 0095 R1, R2, R18a: "garanti içi, ücretsiz verildi" kutusu fiyat alanlarının hemen altında ve `toplam > 0`
+          kapısının DIŞINDA (garanti parçasına fiyat girilmemesi normaldir). Varsayılan işaretsiz. */}
+      <div style={{ marginTop: 4, marginBottom: 8 }}>
+        <label data-testid="ucretsiz-kutusu" style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: ucretsiz ? "var(--bluBg, #eff6ff)" : "var(--n100, #f8fafc)", border: `1px solid ${ucretsiz ? "var(--bluBr, #bfdbfe)" : "var(--n200, #e2e8f0)"}`, borderRadius: 8, padding: "10px 12px" }}>
+          <input type="checkbox" aria-label="Garanti içi, ücretsiz verildi" checked={ucretsiz} onChange={e => setForm(p => ({ ...p, ucretsizMi: e.target.checked }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--blu700, #1d4ed8)" }} />
+          <span style={{ fontSize: 13, fontWeight: 600, color: ucretsiz ? "var(--blu700, #1d4ed8)" : "var(--n700, #334155)" }}>Garanti içi, ücretsiz verildi</span>
+        </label>
+        {garanti && <div data-testid="garanti-durumu" style={{ fontSize: 12, fontWeight: 600, marginTop: 4, color: garanti.aktif ? "var(--grn700, #15803d)" : "var(--n500, #64748b)" }}>{garanti.metin}</div>}
+        {form._karisikUcretsiz && !ucretsiz && (
+          <div style={{ marginTop: 6 }}><UyariSeridi aile="uyari" testId="karisik-parti-uyarisi">{KARISIK_PARTI_UYARISI}</UyariSeridi></div>
+        )}
+        {ucretsiz && <Ipucu>Bu satış borç, gelir ve tahsilat üretmez; parça yine stoktan düşer, tahsis ve kargo aynen çalışır.</Ipucu>}
+        {ucretsiz && garanti && !garanti.aktif && (
+          <div style={{ marginTop: 6 }}><UyariSeridi aile="uyari" testId="garanti-uyarisi">{GARANTI_UYARISI}</UyariSeridi></div>
+        )}
+      </div>
+
       {/* Ödeme durumu + yöntemi (makina satışıyla aynı, Parça Ekle'nin hemen altında). Ödendi işaretliyken
           yöntem seçilir; Çek ise vade + tahsil takibi (çek tahsil edilene kadar borçlu sayılır). */}
-      {toplam > 0 && (
+      {toplam > 0 && !ucretsiz && (
         <div style={{ marginTop: 4 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
             <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked, ...tahsilatOnSecim(p, e.target.checked, hesapDurumu, hesapVarsayilan, kasaHesaplari || []) }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
@@ -280,7 +307,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
       )}
 
       {/* Toplam — Extra Kalıp'taki gibi ödeme kutusunun hemen altında (Faturalı'da KDV dahil toplam da) */}
-      {toplam > 0 && (
+      {toplam > 0 && !ucretsiz && (
         <div style={{ background: "var(--bluBg, #eff6ff)", border: "1px solid var(--bluBr, #bfdbfe)", borderRadius: 8, padding: "10px 12px", marginTop: 12 }}>
           {(() => {
             const kdv = tahsilEdilecekKdv(form.faturaTipi, toplam, form.tarih, kdvRates, form);

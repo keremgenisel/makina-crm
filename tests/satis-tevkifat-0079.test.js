@@ -17,7 +17,10 @@ describe("Spec 0079 AC-31: tevkifatsız veride motor çıktıları birebir aynı
     const { yedekExport: yOnce, ...oDiger } = once;
     const { yedekExport: ySimdi, ...sDiger } = simdi;
     expect(sDiger).toEqual(oDiger);
+    // Spec 0095 R19 ile güncellendi: "Ücretsiz mi?" sütunu indis 8'e girer (işaretsiz kayıtta "Hayır"); kıyas onu çıkarır.
     yOnce.forEach((s, i) => {
+      expect(ySimdi[i][8]).toBe("Hayır");
+      ySimdi[i] = ySimdi[i].filter((_, j) => j !== 8);
       expect(ySimdi[i].slice(0, s.length)).toEqual(s);
       expect(ySimdi[i].slice(s.length).every(x => x === "" || x == null)).toBe(true);
     });

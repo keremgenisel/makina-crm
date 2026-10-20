@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { today, uid, cekBekliyorMu, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, isYedekParcaBorcluMu, yedekParcaBedeli, parcaAdi, calcKalanBorc, calcCiro, sumPayments, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { today, uid, cekBekliyorMu, fmtTR, fmtCur, parseMoney, trLower, isServisBorcluMu, kalipBorcTarafi, partSaleMusteriBorcuMu, isServisUcretliMi, isParcaUcretliMi, isParcaBorcluAnlasmaliFirmaya, isCekVadesiGecmis, effectiveTeklifTur, servisKanali, isYedekParcaBorcluMu, yedekParcaBedeli, UCRETSIZ_IBARESI, parcaAdi, calcKalanBorc, calcCiro, sumPayments, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { kartTahsilEdildiMi, yansitilanKomisyon } from "../lib/krediKarti";
 import { makeCanDo } from "../lib/permissions";
 import { sonSatislar } from "../lib/dashboardStats";
@@ -234,7 +234,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
     });
     yedekParcaSatislar.forEach(s => {
       if (!(s.yontem === "Çek" && !s.tahsilEdildi && !s.deletedAt)) return;
-      const bedel = (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
+      const bedel = yedekParcaBedeli(s); // spec 0095 C1
       const base = { key: `cekyp-${s.id}`, tip: "Çek", kaynak: "yedek", recId: s.id, vade: s.vadeTarihi || "", tutar: bedel + tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s), currency: s.currency };
       if (s.aliciTipi === "musteri") items.push({ ...base, customerId: s.musteriId });
       else items.push({ ...base, customerId: null, firmaAd: s.disFirma ? (s.disFirmaAd || "Dış firma") : (dealers.find(d => d.id === Number(s.dealerId))?.name || "Bayi") });
@@ -418,7 +418,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
                 </div>
                 <div style={{ textAlign: "right", alignSelf: "center", flexShrink: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "var(--brand, #e85d1a)" }}>{fmtTR(r.tarih)}</div>
-                  <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{(r.tip === "kalip" || r.tip === "yedek") ? fmtCur(r.tutar, r.currency) : r.konum}</div>
+                  <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>{r.ucretsiz ? UCRETSIZ_IBARESI : (r.tip === "kalip" || r.tip === "yedek") ? fmtCur(r.tutar, r.currency) : r.konum}</div>
                 </div>
               </div>
             );

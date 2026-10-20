@@ -2,7 +2,7 @@
 // bağlı kayıtlar: alıcısı o bayi olan yedek parça satışları (tahsisleri satışın çocuğudur, birlikte
 // gider) ve bayi dosyaları (dosyalar[].dealerId). Adla bağlı alanlar (servisin işlem firması,
 // "satış yapan") metindir, kaskada girmez (tarihçe okunur kalır).
-import { parseMoney, isYedekParcaBorcluMu } from "./utils";
+import { yedekParcaBedeli, isYedekParcaBorcluMu } from "./utils";
 
 /** Satışın alıcısı bu bayi mi (aliciTipi "bayi" ya da aliciTipi'siz eski kayıt; dış firma alımı hariç). */
 export const yedekParcaBayininMi = (s, dealerId) =>
@@ -19,7 +19,7 @@ export const bayiBagliSayilar = (dealerId, { yedekParcaSatislar = [], dosyalar =
     if (!isYedekParcaBorcluMu(s)) return;
     odenmemis += 1;
     const cur = s.currency || "TRY";
-    acikAlacak[cur] = (acikAlacak[cur] || 0) + (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
+    acikAlacak[cur] = (acikAlacak[cur] || 0) + yedekParcaBedeli(s); // spec 0095 C1; ücretsiz satış zaten borçsuz (C2, AC-47)
   });
   return {
     yedekParca: satislar.length,

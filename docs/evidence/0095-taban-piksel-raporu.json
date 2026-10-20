@@ -1,0 +1,222 @@
+[
+  {
+    "ad": "finans-aydinlik.png",
+    "boyut": "2880x3146"
+  },
+  {
+    "ad": "finans-karanlik.png",
+    "boyut": "2880x3146"
+  },
+  {
+    "ad": "musteriler-liste-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "musteriler-liste-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "bayiler-liste-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "bayiler-liste-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "stok-yedek-parca-suzgec-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "stok-yedek-parca-suzgec-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "musteri-detay-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺290.000 ödenmemiş bakiyesi var. Devam"
+    ]
+  },
+  {
+    "ad": "musteri-detay-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺290.000 ödenmemiş bakiyesi var. Devam"
+    ]
+  },
+  {
+    "ad": "bayi-detay-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "bayi-detay-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "bayi-detay-bos-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "bayi-detay-bos-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "stok-bos-yedek-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "stok-bos-yedek-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "musteri-detay-bolumler-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Sunucu bağlantısı yok: dosya listesi görünür ama ekleme, açma ve indir"
+    ]
+  },
+  {
+    "ad": "musteri-detay-bolumler-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Sunucu bağlantısı yok: dosya listesi görünür ama ekleme, açma ve indir"
+    ]
+  },
+  {
+    "ad": "anasayfa-kart-rozetleri-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "anasayfa-kart-rozetleri-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "servis-pano-kalip-aydinlik.png",
+    "boyut": "2880x1896"
+  },
+  {
+    "ad": "servis-pano-kalip-karanlik.png",
+    "boyut": "2880x1896"
+  },
+  {
+    "ad": "stok-tahsis-modali-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "stok-tahsis-modali-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-odendi-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "musteri-detay-tahsis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ]
+  },
+  {
+    "ad": "musteri-detay-tahsis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ]
+  },
+  {
+    "ad": "musteri-detay-0067-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ]
+  },
+  {
+    "ad": "musteri-detay-0067-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ]
+  },
+  {
+    "ad": "yedek-parca-formu-tahsilat-hesap-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-tahsilat-hesap-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "ayarlar-0068-export-cek-aydinlik.png",
+    "boyut": "2880x2002"
+  },
+  {
+    "ad": "ayarlar-0068-export-cek-karanlik.png",
+    "boyut": "2880x2002"
+  },
+  {
+    "ad": "bayi-yedek-parca-formu-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "bayi-yedek-parca-formu-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-0079-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "yedek-parca-formu-0079-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "musteri-detay-0079-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "musteri-detay-0079-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "stok-yedek-0079-aydinlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "stok-yedek-0079-karanlik.png",
+    "boyut": "2880x1800"
+  },
+  {
+    "ad": "finans-0079-kdv-aydinlik.png",
+    "boyut": "2880x3288"
+  },
+  {
+    "ad": "finans-0079-kdv-karanlik.png",
+    "boyut": "2880x3288"
+  }
+]

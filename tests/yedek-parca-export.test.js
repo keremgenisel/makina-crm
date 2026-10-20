@@ -116,3 +116,20 @@ describe("kredi kartı export kolonları (taksit + komisyon)", () => {
     expect(col(row, "Kredi Kartı Komisyonu")).toBe(60.54);
   });
 });
+
+// Spec 0095 R15, R19: garanti içi ücretsiz satış. Sütunun yeri Extra Kalıp satırındaki emsalinin aynısı (ücret bedelinin ardı).
+describe("Spec 0095: ücretsiz satış dışa aktarması", () => {
+  const ucretsiz = { aliciTipi: "bayi", dealerId: 5, partId: "7", miktar: 3, birimFiyat: 250, currency: "TRY", faturaTipi: "", odendi: false, yontem: "", ucretsizMi: true };
+  it("AC-29: 'Ücretsiz mi?' sütunu Evet/Hayır yazar ve 'Ürün Bedeli (Komisyon Hariç)'in hemen ardındadır", () => {
+    const i = YEDEK_PARCA_EXPORT_HEAD.indexOf("Ücretsiz mi?");
+    expect(i).toBe(YEDEK_PARCA_EXPORT_HEAD.indexOf("Ürün Bedeli (Komisyon Hariç)") + 1);
+    expect(col(yedekParcaExportRow(ucretsiz, deps), "Ücretsiz mi?")).toBe("Evet");
+    expect(col(yedekParcaExportRow({ ...ucretsiz, ucretsizMi: undefined, faturaTipi: "Faturalı Yurtiçi" }, deps), "Ücretsiz mi?")).toBe("Hayır");
+    expect(yedekParcaExportRow(ucretsiz, deps)).toHaveLength(YEDEK_PARCA_EXPORT_HEAD.length);
+  });
+  it("AC-29/2: Birim Fiyat ham saklı fiyat; Toplam, Ürün Bedeli, Ödendi, Ödeme Yöntemi ve iki tevkifat hücresi boş (sıfır değil)", () => {
+    const row = yedekParcaExportRow(ucretsiz, deps);
+    expect(col(row, "Birim Fiyat")).toBe(250);
+    for (const ad of ["Toplam", "Ürün Bedeli (Komisyon Hariç)", "Ödendi", "Ödeme Yöntemi", "Tevkifat Oranı", "Alıcının Beyan Edeceği KDV"]) expect(col(row, ad), ad).toBe("");
+  });
+});

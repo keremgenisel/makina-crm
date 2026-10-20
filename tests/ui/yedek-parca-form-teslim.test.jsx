@@ -43,7 +43,8 @@ describe("YedekParcaSatisForm — teslim şekli panoya düşürmez", () => {
     render(<Harness initial={{ fabrikaTeslim: true }} />);
     expect(screen.queryByText("Pano Durumu")).toBeNull();
     // Spec 0079 R1 ile güncellendi: faturalı yurtiçide "Bu fatura tevkifatlı" kutusu da var; geri kalan tek kutu panoya gönder.
-    const kutular = screen.getAllByRole("checkbox").filter(k => k.getAttribute("aria-label") !== "Bu fatura tevkifatlı");
+    // Spec 0095 R1 ile güncellendi: "Garanti içi, ücretsiz verildi" kutusu da var (kendi testleri ucretsiz-yedek-parca-0095'te).
+    const kutular = screen.getAllByRole("checkbox").filter(k => !["Bu fatura tevkifatlı", "Garanti içi, ücretsiz verildi"].includes(k.getAttribute("aria-label")));
     expect(kutular).toHaveLength(1); // yalnız "Panoya gönder"
     fireEvent.click(kutular[0]);
     expect(screen.getByText("Pano Durumu")).toBeTruthy();

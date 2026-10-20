@@ -20,7 +20,11 @@ const sonPencere = () => { const m = document.querySelectorAll(".modal-backdrop"
 // formda bulunmalı (aşağıda ayrıca sayılır); geri kalan etiketler öncesiyle birebir aynıdır.
 const TEVKIFAT_ETIKETI = "Bu fatura tevkifatlı";
 const tumEtiketler = () => [...sonPencere().querySelectorAll("label")].map(l => l.textContent.trim()).filter(Boolean);
-const etiketler = () => { const t = tumEtiketler(); expect(t.filter(e => e === TEVKIFAT_ETIKETI)).toHaveLength(1); return t.filter(e => e !== TEVKIFAT_ETIKETI); };
+// Spec 0095 R1 ile güncellendi: yedek parça formunda "Garanti içi, ücretsiz verildi" kutusu yeni alandır; dört açılış noktasında
+// birer kez bulunur (aşağıda), diğer formlarda hiç yoktur. Geri kalan etiketler öncesiyle birebir aynıdır.
+const UCRETSIZ_ETIKETI = "Garanti içi, ücretsiz verildi";
+const etiketler = () => { const t = tumEtiketler(); expect(t.filter(e => e === TEVKIFAT_ETIKETI)).toHaveLength(1); return t.filter(e => e !== TEVKIFAT_ETIKETI && e !== UCRETSIZ_ETIKETI); };
+const ucretsizEtiketSayisi = () => tumEtiketler().filter(e => e === UCRETSIZ_ETIKETI).length;
 const tikla = (re) => fireEvent.click(screen.getAllByRole("button").filter(b => re.test(b.textContent.trim())).pop());
 const musteri = () => render(<Customers customers={M} setCustomers={vi.fn()} partSales={[]} services={[]} payments={[]} dealers={D} parts={P}
   setServices={vi.fn()} setPartSales={vi.fn()} setYedekParcaSatislar={vi.fn()} initialDetailId={1} />);
@@ -142,7 +146,8 @@ const ONCE = {
 
 // Dönüşüm öncesi onay kutusu ve açılır liste sayıları (müşteri detayından açılışta).
 // Spec 0079 R1 ile güncellendi: her formda bir onay kutusu daha (tevkifat); oran seçicisi kutu kapalıyken çizilmez.
-const SAYI = {"servis":{"kutu":2,"liste":6},"kalip":{"kutu":3,"liste":3},"yp":{"kutu":3,"liste":2}};
+// Spec 0095 R1 ile güncellendi: yedek parça formunda bir onay kutusu daha var ("Garanti içi, ücretsiz verildi"; 3 → 4).
+const SAYI = {"servis":{"kutu":2,"liste":6},"kalip":{"kutu":3,"liste":3},"yp":{"kutu":4,"liste":2}};
 
 describe("Paylaşılan formlar", () => {
   it("AC-9: Servis formu müşteri detayından ve Servis ve Kargo Panosu'ndan aynı biçimde açılır (öncesiyle ve birbiriyle aynı)", () => {
@@ -168,11 +173,11 @@ describe("Paylaşılan formlar", () => {
     bayi(); tikla(/Bayi Aracılığıyla Kalıp Satışı/); expect(etiketler()).toEqual(ONCE.kalipBayi);
   });
   it("AC-11: Yedek parça formu dört açılış noktasında da aynı biçimde çalışır (öncesiyle aynı)", () => {
-    musteri(); tikla(/^Yedek Parça Satışı$/); expect(etiketler()).toEqual(ONCE.ypMusteri); cleanup();
-    bayi(); tikla(/^Yedek Parça Satışı$/); expect(etiketler()).toEqual(ONCE.ypBayi); cleanup();
+    musteri(); tikla(/^Yedek Parça Satışı$/); expect(etiketler()).toEqual(ONCE.ypMusteri); expect(ucretsizEtiketSayisi()).toBe(1); cleanup();
+    bayi(); tikla(/^Yedek Parça Satışı$/); expect(etiketler()).toEqual(ONCE.ypBayi); expect(ucretsizEtiketSayisi()).toBe(1); cleanup();
     render(<Stock factory={{ name: "A" }} stock={[]} setStock={vi.fn()} customers={M} setCustomers={vi.fn()} parts={P} dealers={D} defaultSubTab="yedeksatis" />);
-    tikla(/Yeni Satış/); expect(etiketler()).toEqual(ONCE.ypStok); cleanup();
-    pano(); tikla(/Yeni Yedek Parça Satışı/); expect(etiketler()).toEqual(ONCE.ypPano);
+    tikla(/Yeni Satış/); expect(etiketler()).toEqual(ONCE.ypStok); expect(ucretsizEtiketSayisi()).toBe(1); cleanup();
+    pano(); tikla(/Yeni Yedek Parça Satışı/); expect(etiketler()).toEqual(ONCE.ypPano); expect(ucretsizEtiketSayisi()).toBe(1);
     expect(ONCE.ypMusteri).toEqual(ONCE.ypStok);
     expect(ONCE.ypBayi).toEqual(ONCE.ypStok);
   });

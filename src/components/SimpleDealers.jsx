@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, parcaAdi, aramaNormalize, tahsilEdilecekKdv } from "../lib/utils";
+import { uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, parcaAdi, aramaNormalize, tahsilEdilecekKdv } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { kartTahsilEdildiMi } from "../lib/krediKarti";
 import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
@@ -650,12 +650,15 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                         {s.kargoDurum && <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 6, padding: "2px 7px", background: "var(--bluBg, #eff6ff)", color: "var(--blu700, #1d4ed8)" }}>{s.kargoDurum}</span>}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        {/* Spec 0095 R10, R11, AC-22/23: ücretsiz satırda tutar yerine ibare, ödeme rozeti yok (Extra Kalıp emsali). */}
                         <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>
-                          {fmtCur(bedel, s.currency)}{kdv > 0 && <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}> · KDV dahil: {fmtCur(bedel + kdv, s.currency)}</span>}
+                          {satisUcretsizMi(s) ? UCRETSIZ_IBARESI : <>{fmtCur(bedel, s.currency)}{kdv > 0 && <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}> · KDV dahil: {fmtCur(bedel + kdv, s.currency)}</span>}</>}
                         </span>
-                        <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: s.odendi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>
-                          {s.odendi ? "Ödendi" : "Ödenmedi"}
-                        </span>
+                        {!satisUcretsizMi(s) && (
+                          <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: s.odendi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: s.odendi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>
+                            {s.odendi ? "Ödendi" : "Ödenmedi"}
+                          </span>
+                        )}
                         {s.yontem === "Kredi Kartı" && s.kartKomisyonu && Number(s.kartKomisyonu.blokajGun) > 0 && !kartTahsilEdildiMi(s.kartKomisyonu) && (
                           <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: "var(--ambBg2, #fef3c7)", color: "var(--amb800, #92400e)" }}>
                             Bloke → {fmtTR(s.kartKomisyonu.hesabaGecis)}
@@ -689,7 +692,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>
-                          {p.ucretsizMi ? "garanti kapsamında (ücretsiz)" : <>{fmtCur(tutar, p.currency)}{kdv > 0 && <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}> · KDV dahil: {fmtCur(tutar + kdv, p.currency)}</span>}</>}
+                          {p.ucretsizMi ? UCRETSIZ_IBARESI : <>{fmtCur(tutar, p.currency)}{kdv > 0 && <span style={{ color: "var(--n500, #64748b)", fontWeight: 400 }}> · KDV dahil: {fmtCur(tutar + kdv, p.currency)}</span>}</>}
                         </span>
                         {!p.ucretsizMi && (
                           <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 10, padding: "2px 8px", background: p.odendi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: p.odendi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>

@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS yedek_parca_satis (
   teslimatFarkli INTEGER, teslimatAd TEXT, teslimatTel TEXT, teslimatAdres TEXT, teslimatUlke TEXT, teslimatSehir TEXT, teslimatIlce TEXT,
   yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER, taksitSayisi INTEGER, kartKomisyonu TEXT, deletedAt TEXT,
   tahsilatTarihi TEXT, teklifId INTEGER, teklifKalemId TEXT, hesapId INTEGER,
-  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER
+  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER, ucretsizMi INTEGER
 );
 CREATE TABLE IF NOT EXISTS yedek_parca_tahsis (
   id INTEGER PRIMARY KEY,
@@ -558,6 +558,11 @@ const TEVKIFAT_COLUMNS = [["tevkifatli", "INTEGER"], ["tevkifatPay", "INTEGER"],
 const tevkifatYaz = (g) => (g?.tevkifatli ? { tevkifatli: 1, tevkifatPay: Number(g.tevkifatPay) || null, tevkifatPayda: Number(g.tevkifatPayda) || null }
   : { tevkifatli: null, tevkifatPay: null, tevkifatPayda: null });
 const tevkifatOku = (tevkifatli, tevkifatPay, tevkifatPayda) => (toBool(tevkifatli) ? { tevkifatli: true, tevkifatPay, tevkifatPayda } : {});
+// Spec 0095 (C3, C4, AC-30): yedek parça satışının garanti içi ücretsiz işareti. Alan Extra Kalıp'takiyle aynı adı taşır
+// (R17) ama okuması `tevkifatOku` emsalidir: kapalı değer gövdeye YAZILMAZ (false da değil; yoksa güncellenmemiş istemcinin
+// gövdesiyle karşılaştırma bölümü değişmiş gösterir, C3/2). `part_sales`'in koşulsuz `toBool(ucretsizMi)` okuması değişmedi.
+const YEDEK_PARCA_UCRETSIZ_COLUMN = [["ucretsizMi", "INTEGER"]];
+const ucretsizOku = (ucretsizMi) => (toBool(ucretsizMi) ? { ucretsizMi: true } : {});
 // Spec 0076 R33: kısmen indirilebilen gider (binek araç). İki tablo, dört nokta tablo başına; kapalı kalemde iki sütun null
 // yazılır ve okumada blob'a hiç yazılmaz. Tanımda oran boş olabilir ("ayardaki oran", R8/3): bayrak açık, oran yok.
 const GIDER_KISIT_COLUMNS = [["kisitliGider", "INTEGER"], ["indirilebilirOran", "INTEGER"]];
@@ -748,13 +753,13 @@ function populateAll(conn, data, skip = new Set()) {
         disFirma, disFirmaAd, disFirmaYetkili, disFirmaTel, disFirmaAdres, disFirmaUlke, disFirmaSehir,
         teslimatFarkli, teslimatAd, teslimatTel, teslimatAdres, teslimatUlke, teslimatSehir, teslimatIlce,
         yontem, vadeTarihi, tahsilEdildi, taksitSayisi, kartKomisyonu, deletedAt, tahsilatTarihi, teklifId, teklifKalemId, hesapId,
-        tevkifatli, tevkifatPay, tevkifatPayda)
+        tevkifatli, tevkifatPay, tevkifatPayda, ucretsizMi)
       VALUES (@id, @dealer_id, @musteri_id, @aliciTipi, @partId, @miktar, @birimFiyat, @currency, @tarih, @odendi, @faturaTipi,
         @kargoFirma, @kargoTakipNo, @kargoTarih, @kargoDurum, @kargoSorumlusu, @panoDusmeZamani, @olusturmaZamani, @notlar, @panoGizli, @batchId, @fabrikaTeslim,
         @disFirma, @disFirmaAd, @disFirmaYetkili, @disFirmaTel, @disFirmaAdres, @disFirmaUlke, @disFirmaSehir,
         @teslimatFarkli, @teslimatAd, @teslimatTel, @teslimatAdres, @teslimatUlke, @teslimatSehir, @teslimatIlce,
         @yontem, @vadeTarihi, @tahsilEdildi, @taksitSayisi, @kartKomisyonu, @deletedAt, @tahsilatTarihi, @teklifId, @teklifKalemId, @hesapId,
-        @tevkifatli, @tevkifatPay, @tevkifatPayda)
+        @tevkifatli, @tevkifatPay, @tevkifatPayda, @ucretsizMi)
     `);
     // id'yi SQLite atasın (customer_kaliplar deseni). tahsis saf çocuk kayıt; id uygulamada referans
     // edilmiyor. Eskiden t.id (okumada atanan rowid) ile yeni null'lar karışınca SQLite'ın null için
@@ -778,7 +783,7 @@ function populateAll(conn, data, skip = new Set()) {
         yontem: s.yontem ?? null, vadeTarihi: s.vadeTarihi ?? null, tahsilEdildi: toInt(s.tahsilEdildi),
         taksitSayisi: s.taksitSayisi ?? null, kartKomisyonu: s.kartKomisyonu ? json(s.kartKomisyonu) : null, deletedAt: s.deletedAt ?? null,
         tahsilatTarihi: s.tahsilatTarihi ?? null, teklifId: s.teklifId ?? null, teklifKalemId: s.teklifKalemId ?? null, hesapId: s.hesapId ?? null,
-        ...tevkifatYaz(s),
+        ...tevkifatYaz(s), ucretsizMi: s.ucretsizMi === true ? 1 : null,
       });
       (s.tahsisler || []).forEach((t, idx) => {
         tStmt.run(s.id, t.miktar ?? null, t.customerId ?? null, t.serialNo ?? null, t.makinaSerbest ?? null, t.tarih ?? null, idx);
@@ -1080,6 +1085,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "cekler", CEKLER_0049_COLUMNS);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_COLUMNS);
+  ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_UCRETSIZ_COLUMN); // spec 0095
   ensureColumns(conn, "yedek_parca_satis", KART_KOMISYON_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", TAHSILAT_TARIHI_COLUMN);
   ensureColumns(conn, "yedek_parca_tahsis", YEDEK_PARCA_TAHSIS_COLUMNS);
@@ -1413,8 +1419,8 @@ function readBlobFromDb() {
     tahsisBySatis.get(t.satis_id).push({ miktar: t.miktar, customerId: t.customer_id, serialNo: t.serialNo, makinaSerbest: t.makinaSerbest, tarih: t.tarih });
   }
   const yedekParcaSatislar = db.prepare(`SELECT * FROM yedek_parca_satis`).all().map((row) => {
-    const { dealer_id, musteri_id, partId, odendi, panoGizli, fabrikaTeslim, disFirma, teslimatFarkli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, ...rest } = row;
-    return { ...rest, ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), dealerId: dealer_id, musteriId: musteri_id, partId: partId != null ? String(partId) : null, odendi: toBool(odendi), panoGizli: toBool(panoGizli), fabrikaTeslim: toBool(fabrikaTeslim), disFirma: toBool(disFirma), teslimatFarkli: toBool(teslimatFarkli), tahsilEdildi: toBool(tahsilEdildi), kartKomisyonu: parseJsonCol(kartKomisyonu, null), tahsisler: tahsisBySatis.get(row.id) || [] };
+    const { dealer_id, musteri_id, partId, odendi, panoGizli, fabrikaTeslim, disFirma, teslimatFarkli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, ucretsizMi, ...rest } = row;
+    return { ...rest, ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), ...ucretsizOku(ucretsizMi), dealerId: dealer_id, musteriId: musteri_id, partId: partId != null ? String(partId) : null, odendi: toBool(odendi), panoGizli: toBool(panoGizli), fabrikaTeslim: toBool(fabrikaTeslim), disFirma: toBool(disFirma), teslimatFarkli: toBool(teslimatFarkli), tahsilEdildi: toBool(tahsilEdildi), kartKomisyonu: parseJsonCol(kartKomisyonu, null), tahsisler: tahsisBySatis.get(row.id) || [] };
   });
 
   const payments = db.prepare(`SELECT * FROM payments`).all().map((row) => {

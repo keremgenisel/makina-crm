@@ -708,9 +708,16 @@ export const kalipBorcTarafi = (ps, factoryName = "Altuntaş Makina") => {
 };
 // Müşterinin kendi borcu olan kalıp/partSales kaydı mı (atıftan sonra).
 export const partSaleMusteriBorcuMu = (ps, factoryName = "Altuntaş Makina") => kalipBorcTarafi(ps, factoryName)?.tip === "musteri";
-// Yedek parça (kargo) satışı — parça bedeli (miktar × birim fiyat; KDV hariç) ve borçlu mu
-export const yedekParcaBedeli = (s) => (parseInt(s?.miktar) || 0) * parseMoney(s?.birimFiyat);
-export const isYedekParcaBorcluMu = (s) => !s?.deletedAt && !satisTahsilEdildi(s);
+// ── Garanti içi ücretsiz satış (spec 0095) ── Extra Kalıp ve yedek parça aynı alanı (`ucretsizMi`) ve aynı ibareyi taşır
+// (R10/2, R17). İbare yalnız çekirdek metindir; " · " gibi birleştirmeler çağıranda kalır (R24).
+export const UCRETSIZ_IBARESI = "garanti kapsamında (ücretsiz)";
+export const satisUcretsizMi = (r) => r?.ucretsizMi === true;
+// Yedek parça (kargo) satışı — parça bedeli (miktar × birim fiyat; KDV hariç) ve borçlu mu. TEK okuma yolu (spec 0095 C1):
+// ücretsiz kayıtta bedel sıfırdır (saklı birim fiyat R12 gereği durur ama hiçbir yerde okunmaz); `miktar × birimFiyat`
+// başka yerde yazılmaz (kaynak taraması, tests/ucretsiz-yedek-parca-0095.test.js AC-32).
+export const yedekParcaBedeli = (s) => (satisUcretsizMi(s) ? 0 : (parseInt(s?.miktar) || 0) * parseMoney(s?.birimFiyat));
+// Spec 0095 C2: ücretsiz kayıt borçsuzdur; ekranlar kendi "ücretsiz mi" dalını yazmaz.
+export const isYedekParcaBorcluMu = (s) => !s?.deletedAt && !satisUcretsizMi(s) && !satisTahsilEdildi(s);
 // ── Mükerrer kayıt tespiti ───────────────────────────────────────────────────
 // Telefonu karşılaştırma anahtarına indir: rakamları ayıkla, son 10 hane (0/ülke kodu farkları elenir)
 const telAnahtar = (t) => { const d = String(t || "").replace(/\D/g, ""); return d.length >= 7 ? d.slice(-10) : ""; };

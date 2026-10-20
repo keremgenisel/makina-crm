@@ -1,6 +1,7 @@
 // Anasayfa "Son Satışlar" — makina satışları (installDate'li müşteriler) + Extra Kalıp satışları
 // (partSales.tur === "Kalıp") + yedek parça (kargo) satışları tek listede, tarihe göre (yeni → eski)
 // sıralı, ilk `limit` kayıt. Yedek parça alıcısı bayi VEYA müşteri olabilir.
+import { yedekParcaBedeli, satisUcretsizMi } from "./utils";
 
 export function sonSatislar(customers = [], partSales = [], yedekParcaSatislar = [], dealers = [], parts = [], limit = 10) {
   const custAd = new Map((customers || []).map((c) => [c.id, c.name]));
@@ -42,7 +43,8 @@ export function sonSatislar(customers = [], partSales = [], yedekParcaSatislar =
       ad: (musteri ? custAd.get(Number(s.musteriId)) : dealerAd.get(Number(s.dealerId))) || "—",
       detay: (partAd.get(String(s.partId)) || "Yedek parça") + ` · ${s.miktar || 0} adet`,
       tarih: s.tarih,
-      tutar: (parseInt(s.miktar) || 0) * (Number(s.birimFiyat) || 0), currency: s.currency || "TRY",
+      // Spec 0095 (ölçüm 2 satır 13, AC-49): tek okuma yolu; ücretsiz satış tutar yerine ibareyi yazar.
+      tutar: yedekParcaBedeli(s), currency: s.currency || "TRY", ...(satisUcretsizMi(s) ? { ucretsiz: true } : {}),
       konum: "",
     });
   }

@@ -6023,6 +6023,17 @@
         "rapor": "docs/evidence/0079-piksel-raporu.json",
         "ekran": "bayi-detay",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "bayi-detay",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "bayi-detay-ucretsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
       }
     ],
     "src/components/Stock.jsx": [
@@ -6062,6 +6073,17 @@
         "rapor": "docs/evidence/0079-taban-piksel-raporu.json",
         "ekran": "stok-yedek-0079",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "stok-yedek-parca-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "stok-yedek-parca-ucretsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
       }
     ],
     "src/components/Finance.jsx": [
@@ -6443,6 +6465,24 @@
         "rapor": "docs/evidence/0079-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-0079",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "yedek-parca-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-ucretsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-ucretsiz-uyari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
@@ -6636,6 +6676,17 @@
         "rapor": "docs/evidence/0079-taban-piksel-raporu.json",
         "ekran": "musteri-detay-0079",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "musteri-detay-bolumler",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "ekran": "musteri-detay-ucretsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
       }
     ],
     "src/components/customers/detail/CustomerFilesSection.jsx": [

@@ -4,7 +4,7 @@
 import {
   normalizeSaleType, fmtCur, fmtTR, sumPayments, calcKalanBorc, calcCiro, isServisBorcluMu,
   isServisUcretliMi, isParcaUcretliMi, parseMoney, partSaleMusteriBorcuMu,
-  sumBekleyenCek, isCekVadesiGecmis, cekBekliyorMu, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu, tahsilEdilecekKdv, tahsilKdvOrani,
+  sumBekleyenCek, isCekVadesiGecmis, cekBekliyorMu, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu, tahsilEdilecekKdv, tahsilKdvOrani, UCRETSIZ_IBARESI,
 } from "../../../lib/utils";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "../../../lib/krediKarti";
 
@@ -54,7 +54,7 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         ev.push({
           kind: "part", date: ps.tarih, color: "var(--cyan, #0891b2)",
           title: "Yedek Parça Verildi",
-          desc: `${ps.ad}${ps.olcu ? " (" + ps.olcu + ")" : ""}${ps.ucretsizMi ? " · garanti kapsamında (ücretsiz)" : " · " + fmtCur(ps.ucret, ps.currency) + (ps.garantiDisiIslem ? " (garanti dışı işlem)" : "")}`,
+          desc: `${ps.ad}${ps.olcu ? " (" + ps.olcu + ")" : ""}${ps.ucretsizMi ? " · " + UCRETSIZ_IBARESI : " · " + fmtCur(ps.ucret, ps.currency) + (ps.garantiDisiIslem ? " (garanti dışı işlem)" : "")}`,
           ps,
         });
       });

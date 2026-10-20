@@ -1,0 +1,2294 @@
+{
+ "kayit": [
+  {
+   "id": 5001,
+   "bedel": 1500,
+   "borclu": true,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "TRY",
+    "tutar": 1800
+   }
+  },
+  {
+   "id": 5002,
+   "bedel": 1200,
+   "borclu": true,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "TRY",
+    "tutar": 1440
+   }
+  },
+  {
+   "id": 5003,
+   "bedel": 999.99,
+   "borclu": true,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "TRY",
+    "tutar": 1199.988
+   }
+  },
+  {
+   "id": 5004,
+   "bedel": 1200,
+   "borclu": false,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "TRY",
+    "tutar": 1440
+   }
+  },
+  {
+   "id": 5005,
+   "bedel": 2061.86,
+   "borclu": false,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "TRY",
+    "tutar": 2474.232
+   }
+  },
+  {
+   "id": 5006,
+   "bedel": 100,
+   "borclu": true,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "USD",
+    "tutar": 120
+   }
+  },
+  {
+   "id": 5101,
+   "bedel": 0,
+   "borclu": true,
+   "hesap": {
+    "sor": false,
+    "neden": "Kasaya girecek tutar yok."
+   }
+  },
+  {
+   "id": 5102,
+   "bedel": 0,
+   "borclu": true,
+   "hesap": {
+    "sor": false,
+    "neden": "Kasaya girecek tutar yok."
+   }
+  },
+  {
+   "id": 5103,
+   "bedel": 160,
+   "borclu": true,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "EUR",
+    "tutar": 160
+   }
+  },
+  {
+   "id": 5104,
+   "bedel": 1500,
+   "borclu": false,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "TRY",
+    "tutar": 1800
+   }
+  },
+  {
+   "id": 5105,
+   "bedel": 50,
+   "borclu": true,
+   "hesap": {
+    "sor": true,
+    "neden": null,
+    "currency": "GBP",
+    "tutar": 50
+   }
+  }
+ ],
+ "tahsilat": [
+  {
+   "kaynak": "servis",
+   "id": 3001,
+   "bedel": 5000,
+   "kdv": 1000,
+   "tutar": 6000,
+   "currency": "TRY",
+   "tarih": "2026-09-08"
+  },
+  {
+   "kaynak": "servis",
+   "id": 3003,
+   "bedel": 3333.33,
+   "kdv": 666.666,
+   "tutar": 3999.996,
+   "currency": "TRY",
+   "tarih": "2026-09-14"
+  },
+  {
+   "kaynak": "servis",
+   "id": 3004,
+   "bedel": 300,
+   "kdv": 60,
+   "tutar": 360,
+   "currency": "USD",
+   "tarih": "2026-09-25"
+  },
+  {
+   "kaynak": "servis",
+   "id": 3005,
+   "bedel": 1000,
+   "kdv": 200,
+   "tutar": 1200,
+   "currency": "TRY",
+   "tarih": "2026-10-05"
+  },
+  {
+   "kaynak": "servis",
+   "id": 3006,
+   "bedel": 2000,
+   "kdv": 400,
+   "tutar": 2400,
+   "currency": "TRY",
+   "tarih": "2026-10-06"
+  },
+  {
+   "kaynak": "kalip",
+   "id": 4001,
+   "bedel": 8000,
+   "kdv": 1600,
+   "tutar": 9600,
+   "currency": "TRY",
+   "tarih": "2026-09-10"
+  },
+  {
+   "kaynak": "kalip",
+   "id": 4002,
+   "bedel": 6000,
+   "kdv": 1200,
+   "tutar": 7200,
+   "currency": "TRY",
+   "tarih": "2026-09-11"
+  },
+  {
+   "kaynak": "kalip",
+   "id": 4004,
+   "bedel": 10309.28,
+   "kdv": 2061.856,
+   "tutar": 12371.136,
+   "currency": "TRY",
+   "tarih": "2026-09-17"
+  },
+  {
+   "kaynak": "kalip",
+   "id": 4005,
+   "bedel": 4000,
+   "kdv": 800,
+   "tutar": 4800,
+   "currency": "TRY",
+   "tarih": "2026-10-07"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5001,
+   "bedel": 1500,
+   "kdv": 300,
+   "tutar": 1800,
+   "currency": "TRY",
+   "tarih": "2026-09-18"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5002,
+   "bedel": 1200,
+   "kdv": 240,
+   "tutar": 1440,
+   "currency": "TRY",
+   "tarih": "2026-09-19"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5003,
+   "bedel": 999.99,
+   "kdv": 199.998,
+   "tutar": 1199.988,
+   "currency": "TRY",
+   "tarih": "2026-09-19"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5004,
+   "bedel": 1200,
+   "kdv": 240,
+   "tutar": 1440,
+   "currency": "TRY",
+   "tarih": "2026-10-01"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5005,
+   "bedel": 2061.86,
+   "kdv": 412.37200000000007,
+   "tutar": 2474.232,
+   "currency": "TRY",
+   "tarih": "2026-10-03"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5006,
+   "bedel": 100,
+   "kdv": 20,
+   "tutar": 120,
+   "currency": "USD",
+   "tarih": "2026-10-04"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5103,
+   "bedel": 160,
+   "kdv": 0,
+   "tutar": 160,
+   "currency": "EUR",
+   "tarih": "2026-10-07"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5104,
+   "bedel": 1500,
+   "kdv": 300,
+   "tutar": 1800,
+   "currency": "TRY",
+   "tarih": "2026-10-08"
+  },
+  {
+   "kaynak": "yedekParca",
+   "id": 5105,
+   "bedel": 50,
+   "kdv": 0,
+   "tutar": 50,
+   "currency": "GBP",
+   "tarih": "2026-10-09"
+  }
+ ],
+ "borc": [
+  {
+   "id": 1001,
+   "borclu": true
+  },
+  {
+   "id": 1002,
+   "borclu": true
+  },
+  {
+   "id": 1003,
+   "borclu": true
+  },
+  {
+   "id": 1004,
+   "borclu": true
+  },
+  {
+   "id": 1005,
+   "borclu": true
+  },
+  {
+   "id": 1006,
+   "borclu": true
+  }
+ ],
+ "eylul": {
+  "ay": "2026-09",
+  "ayEtiketi": "Eylül 2026",
+  "donem": "01.09.2026 - 30.09.2026",
+  "olusturmaTarihi": "20.10.2026",
+  "satisAdet": 3,
+  "satisTutar": {
+   "TRY": 320000,
+   "USD": 10000
+  },
+  "faturaTutar": {
+   "TRY": 300000,
+   "USD": 9000
+  },
+  "satisKdv": {
+   "TRY": 60000,
+   "USD": 1800
+  },
+  "komisyonTutar": {
+   "TRY": 5000,
+   "USD": 0
+  },
+  "ikinciElAdet": 0,
+  "modelKirilimi": [
+   {
+    "model": "AK100",
+    "adet": 2,
+    "gelir": {
+     "TRY": 320000
+    }
+   },
+   {
+    "model": "AK200",
+    "adet": 1,
+    "gelir": {
+     "USD": 10000
+    }
+   }
+  ],
+  "satisYapanKirilimi": [
+   {
+    "ad": "Altuntaş Makina",
+    "adet": 2
+   },
+   {
+    "ad": "Ege Bayi",
+    "adet": 1
+   }
+  ],
+  "satisDetay": [
+   {
+    "firma": "Anadolu Gıda",
+    "tarih": "2026-09-05",
+    "model": "AK100",
+    "tutar": {
+     "TRY": 120000
+    },
+    "faturaTipi": "Faturalı Yurtiçi"
+   },
+   {
+    "firma": "Bal Köfte",
+    "tarih": "2026-09-12",
+    "model": "AK100",
+    "tutar": {
+     "TRY": 200000
+    },
+    "faturaTipi": "Faturalı Yurtiçi"
+   },
+   {
+    "firma": "Ceviz Ltd",
+    "tarih": "2026-09-20",
+    "model": "AK200",
+    "tutar": {
+     "USD": 10000
+    },
+    "faturaTipi": "Faturalı Yurtiçi"
+   }
+  ],
+  "makinaFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 320000,
+     "USD": 10000
+    },
+    "kdv": {
+     "TRY": 60000,
+     "USD": 1800
+    },
+    "adet": 3
+   }
+  ],
+  "extraKalipAdet": 3,
+  "extraKalipTutar": {
+   "TRY": 24000
+  },
+  "extraKalipKdv": {
+   "TRY": 4861.856
+  },
+  "extraKalipDetay": [
+   {
+    "firma": "Anadolu Gıda",
+    "tarih": "2026-09-10",
+    "adet": 1,
+    "teslimSekli": "Kargo",
+    "tutar": {
+     "TRY": 8000
+    }
+   },
+   {
+    "firma": "Anadolu Gıda",
+    "tarih": "2026-09-11",
+    "adet": 1,
+    "teslimSekli": "Kargo",
+    "tutar": {
+     "TRY": 6000
+    }
+   },
+   {
+    "firma": "Bal Köfte",
+    "tarih": "2026-09-16",
+    "adet": 1,
+    "teslimSekli": "Kargo",
+    "tutar": {}
+   },
+   {
+    "firma": "Bal Köfte",
+    "tarih": "2026-09-17",
+    "adet": 1,
+    "teslimSekli": "Kargo",
+    "tutar": {
+     "TRY": 10309.28
+    }
+   }
+  ],
+  "extraKalipTeslim": {
+   "kargo": {
+    "net": {
+     "TRY": 24000
+    },
+    "kdv": {
+     "TRY": 4861.856
+    },
+    "adet": 3
+   }
+  },
+  "extraKalipFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 24000
+    },
+    "kdv": {
+     "TRY": 4861.856
+    },
+    "adet": 3
+   }
+  ],
+  "anlasmaliParcaTutar": {},
+  "anlasmaliParcaDetay": [],
+  "yedekKargoAdet": 3,
+  "yedekKargoMiktar": 13,
+  "yedekKargoTutar": {
+   "TRY": 3699.99
+  },
+  "yedekKargoKdv": {
+   "TRY": 739.998
+  },
+  "yedekKargoMusteriTutar": {
+   "TRY": 1500
+  },
+  "yedekKargoBayiTutar": {
+   "TRY": 2199.99
+  },
+  "yedekKargoTeslim": {
+   "kargo": 0,
+   "fabrikaTeslim": 0,
+   "gonderilmedi": 3
+  },
+  "yedekKargoTeslimTutar": {
+   "gonderilmedi": {
+    "net": {
+     "TRY": 3699.99
+    },
+    "kdv": {
+     "TRY": 739.998
+    },
+    "adet": 3
+   }
+  },
+  "yedekKargoDetay": [
+   {
+    "firma": "Anadolu Gıda",
+    "tarih": "2026-09-18",
+    "aliciTuru": "Müşteri",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 2,
+    "tutar": {
+     "TRY": 1500
+    },
+    "kdv": {
+     "TRY": 300
+    },
+    "odendi": false
+   },
+   {
+    "firma": "Ege Bayi",
+    "tarih": "2026-09-19",
+    "aliciTuru": "Bayi",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 10,
+    "tutar": {
+     "TRY": 1200
+    },
+    "kdv": {
+     "TRY": 240
+    },
+    "odendi": false
+   },
+   {
+    "firma": "Ege Bayi",
+    "tarih": "2026-09-19",
+    "aliciTuru": "Bayi",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 1,
+    "tutar": {
+     "TRY": 999.99
+    },
+    "kdv": {
+     "TRY": 199.998
+    },
+    "odendi": false
+   }
+  ],
+  "yedekKargoFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 3699.99
+    },
+    "kdv": {
+     "TRY": 739.998
+    },
+    "adet": 3
+   }
+  ],
+  "servisAdet": 4,
+  "servisUcretliAdet": 3,
+  "servisUcretsizAdet": 1,
+  "iscilikTutar": {
+   "TRY": 8213.33,
+   "USD": 300
+  },
+  "servisParcaTutar": {},
+  "servisKdv": {
+   "TRY": 1666.6660000000002,
+   "USD": 60
+  },
+  "servisKirilimi": [
+   {
+    "tip": "Garanti Dışı",
+    "adet": 3
+   },
+   {
+    "tip": "Periyodik Bakım",
+    "adet": 1
+   }
+  ],
+  "servisDetay": [
+   {
+    "firma": "Anadolu Gıda",
+    "tarih": "2026-09-08",
+    "tip": "Garanti Dışı",
+    "islemFirma": "Altuntaş Makina",
+    "iscilik": {
+     "TRY": 5000
+    },
+    "parca": {
+     "TRY": 0
+    },
+    "kdv": {
+     "TRY": 1000
+    },
+    "odendi": false,
+    "ucretsiz": false,
+    "yontem": "",
+    "kkBlokajda": false,
+    "kkHesabaGecis": ""
+   },
+   {
+    "firma": "Bal Köfte",
+    "tarih": "2026-09-14",
+    "tip": "Periyodik Bakım",
+    "islemFirma": "Altuntaş Makina",
+    "iscilik": {
+     "TRY": 3333.33
+    },
+    "parca": {
+     "TRY": 0
+    },
+    "kdv": {
+     "TRY": 666.666
+    },
+    "odendi": true,
+    "ucretsiz": false,
+    "yontem": "Kredi Kartı",
+    "kkBlokajda": false,
+    "kkHesabaGecis": "2026-09-20"
+   },
+   {
+    "firma": "Ceviz Ltd",
+    "tarih": "2026-09-22",
+    "tip": "Garanti Dışı",
+    "islemFirma": "Altuntaş Makina",
+    "iscilik": {
+     "USD": 300
+    },
+    "parca": {
+     "USD": 0
+    },
+    "kdv": {
+     "USD": 60
+    },
+    "odendi": true,
+    "ucretsiz": false,
+    "yontem": "Nakit",
+    "kkBlokajda": false,
+    "kkHesabaGecis": ""
+   }
+  ],
+  "servisNet": {
+   "TRY": 8213.33,
+   "USD": 300
+  },
+  "servisBolumKdv": {
+   "TRY": 1666.6660000000002,
+   "USD": 60
+  },
+  "onarimYeriKirilimi": [
+   {
+    "yer": "Belirtilmemiş",
+    "adet": 4,
+    "net": {
+     "TRY": 8333.33,
+     "USD": 300
+    }
+   }
+  ],
+  "servisFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 8213.33,
+     "USD": 300
+    },
+    "kdv": {
+     "TRY": 1666.6660000000002,
+     "USD": 60
+    },
+    "adet": 4
+   }
+  ],
+  "tahsilatAdet": 7,
+  "tahsilatTutar": {
+   "TRY": 229827.912,
+   "USD": 4360
+  },
+  "tahsilatNet": {
+   "TRY": 190947.13,
+   "USD": 3633.3333333333335
+  },
+  "tahsilatKdv": {
+   "TRY": 38880.78199999999,
+   "USD": 726.6666666666665
+  },
+  "tahsilatDetay": [
+   {
+    "firma": "Anadolu Gıda",
+    "tutar": {
+     "TRY": 30000
+    },
+    "yontem": "Nakit",
+    "tarih": "2026-09-05",
+    "not": ""
+   },
+   {
+    "firma": "Bal Köfte",
+    "tutar": {
+     "TRY": 123456.78
+    },
+    "yontem": "Kredi Kartı",
+    "tarih": "2026-09-12",
+    "not": ""
+   },
+   {
+    "firma": "Bal Köfte",
+    "tutar": {
+     "TRY": 60000
+    },
+    "yontem": "Kredi Kartı",
+    "tarih": "2026-09-13",
+    "not": ""
+   },
+   {
+    "firma": "Bal Köfte",
+    "tutar": {
+     "TRY": 3999.996
+    },
+    "yontem": "Kredi Kartı",
+    "tarih": "2026-09-14",
+    "not": "Bakım onarım"
+   },
+   {
+    "firma": "Bal Köfte",
+    "tutar": {
+     "TRY": 12371.136
+    },
+    "yontem": "Kredi Kartı",
+    "tarih": "2026-09-17",
+    "not": "Extra kalıp"
+   },
+   {
+    "firma": "Ceviz Ltd",
+    "tutar": {
+     "USD": 4000
+    },
+    "yontem": "Havale",
+    "tarih": "2026-09-21",
+    "not": ""
+   },
+   {
+    "firma": "Ceviz Ltd",
+    "tutar": {
+     "USD": 360
+    },
+    "yontem": "Nakit",
+    "tarih": "2026-09-25",
+    "not": "Bakım onarım"
+   }
+  ],
+  "tahsilatYontemKirilimi": [
+   {
+    "yontem": "Kredi Kartı",
+    "tutar": {
+     "TRY": 199827.912
+    },
+    "adet": 4
+   },
+   {
+    "yontem": "Nakit",
+    "tutar": {
+     "TRY": 30000,
+     "USD": 360
+    },
+    "adet": 2
+   },
+   {
+    "yontem": "Havale",
+    "tutar": {
+     "USD": 4000
+    },
+    "adet": 1
+   }
+  ],
+  "tahsilatKaynakKirilimi": [
+   {
+    "kaynak": "Makina ödemesi",
+    "tutar": {
+     "TRY": 213456.78,
+     "USD": 4000
+    },
+    "net": {
+     "TRY": 177304.52000000002,
+     "USD": 3333.3333333333335
+    },
+    "kdv": {
+     "TRY": 36152.259999999995,
+     "USD": 666.6666666666665
+    },
+    "adet": 4
+   },
+   {
+    "kaynak": "Bakım onarım",
+    "tutar": {
+     "TRY": 3999.996,
+     "USD": 360
+    },
+    "net": {
+     "TRY": 3333.33,
+     "USD": 300
+    },
+    "kdv": {
+     "TRY": 666.666,
+     "USD": 60
+    },
+    "adet": 2
+   },
+   {
+    "kaynak": "Extra kalıp",
+    "tutar": {
+     "TRY": 12371.136
+    },
+    "net": {
+     "TRY": 10309.28
+    },
+    "kdv": {
+     "TRY": 2061.856
+    },
+    "adet": 1
+   }
+  ],
+  "bekleyenCekAdet": 1,
+  "bekleyenCekTutar": {
+   "TRY": 20000
+  },
+  "bekleyenCekDetay": [
+   {
+    "firma": "Anadolu Gıda",
+    "tutar": {
+     "TRY": 20000
+    },
+    "vadeTarihi": "2026-11-01"
+   }
+  ],
+  "cekTahsilAdet": 0,
+  "borcluFirma": 7,
+  "acikBorc": {
+   "TRY": 35639.988,
+   "USD": 120,
+   "EUR": 160,
+   "GBP": 50
+  },
+  "alacakDetay": [
+   {
+    "firma": "Anadolu Gıda",
+    "tutar": {
+     "TRY": 17400
+    },
+    "kaynaklar": [
+     "Servis",
+     "Extra kalıp",
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   },
+   {
+    "firma": "Fındık Ev",
+    "tutar": {
+     "TRY": 6000
+    },
+    "kaynaklar": [
+     "Servis",
+     "Extra kalıp"
+    ]
+   },
+   {
+    "firma": "Bal Köfte",
+    "tutar": {
+     "TRY": 2400
+    },
+    "kaynaklar": [
+     "Servis"
+    ]
+   },
+   {
+    "firma": "Ege Bayi",
+    "tutar": {
+     "TRY": 9839.988
+    },
+    "kaynaklar": [
+     "Extra kalıp",
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   },
+   {
+    "firma": "Ceviz Ltd",
+    "tutar": {
+     "USD": 120
+    },
+    "kaynaklar": [
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   },
+   {
+    "firma": "Euro Foods",
+    "tutar": {
+     "EUR": 160
+    },
+    "kaynaklar": [
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   },
+   {
+    "firma": "Batı Servis",
+    "tutar": {
+     "GBP": 50
+    },
+    "kaynaklar": [
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   }
+  ],
+  "alacakYaslandirma": [
+   {
+    "aralik": "0-30 gün",
+    "firma": 5,
+    "tutar": {
+     "TRY": 8400,
+     "USD": 120,
+     "EUR": 160,
+     "GBP": 50
+    }
+   },
+   {
+    "aralik": "31-60 gün",
+    "firma": 3,
+    "tutar": {
+     "TRY": 27239.988
+    }
+   }
+  ],
+  "alacakKaynakKirilimi": [
+   {
+    "kaynak": "Servis",
+    "tutar": {
+     "TRY": 9600
+    }
+   },
+   {
+    "kaynak": "Extra kalıp",
+    "tutar": {
+     "TRY": 21600
+    }
+   },
+   {
+    "kaynak": "Yedek parça (kargo ve fabrika teslim)",
+    "tutar": {
+     "TRY": 4439.988,
+     "USD": 120,
+     "EUR": 160,
+     "GBP": 50
+    }
+   }
+  ],
+  "kkBlokajda": [
+   {
+    "firma": "Fındık Ev",
+    "kaynak": "Makina ödemesi",
+    "tarih": "2026-10-04",
+    "hesabaGecis": "2026-11-15",
+    "tutar": {
+     "TRY": 10000
+    }
+   }
+  ],
+  "kkBlokajdaTutar": {
+   "TRY": 10000
+  },
+  "gecikenCek": 0,
+  "gecikenTaksit": 0,
+  "teklifAdet": 0,
+  "onaylananTeklif": 0,
+  "teklifDetay": [],
+  "bekleyenTeklif": 0,
+  "krediKartiSatisTutar": {
+   "TRY": 199827.912
+  },
+  "bankaKomisyonuTutar": {
+   "TRY": 5686.06
+  },
+  "ozet": {
+   "ciroNet": {
+    "TRY": 355913.32,
+    "USD": 10300
+   },
+   "tahsilat": {
+    "TRY": 229827.912,
+    "USD": 4360
+   },
+   "alacak": {
+    "TRY": 35639.988,
+    "USD": 120,
+    "EUR": 160,
+    "GBP": 50
+   },
+   "ciroNetTL": null,
+   "tahsilatTL": null,
+   "alacakTL": null,
+   "toplamKdv": {
+    "TRY": 67268.52,
+    "USD": 1860
+   },
+   "toplamKdvTL": null,
+   "krediKartiSatis": {
+    "TRY": 199827.912
+   },
+   "krediKartiSatisTL": null,
+   "bankaKomisyonu": {
+    "TRY": 5686.06
+   },
+   "bankaKomisyonuTL": null
+  },
+  "toplamKdv": {
+   "TRY": 67268.52,
+   "USD": 1860
+  },
+  "anlasmaliParcaKdv": {},
+  "sahipsizAdet": 0,
+  "kdvKalemleri": {
+   "satis": {
+    "TRY": 60000,
+    "USD": 1800
+   },
+   "servis": {
+    "TRY": 1666.6660000000002,
+    "USD": 60
+   },
+   "extraKalip": {
+    "TRY": 4861.856
+   },
+   "anlasmaliParca": {},
+   "yedekKargo": {
+    "TRY": 739.998
+   }
+  }
+ },
+ "ekim": {
+  "ay": "2026-10",
+  "ayEtiketi": "Ekim 2026",
+  "donem": "01.10.2026 - 31.10.2026",
+  "olusturmaTarihi": "20.10.2026",
+  "satisAdet": 3,
+  "satisTutar": {
+   "TRY": 140000,
+   "EUR": 15000
+  },
+  "faturaTutar": {
+   "TRY": 50000,
+   "EUR": 15000
+  },
+  "satisKdv": {
+   "TRY": 10000,
+   "EUR": 0
+  },
+  "komisyonTutar": {
+   "TRY": 0,
+   "EUR": 0
+  },
+  "ikinciElAdet": 0,
+  "modelKirilimi": [
+   {
+    "model": "AK100",
+    "adet": 2,
+    "gelir": {
+     "TRY": 140000
+    }
+   },
+   {
+    "model": "AK200",
+    "adet": 1,
+    "gelir": {
+     "EUR": 15000
+    }
+   }
+  ],
+  "satisYapanKirilimi": [
+   {
+    "ad": "Altuntaş Makina",
+    "adet": 3
+   }
+  ],
+  "satisDetay": [
+   {
+    "firma": "Defne Yemek",
+    "tarih": "2026-10-02",
+    "model": "AK100",
+    "tutar": {
+     "TRY": 90000
+    },
+    "faturaTipi": "Faturasız Yurtiçi"
+   },
+   {
+    "firma": "Euro Foods",
+    "tarih": "2026-10-03",
+    "model": "AK200",
+    "tutar": {
+     "EUR": 15000
+    },
+    "faturaTipi": "Faturalı Yurtdışı"
+   },
+   {
+    "firma": "Fındık Ev",
+    "tarih": "2026-10-04",
+    "model": "AK100",
+    "tutar": {
+     "TRY": 50000
+    },
+    "faturaTipi": "Faturalı Yurtiçi"
+   }
+  ],
+  "makinaFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 50000
+    },
+    "kdv": {
+     "TRY": 10000
+    },
+    "adet": 1
+   },
+   {
+    "faturaTipi": "Faturalı Yurtdışı",
+    "net": {
+     "EUR": 15000
+    },
+    "kdv": {},
+    "adet": 1
+   },
+   {
+    "faturaTipi": "Faturasız Yurtiçi",
+    "net": {
+     "TRY": 90000
+    },
+    "kdv": {},
+    "adet": 1
+   }
+  ],
+  "extraKalipAdet": 1,
+  "extraKalipTutar": {
+   "TRY": 4000
+  },
+  "extraKalipKdv": {
+   "TRY": 800
+  },
+  "extraKalipDetay": [
+   {
+    "firma": "Fındık Ev",
+    "tarih": "2026-10-07",
+    "adet": 1,
+    "teslimSekli": "Kargo",
+    "tutar": {
+     "TRY": 4000
+    }
+   }
+  ],
+  "extraKalipTeslim": {
+   "kargo": {
+    "net": {
+     "TRY": 4000
+    },
+    "kdv": {
+     "TRY": 800
+    },
+    "adet": 1
+   }
+  },
+  "extraKalipFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 4000
+    },
+    "kdv": {
+     "TRY": 800
+    },
+    "adet": 1
+   }
+  ],
+  "anlasmaliParcaTutar": {},
+  "anlasmaliParcaDetay": [],
+  "yedekKargoAdet": 8,
+  "yedekKargoMiktar": 19,
+  "yedekKargoTutar": {
+   "TRY": 4700,
+   "USD": 100,
+   "EUR": 160,
+   "GBP": 50
+  },
+  "yedekKargoKdv": {
+   "TRY": 952.3720000000001,
+   "USD": 20,
+   "EUR": 0,
+   "GBP": 0
+  },
+  "yedekKargoMusteriTutar": {
+   "TRY": 2000.0000000000002,
+   "USD": 100,
+   "EUR": 160
+  },
+  "yedekKargoBayiTutar": {
+   "TRY": 2700,
+   "GBP": 50
+  },
+  "yedekKargoTeslim": {
+   "kargo": 1,
+   "fabrikaTeslim": 1,
+   "gonderilmedi": 6
+  },
+  "yedekKargoTeslimTutar": {
+   "gonderilmedi": {
+    "net": {
+     "TRY": 4700,
+     "USD": 100,
+     "EUR": 160,
+     "GBP": 50
+    },
+    "kdv": {
+     "TRY": 952.3720000000001,
+     "USD": 20
+    },
+    "adet": 6
+   },
+   "kargo": {
+    "net": {},
+    "kdv": {},
+    "adet": 1
+   },
+   "fabrikaTeslim": {
+    "net": {},
+    "kdv": {},
+    "adet": 1
+   }
+  },
+  "yedekKargoDetay": [
+   {
+    "firma": "Kuzey Servis",
+    "tarih": "2026-10-01",
+    "aliciTuru": "Anlaşmasız Servis",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 3,
+    "tutar": {
+     "TRY": 1200
+    },
+    "kdv": {
+     "TRY": 240
+    },
+    "odendi": true
+   },
+   {
+    "firma": "Bal Köfte",
+    "tarih": "2026-10-03",
+    "aliciTuru": "Müşteri",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 1,
+    "tutar": {
+     "TRY": 2061.86
+    },
+    "kdv": {
+     "TRY": 412.37200000000007
+    },
+    "odendi": true
+   },
+   {
+    "firma": "Ceviz Ltd",
+    "tarih": "2026-10-04",
+    "aliciTuru": "Müşteri",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 4,
+    "tutar": {
+     "USD": 100
+    },
+    "kdv": {
+     "USD": 20
+    },
+    "odendi": false
+   },
+   {
+    "firma": "Defne Yemek",
+    "tarih": "2026-10-05",
+    "aliciTuru": "Müşteri",
+    "teslimSekli": "Kargo",
+    "miktar": 2,
+    "tutar": {
+     "TRY": 0
+    },
+    "kdv": {
+     "TRY": 0
+    },
+    "odendi": false
+   },
+   {
+    "firma": "Ege Bayi",
+    "tarih": "2026-10-06",
+    "aliciTuru": "Bayi",
+    "teslimSekli": "Fabrika Teslim",
+    "miktar": 1,
+    "tutar": {
+     "TRY": 0
+    },
+    "kdv": {
+     "TRY": 0
+    },
+    "odendi": false
+   },
+   {
+    "firma": "Euro Foods",
+    "tarih": "2026-10-07",
+    "aliciTuru": "Müşteri",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 2,
+    "tutar": {
+     "EUR": 160
+    },
+    "kdv": {
+     "EUR": 0
+    },
+    "odendi": true
+   },
+   {
+    "firma": "Ege Bayi",
+    "tarih": "2026-10-08",
+    "aliciTuru": "Bayi",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 5,
+    "tutar": {
+     "TRY": 1500
+    },
+    "kdv": {
+     "TRY": 300
+    },
+    "odendi": true
+   },
+   {
+    "firma": "Batı Servis",
+    "tarih": "2026-10-09",
+    "aliciTuru": "Anlaşmasız Servis",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 1,
+    "tutar": {
+     "GBP": 50
+    },
+    "kdv": {
+     "GBP": 0
+    },
+    "odendi": false
+   }
+  ],
+  "yedekKargoFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 4700,
+     "USD": 100
+    },
+    "kdv": {
+     "TRY": 952.3720000000001,
+     "USD": 20
+    },
+    "adet": 6
+   },
+   {
+    "faturaTipi": "Faturalı Yurtdışı",
+    "net": {
+     "EUR": 160
+    },
+    "kdv": {},
+    "adet": 1
+   },
+   {
+    "faturaTipi": "Faturasız Yurtiçi",
+    "net": {
+     "GBP": 50
+    },
+    "kdv": {},
+    "adet": 1
+   }
+  ],
+  "servisAdet": 2,
+  "servisUcretliAdet": 2,
+  "servisUcretsizAdet": 0,
+  "iscilikTutar": {
+   "TRY": 3000
+  },
+  "servisParcaTutar": {},
+  "servisKdv": {
+   "TRY": 600
+  },
+  "servisKirilimi": [
+   {
+    "tip": "Garanti Dışı",
+    "adet": 2
+   }
+  ],
+  "servisDetay": [
+   {
+    "firma": "Fındık Ev",
+    "tarih": "2026-10-05",
+    "tip": "Garanti Dışı",
+    "islemFirma": "Altuntaş Makina",
+    "iscilik": {
+     "TRY": 1000
+    },
+    "parca": {
+     "TRY": 0
+    },
+    "kdv": {
+     "TRY": 200
+    },
+    "odendi": false,
+    "ucretsiz": false,
+    "yontem": "",
+    "kkBlokajda": false,
+    "kkHesabaGecis": ""
+   },
+   {
+    "firma": "Bal Köfte",
+    "tarih": "2026-10-06",
+    "tip": "Garanti Dışı",
+    "islemFirma": "Altuntaş Makina",
+    "iscilik": {
+     "TRY": 2000
+    },
+    "parca": {
+     "TRY": 0
+    },
+    "kdv": {
+     "TRY": 400
+    },
+    "odendi": true,
+    "ucretsiz": false,
+    "yontem": "Çek",
+    "kkBlokajda": false,
+    "kkHesabaGecis": ""
+   }
+  ],
+  "servisNet": {
+   "TRY": 3000
+  },
+  "servisBolumKdv": {
+   "TRY": 600
+  },
+  "onarimYeriKirilimi": [
+   {
+    "yer": "Belirtilmemiş",
+    "adet": 2,
+    "net": {
+     "TRY": 3000
+    }
+   }
+  ],
+  "servisFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 3000
+    },
+    "kdv": {
+     "TRY": 600
+    },
+    "adet": 2
+   }
+  ],
+  "tahsilatAdet": 3,
+  "tahsilatTutar": {
+   "TRY": 5714.232
+  },
+  "tahsilatNet": {
+   "TRY": 4761.86
+  },
+  "tahsilatKdv": {
+   "TRY": 952.3720000000001
+  },
+  "tahsilatDetay": [
+   {
+    "firma": "Kuzey Servis",
+    "tutar": {
+     "TRY": 1440
+    },
+    "yontem": "Nakit",
+    "tarih": "2026-10-01",
+    "not": "Yedek parça (kargo ve fabrika teslim)"
+   },
+   {
+    "firma": "Bal Köfte",
+    "tutar": {
+     "TRY": 2474.232
+    },
+    "yontem": "Kredi Kartı",
+    "tarih": "2026-10-03",
+    "not": "Yedek parça (kargo ve fabrika teslim)"
+   },
+   {
+    "firma": "Ege Bayi",
+    "tutar": {
+     "TRY": 1800
+    },
+    "yontem": "Çek",
+    "tarih": "2026-10-08",
+    "not": "Yedek parça (kargo ve fabrika teslim)"
+   }
+  ],
+  "tahsilatYontemKirilimi": [
+   {
+    "yontem": "Nakit",
+    "tutar": {
+     "TRY": 1440
+    },
+    "adet": 1
+   },
+   {
+    "yontem": "Kredi Kartı",
+    "tutar": {
+     "TRY": 2474.232
+    },
+    "adet": 1
+   },
+   {
+    "yontem": "Çek",
+    "tutar": {
+     "TRY": 1800
+    },
+    "adet": 1
+   }
+  ],
+  "tahsilatKaynakKirilimi": [
+   {
+    "kaynak": "Yedek parça (kargo ve fabrika teslim)",
+    "tutar": {
+     "TRY": 5714.232
+    },
+    "net": {
+     "TRY": 4761.86
+    },
+    "kdv": {
+     "TRY": 952.3720000000001
+    },
+    "adet": 3
+   }
+  ],
+  "bekleyenCekAdet": 0,
+  "bekleyenCekTutar": {},
+  "bekleyenCekDetay": [],
+  "cekTahsilAdet": 0,
+  "borcluFirma": 7,
+  "acikBorc": {
+   "TRY": 35639.988,
+   "USD": 120,
+   "EUR": 160,
+   "GBP": 50
+  },
+  "alacakDetay": [
+   {
+    "firma": "Anadolu Gıda",
+    "tutar": {
+     "TRY": 17400
+    },
+    "kaynaklar": [
+     "Servis",
+     "Extra kalıp",
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   },
+   {
+    "firma": "Fındık Ev",
+    "tutar": {
+     "TRY": 6000
+    },
+    "kaynaklar": [
+     "Servis",
+     "Extra kalıp"
+    ]
+   },
+   {
+    "firma": "Bal Köfte",
+    "tutar": {
+     "TRY": 2400
+    },
+    "kaynaklar": [
+     "Servis"
+    ]
+   },
+   {
+    "firma": "Ege Bayi",
+    "tutar": {
+     "TRY": 9839.988
+    },
+    "kaynaklar": [
+     "Extra kalıp",
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   },
+   {
+    "firma": "Ceviz Ltd",
+    "tutar": {
+     "USD": 120
+    },
+    "kaynaklar": [
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   },
+   {
+    "firma": "Euro Foods",
+    "tutar": {
+     "EUR": 160
+    },
+    "kaynaklar": [
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   },
+   {
+    "firma": "Batı Servis",
+    "tutar": {
+     "GBP": 50
+    },
+    "kaynaklar": [
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   }
+  ],
+  "alacakYaslandirma": [
+   {
+    "aralik": "0-30 gün",
+    "firma": 5,
+    "tutar": {
+     "TRY": 8400,
+     "USD": 120,
+     "EUR": 160,
+     "GBP": 50
+    }
+   },
+   {
+    "aralik": "31-60 gün",
+    "firma": 3,
+    "tutar": {
+     "TRY": 27239.988
+    }
+   }
+  ],
+  "alacakKaynakKirilimi": [
+   {
+    "kaynak": "Servis",
+    "tutar": {
+     "TRY": 9600
+    }
+   },
+   {
+    "kaynak": "Extra kalıp",
+    "tutar": {
+     "TRY": 21600
+    }
+   },
+   {
+    "kaynak": "Yedek parça (kargo ve fabrika teslim)",
+    "tutar": {
+     "TRY": 4439.988,
+     "USD": 120,
+     "EUR": 160,
+     "GBP": 50
+    }
+   }
+  ],
+  "kkBlokajda": [
+   {
+    "firma": "Fındık Ev",
+    "kaynak": "Makina ödemesi",
+    "tarih": "2026-10-04",
+    "hesabaGecis": "2026-11-15",
+    "tutar": {
+     "TRY": 10000
+    }
+   }
+  ],
+  "kkBlokajdaTutar": {
+   "TRY": 10000
+  },
+  "gecikenCek": 0,
+  "gecikenTaksit": 0,
+  "teklifAdet": 0,
+  "onaylananTeklif": 0,
+  "teklifDetay": [],
+  "bekleyenTeklif": 0,
+  "krediKartiSatisTutar": {
+   "TRY": 12474.232
+  },
+  "bankaKomisyonuTutar": {
+   "TRY": 561.86
+  },
+  "ozet": {
+   "ciroNet": {
+    "TRY": 151700,
+    "EUR": 15160,
+    "USD": 100,
+    "GBP": 50
+   },
+   "tahsilat": {
+    "TRY": 5714.232
+   },
+   "alacak": {
+    "TRY": 35639.988,
+    "USD": 120,
+    "EUR": 160,
+    "GBP": 50
+   },
+   "ciroNetTL": null,
+   "tahsilatTL": null,
+   "alacakTL": null,
+   "toplamKdv": {
+    "TRY": 12352.372,
+    "EUR": 0,
+    "USD": 20,
+    "GBP": 0
+   },
+   "toplamKdvTL": null,
+   "krediKartiSatis": {
+    "TRY": 12474.232
+   },
+   "krediKartiSatisTL": null,
+   "bankaKomisyonu": {
+    "TRY": 561.86
+   },
+   "bankaKomisyonuTL": null
+  },
+  "toplamKdv": {
+   "TRY": 12352.372,
+   "EUR": 0,
+   "USD": 20,
+   "GBP": 0
+  },
+  "anlasmaliParcaKdv": {},
+  "sahipsizAdet": 0,
+  "kdvKalemleri": {
+   "satis": {
+    "TRY": 10000,
+    "EUR": 0
+   },
+   "servis": {
+    "TRY": 600
+   },
+   "extraKalip": {
+    "TRY": 800
+   },
+   "anlasmaliParca": {},
+   "yedekKargo": {
+    "TRY": 952.3720000000001,
+    "USD": 20,
+    "EUR": 0,
+    "GBP": 0
+   }
+  }
+ },
+ "eylulHtml": "<!DOCTYPE html><html lang=\"tr\"><head><meta charset=\"utf-8\">\n<title>Aylık Rapor Eylül 2026</title>\n<style>body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;max-width:720px;margin:24px auto;padding:0 16px;} table{border-collapse:collapse;width:100%;}</style>\n</head><body>\n  <div style=\"display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #1a1a1a;padding-bottom:8px;margin-bottom:16px;\">\n    <div>\n      <div style=\"font-size:18px;font-weight:800;\">Aylık Faaliyet Raporu</div>\n      <div style=\"font-size:13px;color:#475569;\">Eylül 2026</div>\n      <div style=\"font-size:11px;color:#94a3b8;\">Dönem: 01.09.2026 - 30.09.2026</div>\n    </div>\n    <div style=\"text-align:right;font-size:11px;color:#64748b;\">\n      <div style=\"font-weight:700;font-size:13px;color:#1a1a1a;\">Altuntaş Makina</div>\n      \n      \n      \n      \n      <div>Oluşturma: 20.10.2026</div>\n    </div>\n  </div>\n\n  \n    <div style=\"border:1px solid #f0b690;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:linear-gradient(90deg,#e85d1a,#f59e0b);color:#fff;font-weight:800;font-size:12px;letter-spacing:.5px;padding:7px 12px;\">BU AYIN ÖZETİ</div>\n      <div style=\"padding:12px 14px;background:#fffaf5;\">\n        <div style=\"display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;\">\n          \n    <div style=\"flex:1;min-width:180px;background:#ecfdf7;border:1px solid #b8e6da;border-radius:8px;padding:11px 13px;\">\n      <div style=\"font-size:11px;font-weight:600;color:#0f766e;\">🟢 Bu ay giren para (tahsilat)</div>\n      <div style=\"display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:4px;\"><span style=\"font-size:11px;color:#0f766e;font-weight:700;\">Net (KDV hariç)</span><span style=\"font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">190.947 TL</span> + <span style=\"white-space:nowrap\">3.633 USD</span></span></div>\n      <div style=\"display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:2px;\"><span style=\"font-size:10.5px;color:#64748b;font-weight:400;\">KDV</span><span style=\"font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">38.881 TL</span> + <span style=\"white-space:nowrap\">727 USD</span></span></div>\n      <div style=\"display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:2px;\"><span style=\"font-size:10.5px;color:#64748b;font-weight:400;\">Toplam (KDV dahil)</span><span style=\"font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">229.828 TL</span> + <span style=\"white-space:nowrap\">4.360 USD</span></span></div>\n      <div style=\"font-size:10px;color:#64748b;margin-top:3px;\">Fiilen tahsil edilen · nereden geldi (KDV hariç):</div>\n      <div style=\"margin-top:8px;padding-top:7px;border-top:1px dashed #b8e6da;\"><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Makina ödemesi (4)</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">177.305 TL</span> + <span style=\"white-space:nowrap\">3.333 USD</span></span></div><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Tahsil edilen bakım onarım (2)</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">3.333 TL</span> + <span style=\"white-space:nowrap\">300 USD</span></span></div><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Extra kalıp (1)</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">10.309 TL</span></span></div></div>\n    </div>\n          \n    <div style=\"flex:1;min-width:180px;background:#fdf1ec;border:1px solid #f0cdbe;border-radius:8px;padding:11px 13px;\">\n      <div style=\"font-size:11px;font-weight:600;color:#b3401a;\">🔴 Açık alacak (tahsil edilecek)</div>\n      <div style=\"font-size:19px;font-weight:800;margin-top:4px;white-space:nowrap;\"><span style=\"white-space:nowrap\">35.640 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></div>\n      \n      <div style=\"font-size:10px;color:#64748b;margin-top:2px;\">Birikmiş borç · KDV dahil · 📌 rapor anı · ne için:</div>\n      <div style=\"margin-top:8px;padding-top:7px;border-top:1px dashed #f0cdbe;\"><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Servis</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">9.600 TL</span></span></div><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Extra kalıp</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">21.600 TL</span></span></div><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Yedek parça (kargo ve fabrika teslim)</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">4.440 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></span></div><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>↳ bunun KK blokajında (kendiliğinden geçer)</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">10.000 TL</span></span></div></div>\n    </div>\n        </div>\n        <div style=\"font-size:10.5px;color:#64748b;margin-top:10px;padding-top:8px;border-top:1px dashed #f1e4d6;\">\n          3 makina · 4 servis (3 ücretli, 1 ücretsiz) · 3 extra kalıp · 3 yedek parça satışı · 0 teklif · Bu ay doğan KDV: <b><span style=\"white-space:nowrap\">67.269 TL</span> + <span style=\"white-space:nowrap\">1.860 USD</span></b>\n        </div>\n      </div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">MAKİNA SATIŞLARI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Net <b style=\"color:#fff;\"><span style=\"white-space:nowrap\">320.000 TL</span> + <span style=\"white-space:nowrap\">10.000 USD</span></b> · KDV <span style=\"white-space:nowrap\">60.000 TL</span> + <span style=\"white-space:nowrap\">1.800 USD</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;\">Tutarlar KDV hariç</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Eylül 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Satılan makina</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">3 adet</td></tr>\n      \n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Satış bedeli (net)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">320.000 TL</span> + <span style=\"white-space:nowrap\">10.000 USD</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Fatura bedeli (bilgi)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">300.000 TL</span> + <span style=\"white-space:nowrap\">9.000 USD</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Makina KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">60.000 TL</span> + <span style=\"white-space:nowrap\">1.800 USD</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ödenen komisyon</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">5.000 TL</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">FATURA TİPİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura Tipi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">320.000 TL</span> + <span style=\"white-space:nowrap\">10.000 USD</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">60.000 TL</span> + <span style=\"white-space:nowrap\">1.800 USD</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">MODEL KIRILIMI</div><table><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">AK100</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">2 adet</td><td style=\"padding:3px 0;font-size:11px;text-align:right;color:#475569;\"><span style=\"white-space:nowrap\">320.000 TL</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">AK200</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">1 adet</td><td style=\"padding:3px 0;font-size:11px;text-align:right;color:#475569;\"><span style=\"white-space:nowrap\">10.000 USD</span></td></tr></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">SATIŞ YAPAN KIRILIMI</div><table><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Altuntaş Makina</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">2 adet</td></tr><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Ege Bayi</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">1 adet</td></tr></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">SATILAN MAKİNALAR (firma firma · eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Model</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">05.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">AK100</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">120.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">12.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">AK100</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">200.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ceviz Ltd</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">20.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">AK200</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">10.000 USD</span></td></tr></tbody></table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">BAKIM ONARIM GELİRLERİ</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Net <b style=\"color:#fff;\"><span style=\"white-space:nowrap\">8.213 TL</span> + <span style=\"white-space:nowrap\">300 USD</span></b> · KDV <span style=\"white-space:nowrap\">1.667 TL</span> + <span style=\"white-space:nowrap\">60 USD</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;\">Tutarlar KDV hariç</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Eylül 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Servis kaydı</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">4 adet · 3 ücretli · 1 ücretsiz</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">İşçilik geliri</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">8.213 TL</span> + <span style=\"white-space:nowrap\">300 USD</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Parça geliri (Altuntaş servisi)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">—</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Parça geliri (anlaşmalı servisler)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">—</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Servis + parça KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">1.667 TL</span> + <span style=\"white-space:nowrap\">60 USD</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TİP KIRILIMI</div><table><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Garanti Dışı</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">3</td></tr><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Periyodik Bakım</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">1</td></tr></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">ONARIM YERİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Onarım Yeri</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net gelir</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Belirtilmemiş</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">4</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">8.333 TL</span> + <span style=\"white-space:nowrap\">300 USD</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">FATURA TİPİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura Tipi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">4</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">8.213 TL</span> + <span style=\"white-space:nowrap\">300 USD</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.667 TL</span> + <span style=\"white-space:nowrap\">60 USD</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">BAKIM ONARIM VERİLEN FİRMALAR (eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tip</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">İşçilik</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Parça</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">08.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Garanti Dışı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">5.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.000 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">14.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Periyodik Bakım</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">3.333 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">667 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi · Kredi Kartı</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ceviz Ltd</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">22.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Garanti Dışı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">300 USD</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">60 USD</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr></tbody></table>\n    </div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">EXTRA KALIP SATIŞLARI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Net <b style=\"color:#fff;\"><span style=\"white-space:nowrap\">24.000 TL</span></b> · KDV <span style=\"white-space:nowrap\">4.862 TL</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;\">Tutarlar KDV hariç</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Eylül 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Extra kalıp satışı</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">3 adet · <span style=\"white-space:nowrap\">24.000 TL</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Extra kalıp KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">4.862 TL</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TESLİM ŞEKLİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Teslim Şekli</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">24.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.862 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">FATURA TİPİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura Tipi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">24.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.862 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">EXTRA KALIP ALAN FİRMALAR (eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Teslim</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">10.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">8.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">11.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">6.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">16.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">17.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">10.309 TL</span></td></tr></tbody></table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">YEDEK PARÇA SATIŞLARI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Net <b style=\"color:#fff;\"><span style=\"white-space:nowrap\">3.700 TL</span></b> · KDV <span style=\"white-space:nowrap\">740 TL</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;\">Tutarlar KDV hariç</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Eylül 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Yedek parça satışı</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">3 satış · 13 adet · <span style=\"white-space:nowrap\">3.700 TL</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Yedek parça KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">740 TL</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Alıcı ayrımı (Müşteri / Bayi)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">1.500 TL</span> / <span style=\"white-space:nowrap\">2.200 TL</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TESLİM ŞEKLİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Teslim Şekli</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Satış</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">3.700 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">740 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">FATURA TİPİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura Tipi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">3.700 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">740 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YEDEK PARÇA ALAN FİRMALAR (eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Alıcı</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Teslim</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Miktar</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">18.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Müşteri</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">2</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.500 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">300 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ege Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">19.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">10</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.200 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">240 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ege Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">19.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">200 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr></tbody></table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">TAHSİLAT — BU AY GİREN PARA</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"><span style=\"white-space:nowrap\">229.828 TL</span> + <span style=\"white-space:nowrap\">4.360 USD</span> · KDV dahil</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#ecfdf7;border:1px solid #b8e6da;color:#0f766e;\">Tutarlar KDV dahil</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Eylül 2026</span></div>\n    <div style=\"font-size:10px;color:#475569;margin-bottom:8px;line-height:1.5;background:#f8fafc;border-left:3px solid #0d9488;padding:6px 10px;\">\n      <b>Ne demek?</b> Bu ay fiilen kasaya/hesaba giren paradır: nakit/havale girildiği anda, çekler ancak tahsil edildiklerinde\n      sayılır. Bu, \"yapılan iş\" değil \"giren para\"dır; vadesi gelmemiş çekler aşağıda ayrı gösterilir.\n    </div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Gerçekleşen tahsilat (KDV dahil)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">7 kayıt · <span style=\"white-space:nowrap\">229.828 TL</span> + <span style=\"white-space:nowrap\">4.360 USD</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde alınan, vadesi bekleyen çek</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">1 adet · <span style=\"white-space:nowrap\">20.000 TL</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde tahsil edilen çek</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YÖNTEM KIRILIMI</div><table><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Kredi Kartı</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;color:#64748b;\">4 kayıt</td><td style=\"padding:3px 0;font-size:11px;text-align:right;font-weight:700;\"><span style=\"white-space:nowrap\">199.828 TL</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Nakit</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;color:#64748b;\">2 kayıt</td><td style=\"padding:3px 0;font-size:11px;text-align:right;font-weight:700;\"><span style=\"white-space:nowrap\">30.000 TL</span> + <span style=\"white-space:nowrap\">360 USD</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Havale</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;color:#64748b;\">1 kayıt</td><td style=\"padding:3px 0;font-size:11px;text-align:right;font-weight:700;\"><span style=\"white-space:nowrap\">4.000 USD</span></td></tr></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">KİMDEN TAHSİL EDİLDİ (eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Yöntem</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Nakit</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">05.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">30.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kredi Kartı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">12.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">123.457 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kredi Kartı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">13.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">60.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kredi Kartı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">14.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kredi Kartı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">17.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">12.371 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ceviz Ltd</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Havale</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">21.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.000 USD</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ceviz Ltd</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Nakit</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">25.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">360 USD</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">VADESİ BEKLEYEN ÇEKLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Vade</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">01.11.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">20.000 TL</span></td></tr></tbody></table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">ÖDENEN BANKA KOMİSYONU</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"><span style=\"white-space:nowrap\">5.686 TL</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Gider · POS kesintisi</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Eylül 2026</span></div>\n    <div style=\"font-size:10px;color:#475569;margin-bottom:8px;line-height:1.5;background:#fbf3e8;border-left:3px solid #c98a2b;padding:6px 10px;\">\n      <b>Ne demek?</b> Bu ay kredi kartıyla alınan tahsilatlardan bankanın kestiği toplam komisyondur (bir giderdir).\n      Müşteriye yansıtılan kısım dahildir, çünkü banka her durumda keser.\n    </div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ödenen banka komisyonu</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">5.686 TL</span></td></tr>\n    </table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">AÇIK ALACAKLAR (tahsil edilecek)</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"><span style=\"white-space:nowrap\">35.640 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span> · KDV dahil</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#ecfdf7;border:1px solid #b8e6da;color:#0f766e;\">Tutarlar KDV dahil</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fbf3e8;border:1px solid #eddcc2;color:#8a6d2b;\">📌 Rapor anı (seçilen ay değil)</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Toplam açık alacak (KDV dahil)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">35.640 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Borçlu firma</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">7 firma</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Vadesi geçmiş çek</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Vadesi geçmiş taksit</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kredi kartı blokajında bekleyen (kendiliğinden geçer)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">1 kayıt · <span style=\"white-space:nowrap\">10.000 TL</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">KREDİ KARTI BLOKAJINDA BEKLEYENLER (hesaba geçince tahsilata düşer)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kaynak</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">İşlem tarihi</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hesaba geçiş</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fındık Ev</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Makina ödemesi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">04.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">15.11.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">10.000 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YAŞLANDIRMA (borcun yaşına göre)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Yaş aralığı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Pay</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">0-30 gün</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">5</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">8.400 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">%24</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">31-60 gün</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">27.240 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">%76</td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">BORÇLU FİRMALAR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kaynak</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açık Borç</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Servis, Extra kalıp, Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">17.400 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fındık Ev</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Servis, Extra kalıp</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">6.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Servis</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">2.400 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ege Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Extra kalıp, Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">9.840 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ceviz Ltd</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">120 USD</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Euro Foods</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">160 EUR</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Batı Servis</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">50 GBP</span></td></tr></tbody></table>\n    <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Bu bölüm seçilen aya değil, raporun oluşturulduğu andaki güncel duruma aittir.</div></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KDV ÖZETİ (beyanname için)</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"><span style=\"white-space:nowrap\">67.269 TL</span> + <span style=\"white-space:nowrap\">1.860 USD</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\"><table>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Satış (makina) KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">60.000 TL</span> + <span style=\"white-space:nowrap\">1.800 USD</span></td></tr>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Servis + parça KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">1.667 TL</span> + <span style=\"white-space:nowrap\">60 USD</span></td></tr>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Extra kalıp KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">4.862 TL</span></td></tr>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Yedek parça (kargo ve fabrika teslim) KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">740 TL</span></td></tr>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Anlaşmalı servis parçası KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">—</td></tr>\n    <tr><td style=\"padding:6px 8px 3px 0;font-size:12px;font-weight:800;border-top:2px solid #1a1a1a;\">BU AY DOĞAN TOPLAM KDV</td><td style=\"padding:6px 0 3px;font-weight:800;font-size:13px;text-align:right;border-top:2px solid #1a1a1a;\"><span style=\"white-space:nowrap\">67.269 TL</span> + <span style=\"white-space:nowrap\">1.860 USD</span></td></tr>\n  </table>\n  <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Yalnızca Faturalı Yurtiçi işlemler KDV doğurur; faturasız ve yurtdışı işlemler bu toplama girmez. Beyanname öncesi kontrol amaçlıdır.</div></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">VERİLEN TEKLİFLER</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Eylül 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde verilen teklif</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Bunlardan bugüne kadar onaylanan / satışa dönen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Cevap bekleyen toplam teklif</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n    </table>\n    </div>\n    </div>\n  \n</body></html>",
+ "ekimHtml": "<!DOCTYPE html><html lang=\"tr\"><head><meta charset=\"utf-8\">\n<title>Aylık Rapor Ekim 2026</title>\n<style>body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;max-width:720px;margin:24px auto;padding:0 16px;} table{border-collapse:collapse;width:100%;}</style>\n</head><body>\n  <div style=\"display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #1a1a1a;padding-bottom:8px;margin-bottom:16px;\">\n    <div>\n      <div style=\"font-size:18px;font-weight:800;\">Aylık Faaliyet Raporu</div>\n      <div style=\"font-size:13px;color:#475569;\">Ekim 2026</div>\n      <div style=\"font-size:11px;color:#94a3b8;\">Dönem: 01.10.2026 - 31.10.2026</div>\n    </div>\n    <div style=\"text-align:right;font-size:11px;color:#64748b;\">\n      <div style=\"font-weight:700;font-size:13px;color:#1a1a1a;\">Altuntaş Makina</div>\n      \n      \n      \n      \n      <div>Oluşturma: 20.10.2026</div>\n    </div>\n  </div>\n\n  \n    <div style=\"border:1px solid #f0b690;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:linear-gradient(90deg,#e85d1a,#f59e0b);color:#fff;font-weight:800;font-size:12px;letter-spacing:.5px;padding:7px 12px;\">BU AYIN ÖZETİ</div>\n      <div style=\"padding:12px 14px;background:#fffaf5;\">\n        <div style=\"display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;\">\n          \n    <div style=\"flex:1;min-width:180px;background:#ecfdf7;border:1px solid #b8e6da;border-radius:8px;padding:11px 13px;\">\n      <div style=\"font-size:11px;font-weight:600;color:#0f766e;\">🟢 Bu ay giren para (tahsilat)</div>\n      <div style=\"display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:4px;\"><span style=\"font-size:11px;color:#0f766e;font-weight:700;\">Net (KDV hariç)</span><span style=\"font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">4.762 TL</span></span></div>\n      <div style=\"display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:2px;\"><span style=\"font-size:10.5px;color:#64748b;font-weight:400;\">KDV</span><span style=\"font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">952 TL</span></span></div>\n      <div style=\"display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:2px;\"><span style=\"font-size:10.5px;color:#64748b;font-weight:400;\">Toplam (KDV dahil)</span><span style=\"font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">5.714 TL</span></span></div>\n      <div style=\"font-size:10px;color:#64748b;margin-top:3px;\">Fiilen tahsil edilen · nereden geldi (KDV hariç):</div>\n      <div style=\"margin-top:8px;padding-top:7px;border-top:1px dashed #b8e6da;\"><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Yedek parça (kargo ve fabrika teslim) (3)</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">4.762 TL</span></span></div></div>\n    </div>\n          \n    <div style=\"flex:1;min-width:180px;background:#fdf1ec;border:1px solid #f0cdbe;border-radius:8px;padding:11px 13px;\">\n      <div style=\"font-size:11px;font-weight:600;color:#b3401a;\">🔴 Açık alacak (tahsil edilecek)</div>\n      <div style=\"font-size:19px;font-weight:800;margin-top:4px;white-space:nowrap;\"><span style=\"white-space:nowrap\">35.640 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></div>\n      \n      <div style=\"font-size:10px;color:#64748b;margin-top:2px;\">Birikmiş borç · KDV dahil · 📌 rapor anı · ne için:</div>\n      <div style=\"margin-top:8px;padding-top:7px;border-top:1px dashed #f0cdbe;\"><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Servis</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">9.600 TL</span></span></div><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Extra kalıp</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">21.600 TL</span></span></div><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>Yedek parça (kargo ve fabrika teslim)</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">4.440 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></span></div><div style=\"display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#475569;margin-top:2px;\"><span>↳ bunun KK blokajında (kendiliğinden geçer)</span><span style=\"font-variant-numeric:tabular-nums;white-space:nowrap;\"><span style=\"white-space:nowrap\">10.000 TL</span></span></div></div>\n    </div>\n        </div>\n        <div style=\"font-size:10.5px;color:#64748b;margin-top:10px;padding-top:8px;border-top:1px dashed #f1e4d6;\">\n          3 makina · 2 servis (2 ücretli, 0 ücretsiz) · 1 extra kalıp · 8 yedek parça satışı · 0 teklif · Bu ay doğan KDV: <b><span style=\"white-space:nowrap\">12.352 TL</span> + <span style=\"white-space:nowrap\">20 USD</span></b>\n        </div>\n      </div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">MAKİNA SATIŞLARI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Net <b style=\"color:#fff;\"><span style=\"white-space:nowrap\">140.000 TL</span> + <span style=\"white-space:nowrap\">15.000 EUR</span></b> · KDV <span style=\"white-space:nowrap\">10.000 TL</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;\">Tutarlar KDV hariç</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Ekim 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Satılan makina</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">3 adet</td></tr>\n      \n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Satış bedeli (net)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">140.000 TL</span> + <span style=\"white-space:nowrap\">15.000 EUR</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Fatura bedeli (bilgi)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">50.000 TL</span> + <span style=\"white-space:nowrap\">15.000 EUR</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Makina KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">10.000 TL</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ödenen komisyon</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">—</td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">FATURA TİPİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura Tipi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">50.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">10.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtdışı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">15.000 EUR</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturasız Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">90.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">MODEL KIRILIMI</div><table><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">AK100</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">2 adet</td><td style=\"padding:3px 0;font-size:11px;text-align:right;color:#475569;\"><span style=\"white-space:nowrap\">140.000 TL</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">AK200</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">1 adet</td><td style=\"padding:3px 0;font-size:11px;text-align:right;color:#475569;\"><span style=\"white-space:nowrap\">15.000 EUR</span></td></tr></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">SATIŞ YAPAN KIRILIMI</div><table><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Altuntaş Makina</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">3 adet</td></tr></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">SATILAN MAKİNALAR (firma firma · eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Model</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Defne Yemek</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">02.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">AK100</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturasız Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">90.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Euro Foods</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">03.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">AK200</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtdışı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">15.000 EUR</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fındık Ev</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">04.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">AK100</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">50.000 TL</span></td></tr></tbody></table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">BAKIM ONARIM GELİRLERİ</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Net <b style=\"color:#fff;\"><span style=\"white-space:nowrap\">3.000 TL</span></b> · KDV <span style=\"white-space:nowrap\">600 TL</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;\">Tutarlar KDV hariç</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Ekim 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Servis kaydı</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">2 adet · 2 ücretli · 0 ücretsiz</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">İşçilik geliri</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">3.000 TL</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Parça geliri (Altuntaş servisi)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">—</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Parça geliri (anlaşmalı servisler)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">—</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Servis + parça KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">600 TL</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TİP KIRILIMI</div><table><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Garanti Dışı</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;\">2</td></tr></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">ONARIM YERİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Onarım Yeri</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net gelir</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Belirtilmemiş</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">2</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">3.000 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">FATURA TİPİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura Tipi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">2</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">3.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">600 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">BAKIM ONARIM VERİLEN FİRMALAR (eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tip</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">İşçilik</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Parça</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fındık Ev</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">05.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Garanti Dışı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">200 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">06.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Garanti Dışı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">2.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">400 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr></tbody></table>\n    </div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">EXTRA KALIP SATIŞLARI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Net <b style=\"color:#fff;\"><span style=\"white-space:nowrap\">4.000 TL</span></b> · KDV <span style=\"white-space:nowrap\">800 TL</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;\">Tutarlar KDV hariç</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Ekim 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Extra kalıp satışı</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">1 adet · <span style=\"white-space:nowrap\">4.000 TL</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Extra kalıp KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">800 TL</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TESLİM ŞEKLİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Teslim Şekli</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">800 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">FATURA TİPİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura Tipi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.000 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">800 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">EXTRA KALIP ALAN FİRMALAR (eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Teslim</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fındık Ev</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">07.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.000 TL</span></td></tr></tbody></table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">YEDEK PARÇA SATIŞLARI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Net <b style=\"color:#fff;\"><span style=\"white-space:nowrap\">4.700 TL</span> + <span style=\"white-space:nowrap\">100 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></b> · KDV <span style=\"white-space:nowrap\">952 TL</span> + <span style=\"white-space:nowrap\">20 USD</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fff3ec;border:1px solid #f4d3bf;color:#b5480f;\">Tutarlar KDV hariç</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Ekim 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Yedek parça satışı</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">8 satış · 19 adet · <span style=\"white-space:nowrap\">4.700 TL</span> + <span style=\"white-space:nowrap\">100 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Yedek parça KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">952 TL</span> + <span style=\"white-space:nowrap\">20 USD</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Alıcı ayrımı (Müşteri / Bayi)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">2.000 TL</span> + <span style=\"white-space:nowrap\">100 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> / <span style=\"white-space:nowrap\">2.700 TL</span> + <span style=\"white-space:nowrap\">50 GBP</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TESLİM ŞEKLİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Teslim Şekli</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Satış</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fabrika Teslim</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">6</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.700 TL</span> + <span style=\"white-space:nowrap\">100 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">952 TL</span> + <span style=\"white-space:nowrap\">20 USD</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">FATURA TİPİ KIRILIMI</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Fatura Tipi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Net</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">6</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">4.700 TL</span> + <span style=\"white-space:nowrap\">100 USD</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">952 TL</span> + <span style=\"white-space:nowrap\">20 USD</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturalı Yurtdışı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">160 EUR</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Faturasız Yurtiçi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">50 GBP</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YEDEK PARÇA ALAN FİRMALAR (eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Alıcı</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Teslim</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Miktar</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">KDV</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kuzey Servis</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">01.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anlaşmasız Servis</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.200 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">240 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">03.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Müşteri</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">2.062 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">412 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ceviz Ltd</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">04.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Müşteri</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">4</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">100 USD</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">20 USD</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Defne Yemek</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">05.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Müşteri</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kargo</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">2</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ege Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">06.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fabrika Teslim</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Euro Foods</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">07.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Müşteri</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">2</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">160 EUR</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ege Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">08.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">5</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.500 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">300 TL</span></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Batı Servis</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">09.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anlaşmasız Servis</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Panoya gönderilmedi</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">50 GBP</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr></tbody></table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">TAHSİLAT — BU AY GİREN PARA</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"><span style=\"white-space:nowrap\">5.714 TL</span> · KDV dahil</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#ecfdf7;border:1px solid #b8e6da;color:#0f766e;\">Tutarlar KDV dahil</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Ekim 2026</span></div>\n    <div style=\"font-size:10px;color:#475569;margin-bottom:8px;line-height:1.5;background:#f8fafc;border-left:3px solid #0d9488;padding:6px 10px;\">\n      <b>Ne demek?</b> Bu ay fiilen kasaya/hesaba giren paradır: nakit/havale girildiği anda, çekler ancak tahsil edildiklerinde\n      sayılır. Bu, \"yapılan iş\" değil \"giren para\"dır; vadesi gelmemiş çekler aşağıda ayrı gösterilir.\n    </div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Gerçekleşen tahsilat (KDV dahil)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">3 kayıt · <span style=\"white-space:nowrap\">5.714 TL</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde alınan, vadesi bekleyen çek</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet · —</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde tahsil edilen çek</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YÖNTEM KIRILIMI</div><table><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Nakit</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;color:#64748b;\">1 kayıt</td><td style=\"padding:3px 0;font-size:11px;text-align:right;font-weight:700;\"><span style=\"white-space:nowrap\">1.440 TL</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Kredi Kartı</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;color:#64748b;\">1 kayıt</td><td style=\"padding:3px 0;font-size:11px;text-align:right;font-weight:700;\"><span style=\"white-space:nowrap\">2.474 TL</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;font-size:11px;\">Çek</td><td style=\"padding:3px 8px;font-size:11px;text-align:right;color:#64748b;\">1 kayıt</td><td style=\"padding:3px 0;font-size:11px;text-align:right;font-weight:700;\"><span style=\"white-space:nowrap\">1.800 TL</span></td></tr></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">KİMDEN TAHSİL EDİLDİ (eskiden yeniye)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Yöntem</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kuzey Servis</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Nakit</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">01.10.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.440 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kredi Kartı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">03.10.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">2.474 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ege Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Çek</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">08.10.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">1.800 TL</span></td></tr></tbody></table>\n    </div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">ÖDENEN BANKA KOMİSYONU</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"><span style=\"white-space:nowrap\">562 TL</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Gider · POS kesintisi</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Ekim 2026</span></div>\n    <div style=\"font-size:10px;color:#475569;margin-bottom:8px;line-height:1.5;background:#fbf3e8;border-left:3px solid #c98a2b;padding:6px 10px;\">\n      <b>Ne demek?</b> Bu ay kredi kartıyla alınan tahsilatlardan bankanın kestiği toplam komisyondur (bir giderdir).\n      Müşteriye yansıtılan kısım dahildir, çünkü banka her durumda keser.\n    </div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ödenen banka komisyonu</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">562 TL</span></td></tr>\n    </table></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">AÇIK ALACAKLAR (tahsil edilecek)</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"><span style=\"white-space:nowrap\">35.640 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span> · KDV dahil</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#ecfdf7;border:1px solid #b8e6da;color:#0f766e;\">Tutarlar KDV dahil</span> <span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#fbf3e8;border:1px solid #eddcc2;color:#8a6d2b;\">📌 Rapor anı (seçilen ay değil)</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Toplam açık alacak (KDV dahil)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">35.640 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Borçlu firma</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">7 firma</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Vadesi geçmiş çek</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Vadesi geçmiş taksit</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kredi kartı blokajında bekleyen (kendiliğinden geçer)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">1 kayıt · <span style=\"white-space:nowrap\">10.000 TL</span></td></tr>\n    </table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">KREDİ KARTI BLOKAJINDA BEKLEYENLER (hesaba geçince tahsilata düşer)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kaynak</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">İşlem tarihi</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hesaba geçiş</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fındık Ev</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Makina ödemesi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">04.10.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">15.11.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">10.000 TL</span></td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YAŞLANDIRMA (borcun yaşına göre)</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Yaş aralığı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Pay</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">0-30 gün</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">5</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">8.400 TL</span> + <span style=\"white-space:nowrap\">120 USD</span> + <span style=\"white-space:nowrap\">160 EUR</span> + <span style=\"white-space:nowrap\">50 GBP</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">%24</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">31-60 gün</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">27.240 TL</span></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">%76</td></tr></tbody></table>\n    <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">BORÇLU FİRMALAR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kaynak</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açık Borç</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Anadolu Gıda</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Servis, Extra kalıp, Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">17.400 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Fındık Ev</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Servis, Extra kalıp</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">6.000 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bal Köfte</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Servis</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">2.400 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ege Bayi</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Extra kalıp, Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">9.840 TL</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ceviz Ltd</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">120 USD</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Euro Foods</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">160 EUR</span></td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Batı Servis</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yedek parça (kargo ve fabrika teslim)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><span style=\"white-space:nowrap\">50 GBP</span></td></tr></tbody></table>\n    <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Bu bölüm seçilen aya değil, raporun oluşturulduğu andaki güncel duruma aittir.</div></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KDV ÖZETİ (beyanname için)</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"><span style=\"white-space:nowrap\">12.352 TL</span> + <span style=\"white-space:nowrap\">20 USD</span></span>\n      </div>\n      <div style=\"padding:10px 12px;\"><table>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Satış (makina) KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">10.000 TL</span></td></tr>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Servis + parça KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">600 TL</span></td></tr>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Extra kalıp KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">800 TL</span></td></tr>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Yedek parça (kargo ve fabrika teslim) KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\"><span style=\"white-space:nowrap\">952 TL</span> + <span style=\"white-space:nowrap\">20 USD</span></td></tr>\n    <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Anlaşmalı servis parçası KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">—</td></tr>\n    <tr><td style=\"padding:6px 8px 3px 0;font-size:12px;font-weight:800;border-top:2px solid #1a1a1a;\">BU AY DOĞAN TOPLAM KDV</td><td style=\"padding:6px 0 3px;font-weight:800;font-size:13px;text-align:right;border-top:2px solid #1a1a1a;\"><span style=\"white-space:nowrap\">12.352 TL</span> + <span style=\"white-space:nowrap\">20 USD</span></td></tr>\n  </table>\n  <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Yalnızca Faturalı Yurtiçi işlemler KDV doğurur; faturasız ve yurtdışı işlemler bu toplama girmez. Beyanname öncesi kontrol amaçlıdır.</div></div>\n    </div>\n\n  \n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">VERİLEN TEKLİFLER</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\"></span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n    <div style=\"margin-bottom:6px;\"><span style=\"display:inline-block;font-size:9px;letter-spacing:.03em;padding:2px 7px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;\">Ekim 2026</span></div>\n    <table>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde verilen teklif</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Bunlardan bugüne kadar onaylanan / satışa dönen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n      <tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Cevap bekleyen toplam teklif</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">0 adet</td></tr>\n    </table>\n    </div>\n    </div>\n  \n</body></html>",
+ "yedekExport": [
+  [
+   "Müşteri",
+   "Anadolu Gıda",
+   "Rulman",
+   2,
+   750,
+   "TL",
+   1500,
+   1500,
+   "2026-09-18",
+   "Hayır",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Bayi",
+   "Ege Bayi",
+   "Kayış",
+   10,
+   120,
+   "TL",
+   1200,
+   1200,
+   "2026-09-19",
+   "Hayır",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Bayi",
+   "Ege Bayi",
+   "Rulman",
+   1,
+   999.99,
+   "TL",
+   999.99,
+   999.99,
+   "2026-09-19",
+   "Hayır",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Anlaşmasız Servis",
+   "Kuzey Servis",
+   "Rulman",
+   3,
+   400,
+   "TL",
+   1200,
+   1200,
+   "2026-10-01",
+   "Evet",
+   "Nakit",
+   "",
+   "",
+   "",
+   "",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Müşteri",
+   "Bal Köfte",
+   "Kayış",
+   1,
+   2061.86,
+   "TL",
+   2061.86,
+   2000,
+   "2026-10-03",
+   "Evet",
+   "Kredi Kartı",
+   "",
+   "Tek Çekim",
+   61.86,
+   "Evet",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Müşteri",
+   "Ceviz Ltd",
+   "Rulman",
+   4,
+   25,
+   "USD",
+   100,
+   100,
+   "2026-10-04",
+   "Hayır",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Müşteri",
+   "Defne Yemek",
+   "Rulman",
+   2,
+   0,
+   "TL",
+   0,
+   0,
+   "2026-10-05",
+   "Hayır",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "Kargo",
+   "",
+   "",
+   "Hazırlanıyor",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Bayi",
+   "Ege Bayi",
+   "Kayış",
+   1,
+   0,
+   "TL",
+   0,
+   0,
+   "2026-10-06",
+   "Hayır",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "Fabrika Teslim",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Müşteri",
+   "Euro Foods",
+   "Kayış",
+   2,
+   80,
+   "EUR",
+   160,
+   160,
+   "2026-10-07",
+   "Evet",
+   "Çek",
+   "Beklemede",
+   "",
+   "",
+   "",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Bayi",
+   "Ege Bayi",
+   "Rulman",
+   5,
+   300,
+   "TL",
+   1500,
+   1500,
+   "2026-10-08",
+   "Evet",
+   "Çek",
+   "Tahsil edildi",
+   "",
+   "",
+   "",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Anlaşmasız Servis",
+   "Batı Servis",
+   "Kayış",
+   1,
+   50,
+   "TL",
+   50,
+   50,
+   "2026-10-09",
+   "Hayır",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "—",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ]
+ ],
+ "bayiSilme": [
+  {
+   "yedekParca": 4,
+   "odenmemis": 3,
+   "acikAlacak": {
+    "TRY": 2199.99
+   },
+   "dosya": 0
+  }
+ ],
+ "sonSatislar": [
+  {
+   "tip": "yedek",
+   "key": "y5105",
+   "custId": null,
+   "recId": 5105,
+   "ad": "—",
+   "detay": "Kayış · 1 adet",
+   "tarih": "2026-10-09",
+   "tutar": 50,
+   "currency": "GBP",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5104",
+   "custId": null,
+   "recId": 5104,
+   "ad": "Ege Bayi",
+   "detay": "Rulman · 5 adet",
+   "tarih": "2026-10-08",
+   "tutar": 1500,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "kalip",
+   "key": "k4005",
+   "custId": 1006,
+   "recId": 4005,
+   "ad": "Fındık Ev",
+   "detay": "Lahmacun (200)",
+   "tarih": "2026-10-07",
+   "tutar": 4000,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5103",
+   "custId": 1005,
+   "recId": 5103,
+   "ad": "Euro Foods",
+   "detay": "Kayış · 2 adet",
+   "tarih": "2026-10-07",
+   "tutar": 160,
+   "currency": "EUR",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5102",
+   "custId": null,
+   "recId": 5102,
+   "ad": "Ege Bayi",
+   "detay": "Kayış · 1 adet",
+   "tarih": "2026-10-06",
+   "tutar": 0,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5101",
+   "custId": 1004,
+   "recId": 5101,
+   "ad": "Defne Yemek",
+   "detay": "Rulman · 2 adet",
+   "tarih": "2026-10-05",
+   "tutar": 0,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "makina",
+   "key": "m1006",
+   "custId": 1006,
+   "recId": 1006,
+   "ad": "Fındık Ev",
+   "detay": "AK100 · S1006",
+   "tarih": "2026-10-04",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5006",
+   "custId": 1003,
+   "recId": 5006,
+   "ad": "Ceviz Ltd",
+   "detay": "Rulman · 4 adet",
+   "tarih": "2026-10-04",
+   "tutar": 100,
+   "currency": "USD",
+   "konum": ""
+  },
+  {
+   "tip": "makina",
+   "key": "m1005",
+   "custId": 1005,
+   "recId": 1005,
+   "ad": "Euro Foods",
+   "detay": "AK200 · S1005",
+   "tarih": "2026-10-03",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5005",
+   "custId": 1002,
+   "recId": 5005,
+   "ad": "Bal Köfte",
+   "detay": "Kayış · 1 adet",
+   "tarih": "2026-10-03",
+   "tutar": 2061.86,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "makina",
+   "key": "m1004",
+   "custId": 1004,
+   "recId": 1004,
+   "ad": "Defne Yemek",
+   "detay": "AK100 · S1004",
+   "tarih": "2026-10-02",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5004",
+   "custId": null,
+   "recId": 5004,
+   "ad": "—",
+   "detay": "Rulman · 3 adet",
+   "tarih": "2026-10-01",
+   "tutar": 1200,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "makina",
+   "key": "m1003",
+   "custId": 1003,
+   "recId": 1003,
+   "ad": "Ceviz Ltd",
+   "detay": "AK200 · S1003",
+   "tarih": "2026-09-20",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5002",
+   "custId": null,
+   "recId": 5002,
+   "ad": "Ege Bayi",
+   "detay": "Kayış · 10 adet",
+   "tarih": "2026-09-19",
+   "tutar": 1200,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5003",
+   "custId": null,
+   "recId": 5003,
+   "ad": "Ege Bayi",
+   "detay": "Rulman · 1 adet",
+   "tarih": "2026-09-19",
+   "tutar": 999.99,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "yedek",
+   "key": "y5001",
+   "custId": 1001,
+   "recId": 5001,
+   "ad": "Anadolu Gıda",
+   "detay": "Rulman · 2 adet",
+   "tarih": "2026-09-18",
+   "tutar": 1500,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "kalip",
+   "key": "k4004",
+   "custId": 1002,
+   "recId": 4004,
+   "ad": "Bal Köfte",
+   "detay": "Pide (120)",
+   "tarih": "2026-09-17",
+   "tutar": 10309.28,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "kalip",
+   "key": "k4003",
+   "custId": 1002,
+   "recId": 4003,
+   "ad": "Bal Köfte",
+   "detay": "Hediye (50)",
+   "tarih": "2026-09-16",
+   "tutar": 0,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "makina",
+   "key": "m1002",
+   "custId": 1002,
+   "recId": 1002,
+   "ad": "Bal Köfte",
+   "detay": "AK100 · S1002",
+   "tarih": "2026-09-12",
+   "konum": ""
+  },
+  {
+   "tip": "kalip",
+   "key": "k4002",
+   "custId": 1001,
+   "recId": 4002,
+   "ad": "Anadolu Gıda",
+   "detay": "Köfte (60)",
+   "tarih": "2026-09-11",
+   "tutar": 6000,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "kalip",
+   "key": "k4001",
+   "custId": 1001,
+   "recId": 4001,
+   "ad": "Anadolu Gıda",
+   "detay": "Burger (100)",
+   "tarih": "2026-09-10",
+   "tutar": 8000,
+   "currency": "TRY",
+   "konum": ""
+  },
+  {
+   "tip": "makina",
+   "key": "m1001",
+   "custId": 1001,
+   "recId": 1001,
+   "ad": "Anadolu Gıda",
+   "detay": "AK100 · S1001",
+   "tarih": "2026-09-05",
+   "konum": ""
+  }
+ ]
+}

@@ -44,7 +44,8 @@ try {
       teslimatFarkli: true, teslimatAd: "Depo", teslimatAdres: "Cad 1", teslimatSehir: "Bursa", teslimatIlce: "Nilüfer", teslimatUlke: "Türkiye",
       odendi: true, yontem: "Çek", vadeTarihi: "2026-11-01", tahsilEdildi: true }],
     // Temiz kurulumda yedek parça satışı + tahsis child tablosu oluşmalı (yazma çökmemeli)
-    yedekParcaSatislar: [{ id: 8, dealerId: 2, tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10, teklifId: 9, teklifKalemId: "a", partId: "3", miktar: 5, birimFiyat: 90, currency: "TRY", tarih: "2026-07-15", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 54, blokajGun: 0, yansitildi: false }, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN", makinaSerbest: "", tarih: "2026-07-16" }] }],
+    yedekParcaSatislar: [{ id: 8, dealerId: 2, tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10, teklifId: 9, teklifKalemId: "a", partId: "3", miktar: 5, birimFiyat: 90, currency: "TRY", tarih: "2026-07-15", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 54, blokajGun: 0, yansitildi: false }, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN", makinaSerbest: "", tarih: "2026-07-16" }] },
+      { id: 81, dealerId: 2, partId: "3", miktar: 1, birimFiyat: 40, currency: "TRY", tarih: "2026-07-17", odendi: false, ucretsizMi: true, tahsisler: [] }], // spec 0095
     calisanlar: [{ id: 9, ad: "Ali Veli" }],
     // Gider kaydı (spec 0001): temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari kolonu oluşmalı
     giderTurleri: [{ id: 30, ad: "Hammadde", davranis: "normal" }, { id: 38, ad: "SGK", davranis: "sgk" }], // spec 0074 AC-33
@@ -117,6 +118,8 @@ check("temiz kurulumda uretim_partileri tablosu ve stock.partiId sütunu oluştu
 check("spec 0082 AC-19: temiz kurulumda okunan veride standart gider bölümü anahtarı yok; tablo duruyor (ölü tablo, X1)", !("standartGiderler" in blob)
   && (() => { try { return Array.isArray(new (require(path.join(root, "node_modules", "better-sqlite3")))(dbmod.getDbPath(), { readonly: true }).prepare("SELECT * FROM standart_giderler").all()); } catch { return false; } })());
 check("spec 0068 AC-20: temiz kurulumda tedarikciler ve uretim_partileri deletedAt sütunu oluştu", (blob.tedarikciler || []).find(x => x.id === 39)?.deletedAt === "2026-10-01T09:00:00.000Z" && (blob.uretimPartileri || []).find(x => x.id === 40)?.deletedAt === "2026-10-01T09:00:00.000Z");
+check("spec 0095: temiz kurulumda yedek_parca_satis.ucretsizMi sütunu oluştu; işaretsizde alan yok", (blob.yedekParcaSatislar || []).find(x => x.id === 81)?.ucretsizMi === true
+  && !("ucretsizMi" in ((blob.yedekParcaSatislar || []).find(x => x.id === 8) || { ucretsizMi: 1 })));
 check("temiz kurulumda üç bölümün hesapId sütunu oluştu (spec 0044)", (blob.partSales || [])[0]?.hesapId === 5);
 check("temiz kurulumda cekler tablosunun 0049 sütunları oluştu (AC-25)", (blob.cekler || []).find(c => c.id === 38)?.hesapId === 5 && (blob.cekler || []).find(c => c.id === 38)?.tutar === 100);
 check("temiz kurulumda cekler tablosu ve hesap_hareketleri.cekId sütunu oluştu (spec 0040)", (blob.cekler || [])[0]?.no === "1" && (blob.hesapHareketleri || [])[0]?.cekId === 36);

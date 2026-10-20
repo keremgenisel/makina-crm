@@ -3,7 +3,7 @@ import { CEK_DURUM_AD } from "../../../lib/cek";
 import { SALE_TYPE_STYLE } from "../../../lib/constants";
 import {
   fmtTR, fmtCur, parseMoney, normalizeSaleType, parcaAdi, parcaGruplari, isAltuntasServisi,
-  disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster, sureBicim, yedekParcaBedeli, tahsilEdilecekKdv, satisKdvBolumu,
+  disServisMi, islemFirmaGoster, partSaleDisFirmaMi, satisFirmaGoster, sureBicim, yedekParcaBedeli, tahsilEdilecekKdv, satisKdvBolumu, satisUcretsizMi, UCRETSIZ_IBARESI,
 } from "../../../lib/utils";
 import { servisSureleri } from "../../../lib/servisAnaliz";
 import { yansitilanKomisyon } from "../../../lib/krediKarti";
@@ -273,23 +273,29 @@ export const MachineTimeline = ({
                 const bedel = grup.reduce((t, s) => t + yedekParcaBedeli(s), 0);
                 const kom = grup.reduce((t, s) => t + yansitilanKomisyon(s), 0);
                 const kdv = grup.reduce((t, s) => t + tahsilEdilecekKdv(s.faturaTipi, yedekParcaBedeli(s), s.tarih, kdvRates, s), 0);
+                // Spec 0095 R10, R11, R23: bütün satırları ücretsiz partide tutar ve ödeme düğmeleri yerine ibare; karışık partide
+                // düğmeler partinin ücretli satırını temsilci alır (ödeme yalnız ücretli satırlara yazılır).
+                if (grup.every(satisUcretsizMi)) return (
+                  <div style={{ marginTop: 5, fontSize: 12, color: "var(--n500, #64748b)" }} data-testid="ucretsiz-ibaresi">Yedek Parça: {UCRETSIZ_IBARESI}</div>
+                );
+                const odemeYp = grup.find(s => !satisUcretsizMi(s)) || ev.yp;
                 return (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>
                       {kkUcgenMetin(bedel, kom, kdv, ev.yp.currency, "Yedek parça")
                         || <>Yedek Parça Ücreti: {fmtCur(bedel, ev.yp.currency)}{kdv > 0 && <> · KDV dahil: {fmtCur(bedel + kdv, ev.yp.currency)}</>}</>}
                     </span>
-                    <TevkifatRozeti kayit={ev.yp} tip={ev.yp.faturaTipi} bedel={bedel} tarih={ev.yp.tarih} kdvRates={kdvRates} currency={ev.yp.currency} />
+                    <TevkifatRozeti kayit={odemeYp} tip={odemeYp.faturaTipi} bedel={bedel} tarih={odemeYp.tarih} kdvRates={kdvRates} currency={odemeYp.currency} />
                     {canDo("cust_yedek_parca_payment") && onToggleYedekParcaOdendi && (
-                      <button onClick={() => onToggleYedekParcaOdendi(ev.yp)}
-                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: ev.yp.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: ev.yp.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: ev.yp.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
-                        {ev.yp.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
+                      <button onClick={() => onToggleYedekParcaOdendi(odemeYp)}
+                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: odemeYp.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: odemeYp.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: odemeYp.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
+                        {odemeYp.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                       </button>
                     )}
-                    {ev.yp.odendi && ev.yp.yontem === "Çek" && canDo("cust_yedek_parca_payment") && onToggleYedekParcaCekTahsil && (
-                      <button onClick={() => onToggleYedekParcaCekTahsil(ev.yp)}
-                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: ev.yp.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)", background: ev.yp.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", color: ev.yp.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
-                        {ev.yp.tahsilEdildi ? "Çek tahsil edildi" : "Çek beklemede · işaretle: tahsil edildi"}
+                    {odemeYp.odendi && odemeYp.yontem === "Çek" && canDo("cust_yedek_parca_payment") && onToggleYedekParcaCekTahsil && (
+                      <button onClick={() => onToggleYedekParcaCekTahsil(odemeYp)}
+                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: odemeYp.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)", background: odemeYp.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", color: odemeYp.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
+                        {odemeYp.tahsilEdildi ? "Çek tahsil edildi" : "Çek beklemede · işaretle: tahsil edildi"}
                       </button>
                     )}
                   </div>
@@ -325,7 +331,7 @@ export const MachineTimeline = ({
                         )}
                         <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>
                           {psList.length === 1 ? `${p.ad}${p.olcu ? " (" + p.olcu + ")" : ""} · ` : ""}
-                          {p.ucretsizMi ? "garanti kapsamında (ücretsiz)"
+                          {p.ucretsizMi ? UCRETSIZ_IBARESI
                             : (kkUcgenMetin(parseMoney(p.ucret), yansitilanKomisyon(p), kdv, p.currency)
                               || (fmtCur(p.ucret, p.currency) + (kdv > 0 ? ` · KDV dahil: ${fmtCur(p.ucret + kdv, p.currency)}` : "")))}
                         </span>

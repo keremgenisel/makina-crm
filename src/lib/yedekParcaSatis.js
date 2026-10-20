@@ -1,10 +1,34 @@
 // Yedek parça (kargo) satışı ortak kayıt mantığı. Stok > Yedek Parça Satışı sekmesi, müşteri detay
 // modalı ve bayi detay modalı aynı doğrulama + kayıt yolunu kullanır (ayrışmasın diye tek kaynak).
-import { uid, today, parseMoney, simdiYerel, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "./utils";
+import { uid, today, yerelBugun, fmtTR, parseMoney, simdiYerel, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "./utils";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "./satisTevkifat";
 import { yedekParcaDus } from "./yedekParcaStok";
 import { yerelServisEkle } from "./yerelServis";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
+
+// ── Garanti içi ücretsiz verme (spec 0095) ──────────────────────────────────────────────────────────────────────────
+// İşaretin TEK yazım yolu (R14/2, AC-34): alan her çağrıda silinir, yalnız form işaretliyse `true` yazılır (kapalı değer
+// gövdeye girmez, C4; `{ ...eski, ...rec }` birleştirmesi eski `true`'yu korumasın). İşaretliyken ödeme ve tahsilat
+// alanları temizlenir (R7/2), tevkifat anahtarları silinir (R7) ve fatura tipi boşalır (R18c). Birim fiyat saklanır (R12).
+export const ucretsizUygula = (rec, form) => {
+  const k = { ...rec };
+  delete k.ucretsizMi;
+  if (!form?.ucretsizMi) return k;
+  delete k.tevkifatli; delete k.tevkifatPay; delete k.tevkifatPayda;
+  return { ...k, ucretsizMi: true, faturaTipi: "", yontem: "", vadeTarihi: "", tahsilEdildi: false, taksitSayisi: null,
+    kartKomisyonu: null, hesapId: null, odendi: false, tahsilatTarihi: null };
+};
+// Alıcı müşterinin (makina kaydı) garanti durumu (R4, R4/2): ölçüt `warrantyEnd >= bugün`, bugün YEREL gündür
+// (`ServiceForm`'un `today()` satırı UTC'dir ve bilinçli olarak değişmedi, X9). Alıcı yoksa null.
+// Spec 0095 R23 (triyaj): karışık partinin toplu düzenlemesi partiyi yeniden kurar; ücretsiz satır saklı fiyatıyla ücretli doğar.
+export const KARISIK_PARTI_UYARISI = "Bu partide ücretsiz satır var; kaydedince ücretli olur, ayrı düzenleyin.";
+export const GARANTI_UYARISI = "Bu makinanın garantisi aktif görünmüyor; parça yine de ücretsiz kaydedilebilir.";
+export const garantiDurumu = (musteri, bugun = yerelBugun()) => {
+  if (!musteri) return null;
+  const bitis = musteri.warrantyEnd || "";
+  if (!bitis) return { aktif: false, metin: "Garanti bitiş tarihi girilmemiş" };
+  return bitis >= bugun ? { aktif: true, metin: `Garanti aktif · bitiş ${fmtTR(bitis)}` } : { aktif: false, metin: `Garanti ${fmtTR(bitis)} tarihinde bitti` };
+};
 
 // Form → normalize + doğrula → { ok, rec } | { ok:false, hata }. Alıcı bayi VEYA müşteri olabilir.
 // ayar = krediKartiKomisyonlari (kredi kartı komisyon tablosu), kdvRates = KDV oran dönemleri —
@@ -32,12 +56,13 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
   const kdvTarih = form.tarih || today();                     // KDV oranı SATIŞ tarihinden
   const kkTarih = form.kartTarihi || form.tarih || today();   // blokaj KART İŞLEM tarihinden (boşsa satış tarihi)
   const kkFatura = form.faturaTipi || "Faturalı Yurtiçi";
-  const tevkifatHata = satisTevkifatDogrula(form, kkFatura); // spec 0079 R6
+  const ucretsiz = !!form.ucretsizMi; // spec 0095 R7/4: ücretsizde tevkifat doğrulanmaz, kart dalı çalışmaz
+  const tevkifatHata = ucretsiz ? null : satisTevkifatDogrula(form, kkFatura); // spec 0079 R6
   if (tevkifatHata) return { ok: false, hata: tevkifatHata };
   // Spec 0079 R13 (revizyon 2): kart tutarı tahsil edilen KDV ile; düzenlemede kayıtlı anlık görüntünün tabanı korunur.
   const taban = kartTabanKaydi(form);
   let birimFiyatSave = netBirim, kartKomisyonu = null;
-  if (form.yontem === "Kredi Kartı" && form.taksitSayisi && ayar) {
+  if (!ucretsiz && form.yontem === "Kredi Kartı" && form.taksitSayisi && ayar) {
     if (form.kkYansit && netBedel > 0) {
       const kdvOran = tahsilKdvOrani(kkFatura, kdvTarih, kdvRates, taban); // uygulanan (tahsil edilen) oran; Yurtdışı/Faturasız → 0
       const a = kartYansitmaAyrim(netBedel, form.taksitSayisi, ayar, kdvOran, kkTarih);
@@ -49,7 +74,7 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     }
     kartKomisyonu = kartTabanIsaretle(kartKomisyonu, taban);
   }
-  return { ok: true, rec: satisTevkifatUygula({
+  return { ok: true, rec: ucretsizUygula(satisTevkifatUygula({
     aliciTipi, dealerId, musteriId, partId, miktar,
     // Anlaşmasız dış firma alıcı bilgileri (yalnız bu kayda; bayi/müşteri kaydı oluşturulmaz).
     disFirma,
@@ -81,10 +106,11 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     teklifId: form.teklifId ?? null, teklifKalemId: form.teklifKalemId ?? null,
     // Spec 0044 R1: tahsilatın girdiği hesap; formda alan hiç yoksa kayda dokunulmaz (düzenleme ...rec ile birleşir).
     ...(form.hesapId !== undefined ? { hesapId: form.hesapId ?? null } : {}),
-  }, form, kkFatura) }; // spec 0079 R5, R7: toplu satışta her satıra aynı tevkifat; kapı kapalıysa alanlar yok
+  }, form, kkFatura), form) }; // spec 0079 R5, R7: toplu satışta her satıra aynı tevkifat; spec 0095 R13: aynı işaret
 }
 // Düzenleme kolu (spec 0079 R5/1): `{ ...eski, ...rec }` birleştirmesi eski tevkifat alanlarını silmez; buradan geçer.
-export const yedekParcaGuncelle = (eski, rec, form) => satisTevkifatUygula({ ...eski, ...rec }, form, rec.faturaTipi);
+// Spec 0095 R14/2: aynı tuzak işaret için de geçerli; `ucretsizUygula` alanı siler ya da yazar (son adım).
+export const yedekParcaGuncelle = (eski, rec, form) => ucretsizUygula(satisTevkifatUygula({ ...eski, ...rec }, form, rec.faturaTipi), form);
 
 // Yedek parça satışı "planlanmış" mı? = panoya düşme zamanı ileride → o zamana kadar panoda gizli.
 // Servisteki servisPlanlandiMi'nin kargo karşılığı. Damgalar yerel duvar-saati string'i (new Date yerel).

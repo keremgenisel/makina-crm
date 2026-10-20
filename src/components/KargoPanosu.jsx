@@ -1,4 +1,4 @@
-import { fmtCur, parseMoney, parcaAdi, fmtTR, satisFirmaGoster } from "../lib/utils";
+import { fmtCur, parseMoney, parcaAdi, fmtTR, satisFirmaGoster, yedekParcaBedeli, satisUcretsizMi, UCRETSIZ_IBARESI } from "../lib/utils";
 import { Btn, Modal, Input, Icon } from "./ui";
 import { aliciAd } from "./stock/TahsisModal";
 import { logAction } from "../lib/audit";
@@ -127,7 +127,9 @@ export const KargoDetayModal = ({ grup, setYedekParcaSatislar = null, setPartSal
     : [["İletişim Kişisi", alici.contact], ["Telefon", alici.phone],
        ["E-posta", alici.email], ["Adres", alici.adres], ["Şehir / Ülke", aliciSehir]]) : [])).filter(([, v]) => v);
   const baslik = kalip ? (musteri?.name || "(müşteri yok)") : aliciAd(satis, dealers, customers);
-  const genelToplam = grup.reduce((t, s) => t + (kalip ? parseMoney(s.ucret) : (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat)), 0);
+  // Spec 0095 R21, R23: yedek parçada tek okuma yolu (ücretsiz satır sıfır katar); ibare yalnız bütün satırlar ücretsizse.
+  const genelToplam = grup.reduce((t, s) => t + (kalip ? parseMoney(s.ucret) : yedekParcaBedeli(s)), 0);
+  const hepsiUcretsiz = !kalip && grup.length > 0 && grup.every(satisUcretsizMi);
   const audit = (action, detail, entityId = satis.id) => logAction({ serverPermissions, action, entity: kalip ? "kalip_satisi" : "yedek_parca_satis", entityId, entityName: baslik, detail });
   const guncelle = (patch) => { // ortak kargo alanları → grubun tümüne
     if (canKargo && setKayit) {
@@ -165,18 +167,17 @@ export const KargoDetayModal = ({ grup, setYedekParcaSatislar = null, setPartSal
             </div>
           </div>
         )}
-        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", margin: "8px 0 4px" }}>{fmtTR(satis.tarih)} · Genel Toplam: <strong>{fmtCur(genelToplam, satis.currency || "TRY")}</strong></div>
+        <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", margin: "8px 0 4px" }}>{fmtTR(satis.tarih)} · Genel Toplam: <strong data-testid="kargo-genel-toplam">{hepsiUcretsiz ? UCRETSIZ_IBARESI : fmtCur(genelToplam, satis.currency || "TRY")}</strong></div>
 
         {/* Kalemler — toplu satışta satır satır */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
           {grup.map(s => {
-            const m = parseInt(s.miktar) || 0;
             return (
               <div key={s.id} style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px", background: "var(--n100, #f8fafc)" }}>
                 <div style={{ fontSize: 12.5, color: "var(--n700, #334155)", fontWeight: 600 }}>
                   {kalip
                     ? <>{s.ad || "(kalıp)"}{s.olcu ? ` · ${s.olcu}` : ""} · {fmtCur(parseMoney(s.ucret), s.currency || "TRY")}{satisFirmaGoster(s) ? ` · Satış: ${satisFirmaGoster(s)}` : ""}</>
-                    : <>{partAd(s) || "(parça)"} · <strong>{s.miktar} adet</strong> · {fmtCur(m * parseMoney(s.birimFiyat), s.currency || "TRY")}</>}
+                    : <>{partAd(s) || "(parça)"} · <strong>{s.miktar} adet</strong> · {satisUcretsizMi(s) ? UCRETSIZ_IBARESI : fmtCur(yedekParcaBedeli(s), s.currency || "TRY")}</>}
                 </div>
               </div>
             );

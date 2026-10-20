@@ -8,7 +8,7 @@ import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
 import { sahipsizHaric } from "../lib/sahipsiz";
 import { yansitilanKomisyon } from "../lib/krediKarti";
-import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, faturaBedeliOf, gercekSatisBedeli } from "../lib/utils";
+import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, yedekParcaBedeli, faturaBedeliOf, gercekSatisBedeli } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { hesaplaGiderRaporu, kdvKarsilastir, yururlukKapsami, ayinSonGunu, tevkifatOzeti, turHaritasi } from "../lib/gider";
 import { satisKdvAylar } from "../lib/giderKdv";
@@ -125,7 +125,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     const yedekParcaSatisInRange = partSales.filter(p => p.tur === "YedekParca" && inRange(p.tarih)); // Bağımsız yedek parça satışları
     // Yeni yedek parça (kargo ve fabrika teslim) satışları — alıcı bayi VEYA müşteri (ayrı dizi, partSales'ten bağımsız).
     const yedekParcaKargoInRange = (yedekParcaSatislar || []).filter(s => !s.deletedAt && inRange(s.tarih));
-    const kargoBedel = (s) => (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
+    const kargoBedel = yedekParcaBedeli; // spec 0095 C1: tek okuma yolu (ücretsizde sıfır)
 
     // ── ADETLER ──
     const totalMakina = sales.length;
@@ -457,7 +457,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     };
     const custAd = (id) => customers.find(c => String(c.id) === String(id))?.name || "—";
     const dealerAd = (id) => dealers.find(d => String(d.id) === String(id))?.name || "—";
-    const kargoBedel = (s) => (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
+    const kargoBedel = yedekParcaBedeli; // spec 0095 C1
     const rows = [];
     (partSales || []).filter(p => !p.deletedAt && p.yontem === "Kredi Kartı" && !p.ucretsizMi && inR(p.tarih)).forEach(p => {
       const kdv = tahsilEdilecekKdv(p.faturaTipi, p.ucret, p.tarih, kdvRates, p);

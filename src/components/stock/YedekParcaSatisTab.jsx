@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
+import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
 import { Segment, BosDurum } from "../tasarim";
@@ -198,6 +198,7 @@ export const YedekParcaSatisTab = ({
   };
 
   const odendiToggle = (rec) => {
+    if (satisUcretsizMi(rec)) return; // spec 0095 R7/2: ücretsiz kayıtta ödeme durumu yoktur (düğme de çizilmez)
     if (!canDoStock("yedek_parca_edit")) return;
     const yeni = !rec.odendi;
     const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
@@ -225,7 +226,8 @@ export const YedekParcaSatisTab = ({
   const satirKart = (s, grupIci = false) => {
     const d = durumBilgi(s);
     const part = partMap[String(s.partId)];
-    const toplam = (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
+    const toplam = yedekParcaBedeli(s); // spec 0095 C1
+    const ucretsiz = satisUcretsizMi(s);
     const kalan = (parseInt(s.miktar) || 0) - tahsisToplam(s);
     const odakli = s.id === vurgulu;
     return (
@@ -243,7 +245,7 @@ export const YedekParcaSatisTab = ({
               </div>
             )}
             <div style={{ fontSize: grupIci ? 13.5 : 12.5, fontWeight: grupIci ? 700 : 400, color: grupIci ? "var(--n900, #0f172a)" : "var(--n600, #475569)", marginTop: grupIci ? 0 : 2 }}>
-              {parcaAdi(part) || "(parça yok)"} · <strong>{s.miktar} adet</strong> · {fmtCur(toplam, s.currency || "TRY")}
+              {parcaAdi(part) || "(parça yok)"} · <strong>{s.miktar} adet</strong> · {ucretsiz ? <span data-testid="ucretsiz-ibaresi">{UCRETSIZ_IBARESI}</span> : fmtCur(toplam, s.currency || "TRY")}
               {/* Spec 0079 R26: tevkifatlı satışın rozeti (oran ve alıcının beyan edeceği KDV). */}
               {(() => { const b = satisKdvBolumu(s.faturaTipi, toplam, s.tarih, kdvRates, s); return b.tevkifatli ? (
                 <span data-testid="satis-tevkifat-rozeti" style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" }}>
@@ -256,11 +258,12 @@ export const YedekParcaSatisTab = ({
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
             <span style={{ fontSize: 11.5, fontWeight: 700, color: d.renk, background: d.bg, border: `1px solid ${d.br}`, borderRadius: 999, padding: "2px 10px" }}>{d.label}</span>
-            <button onClick={() => odendiToggle(s)} disabled={!canDoStock("yedek_parca_edit")}
+            {/* Spec 0095 R11, AC-23: ücretsiz kayıtta ödeme durumu diye bir şey yoktur; düğme çizilmez. */}
+            {!ucretsiz && <button onClick={() => odendiToggle(s)} disabled={!canDoStock("yedek_parca_edit")}
               style={{ fontSize: 11.5, fontWeight: 700, cursor: canDoStock("yedek_parca_edit") ? "pointer" : "default", border: "none", borderRadius: 999, padding: "2px 10px",
                 color: s.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)", background: s.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)" }}>
               {s.odendi ? "Ödendi" : "Ödenmedi"}
-            </button>
+            </button>}
           </div>
         </div>
 

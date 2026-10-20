@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../../lib/constants";
-import { fmtTR, cekGelirMi, fmtKalipCapi, normalizeSaleType, isFaturali, parseMoney, kalipCount, faturaBedeliOf, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, isAltuntasServisi, tahsilEdilecekKdv } from "../../lib/utils";
+import { fmtTR, cekGelirMi, fmtKalipCapi, normalizeSaleType, isFaturali, parseMoney, kalipCount, faturaBedeliOf, isServisUcretliMi, isParcaUcretliMi, altuntasParcaBedeli, isAltuntasServisi, tahsilEdilecekKdv, yedekParcaBedeli, satisUcretsizMi } from "../../lib/utils";
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { Icon, Btn } from "../ui";
 import { KartBolum } from "../tasarim";
@@ -32,7 +32,7 @@ export const urunBedeliKomisyonHaric = (bedel, rec, matrahTotal = null) => {
 
 // Yedek parça (kargo) satışları dışa aktarım başlığı + satırı (saf; test edilebilir).
 // Alıcı adı/türü ortak yardımcılarla çözülür → bayi / müşteri / anlaşmasız dış firma doğru gösterilir.
-export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Ürün Bedeli (Komisyon Hariç)", "Tarih", "Ödendi", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri", ...SATIS_TEVKIFAT_EXPORT_HEAD];
+export const YEDEK_PARCA_EXPORT_HEAD = ["Alıcı Tipi", "Alıcı", "Yedek Parça", "Miktar", "Birim Fiyat", "Para Birimi", "Toplam", "Ürün Bedeli (Komisyon Hariç)", "Ücretsiz mi?", "Tarih", "Ödendi", "Ödeme Yöntemi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Teslim Şekli", "Kargo Firma", "Kargo Takip No", "Kargo Durumu", "Farklı Teslimat Adresi", "Makina Tahsisleri", ...SATIS_TEVKIFAT_EXPORT_HEAD];
 // Spec 0079 R32: tevkifat sütunları satırın sonunda (tevkifatsızda boş).
 export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [], kdvRates = DEFAULT_KDV_RATES } = {}) => {
   const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
@@ -44,12 +44,15 @@ export const yedekParcaExportRow = (s, { dealers = [], customers = [], parts = [
     ? [s.teslimatAd, s.teslimatAdres, [s.teslimatIlce, s.teslimatSehir].filter(Boolean).join(" / "), s.teslimatUlke, s.teslimatTel].filter(Boolean).join(" · ")
     : "";
   const cekDurum = s.yontem === "Çek" ? (s.tahsilEdildi ? "Tahsil edildi" : "Beklemede") : "";
+  // Spec 0095 R19: ücretsizde Birim Fiyat ham (R12, saklı fiyat), türetilmiş para hücreleri ve ödeme hücreleri BOŞ (sıfır
+  // değil: "sıfır liraya satıldı" okunmasın); "Ücretsiz mi?" Ürün Bedeli'nin ardında (Extra Kalıp satırının emsali).
+  const ucretsiz = satisUcretsizMi(s), bedel = yedekParcaBedeli(s);
   return [tur, aliciAd(s, dealers, customers), part.ad || s.partId, parseInt(s.miktar) || 0,
     parseMoney(s.birimFiyat), curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"],
-    (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), urunBedeliKomisyonHaric((parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s), s.tarih || "", s.odendi ? "Evet" : "Hayır",
-    s.odendi ? (s.yontem || "Nakit") : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s), komisyonYansitildiEtiket(s),
+    ucretsiz ? "" : bedel, ucretsiz ? "" : urunBedeliKomisyonHaric(bedel, s), ucretsiz ? "Evet" : "Hayır", s.tarih || "", ucretsiz ? "" : s.odendi ? "Evet" : "Hayır",
+    (s.odendi && !ucretsiz) ? (s.yontem || "Nakit") : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s), komisyonYansitildiEtiket(s),
     teslimSekli, s.kargoFirma || "", s.kargoTakipNo || "", s.kargoDurum || "", teslimatAdresi, tahsis,
-    ...satisTevkifatExportHucreleri(s.faturaTipi, (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat), s.tarih, kdvRates, s)];
+    ...(ucretsiz ? ["", ""] : satisTevkifatExportHucreleri(s.faturaTipi, bedel, s.tarih, kdvRates, s))];
 };
 
 // Finans Özeti (Dışa Aktar) toplamları — saf; Finance.jsx ile AYNI gelir kuralları:

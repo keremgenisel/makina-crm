@@ -1,6 +1,6 @@
 import LOGO from "../assets/logo.avif?inline";
 import { sayi, st, gecenAyEki, altBaslik, gun, detayTablo, rozet, rozetSatiri, bolum, belgeAcilis } from "./raporSunumu";
-import { today, todayTR, fmtTR, fmtCur, parseMoney, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster, satisKdvBolumu } from "./utils";
+import { today, todayTR, fmtTR, fmtCur, parseMoney, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster, satisKdvBolumu, UCRETSIZ_IBARESI } from "./utils";
 import { COUNTRY_EN } from "./constants";
 
 // TIRNAK da kaçırılır: bu değerler yalnız metin düğümlerinde değil, HTML ÖZNİTELİĞİ içinde
@@ -1633,7 +1633,7 @@ export function buildAylikRaporHtml(rapor, factory) {
   const extraKalipDetayTablo = detayTablo("EXTRA KALIP ALAN FİRMALAR (eskiden yeniye)", ["Firma", "Tarih", "Teslim", "Adet", "Tutar"],
     (rapor.extraKalipDetay || []).map(r => [r.firma, gun(r.tarih), r.teslimSekli, r.adet, paraSatir(r.tutar)]), ["left", "left", "left", "right", "right"]);
   const yedekKargoDetayTablo = detayTablo("YEDEK PARÇA ALAN FİRMALAR (eskiden yeniye)", ["Alıcı", "Tarih", "Tür", "Teslim", "Miktar", "Tutar", "KDV", "Durum"],
-    (rapor.yedekKargoDetay || []).map(r => [r.firma, gun(r.tarih), r.aliciTuru, r.teslimSekli, r.miktar, paraSatir(r.tutar), paraSatir(r.kdv), r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "left", "left", "right", "right", "right", "left"]);
+    (rapor.yedekKargoDetay || []).map(r => [r.firma, gun(r.tarih), r.aliciTuru, r.teslimSekli, r.miktar, paraSatir(r.tutar), paraSatir(r.kdv), r.ucretsiz ? UCRETSIZ_IBARESI : r.odendi ? "Ödendi" : "Ödenmedi"]), ["left", "left", "left", "left", "right", "right", "right", "left"]); // spec 0095 AC-38
   // Bakım onarım Durum sütunu: kredi kartıyla ödenen kayıt "Ödendi" ama para blokajda ise bunu
   // belirt (yöntem + hesaba geçiş günü) — müşteri "ödendi yazıyor, giren parada neden yok" sormasın.
   const servisDurum = (r) => {

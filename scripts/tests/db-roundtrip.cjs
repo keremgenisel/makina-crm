@@ -212,7 +212,7 @@ dbmod.writeBlobToDb({
     // Alıcı müşteri (bayiye değil son müşteriye satış) — musteriId dolu, dealerId boş; panoGizli (arşiv) true; fabrika teslim
     { id: 651, aliciTipi: "musteri", musteriId: 500, partId: "8", miktar: 3, birimFiyat: 50, currency: "TRY", tarih: "2026-07-18", odendi: true, yontem: "Çek", vadeTarihi: "2026-10-01", tahsilEdildi: true, tahsilatTarihi: "2026-10-03", kargoDurum: "Teslim Edildi", panoGizli: true, fabrikaTeslim: true, tahsisler: [] },
     // Anlaşmasız dış firma alıcı (kayıtlı bayi değil) — bilgiler kayda yazılır
-    { id: 652, aliciTipi: "bayi", dealerId: null, disFirma: true, disFirmaAd: "Harici Parça Ltd", disFirmaYetkili: "Veli Kaya", disFirmaTel: "05553334455", disFirmaAdres: "Sanayi Sitesi 3. Blok No:7", disFirmaUlke: "Türkiye", disFirmaSehir: "Ankara", partId: "8", miktar: 2, birimFiyat: 75, currency: "TRY", tarih: "2026-07-19", odendi: false, tahsisler: [] },
+    { id: 652, aliciTipi: "bayi", dealerId: null, disFirma: true, disFirmaAd: "Harici Parça Ltd", disFirmaYetkili: "Veli Kaya", disFirmaTel: "05553334455", disFirmaAdres: "Sanayi Sitesi 3. Blok No:7", disFirmaUlke: "Türkiye", disFirmaSehir: "Ankara", partId: "8", miktar: 2, birimFiyat: 75, currency: "TRY", tarih: "2026-07-19", odendi: false, tahsisler: [], ucretsizMi: true }, // spec 0095 AC-30
   ],
   gorusmeler: [
     { id: 7, customerId: 500, tarih: "2026-07-01", tur: "Telefon", not: "Fiyat bekliyor", takipTarihi: "2026-07-10", tamamlandi: false, kullanici: "kerem" },
@@ -432,6 +432,29 @@ check("yedek parça satışı kargo sorumlusu + panoya düşme zamanı roundtrip
 check("yedek parça satışı oluşturma zamanı roundtrip (pano sıralaması)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.olusturmaZamani === "2026-07-15T10:20:30"; })());
 check("yedek parça satışı batchId roundtrip (toplu satış gruplaması)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.batchId === 777001; })());
 check("yedek parça satışı fabrikaTeslim (boolean) roundtrip", (() => { const mus = (blob.yedekParcaSatislar || []).find(x => x.id === 651); const bayi = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return mus?.fabrikaTeslim === true && bayi?.fabrikaTeslim === false; })());
+// Spec 0095 AC-30, AC-33, AC-44: garanti içi ücretsiz işareti `tevkifatOku` emsaliyle okunur: işaretli kayıtta true ve saklı
+// birim fiyat (R12) korunur; işaretsiz kayıtta anahtar HİÇ yok (false da değil, `panoGizli`/`fabrikaTeslim` testlerinin tersine).
+check("spec 0095 AC-30: ücretsiz işareti roundtrip; işaretsiz kayıtta alan gövdede yok", (() => {
+  const u = (blob.yedekParcaSatislar || []).find(x => x.id === 652), a = (blob.yedekParcaSatislar || []).find(x => x.id === 650), b = (blob.yedekParcaSatislar || []).find(x => x.id === 651);
+  return u?.ucretsizMi === true && u.birimFiyat === 75 && a && b && !("ucretsizMi" in a) && !("ucretsizMi" in b);
+})());
+check("spec 0095 AC-33: alanı bilmeyen (güncellenmemiş) istemcinin geri gönderdiği gövde bölümü değişmiş göstermez", (() => {
+  const { degisenBolumler, stableStringify } = require(path.join(root, "electron", "serverAuth.cjs"));
+  const eskiIstemci = JSON.parse(JSON.stringify(blob));
+  eskiIstemci.yedekParcaSatislar.forEach(s => { if (s.ucretsizMi !== true) delete s.ucretsizMi; });
+  return !degisenBolumler(blob, eskiIstemci).includes("yedekParcaSatislar")
+    && stableStringify(blob.yedekParcaSatislar.filter(s => s.id !== 652)) === stableStringify(eskiIstemci.yedekParcaSatislar.filter(s => s.id !== 652));
+})());
+check("spec 0095 AC-44: iki tabloda aynı adlı ucretsizMi sütunu", (() => {
+  const dbPath = dbmod.getDbPath();
+  dbmod.close();
+  const c = new Database(dbPath);
+  const ad = (t) => c.prepare(`PRAGMA table_info(${t})`).all().map(x => x.name);
+  const ok = ad("part_sales").includes("ucretsizMi") && ad("yedek_parca_satis").includes("ucretsizMi");
+  c.close();
+  dbmod.migrateFromJsonIfNeeded();
+  return ok;
+})());
 check("yedek parça satışı disFirma (anlaşmasız dış firma alıcı) roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 652); return s?.disFirma === true && s?.disFirmaAd === "Harici Parça Ltd" && s?.disFirmaYetkili === "Veli Kaya" && s?.disFirmaTel === "05553334455" && s?.disFirmaAdres === "Sanayi Sitesi 3. Blok No:7" && s?.disFirmaUlke === "Türkiye" && s?.disFirmaSehir === "Ankara" && s?.dealerId == null; })());
 check("yedek parça satışı farklı teslimat adresi roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); const mus = (blob.yedekParcaSatislar || []).find(x => x.id === 651); return s?.teslimatFarkli === true && s?.teslimatAd === "Şantiye Deposu" && s?.teslimatTel === "03121112233" && s?.teslimatAdres === "Başkent OSB 15. Cad No:8" && s?.teslimatUlke === "Türkiye" && s?.teslimatSehir === "Ankara" && s?.teslimatIlce === "Sincan" && mus?.teslimatFarkli === false; })());
 check("odemePlani JSON tam turu", blob.customers[0]?.odemePlani?.[0]?.vadeTarihi === "2026-08-30");

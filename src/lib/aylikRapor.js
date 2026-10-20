@@ -6,7 +6,7 @@ import {
   parseMoney, isServisUcretliMi, isParcaUcretliMi,
   altuntasParcaBedeli, isPaymentReceived, isCekVadesiGecmis, taksitGecikmisMi,
   kalipBorcTarafi, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf, gercekSatisBedeli,
-  normalizeSaleType, cekBekliyorMu, odemeGelirTarihi, tahsilEdilecekKdv, tahsilKdvOrani, satisKdvBolumu,
+  normalizeSaleType, cekBekliyorMu, odemeGelirTarihi, tahsilEdilecekKdv, tahsilKdvOrani, satisKdvBolumu, yedekParcaBedeli, satisUcretsizMi,
 } from "./utils";
 import { SALE_TYPES } from "./constants";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "./krediKarti";
@@ -73,7 +73,7 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   // Yedek parça (kargo ve fabrika teslim) alıcısının adı — müşteri / bayi / anlaşmasız dış firma (ekrandaki aliciAd ile aynı).
   const dealerAdi = (id) => dealers.find(d => d.id === Number(id))?.name || "—";
   const kargoAlici = (s) => s.aliciTipi === "musteri" ? custAdi(s.musteriId) : s.disFirma ? (s.disFirmaAd || "Dış firma") : dealerAdi(s.dealerId);
-  const kargoBedeli = (s) => (parseInt(s.miktar) || 0) * parseMoney(s.birimFiyat);
+  const kargoBedeli = yedekParcaBedeli; // spec 0095 C1: tek okuma yolu (ücretsizde sıfır)
 
   // Spec 0079 R22, R16: tevkifatlı satışların bilgi nesnesi. Toplam KDV'ye giren beş kaynak (makina, Extra Kalıp, yedek parça,
   // anlaşmalı servise parça, servis) KDV'yi buradan alır; böylece bilgi rakamı ile beyan edilen KDV aynı tabandan gelir ve kayıt
@@ -170,9 +170,15 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   const yedekKargoTeslimTutar = {}; // kargo / fabrikaTeslim / gonderilmedi → {net,kdv,adet}
   const kargoTeslimKey = (s) => s.fabrikaTeslim ? "fabrikaTeslim" : (s.kargoDurum ? "kargo" : "gonderilmedi");
   let yedekKargoMiktar = 0;
+  // Spec 0095 R20: adet sayaçları (satış sayısı, miktar, teslim şekli) ücretsiz satışı SAYAR; para kovaları ve fatura tipi
+  // kırılımı (vergi tablosu) saymaz. Extra Kalıp'tan bilinçli sapmadır: orada ücretsiz kayıt adetten de düşülür (ölçüm 5).
   ayYedekKargo.forEach(s => {
     const bedel = kargoBedeli(s), c = s.currency;
     yedekKargoMiktar += parseInt(s.miktar) || 0;
+    if (s.fabrikaTeslim) yedekKargoTeslim.fabrikaTeslim++;
+    else if (s.kargoDurum) yedekKargoTeslim.kargo++;
+    else yedekKargoTeslim.gonderilmedi++;
+    if (satisUcretsizMi(s)) return;
     const yk = yansitilanKomisyon(s); // gelirde değil, KDV matrahında → tutardan düş
     const net = bedel - yk;
     const kdv = kdvBol(s.faturaTipi, bedel, s.tarih, s, c, "y" + (s.batchId ?? s.id)); // R7: bir fatura (batch) bir adet
@@ -181,9 +187,6 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     paraEkle(yedekKargoKdv, c, kdv);
     ftEkle(kargoFatura, s.faturaTipi, c, net, kdv, 1);
     kovaEkle(yedekKargoTeslimTutar, kargoTeslimKey(s), c, net, kdv);
-    if (s.fabrikaTeslim) yedekKargoTeslim.fabrikaTeslim++;
-    else if (s.kargoDurum) yedekKargoTeslim.kargo++;
-    else yedekKargoTeslim.gonderilmedi++;
   });
   const yedekKargoDetay = ayYedekKargo.map(s => ({
     firma: kargoAlici(s),
@@ -191,9 +194,11 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     aliciTuru: aliciTuru(s),
     teslimSekli: teslimSekli(s),
     miktar: parseInt(s.miktar) || 0,
-    tutar: tekPara(s.currency, kargoBedeli(s)),
-    kdv: tekPara(s.currency, tahsilEdilecekKdv(s.faturaTipi, kargoBedeli(s), s.tarih, kdvRates, s)),
+    // Spec 0095 R20, AC-38: ücretsizde Tutar ve KDV boş (Extra Kalıp detayının `{}` emsali), Durum ibare.
+    tutar: satisUcretsizMi(s) ? {} : tekPara(s.currency, kargoBedeli(s)),
+    kdv: satisUcretsizMi(s) ? {} : tekPara(s.currency, tahsilEdilecekKdv(s.faturaTipi, kargoBedeli(s), s.tarih, kdvRates, s)),
     odendi: s.odendi === true,
+    ...(satisUcretsizMi(s) ? { ucretsiz: true } : {}),
   })).sort(tariheGore);
 
   // Detay satırında ödeme yöntemi: kredi kartıyla ödenen kayıt "Ödendi" görünür ama para blokaj

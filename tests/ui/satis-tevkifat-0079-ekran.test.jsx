@@ -94,7 +94,9 @@ describe("Spec 0079 AC-31: tevkifatsız veride ekranlar birebir aynı", () => {
     expect(Object.keys(simdi.disaAktarma).sort()).toEqual(Object.keys(once.disaAktarma).sort());
     for (const [ad, satirlar] of Object.entries(once.disaAktarma)) {
       // R32: tevkifat sütunları satırın SONUNA eklenir; tevkifatsız kayıtta boştur, eski sütunlar birebir aynı.
-      const yeni = simdi.disaAktarma[ad];
+      // Spec 0095 R19 ile güncellendi: yedek parça sayfasında "Ücretsiz mi?" sütunu indis 8'e girer; kıyas onu çıkarır.
+      const ypSayfasi = simdi.disaAktarma[ad][0]?.[0] === "Alıcı Tipi";
+      const yeni = simdi.disaAktarma[ad].map(r => (ypSayfasi ? r.filter((_, j) => j !== 8) : r));
       expect(yeni.length, ad).toBe(satirlar.length);
       satirlar.forEach((s, i) => {
         expect(yeni[i].slice(0, s.length), `${ad} satır ${i}`).toEqual(s);

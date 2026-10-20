@@ -13,6 +13,7 @@ import { Finance } from "../../src/components/Finance";
 import { Customers } from "../../src/components/Customers";
 import { SimpleDealers } from "../../src/components/SimpleDealers";
 import { Stock } from "../../src/components/Stock";
+import { KargoDetayModal } from "../../src/components/KargoPanosu";
 import { Notes } from "../../src/components/Notes";
 import { Analiz } from "../../src/components/Analiz";
 import { MailComposeModal } from "../../src/components/MailCompose";
@@ -217,6 +218,17 @@ const KALIP_0079 = [{ id: 7902, customerId: 500, tur: "Kalıp", ad: "Hamburger",
   odendi: false, satisFirma: "Altuntaş Makina", ...T79(2) }];
 const YP_0079 = [{ id: 7903, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 2, birimFiyat: 750, currency: "TRY", faturaTipi: "Faturalı Yurtiçi", tarih: "2026-09-15",
   odendi: false, tahsisler: [], ...T79(9) }];
+// Spec 0095: garanti içi ücretsiz yedek parça satışı. Kutu Gıda'ya iki kalemli ücretsiz kargo partisi (birim fiyat saklı, R12),
+// Ege Bayi'ye ücretsiz satış, Akdeniz Servis'e ücretsiz fabrika teslim; garantisi bitmiş makina uyarı ekranı için.
+const UCZ_0095 = { ucretsizMi: true, faturaTipi: "", yontem: "", vadeTarihi: "", tahsilEdildi: false, taksitSayisi: null, kartKomisyonu: null, hesapId: null, tahsilatTarihi: null, odendi: false };
+const YP_0095 = [
+  { id: 9501, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 2, birimFiyat: 750, currency: "TRY", tarih: "2026-10-15", batchId: 950, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 500, serialNo: "", makinaSerbest: "", tarih: "2026-10-15" }], ...UCZ_0095 },
+  { id: 9502, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 1, birimFiyat: 1200, currency: "TRY", tarih: "2026-10-15", batchId: 950, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 1, customerId: 500, serialNo: "", makinaSerbest: "", tarih: "2026-10-15" }], ...UCZ_0095 },
+  { id: 9503, aliciTipi: "bayi", dealerId: 3, partId: "7", miktar: 4, birimFiyat: 350, currency: "TRY", tarih: "2026-10-12", tahsisler: [], ...UCZ_0095 },
+  { id: 9504, aliciTipi: "bayi", dealerId: 4, partId: "7", miktar: 1, birimFiyat: 0, currency: "TRY", tarih: "2026-10-10", fabrikaTeslim: true, tahsisler: [], ...UCZ_0095 },
+];
+const MUSTERI_0095_BITMIS = MUSTERILER.map(c => (c.id === 500 ? { ...c, warrantyEnd: "2025-08-10" } : c));
+const MUSTERI_0095_AKTIF = MUSTERILER.map(c => (c.id === 500 ? { ...c, warrantyEnd: "2028-08-10" } : c));
 const SATIS_0079 = { ...SATIS, customers: MUSTERI_0079, services: SERVIS_0079, partSales: KALIP_0079, yedekParcaSatislar: YP_0079 };
 // Spec 0060 R1, R2: taksitli stopajlı kira, taksitsiz stopajlı kira, tek hedefli taksitli kalem, dört hedefli personel.
 let n0060 = 9600;
@@ -1148,6 +1160,19 @@ const EKRANLAR = {
   "stok-yedek-0079": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERI_0079} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
     dealers={DEALERS} yedekParcaSatislar={YP_0079} defaultSubTab="yedeksatis" showToast={bos} />, ["~Kutu Gıda"]],
   "finans-0079-kdv": [<FINANS musteriler={MUSTERI_0079} />, ["Göster", "kaydir:KDV Karşılaştırması"]],
+  // Spec 0095: garanti içi ücretsiz verme (form, garanti uyarısı, Stok satırı, kargo detay penceresi, bayi ve müşteri detayı).
+  "yedek-parca-formu-ucretsiz": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı" customers={MUSTERI_0095_AKTIF}
+    ilk={{ aliciTipi: "musteri", musteriId: 500, currency: "TRY", tarih: "2026-10-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, ucretsizMi: true, satirlar: [{ partId: 7, miktar: 2, birimFiyat: 750 }] }} />, ["kaydir:Garanti içi, ücretsiz verildi"]],
+  "yedek-parca-formu-ucretsiz-uyari": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı" customers={MUSTERI_0095_BITMIS}
+    ilk={{ aliciTipi: "musteri", musteriId: 500, currency: "TRY", tarih: "2026-10-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, ucretsizMi: true, satirlar: [{ partId: 7, miktar: 1, birimFiyat: "" }] }} />, ["kaydir:Garanti içi, ücretsiz verildi"]],
+  "stok-yedek-parca-ucretsiz": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
+    dealers={BAYI_LISTE} yedekParcaSatislar={YP_0095} defaultSubTab="yedeksatis" showToast={bos} />, ["~Kutu Gıda"]],
+  "kargo-detay-ucretsiz": [<KargoDetayModal grup={YP_0095.filter(s => s.batchId === 950)} dealers={BAYI_LISTE} parts={[{ id: 7, ad: "Rulman" }]} customers={MUSTERILER}
+    factory={{ name: "Altuntaş Makina" }} onClose={bos} />, []],
+  "bayi-detay-ucretsiz": [bayiDetay(3, { yedekParcaSatislar: YP_0095 }), ["kaydir:Yedek Parça Geçmişi"]],
+  "musteri-detay-ucretsiz": [<Customers customers={MUSTERILER} setCustomers={bos} partSales={[]} services={[]} payments={[]} yedekParcaSatislar={YP_0095} dealers={BAYI_LISTE}
+    parts={[{ id: 7, ad: "Rulman" }]} setServices={bos} setPartSales={bos} setYedekParcaSatislar={bos} calisanlar={CAL} initialDetailId={500} />, ["kaydir:Makina Geçmişi"]],
+
   "giderler-0079-kdv": [<GiderEkrani satis={SATIS_0079} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0081: kutu kapalı başlar
   "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],
   "servis-formu-yazdir-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0079[0], MUSTERI_0079, undefined, {}) }} />, []],
