@@ -4,7 +4,7 @@
 // SONA eklenir, yoksa eski şablonla alınmış dosyalar sessizce kayar.
 import { trLower } from "./utils";
 import { kurus } from "./gider";
-import { parcaMaliyetDogrula, parcaMaliyetKurus, kirilimTutarliMi, HAMMADDE_EXCEL_HATASI } from "./urunAgaci";
+import { parcaMaliyetDogrula, parcaMaliyetKurus, kirilimTutarliMi, HAMMADDE_EXCEL_HATASI, maliyetGecmisiYaz, gecerliGunMu } from "./urunAgaci";
 
 export const PARCA_AKTARMA_BASLIKLARI = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)",
   // Spec 0087 R11: onuncu ve SON sütun (konuma göre eşleme; araya eklenseydi eski dosyalar kayardı).
@@ -20,7 +20,10 @@ const maliyetHucresi = (p) => { const k = parcaMaliyetKurus(p); return k == null
 export const parcaDisaAktarmaSatiri = (p) => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? "", maliyetHucresi(p)];
 
 // Satırlar (ilk satır başlık) → kayıt dizisi. `idBaslangic` yeni parçaların kimlik tabanıdır (ekranda Date.now()).
-export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now()) => {
+// Spec 0097 R20, R20/2 (plan P11): `bugun` (yerel gün, YYYY-AA-GG) zorunludur ve varsayılanı yoktur; modül saat okumaz.
+// Değişen maliyet içe aktarma gününden geçerli sayılır; karar parça kartıyla aynı tek motordan (`maliyetGecmisiYaz`).
+export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), bugun) => {
+  if (!gecerliGunMu(bugun)) throw new Error("parcaSatirlariniCoz: bugun (YYYY-AA-GG) gerekli");
   const dataRows = rows.slice(1);
   const newParts = []; const errors = [];
   let yeniler = 0, guncellenenler = 0;
@@ -49,6 +52,12 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now()) 
     const kirilimli = !!mevcut && kirilimTutarliMi(mevcut) && !m.bos && !m.hata;
     if (kirilimli && kurus(m.deger) !== parcaMaliyetKurus(mevcut)) errors.push(`Satır ${idx + 2}: ${HAMMADDE_EXCEL_HATASI}`);
     if (mevcut) guncellenenler++; else yeniler++;
+    const maliyetAlani = m.bos || m.hata || kirilimli ? {} : { maliyet: m.deger };
+    // R20, R4: geçmiş mevcut kayıttan türer; değer değişmiyorsa geçmiş alanı hiç yazılmaz (uygulama kolu eskisini korur).
+    const gecmisKarari = mevcut ? maliyetGecmisiYaz(mevcut, parcaMaliyetKurus({ ...mevcut, ...maliyetAlani }), { tarih: bugun, bugun }) : null;
+    const gecmisAlani = gecmisKarari && !gecmisKarari.hata && JSON.stringify(gecmisKarari.gecmis) !== JSON.stringify(mevcut.maliyetGecmisi || [])
+      ? { maliyetGecmisi: gecmisKarari.gecmis } : {};
+    if (gecmisKarari?.hata) errors.push(`Satır ${idx + 2}: ${gecmisKarari.hata} Maliyet alınmadı.`);
     newParts.push({
       id, ad,
       adEN: cell(1) || (mevcut?.adEN ?? ""),
@@ -59,7 +68,8 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now()) 
       fiyatTRY: cell(6) || (mevcut?.fiyatTRY ?? ""),
       fiyatUSD: cell(7) || (mevcut?.fiyatUSD ?? ""),
       fiyatEUR: cell(8) || (mevcut?.fiyatEUR ?? ""),
-      ...(m.bos || m.hata || kirilimli ? {} : { maliyet: m.deger }),
+      ...(gecmisKarari?.hata ? {} : maliyetAlani),
+      ...gecmisAlani,
       _mevcut: !!mevcut,
     });
   });

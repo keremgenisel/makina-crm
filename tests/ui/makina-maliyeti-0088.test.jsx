@@ -173,18 +173,23 @@ describe("Spec 0088: Parti Hesabı", () => {
   it("AC-26, AC-29, AC-29/3, AC-30, AC-33: model-adet tablosu, özet, kırılım, kursuz ve partisiz sayısı", () => {
     render(<H gorunum="parti" />);
     expect(hucreler(screen.getByTestId("parti-satiri-AK100"))[1]).toBe("5");
-    expect(screen.getByTestId("ozet-standart").textContent).toContain("5.506,00 ₺");
+    // Spec 0097 ile (R16; 0088 R28 ters çevrildi): pay partinin kendi aylarından. 5 makina × 726,20 direkt (= 3.631,00, tedarik
+    // karşılaştırmasının standart direkt maliyeti) + partinin havuzu 45.000,00 (eskiden 5 × 375,00 hesap ayarlarının payı = 5.506,00).
+    expect(screen.getByTestId("ozet-standart").textContent).toContain("48.631,00 ₺");
     expect(screen.getByTestId("ozet-satis").textContent).toContain("140.000,00 ₺");
     expect(screen.getByTestId("ozet-kirilim").textContent).toBe("Satılmış 2 · Stokta 1 · Bedelsiz 1 · Kuru olmayan 1");
     expect(screen.getByTestId("kursuz-not").textContent).toMatch(/^1 döviz satışının kuru yok/);
     expect(screen.getByTestId("partisiz-makina").textContent).toMatch(/^2 makinanın partisi yok/);
   });
 
-  it("AC-29/4: parti satırındaki birim toplam Model Maliyetleri ile aynı", () => {
-    render(<H />);
-    const model = hucreler(modelSatiri("AK100"))[4]; // spec 0091 R13: bir sütun kaydı
-    git("Parti Hesabı");
-    expect(hucreler(screen.getByTestId("parti-satiri-AK100"))[4]).toBe(model);
+  // Spec 0097 ile (R16, R9; 0088 AC-29/4 ters çevrildi): parti satırının birim toplamı artık Model Maliyetleri'ninki değil;
+  // direkt maliyet üretim gününden, pay partinin kendi aylarından (Üretim Partileri'nin makina başı payı: 45.000 / 5 = 9.000).
+  it("AC-29/4 (spec 0097 ile): parti satırının birim toplamı direkt + partinin makina başı payı", () => {
+    render(<H gorunum="parti" />);
+    const h = hucreler(screen.getByTestId("parti-satiri-AK100"));
+    expect(h[2]).toBe("726,20 ₺");
+    expect(h[3].startsWith("9.000,00 ₺")).toBe(true);
+    expect(h[4]).toBe("9.726,20 ₺");
   });
 
   it("AC-31, AC-31/2: tedarik karşılaştırması, fark ve iki yapısal neden cümlesi", () => {

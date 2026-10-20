@@ -29,7 +29,12 @@ const olc = (veri, bugun, ayar) => {
   const pay = genelGiderPayi(veri, ayar, bugun);
   sonuc.genelGiderPayi = ayikla(pay);
   const modeller = modelMaliyetleri({ standardModels: veri.modeller || [{ model: "AK100", defaultParcalar: [] }], customModels: [], parts: veri.parts || [] }, pay.payK);
-  sonuc.partiHesabi = Object.fromEntries((veri.uretimPartileri || []).filter(p => !p.deletedAt).map(p => [p.id, ayikla(partiHesabi(p, veri, { payK: pay.payK, modeller, bugun }))]));
+  // Spec 0097 ile (R9/2, R12, R16; "Ters çevrilen kriterler"): parti hesabı üretimdeki gibi tarihli katalog ve partinin kendi payıyla
+  // çağrılır; altının YALNIZ bu bloğu yeni kodla yeniden üretildi (diğer bloklar spec 0092 öncesi altınla aynı kaldı, git farkı).
+  const katalog = { standardModels: veri.modeller || [{ model: "AK100", defaultParcalar: [] }], customModels: [], parts: veri.parts || [] };
+  const paylar = partiGenelPaylari(veri, bugun).partiler;
+  sonuc.partiHesabi = Object.fromEntries((veri.uretimPartileri || []).filter(p => !p.deletedAt).map(p => [p.id,
+    ayikla(partiHesabi(p, veri, { payK: pay.payK, modeller, bugun, katalog, partiPay: paylar.find(x => String(x.id) === String(p.id)) }))]));
   return sonuc;
 };
 const olcum = () => ({

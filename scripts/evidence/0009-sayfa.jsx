@@ -32,6 +32,7 @@ import { Kasa } from "../../src/components/Kasa";
 import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
 import { GiderTurManager } from "../../src/components/settings/GiderTurManager";
 import * as M88 from "../../tests/fixtures/0088-veri.js";
+import * as V97 from "../../tests/fixtures/0097-veri.js";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
 import { odemeleriUygula, turHaritasi, giderKalemDogrula } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
@@ -162,6 +163,10 @@ const TED_0096 = [{ id: 31, ad: "Demir Çelik A.Ş.", hammadde: true }, { id: 32
 const AYNA_0096 = { id: 11, ad: "Ayna mahruti dişlisi takımı", kod: "AM-1", tip: "Standart", models: [], hammaddeler: [{ tedarikciId: 31, tutar: 7000 }, { tedarikciId: 32, tutar: 9000 }, { tedarikciId: 33, tutar: 1000 }] };
 const MIL_0096 = { id: 12, ad: "Tahrik mili", kod: "TM-3", tip: "Standart", models: [], maliyet: 300, hammaddeler: [{ tedarikciId: 31, tutar: 4250 }, { tedarikciId: 32, tutar: null }] };
 const PARCA_0096 = [AYNA_0096, MIL_0096, ...PARCA_0087];
+// Spec 0097: maliyeti iki kez değişmiş parça (başlangıçtan beri 10, 2026-02-01'den 15, 2026-05-01'de boşaltıldı, 2026-06-01'den 18).
+const RULMAN_0097 = { id: 13, ad: "Ana rulman", kod: "AR-1", tip: "Standart", fiyatTRY: 900, models: ["AK100"], maliyet: 18,
+  maliyetGecmisi: [{ gecerli: "", kurus: 1000 }, { gecerli: "2026-02-01", kurus: 1500 }, { gecerli: "2026-05-01", kurus: null }, { gecerli: "2026-06-01", kurus: 1800 }] };
+const PARCA_0097 = [RULMAN_0097, ...PARCA_0096];
 const MODELLER_0087 = [
   { model: "AK120_DSC", defaultParcalar: [{ partId: "7", ad: "Rulman 6204", miktar: 4 }],
     ekMaliyetler: [{ ad: "Büküm işçiliği", tutar: 90 }, { ad: "Helis dişli açımı", tutar: 145.6 }] },
@@ -557,6 +562,14 @@ function MaliyetEkrani({ ayar = M88.AYAR, turler = M88.TURLER, p0 = M88.PARTILER
     makinaMaliyet={makinaMaliyet} tumMusteriler={musteriler} serverPermissions={null} showToast={bos} />;
 }
 const maliyetEkrani = (o, adimlar = []) => [<MaliyetEkrani {...o} />, adimlar];
+// Spec 0097: Parti Hesabı'nın tarihli satırları ve dönem kilitli pay; veri tests/fixtures/0097-veri.js (motor ve ekran testleriyle aynı).
+function MaliyetEkrani0097() {
+  const [uretimPartileri, setUretimPartileri] = useState(V97.PARTILER);
+  return <MakinaMaliyeti aktifKullanici="kerem" giderler={V97.GIDERLER} giderTurleri={V97.TURLER} setGiderTurleri={bos} tedarikciler={[]} stock={V97.STOCK} customers={V97.CUSTOMERS}
+    partStockLog={[]} parts={V97.PARCALAR} standardModels={V97.STANDART} customModels={V97.OZEL} setStandardModels={bos} setCustomModels={bos}
+    uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} appSettings={{ giderAyarlari: { yururlukAy: V97.YURURLUK }, maliyetAyarlari: V97.AYAR }} setAppSettings={bos}
+    rates={{}} tumMusteriler={V97.CUSTOMERS} serverPermissions={null} showToast={bos} baslangicGorunum="parti" />;
+}
 // Spec 0090 R13: parti havuzu yalnız rolü "Genel gidere girer" türlerden; kanıt verisinde bütün türlere bu rol verilir.
 const GENEL_TURLER = TURLER.map(t => ({ ...t, maliyetRolu: "genel" }));
 const maliyetPartiEkrani = (adimlar) => maliyetEkrani({ p0: [P_KAPALI, P_ACIK], musteriler: PARTI_MUSTERI, stok: PARTI_STOK, giderler: GIDERLER, turler: GENEL_TURLER }, ["Üretim Partileri", ...adimlar]);
@@ -712,6 +725,8 @@ const EKRANLAR = {
   "katalog-parca-0096-kirilim": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
   "katalog-parca-0096-tutarsiz": [ayarlar("yedekparca", { parts: [MIL_0096, ...PARCA_0087], standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
   "katalog-parca-0096-bos": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
+  "katalog-parca-0097-gecmis": [ayarlar("yedekparca", { parts: PARCA_0097, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Maliyet geçmişi"]],
+  "katalog-parca-0097-hata": [ayarlar("yedekparca", { parts: PARCA_0097, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Alış maliyeti=20", "doldur:Geçerlilik tarihi=2026-05-15", "Kaydet", "kaydir:Alış maliyeti"]],
   "katalog-parca-0096-hata": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Hammadde tutarı 1=-5", "Kaydet", "kaydir:Hammadde tedarikçileri"]],
   "ayarlar-yedekparca-0096-suzgec": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["sec:Hammadde tedarikçisi süzgeci=32"]],
   "ayarlar-yedekparca-0096-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), []],
@@ -804,6 +819,9 @@ const EKRANLAR = {
   "maliyet-modeller-isaret-uyari": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK100"] } }, ["dugme:Üretimde olmayanları da göster"]),
   "maliyet-modeller-bos-uretimde": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK100", "AK120", "AK200"] } }),
   "maliyet-parti": maliyetEkrani({}, ["Parti Hesabı"]),
+  "maliyet-0097-parti-tarihli": [<MaliyetEkrani0097 />, []],
+  "maliyet-0097-parti-acik": [<MaliyetEkrani0097 />, ["sec:Üretim partisi=2"]],
+  "maliyet-0097-parti-baslamadi": [<MaliyetEkrani0097 />, ["sec:Üretim partisi=3"]],
   "maliyet-parti-planli": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803"]),
   "maliyet-parti-plan-formu": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803", "dugme:Planlanan adetler"]),
   "maliyet-parti-bos": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=802"]),

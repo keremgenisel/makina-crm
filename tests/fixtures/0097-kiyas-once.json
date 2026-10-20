@@ -1,0 +1,534 @@
+{
+ "disaAktarma": [
+  [
+   "Rulman",
+   "",
+   "R1",
+   "Standart",
+   "",
+   "",
+   "450",
+   "",
+   "",
+   120.5
+  ],
+  [
+   "Hediye vida",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   0
+  ],
+  [
+   "Pul",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   7.5
+  ],
+  [
+   "Maliyetsiz",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Dişli",
+   "Gear",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   1234.56
+  ],
+  [
+   "Boş metin",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Çöpte",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   99
+  ],
+  [
+   "Ayna",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   182.25
+  ],
+  [
+   "Tutarsız kırılım",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   40
+  ]
+ ],
+ "listeHucresi": [
+  "120,50 ₺",
+  "0,00 ₺",
+  "7,50 ₺",
+  "—",
+  "1.234,56 ₺",
+  "—",
+  "99,00 ₺",
+  "182,25 ₺",
+  "40,00 ₺"
+ ],
+ "kurus": [
+  12050,
+  0,
+  750,
+  null,
+  123456,
+  null,
+  9900,
+  18225,
+  4000
+ ],
+ "girildiMi": [
+  true,
+  true,
+  true,
+  false,
+  true,
+  false,
+  true,
+  true,
+  true
+ ],
+ "sayac": 2,
+ "modeller": [
+  {
+   "model": "AK100",
+   "kit": [
+    {
+     "partId": "1",
+     "ad": "Rulman",
+     "adet": 2,
+     "birimK": 12050,
+     "satirK": 24100,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "2",
+     "ad": "Hediye vida",
+     "adet": 4,
+     "birimK": 0,
+     "satirK": 0,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "3",
+     "ad": "Pul",
+     "adet": 3,
+     "birimK": 750,
+     "satirK": 2250,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "4",
+     "ad": "Maliyetsiz",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "7",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    },
+    {
+     "partId": "8",
+     "ad": "Ayna",
+     "adet": 2,
+     "birimK": 18225,
+     "satirK": 36450,
+     "eksik": false,
+     "neden": null
+    }
+   ],
+   "ek": [
+    {
+     "ad": "Büküm",
+     "tutarK": 9000
+    }
+   ],
+   "kitBos": false,
+   "eksikSayisi": 2,
+   "direktK": 71800,
+   "payK": 12345,
+   "toplamK": 84145,
+   "katsayi": 1.4,
+   "oneriK": 117803,
+   "kalipListeK": null
+  },
+  {
+   "model": "OZEL",
+   "kit": [
+    {
+     "partId": "5",
+     "ad": "Dişli",
+     "adet": 1,
+     "birimK": 123456,
+     "satirK": 123456,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "6",
+     "ad": "Boş metin",
+     "adet": 2,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "9",
+     "ad": "Tutarsız kırılım",
+     "adet": 3,
+     "birimK": 4000,
+     "satirK": 12000,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "99",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    }
+   ],
+   "ek": [],
+   "kitBos": false,
+   "eksikSayisi": 2,
+   "direktK": 135456,
+   "payK": 12345,
+   "toplamK": 147801,
+   "katsayi": null,
+   "oneriK": null,
+   "kalipListeK": null
+  }
+ ],
+ "modellerSecenekli": [
+  {
+   "model": "AK100",
+   "kit": [
+    {
+     "partId": "1",
+     "ad": "Rulman",
+     "adet": 2,
+     "birimK": 12050,
+     "satirK": 24100,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "2",
+     "ad": "Hediye vida",
+     "adet": 4,
+     "birimK": 0,
+     "satirK": 0,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "3",
+     "ad": "Pul",
+     "adet": 3,
+     "birimK": 750,
+     "satirK": 2250,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "4",
+     "ad": "Maliyetsiz",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "7",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    },
+    {
+     "partId": "8",
+     "ad": "Ayna",
+     "adet": 2,
+     "birimK": 18225,
+     "satirK": 36450,
+     "eksik": false,
+     "neden": null
+    }
+   ],
+   "ek": [
+    {
+     "ad": "Büküm",
+     "tutarK": 9000
+    }
+   ],
+   "kitBos": false,
+   "eksikSayisi": 2,
+   "direktK": 71800,
+   "payK": 12345,
+   "toplamK": 84145,
+   "katsayi": 1.4,
+   "oneriK": 117803,
+   "kalipListeK": null,
+   "uretimde": true,
+   "donemAdet": 3,
+   "adetNeden": null,
+   "isaret": null
+  },
+  {
+   "model": "OZEL",
+   "kit": [
+    {
+     "partId": "5",
+     "ad": "Dişli",
+     "adet": 1,
+     "birimK": 123456,
+     "satirK": 123456,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "6",
+     "ad": "Boş metin",
+     "adet": 2,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "9",
+     "ad": "Tutarsız kırılım",
+     "adet": 3,
+     "birimK": 4000,
+     "satirK": 12000,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "99",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    }
+   ],
+   "ek": [],
+   "kitBos": false,
+   "eksikSayisi": 2,
+   "direktK": 135456,
+   "payK": 12345,
+   "toplamK": 147801,
+   "katsayi": null,
+   "oneriK": null,
+   "kalipListeK": null,
+   "uretimde": false,
+   "donemAdet": 0,
+   "adetNeden": null,
+   "isaret": null
+  }
+ ],
+ "iceAktarma": {
+  "parts": [
+   {
+    "id": 1,
+    "ad": "Rulman",
+    "adEN": "",
+    "kod": "R1",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "450",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "maliyet": 120.5,
+    "_mevcut": true
+   },
+   {
+    "id": 2,
+    "ad": "Hediye vida",
+    "adEN": "",
+    "kod": "",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "maliyet": 0,
+    "_mevcut": true
+   },
+   {
+    "id": 3,
+    "ad": "Pul",
+    "adEN": "",
+    "kod": "",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "maliyet": 7.5,
+    "_mevcut": true
+   },
+   {
+    "id": 4,
+    "ad": "Maliyetsiz",
+    "adEN": "",
+    "kod": "",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "_mevcut": true
+   },
+   {
+    "id": 5,
+    "ad": "Dişli",
+    "adEN": "Gear",
+    "kod": "",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "maliyet": 1234.56,
+    "_mevcut": true
+   },
+   {
+    "id": 6,
+    "ad": "Boş metin",
+    "adEN": "",
+    "kod": "",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "_mevcut": true
+   },
+   {
+    "id": 8,
+    "ad": "Ayna",
+    "adEN": "",
+    "kod": "",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "_mevcut": true
+   },
+   {
+    "id": 9,
+    "ad": "Tutarsız kırılım",
+    "adEN": "",
+    "kod": "",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "maliyet": 40,
+    "_mevcut": true
+   },
+   {
+    "id": 1001,
+    "ad": "Yeni parça",
+    "adEN": "",
+    "kod": "",
+    "tip": "Standart",
+    "tanim": "",
+    "tanimEN": "",
+    "fiyatTRY": "",
+    "fiyatUSD": "",
+    "fiyatEUR": "",
+    "maliyet": 15,
+    "_mevcut": false
+   }
+  ],
+  "errors": [],
+  "yeniler": 1,
+  "guncellenenler": 8
+ }
+}

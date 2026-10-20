@@ -648,6 +648,29 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0096 AC-28: boş liste olarak yazılan kırılım gövdede yok", !("hammaddeler" in c.parts.find(p => p.id === 8)));
 }
 
+// ── Spec 0097 AC-33, AC-36: parça maliyetinin tarihli geçmişi. Geçmişi olmayan parçanın okunan gövdesi spec öncesi koddan
+// üretilmiş fikstürle birebir aynı (boş geçmiş gövdede hiç yok, `null` olarak da değil); dolu geçmiş sırası, `{ gecerli, kurus }`
+// şekli, boş ilk tarih, kuruş tamsayısı ve `null` ("girilmedi") kaydıyla gidiş dönüşte korunur.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  check("spec 0097 AC-33: geçmişi olmayan parçaların gövdesi spec öncesiyle birebir", esit(b.parts, once.parts));
+  check("spec 0097 AC-36: boş geçmiş gövdede hiç yok", b.parts.every(p => !("maliyetGecmisi" in p)));
+  const gecmis = [{ gecerli: "", kurus: 1000 }, { gecerli: "2026-02-01", kurus: 1500 }, { gecerli: "2026-05-10", kurus: null }, { gecerli: "2026-06-01", kurus: 1725 }];
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.parts[0].maliyetGecmisi = gecmis;
+  girdi.parts[1].maliyetGecmisi = [];
+  dbmod.writeBlobToDb(girdi);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0097 AC-36: geçmiş sırası, şekli, boş ilk tarih, kuruş ve null kaydı korunur", esit(c.parts.find(p => p.id === 7)?.maliyetGecmisi, gecmis));
+  check("spec 0097 AC-36: boş liste olarak yazılan geçmiş gövdede yok", !("maliyetGecmisi" in c.parts.find(p => p.id === 8)));
+  check("spec 0097 AC-37: kardeş maliyet alanı TL olarak aynen (geçmiş onu değiştirmez)", c.parts.find(p => p.id === 7)?.maliyet === 120.5);
+}
+
 // ── Spec 0088 AC-43, AC-44 (C7, C8, C8/2): tür rolü (meta JSON), modelin kâr katsayısı ve Extra Kalıp fiyatı, partinin
 // planlanan adetleri, appSettings.maliyetAyarlari. Rolsüz tür, katsayısız model, plansız parti ve maliyet ayarı olmayan
 // uygulama ayarlarının okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı.

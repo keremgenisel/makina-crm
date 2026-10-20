@@ -242,7 +242,9 @@ describe("Spec 0072 triyaj: ay dönümü yerel gündür (TZ=Europe/Istanbul)", (
     expect(readFileSync("src/App.jsx", "utf8")).not.toMatch(/const makinaMaliyet = useMemo/);
     const s = readFileSync("src/components/MakinaMaliyeti.jsx", "utf8");
     expect(s).toMatch(/const bugun = useBugun\(\);/);
-    expect(s).toMatch(/partiGenelPaylari\(\{ \.\.\.veri, customers: tumMusteriler \|\| customers \}, bugun\), \[veri, tumMusteriler, customers, bugun\]\)/);
+    // Spec 0097 ile (R9/4): ham müşteri dizili veri tek memoda kurulur, parti payı ve Parti Hesabı onu paylaşır; bağımlılık aynı.
+    expect(s).toMatch(/const veriHam = useMemo\(\(\) => \(\{ \.\.\.veri, customers: tumMusteriler \|\| customers \}\), \[veri, tumMusteriler, customers\]\);/);
+    expect(s).toMatch(/partiGenelPaylari\(veriHam, bugun\), \[veriHam, bugun\]\)/);
     expect(s).not.toMatch(/today\(\)/);
   });
 });

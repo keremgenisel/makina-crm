@@ -30,13 +30,118 @@ export const maliyetMetni = (n) => (n == null || n === "" ? "—" : `${ikiHane.f
 // C1, C9: maliyetin tek okuma yolu bu iki fonksiyondur ve birimi kuruştur; TL'ye çevirme yalnız biçimlemede olur.
 const tutarliSatirlar = (p) => (p?.hammaddeler || []).filter(h => h && h.tutar != null && h.tutar !== "");
 export const kirilimTutarliMi = (p) => tutarliSatirlar(p).length > 0;
-export const parcaMaliyetKurus = (p) => {
-  if (!p) return null;
+const bugunkuKurus = (p) => {
   const t = tutarliSatirlar(p);
   if (t.length) return t.reduce((a, h) => a + kurus(h.tutar), 0);
   return p.maliyet == null || p.maliyet === "" ? null : kurus(p.maliyet);
 };
-export const parcaMaliyetiVar = (p) => parcaMaliyetKurus(p) != null;
+// Spec 0097 R2, R2/2, R2/4, R3/2: tarih aynı fonksiyonun ikinci parametresidir. Tarihsiz çağrı bugünkü çözülmüş maliyettir
+// (davranışı birebir eski, C4). Tarihli okuma `getKdvRateForDate` emsaliyle geçerlilik tarihi sorgu tarihinden büyük olmayan
+// EN SON kaydı uygular; boş tarih ("başlangıçtan beri") her tarihten küçüktür (tuzak 6). Emsalden iki bilinçli sapma: boş ya da
+// biçimsiz sorgu tarihi bugünkü maliyeti verir, en eski kaydı değil (R2/4, tuzak 8); sorgu son kaydın aralığına düşerse saklı
+// kuruş okunmaz, bugünkü çözülmüş değer döner (R3/2, plan P5: karışık sürümde iki okuma yolu ayrışmasın).
+export const parcaMaliyetKurus = (p, tarih) => {
+  if (!p) return null;
+  const bugunku = bugunkuKurus(p);
+  if (tarih === undefined) return bugunku;
+  const g = maliyetGecmisiOf(p);
+  if (!g.length || !gecerliGunMu(tarih)) return bugunku;
+  let i = -1;
+  for (let j = 0; j < g.length; j++) if (g[j].gecerli <= tarih) i = j;
+  if (i < 0 || i === g.length - 1) return bugunku;
+  return g[i].kurus;
+};
+export const parcaMaliyetiVar = (p, tarih) => parcaMaliyetKurus(p, tarih) != null;
+
+// ── Spec 0097: maliyetin tarihli geçmişi ─────────────────────────────────────────────────────────────────────────────────
+// R1/3: `parts[].maliyetGecmisi = [{ gecerli, kurus }]`, satır kimliği yok, eskiden yeniye sıralı; ilk kaydın `gecerli`'si
+// "" ("başlangıçtan beri"), diğerleri "YYYY-AA-GG"; `kurus` tamsayı ya da `null` ("girilmedi", R4/3). Birimi kuruştur, kardeş
+// `maliyet` alanı TL'dir; ikisi hiçbir yerde toplanmaz. C2: geçmişte saklanan kuruş 0096 C2'nin bilinçli istisnasıdır.
+const GUN_DESEN = /^\d{4}-\d{2}-\d{2}$/;
+export const gecerliGunMu = (t) => {
+  if (typeof t !== "string" || !GUN_DESEN.test(t)) return false;
+  const [y, a, g] = t.split("-").map(Number);
+  const d = new Date(Date.UTC(y, a - 1, g));
+  return d.getUTCFullYear() === y && d.getUTCMonth() === a - 1 && d.getUTCDate() === g;
+};
+export const maliyetGecmisiOf = (p) => (Array.isArray(p?.maliyetGecmisi) ? p.maliyetGecmisi : [])
+  .map(x => ({ gecerli: x?.gecerli || "", kurus: x?.kurus == null ? null : x.kurus }))
+  .sort((a, b) => (a.gecerli < b.gecerli ? -1 : a.gecerli > b.gecerli ? 1 : 0));
+export const gunMetni = (t) => (gecerliGunMu(t) ? t.split("-").reverse().join(".") : "");
+
+// R5, R5/3, R8, R8/3: metinler (testler buradan okur).
+export const BASLANGICTAN_BERI = "başlangıçtan beri";
+export const GIRILMEDI_IBARESI = "girilmedi";
+export const GECERLILIK_ETIKETI = "Geçerlilik tarihi";
+export const GECERLILIK_IPUCU = "Bu düzenlemede maliyet değişirse bu tarihten geçerli olur; daha önce üretilen makinalar eski maliyetle hesaplanır.";
+export const GECMIS_BASLIGI = "Maliyet geçmişi";
+export const TARIH_GECERSIZ_HATASI = "Geçerlilik tarihi takvimde var olan bir gün olmalı.";
+export const TARIH_GELECEK_HATASI = "Geçerlilik tarihi bugünden sonra olamaz.";
+export const tarihOnceHatasi = (t) => `Geçerlilik tarihi ${gunMetni(t)} tarihli kayıttan önce olamaz.`;
+// Triyaj (bulgu 1): tarih düzeltmesinde sondan bir önceki kayıtla AYNI gün de reddedilir (aynı güne ikinci kayıt yazılmaz, R4/2).
+export const tarihSonraHatasi = (t) => `Geçerlilik tarihi ${gunMetni(t)} tarihli kayıttan sonra olmalı.`;
+
+// R6, R6/3 (plan P2), C5: biçim ve takvim, gelecek tarih yasak, alt sınırdan önceki tarih yasak (alt sınır "" ise yok).
+// `esitRed` (triyaj bulgu 1): alt sınırla aynı gün de reddedilir; tarih düzeltmesinde kullanılır.
+export const gecerlilikTarihiDogrula = (tarih, bugun, altSinir = "", { esitRed = false } = {}) => {
+  if (!gecerliGunMu(tarih)) return TARIH_GECERSIZ_HATASI;
+  if (tarih > bugun) return TARIH_GELECEK_HATASI;
+  if (altSinir && esitRed && tarih <= altSinir) return tarihSonraHatasi(altSinir);
+  if (altSinir && tarih < altSinir) return tarihOnceHatasi(altSinir);
+  return null;
+};
+
+// R4, R4/2, R4/3, R6/3, R7, R7/2, R21, R21/2, R3/2 (plan P1, P2, P3, P5): TEK karar motoru. İki çağıranı var: parça kartının kayıt
+// fonksiyonu ve içe aktarma (kaynak taraması sabitler). Saf: saati okumaz, `bugun` parametredir (R5/4). `eski` kayıttaki parça
+// (yeni parçada null: kayıt yazılmaz, R5/2), `cozulmusK` yeni kaydın tek okuma yolundan çözülmüş maliyeti, `tarih` girilen
+// geçerlilik tarihi, `tarihElle` kullanıcının tarih alanını değiştirip değiştirmediği. Dönüş `{ gecmis, hata }`; hata varsa
+// geçmiş eski hâlidir ve kayıt yapılmamalıdır.
+export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false } = {}) => {
+  const g = maliyetGecmisiOf(eski);
+  if (!eski) return { gecmis: [], hata: null };
+  if (!gecerliGunMu(bugun)) throw new Error("maliyetGecmisiYaz: bugun (YYYY-AA-GG) gerekli");
+  const eskiK = bugunkuKurus(eski); // P5: karar kayıtta saklı son kuruştan değil, eski kaydın çözülmüş değerinden
+  const yeniK = cozulmusK == null ? null : cozulmusK;
+  // P5: son kayıt her yazımda bugünkü değere eşitlenir (karışık sürümde ayrışmış olabilir).
+  const taban = g.length ? [...g.slice(0, -1), { gecerli: g[g.length - 1].gecerli, kurus: eskiK }] : [];
+  if (yeniK === eskiK) {
+    // R7, R7/2 (P3): tutar aynı; yalnız kullanıcı tarih alanını değiştirdiyse son kaydın tarihi düzeltilir.
+    const son = taban[taban.length - 1];
+    // Triyaj (bulgu 3): boşaltılmış tarih alanı tutar değişmiyorsa yok sayılır (maliyetle ilgisiz düzenleme engellenmesin).
+    if (!tarihElle || !tarih || taban.length < 2 || !son.gecerli || tarih === son.gecerli) return { gecmis: g, hata: null };
+    const hata = gecerlilikTarihiDogrula(tarih, bugun, taban[taban.length - 2].gecerli, { esitRed: true });
+    if (hata) return { gecmis: g, hata };
+    return { gecmis: [...taban.slice(0, -1), { gecerli: tarih, kurus: eskiK }], hata: null };
+  }
+  // R21/2 (P1): geçmiş boşken ilk giriş ("girilmedi" → değer) başlangıçtan beri geçerlidir, kayıt yazılmaz.
+  if (!taban.length && eskiK == null) return { gecmis: g, hata: null };
+  const dizi = taban.length ? taban : [{ gecerli: "", kurus: eskiK }]; // R21: eski değer "başlangıçtan beri"
+  const son = dizi[dizi.length - 1];
+  const hata = gecerlilikTarihiDogrula(tarih, bugun, son.gecerli); // R6/3: tutar değişirken sınır son kayıt
+  if (hata) return { gecmis: g, hata };
+  if (tarih === son.gecerli) return { gecmis: [...dizi.slice(0, -1), { gecerli: tarih, kurus: yeniK }], hata: null }; // R4/2, AC-7
+  return { gecmis: [...dizi, { gecerli: tarih, kurus: yeniK }], hata: null };
+};
+
+// C13 (triyaj bulgu 4): kayıt fonksiyonunun geçmiş adımı. `temel` yazılacak kaydın geçmişsiz hâli, `eski` güncelleyicinin içindeki
+// kayıt (eklemede null: geçmiş yazılmaz), `ek` kaydın başında çözülmüş tarih bilgisi. Karar hata dönerse (doğrulamadan sonra kaydı
+// değiştiren dar bir yarış) null döner ve çağıran kaydı HİÇ değiştirmez: yeni maliyet tarihsiz geçmişle yazılmasın.
+export const gecmisliKayit = (temel, eski = null, ek = null) => {
+  if (!eski || !ek) { const g = eski?.maliyetGecmisi || []; return { ...temel, ...(g.length ? { maliyetGecmisi: g } : {}) }; }
+  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), ek);
+  if (r.hata) return null;
+  return { ...temel, ...(r.gecmis.length ? { maliyetGecmisi: r.gecmis } : {}) };
+};
+
+// R8, R8/3: parça kartının salt okunur listesi, en yeni üstte (saklama sırasının tersi). Son kaydın tutarı R3/2 gereği
+// bugünkü çözülmüş değerdir.
+export const maliyetGecmisiSatirlari = (p) => {
+  const g = maliyetGecmisiOf(p);
+  return g.map((x, i) => {
+    const k = i === g.length - 1 ? bugunkuKurus(p) : x.kurus;
+    return { gecerli: x.gecerli, tarihMetni: x.gecerli ? gunMetni(x.gecerli) : BASLANGICTAN_BERI, tutarMetni: k == null ? GIRILMEDI_IBARESI : maliyetMetniKurus(k) };
+  }).reverse();
+};
 // Spec 0087'nin adı korunur (çağıranlar değişmesin); spec 0096 C1 ile kırılımı da bilen ölçütün üstüne indi.
 export const maliyetGirildiMi = parcaMaliyetiVar;
 // Plan P7: kuruştan biçimleyici (parça paneli makina maliyeti motorunu içe almaz). Girilmemiş "—", sıfır "0,00 ₺".

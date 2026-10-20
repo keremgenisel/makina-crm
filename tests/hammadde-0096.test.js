@@ -16,6 +16,8 @@ import { uid } from "../src/lib/utils";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge";
 import { KILIT_ALANLARI } from "../src/lib/kilitAlanlari";
+// Spec 0097 ile (R20/2, plan P11): içe aktarma yerel günü zorunlu parametre olarak alır.
+const BUGUN = "2026-10-20";
 
 const satir = (tedarikciId, tutar) => ({ tedarikciId, tutar });
 const parca = (o = {}) => ({ id: 1, ad: "Ayna mahruti dişlisi", models: [], ...o });
@@ -145,7 +147,7 @@ describe("Spec 0096: aktarma (R24, C9)", () => {
   it("AC-40: kırılımı tutarlı parçaya Excel'den maliyet yazılmaz; neden satır numarasıyla bildirilir", () => {
     const mevcut = [parca({ id: 5, ad: "Ayna", hammaddeler: [satir(31, 100)] }), parca({ id: 6, ad: "Pul" }), parca({ id: 7, ad: "İşaretli", hammaddeler: [satir(31, null)] })];
     const rows = [PARCA_AKTARMA_BASLIKLARI, ["Ayna", "", "", "", "", "", "", "", "", "250"], ["Pul", "", "", "", "", "", "", "", "", "7,5"], ["İşaretli", "", "", "", "", "", "", "", "", "9"]];
-    const r = parcaSatirlariniCoz(rows, mevcut, 100);
+    const r = parcaSatirlariniCoz(rows, mevcut, 100, BUGUN);
     expect("maliyet" in r.parts.find(p => p.ad === "Ayna")).toBe(false);
     expect(r.parts.find(p => p.ad === "Pul").maliyet).toBe(7.5);
     expect(r.parts.find(p => p.ad === "İşaretli").maliyet).toBe(9); // tutarsız kırılım: maliyet bugünkü gibi elle (R6)
@@ -156,12 +158,12 @@ describe("Spec 0096: aktarma (R24, C9)", () => {
 describe("Spec 0096 triyaj", () => {
   it("bulgu 1: dışa aktarılan dosya aynen geri yüklenince kırılımlı parça bildirim üretmez; farklı rakamda üretir; ikisinde de maliyet alınmaz", () => {
     const mevcut = [parca({ id: 5, ad: "Ayna", hammaddeler: [satir(31, 8000.55), satir(32, 9000.45)] })];
-    const ayni = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, parcaDisaAktarmaSatiri(mevcut[0])], mevcut, 100);
+    const ayni = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, parcaDisaAktarmaSatiri(mevcut[0])], mevcut, 100, BUGUN);
     expect(ayni.errors).toEqual([]);
     expect("maliyet" in ayni.parts[0]).toBe(false);
-    const metin = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, ["Ayna", "", "", "", "", "", "", "", "", "17.001,00"]], mevcut, 100);
+    const metin = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, ["Ayna", "", "", "", "", "", "", "", "", "17.001,00"]], mevcut, 100, BUGUN);
     expect(metin.errors).toEqual([]); // Türkçe biçimli aynı toplam da aynı sayılır
-    const farkli = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, ["Ayna", "", "", "", "", "", "", "", "", "17000"]], mevcut, 100);
+    const farkli = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, ["Ayna", "", "", "", "", "", "", "", "", "17000"]], mevcut, 100, BUGUN);
     expect(farkli.errors).toEqual([`Satır 2: ${HAMMADDE_EXCEL_HATASI}`]);
     expect("maliyet" in farkli.parts[0]).toBe(false);
   });
@@ -208,7 +210,8 @@ describe("Spec 0096: kaynak taramaları", () => {
       "src/lib/makinaMaliyeti.js": 2, // stok partisi toplayıcısının yerel alanı (x.maliyet), parça kaydı değil
     });
     expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/p\.maliyet|maliyet == null/);
-    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p\)/);
+    // Spec 0097 ile (C1/2, AC-56): tarihli okuma aynı fonksiyonun ikinci parametresidir; desen yeni imzayı arar (gevşetilmedi).
+    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih\)/);
   });
   it("AC-41: satır tutarlarını TL olarak toplayan ikinci yer yok (kırılım toplamı yalnız urunAgaci'nde, kuruşla)", () => {
     // Kapsam: parça kırılımını (`hammaddeler`) okuyan dosyalar; gider tarafının kendi `.tutar` toplamları bu kavramdan değil.

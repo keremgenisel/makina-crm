@@ -8,6 +8,8 @@ import { trLower, withDeleted } from "../lib/utils";
 // büyük; başarısızlıkta false). Kanca üç panelde paylaşılıyor (KalipManager, PartManager, CalisanManager);
 // dönüşü yalnız PartManager kullanır (kit yazımı kayıt gerçekten yazıldıysa yapılır). `hazirla(kayit)` yazılacak kaydı son
 // hâline getirir (varsayılan değiştirmeden geçirir): parça paneli maliyetin ham metnini sayıya çevirir, boşsa alanı siler.
+// Spec 0097 C13/2 (plan P14): `hazirla(kayit, eski, ek)`: `eski` güncelleyicinin içindeki kayıttır (eklemede null), `ek` çağıranın
+// kaydın başında bir kez çözdüğü bilgidir (`add(ek)`, `saveEdit(ek)`). Geriye dönük uyumlu; yalnız PartManager kullanır.
 const AYNEN = (x) => x;
 export function useSimpleDefList({ items, setItems, genId, showToast = () => {}, emptyForm = { ad: "" }, addMsg, editMsg, deleteMsg, onRename, hazirla = AYNEN }) {
   const [form, setForm] = useState(emptyForm);
@@ -17,25 +19,25 @@ export function useSimpleDefList({ items, setItems, genId, showToast = () => {},
 
   // Dönüş değeri (kimlik/false) modal tabanlı ekranların "kaydet başarılıysa modalı kapat,
   // çakışma varsa açık tut ki kullanıcı adı düzeltsin" mantığı için kullanılır.
-  const add = () => {
+  const add = (ek) => {
     const ad = form.ad.trim();
     if (!ad) return false;
     if (items.some(x => trLower(x.ad) === trLower(ad))) { showToast(`"${ad}" zaten tanımlı.`, "err"); return false; }
     const yeniId = genId(items);
-    setItems(p => p.some(x => x.id === yeniId) ? p : [...p, hazirla({ ...form, id: yeniId, ad })]);
+    setItems(p => p.some(x => x.id === yeniId) ? p : [...p, hazirla({ ...form, id: yeniId, ad }, null, ek)]);
     setForm(emptyForm);
     showToast(addMsg);
     return yeniId;
   };
   const startEdit = (item) => { setEditId(item.id); setEditForm({ ...item }); };
   const cancelEdit = () => setEditId(null);
-  const saveEdit = () => {
+  const saveEdit = (ek) => {
     const ad = editForm.ad.trim();
     if (!ad) return false;
     if (items.some(x => x.id !== editId && trLower(x.ad) === trLower(ad))) { showToast(`"${ad}" zaten tanımlı.`, "err"); return false; }
     const oldAd = items.find(x => x.id === editId)?.ad;
     const duzenlenen = editId;
-    setItems(p => p.map(x => x.id === editId ? hazirla({ ...x, ...editForm, ad }) : x));
+    setItems(p => p.map(x => x.id === editId ? hazirla({ ...x, ...editForm, ad }, x, ek) : x));
     setEditId(null);
     // Ad gerçekten değiştiyse, bu adı düz metin olarak kopyalamış diğer kayıtları da güncelle
     // (bkz. SimpleDealers.jsx'teki bayi adı düzenleme deseni) — yoksa eski ad geçmiş kayıtlarda kalır.

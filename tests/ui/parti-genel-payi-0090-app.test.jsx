@@ -94,13 +94,16 @@ describe("Spec 0090: Üretim Partileri satırı (R17–R22, R31)", () => {
     expect(PARTI_BASLIK_CUMLESI).toMatch(/Genel gidere girer/);
     expect(PARTI_BASLIK_CUMLESI).not.toMatch(/ortak gider/i);
   });
-  it("AC-38/5: Parti Hesabı'nın 'Genel gider payı (birim)' sütununda ayrım ibaresi; iki rakam toplanmaz", () => {
+  // Spec 0097 ile (R19/2, AC-53; 0090 R34 ve AC-38/5 ters çevrildi): sütun artık partinin kendi aylarından gelir ve Üretim
+  // Partileri'yle aynı payı gösterir; "ikisi toplanmaz" iddiası kalktı. Sabitin adı ve testId'si korunur.
+  it("AC-38/5 (spec 0097 ile): Parti Hesabı'nın 'Genel gider payı (birim)' sütununda ibare; iki görünüm aynı payı gösterir", () => {
     render(<MH p0={PARTILER} stock={STOK} giderler={GID} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" }, maliyetAyarlari: { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 10 } }} />);
     sekme("Parti Hesabı");
     const ibare = screen.getByTestId("pay-ayrim-ibaresi");
     expect(ibare.textContent).toBe(PAY_AYRIM_IBARESI);
     expect(ibare.closest("th").textContent).toMatch(/^Genel gider payı \(birim\)/);
-    expect(PAY_AYRIM_IBARESI).toMatch(/toplanmaz/);
+    expect(PAY_AYRIM_IBARESI).not.toMatch(/toplanmaz|hesap ayarlarının dönemi/i);
+    expect(PAY_AYRIM_IBARESI).toMatch(/kendi aylarının/);
   });
   it("AC-50: partisiz veride boş durum metni partisiz makinaların bölünmede sayıldığını söyler", () => {
     render(<MH />);

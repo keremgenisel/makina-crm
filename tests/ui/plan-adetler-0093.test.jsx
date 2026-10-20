@@ -197,11 +197,13 @@ describe("Spec 0093: Parti Hesabı'nın geri kalanı süzülmez (R5, C1)", () =>
     render(<H />); parti(1);
     expect(within(screen.getByTestId("parti-satiri-OZ3_ESKI")).getAllByRole("cell")[1].textContent).toBe("1");
   });
-  it("AC-13: ölçüm 1 kurulumu işaretli ve işaretsiz birebir aynı; 14.000,00 TL", () => {
+  it("AC-13: ölçüm 1 kurulumu işaretli ve işaretsiz birebir aynı (spec 0097 ile 32.000,00 TL)", () => {
     const { container } = render(<H />); parti(2);
     const isaretli = container.textContent;
-    expect(screen.getByTestId("ozet-standart").textContent).toContain("14.000,00");
-    expect(screen.getByTestId("ozet-ciro").textContent).toContain("28.000,00");
+    // Spec 0097 ile (R16): pay partinin kendi aylarından gelir (eskiden hesap ayarlarının payıyla 14.000,00); AC-13'ün asıl iddiası,
+    // işaretli ve işaretsiz çizimin birebir aynı olması, aynen geçerli.
+    expect(screen.getByTestId("ozet-standart").textContent).toContain("32.000,00");
+    expect(screen.getByTestId("ozet-ciro").textContent).toContain("64.000,00"); // spec 0097 ile (eskiden 28.000,00)
     cleanup();
     const r2 = render(<H gizli={[]} />); parti(2);
     expect(r2.container.textContent).toBe(isaretli);

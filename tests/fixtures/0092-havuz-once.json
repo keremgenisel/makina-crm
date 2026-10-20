@@ -270,28 +270,39 @@
     "satirlar": [
      {
       "model": "AK100",
+      "turetilenAdet": 5,
+      "katsayi": 2.19498,
+      "anahtar": "AK100",
       "adet": 5,
       "planlanan": false,
-      "turetilenAdet": 5,
       "direktK": 72620,
-      "payK": 37500,
-      "toplamK": 110120,
-      "oneriK": 241711,
       "eksikSayisi": 0,
-      "toplamMaliyetK": 550600,
-      "oneriCiroK": 1208555
+      "payK": 900000,
+      "payKaynak": "parti",
+      "payNeden": null,
+      "payToplamK": 4500000,
+      "ayAraligi": {
+       "ilk": "2026-02",
+       "son": "2026-02"
+      },
+      "tarihsiz": false,
+      "toplamK": 972620,
+      "oneriK": 2134881,
+      "toplamMaliyetK": 4863100,
+      "oneriCiroK": 10674407
      }
     ],
     "bulunamayan": [],
     "bos": false,
+    "payDurumu": null,
     "ozet": {
-     "toplamStandartK": 550600,
-     "onerilenCiroK": 1208555,
+     "toplamStandartK": 4863100,
+     "onerilenCiroK": 10674407,
      "katsayisiz": 0,
      "satisK": 14000000,
-     "oneriyeGoreKarK": 657955,
-     "gercegeGoreKarK": 13779760,
-     "satilmisStandartK": 220240,
+     "oneriyeGoreKarK": 5811307,
+     "gercegeGoreKarK": 12054760,
+     "satilmisStandartK": 1945240,
      "kirilim": {
       "satilmis": 2,
       "stokta": 1,
@@ -321,6 +332,10 @@
     "satirlar": [],
     "bulunamayan": [],
     "bos": true,
+    "payDurumu": {
+     "durum": "makinaYok",
+     "neden": "Bağlı makina yok; ayların gideri makinalar bağlanınca paylaştırılır."
+    },
     "ozet": {
      "toplamStandartK": 0,
      "onerilenCiroK": 0,
@@ -358,16 +373,23 @@
     "satirlar": [
      {
       "model": "AK100",
+      "turetilenAdet": 0,
+      "katsayi": 2.19498,
+      "anahtar": "AK100",
       "adet": 10,
       "planlanan": true,
-      "turetilenAdet": 0,
       "direktK": 72620,
+      "eksikSayisi": 0,
       "payK": 37500,
+      "payKaynak": "ayarlar",
+      "payNeden": null,
+      "payToplamK": 375000,
+      "ayAraligi": null,
+      "tarihsiz": false,
       "toplamK": 110120,
       "oneriK": 241711,
-      "eksikSayisi": 0,
       "toplamMaliyetK": 1101200,
-      "oneriCiroK": 2417110
+      "oneriCiroK": 2417112
      }
     ],
     "bulunamayan": [
@@ -378,12 +400,16 @@
      }
     ],
     "bos": false,
+    "payDurumu": {
+     "durum": "makinaYok",
+     "neden": "Bağlı makina yok; ayların gideri makinalar bağlanınca paylaştırılır."
+    },
     "ozet": {
      "toplamStandartK": 1101200,
-     "onerilenCiroK": 2417110,
+     "onerilenCiroK": 2417112,
      "katsayisiz": 0,
      "satisK": 0,
-     "oneriyeGoreKarK": 1315910,
+     "oneriyeGoreKarK": 1315912,
      "gercegeGoreKarK": 0,
      "satilmisStandartK": 0,
      "kirilim": {
@@ -676,26 +702,37 @@
     "satirlar": [
      {
       "model": "AK100",
+      "turetilenAdet": 3,
+      "katsayi": null,
+      "anahtar": "AK100",
       "adet": 3,
       "planlanan": false,
-      "turetilenAdet": 3,
       "direktK": 0,
-      "payK": 900000,
-      "toplamK": 900000,
-      "oneriK": null,
       "eksikSayisi": 0,
-      "toplamMaliyetK": 2700000,
+      "payK": 1150001,
+      "payKaynak": "parti",
+      "payNeden": null,
+      "payToplamK": 3450003,
+      "ayAraligi": {
+       "ilk": "2026-02",
+       "son": "2026-03"
+      },
+      "tarihsiz": false,
+      "toplamK": 1150001,
+      "oneriK": null,
+      "toplamMaliyetK": 3450003,
       "oneriCiroK": null
      }
     ],
     "bulunamayan": [],
     "bos": false,
+    "payDurumu": null,
     "ozet": {
-     "toplamStandartK": 2700000,
+     "toplamStandartK": 3450003,
      "onerilenCiroK": 0,
      "katsayisiz": 1,
      "satisK": 0,
-     "oneriyeGoreKarK": -2700000,
+     "oneriyeGoreKarK": -3450003,
      "gercegeGoreKarK": 0,
      "satilmisStandartK": 0,
      "kirilim": {
@@ -727,26 +764,57 @@
     "satirlar": [
      {
       "model": "AK100",
-      "adet": 2,
+      "turetilenAdet": 1,
+      "katsayi": null,
+      "anahtar": "AK100#1",
+      "adet": 1,
       "planlanan": false,
-      "turetilenAdet": 2,
       "direktK": 0,
-      "payK": 900000,
-      "toplamK": 900000,
-      "oneriK": null,
       "eksikSayisi": 0,
-      "toplamMaliyetK": 1800000,
+      "payK": 850000,
+      "payKaynak": "parti",
+      "payNeden": null,
+      "payToplamK": 850000,
+      "ayAraligi": {
+       "ilk": "2026-04",
+       "son": "2026-04"
+      },
+      "tarihsiz": false,
+      "toplamK": 850000,
+      "oneriK": null,
+      "toplamMaliyetK": 850000,
+      "oneriCiroK": null
+     },
+     {
+      "model": "AK100",
+      "turetilenAdet": 1,
+      "katsayi": null,
+      "anahtar": "AK100#2",
+      "adet": 1,
+      "planlanan": false,
+      "direktK": 0,
+      "eksikSayisi": 0,
+      "payK": 850000,
+      "payKaynak": "parti",
+      "payNeden": null,
+      "payToplamK": 850000,
+      "ayAraligi": null,
+      "tarihsiz": true,
+      "toplamK": 850000,
+      "oneriK": null,
+      "toplamMaliyetK": 850000,
       "oneriCiroK": null
      }
     ],
     "bulunamayan": [],
     "bos": false,
+    "payDurumu": null,
     "ozet": {
-     "toplamStandartK": 1800000,
+     "toplamStandartK": 1700000,
      "onerilenCiroK": 0,
-     "katsayisiz": 1,
+     "katsayisiz": 2,
      "satisK": 0,
-     "oneriyeGoreKarK": -1800000,
+     "oneriyeGoreKarK": -1700000,
      "gercegeGoreKarK": 0,
      "satilmisStandartK": 0,
      "kirilim": {
@@ -778,6 +846,10 @@
     "satirlar": [],
     "bulunamayan": [],
     "bos": true,
+    "payDurumu": {
+     "durum": "makinaYok",
+     "neden": "Bağlı makina yok; ayların gideri makinalar bağlanınca paylaştırılır."
+    },
     "ozet": {
      "toplamStandartK": 0,
      "onerilenCiroK": 0,
@@ -815,26 +887,40 @@
     "satirlar": [
      {
       "model": "AK100",
+      "turetilenAdet": 1,
+      "katsayi": null,
+      "anahtar": "AK100",
       "adet": 1,
       "planlanan": false,
-      "turetilenAdet": 1,
       "direktK": 0,
-      "payK": 900000,
-      "toplamK": 900000,
-      "oneriK": null,
       "eksikSayisi": 0,
-      "toplamMaliyetK": 900000,
+      "payK": null,
+      "payKaynak": "parti",
+      "payNeden": null,
+      "payToplamK": 0,
+      "ayAraligi": {
+       "ilk": "2026-09",
+       "son": "2026-09"
+      },
+      "tarihsiz": false,
+      "toplamK": 0,
+      "oneriK": null,
+      "toplamMaliyetK": 0,
       "oneriCiroK": null
      }
     ],
     "bulunamayan": [],
     "bos": false,
+    "payDurumu": {
+     "durum": "baslamadi",
+     "neden": "Parti henüz başlamadı; havuz başlangıç ayından itibaren oluşur."
+    },
     "ozet": {
-     "toplamStandartK": 900000,
+     "toplamStandartK": 0,
      "onerilenCiroK": 0,
      "katsayisiz": 1,
      "satisK": 0,
-     "oneriyeGoreKarK": -900000,
+     "oneriyeGoreKarK": 0,
      "gercegeGoreKarK": 0,
      "satilmisStandartK": 0,
      "kirilim": {

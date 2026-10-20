@@ -195,12 +195,15 @@ describe("Spec 0088: parti hesabı", () => {
 
   it("AC-29, AC-29/2, AC-29/3: özet dört rakam; iki kâr farklı kümeden; adet kırılımı", () => {
     const o = ph(801).ozet;
-    expect(o).toMatchObject({ toplamStandartK: 550600, onerilenCiroK: Math.round(110120 * 2.19498) * 5, satisK: 14000000, satilmisStandartK: 220240 });
+    // Spec 0097 ile (R14/2, plan P6): önerilen ciro satırın toplam maliyetinden türer (eskiden birim öneri × adet: 1208555).
+    expect(o).toMatchObject({ toplamStandartK: 550600, onerilenCiroK: Math.round(550600 * 2.19498), satisK: 14000000, satilmisStandartK: 220240 });
     expect(o.oneriyeGoreKarK).toBe(o.onerilenCiroK - o.toplamStandartK);
     expect(o.gercegeGoreKarK).toBe(14000000 - 220240);
     expect(o.kirilim).toEqual({ satilmis: 2, stokta: 1, bedelsiz: 1, kursuz: 1, modelYok: 0 });
   });
 
+  // Spec 0097 ile (R16, 0088 R28 ters çevrildi): bu çağrı `partiPay` vermez, yani spec öncesi yolu sınar. Üretim yolu (Makina
+  // Maliyeti ekranı) partinin kendi aylarının payını kullanır: tests/maliyet-gecmisi-0097.test.js AC-26/AC-27.
   it("AC-29/4: parti satırındaki pay hesap ayarlarının payıdır; birim toplam Model Maliyetleri ile aynı", () => {
     const s = ph(801).satirlar[0];
     expect(s.payK).toBe(37500);

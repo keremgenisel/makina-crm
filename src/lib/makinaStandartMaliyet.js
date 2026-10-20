@@ -10,9 +10,9 @@
 // belirler. Personel çalışan ayrıntısı bu motordan geçmez (R26, C3).
 import { kurus, tl, ayEkle, ayOf, ayinSonGunu, hesaplaGiderRaporu, turHaritasi, DAVRANIS, tutarCoz } from "./gider";
 import { partiAylari, canliPartiler } from "./uretimPartisi";
-import { makinaListesi, satisKurBilgisi, katDegeriDogrula } from "./makinaMaliyeti";
+import { makinaListesi, satisKurBilgisi, katDegeriDogrula, URETIM_KAYNAK } from "./makinaMaliyeti";
 import { gercekSatisBedeli, trLower } from "./utils";
-import { parcaMaliyetKurus } from "./urunAgaci";
+import { parcaMaliyetKurus, gecerliGunMu } from "./urunAgaci";
 
 // ── Rol ──────────────────────────────────────────────────────────────────────
 export const MALIYET_ROLU = { URUN_AGACI: "urunAgaci", GENEL: "genel", YOK: "yok" };
@@ -199,13 +199,15 @@ export const gercekUretim = ({ customers = [], stock = [], partStockLog = [] } =
 // ── Model maliyeti (R11–R16) ─────────────────────────────────────────────────
 const parcaHaritasi = (parts = []) => new Map((parts || []).filter(p => !p.deletedAt).map(p => [String(p.id), p]));
 const oneriKurus = (toplamK, katsayi) => (Number(katsayi) > 0 ? Math.round(toplamK * Number(katsayi)) : null);
-export const modelMaliyeti = (model, partMap, payK = 0) => {
+// Spec 0097 R2, R9: `tarih` verilirse kit satırlarının birim maliyeti o günde geçerli değerdir (tek okuma yolunun uzantısı); verilmezse
+// bugünkü (Model Maliyetleri, C4). Parça kaydının çöp durumu tarihlenmez (C7): çöpteki parça haritada yok, tarihli okumada da eksik.
+export const modelMaliyeti = (model, partMap, payK = 0, tarih) => {
   const kit = (model.defaultParcalar || []).map(r => {
     const p = partMap.get(String(r.partId));
     const adet = Number(r.miktar) || 0;
     if (!p) return { partId: r.partId, ad: r.ad || "", adet, birimK: null, satirK: 0, eksik: true, neden: "parcaYok" };
     // Spec 0096 C1 (AC-19): birim maliyet parçanın tek okuma yolundan (hammadde kırılımı varsa onun toplamı, kuruş).
-    const birimK = parcaMaliyetKurus(p);
+    const birimK = parcaMaliyetKurus(p, tarih);
     if (birimK == null) return { partId: r.partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
     return { partId: r.partId, ad: p.ad, adet, birimK, satirK: birimK * adet, eksik: false, neden: null };
   });
@@ -258,11 +260,54 @@ export const planAdediDogrula = (ham) => {
   if (!/^\d+$/.test(t) || Number(t) < 1 || Number(t) > ADET_MAX) return { bos: false, deger: null, hata: PLAN_ADET_HATASI };
   return { bos: false, deger: Number(t), hata: null };
 };
-export const partiHesabi = (parti, veri, { payK = 0, modeller = [], rates = null, bugun } = {}) => {
+// Spec 0097 R9, R9/2, R10/3, C12: makinanın standart direkt maliyeti ÜRETİM GÜNÜNDE geçerli parça maliyetleriyle; tarih tek zincirden
+// (`makinaListesi`). Tarihi çözülemeyen makina (kaynak `BILINMIYOR` ya da biçimsiz tarih) bugünkü maliyetle (R10).
+export const TARIHSIZ_SATIR_NEDENI = "Üretim tarihi bilinmiyor; bugünkü maliyetle hesaplandı.";
+export const PAY_KAYNAK = { AYARLAR: "ayarlar", PARTI: "parti" };
+// Ekran metinleri (biçim yalnız burada, R12/2, R17): satırın ay aralığı ve planlanan satırın pay kaynağı.
+const ayMetni = (ay) => ay.split("-").reverse().join(".");
+export const ayAraligiMetni = (a) => (!a ? "" : a.ilk === a.son ? ayMetni(a.ilk) : `${ayMetni(a.ilk)} – ${ayMetni(a.son)}`);
+export const PAY_KAYNAK_METNI = { ayarlar: "hesap ayarlarından", parti: "partinin aylarından" };
+const uretimGunu = (m) => {
+  if (m.uretimKaynak === URETIM_KAYNAK.BILINMIYOR) return null;
+  const g = String(m.uretimTarihi || "").slice(0, 10);
+  return gecerliGunMu(g) ? g : null;
+};
+// Spec 0097 R9/2, R9/3, R11, R12–R12/6, R14/2, R16–R18/2 (plan P4, P6–P10): `katalog` ({ parts, standardModels, customModels },
+// tarihli hesabın girdisi) ve `partiPay` (`partiGenelPaylari`'nın bu partiye ait satırı, dönem kilitli pay) üretimde HER ZAMAN
+// verilir (Makina Maliyeti ekranı). Verilmezse spec öncesi davranış sürer (bugünkü maliyet, hesap ayarlarının payı); bu yalnız
+// eski motor testlerinin çağrısıdır. `modeller` bugünkü listedir (planlanan satırlar, ad eşlemesi, kâr katsayısı; R9/2, R14).
+// `veri.customers` HAM dizidir (çöptekiler dahil): parti payıyla aynı tek zincir (R9/4).
+export const partiHesabi = (parti, veri, { payK = 0, modeller = [], rates = null, bugun, katalog = null, partiPay = null } = {}) => {
   const liste = makinaListesi({ customers: veri.customers || [], stock: veri.stock || [], partStockLog: veri.partStockLog || [] });
   const makinalar = liste.filter(m => m.kayit?.partiId != null && String(m.kayit.partiId) === String(parti.id));
   // Triyaj (bulgu 1): model adı büyük/küçük harften bağımsız eşlenir (eski motorun `modelKey` kuralı, trLower).
   const modelMap = new Map(modeller.map(m => [trLower(m.model), m]));
+  // C12: tarihli direkt maliyet belirgin (model, gün) başına bir kez hesaplanır (makina başına değil).
+  const hamModeller = katalog ? new Map([...(katalog.standardModels || []), ...(katalog.customModels || [])].filter(m => m && !m.deletedAt).map(m => [trLower(m.model), m])) : null;
+  const partMap = katalog ? parcaHaritasi(katalog.parts) : null;
+  const onbellek = new Map();
+  const direktOf = (k, gun) => {
+    const bugunku = modelMap.get(k);
+    if (!hamModeller || gun == null || !hamModeller.has(k)) return { direktK: bugunku.direktK, eksikSayisi: bugunku.eksikSayisi };
+    const anahtar = `${k}|${gun}`;
+    if (!onbellek.has(anahtar)) { const r = modelMaliyeti(hamModeller.get(k), partMap, 0, gun); onbellek.set(anahtar, { direktK: r.direktK, eksikSayisi: r.eksikSayisi }); }
+    return onbellek.get(anahtar);
+  };
+  // R16, R16/2, R18 (P8): türetilen satırın payı partinin kendi aylarından, makina başına toplanır; durum "tamam" değilse yazılmaz.
+  const payTamam = partiPay ? partiPay.durum === PARTI_DURUM.TAMAM : true;
+  const makinaPayi = new Map((partiPay?.makinaPaylari || []).map(x => [x.anahtar, x.payK]));
+  const turetilenPayi = (m) => (!partiPay ? payK : payTamam ? (makinaPayi.get(m.anahtar) ?? 0) : null);
+  const turetilenBirimPay = !partiPay ? payK : payTamam ? partiPay.makinaBasiK : null;
+  // R11, R11/2, R17 (K3): "kapanmış"ın tek ölçütü partiGenelPaylari'nın `acik` alanı. Kapanmışta planlanan adet bitiş ayının son
+  // günündeki maliyet ve partinin makina başı payıyla, açıkta bugünkü maliyet ve hesap ayarlarının payıyla.
+  const kapanmis = partiPay?.acik === false;
+  const planGunu = kapanmis ? ayinSonGunu(parti.bitisAy) : null;
+  // Triyaj (bulgu 2, R18/2): kapanmış partinin durumu "tamam" değilse (makina yok, rol yok, yürürlük öncesi) planlanan satırın payı
+  // da yazılmaz (havuzu sıfır partide hesaplanmış bir 0 gösterilmez) ve satır nedeni taşır.
+  const planPay = kapanmis ? (payTamam ? partiPay.makinaBasiK : null) : payK;
+  const planPayNeden = kapanmis && !payTamam ? partiPay.neden : null;
+  const planPayKaynak = kapanmis ? PAY_KAYNAK.PARTI : PAY_KAYNAK.AYARLAR;
   const gorunenAd = new Map();
   const turetilen = new Map();
   for (const m of makinalar) { const k = trLower(m.model); if (!gorunenAd.has(k)) gorunenAd.set(k, m.model); turetilen.set(k, (turetilen.get(k) || 0) + 1); }
@@ -271,25 +316,58 @@ export const partiHesabi = (parti, veri, { payK = 0, modeller = [], rates = null
   for (const [ad, n] of Object.entries(planHam)) if (Number(n) > 0) { const k = trLower(ad); if (!gorunenAd.has(k)) gorunenAd.set(k, ad); plan.set(k, Number(n)); }
   const adlar = [...new Set([...turetilen.keys(), ...plan.keys()])];
   const satirlar = []; const bulunamayan = [];
+  const satirYap = (r) => {
+    const toplamK = r.direktK + (r.payK ?? 0);
+    const toplamMaliyetK = r.direktK * r.adet + r.payToplamK;
+    // R14, R14/2 (P6): kâr katsayısı modelin BUGÜNKÜ katsayısı; ciro satırın toplam maliyetinden (birim öneri × adetten değil).
+    return { ...r, toplamK, oneriK: oneriKurus(toplamK, r.katsayi), toplamMaliyetK, oneriCiroK: r.katsayi ? oneriKurus(toplamMaliyetK, r.katsayi) : null };
+  };
   for (const k of adlar) {
     const planli = plan.has(k);
-    const adet = planli ? plan.get(k) : turetilen.get(k) || 0;
     const mm = modelMap.get(k);
     // R18/2: adı bulunamayan model (yeniden adlandırılmış ya da çöpte) görünür çizilir, hesaba girmez.
-    if (!mm) { bulunamayan.push({ model: gorunenAd.get(k), adet, planlanan: planli }); continue; }
+    if (!mm) { bulunamayan.push({ model: gorunenAd.get(k), adet: planli ? plan.get(k) : turetilen.get(k) || 0, planlanan: planli }); continue; }
     const ad = mm.model;
-    satirlar.push({ model: ad, adet, planlanan: planli, turetilenAdet: turetilen.get(k) || 0, direktK: mm.direktK, payK, toplamK: mm.direktK + payK,
-      oneriK: oneriKurus(mm.direktK + payK, mm.katsayi), eksikSayisi: mm.eksikSayisi,
-      toplamMaliyetK: (mm.direktK + payK) * adet, oneriCiroK: mm.katsayi ? oneriKurus(mm.direktK + payK, mm.katsayi) * adet : null });
+    const ortak = { model: ad, turetilenAdet: turetilen.get(k) || 0, katsayi: mm.katsayi };
+    if (planli) {
+      // R12/3: planlanan adet modelin tek satırıdır, maliyet gruplarına bölünmez; anahtarı yalın model adı (R12/4, P4).
+      const adet = plan.get(k);
+      const d = direktOf(k, planGunu);
+      satirlar.push(satirYap({ ...ortak, anahtar: ad, adet, planlanan: true, direktK: d.direktK, eksikSayisi: d.eksikSayisi,
+        payK: planPay, payKaynak: planPayKaynak, payNeden: planPayNeden, payToplamK: (planPay ?? 0) * adet, ayAraligi: null, tarihsiz: false }));
+      continue;
+    }
+    // R12, R12/2, R12/6, R10/2 (P9): maliyeti (direkt + eksik sayısı) aynı makinalar tek satır; tarihsizler her zaman kendi satırında.
+    // Triyaj (bulgu 5, bilinçli): gruplama dönem ardışıklığına bakmaz; maliyeti eski değerine dönen makinalar (10 → 15 → 10) tek satırda
+    // toplanır ve satırın ay aralığı aradaki dönemi de kapsar.
+    const gruplar = new Map();
+    for (const m of makinalar) {
+      if (trLower(m.model) !== k) continue;
+      const gun = uretimGunu(m);
+      const d = direktOf(k, gun);
+      const g = gun == null ? "tarihsiz" : `${d.direktK}|${d.eksikSayisi}`;
+      if (!gruplar.has(g)) gruplar.set(g, { d, tarihsiz: gun == null, adet: 0, payToplamK: 0, ilk: null, son: null });
+      const x = gruplar.get(g);
+      x.adet++;
+      x.payToplamK += turetilenPayi(m) ?? 0; // R16/3: makina paylarının TOPLAMI (artık kuruş ilk makinada)
+      if (gun) { if (!x.ilk || gun < x.ilk) x.ilk = gun; if (!x.son || gun > x.son) x.son = gun; }
+    }
+    const sirali = [...gruplar.values()].sort((a, b) => (a.tarihsiz !== b.tarihsiz ? (a.tarihsiz ? 1 : -1) : a.ilk < b.ilk ? -1 : a.ilk > b.ilk ? 1 : 0));
+    sirali.forEach((x, i) => satirlar.push(satirYap({ ...ortak, anahtar: sirali.length === 1 ? ad : `${ad}#${i + 1}`, adet: x.adet, planlanan: false,
+      turetilenAdet: x.adet, // R12/5: bölünen satırda satırın kendi makina sayısı
+      direktK: x.d.direktK, eksikSayisi: x.d.eksikSayisi, payK: turetilenBirimPay, payKaynak: PAY_KAYNAK.PARTI, payNeden: null, payToplamK: x.payToplamK,
+      ayAraligi: x.tarihsiz ? null : { ilk: x.ilk.slice(0, 7), son: x.son.slice(0, 7) }, tarihsiz: x.tarihsiz })));
   }
   // R20, R20/2 (AC-29/2, AC-29/3, AC-30): gerçeğe göre kâr yalnız satılmış (bedeli ve kuru olan) makinalardan.
   // Triyaj (bulgu 1): modeli bulunamayan satılmış makina ne satışa ne kâra girer (standart maliyeti yok); ayrı sayılır.
+  // Spec 0097 R9/3, R9/5 (P7): satılmış makinanın standart maliyeti KENDİ üretim gününün direkt maliyeti + KENDİ payı; modelinin
+  // planlanan adedi olsa da (tablo o modeli bugünkü maliyetle çizer, R12/3; bu modelde tablo ile özet ayrışabilir).
   const kirilim = { satilmis: 0, stokta: 0, bedelsiz: 0, kursuz: 0, modelYok: 0 };
   let satisK = 0, satilmisStandartK = 0; const kurDurumlari = { kayitli: 0, yaklasik: 0 };
   for (const m of makinalar) {
     if (m.tur === "stok") { kirilim.stokta++; continue; }
-    const mm = modelMap.get(trLower(m.model));
-    if (!mm) { kirilim.modelYok++; continue; }
+    const k = trLower(m.model);
+    if (!modelMap.get(k)) { kirilim.modelYok++; continue; }
     const bedel = gercekSatisBedeli(m.kayit);
     if (!(bedel > 0)) { kirilim.bedelsiz++; continue; }
     const kur = satisKurBilgisi(m.kayit, rates);
@@ -297,7 +375,7 @@ export const partiHesabi = (parti, veri, { payK = 0, modeller = [], rates = null
     if (kur.durum !== "tl") kurDurumlari[kur.durum]++;
     kirilim.satilmis++;
     satisK += kurus(bedel * kur.kur);
-    satilmisStandartK += mm.direktK + payK;
+    satilmisStandartK += direktOf(k, uretimGunu(m)).direktK + (turetilenPayi(m) ?? 0);
   }
   const toplamStandartK = satirlar.reduce((a, r) => a + r.toplamMaliyetK, 0);
   const katsayisiz = satirlar.filter(r => r.oneriCiroK == null).length;
@@ -308,11 +386,14 @@ export const partiHesabi = (parti, veri, { payK = 0, modeller = [], rates = null
   // Triyaj (bulgu 4): başlangıcı gelecekte olan (henüz başlamamış, planlı) partide dönem ters döner; karşılaştırma yapılmaz.
   const baslamadi = !!donem.bas && donem.bas > String(bugun).slice(0, 7);
   const havuz = baslamadi ? { yururlukOncesi: false, urunAgaciK: 0 } : rolHavuzlari(veri, donem.bas, donem.bit, bugun);
+  // Spec 0097 R9/3: standart direkt maliyet satırların tarihli direkt maliyetlerinden.
   const standartDirektK = satirlar.reduce((a, r) => a + r.direktK * r.adet, 0);
   const paylasan = baslamadi ? 0 : (veri.uretimPartileri || []).filter(p => !p.deletedAt && String(p.id) !== String(parti.id) && p.baslangicAy
     && aylariKesisir(donem, partiDonemi(p, bugun))).length;
+  // R18: pay yazılmayan durumun nedeni tablonun üstünde tek satır (yalnız türetilen satır varken anlamlı).
+  const payDurumu = partiPay && !payTamam ? { durum: partiPay.durum, neden: partiPay.neden } : null;
   return {
-    satirlar, bulunamayan, bos: satirlar.length === 0 && bulunamayan.length === 0,
+    satirlar, bulunamayan, bos: satirlar.length === 0 && bulunamayan.length === 0, payDurumu,
     ozet: { toplamStandartK, onerilenCiroK, katsayisiz, satisK, oneriyeGoreKarK: onerilenCiroK - toplamStandartK,
       gercegeGoreKarK: satisK - satilmisStandartK, satilmisStandartK, kirilim, kurDurumlari },
     tedarik: { donem, baslamadi, yururlukOncesi: havuz.yururlukOncesi, tedarikK: havuz.urunAgaciK, standartDirektK, farkK: havuz.urunAgaciK - standartDirektK, paylasanParti: paylasan },

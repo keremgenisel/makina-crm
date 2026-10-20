@@ -6720,6 +6720,68 @@
         "rapor": "docs/evidence/0096-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-0096-yetkisiz",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-maliyetsiz"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-suzgec"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-yetkisiz"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "katalog-parca-yeni"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R5 R8 (geçerlilik tarihi ve maliyet geçmişi)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-kirilim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R5 R8 (geçerlilik tarihi ve maliyet geçmişi)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-tutarsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R5 R8 (geçerlilik tarihi ve maliyet geçmişi)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R5 R8 (geçerlilik tarihi ve maliyet geçmişi)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R5 R8 (geçerlilik tarihi ve maliyet geçmişi)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-gecmis",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R5 R8 (geçerlilik tarihi ve maliyet geçmişi)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R5 R8 (geçerlilik tarihi ve maliyet geçmişi)"
       }
     ],
     "src/components/PartTypeManager.jsx": [
@@ -6971,6 +7033,36 @@
         "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "maliyet-0092-partiler",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-uretim-partileri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-uretim-partisi-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0089-parti-degisim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0090-parti-neden",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0092-partiler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
       }
     ],
     "src/components/Kasa.jsx": [
@@ -8953,6 +9045,48 @@
         "rapor": "docs/evidence/0091-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller-uretimde-kapali",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller-uretimde-kapali",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-uretim-partileri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0090-parti-neden",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0097-parti-tarihli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
       }
     ],
     "src/components/maliyet/PayOzeti.jsx": [
@@ -8990,6 +9124,30 @@
         "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "maliyet-0092-pay",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-bos-rol",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-bos-ayar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0092-pay",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
       }
     ],
     "src/components/maliyet/ModelMaliyetleri.jsx": [
@@ -9067,6 +9225,54 @@
         "rapor": "docs/evidence/0093-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller-bos-uretimde",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller-dokum",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-katsayi-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller-uretimde-kapali",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller-uretimde-acik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller-isaret-bilgi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller-isaret-uyari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-modeller-bos-uretimde",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
       }
     ],
     "src/components/maliyet/PartiHesabi.jsx": [
@@ -9124,6 +9330,66 @@
         "rapor": "docs/evidence/0093-taban-piksel-raporu.json",
         "ekran": "maliyet-parti-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-parti-planli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-parti-plan-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-parti-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0093-plan-suzulmus",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0093-plan-gizli-adet",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0093-plan-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0097-parti-tarihli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0097-parti-acik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-0097-parti-baslamadi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R12 R16 R19/2 (tarihli satırlar, dönem kilitli pay)"
       }
     ],
     "src/components/maliyet/HesapAyarlari.jsx": [
@@ -9146,6 +9412,30 @@
         "rapor": "docs/evidence/0088-taban-piksel-raporu.json",
         "ekran": "maliyet-ayarlar-rol-uyari",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar-oneri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
+      },
+      {
+        "rapor": "docs/evidence/0097-piksel-raporu.json",
+        "ekran": "maliyet-ayarlar-rol-uyari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0097 R19 (üst ibare; Model Maliyetleri'nde fark yalnız şerit, AC-58)"
       }
     ]
   }

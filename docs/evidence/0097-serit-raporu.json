@@ -1,0 +1,254 @@
+{
+ "maliyet-ayarlar-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-ayarlar-hata-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-ayarlar-hata-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-ayarlar-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-ayarlar-oneri-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-ayarlar-oneri-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-ayarlar-rol-uyari-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 170,
+   "y1": 197
+  }
+ },
+ "maliyet-ayarlar-rol-uyari-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 170,
+   "y1": 197
+  }
+ },
+ "maliyet-bos-ayar-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-bos-ayar-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-bos-rol-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-bos-rol-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-katsayi-formu-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-katsayi-formu-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-bos-uretimde-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-bos-uretimde-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-dokum-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-dokum-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-isaret-bilgi-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-isaret-bilgi-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-isaret-uyari-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-isaret-uyari-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-uretimde-acik-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-uretimde-acik-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-uretimde-kapali-aydinlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ },
+ "maliyet-modeller-uretimde-kapali-karanlik.png": {
+  "boyutAyni": true,
+  "kutu": {
+   "x0": 82,
+   "x1": 2021,
+   "y0": 171,
+   "y1": 198
+  }
+ }
+}

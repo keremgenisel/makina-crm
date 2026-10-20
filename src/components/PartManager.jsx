@@ -8,7 +8,8 @@ import { MALIYET_ETIKETI, MALIYET_IPUCU, KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, m
   kitAdediDogrula, parcaKitAdetleri, parcaKitPlani, kitleriGuncelle, isaretsizKitteMetni,
   parcaMaliyetKurus, parcaMaliyetMetni, elleMaliyetMetni, maliyetKaynagi, KAYNAK_ELLE, kaynakListeMetni, kaynakKartMetni, KAYNAK_KIRILIM_YETKISIZ, kirilimdanGeliyorMetni,
   HAMMADDE_BOS_METNI, HAMMADDE_BOLUM_BASLIGI, HAMMADDE_IPUCU, HAMMADDE_TUTARSIZ_UYARI, hammaddeTedarikciAdi, hammaddeSecilebilirMi,
-  hammaddeFormu, hammaddeDogrula } from "../lib/urunAgaci";
+  hammaddeFormu, hammaddeDogrula, maliyetGecmisiYaz, gecmisliKayit, maliyetGecmisiSatirlari, GECERLILIK_ETIKETI, GECERLILIK_IPUCU, GECMIS_BASLIGI } from "../lib/urunAgaci";
+import { useBugun } from "../hooks/useBugun";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -73,6 +74,33 @@ const MaliyetAlani = ({ value, onChange, hata, kirilimK = null, kaynak = null, g
     <Ipucu>{MALIYET_IPUCU}</Ipucu>
   </Field>
 );
+// Spec 0097 R5, R5/3: geçerlilik tarihi yalnız düzenlemede ve kırılımlı parçada da ETKİN (pasif maliyet alanının komşusu);
+// gider yetkisi istemez. `elle` bayrağı (R7/2) kullanıcının alanı değiştirip değiştirmediğidir, kayda yazılmaz.
+const GecerlilikAlani = ({ tarih, setTarih, hata }) => (
+  <Field label={GECERLILIK_ETIKETI}>
+    <Input type="date" aria-label={GECERLILIK_ETIKETI} value={tarih.deger} onChange={e => setTarih({ deger: e.target.value, elle: true })} />
+    <HataMetni>{hata || ""}</HataMetni>
+    <Ipucu>{GECERLILIK_IPUCU}</Ipucu>
+  </Field>
+);
+// R8, R8/2, R8/3 (AC-16, AC-17, AC-43): salt okunur geçmiş, en yeni üstte; boşken bölüm çizilmez. Kayıttan okunur (form değil).
+const MaliyetGecmisi = ({ parca }) => {
+  const satirlar = maliyetGecmisiSatirlari(parca);
+  if (!satirlar.length) return null;
+  return (
+    <div data-testid="maliyet-gecmisi" style={{ marginBottom: 12 }}>
+      <BolumBasligi>{GECMIS_BASLIGI}</BolumBasligi>
+      <div style={{ display: "grid", gap: 2, maxWidth: 360 }}>
+        {satirlar.map((r, i) => (
+          <div key={`${r.gecerli}-${i}`} data-testid="maliyet-gecmisi-satiri" style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, padding: "3px 0", borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
+            <span style={{ color: "var(--n600, #475569)" }}>{r.tarihMetni}</span>
+            <span style={{ fontWeight: 600 }}>{r.tutarMetni}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // Spec 0096 R3–R4/2, R8, R11, R12, R17/2, R23: parçanın hammadde tedarikçisi satırları. Seçici yalnız hammadde işaretli canlı
 // tedarikçileri listeler (bir parçada bir kez); satırın kendi tedarikçisinin adı HAM diziden çözülür (çöpteki / bulunamayan).
@@ -194,13 +222,18 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   // Spec 0087 R4, C4 (plan P4): maliyetin ham metni kayıtta sayıya çevrilir; boşsa alan gövdeye hiç yazılmaz.
   // Spec 0096 R7, R7/2, C12: kırılım da HER çağrıda ayrıştırılır (düzenleme `{ ...x, ...editForm }` birleştirmesidir; boşaltılan
   // kırılım eski kayıttan geri gelmesin) ve yalnız doluyken yazılır; kırılımda tutar varsa `maliyet` anahtarı her çağrıda silinir.
-  const hazirla = (kayit) => {
-    const { maliyet, hammaddeler, ...geri } = kayit;
+  const hazirlaTemel = (kayit) => {
+    const { maliyet, hammaddeler, maliyetGecmisi: _formKopyasi, ...geri } = kayit;
     const kirilim = hammaddeDogrula(hammaddeler).kayit;
     const kirilimli = kirilim.some(h => h.tutar != null);
     const d = parcaMaliyetDogrula(maliyet);
     return { ...geri, ...(kirilimli || d.bos || d.hata ? {} : { maliyet: d.deger }), ...(kirilim.length ? { hammaddeler: kirilim } : {}) };
   };
+  // Spec 0097 R4, C13, C13/2 (tuzak 2, 3, 9): formdan gelen geçmiş kopyası atılır; geçmiş güncelleyicinin içindeki ESKİ kayıttan
+  // (`eski`) ve yeni kaydın ÇÖZÜLMÜŞ maliyetinden (kırılım toplamı dahil) tek karar motoruyla yazılır. Tarih ve bugün `ek` ile
+  // kaydın başında bir kez çözülmüş gelir; bu fonksiyon saat okumaz. Yeni parçada (`eski` yok) geçmiş yazılmaz (R5/2).
+  // Triyaj (bulgu 4): karar hata dönerse kayıt hiç değişmez (eski kayıt aynen döner).
+  const hazirla = (kayit, eski = null, ek = null) => gecmisliKayit(hazirlaTemel(kayit), eski, ek) ?? eski;
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
       items: parts,
@@ -248,18 +281,24 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   // Formun kit adetleri kancanın formunda TUTULMAZ (gövdeye sızmasın, plan P4): model adı → ham metin.
   const [adetler, setAdetler] = useState({});
   const [kittekiler, setKittekiler] = useState({});
-  const [hatalar, setHatalar] = useState({ maliyet: null, adet: {}, hammadde: {} });
+  const [hatalar, setHatalar] = useState({ maliyet: null, adet: {}, hammadde: {}, tarih: null });
+  // Spec 0097 R5/4: varsayılan tarih yerel gün (`useBugun`), `today()` değil.
+  const bugun = useBugun();
+  const [tarih, setTarih] = useState({ deger: "", elle: false });
   // R10, AC-8, AC-9: kümesi bütün canlı parçalar (arama ve sayfadan bağımsız; `parts` App'ten çöpü süzülmüş gelir).
   const maliyetsizSayi = parts.filter(p => !maliyetGirildiMi(p)).length;
 
-  const openAdd = () => { setForm(emptyForm); setAdetler({}); setKittekiler({}); setHatalar({ maliyet: null, adet: {}, hammadde: {} }); setAddOpen(true); };
+  const openAdd = () => { setForm(emptyForm); setAdetler({}); setKittekiler({}); setHatalar({ maliyet: null, adet: {}, hammadde: {}, tarih: null }); setAddOpen(true); };
   const openEdit = (k) => {
     const kit = parcaKitAdetleri(k.id, [standardModels, customModels]);
     setKittekiler(kit);
     setAdetler(Object.fromEntries(Object.entries(kit).map(([m, n]) => [m, String(n)])));
-    setHatalar({ maliyet: null, adet: {}, hammadde: {} });
+    setHatalar({ maliyet: null, adet: {}, hammadde: {}, tarih: null });
+    setTarih({ deger: bugun, elle: false }); // Spec 0097 AC-10: alan bugünün tarihiyle gelir
     // Spec 0096 R17/3: kırılım formda hep form biçiminde (tutar metin), yetkisiz kullanıcıda da (bölüm çizilmese de taşınır).
-    startEdit({ ...k, maliyet: elleMaliyetMetni(k), hammaddeler: hammaddeFormu(k.hammaddeler) });
+    // Spec 0097 C13: geçmiş forma kopyalanmaz (kayıt fonksiyonu onu kayıttan okur).
+    const { maliyetGecmisi: _g, ...kayit } = k;
+    startEdit({ ...kayit, maliyet: elleMaliyetMetni(k), hammaddeler: hammaddeFormu(k.hammaddeler) });
   };
 
   // R7, R14–R16, plan P5: doğrula → karşı bölüme yazılacaksa kilide anlık bak (reddedilirse kayıt bütünüyle yazılmaz) →
@@ -273,16 +312,19 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     const isaretli = allModels.map(x => x.model).filter(ad => (f.models || []).includes(ad));
     const adetHata = {}; const adetMap = {};
     for (const ad of isaretli) { const d = kitAdediDogrula(adetler[ad]); if (d.hata) adetHata[ad] = d.hata; else adetMap[ad] = d.deger; }
-    setHatalar({ maliyet: m.hata, adet: adetHata, hammadde: h.hatalar });
-    if (m.hata || Object.keys(adetHata).length || !h.gecerli) return;
     const eski = kip === "ekle" ? null : parts.find(x => x.id === editId);
+    // Spec 0097 R5/4, R6, R6/3, R7/2: tarih kaydın başında BİR KEZ çözülür; doğrulama yazımla aynı motordan (önizleme).
+    const ek = kip === "ekle" ? null : { tarih: tarih.deger, bugun, tarihElle: tarih.elle };
+    const tarihHata = eski && !m.hata && h.gecerli ? maliyetGecmisiYaz(eski, parcaMaliyetKurus(hazirlaTemel({ ...eski, ...f })), ek).hata : null;
+    setHatalar({ maliyet: m.hata, adet: adetHata, hammadde: h.hatalar, tarih: tarihHata });
+    if (m.hata || Object.keys(adetHata).length || !h.gecerli || tarihHata) return;
     const kitGirdisi = { partId: kip === "ekle" ? "__yeni__" : editId, ad: (f.ad || "").trim(), models: f.models || [], eskiModeller: eski?.models || [], adetler: adetMap };
     // Triyaj (bulgu 3): yazma kararı TAM özel model dizisiyle verilir; kit satırı yalnız çöpteki bir modelde duruyorsa ad
     // taşıması da yazılsın (geri alınan model eski adı basmasın). Canlı dizi yalnız ekranda çizilenleri taşır.
     const plan = parcaKitPlani(kitGirdisi, standardModels, rawCustomModels || customModels);
     const kilit = plan.karsiBolumeYazar ? baskasiKilitli?.("ayar", "models") : null;
     if (kilit) { showToast(kilitRedMesaji(kilit), "err"); return; }
-    const id = kip === "ekle" ? add() : saveEdit();
+    const id = kip === "ekle" ? add() : saveEdit(ek);
     if (!id) return;
     if (kip === "ekle") setAddOpen(false);
     if (!plan.karsiBolumeYazar) return;
@@ -482,7 +524,11 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={editForm} onChange={setEditForm} />
           </Field>
-          <MaliyetAlani value={editForm.maliyet} onChange={v => setEditForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...formMaliyeti(editForm)} giderYetki={giderYetki} />
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
+            <MaliyetAlani value={editForm.maliyet} onChange={v => setEditForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...formMaliyeti(editForm)} giderYetki={giderYetki} />
+            <GecerlilikAlani tarih={tarih} setTarih={setTarih} hata={hatalar.tarih} />
+          </div>
+          <MaliyetGecmisi parca={parts.find(x => x.id === editId)} />
           {giderYetki && <HammaddeAlani satirlar={editForm.hammaddeler || []} setSatirlar={v => setEditForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} />}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">

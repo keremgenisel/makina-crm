@@ -15,8 +15,10 @@ import { UretimPartileri } from "./gider/UretimPartileri";
 // R3: dört görünüm bu sırayla. Üretim Partileri yönetimi Giderler'den buraya taşındı (R23); bileşen gider/'de kalır (plan P7).
 export const GORUNUMLER = [{ value: "modeller", label: "Model Maliyetleri" }, { value: "parti", label: "Parti Hesabı" }, { value: "partiler", label: "Üretim Partileri" }, { value: "ayarlar", label: "Hesap Ayarları" }];
 const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "modeller");
-// R31 (AC-48): rakamlar bugünkü ayarlarla; kapanmış partinin standart maliyeti de oynar.
-export const BUGUNKU_AYAR_IBARESI = "Rakamlar bugünkü ayarlarla hesaplanır: gider türü rolü, varsayılan üretim adedi, dönem ya da bir parçanın maliyeti değişince kapanmış partilerin rakamı da değişir.";
+// Spec 0097 R19 (AC-30; 0088 R31 bu spec'le yeniden yazıldı): bugünkü ayarlar yalnız Model Maliyetleri ile planlanan adet
+// satırlarını etkiler; üretilmiş makinalar üretim gününün parça maliyeti ve partinin kendi aylarının genel gideriyle hesaplanır.
+// Tek satıra sığar (AC-58: Model Maliyetleri ekranlarında fark yalnız şeritte kalsın, alttaki içerik kaymasın).
+export const BUGUNKU_AYAR_IBARESI = "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri ile planlanan adet satırlarını etkiler; üretilmiş makinalar üretim günü maliyetiyle hesaplanır.";
 
 export const MakinaMaliyeti = ({
   aktifKullanici = "", giderler = [], giderTurleri = [], setGiderTurleri, tedarikciler = [], stock = [], customers = [], partStockLog = [],
@@ -39,7 +41,11 @@ export const MakinaMaliyeti = ({
     [standardModels, customModels, parts, pay.payK, uretimdeDisi, gercek]);
   // Spec 0090 R12–R37, R37/3 (K8): parti payı burada kurulur (App'te ağır hesap yok). Üretim tarihi zinciri çöpteki müşteriyi de
   // okur (stoğa dönen makinanın özgün tarihi); bu yüzden müşteriler ham dizidir (bugünkü motorun girdisiyle aynı).
-  const partiSonucu = useMemo(() => partiGenelPaylari({ ...veri, customers: tumMusteriler || customers }, bugun), [veri, tumMusteriler, customers, bugun]);
+  const veriHam = useMemo(() => ({ ...veri, customers: tumMusteriler || customers }), [veri, tumMusteriler, customers]);
+  const partiSonucu = useMemo(() => partiGenelPaylari(veriHam, bugun), [veriHam, bugun]);
+  // Spec 0097 R9/2, R9/4, C11: Parti Hesabı tarihli maliyeti katalogdan kurar ve payla AYNI ham müşteri dizisini okur; dönem kilitli
+  // pay burada zaten hesaplanıyor, görünüme geçirilir (yeni ağır hesap yok).
+  const parcaKatalogu = useMemo(() => ({ parts, standardModels, customModels }), [parts, standardModels, customModels]);
   // Triyaj (bulgu 2): kapanış haritası kaydedilen partinin aralığından (tek yol, C15).
   const kapanisHavuzu = (parti) => partiKapanisHavuzu(veri, parti, bugun);
   const ortak = { pay, gercek, modeller, canDo, baskasiKilitli, showToast };
@@ -52,7 +58,7 @@ export const MakinaMaliyeti = ({
       </div>
       <div style={{ marginBottom: 12 }}><UyariSeridi aile="bilgi" testId="bugunku-ayar-ibaresi">{BUGUNKU_AYAR_IBARESI}</UyariSeridi></div>
       {gorunum === "modeller" && <ModelMaliyetleri {...ortak} standardModels={standardModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels} />}
-      {gorunum === "parti" && <PartiHesabi {...ortak} veri={veri} rates={rates} bugun={bugun} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers} />}
+      {gorunum === "parti" && <PartiHesabi {...ortak} veri={veriHam} katalog={parcaKatalogu} partiSonucu={partiSonucu} rates={rates} bugun={bugun} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers} />}
       {gorunum === "partiler" && <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
         partiSonucu={partiSonucu} kapanisHavuzu={kapanisHavuzu} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />}
       {gorunum === "ayarlar" && <HesapAyarlari {...ortak} ayarlar={ayarlar} setAppSettings={setAppSettings} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} bugun={bugun} />}

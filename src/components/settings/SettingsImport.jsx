@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trLower, bumpId, normalizeSaleType, fmt, fmtTR, isFaturali } from "../../lib/utils";
+import { trLower, bumpId, normalizeSaleType, fmt, fmtTR, isFaturali, yerelBugun } from "../../lib/utils";
 import { PART_TYPE_PALETTE_KEYS } from "../../lib/constants";
 import { Icon, Btn, Modal } from "../ui";
 import { KartBolum } from "../tasarim";
@@ -176,7 +176,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
   };
 
   // Yedek parça satırlarını kayıt dizisine çevirir (spec 0087: saf çekirdek lib/parcaAktarma.js'te)
-  const partsRowsToRecords = (rows) => parcaSatirlariniCoz(rows, parts);
+  const partsRowsToRecords = (rows) => parcaSatirlariniCoz(rows, parts, Date.now(), yerelBugun()); // spec 0097 R20/2: içe aktarma günü yerel gündür
 
   // xlsx (SheetJS) paketinde npm üzerinden düzeltilmemiş bilinen bir Prototip Kirlenmesi/ReDoS açığı var
   // (GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9). Kaynağı tamamen engelleyemediğimiz için saldırı yüzeyini

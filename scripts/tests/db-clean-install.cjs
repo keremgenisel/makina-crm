@@ -192,6 +192,16 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && JSON.stringify(b.parts.find(p => p.id === 52)?.hammaddeler) === JSON.stringify([{ tedarikciId: 51, tutar: 17000 }]));
 }
 
+// Spec 0097: temiz kurulumda parçanın maliyet geçmişi ilk oturumda yazılır.
+{
+  let h = null;
+  const gecmis = [{ gecerli: "", kurus: 1000 }, { gecerli: "2026-02-01", kurus: 1500 }];
+  try { dbmod.writeBlobToDb({ parts: [{ id: 53, ad: "Rulman", models: [], maliyet: 15, maliyetGecmisi: gecmis }] }); } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0097: temiz kurulumda maliyetGecmisi sütunu var ve yazıldı", h === null
+    && JSON.stringify(b.parts.find(p => p.id === 53)?.maliyetGecmisi) === JSON.stringify(gecmis));
+}
+
 // Spec 0088 AC-43: temiz kurulumda kâr katsayısı, Extra Kalıp fiyatı, planlanan adetler ve maliyet ayarları ilk oturumda yazılır.
 {
   let h = null;
