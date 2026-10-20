@@ -1,0 +1,204 @@
+{
+ "disaAktarma": [
+  [
+   "Rulman",
+   "",
+   "R1",
+   "Standart",
+   "",
+   "",
+   "450",
+   "",
+   "",
+   120.5
+  ],
+  [
+   "Hediye vida",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   0
+  ],
+  [
+   "Pul",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   7.5
+  ],
+  [
+   "Maliyetsiz",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Dişli",
+   "Gear",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   1234.56
+  ],
+  [
+   "Boş metin",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Çöpte",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   99
+  ]
+ ],
+ "girildiMi": [
+  true,
+  true,
+  true,
+  false,
+  true,
+  false,
+  true
+ ],
+ "modeller": [
+  {
+   "model": "AK100",
+   "kit": [
+    {
+     "partId": "1",
+     "ad": "Rulman",
+     "adet": 2,
+     "birimK": 12050,
+     "satirK": 24100,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "2",
+     "ad": "Hediye vida",
+     "adet": 4,
+     "birimK": 0,
+     "satirK": 0,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "3",
+     "ad": "Pul",
+     "adet": 3,
+     "birimK": 750,
+     "satirK": 2250,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "4",
+     "ad": "Maliyetsiz",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "7",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    }
+   ],
+   "ek": [
+    {
+     "ad": "Büküm",
+     "tutarK": 9000
+    }
+   ],
+   "kitBos": false,
+   "eksikSayisi": 2,
+   "direktK": 35350,
+   "payK": 12345,
+   "toplamK": 47695,
+   "katsayi": 1.4,
+   "oneriK": 66773,
+   "kalipListeK": null
+  },
+  {
+   "model": "OZEL",
+   "kit": [
+    {
+     "partId": "5",
+     "ad": "Dişli",
+     "adet": 1,
+     "birimK": 123456,
+     "satirK": 123456,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "6",
+     "ad": "Boş metin",
+     "adet": 2,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "99",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    }
+   ],
+   "ek": [],
+   "kitBos": false,
+   "eksikSayisi": 2,
+   "direktK": 123456,
+   "payK": 12345,
+   "toplamK": 135801,
+   "katsayi": null,
+   "oneriK": null,
+   "kalipListeK": null
+  }
+ ]
+}

@@ -45,7 +45,7 @@ const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "rapor"
 
 export const Giderler = ({
   giderler: giderlerHam = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
-  calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [],
+  calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [], parts = [], // spec 0096 R13/5: ham parça dizisi (tedarikçi kullanımı)
   appSettings = {}, kdvRates, factory = null, rates = null, satisVerisi = {}, serverPermissions = null, showToast = () => {},
   // Spec 0003: Anasayfa'daki "Giderlerde Görüntüle" ile gelinirse ödeme süzgeci "hatirlatma" açık başlar.
   baslangicOdemeFiltresi = "",
@@ -393,7 +393,7 @@ export const Giderler = ({
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
           hesapHareketleri={hesapHareketleri} giderTurleri={giderTurleri} yururlukAy={yururlukAy} bugun={bugun} kasaHesaplari={kasaHesaplari}
-          rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />
+          rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} parts={parts} />
       )}
 
       {giderKilidi && kilitKalemId != null ? (

@@ -1045,11 +1045,33 @@ export const turKullanim = (turId, giderler = [], tanimlar = []) => ({
   cop: giderler.filter(k => String(k.turId) === String(turId) && k.deletedAt).length,
   tanim: tanimlar.filter(t => String(t.turId) === String(turId)).length,
 });
-export const tedarikciKullanim = (tedId, giderler = [], tanimlar = []) => ({
-  kalem: giderler.filter(k => String(k.tedarikciId) === String(tedId)).length,
-  cop: giderler.filter(k => String(k.tedarikciId) === String(tedId) && k.deletedAt).length,
-  tanim: tanimlar.filter(t => String(t.tedarikciId) === String(tedId)).length,
-});
+// Spec 0096 R13/2: parça hammadde kırılımında geçen tedarikçiler, tedarikçi kimliği (metin) → { parca, cop }. Tedarikçiyi kalıcı
+// silen dört kapının (silme düğmesi, Kalıcı Sil, çöpü boşalt, otuz günlük temizlik) TEK yardımcısı. R13/5: canlı ve çöpteki
+// parçalar sayılır (çöpten geri alınan parçanın bağı kopmasın); "çöpü boşalt" kalacak parçaları verir.
+export const kirilimdaGecenTedarikciler = (parts = []) => {
+  const m = new Map();
+  for (const p of parts || []) for (const h of p?.hammaddeler || []) {
+    if (h?.tedarikciId == null || h.tedarikciId === "") continue;
+    const k = String(h.tedarikciId);
+    const x = m.get(k) || { parca: 0, cop: 0 };
+    x.parca += 1; if (p.deletedAt) x.cop += 1;
+    m.set(k, x);
+  }
+  return m;
+};
+// Çöp Kutusu satırının korunma nedeni (R13/2, AC-37).
+export const KIRILIMDA_TEDARIKCI_NEDENI = "Bir parçanın hammadde kırılımında geçiyor; önce Ayarlar › Katalog › Parça/Yedek Parça'da kırılımdan çıkarın.";
+// Spec 0096 R13, R13/3: parça kırılımı da kullanımdır (`parca`, `parcaCop`); dördüncü parametre verilmezse eski çıktı + sıfırlar.
+// Triyaj (bulgu 3): beşinci parametre hazır harita (`kirilimdaGecenTedarikciler`); liste onu bir kez kurar, satır başına parça taranmaz.
+export const tedarikciKullanim = (tedId, giderler = [], tanimlar = [], parts = [], harita = null) => {
+  const p = (harita || kirilimdaGecenTedarikciler(parts)).get(String(tedId)) || { parca: 0, cop: 0 };
+  return {
+    kalem: giderler.filter(k => String(k.tedarikciId) === String(tedId)).length,
+    cop: giderler.filter(k => String(k.tedarikciId) === String(tedId) && k.deletedAt).length,
+    tanim: tanimlar.filter(t => String(t.tedarikciId) === String(tedId)).length,
+    parca: p.parca, parcaCop: p.cop,
+  };
+};
 export const tedarikciAdHatasi = (ad, tedarikciler = [], haricId = null) => {
   const a = String(ad || "").trim();
   if (!a) return "Tedarikçi adı boş olamaz.";

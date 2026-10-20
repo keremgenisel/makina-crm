@@ -95,7 +95,8 @@ describe("Spec 0068 C8, R11: canlı/ham ayrımı ve otomatik temizlik (kaynak)",
     }
   });
   it("AC-15 / AC-33: 30 günlük otomatik temizlik iki bölümü de kapsar", () => {
-    expect(app).toMatch(/data\.tedarikciler = purgeOldTrash\(data\.tedarikciler\)/);
+    // Spec 0096 R13/2 ile güncellendi: tedarikçi temizliği kırılımda geçen tedarikçiyi `koru` ile korur (çek emsali).
+    expect(app).toMatch(/data\.tedarikciler = purgeOldTrash\(data\.tedarikciler, undefined, t => korunan\.has\(String\(t\.id\)\)\)/);
     expect(app).toMatch(/data\.uretimPartileri = purgeOldTrash\(data\.uretimPartileri\)/);
   });
 });

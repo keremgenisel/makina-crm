@@ -409,7 +409,8 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
             Toplam <b>{partsImportPreview.parts.length}</b> kayıt bulundu:
             <b style={{ color: "var(--grn600, #16a34a)" }}> {partsImportPreview.yeniler} yeni</b> eklenecek,
             <b style={{ color: "var(--cyan, #0891b2)" }}> {partsImportPreview.guncellenenler} mevcut</b> güncellenecek.
-            {partsImportPreview.errors.length > 0 && <span style={{ color: "var(--red600, #dc2626)" }}> · {partsImportPreview.errors.length} satır atlandı.</span>}
+            {/* Triyaj (spec 0096 bulgu 1): bildirimlerin çoğunda satırın öbür alanları alınır; "atlandı" değil "uyarı". */}
+            {partsImportPreview.errors.length > 0 && <span style={{ color: "var(--red600, #dc2626)" }}> · {partsImportPreview.errors.length} uyarı.</span>}
           </div>
           {partsImportPreview.errors.length > 0 && (
             <div style={{ background: "var(--redBg, #fef2f2)", border: "1px solid var(--redBr, #fecaca)", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "var(--red800, #991b1b)", maxHeight: 100, overflowY: "auto" }}>

@@ -193,6 +193,11 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null, ta
     ...(c.hesapId != null ? { hesapId: remapRef(maps.kasaHesaplari, c.hesapId) } : {}),
     ...(c.alacakliId != null && c.alacakliTur === "tedarikci" ? { alacakliId: remapRef(maps.tedarikciler, c.alacakliId) } : {}),
     ...(c.alacakliId != null && c.alacakliTur === "calisan" ? { alacakliId: remapRef(maps.calisanlar, c.alacakliId) } : {}) }));
+  // Spec 0096 R26 (AC-49): parçanın hammadde kırılımı tedarikçiye kimlikle bağlı; yeniden atanan tedarikçi kimliğini izler.
+  // Taşınmasa satır eski kimliğe bakardı ve o kimlik sunucuda başka bir tedarikçiye aitse yanlış tedarikçiyi gösterirdi.
+  adds.parts = adds.parts.map(p => (Array.isArray(p.hammaddeler) && p.hammaddeler.length
+    ? { ...p, hammaddeler: p.hammaddeler.map(h => (h?.tedarikciId != null ? { ...h, tedarikciId: remapGevsek(maps.tedarikciler, h.tedarikciId) } : h)) }
+    : p));
   // Spec 0058 R14 (Q3): kapsam dışı girişi kaynağına göre kaydını izler (servis, Extra Kalıp, yedek parça ya da hareket).
   // Bilinen sınır: birleştirme yalnız eklemeleri yeniden uygular; başka PC yazarken yapılan "kapsama al" geri gelebilir.
   const KAPSAM_HARITA = { servis: "services", kalip: "partSales", yedekParca: "yedekParcaSatislar" };

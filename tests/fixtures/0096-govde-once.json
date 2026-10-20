@@ -1,0 +1,78 @@
+{
+  "tedarikciler": [
+    {
+      "id": 31,
+      "ad": "Demir Çelik A.Ş.",
+      "yetkili": "Ali",
+      "telefon": "0212",
+      "eposta": "",
+      "vergiDairesi": "Kartal",
+      "vergiNo": "123",
+      "adres": "",
+      "deletedAt": null,
+      "not": "Sac"
+    },
+    {
+      "id": 32,
+      "ad": "Eski Tedarikçi",
+      "yetkili": null,
+      "telefon": null,
+      "eposta": null,
+      "vergiDairesi": null,
+      "vergiNo": null,
+      "adres": null,
+      "deletedAt": "2026-10-01T10:00:00.000Z",
+      "not": null
+    }
+  ],
+  "parts": [
+    {
+      "id": 7,
+      "ad": "Rulman",
+      "adEN": "Bearing",
+      "kod": "R-6204",
+      "tanim": "",
+      "tanimEN": "",
+      "fiyatTRY": 450,
+      "fiyatUSD": "",
+      "fiyatEUR": "",
+      "models": [
+        "AK100_DS"
+      ],
+      "deletedAt": null,
+      "tip": "Standart",
+      "resim": "",
+      "maliyet": 120.5
+    },
+    {
+      "id": 8,
+      "ad": "Maliyetsiz parça",
+      "adEN": "",
+      "kod": "",
+      "tanim": "",
+      "tanimEN": "",
+      "fiyatTRY": null,
+      "fiyatUSD": null,
+      "fiyatEUR": null,
+      "models": [],
+      "deletedAt": null,
+      "tip": "Standart",
+      "resim": ""
+    },
+    {
+      "id": 9,
+      "ad": "Silinen parça",
+      "adEN": "",
+      "kod": "",
+      "tanim": "",
+      "tanimEN": "",
+      "fiyatTRY": null,
+      "fiyatUSD": null,
+      "fiyatEUR": null,
+      "models": [],
+      "deletedAt": "2026-10-01T10:00:00.000Z",
+      "tip": "Standart",
+      "resim": ""
+    }
+  ]
+}

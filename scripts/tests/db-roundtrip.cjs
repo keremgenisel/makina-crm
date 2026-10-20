@@ -623,6 +623,31 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0087 AC-4: maliyetsiz parça yine anahtarsız", !("maliyet" in c.parts.find(p => p.id === 7)));
 }
 
+// ── Spec 0096 AC-28, AC-29, AC-36: tedarikçinin hammadde işareti ve parçanın hammadde kırılımı. İşaretsiz tedarikçinin ve
+// kırılımsız parçanın okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı (kapalı işaret ve boş kırılım
+// gövdede hiç yok, `null` olarak da değil); dolu değerler gidiş dönüşte sırası ve şekliyle korunur, işaret `true` okunur.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0096-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0096-govde-once.json"), "utf8"));
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  check("spec 0096 AC-28: işaretsiz tedarikçi ve kırılımsız parçanın gövdesi spec öncesiyle birebir", esit(b.tedarikciler, once.tedarikciler) && esit(b.parts, once.parts));
+  check("spec 0096 AC-36: kapalı işaret ve boş kırılım gövdede hiç yok", b.tedarikciler.every(t => !("hammadde" in t)) && b.parts.every(p => !("hammaddeler" in p)));
+  const kirilim = [{ tedarikciId: 31, tutar: 8000.55 }, { tedarikciId: 33, tutar: null }, { tedarikciId: 32, tutar: 0 }];
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.tedarikciler[0].hammadde = true;
+  girdi.tedarikciler.push({ id: 33, ad: "Döküm Ltd", hammadde: false });
+  girdi.parts.push({ id: 10, ad: "Ayna dişlisi", models: [], hammaddeler: kirilim });
+  girdi.parts[1].hammaddeler = [];
+  dbmod.writeBlobToDb(girdi);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0096 AC-29: işaret true olarak okunur (1 değil); false yazılan işaret gövdede yok", c.tedarikciler.find(t => t.id === 31)?.hammadde === true && !("hammadde" in c.tedarikciler.find(t => t.id === 33)));
+  check("spec 0096 AC-29: kırılım sırası, { tedarikciId, tutar } şekli, kuruş, boş tutar (null) ve sıfır korunur", esit(c.parts.find(p => p.id === 10)?.hammaddeler, kirilim));
+  check("spec 0096 AC-28: boş liste olarak yazılan kırılım gövdede yok", !("hammaddeler" in c.parts.find(p => p.id === 8)));
+}
+
 // ── Spec 0088 AC-43, AC-44 (C7, C8, C8/2): tür rolü (meta JSON), modelin kâr katsayısı ve Extra Kalıp fiyatı, partinin
 // planlanan adetleri, appSettings.maliyetAyarlari. Rolsüz tür, katsayısız model, plansız parti ve maliyet ayarı olmayan
 // uygulama ayarlarının okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı.

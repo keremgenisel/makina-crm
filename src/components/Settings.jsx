@@ -273,7 +273,10 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
           <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}
             standardModels={standardModels} customModels={customModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels}
             partTypeDefs={partTypeDefs} baskasiKilitli={baskasiKilitli}
-            rawCustomModels={rawCustomModels.length >= customModels.length ? rawCustomModels : customModels} />
+            rawCustomModels={rawCustomModels.length >= customModels.length ? rawCustomModels : customModels}
+            // Spec 0096 C11 (plan P1): tedarikçi listesi parça paneline gider yetkisiyle kapatılarak verilir; App'ten gelen dizi
+            // ham ve kapısız kalır çünkü aynı dizi yedeğe gidiyor (App'te kapatılsa yetkisiz kullanıcının yedeği boş liste taşırdı).
+            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} />
         </KartBolum>
       )}
 

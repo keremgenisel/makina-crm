@@ -5,7 +5,8 @@
 // kaynağı kittir (R6); parça kartı ona ikinci bir giriş kapısıdır. İşaret ile kitin birlikte yazılması bu modülden geçer
 // (R15, AC-19): ekranlar "hangi model dizisi" dalı yazmaz, `kitleriGuncelle`'yi iki model dizisinin işlevsel
 // güncelleyicisinde çağırır (tam dizi; App ekranlara çöpü süzülmüş dizi verir, geri yazmak çöptekileri silerdi).
-import { tutarCoz } from "./gider";
+import { tutarCoz, kurus } from "./gider";
+import { tutarMetni } from "./tutarGirdisi";
 
 // R1: maliyet TL'dir ve KDV hariçtir (matrah, 0076 R14). Alan KDV ayırmaz.
 export const MALIYET_ETIKETI = "Alış maliyeti (TL, KDV hariç)";
@@ -21,7 +22,78 @@ export const isaretsizKitteMetni = (model, adet) => `${model}: işaretsiz, makin
 const ikiHane = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 // R4, AC-5: girilmemiş maliyet "—", sıfır "0,00 ₺" (ikisi ayırt edilir).
 export const maliyetMetni = (n) => (n == null || n === "" ? "—" : `${ikiHane.format(Number(n) || 0)} ₺`);
-export const maliyetGirildiMi = (p) => p?.maliyet != null && p.maliyet !== "";
+
+// ── Spec 0096: hammadde tedarikçisi kırılımı ve parça maliyetinin TEK okuma yolu ──────────────────────────────────────────
+// Kırılım `parts[].hammaddeler = [{ tedarikciId, tutar }]` (tutar TL, KDV hariç; boşsa `null` = "tutar girilmedi", sıfır
+// girilmiş sayılır, R8/2, R12). En az bir satırda tutar varsa parçanın maliyeti o satırların toplamıdır ve elle girilen alan
+// kullanılmaz (R5); hiçbir satırda tutar yoksa maliyet elle girilen değerdir (R6). Toplam saklanmaz, okuma anında türer (C2).
+// C1, C9: maliyetin tek okuma yolu bu iki fonksiyondur ve birimi kuruştur; TL'ye çevirme yalnız biçimlemede olur.
+const tutarliSatirlar = (p) => (p?.hammaddeler || []).filter(h => h && h.tutar != null && h.tutar !== "");
+export const kirilimTutarliMi = (p) => tutarliSatirlar(p).length > 0;
+export const parcaMaliyetKurus = (p) => {
+  if (!p) return null;
+  const t = tutarliSatirlar(p);
+  if (t.length) return t.reduce((a, h) => a + kurus(h.tutar), 0);
+  return p.maliyet == null || p.maliyet === "" ? null : kurus(p.maliyet);
+};
+export const parcaMaliyetiVar = (p) => parcaMaliyetKurus(p) != null;
+// Spec 0087'nin adı korunur (çağıranlar değişmesin); spec 0096 C1 ile kırılımı da bilen ölçütün üstüne indi.
+export const maliyetGirildiMi = parcaMaliyetiVar;
+// Plan P7: kuruştan biçimleyici (parça paneli makina maliyeti motorunu içe almaz). Girilmemiş "—", sıfır "0,00 ₺".
+export const maliyetMetniKurus = (k) => (k == null ? "—" : `${ikiHane.format(k / 100)} ₺`);
+export const parcaMaliyetMetni = (p) => maliyetMetniKurus(parcaMaliyetKurus(p));
+// Elle girilmiş maliyetin form metni (düzenleme açılışı; kayıttaki elle alanın tek okuyucusu, AC-32).
+export const elleMaliyetMetni = (p) => tutarMetni(p?.maliyet);
+
+// R9, R9/2, R21: maliyetin kaynağı. Kartta iki ibare, listede yalnız kırılımdan gelende ikinci satır.
+export const maliyetKaynagi = (p) => (kirilimTutarliMi(p) ? { tur: "kirilim", n: tutarliSatirlar(p).length } : parcaMaliyetiVar(p) ? { tur: "elle" } : null);
+export const KAYNAK_ELLE = "Elle girildi";
+export const kaynakListeMetni = (n) => `${n} tedarikçiden`;
+export const kaynakKartMetni = (n) => `${n} tedarikçinin hammadde kırılımından geliyor`;
+// Triyaj (bulgu 2): gider yetkisi olmayan kullanıcı tedarikçi SAYISINI da görmez (listede ikinci satır kapalı); kartta sayısız ibare.
+export const KAYNAK_KIRILIM_YETKISIZ = "Hammadde kırılımından geliyor";
+export const kirilimdanGeliyorMetni = (k) => `Maliyet hammadde kırılımından geliyor: ${maliyetMetniKurus(k)}`;
+// R4/2: hiç hammadde tedarikçisi işaretlenmemişken bölümün boş durumu; işaretin konduğu yeri adıyla söyler.
+export const HAMMADDE_BOS_METNI = "Henüz hammadde tedarikçisi işaretlenmedi. İşaret Giderler › Tedarikler ve Ekstre ekranındaki tedarikçi formundan konur.";
+export const HAMMADDE_BOLUM_BASLIGI = "Hammadde tedarikçileri";
+export const HAMMADDE_IPUCU = "Bu parçanın hammaddesini veren tedarikçiler ve parça başına tutar (TL, KDV hariç). Tutar girilen satırların toplamı parçanın alış maliyeti olur.";
+// R8: tutarı boş satır varken uyarı (kaydı engellemez).
+export const HAMMADDE_TUTARSIZ_UYARI = "Tutarı girilmemiş tedarikçi var; maliyet yalnız tutarı girilmiş satırların toplamıdır.";
+// R24: içe aktarmada kırılımı tutarlı parçanın maliyet hücresi alınmaz.
+export const HAMMADDE_EXCEL_HATASI = "bu parçanın maliyeti hammadde kırılımından geliyor, Excel'deki değer alınmadı.";
+// R16, R16/2: tek çözücü, iki metin; tutar her durumda maliyete girer (maliyet tedarikçi kaydının durumuna bakmaz).
+export const SILINMIS_TEDARIKCI = "silinmiş tedarikçi";
+export const BULUNAMAYAN_TEDARIKCI = "kaydı bulunamayan tedarikçi";
+// R17/2: ad çözümü HAM diziden (çöptekinin adı çözülsün), seçici ayrıca süzülür.
+export const hammaddeTedarikciAdi = (tedarikciId, hamTedarikciler = []) => {
+  const t = (hamTedarikciler || []).find(x => String(x.id) === String(tedarikciId));
+  if (!t) return BULUNAMAYAN_TEDARIKCI;
+  return t.deletedAt ? `${t.ad} (${SILINMIS_TEDARIKCI})` : t.ad;
+};
+export const hammaddeSecilebilirMi = (t) => !!t && !t.deletedAt && t.hammadde === true;
+
+// R17/3 (plan P4): kırılım formda hep form biçimindedir (tutar metin); kayıt fonksiyonu hep form biçiminden çözer.
+export const hammaddeFormu = (kayit = []) => (kayit || []).map(h => ({ tedarikciId: h?.tedarikciId == null ? "" : String(h.tedarikciId), tutar: tutarMetni(h?.tutar) }));
+const kimlikCoz = (v) => (/^\d+$/.test(String(v)) ? Number(v) : v);
+// R23 (`ekMaliyetDogrula` emsali), R11, R12: tedarikçisi ve tutarı boş satır atılır; tedarikçisi boş tutarı dolu satır
+// "Tedarikçi seçilmedi."; negatif ve sayı olmayan tutar hata; aynı tedarikçi iki kez hata. Sıfır serbest, boş tutar `null`.
+export const TEDARIKCI_SECILMEDI = "Tedarikçi seçilmedi.";
+export const hammaddeDogrula = (satirlar = []) => {
+  const kayit = []; const hatalar = {}; const gorulen = new Set();
+  (satirlar || []).forEach((s, i) => {
+    const ted = s?.tedarikciId == null ? "" : String(s.tedarikciId).trim();
+    const r = tutarCoz(s?.tutar);
+    if (!ted && r.bos) return;
+    if (!ted) { hatalar[i] = TEDARIKCI_SECILMEDI; return; }
+    if (gorulen.has(ted)) { hatalar[i] = "Bu tedarikçi bu parçada zaten var."; return; }
+    if (r.gecersiz) { hatalar[i] = "Tutar sayı olmalı."; return; }
+    if (!r.bos && r.deger < 0) { hatalar[i] = "Tutar negatif olamaz."; return; }
+    gorulen.add(ted);
+    kayit.push({ tedarikciId: kimlikCoz(ted), tutar: r.bos ? null : Math.round(r.deger * 100) / 100 });
+  });
+  const tutarli = kayit.filter(h => h.tutar != null).length;
+  return { kayit, hatalar, gecerli: Object.keys(hatalar).length === 0, tutarsizVar: tutarli > 0 && tutarli < kayit.length };
+};
 
 // R14 (AC-7): boş serbest ("girilmedi"), negatif ve sayıya çevrilemeyen metin hata. Tek kaynak `tutarCoz` (R3, R4).
 export const parcaMaliyetDogrula = (ham) => {

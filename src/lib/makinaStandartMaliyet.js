@@ -12,6 +12,7 @@ import { kurus, tl, ayEkle, ayOf, ayinSonGunu, hesaplaGiderRaporu, turHaritasi, 
 import { partiAylari, canliPartiler } from "./uretimPartisi";
 import { makinaListesi, satisKurBilgisi, katDegeriDogrula } from "./makinaMaliyeti";
 import { gercekSatisBedeli, trLower } from "./utils";
+import { parcaMaliyetKurus } from "./urunAgaci";
 
 // ── Rol ──────────────────────────────────────────────────────────────────────
 export const MALIYET_ROLU = { URUN_AGACI: "urunAgaci", GENEL: "genel", YOK: "yok" };
@@ -203,8 +204,9 @@ export const modelMaliyeti = (model, partMap, payK = 0) => {
     const p = partMap.get(String(r.partId));
     const adet = Number(r.miktar) || 0;
     if (!p) return { partId: r.partId, ad: r.ad || "", adet, birimK: null, satirK: 0, eksik: true, neden: "parcaYok" };
-    if (p.maliyet == null || p.maliyet === "") return { partId: r.partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
-    const birimK = kurus(p.maliyet);
+    // Spec 0096 C1 (AC-19): birim maliyet parçanın tek okuma yolundan (hammadde kırılımı varsa onun toplamı, kuruş).
+    const birimK = parcaMaliyetKurus(p);
+    if (birimK == null) return { partId: r.partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
     return { partId: r.partId, ad: p.ad, adet, birimK, satirK: birimK * adet, eksik: false, neden: null };
   });
   const ek = (model.ekMaliyetler || []).map(k => ({ ad: k.ad, tutarK: kurus(k.tutar) }));

@@ -7,7 +7,7 @@ import {
 } from "./lib/constants";
 import { URETIM_ALANI } from "./lib/uretimdekiModeller";
 import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, yerelYedekAyariOku, yerelYedekAyariYaz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
-import { odemeleriUygula, turHaritasi, canliModelSeti } from "./lib/gider";
+import { odemeleriUygula, turHaritasi, canliModelSeti, kirilimdaGecenTedarikciler } from "./lib/gider";
 import { hatirlatmaEsigi } from "./lib/odemeHatirlatma";
 import { stopajBeyanAyari } from "./lib/stopajDonemi";
 import { cekleriUygula, odemeleriAyikla, ciroluTahsilatIdleri, bagliCekler, bagliHareketiOlanCekler } from "./lib/cek";
@@ -1091,7 +1091,8 @@ export default function App() {
       if (Array.isArray(data.partTypeDefs)) data.partTypeDefs = purgeOldTrash(data.partTypeDefs);
       if (Array.isArray(data.calisanlar)) data.calisanlar = purgeOldTrash(data.calisanlar);
       if (Array.isArray(data.giderler)) data.giderler = purgeOldTrash(data.giderler);
-      if (Array.isArray(data.tedarikciler)) data.tedarikciler = purgeOldTrash(data.tedarikciler); // spec 0068 R11
+      // Spec 0096 R13/2 (AC-37): parça hammadde kırılımında geçen tedarikçi otuz günlük temizlikte korunur (çek emsali).
+      if (Array.isArray(data.tedarikciler)) { const korunan = kirilimdaGecenTedarikciler(data.parts); data.tedarikciler = purgeOldTrash(data.tedarikciler, undefined, t => korunan.has(String(t.id))); } // spec 0068 R11
       if (Array.isArray(data.uretimPartileri)) data.uretimPartileri = purgeOldTrash(data.uretimPartileri);
       // Spec 0078 R22: altı kasa/gider bölümü; çeke bağlı canlı hareketi olan çek temizlenmez (R21, aynı yardımcı).
       if (Array.isArray(data.hesapHareketleri)) data.hesapHareketleri = purgeOldTrash(data.hesapHareketleri);
@@ -1698,7 +1699,7 @@ export default function App() {
           giderKasaRaporVerisi={giderKasaRaporVerisi} kasaYetki={kasaYetki} />}
         {activeTab === "gider"     && !giderYetki && <GiderPerdesi />}
         {activeTab === "gider"     && giderYetki && <Giderler aktifKullanici={savedUsername} giderler={giderler} setGiderler={setGiderler} giderTanimlari={canliGiderTanimlari} setGiderTanimlari={setGiderTanimlari}
-          giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} setTedarikciler={setTedarikciler}
+          giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} setTedarikciler={setTedarikciler} parts={parts}
           calisanlar={liveCalisanlar} stock={liveStock} customers={liveCustomers} standardModels={standardModels} customModels={liveCustomModels}
           appSettings={appSettings} kdvRates={appSettings.kdvRates} factory={factory} rates={rates} serverPermissions={effectivePermissions} showToast={showToast}
           satisVerisi={giderSatisVerisi} key={`gider-${giderOdemeFiltresi}-${giderAcilis?.no || 0}`} baslangicOdemeFiltresi={giderOdemeFiltresi}

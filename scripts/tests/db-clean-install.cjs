@@ -177,6 +177,21 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.customModels.find(m => m.model === "OZEL")?.ekMaliyetler?.[0]?.tutar === 145.6);
 }
 
+// Spec 0096: temiz kurulumda tedarikçinin hammadde işareti ve parçanın hammadde kırılımı ilk oturumda yazılır.
+{
+  let h = null;
+  try {
+    dbmod.writeBlobToDb({
+      tedarikciler: [{ id: 51, ad: "Sac A.Ş.", hammadde: true }],
+      parts: [{ id: 52, ad: "Ayna", models: [], hammaddeler: [{ tedarikciId: 51, tutar: 17000 }] }],
+    });
+  } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0096: temiz kurulumda hammadde ve hammaddeler sütunları var ve yazıldı", h === null
+    && b.tedarikciler.find(t => t.id === 51)?.hammadde === true
+    && JSON.stringify(b.parts.find(p => p.id === 52)?.hammaddeler) === JSON.stringify([{ tedarikciId: 51, tutar: 17000 }]));
+}
+
 // Spec 0088 AC-43: temiz kurulumda kâr katsayısı, Extra Kalıp fiyatı, planlanan adetler ve maliyet ayarları ilk oturumda yazılır.
 {
   let h = null;

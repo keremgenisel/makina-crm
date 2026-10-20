@@ -3,7 +3,8 @@
 // `tests/fixtures/0087-aktarma-once.json`). İçe aktarma başlığı OKUMAZ, hücreleri konuma göre eşler: yeni sütun yalnız
 // SONA eklenir, yoksa eski şablonla alınmış dosyalar sessizce kayar.
 import { trLower } from "./utils";
-import { parcaMaliyetDogrula } from "./urunAgaci";
+import { kurus } from "./gider";
+import { parcaMaliyetDogrula, parcaMaliyetKurus, kirilimTutarliMi, HAMMADDE_EXCEL_HATASI } from "./urunAgaci";
 
 export const PARCA_AKTARMA_BASLIKLARI = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)",
   // Spec 0087 R11: onuncu ve SON sütun (konuma göre eşleme; araya eklenseydi eski dosyalar kayardı).
@@ -13,7 +14,10 @@ export const PARCA_SABLON_ORNEGI = ["Örnek Parça", "Example Part", "PRC-001", 
 export const MALIYET_BELIRSIZ_DESEN = /^\s*-?\d+\.\d{3,}\s*$/;
 export const MALIYET_BELIRSIZ_HATASI = "Maliyet belirsiz (nokta binlik mi ondalık mı anlaşılmıyor; ör. 1234,56 yazın), alınmadı.";
 
-export const parcaDisaAktarmaSatiri = (p) => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? "", p.maliyet ?? ""];
+// Spec 0096 C1, C9 (AC-30, AC-30/2): maliyet tek okuma yolundan (kırılımlıda toplam), kuruştan iki haneli ham sayıya; sütun
+// sayısı ve sırası değişmez, kırılımsız parçada hücre spec öncesiyle aynı (tests/fixtures/0096-kiyas-once.json).
+const maliyetHucresi = (p) => { const k = parcaMaliyetKurus(p); return k == null ? "" : k / 100; };
+export const parcaDisaAktarmaSatiri = (p) => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", p.fiyatTRY ?? "", p.fiyatUSD ?? "", p.fiyatEUR ?? "", maliyetHucresi(p)];
 
 // Satırlar (ilk satır başlık) → kayıt dizisi. `idBaslangic` yeni parçaların kimlik tabanıdır (ekranda Date.now()).
 export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now()) => {
@@ -39,6 +43,11 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now()) 
     const belirsiz = typeof hamMaliyet === "string" && MALIYET_BELIRSIZ_DESEN.test(hamMaliyet);
     const m = belirsiz ? { bos: false, deger: null, hata: MALIYET_BELIRSIZ_HATASI } : parcaMaliyetDogrula(hamMaliyet);
     if (m.hata) errors.push(`Satır ${idx + 2}: ${m.hata}${belirsiz ? "" : " Maliyet alınmadı."}`);
+    // Spec 0096 R24 (AC-40): kırılımı tutarlı parçada maliyet hammadde satırlarından gelir; hücre hiç alınmaz. Triyaj (bulgu 1):
+    // dışa aktarma bu hücreye kırılımın toplamını yazdığı için aynı dosyanın geri yüklenmesi bildirim üretmez; yalnız FARKLI bir
+    // rakam yazılmışsa neden bildirilir.
+    const kirilimli = !!mevcut && kirilimTutarliMi(mevcut) && !m.bos && !m.hata;
+    if (kirilimli && kurus(m.deger) !== parcaMaliyetKurus(mevcut)) errors.push(`Satır ${idx + 2}: ${HAMMADDE_EXCEL_HATASI}`);
     if (mevcut) guncellenenler++; else yeniler++;
     newParts.push({
       id, ad,
@@ -50,7 +59,7 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now()) 
       fiyatTRY: cell(6) || (mevcut?.fiyatTRY ?? ""),
       fiyatUSD: cell(7) || (mevcut?.fiyatUSD ?? ""),
       fiyatEUR: cell(8) || (mevcut?.fiyatEUR ?? ""),
-      ...(m.bos || m.hata ? {} : { maliyet: m.deger }),
+      ...(m.bos || m.hata || kirilimli ? {} : { maliyet: m.deger }),
       _mevcut: !!mevcut,
     });
   });

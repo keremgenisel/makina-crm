@@ -5394,6 +5394,34 @@
         "rapor": "docs/evidence/0090-piksel-raporu.json",
         "ekran": "giderler-tedarikciler",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "giderler-tedarikciler",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "giderler-tedarikci-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R1"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "giderler-0068-tedarikci-sil",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "giderler-0096-tedarikciler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R2/2"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "giderler-0096-tedarikci-sil",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R13/4"
       }
     ],
     "src/components/settings/GiderTurManager.jsx": [
@@ -5886,6 +5914,21 @@
       },
       {
         "rapor": "docs/evidence/0082-taban-piksel-raporu.json",
+        "ekran": "cop-kutusu-0078",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "ayarlar-trash",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "ayarlar-0068-trash",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
         "ekran": "cop-kutusu-0078",
         "beklenen": "ayni"
       }
@@ -6630,6 +6673,66 @@
         "rapor": "docs/evidence/0087-taban-piksel-raporu.json",
         "ekran": "katalog-parca-yeni",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R3"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "katalog-parca-yeni",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R3"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R10"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-maliyetsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R10"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-kirilim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R21"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-tutarsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R8"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R4/2"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R12"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R10"
+      },
+      {
+        "rapor": "docs/evidence/0096-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-yetkisiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0096 R17"
       }
     ],
     "src/components/PartTypeManager.jsx": [

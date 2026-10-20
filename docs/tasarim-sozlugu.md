@@ -74,6 +74,9 @@ Segment ile `ui.jsx` `Select` (açılır liste) arasındaki seçim ölçüyle ya
   kısa seçimde).
 - Dört seçenek arada kalır: etiketler kısa ve form satırı genişse segment, dar formda açılır liste.
 - **Sekme ve süzgeç çubukları her zaman segmenttir** (spec 0014 birliği), seçenek sayısı ne olursa olsun.
+  **İstisna (spec 0096 C14):** Ayarlar › Katalog › Parça/Yedek Parça'nın **hammadde tedarikçisi süzgeci** `Select`'tir
+  (`src/components/PartManager.jsx`, `aria-label="Hammadde tedarikçisi süzgeci"`): seçenekler tedarikçi adlarıdır, uzun ve
+  sayısı sınırsızdır; segment çubuğu birkaç satıra yayılırdı. Yalnız gider yetkisiyle çizilir.
 
 İlk uygulaması ödeme yöntemidir: beş seçenekli (kasa yetkisiyle ANA hedefte yedi) olduğu için ödeme satırının yöntemi
 açılır listedir (`src/components/gider/OdemeGirisi.jsx`; gider formu ve ödeme penceresi aynı bileşen, spec 0053). Kalem ve

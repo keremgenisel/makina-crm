@@ -157,6 +157,11 @@ const PARCA_0087 = [
   { id: 9, ad: "Perçin", kod: "P-4", tip: "Standart", models: [], maliyet: 0 },
   { id: 10, ad: "Pleksi kapak", kod: "PK-2", tip: "Standart", fiyatTRY: 300, models: [] },
 ];
+// Spec 0096: hammadde tedarikçileri (üçü işaretli) ve kırılımlı parçalar (tutarlı, tutarsız).
+const TED_0096 = [{ id: 31, ad: "Demir Çelik A.Ş.", hammadde: true }, { id: 32, ad: "Sac Ltd", hammadde: true }, { id: 33, ad: "Döküm Sanayi", hammadde: true }, ...TED];
+const AYNA_0096 = { id: 11, ad: "Ayna mahruti dişlisi takımı", kod: "AM-1", tip: "Standart", models: [], hammaddeler: [{ tedarikciId: 31, tutar: 7000 }, { tedarikciId: 32, tutar: 9000 }, { tedarikciId: 33, tutar: 1000 }] };
+const MIL_0096 = { id: 12, ad: "Tahrik mili", kod: "TM-3", tip: "Standart", models: [], maliyet: 300, hammaddeler: [{ tedarikciId: 31, tutar: 4250 }, { tedarikciId: 32, tutar: null }] };
+const PARCA_0096 = [AYNA_0096, MIL_0096, ...PARCA_0087];
 const MODELLER_0087 = [
   { model: "AK120_DSC", defaultParcalar: [{ partId: "7", ad: "Rulman 6204", miktar: 4 }],
     ekMaliyetler: [{ ad: "Büküm işçiliği", tutar: 90 }, { ad: "Helis dişli açımı", tutar: 145.6 }] },
@@ -250,7 +255,7 @@ const H0060 = [
   { id: 4, tur: "odeme", tarih: "2026-09-15", tutar: t0060(603, "ana")[0].tutar, hesapId: 1, giderId: 603, taksitId: t0060(603, "ana")[0].id, yontem: "Havale" },
 ];
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED, satis = SATIS }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED, satis = SATIS, parcalar = [] }) {
   const [giderler, setGiderler] = useState(g0);
   // Spec 0024: h0 verilirse ödeme durumu hareketlerden türer (App gibi); verilmezse eski ekranlar saklı durumu okur.
   const [hareketler, setHareketler] = useState(h0);
@@ -260,7 +265,7 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
   return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={tanimlar} setGiderTanimlari={setTanimlar}
     giderTurleri={turler} tedarikciler={ted} setTedarikciler={setTed}
     calisanlar={CAL} standardModels={MODELLER} customModels={[]} appSettings={ayar} serverPermissions={null}
-    satisVerisi={satis} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}}
+    satisVerisi={satis} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}} parts={parcalar}
     uretimPartileri={partiler} setUretimPartileri={setPartiler}
     setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})}
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})}
@@ -703,6 +708,13 @@ const EKRANLAR = {
   "katalog-model-uretimde": [ayarlar("models", { appSettings: { ...AYAR, uretimdeOlmayanModeller: [MODELLER[0].model] } }), []],
   // Spec 0087 R18: parça formu (maliyetli düzenleme ve maliyetsiz yeni kayıt), maliyeti girilmemiş ibaresi, adetli kit ve ek kalem.
   "katalog-parca": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Kullanıldığı Modeller ve Kit Adetleri"]],
+  // Spec 0096: kırılımlı parça kartı (pasif maliyet alanı), tutarsız kırılım uyarısı, boş durum, hata, süzgeç, gider yetkisiz görünüm.
+  "katalog-parca-0096-kirilim": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
+  "katalog-parca-0096-tutarsiz": [ayarlar("yedekparca", { parts: [MIL_0096, ...PARCA_0087], standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
+  "katalog-parca-0096-bos": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
+  "katalog-parca-0096-hata": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Hammadde tutarı 1=-5", "Kaydet", "kaydir:Hammadde tedarikçileri"]],
+  "ayarlar-yedekparca-0096-suzgec": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["sec:Hammadde tedarikçisi süzgeci=32"]],
+  "ayarlar-yedekparca-0096-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), []],
   "katalog-parca-yeni": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["~Parça/Yedek Parça Ekle"]],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],
   "katalog-model-ekmaliyet": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Ek Maliyet Kalemleri"]],
@@ -1020,6 +1032,9 @@ const EKRANLAR = {
   "ayarlar-guvenlik-gecmisi": [ayarlar("securitylog"), []],
   "ayarlar-0068-export-cek": [ayarlar("export", { kasaVeriYetki: true, cekler: CEK68 }), ["tikla:Müşteri & Servis (5)"]],
   "giderler-0068-tedarikci-sil": [<GiderEkrani tedler={[{ id: 14, ad: "Akın Hırdavat" }, ...TED]} />, ["Tedarikler ve Ekstre", "baslik:Sil"]],
+  // Spec 0096: hammadde rozetli tedarikçi listesi (kullanım parça sayar) ve parça sayısını yazan "silinemez" penceresi.
+  "giderler-0096-tedarikciler": [<GiderEkrani tedler={TED_0096} parcalar={PARCA_0096} />, ["Tedarikler ve Ekstre"]],
+  "giderler-0096-tedarikci-sil": [<GiderEkrani tedler={[TED_0096[0]]} parcalar={PARCA_0096} />, ["Tedarikler ve Ekstre", "baslik:Sil"]],
   "anasayfa-0062-hatirlatma": [hatirlatma62, ["Gider Ödemeleri"]],
   "anasayfa-0062-hatirlatma-sayfa2": [hatirlatma62, [...sayfa2(["Gider Ödemeleri"]), "kaydir:Yaklaşan ("]], // son "Sonraki ›" yaklaşan bölümün
   "giderler-acik-kalemler": [<GiderEkrani g0={G0061} h0={H0060} />, ["dugme:Açık kalemler (tüm dönemler)"]],

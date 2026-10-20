@@ -10,7 +10,7 @@ import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { KartBolum } from "../tasarim";
 import { ciroluTahsilatIdleri, bagliHareketiOlanCekler, BAGLI_HAREKETLI_CEK_NEDENI } from "../../lib/cek";
-import { turHaritasi } from "../../lib/gider";
+import { turHaritasi, kirilimdaGecenTedarikciler, KIRILIMDA_TEDARIKCI_NEDENI } from "../../lib/gider";
 import { copHareketGeriAlmaNedeni } from "../../lib/kasa";
 import { makeCanDo } from "../../lib/permissions";
 import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
@@ -208,7 +208,14 @@ export const SettingsTrash = ({
     setTedarikciler(p => p.map(x => (x.id === t.id ? { ...x, deletedAt: undefined } : x)));
     showToast("Tedarikçi geri alındı.");
   };
-  const purgeTedarikci = (t) => { setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi."); };
+  // Spec 0096 R13/2, R13/5 (AC-37, AC-50): parça hammadde kırılımında geçen tedarikçi kalıcı silinmez (ham parça dizisi: çöpteki
+  // parça geri alınırsa bağ kopmasın). "Çöpü boşalt" çöpteki parçaları da kalıcı sildiği için orada kalacak parçalar sayılır.
+  const korunanTedarikciler = kirilimdaGecenTedarikciler(rawParts || []);
+  const bosaltmadaKorunanTedarikciler = kirilimdaGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt));
+  const purgeTedarikci = (t) => {
+    if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${KIRILIMDA_TEDARIKCI_NEDENI}`, "err"); return; }
+    setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi.");
+  };
   const restoreParti = (u) => {
     const h = geriAlmaAdCakismasi(u, rawUretimPartileri, "parti");
     if (h) { showToast(h, "err"); return; }
@@ -290,7 +297,7 @@ export const SettingsTrash = ({
     setYedekParcaSatislar?.(p => p.filter(x => !x.deletedAt));
     if (giderYetki && rawGiderler.some(x => x.deletedAt)) setGiderler?.(p => p.filter(x => !x.deletedAt));
     // Spec 0068 R11 (AC-15, AC-33): yalnız görebildiği ve silme izni olan kullanıcının boşaltması dokunur (gider satırlarıyla aynı ilke).
-    if (tedarikciYetki && rawTedarikciler.some(x => x.deletedAt)) setTedarikciler(p => p.filter(x => !x.deletedAt));
+    if (tedarikciYetki && rawTedarikciler.some(x => x.deletedAt && !bosaltmadaKorunanTedarikciler.has(String(x.id)))) setTedarikciler(p => p.filter(x => !x.deletedAt || bosaltmadaKorunanTedarikciler.has(String(x.id))));
     if (partiYetki && rawUretimPartileri.some(x => x.deletedAt)) setUretimPartileri(p => p.filter(x => !x.deletedAt));
     // Spec 0078 R23, AC-45: altı kasa/gider bölümü; yalnız görebildiği ve izni olan kullanıcının boşaltması dokunur.
     // Hareket satırı türüne göre izinli olanlar silinir; çeke bağlı canlı hareketi olan çek kalır (R21).
@@ -345,7 +352,8 @@ export const SettingsTrash = ({
       });
       // Spec 0068 R11, R21: tedarikçi ve üretim partisi; düğmeler silme izniyle (izinsizde satır görünür, düğme yok).
       rawTedarikciler.filter(t => t.deletedAt).forEach(t => items.push({ key: `tedarikci-${t.id}`, type: "Tedarikçi", label: t.ad || "—", deletedAt: t.deletedAt,
-        restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki ? () => purgeTedarikci(t) : null }));
+        restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki && !korunanTedarikciler.has(String(t.id)) ? () => purgeTedarikci(t) : null,
+        neden: korunanTedarikciler.has(String(t.id)) ? KIRILIMDA_TEDARIKCI_NEDENI : null }));
       rawUretimPartileri.filter(u => u.deletedAt).forEach(u => items.push({ key: `parti-${u.id}`, type: "Üretim Partisi", label: `${u.ad || "—"} · ${u.baslangicAy || ""}${u.bitisAy ? " – " + u.bitisAy : " (açık)"}`, deletedAt: u.deletedAt,
         restore: partiYetki ? () => restoreParti(u) : null, purge: partiYetki ? () => purgeParti(u) : null }));
       // Spec 0078 R23, R24: hareket, tekrarlayan tanım ve gider türü (gider yetkisi). Çeke bağlı hareket
