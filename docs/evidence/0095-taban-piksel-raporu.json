@@ -1,43 +1,53 @@
 [
   {
     "ad": "finans-aydinlik.png",
-    "boyut": "2880x3146"
+    "boyut": "2880x3146",
+    "piksel": 0
   },
   {
     "ad": "finans-karanlik.png",
-    "boyut": "2880x3146"
+    "boyut": "2880x3146",
+    "piksel": 0
   },
   {
     "ad": "musteriler-liste-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "musteriler-liste-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "bayiler-liste-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "bayiler-liste-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "stok-yedek-parca-suzgec-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "stok-yedek-parca-suzgec-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-aydinlik.png",
@@ -45,7 +55,8 @@
     "seritler": [
       "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
       "Bu makinenin devredilmeden önce ₺290.000 ödenmemiş bakiyesi var. Devam"
-    ]
+    ],
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-karanlik.png",
@@ -53,31 +64,38 @@
     "seritler": [
       "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
       "Bu makinenin devredilmeden önce ₺290.000 ödenmemiş bakiyesi var. Devam"
-    ]
+    ],
+    "piksel": 0
   },
   {
     "ad": "bayi-detay-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "bayi-detay-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "bayi-detay-bos-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "bayi-detay-bos-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "stok-bos-yedek-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "stok-bos-yedek-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-bolumler-aydinlik.png",
@@ -85,7 +103,8 @@
     "seritler": [
       "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
       "Sunucu bağlantısı yok: dosya listesi görünür ama ekleme, açma ve indir"
-    ]
+    ],
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-bolumler-karanlik.png",
@@ -93,130 +112,225 @@
     "seritler": [
       "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
       "Sunucu bağlantısı yok: dosya listesi görünür ama ekleme, açma ve indir"
-    ]
+    ],
+    "piksel": 0
   },
   {
     "ad": "anasayfa-kart-rozetleri-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "anasayfa-kart-rozetleri-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "servis-pano-kalip-aydinlik.png",
-    "boyut": "2880x1896"
+    "boyut": "2880x1896",
+    "piksel": 0
   },
   {
     "ad": "servis-pano-kalip-karanlik.png",
-    "boyut": "2880x1896"
+    "boyut": "2880x1896",
+    "piksel": 0
   },
   {
     "ad": "stok-tahsis-modali-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "stok-tahsis-modali-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-odendi-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-odendi-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-kargo-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-kargo-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-tahsis-aydinlik.png",
     "boyut": "2880x1800",
     "seritler": [
       "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
-    ]
+    ],
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-tahsis-karanlik.png",
     "boyut": "2880x1800",
     "seritler": [
       "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
-    ]
+    ],
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-0067-aydinlik.png",
     "boyut": "2880x1800",
     "seritler": [
       "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
-    ]
+    ],
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-0067-karanlik.png",
     "boyut": "2880x1800",
     "seritler": [
       "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
-    ]
+    ],
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-tahsilat-hesap-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-tahsilat-hesap-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "ayarlar-0068-export-cek-aydinlik.png",
-    "boyut": "2880x2002"
+    "boyut": "2880x2002",
+    "piksel": 0
   },
   {
     "ad": "ayarlar-0068-export-cek-karanlik.png",
-    "boyut": "2880x2002"
+    "boyut": "2880x2002",
+    "piksel": 0
   },
   {
     "ad": "bayi-yedek-parca-formu-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "bayi-yedek-parca-formu-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-0079-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "yedek-parca-formu-0079-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-0079-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "musteri-detay-0079-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "stok-yedek-0079-aydinlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "stok-yedek-0079-karanlik.png",
-    "boyut": "2880x1800"
+    "boyut": "2880x1800",
+    "piksel": 0
   },
   {
     "ad": "finans-0079-kdv-aydinlik.png",
-    "boyut": "2880x3288"
+    "boyut": "2880x3288",
+    "piksel": 0
   },
   {
     "ad": "finans-0079-kdv-karanlik.png",
-    "boyut": "2880x3288"
+    "boyut": "2880x3288",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-ucretsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-ucretsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-ucretsiz-uyari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu makinanın garantisi aktif görünmüyor; parça yine de ücretsiz kayded"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-ucretsiz-uyari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu makinanın garantisi aktif görünmüyor; parça yine de ücretsiz kayded"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-yedek-parca-ucretsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-yedek-parca-ucretsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kargo-detay-ucretsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kargo-detay-ucretsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-detay-ucretsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-detay-ucretsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-ucretsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-ucretsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
   }
 ]

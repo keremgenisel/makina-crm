@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 4, plan turu 2026-10-20) |
+| **Durum** | Tamamlandı (revizyon 4; uygulama `9b72012`, 2026-10-20) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Stok › Yedek Parça Satışı, müşteri detayı (zaman çizelgesi ve yedek parça toplamı), bayi detayı (borç kutusu ve yedek parça geçmişi), bayi silme onayı, Servis ve Kargo Panosu'nun kargo **detay penceresi** (kart değişmez), Anasayfa, Müşteriler, Finans, Aylık Faaliyet Raporu, Ayarlar › Sahipsiz Kayıtlar, Dışa Aktar; saf motorlar `utils`, `satisTahsilat`, `aylikRapor`, `bayiKaskad` |
@@ -600,13 +600,16 @@ Yirmi iki bulgunun tamamı Takım Yöneticisi tarafından onaylandı ve bu spec'
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 4 | 1 taslak, 2 karar onayı, 3 QA turu (22 bulgu), 4 plan turu (P1–P4, K1–K8) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: üç düşük bulgu (tevkifat rozeti yanlış satırdan, karışık parti uyarısı, iki satırlı çarpımı kaçıran tarama) |
+| **Bulgu gerçek/gürültü oranı** | 3/0 | Triyajın bana iletilen üç bulgusu gerçekti; gürültü işaretlenenler iletilmedi |
+| **Regresyon sayısı** | 0 | Tam takım Electron dahil yeşil; işaretsiz eski kayıtlar spec öncesi altınla birebir (AC-27) |
+| **Kaçan hata** | 3 (düşük) | Triyajın üç bulgusu; hepsi karışık parti ve tarama kenarı |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** QA turu bedelin on iki kopyasını saymıştı, plan turu on üçüncüsünü buldu; dağınık bir
+formülün kopyalarını sabit bir sayıyla değil, taramayla saymak gerekir (ve taramanın kendisi de iki satıra bölünmüş
+yazımı kaçırdı, triyaj buldu). Saat dilimi kriterleri yazılırken ayırt edici durum ölçülmeli: AC-41'in ilk metni eski
+bozuk yolla da geçerdi. Plan turundaki atıflar uygulamada yeniden ölçülmeli (K6'nın "Extra Kalıp" atfı yanlıştı).
 
 ---
 
@@ -629,3 +632,6 @@ Yirmi iki bulgunun tamamı Takım Yöneticisi tarafından onaylandı ve bu spec'
   P4: C1/2'nin taramasına teklif/fatura ve form satırı istisnaları. K1/K2: R7/4, AC-50. K3: karışık parti R23, AC-48.
   K4: R18c'ye fatura tipinin geri gelmediği notu. K5: R4/3. K6: R20'ye raporun servis "Ücretsiz" metninin değişmediği notu (uygulamada atıf düzeltildi).
   K7: R24.
+- 5 · 2026-10-20 · Uygulandı (`9b72012`) ve kapandı. Triyajın üç düşük bulgusu düzeltildi: makina geçmişinde tevkifat
+  rozeti ödeme temsilcisi satırdan okunur; karışık partinin toplu düzenlemesinde uyarı şeridi (`KARISIK_PARTI_UYARISI`,
+  davranış K3'teki gibi); bedel taramasına çarpımın sağ yanını arayan ikinci desen.

@@ -2,7 +2,8 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0095-yedek-parca-garanti-ici-ucretsiz.md` (revizyon 4) |
+| **Spec** | `specs/done/0095-yedek-parca-garanti-ici-ucretsiz.md` (revizyon 4) |
+| **Commit** | uygulama `9b72012`; kapanış (SCORECARD, kanıt, taşıma) ayrı commit |
 | **Dal** | `feat/0095-ucretsiz-yedek-parca`, `origin/main` (`954353e`, v3.48.0) üstünde, çalışma kopyası `../wt-0095` |
 | **Onay** | Takım Yöneticisi, 2026-10-20: plan turunun bütün maddeleri (P1–P4, K1–K8) onaylandı |
 
@@ -72,7 +73,7 @@ Ters çevrilen mevcut testler ("spec 0095 ile" notlu): `tests/satis-tevkifat-007
 ## 5. Ölçümler
 
 - **Bozma denemeleri** (her biri yedek kopyayla geri alındı): bedelin ücretsiz dalı (8 test kırıldı), borcun ücretsiz dalı (8), `ucretsizUygula`'nın silmesi (3), kart dalı kapısı (1), `yerelBugun` yerine `today()` (3), raporun adet sayaçları (1), karışık partide `ypOdemeIdleri` (1), `hesapId` temizliği (2), DB okumasının koşulsuz yazımı (Electron: 3 kontrol).
-- **Görsel kanıt** (`0095-piksel-raporu.json`, taban `0095-taban-piksel-raporu.json`): 24 mevcut ekran × 2 tema; değişen yalnız yedek parça formunun altı ekranı (yeni kutu içeriği aşağı iter). Finans, Stok, bayi ve müşteri detayı, pano, Anasayfa, Müşteriler ve dışa aktarma ekranları 0 piksel. Yeni ekranlar: `yedek-parca-formu-ucretsiz`, `yedek-parca-formu-ucretsiz-uyari`, `stok-yedek-parca-ucretsiz`, `kargo-detay-ucretsiz`, `bayi-detay-ucretsiz`, `musteri-detay-ucretsiz`.
+- **Görsel kanıt** (`0095-piksel-raporu.json`: spec öncesi kod ↔ uygulama; `0095-taban-piksel-raporu.json`: kapanışta son kod ↔ uygulama, 60 görüntü 0 fark, kanıt eşlemesi buna `ayni` bakar): 24 mevcut ekran × 2 tema; değişen yalnız yedek parça formunun altı ekranı (yeni kutu içeriği aşağı iter). Finans, Stok, bayi ve müşteri detayı, pano, Anasayfa, Müşteriler ve dışa aktarma ekranları 0 piksel. Yeni ekranlar: `yedek-parca-formu-ucretsiz`, `yedek-parca-formu-ucretsiz-uyari`, `stok-yedek-parca-ucretsiz`, `kargo-detay-ucretsiz`, `bayi-detay-ucretsiz`, `musteri-detay-ucretsiz`.
 
 ## 6. Sürüm notu
 

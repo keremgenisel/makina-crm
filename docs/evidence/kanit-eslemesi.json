@@ -6025,15 +6025,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "bayi-detay",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "bayi-detay-ucretsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Stock.jsx": [
@@ -6075,15 +6074,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "stok-yedek-parca-suzgec",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "stok-yedek-parca-ucretsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Finance.jsx": [
@@ -6467,22 +6465,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-ucretsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-ucretsiz-uyari",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
@@ -6678,15 +6673,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "musteri-detay-bolumler",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0095-piksel-raporu.json",
+        "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "musteri-detay-ucretsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-20 · spec 0095 R1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/detail/CustomerFilesSection.jsx": [
