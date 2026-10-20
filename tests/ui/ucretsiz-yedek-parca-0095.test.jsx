@@ -160,19 +160,23 @@ describe("Spec 0095: Stok › Yedek Parça Satışı", () => {
 });
 
 // ── Kargo detay penceresi ve kartı ───────────────────────────────────────────────────────────────────────────────────
+// Code scanning (js/incomplete-sanitization): ibare düzenli ifadeye çevrilirken BÜTÜN özel karakterler kaçışlanır (yalnız parantez
+// değil); ibare ters eğik çizgi ya da nokta taşırsa desen sessizce başka metni eşlemesin.
+const kacisla = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const ibareDeseni = () => new RegExp(kacisla(UCRETSIZ_IBARESI));
 const detay = (grup) => render(<KargoDetayModal grup={grup} dealers={DEALERS} parts={PARTS} customers={MUSTERILER} factory={FAB} onClose={() => {}} />);
 describe("Spec 0095: Servis ve Kargo Panosu", () => {
   it("AC-24 / AC-9 satır 7 ve 9: ücretsiz partide Genel Toplam ve kalem satırı ibareyi yazar", () => {
     const grup = [ucz({ batchId: 5, kargoDurum: "Hazırlanıyor" }), ucz({ id: 9003, partId: "82", miktar: 1, batchId: 5, kargoDurum: "Hazırlanıyor" })];
     detay(grup);
     expect(screen.getByTestId("kargo-genel-toplam").textContent).toBe(UCRETSIZ_IBARESI);
-    expect(screen.getAllByText(new RegExp(UCRETSIZ_IBARESI.replace(/[()]/g, "\\$&")))).toHaveLength(3);
+    expect(screen.getAllByText(ibareDeseni())).toHaveLength(3);
     expect(document.body.textContent).not.toMatch(/1\.500|500,00/);
   });
   it("AC-48 (kargo detayı): karışık partide Genel Toplam ücretli satırların toplamı, ibare satır başına", () => {
     detay([yp({ batchId: 5 }), ucz({ id: 9003, batchId: 5 })]);
     expect(screen.getByTestId("kargo-genel-toplam").textContent).toMatch(/1\.500/);
-    expect(screen.getAllByText(new RegExp(UCRETSIZ_IBARESI.replace(/[()]/g, "\\$&")))).toHaveLength(1);
+    expect(screen.getAllByText(ibareDeseni())).toHaveLength(1);
   });
   it("AC-24/2: kargo kartı değişmez (ücretsiz ve ücretli ikizi aynı metin), tutar ve ücretsiz rozeti yok", () => {
     const a = metin(render(<KargoKart s={ucz({ kargoDurum: "Hazırlanıyor" })} dealers={DEALERS} parts={PARTS} customers={MUSTERILER} canKargo onClick={vi.fn()} />).container);
