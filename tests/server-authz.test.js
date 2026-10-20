@@ -1559,3 +1559,28 @@ describe("Spec 0088: Makina Maliyeti sekmesinin sunucu kapısı", () => {
     expect(SEKME_ON_KOSULLARI).toEqual({ maliyet: ["gider"] });
   });
 });
+
+// ── Spec 0098 AC-39 (C4, Karar 3): sunucu yazma denetimi değişmez ─────────────────────────────────────────────────────
+// Tahsilat hesabı yetkisi istemci tarafı bir çizim kuralıdır; sunucu `tahsilat_hesap` kimliğini hiç sormaz. Yeni kimliği olmayan
+// (işlem izinleri özelleştirilmiş) satış kullanıcısının `hesapId` taşıyan yazımı bölüm izinleriyle değerlendirilir ve 403 üretmez.
+describe("spec 0098: tahsilat hesabı yetkisi sunucu denetimine girmez", () => {
+  const satici = JSON.stringify({ tabs: ["dashboard", "customers", "stock", "servis"], giderActions: ["gider_add"] });
+  it("AC-39: yeni kimliği olmayan kullanıcının hesapId'li yeni ve düzenlenen satışı geçer", () => {
+    const yp = { id: 1, aliciTipi: "musteri", musteriId: 5, partId: 7, miktar: 1, birimFiyat: 100, odendi: false, tahsisler: [] };
+    const sv = { id: 2, customerId: 5, odendi: false, servisUcreti: 100 };
+    for (const [bolum, kayit] of [["yedekParcaSatislar", yp], ["services", sv]]) {
+      const eski = { [bolum]: [kayit] };
+      const duzenleme = { [bolum]: [{ ...kayit, odendi: true, hesapId: 51 }] };
+      const ekleme = { [bolum]: [kayit, { ...kayit, id: 99, odendi: true, hesapId: 51 }] };
+      for (const yeni of [duzenleme, ekleme]) {
+        expect(yazmaYetkisiVar(satici, "user", degisenBolumler(eski, yeni), eski, yeni).ok, bolum).toBe(true);
+        expect(eylemDenetimi(eski, yeni, satici, "user").ok, bolum).toBe(true);
+      }
+    }
+  });
+  it("AC-39 / C4: serverAuth.cjs yeni kimliği bilmez (beyaz liste ve alan denetimi yok)", async () => {
+    const { readFileSync } = await import("node:fs");
+    expect(readFileSync("electron/serverAuth.cjs", "utf8")).not.toMatch(/tahsilat_hesap/);
+    expect(readFileSync("electron/server.cjs", "utf8")).not.toMatch(/tahsilat_hesap/);
+  });
+});

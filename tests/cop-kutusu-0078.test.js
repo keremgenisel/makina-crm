@@ -62,11 +62,13 @@ describe("Spec 0078 B: canlı dizi tek yerde (App)", () => {
   // Spec 0082 ile güncellendi: standart gider bölümünün iki canlı (arama, Giderler) ve bir ham (Ayarlar) geçişi kalktı (14/16 → 12/15).
   // Spec 0088 ile: Makina Maliyeti ekranı giderTurleri'ni HAM alır (rol yazımı tam dizide; çöpteki türün kalemi türüyle okunur,
   // C2); sayım yirmi sekize, ham on altıya çıktı.
-  it("AC-37 (revizyon 2 ölçümü, spec 0082 ve 0088 sonrası): yirmi sekiz prop geçişinden on ikisi canlı, on altısı ham (Ayarlar 3, giderTurleri 7, cekler 6)", () => {
+  // Spec 0098 ile (R4/2, plan P9, yalnız sayı): tahsilat zincirinin üç geçişinin koşulu `tahsilatHesapYetki` oldu ve Servis Panosu'nun iki
+  // çağrısı (sekme, kiosk) canlı hesap dizisini aldı; sayım otuza, canlı on dörde çıktı.
+  it("AC-37 (revizyon 2 ölçümü, spec 0082, 0088 ve 0098 sonrası): otuz prop geçişinden on dördü canlı, on altısı ham (Ayarlar 3, giderTurleri 7, cekler 6)", () => {
     const say = (re) => (app.match(re) || []).length;
     const canli = say(/hesapHareketleri=\{(?:giderYetki \? )?(?:canliHareketler|odemeHareketleri)/g) + say(/giderTanimlari=\{(?:giderYetki \? )?canliGiderTanimlari/g)
-      + say(/kasaHesaplari=\{(?:kasaYetki \? )?canliKasaHesaplari/g);
-    expect(canli).toBe(12);
+      + say(/kasaHesaplari=\{(?:(?:kasaYetki|tahsilatHesapYetki) \? )?canliKasaHesaplari/g);
+    expect(canli).toBe(14);
     const ham = say(/hesapHareketleri=\{hesapHareketleri\}/g) + say(/giderTanimlari=\{giderTanimlari\}/g)
       + say(/kasaHesaplari=\{kasaHesaplari\}/g) + say(/giderTurleri=\{(?:giderYetki \? )?giderTurleri/g) + say(/cekler=\{(?:kasaYetki \? )?(?:cekler|ceklerBagli)/g);
     expect(ham).toBe(16);

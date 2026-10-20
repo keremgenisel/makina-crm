@@ -149,12 +149,16 @@ describe("Spec 0044: müşteri detayında Ödendi anahtarı hesap sorar", () => 
     expect(pencere()).toBeNull();
     await bekleKayit(kayitlar, k => k.services?.some(s => s.id === 800 && s.odendi === true && s.hesapId == null));
   });
-  it("AC-28: kasa yetkisi (Giderler + Finans) olmayan kullanıcıya hesap sorulmaz", async () => {
+  // Spec 0098 ile (AC-7, R1; 0044 AC-28'in testi ters çevrildi): hesap sorulup sorulmaması Kasa sekmesine değil tahsilat hesabı
+  // yetkisine bağlı. Aynı düzenekte (Finans'sız, işlem izinleri tanımsız: yetki varsayılan açık, R7) pencere açılır, seçim kayda yazılır.
+  it("AC-28 (spec 0098 ile, AC-7): Finans'sız kullanıcıya da hesap sorulur ve seçim kayda yazılır", async () => {
     const { kayitlar } = await baslat({ sunucu: { tabs: ["dashboard", "customers", "gider"] } });
     await detayAc();
     fireEvent.click(anahtar(0));
-    expect(pencere()).toBeNull();
-    await bekleKayit(kayitlar, k => k.services?.some(s => s.id === 800 && s.odendi === true && s.hesapId == null));
+    expect(pencere()).toBeTruthy();
+    fireEvent.change(within(pencere()).getByLabelText("Tahsilat hesabı"), { target: { value: "51" } });
+    fireEvent.click(screen.getByText("Ödendi olarak kaydet"));
+    await bekleKayit(kayitlar, k => k.services?.some(s => s.id === 800 && s.odendi === true && s.hesapId === 51));
   });
   it("AC-27: parça bedeli farklı para birimindeki eski servis hesap sorulmadan işaretlenir", async () => {
     const eski = { ...SERVIS, parcaUcreti: 100, parcaUcretiAltuntastan: 100, parcaUcretsizMi: false, parcaCurrency: "USD" };

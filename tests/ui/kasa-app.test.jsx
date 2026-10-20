@@ -144,13 +144,15 @@ describe("Müşteri tahsilatına hesap (R6, C6, C7)", () => {
     fireEvent.change(screen.getAllByDisplayValue("Nakit").pop().parentElement.querySelector("input"), { target: { value: "7000" } });
     expect(screen.queryByLabelText("Tahsilat hesabı")).toBeNull();
   });
-  it("AC-25 / C6: Finans sekmesi olmayan kullanıcı tahsilata hesap seçemez", async () => {
+  // Spec 0098 ile (R1, AC-4; 0024'ün bu testi ters çevrildi): tahsilat hesabı seçimi Kasa sekmesinden ayrıldı. İşlem izinleri
+  // tanımsız (yetki varsayılan açık, R7) Finans'sız kullanıcı tahsilat satırında alanı görür; Kasa EKRANINI görmez (0024 AC-25 korunur).
+  it("AC-25 / C6 (spec 0098 ile): Finans sekmesi olmayan kullanıcı tahsilata hesap seçer, Kasa ekranını görmez", async () => {
     await baslat({ sunucu: { tabs: ["dashboard", "customers", "gider"] } });
+    expect(screen.queryAllByText("Kasa").filter(e => e.closest("nav"))).toEqual([]);
     await tahsilatFormu();
-    // Spec 0063 R13: alan satırdadır; tutarlı satır açılınca da yok.
     fireEvent.click(screen.getByText("+ Ödeme Ekle"));
     fireEvent.change(screen.getAllByDisplayValue("Nakit").pop().parentElement.querySelector("input"), { target: { value: "7000" } });
-    expect(screen.queryByLabelText("Tahsilat hesabı")).toBeNull();
+    expect(screen.getByLabelText("Tahsilat hesabı")).toBeTruthy();
   });
 });
 

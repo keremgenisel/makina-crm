@@ -88,6 +88,15 @@ if (ekran.startsWith("kullanici-izin-kasa")) {
   ];
   window.appServer = { apiRequest: async ({ method } = {}) => ({ ok: true, status: 200, data: method === "GET" ? KULLANICILAR : {} }) };
 }
+if (ekran.startsWith("kullanici-izin-0098")) {
+  // Spec 0098: işlem izinleri özelleştirilmiş iki kullanıcı; Kasa'lıda etkisizlik ipucusu yok, Kasa'sızda Kasa grubunda var. İkisinde de
+  // "Tahsilat hesabı" grubu kendi notuyla önde.
+  const kasali = ekran.endsWith("kasali");
+  const KULLANICILAR = [{ id: 1, username: kasali ? "muhasebe" : "satis", role: "user", is_active: 1,
+    permissions: JSON.stringify(kasali ? { tabs: ["dashboard", "finance", "gider", "kasa"], giderActions: ["gider_add", "kasa_hesap", "tahsilat_hesap"] }
+      : { tabs: ["dashboard", "customers", "stock", "servis"], giderActions: ["tahsilat_hesap"] }) }];
+  window.appServer = { apiRequest: async ({ method } = {}) => ({ ok: true, status: 200, data: method === "GET" ? KULLANICILAR : {} }) };
+}
 if (ekran === "ayarlar-server-istemci") {
   // Sunucuya bağlı istemci: Sunucu Bağlantısı + İki Adımlı Doğrulama bölümleri. Yalnız okuma çağrıları yanıtlanır.
   const t = {
@@ -176,6 +185,9 @@ const MUSTERILER = [
   { id: 500, name: "Kutu Gıda", model: "AK120_DSC", serialNo: "S-1", currency: "TRY", faturali: "Faturalı Yurtiçi", faturaBedeli: 250000, fabrikaSatisBedeli: 240000, installDate: "2026-08-10", uretimTarihi: "2026-07-15", kalanBorc: 0 },
   { id: 501, name: "Ege Köfte", model: "AK100", serialNo: "S-2", currency: "TRY", faturali: "Faturalı Yurtiçi", faturaBedeli: 180000, installDate: "2026-09-05", uretimTarihi: "2026-08-20", kalanBorc: 20000 },
 ];
+// Spec 0098: panoya düşmüş ücretli servis (müşteri Kutu Gıda).
+const PANO_SERVIS_0098 = { id: 9801, customerId: 500, type: "Garanti Dışı", repairPlace: "Yerinde Onarım", servisUcreti: 1500, currency: "TRY", faturaTipi: "Faturalı Yurtiçi",
+  date: "2026-09-20", durum: "Bekliyor", islemFirma: "Altuntaş Makina", degisenParcalar: [], odendi: false };
 const k = (id, o) => ({ id, tarih: "2026-09-10", turId: 4, tutar: 10000, kdvOrani: 20, odendi: false, ...o });
 // Spec 0070: SGK ve yol parası girilmiş iki çalışan (kart) ve iki personel kalemi (resmi + elden satırlı).
 // Spec 0074 R18 ile güncellendi: personel kaleminde SGK yok; ayın SGK'sı SGK davranışlı türde tek kalem (kart SGK'sı yalnız öneri).
@@ -848,6 +860,11 @@ const EKRANLAR = {
   "giderler-personel-coklu-odeme": [<GiderEkrani g0={[PERSONEL_IKI]} h0={[]} />, ["dugme:Çalışanları göster", "dugme:Ödeme planı", "dugme:Ödeme gir", "sec:Taksit=5101", "sec:Ödeme yöntemi=Havale", "dugme:Başka yöntemle satır ekle", "sec:Taksit 2=5102", "sec:Ödeme yöntemi 2=Nakit"]],
   "giderler-personel-ayrinti-acik": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["tikla:Gider Türü Kırılımı", "dugme:▸ Aç", "kaydir:Gider Türü Kırılımı"]], // spec 0081: kutu kapalı başlar
   "anasayfa-kart-rozetleri": [<Dashboard customers={MUSTERILER} dealers={DEALERS} services={[]} payments={KK_ODEME} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }} />, []],
+  // Spec 0098 R4/2: panonun servis formu, tahsilat hesabı yetkisiyle (App'in verdiği iki prop) ve yetkisiz (prop yok).
+  "servis-pano-0098-hesap": [<ServisPanosu services={[PANO_SERVIS_0098]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
+    factory={{ name: "Altuntaş Makina" }} kasaHesaplari={KASA_HESAPLAR} tahsilatHesapVarsayilan={() => 402} />, ["*Kutu Gıda", "*Ücret henüz tahsil edilmedi", "kaydir:Tahsilatın girdiği hesap"]],
+  "servis-pano-0098-hesapsiz": [<ServisPanosu services={[PANO_SERVIS_0098]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
+    factory={{ name: "Altuntaş Makina" }} />, ["*Kutu Gıda", "*Ücret henüz tahsil edilmedi", "kaydir:Ücret tahsil edildi"]],
   "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
     partSales={PANO_KALIP} setPartSales={bos} kalipYetki yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],
   "stok-tahsis-modali": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
@@ -933,10 +950,12 @@ const EKRANLAR = {
   "uygulama-menu-kasasiz": [<App />, ["Giderler"]],
   "uygulama-menu-kasali": [<App />, ["Giderler"]],
   "kullanici-izin-kasa": [<UserManager flash={bos} />, ["dugme:Düzenle"]],
+  "kullanici-izin-0098-kasali": [<UserManager flash={bos} />, ["dugme:Düzenle", "tikla:Kasa işlemleri", "kaydir:Tahsilat hesabı"]],
+  "kullanici-izin-0098-kasasiz": [<UserManager flash={bos} />, ["dugme:Düzenle", "tikla:Kasa işlemleri", "kaydir:Tahsilat hesabı"]],
   // Spec 0066 R21: kasa kutuları ve ipucu kendi "Kasa işlemleri" akordeonunda.
   "kullanici-izin-kasa-ipucu": [<UserManager flash={bos} />, ["dugme:Düzenle", "tikla:Kasa işlemleri", "kaydir:Hesaplar ve hareketler"]],
   "kullanici-izin-kasa-0066": [<UserManager flash={bos} />, ["dugme:Düzenle", "tikla:Gider işlemleri", "tikla:Kasa işlemleri", "kaydir:Tedarikçi yönetimi"]],
-  "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
+  "musteri-tahsilat-hesap": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapYetki: true }), ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle"]],
   // Spec 0044: tahsilatın hesabı. Kasa hareketlerinde tahsilat satırları, hesapsız tahsilat listesi, Ödendi anahtarının penceresi,
   // formlarda seçici ve bedeli bize ait olmayan serviste açıklama satırı.
   "kasa-tahsilat-hareketleri": [kasaTahsilat(), ["~Ziraat Bankası"]],
@@ -977,7 +996,7 @@ const EKRANLAR = {
   "kasa-hesapsiz-hepsi": [kasaTahsilat({ giderAyarlari: { hesapsizBaslangic: "2026-09-20" } }), ["dugme:Hepsini göster", "dugme:Listeyi göster", "kaydir:Hesap ata"]],
   "kasa-hareket-hedef": [kasa51(), ["~Ziraat Bankası"]],
   "kasa-ekstre-hedef": [kasa51(), ["dugme:Ekstre"]],
-  "musteri-tahsilat-hesap-penceresi": [detay(601, { services: [...DETAY_SERVIS, TH_DETAY_SERVIS], kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapVarsayilan: () => 402 }),
+  "musteri-tahsilat-hesap-penceresi": [detay(601, { services: [...DETAY_SERVIS, TH_DETAY_SERVIS], kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapYetki: true, tahsilatHesapVarsayilan: () => 402 }),
     ["dugme:Ödenmedi · işaretle: Ödendi"]],
   "servis-formu-tahsilat-hesap": [<FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" kasaHesaplari={KASA_HESAPLAR}
     ilk={{ customerId: 500, date: "2026-09-20", type: "Garanti Dışı", repairPlace: "Yerinde Onarım", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", currency: "TRY", servisUcreti: "1500", odendi: true, yontem: "Nakit", hesapId: 402, degisenParcalar: [] }} />, ["kaydir:Tahsilatın girdiği hesap"]],
@@ -1068,9 +1087,9 @@ const EKRANLAR = {
   // Tekrarlayan giderler tablosu, yerleşim testinin uzun içerikli verisiyle (1440 genişlikte, Ayarlar menüsü olmadan).
   // Spec 0063: ilk ödeme satırlarında hesap (iki satır, ön seçim), bayi detayından yedek parça ve kalıp satışında hesap alanı.
   "musteri-formu-ilk-odeme": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos}
-    kasaHesaplari={KASA_HESAPLAR} kasaYetki tahsilatHesapVarsayilan={() => 402} />,
+    kasaHesaplari={KASA_HESAPLAR} kasaYetki tahsilatHesapYetki tahsilatHesapVarsayilan={() => 402} />,
     ["~Yeni Müşteri", "doldur:Satın alan firma / kişi=Yeni Kafe", "dugme:+ Ödeme Ekle", "doldur:Tahsilat tutarı 1=30000", "dugme:+ Ödeme Ekle", "doldur:Tahsilat tutarı 2=70000", "kaydir:İlk Ödeme (Kapora/Ödeme)"]],
-  "musteri-tahsilat-hesap-satir": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapVarsayilan: () => 402 }),
+  "musteri-tahsilat-hesap-satir": [detay(601, { kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapYetki: true, tahsilatHesapVarsayilan: () => 402 }),
     ["dugme:Ödeme Ekle", "dugme:+ Ödeme Ekle", "doldur:Tahsilat tutarı 1=4000", "dugme:+ Ödeme Ekle", "doldur:Tahsilat tutarı 2=6000"]],
   "bayi-yedek-parca-formu": [<SimpleDealers dealers={DEALERS} setDealers={bos} factory={{ name: "Altuntaş Makina" }} setFactory={bos} partSales={[]} services={[]} customers={MUSTERILER}
     showToast={bos} openDetailId={3} parts={[{ id: 7, ad: "Rulman" }]} partStock={[{ partId: 7, miktar: 20 }]} setYedekParcaSatislar={bos} setPartStock={bos} setPartStockLog={bos}

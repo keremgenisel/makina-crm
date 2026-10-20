@@ -174,7 +174,9 @@ describe("Spec 0052: kasasız kullanıcı gerçek uygulamada", () => {
     expect(secenekler).toContain("Çek (kendi)");
     expect(screen.getByLabelText("Tedarikçiye hesabı")).toBeTruthy();
   });
-  it("AC-12: müşteri tahsilat formunda hesap seçici çizilmez (Kasa'lıda çizilir)", async () => {
+  // Spec 0098 ile (R1, R6; 0052 AC-12'nin TAHSİLAT yarısı ters çevrildi): tahsilat hesabı seçimi kendi yetkisinde, Kasa sekmesine
+  // bağlı değil; işlem izinleri tanımsız kullanıcıda varsayılan açık (R7). Ödeme yarısı (gider ödemesinin seçicisi) yukarıdaki testte korunur.
+  it("AC-12 (spec 0098 ile): müşteri tahsilat formunda hesap seçici Kasa'sız kullanıcıda da çizilir", async () => {
     const tahsilatFormu = async () => {
       menu("Müşteriler");
       await waitFor(() => expect(screen.getByText("TAHSİLATLI FİRMA")).toBeTruthy());
@@ -187,7 +189,7 @@ describe("Spec 0052: kasasız kullanıcı gerçek uygulamada", () => {
     await tahsilatFormu();
     fireEvent.click(screen.getByText("+ Ödeme Ekle"));
     fireEvent.change(screen.getAllByDisplayValue("Nakit").pop().parentElement.querySelector("input"), { target: { value: "7000" } });
-    expect(screen.queryByLabelText("Tahsilat hesabı")).toBeNull();
+    expect(await screen.findByLabelText("Tahsilat hesabı")).toBeTruthy();
     cleanup();
     await baslat(KASALI_SEKMELER);
     await tahsilatFormu();

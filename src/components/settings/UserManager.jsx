@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Modal, PasswordInput, Btn, ConfirmDialog } from "../ui";
 import {
   ALL_TABS, DEFAULT_USER_TABS, DANGER_SECTION, VARSAYILAN_KAPALI_SEKMELER, KASA_ETKISIZ_IPUCU,
-  GIDER_AKORDEON_GRUPLARI, KASA_AKORDEON_GRUPLARI, GIDER_KASA_ORTAK_NOT, GIDER_VARSAYILAN_METNI, KASA_VARSAYILAN_METNI,
+  GIDER_AKORDEON_GRUPLARI, KASA_AKORDEON_GRUPLARI, kasaEtkisizGrupMu, GIDER_KASA_ORTAK_NOT, GIDER_VARSAYILAN_METNI, KASA_VARSAYILAN_METNI,
   CUSTOMER_ACTION_GROUPS, DEALER_ACTION_GROUPS, STOCK_ACTION_GROUPS,
   EVRAK_ACTION_GROUPS, NOT_ACTION_GROUPS, FINANCE_ACTION_GROUPS, GIDER_ACTION_GROUPS,
   parseTabPerms, parseSettingsPerms, parseCustomerActionsPerms, parseDealerActionsPerms,
@@ -181,7 +181,8 @@ export function UserManager({ flash, settingsGroups = [] }) {
   // Spec 0066 R6, R16: ipucu yalnız Kasa akordeonunda ve koşulu 0052'nin görünürlük kuralının kendisi (kasa + Giderler +
   // Finans), elle yeniden yazılmaz.
   const kasaGorunur = gorunurSekmeler(ALL_TABS, "active", { role: "user", permissions: JSON.stringify({ tabs: editTabs }) }).some(t => t.id === "kasa");
-  const kasaGruplari = KASA_AKORDEON_GRUPLARI.map(g => (kasaGorunur ? g : { ...g, ipucu: KASA_ETKISIZ_IPUCU }));
+  // Spec 0098 R13, R13/2: ipucu yalnız etkisiz kimlikli gruplara (tahsilat hesabı grubu Kasa'sız kullanıcıda da işe yarar).
+  const kasaGruplari = KASA_AKORDEON_GRUPLARI.map(g => (kasaGorunur || !kasaEtkisizGrupMu(g) ? g : { ...g, ipucu: KASA_ETKISIZ_IPUCU }));
   const giderOn = (v) => { setEditGiderActionsOn(v); if (v) setEditGiderActions([...allGiderActionIds]); };
   // Sıralama "Erişebileceği Sekmeler" (ALL_TABS) düzenini izler: Müşteriler, Bayiler, Stok, Finans, Gider, Kasa,
   // Evrak, Notlar, Servis Panosu, Ayarlar (spec 0066 AC-19). (Anasayfa/Harita'nın işlem izni yok.)
@@ -255,6 +256,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
                 {sec.groups.map(g => (
                   <div key={g.grup}>
                     <div style={grupBaslikStyle}>{g.grup}</div>
+                    {g.notu && <div data-testid="tahsilat-hesap-ipucu" style={{ fontSize: 11, color: "var(--n500, #64748b)", marginBottom: 5 }}>{g.notu}</div>}
                     {g.ipucu && <div data-testid="kasa-etkisiz-ipucu" style={{ fontSize: 11, color: "var(--n500, #64748b)", marginBottom: 5 }}>{g.ipucu}</div>}
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{g.items.map(item => permChekbox(sec, item))}</div>
                   </div>

@@ -79,6 +79,9 @@ export const ServisPanosu = ({
   yedekParcaSatislar = [], setYedekParcaSatislar = null, kargoYetki = false,
   partSales = [], setPartSales = null, kalipYetki = false, aktifKullanici = "",
   onAyriPencere = null,
+  // Spec 0098 R4/2: tahsilat hesabı alanı. App bu iki prop'u tek kapıdan (`tahsilatHesapYetki`) verir; pano yeni mekanizma kurmaz,
+  // formlara bugünkü imzalarla iletir. Ayrı pencerede (ServisPencere) verilmez, alan orada bilerek yoktur (R4/3, X8).
+  kasaHesaplari = null, tahsilatHesapVarsayilan = null,
 }) => {
   const canDo = makeCanDo(serverPermissions, "customerActions");
   const canKargoDuzenle = makeCanDo(serverPermissions, "stockActions")("yedek_parca_edit");
@@ -885,7 +888,7 @@ export const ServisPanosu = ({
         <YedekParcaSatisForm title="Yeni Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
-          geoData={geoData} loadingGeo={loadingGeo}
+          geoData={geoData} loadingGeo={loadingGeo} kasaHesaplari={kasaHesaplari} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
       )}
 
@@ -901,7 +904,7 @@ export const ServisPanosu = ({
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={form} setForm={setForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
-          geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar}
+          geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar} kasaHesaplari={kasaHesaplari} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={kaydet} onCancel={() => setSvModal(null)}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
         />

@@ -51,6 +51,8 @@ export const TahsilatHesapAlani = ({ durum, hesaplar = [], value, onChange, vars
   useEffect(() => { if (onSecimGerekli) onChange(uyumluHesapId(hesaplar, varsayilan(durum.currency), durum.currency)); }, [onSecimGerekli]);
   if (!durum?.sor) return durum?.neden ? <div data-testid="tahsilat-hesap-neden"><Ipucu>{durum.neden}</Ipucu></div> : null;
   const { uygun } = hesapSecenekleri(hesaplar, durum.currency, value);
+  // Spec 0098 C12/2 (bilinen sınır, triyaj bulgu 4): bu ipucu Kasa'yı anar; spec 0098'den beri alanı Kasa'yı görmeyen kullanıcı da
+  // görür. C8 metnin değişmemesini istediği için bilerek aynen bırakıldı; nötrleştirmek ayrı iştir.
   const bosMetni = durum.listedeBekler === false ? "seçilmezse hiçbir bakiyeye girmez." : "boş bırakılırsa Kasa'da hesabı belirtilmemiş tahsilatlar arasında bekler.";
   return (
     <div data-testid={testId}>

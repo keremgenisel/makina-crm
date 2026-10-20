@@ -3,6 +3,7 @@
 // bölümlerden oluşur: tabs, settings, customerActions, dealerActions, stockActions,
 // evrakActions, notActions, financeActions. parse* fonksiyonları bir kullanıcının
 // permissions string'inden ilgili bölümü çıkarır (yoksa null = varsayılan/tümü açık).
+import { makeCanDo } from "../../lib/permissions";
 
 export const ALL_TABS = [
   { id: "dashboard", label: "Anasayfa" },
@@ -24,8 +25,18 @@ export const ALL_TABS = [
 export const DEFAULT_USER_TABS = ["dashboard", "customers", "dealers", "stock", "evrak", "notes"];
 // İzin ekranında "(varsayılan kapalı)" ibaresi alan sekmeler (spec 0001 C6, spec 0052 R5).
 export const VARSAYILAN_KAPALI_SEKMELER = new Set(["gider", "kasa", "maliyet"]);
-// Spec 0052 R11: Kasa ekranının eylemleri; Kasa sekmesi olmayan kullanıcıda etkisizdir.
-export const KASA_EYLEM_IDLERI = new Set(["kasa_hesap", "virman", "avans"]);
+// Spec 0098 R2/2, R12/2, R12/3 (plan P1): tahsilat hesabı seçiminin kendi yetkisi. Kimliğin TEK yazıldığı yer burasıdır (C11);
+// kapının formülü de burada ve App onu tek yerde çağırır (C1). Kasa ekranının görünürlüğüne bakmaz (R1): gider sekmesi şart değil,
+// Finans ve Kasa sekmeleri okunmaz. Perde inikken kapalı (R11, C7); salt okunur modda `effectivePermissions.giderActions = []`
+// olduğu için kapalı (R10); işlem izinleri tanımsızken (admin, yerel mod, sunucu PC, özelleştirilmemiş kullanıcı) açık (R7).
+export const TAHSILAT_HESAP_ID = "tahsilat_hesap";
+export const TAHSILAT_HESAP_IPUCU = "Bu yetki Kasa ekranını açmaz; yalnız tahsilatın hangi hesaba girdiğinin kaydın formunda seçilmesini sağlar.";
+export const tahsilatHesapKapisi = (izinler, perdeIndi) => !perdeIndi && makeCanDo(izinler, "giderActions")(TAHSILAT_HESAP_ID);
+// Spec 0052 R11: Kasa ekranının eylemleri. Spec 0098 R13/2 (C5): iki ayrı küme. `KASA_EYLEM_IDLERI` Kasa akordeonuna YERLEŞİMİ
+// belirler (0066 AC-12'nin eşitliği korunur); `KASA_ETKISIZ_IDLERI` "Kasa sekmesi olmayanda etkisiz" ipucusunun kapsamıdır ve
+// tahsilat hesabı ona girmez (Kasa'sız kullanıcıda işe yarayan kutudur).
+export const KASA_EYLEM_IDLERI = new Set(["kasa_hesap", "virman", "avans", TAHSILAT_HESAP_ID]);
+export const KASA_ETKISIZ_IDLERI = new Set(["kasa_hesap", "virman", "avans"]);
 export const KASA_ETKISIZ_IPUCU = "Kasa sekmesi olmayan kullanıcıda bu eylemler kullanılmaz.";
 
 export function parseTabPerms(permissions) {
@@ -244,6 +255,11 @@ export const GIDER_ACTION_GROUPS = [
     { id: "tedarikci_edit",   label: "Tedarikçi düzenle" },
     { id: "tedarikci_delete", label: "Tedarikçi sil" },
   ]},
+  // Spec 0098 R2, R2/2, R13: kendi grubu, Kasa akordeonunda "Hesaplar ve hareketler"in önünde; `notu` grubun kendi ipucusudur
+  // (etkisizlik ipucusu `ipucu` alanında ve ayrı testId ile kalır, R13/2).
+  { grup: "Tahsilat hesabı", notu: TAHSILAT_HESAP_IPUCU, items: [
+    { id: TAHSILAT_HESAP_ID, label: "Tahsilat hesabını seçme (servis, Extra Kalıp, yedek parça ve makina tahsilatı)" },
+  ]},
   // Spec 0024 C6/Q7: Kasa ekranı (hesaplar ve virman). Spec 0052 R11: Kasa sekmesi olmayan kullanıcıda etkisizdir.
   // Spec 0066 R1: izin ekranında kendi "Kasa işlemleri" akordeonunda; grup adı başlığı tekrarlamasın diye "Hesaplar ve hareketler".
   { grup: "Hesaplar ve hareketler", items: [
@@ -257,6 +273,8 @@ export const GIDER_ACTION_GROUPS = [
 // KASA_EYLEM_IDLERI kimliği olan grup bütün olarak Kasa akordeonuna gider; ad eşleşmesi ve ayrı bayrak yok. İki
 // akordeon da aynı `giderActions` dizisini yazar (izin boyutu değişmedi, R3).
 export const kasaGrubuMu = (g) => g.items.some(i => KASA_EYLEM_IDLERI.has(i.id));
+// Spec 0098 R13/2: etkisizlik ipucusu yalnız bu yüklemi sağlayan gruplara basılır.
+export const kasaEtkisizGrupMu = (g) => g.items.some(i => KASA_ETKISIZ_IDLERI.has(i.id));
 export const GIDER_AKORDEON_GRUPLARI = GIDER_ACTION_GROUPS.filter(g => !kasaGrubuMu(g));
 export const KASA_AKORDEON_GRUPLARI = GIDER_ACTION_GROUPS.filter(kasaGrubuMu);
 // Spec 0066 R5, R9, R17: ortak "özelleştir" anahtarı ve tek dizi gerçeği ekranda yazılı.

@@ -76,6 +76,9 @@ export function ServisPencere() {
           Yükleniyor…
         </div>
       ) : (
+        /* Spec 0098 R4/3, X8 (AC-45): tahsilat hesabı alanı bu pencerede bilerek YOK. Köprü veri taşır, fonksiyon taşımaz:
+            ön seçim (`tahsilatHesapVarsayilan`) bir fonksiyondur ve anlık görüntüde `payments` yok. Bu yüzden `kasaHesaplari` ve
+            `tahsilatHesapVarsayilan` verilmez; aynı kayıt sekmedeki panodan ya da müşteri detayından işaretlenir. */
         <ServisPanosu
           services={withoutDeleted(snap.services)} setServices={s.services}
           customers={snap.customers} calisanlar={snap.calisanlar} parts={snap.parts} dealers={snap.dealers}

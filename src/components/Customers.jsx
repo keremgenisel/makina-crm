@@ -27,8 +27,8 @@ export const Customers = ({
   // Gider kaydı (spec 0001 R7): giderYetki formdaki maliyet alanlarını açar; spec 0090 R39 ile silme onayında bağlı gider sayısı yok.
   // rates satış kuru içindir (spec 0002 R12). Spec 0067 R8: makina maliyeti müşteri ekranına artık gelmez.
   giderYetki = false, rates = null,
-  // Spec 0024 C6/C7: tahsilata hesap seçimi yalnız kasa yetkisiyle (gider + Finans sekmesi, perde kalkık).
-  kasaHesaplari = [], kasaYetki = false, tahsilatHesapVarsayilan = null,
+  // Spec 0098 R1, R8/2: tahsilata hesap seçimi tahsilat hesabı yetkisiyle (`tahsilat_hesap`, perde kalkık); Kasa sekmesine bağlı değil.
+  kasaHesaplari = [], tahsilatHesapYetki = false, tahsilatHesapVarsayilan = null,
   // Spec 0040: çek kaydı tahsilatla (ilk satış ödemesi dahil) doğar.
   cekler = [], setCekler = null,
   gorusmeler = [], setGorusmeler = null,
@@ -300,7 +300,7 @@ export const Customers = ({
       const odemeTarih = clean.installDate || today();
       // Ödeme kayıtlarını (kredi kartında kartKomisyonu snapshot'ı ile) kurup borçtan düşülecek tutarı ONLARDAN
       // süz — blokajlı kredi kartı (tek çekim/taksit) henüz hesaba geçmediğinden borçta kalmalı. Bkz. ilkSatisOdemeleri.
-      const { kayitlar: yeniOdemeler, alinanTutar: ilkOdemeAlinanTutar } = ilkSatisOdemeleri(kasaYetki ? _ilkOdemeSatirlari : (_ilkOdemeSatirlari || []).map(({ hesapId, ...r }) => r), { // spec 0063 R2: yetkisiz kayıtta hesap yazılmaz
+      const { kayitlar: yeniOdemeler, alinanTutar: ilkOdemeAlinanTutar } = ilkSatisOdemeleri(tahsilatHesapYetki ? _ilkOdemeSatirlari : (_ilkOdemeSatirlari || []).map(({ hesapId, ...r }) => r), { // spec 0063 R2: yetkisiz kayıtta hesap yazılmaz
         customerId: newId, currency: clean.currency, tarih: odemeTarih, ayar: appSettings?.krediKartiKomisyonlari, kdvOran: odemeKdvOran, yeniId: uid, kartTaban: clean,
       });
       clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
@@ -660,7 +660,7 @@ export const Customers = ({
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
           canDo={canDo}
-          kasaHesaplari={kasaHesaplari} kasaYetki={kasaYetki} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} cekler={cekler} setCekler={setCekler}
+          kasaHesaplari={kasaHesaplari} tahsilatHesapYetki={tahsilatHesapYetki} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} cekler={cekler} setCekler={setCekler}
           onOpenAddForFirm={openAddForFirm}
           isCustomer={isCustomer}
           customers={customers} setCustomers={setCustomers}
@@ -721,7 +721,7 @@ export const Customers = ({
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}
           giderYetki={giderYetki}
-          kasaHesaplari={kasaYetki ? kasaHesaplari : null} tahsilatHesapVarsayilan={kasaYetki ? tahsilatHesapVarsayilan : null}
+          kasaHesaplari={tahsilatHesapYetki ? kasaHesaplari : null} tahsilatHesapVarsayilan={tahsilatHesapYetki ? tahsilatHesapVarsayilan : null}
         />
       )}
     </div>

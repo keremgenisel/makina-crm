@@ -90,11 +90,13 @@ describe("Spec 0066: Gider ve Kasa akordeonlarının ayrımı (R4, R10, R14, R15
     for (const g of Defs.KASA_AKORDEON_GRUPLARI) expect(Defs.GIDER_ACTION_GROUPS).toContain(g);
     expect(Defs.GIDER_ACTION_GROUPS.filter(Defs.kasaGrubuMu)).toEqual(Defs.KASA_AKORDEON_GRUPLARI);
   });
-  it("AC-20: gider ve kasa akordeonlarının grup adları birebir (R1: \"Kasa ve hesaplar\" → \"Hesaplar ve hareketler\")", () => {
+  // Spec 0098 ile (R2/2, 0066 AC-20 ters çevrildi): Kasa akordeonu iki grup; yeni "Tahsilat hesabı" önde.
+  it("AC-20 (spec 0098 ile): gider ve kasa akordeonlarının grup adları birebir (R1: \"Kasa ve hesaplar\" → \"Hesaplar ve hareketler\")", () => {
     expect(Defs.GIDER_AKORDEON_GRUPLARI.map(g => g.grup)).toEqual(["Kalem işlemleri", "Tanım yönetimi", "Tedarikçi yönetimi"]);
-    expect(Defs.KASA_AKORDEON_GRUPLARI.map(g => g.grup)).toEqual(["Hesaplar ve hareketler"]);
+    expect(Defs.KASA_AKORDEON_GRUPLARI.map(g => g.grup)).toEqual(["Tahsilat hesabı", "Hesaplar ve hareketler"]);
   });
-  it("AC-21: kutu etiketleri ve kimlikleri bu işten önceki hâliyle birebir aynı", () => {
+  // Spec 0098 ile (R2/2, 0066 AC-21 ters çevrildi): on üçüncü kutu `tahsilat_hesap`, Kasa'nın eylemlerinden önce.
+  it("AC-21 (spec 0098 ile): kutu etiketleri ve kimlikleri birebir", () => {
     expect(Defs.GIDER_ACTION_GROUPS.flatMap(g => g.items)).toEqual([
       { id: "gider_add", label: "Gider ekle" },
       { id: "gider_edit", label: "Gider düzenle" },
@@ -105,6 +107,7 @@ describe("Spec 0066: Gider ve Kasa akordeonlarının ayrımı (R4, R10, R14, R15
       { id: "tedarikci_add", label: "Tedarikçi ekle" },
       { id: "tedarikci_edit", label: "Tedarikçi düzenle" },
       { id: "tedarikci_delete", label: "Tedarikçi sil" },
+      { id: "tahsilat_hesap", label: "Tahsilat hesabını seçme (servis, Extra Kalıp, yedek parça ve makina tahsilatı)" },
       { id: "kasa_hesap", label: "Hesap ekle, düzenle, kapat ve sil ve kasa iş listesini düzenleme" },
       { id: "virman", label: "Hesaplar arası virman" },
       { id: "avans", label: "Çalışana avans ver ve sil" },

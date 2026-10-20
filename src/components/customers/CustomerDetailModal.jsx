@@ -75,8 +75,8 @@ export const CustomerDetailModal = ({
   onGoYedekParca = null,
   // Spec 0067 R6, R8, R22: "Maliyet ve Kâr" kutusu müşteri detayından kaldırıldı (maliyet Giderler › Makina Kârlılığı'nda);
   // maliyet verisi, kurlar ve onları kapılayan gider yetkisi bu bileşene artık gelmez.
-  // Spec 0024 R6, C6/C7: tahsilatın hangi hesaba girdiği; yalnız kasa yetkisiyle seçilir (yoksa alan hiç çizilmez).
-  kasaHesaplari = [], kasaYetki = false, tahsilatHesapVarsayilan = null,
+  // Spec 0024 R6, spec 0098 R1, R8: tahsilatın hangi hesaba girdiği; yalnız tahsilat hesabı yetkisiyle seçilir (yoksa alan hiç çizilmez).
+  kasaHesaplari = [], tahsilatHesapYetki = false, tahsilatHesapVarsayilan = null,
   // Spec 0040 R1, R2, C10, C12: çek kaydı tahsilatla birlikte doğar (perde inikken de); çeke bağlı tahsilatın "tahsil
   // edildi" durumu çek portföyünden yönetilir.
   cekler = [], setCekler = null,
@@ -239,7 +239,7 @@ export const CustomerDetailModal = ({
   // Geri alma pencere açmaz ve hesabı temizlemez (R9).
   const [tahsilatPencere, setTahsilatPencere] = useState(null);
   const tahsilatSor = (kaynak, kayitlar, uygula) => {
-    if (!kasaYetki) return uygula(undefined);
+    if (!tahsilatHesapYetki) return uygula(undefined);
     const durumlar = kayitlar.map(r => tahsilatHesapDurumu(kaynak, r, { factoryName, kdvRates }));
     const sorulanlar = durumlar.filter(d => d.sor);
     if (!sorulanlar.length) {
@@ -644,8 +644,8 @@ export const CustomerDetailModal = ({
         vadeTarihi: yontem === "Çek" ? (paymentForm.vadeTarihi || "") : undefined,
         // C10: çeke bağlı tahsilatta durum çek kaydındadır; bayrağa formdan dokunulmaz.
         tahsilEdildi: yontem === "Çek" ? (bagli ? !!payments.find(x => x.id === paymentForm.id)?.tahsilEdildi : !!paymentForm.tahsilEdildi) : undefined,
-        // Hesap alanı yalnız kasa yetkisiyle çizilir; yetkisiz düzenleme mevcut hesabı korur.
-        ...(kasaYetki ? { hesapId: paymentForm.hesapId === "" || paymentForm.hesapId == null ? null : paymentForm.hesapId } : {}),
+        // Hesap alanı yalnız tahsilat hesabı yetkisiyle çizilir (spec 0098); yetkisiz düzenleme mevcut hesabı korur (AC-16).
+        ...(tahsilatHesapYetki ? { hesapId: paymentForm.hesapId === "" || paymentForm.hesapId == null ? null : paymentForm.hesapId } : {}),
       };
       newPayments = payments.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
       guncelle = (p) => p.map(x => x.id === paymentForm.id ? { ...x, ...fields } : x);
@@ -666,7 +666,7 @@ export const CustomerDetailModal = ({
       const odemeKdvOran = tahsilKdvOrani(detailView?.faturali, ortak.tarih, kdvRates, detailView);
       const yeniKayitlar = satirlar.map(r => {
         // Spec 0063 R13, R4: hesap satırın alanıdır; boş satırda alan hiç yazılmaz.
-        const base = { id: uid(), ...ortak, yontem: r.yontem || "Nakit", ...(kasaYetki && r.hesapId != null && r.hesapId !== "" ? { hesapId: r.hesapId } : {}) };
+        const base = { id: uid(), ...ortak, yontem: r.yontem || "Nakit", ...(tahsilatHesapYetki && r.hesapId != null && r.hesapId !== "" ? { hesapId: r.hesapId } : {}) };
         if (r.yontem === "Kredi Kartı" && r.taksitSayisi) {
           const mk = makinaKartOdemesi(parseMoney(r.tutar), r.taksitSayisi, appSettings?.krediKartiKomisyonlari, r.kartTarihi || ortak.tarih, !!r.kkYansit, odemeKdvOran);
           return { ...base, tutar: mk.tutar, taksitSayisi: r.taksitSayisi, kartKomisyonu: kartTabanIsaretle(mk.kartKomisyonu, detailView) };
@@ -1408,12 +1408,12 @@ export const CustomerDetailModal = ({
             <Field label="Ödeme Satırları">
               <PaymentRowsEditor cekler={cekler} rows={paymentForm.satirlar} onChange={rows => setPaymentForm(p => ({ ...p, satirlar: rows }))} sym={CUR_SYM[paymentForm.currency || "TRY"]}
                 krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} currency={paymentForm.currency || "TRY"} kdvOrani={calcKDV(detailView?.faturali, 100, paymentForm.tarih || today(), kdvRates)} tahsilKdvOrani={tahsilKdvOrani(detailView?.faturali, paymentForm.tarih || today(), kdvRates, detailView)} tarih={paymentForm.tarih || today()}
-                satirEki={kasaYetki ? (r, i) => <OdemeSatiriHesap satir={r} i={i} currency={paymentForm.currency || "TRY"} hesaplar={kasaHesaplari} varsayilan={tahsilatHesapVarsayilan}
+                satirEki={tahsilatHesapYetki ? (r, i) => <OdemeSatiriHesap satir={r} i={i} currency={paymentForm.currency || "TRY"} hesaplar={kasaHesaplari} varsayilan={tahsilatHesapVarsayilan}
                   onChange={(idx, v) => setPaymentForm(p => ({ ...p, satirlar: (p.satirlar || []).map((x, j) => j === idx ? { ...x, hesapId: v } : x) }))} /> : null} />
             </Field>
           )}
           <HataMetni>{paymentHata}</HataMetni>
-          {kasaYetki && paymentForm.id && (
+          {tahsilatHesapYetki && paymentForm.id && (
             // Spec 0063 R13, Q5: düzenleme kipi tek kayıttır, hesap form düzeyinde ve paylaşılan alandan (R11); tutar sıfırken de sorulur.
             <TahsilatHesapAlani durum={{ ...makinaTahsilatDurumu(paymentForm.tutar, paymentForm.currency), sor: true }} hesaplar={kasaHesaplari}
               value={paymentForm.hesapId ?? null} onChange={v => setPaymentForm(p => ({ ...p, hesapId: v }))} />
@@ -1476,7 +1476,7 @@ export const CustomerDetailModal = ({
           form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar}
-          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
+          kasaHesaplari={tahsilatHesapYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={saveService} onCancel={() => { svDraft.clearDraft(); setSvModal(null); }}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
           draftBar={<DraftRestoreBar draft={svDraft.draft} onRestore={svDraft.restoreDraft} onDiscard={svDraft.discardDraft} />}
@@ -1489,7 +1489,7 @@ export const CustomerDetailModal = ({
           form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           dealers={dealers} calisanlar={calisanlar} factory={factory} geoData={geoData} loadingGeo={loadingGeo}
-          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
+          kasaHesaplari={tahsilatHesapYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={savePartSale} onCancel={() => { pkDraft.clearDraft(); setPkForm(null); }}
           draftBar={<DraftRestoreBar draft={pkDraft.draft} onRestore={pkDraft.restoreDraft} onDiscard={pkDraft.discardDraft} />}
         />
@@ -1504,7 +1504,7 @@ export const CustomerDetailModal = ({
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
-          kasaHesaplari={kasaYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
+          kasaHesaplari={tahsilatHesapYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={saveYedekParca} onCancel={() => setYpForm(null)} />
       ))}
 

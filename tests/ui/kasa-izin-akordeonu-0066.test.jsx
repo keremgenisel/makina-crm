@@ -85,7 +85,7 @@ describe("Spec 0066: ortak durum (R5, R9, R17, C5)", () => {
     fireEvent.click(ozellestir("Kasa işlemleri"));
     const isaretli = (b) => within(akordeon(b)).getAllByRole("checkbox").filter(c => c.checked && !c.closest("label").textContent.includes("özelleştir")).length;
     expect(isaretli("Gider işlemleri")).toBe(9);
-    expect(isaretli("Kasa işlemleri")).toBe(3);
+    expect(isaretli("Kasa işlemleri")).toBe(4); // spec 0098 ile (plan P9, yalnız sayı): "Tahsilat hesabı" grubunun kutusu
     expect(ozellestir("Gider işlemleri").checked).toBe(true);
     expect(within(akordeon("Gider işlemleri")).getByText("Özel")).toBeTruthy();
     expect((await kaydet(istekler)).giderActions).toEqual(TUM_GIDER);

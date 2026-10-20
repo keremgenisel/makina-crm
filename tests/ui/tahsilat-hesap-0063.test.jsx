@@ -49,7 +49,8 @@ function musteriKur({ kasaYetki = true, customers = [] } = {}) {
     return <Customers customers={c} setCustomers={setC} payments={p} setPayments={setP} stock={[]} setStock={setter("stock")} services={[]} setServices={setter("services")}
       partSales={[]} setPartSales={setter("partSales")} partStock={[]} setPartStock={setter("partStock")} partStockLog={[]} setPartStockLog={setter("partStockLog")}
       // App'in verdiği gibi: Customers'a kasa yetkisizken boş dizi gelir; forma null süzülmesi Customers'ın işidir (R16).
-      kasaHesaplari={kasaYetki ? HESAPLAR : []} kasaYetki={kasaYetki} tahsilatHesapVarsayilan={kasaYetki ? varsayilan : null} />;
+      // Spec 0098 ile (R8/2): tahsilat zincirinin boolean prop'u `tahsilatHesapYetki` (eskiden `kasaYetki`).
+      kasaHesaplari={kasaYetki ? HESAPLAR : []} tahsilatHesapYetki={kasaYetki} tahsilatHesapVarsayilan={kasaYetki ? varsayilan : null} />;
   };
   render(<Harness />);
   return durum;
@@ -74,7 +75,7 @@ describe("Spec 0063 A: yeni müşteri formunun ilk ödemesi", () => {
       const [c, setC] = useState([]); const [p, setP] = useState([]);
       durum.payments = p;
       return <Customers customers={c} setCustomers={setC} payments={p} setPayments={setP} stock={[]} setStock={vi.fn()} services={[]} partSales={[]}
-        kasaHesaplari={HESAPLAR} kasaYetki tahsilatHesapVarsayilan={() => 52} />;
+        kasaHesaplari={HESAPLAR} tahsilatHesapYetki tahsilatHesapVarsayilan={() => 52} />; // spec 0098 ile (R8/2): prop adı
     };
     render(<Harness />);
     yeniMusteri();
