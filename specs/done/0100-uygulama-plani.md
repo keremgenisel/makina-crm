@@ -1,6 +1,6 @@
 # 0100 Uygulama Planı: stoktaki makinanın üretim durumu ve parti üretim panosu
 
-Spec: `specs/0100-stok-makina-durumu.md` (revizyon 3). Onay: Takım Yöneticisi, 2026-10-21 (on beş öneri, P1–P15).
+Spec: `specs/done/0100-stok-makina-durumu.md` (revizyon 3). Onay: Takım Yöneticisi, 2026-10-21 (on beş öneri, P1–P15).
 Çalışma yeri: `../wt-0100`, dal `feat/0100-stok-durumu`, taban `main` `530ae98`.
 
 ## 1. Dosyalar
@@ -76,3 +76,7 @@ Güncellenmemiş bir bilgisayardan eklenen makina "Montajda" doğmaz, satışa h
 6. Süzgeç rozet özeti `useMemo` içinde.
 
 Her düzeltme kendi testini aldı ve geri alındığında o testin kırıldığı ölçüldü (6/6).
+
+## 7. Kapanış
+
+Kapanış kanıtı `0100-kapanis-piksel-raporu.json` (son kod ↔ son kod, 14 görüntü, 0 fark); eşlemedeki beş `degisti` kaydı bu rapora `ayni` olarak yönlendirildi. Özellik commit'i `a6cc65d`.

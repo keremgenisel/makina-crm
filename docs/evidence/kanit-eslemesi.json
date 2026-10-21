@@ -6607,22 +6607,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "rapor": "docs/evidence/0100-kapanis-piksel-raporu.json",
         "ekran": "makina-stok-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R13"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "rapor": "docs/evidence/0100-kapanis-piksel-raporu.json",
         "ekran": "stok-makina-parti",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R13"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "rapor": "docs/evidence/0100-kapanis-piksel-raporu.json",
         "ekran": "stok-0100-durum-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R13"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/PartStokTab.jsx": [
@@ -9563,16 +9560,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "rapor": "docs/evidence/0100-kapanis-piksel-raporu.json",
         "ekran": "stok-0100-pano",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R18"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "rapor": "docs/evidence/0100-kapanis-piksel-raporu.json",
         "ekran": "stok-0100-pano-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R18"
+        "beklenen": "ayni"
       }
     ]
   }

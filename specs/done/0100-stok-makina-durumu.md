@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, plan onayı 2026-10-21; plan `specs/0100-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (revizyon 3; plan `specs/done/0100-uygulama-plani.md`; commit `a6cc65d`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Stok › Makina Stoğu (liste, süzgeçler, ekleme ve düzenleme pencereleri), Stok'un yeni alt sekmesi Parti Üretim Panosu, Anasayfa'nın stok kutusu ve ayrıntı penceresi, müşteri ekleme formunun stoktan makina seçicisi; yeni saf motor; `stock` tablosunun yeni alanı; `src/components/ui.jsx` (`StatCard`'ın isteğe bağlı ek satır yuvası); `docs/evidence/kanit-eslemesi.json`, `scripts/evidence/0009-sayfa.jsx`, `tests/tasarim-kontrast.test.js` ve `tests/suzgec-kaynak.test.js` |
@@ -450,31 +450,31 @@ model, eksik üretileni maskeler. *Reddedilen:* toplam planlanan eksi toplam ür
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Sayma işi saf motorda yazıldı ve kendi testi var; arayüz yalnız gösteriyor.
-- [ ] Aynı sayıyı gösteren üç yer (stok başlığı, pano, Anasayfa) aynı motoru çağırıyor (AC-37).
-- [ ] Yeni kalıcı alan dört nokta kuralıyla yazıldı ve `db-roundtrip` ile `db-clean-install` testlerine eklendi.
-- [ ] Okuma ayıklamalı yazıldı ve durumu olmayan satırların gövdesi spec öncesi fikstürle (`tests/fixtures/0100-govde-once.json`) birebir karşılaştırıldı (AC-45).
-- [ ] Motorun imzası tek `veri` nesnesi (R31/2) ve üç çağıranın aynı fonksiyonu çağırdığı çağrı casusuyla ölçüldü (AC-37).
-- [ ] Yeni motor `partiAcikMi`'yi çağırıyor, kaynakta ikinci bir `!p.bitisAy` yok (AC-62); 0090'daki kopya bilinen borç olarak yazıldı (X9).
-- [ ] Yeni veri bölümü **yok**; birleştirme kuralı değişmedi, bu açıkça yazıldı.
-- [ ] Yeni eylem izni **yok**; durum yazımı stok makina düzenleme iznine bağlı ve sunucu tarafı değişmedi, bu açıkça yazıldı.
-- [ ] Soft-delete ve çöp kutusu ilişkisi değişmedi.
-- [ ] Kullanıcıya görünen bütün metinler Türkçe; yazdırma çıktısı yok.
-- [ ] Para gösterimi yok; pano para göstermiyor (AC-27).
-- [ ] Renkler tema değişkenlerinden geliyor ve karanlık temada kontrast testi geçiyor; üç rozet çifti (`pur700`/`purBg`, `grn700`/`grnBg`, `blu700`/`bluBg`) `tests/tasarim-kontrast.test.js`'in 0030 bloğuna **dosya adıyla** eklendi (AC-49).
-- [ ] `tests/suzgec-kaynak.test.js`'in ekran listesine `src/components/stock/MakinaStokTab.jsx` eklendi ve durum süzgeci sözlükten geliyor (AC-48).
-- [ ] `StatCard`'ın yeni yuvası isteğe bağlı ve verilmediğinde çizim değişmiyor (AC-61); kutunun yeni yüksekliğinin aynı satırdaki dört kutuya etkisi kanıt ekranıyla sunuldu (ölçüm 19).
-- [ ] Anasayfa parti listesini kapısız alıyor, parti adını çizmediği kaynak taramasıyla sabitlendi (AC-60, R30/2).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: durumlu liste, süzgeçli liste, boş durum, pano, boş pano, Anasayfa kutusu ve penceresi, düzenleme penceresi. Kanıt aracına beş yeni ekran girdi: `stok-0100-durum-suzgec`, `stok-0100-pano`, `stok-0100-pano-bos`, `anasayfa-0100-kutu`, `anasayfa-0100-pencere`; plan onayı P1 ile: kutunun etiketi değiştiği için kanıt aracında Anasayfa'yı çizen yedi ekranın hepsi değişir (eşleme kaydı yok, raporda bilinçli değişiklik olarak gösterilir).
-- [ ] `docs/evidence/kanit-eslemesi.json`: `MakinaStokTab.jsx`'in üç kaydı (`stok-alt-sekme`, `stok-makina-parti`, `makina-stok-formu`) `beklenen: "degisti"` + `onay` ile güncellendi (ölçüm 24) ve spec `done`'a taşınırken `ayni`ye çevrildi; pano bileşeni için yeni kayıt eklendi (`Dashboard.jsx` sözlüğü kullanmadığı için onun kaydı yok).
-- [ ] 0079 ve 0095 kıyas testlerinin Anasayfa bölümü "spec 0100 ile" notuyla güncellendi: iki kıyas da Dashboard'a boş stok verdiği için kırılmanın tek koşulu kutunun etiketidir (ölçüm 12), `anasayfa` anahtarındaki kutu metni düzenli ifadeyle ayıklandı ve testlerin asıl iddiası korundu.
-- [ ] Karışık sürüm notu plana yazıldı: güncellenmemiş bilgisayardan eklenen makina Montajda doğmaz, satışa hazır görünür ve elle düzeltilir (ölçüm 25). Veri kaybı yok, yazma sırası zorunlu değil.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` yeni alan, yeni ekran ve durum kuralıyla güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Sayma işi saf motorda yazıldı ve kendi testi var; arayüz yalnız gösteriyor.
+- [x] Aynı sayıyı gösteren üç yer (stok başlığı, pano, Anasayfa) aynı motoru çağırıyor (AC-37).
+- [x] Yeni kalıcı alan dört nokta kuralıyla yazıldı ve `db-roundtrip` ile `db-clean-install` testlerine eklendi.
+- [x] Okuma ayıklamalı yazıldı ve durumu olmayan satırların gövdesi spec öncesi fikstürle (`tests/fixtures/0100-govde-once.json`) birebir karşılaştırıldı (AC-45).
+- [x] Motorun imzası tek `veri` nesnesi (R31/2) ve üç çağıranın aynı fonksiyonu çağırdığı çağrı casusuyla ölçüldü (AC-37).
+- [x] Yeni motor `partiAcikMi`'yi çağırıyor, kaynakta ikinci bir `!p.bitisAy` yok (AC-62); 0090'daki kopya bilinen borç olarak yazıldı (X9).
+- [x] Yeni veri bölümü **yok**; birleştirme kuralı değişmedi, bu açıkça yazıldı.
+- [x] Yeni eylem izni **yok**; durum yazımı stok makina düzenleme iznine bağlı ve sunucu tarafı değişmedi, bu açıkça yazıldı.
+- [x] Soft-delete ve çöp kutusu ilişkisi değişmedi.
+- [x] Kullanıcıya görünen bütün metinler Türkçe; yazdırma çıktısı yok.
+- [x] Para gösterimi yok; pano para göstermiyor (AC-27).
+- [x] Renkler tema değişkenlerinden geliyor ve karanlık temada kontrast testi geçiyor; üç rozet çifti (`pur700`/`purBg`, `grn700`/`grnBg`, `blu700`/`bluBg`) `tests/tasarim-kontrast.test.js`'in 0030 bloğuna **dosya adıyla** eklendi (AC-49).
+- [x] `tests/suzgec-kaynak.test.js`'in ekran listesine `src/components/stock/MakinaStokTab.jsx` eklendi ve durum süzgeci sözlükten geliyor (AC-48).
+- [x] `StatCard`'ın yeni yuvası isteğe bağlı ve verilmediğinde çizim değişmiyor (AC-61); kutunun yeni yüksekliğinin aynı satırdaki dört kutuya etkisi kanıt ekranıyla sunuldu (ölçüm 19).
+- [x] Anasayfa parti listesini kapısız alıyor, parti adını çizmediği kaynak taramasıyla sabitlendi (AC-60, R30/2).
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: durumlu liste, süzgeçli liste, boş durum, pano, boş pano, Anasayfa kutusu ve penceresi, düzenleme penceresi. Kanıt aracına beş yeni ekran girdi: `stok-0100-durum-suzgec`, `stok-0100-pano`, `stok-0100-pano-bos`, `anasayfa-0100-kutu`, `anasayfa-0100-pencere`; plan onayı P1 ile: kutunun etiketi değiştiği için kanıt aracında Anasayfa'yı çizen yedi ekranın hepsi değişir (eşleme kaydı yok, raporda bilinçli değişiklik olarak gösterilir).
+- [x] `docs/evidence/kanit-eslemesi.json`: `MakinaStokTab.jsx`'in üç kaydı (`stok-alt-sekme`, `stok-makina-parti`, `makina-stok-formu`) `beklenen: "degisti"` + `onay` ile güncellendi (ölçüm 24) ve spec `done`'a taşınırken `ayni`ye çevrildi; pano bileşeni için yeni kayıt eklendi (`Dashboard.jsx` sözlüğü kullanmadığı için onun kaydı yok).
+- [x] 0079 ve 0095 kıyas testlerinin Anasayfa bölümü "spec 0100 ile" notuyla güncellendi: iki kıyas da Dashboard'a boş stok verdiği için kırılmanın tek koşulu kutunun etiketidir (ölçüm 12), `anasayfa` anahtarındaki kutu metni düzenli ifadeyle ayıklandı ve testlerin asıl iddiası korundu.
+- [x] Karışık sürüm notu plana yazıldı: güncellenmemiş bilgisayardan eklenen makina Montajda doğmaz, satışa hazır görünür ve elle düzeltilir (ölçüm 25). Veri kaybı yok, yazma sırası zorunlu değil.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` yeni alan, yeni ekran ve durum kuralıyla güncellendi.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -558,10 +558,10 @@ Yirmi yedi bulgunun tamamı onaylandı ve spec'e işlendi.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | Revizyon 2 QA turu (27 bulgu), revizyon 3 plan onayı (on beş öneri, P1–P15) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 6 bulgu (2 orta, 3 düşük, 1 not) |
+| **Bulgu gerçek/gürültü oranı** | 6 / 0 | Plansız modelde fazla üretim işaretsizdi (kayıtsız yorum, spec'e uyuldu); "(açık)" eki iki yeni ekranda kendi ifadesiyle; serisiz yarışta form partisi; serili düşümde çöpteki satır; pencere düğmeleri gövdede; süzgeç özeti her çizimde. Hepsi düzeltildi, her biri geri almayla ölçüldü (6/6) |
+| **Regresyon sayısı** | 0 | Tam takım 392 dosya, 5.131 test yeşil (Electron dahil); 40 kanıt ekranı 0 piksel |
+| **Kaçan hata** | 0 | Var olan bir hata uygulama turunda bulundu ve düzeltildi: serisiz satış çöpteki stok satırını düşebiliyordu (P4; triyajda serili kardeşi de) |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Spec'in ölçümleri plan turunu geçse bile uygulamada yanlış çıkabiliyor: "iki kopya" dört, "yalnız yeni ekranlar" dokuz ekran, "üç kayıt kırılır" hiç kırılmadı. Kural: taramayı ve kanıtı ölçülen gerçeğe sabitle ve sapmayı plana yaz. İkinci ders triyajdan: spec'in açıkça söylemediği bir durum için verilen yorum (planı olmayan modelin işaretlenmemesi) kodun yorumunda kalırsa kayıtsız sapmadır; ya spec'e yazılmalı ya da yazılı kurala uyulmalı.
