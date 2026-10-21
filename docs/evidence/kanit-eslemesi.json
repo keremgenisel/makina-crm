@@ -6768,6 +6768,140 @@
       {
         "rapor": "docs/evidence/0097-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0097-hata"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-yeni",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-kirilim",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-tutarsiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-gecmis",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-yetkisiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-maliyetsiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-yetkisiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-ekle",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-elle",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-yeni",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-kirilim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0099 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-tutarsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0099 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0099 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-gecmis",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-yetkisiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-maliyetsiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-yetkisiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-ekle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0099 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0099-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-elle",
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartTypeManager.jsx": [

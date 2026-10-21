@@ -399,6 +399,8 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 - `src/components/settings/SettingsGider.jsx` → eşik uyarısı (amber, `role="alert"`).
 - `src/components/gider/KdvKarsilastirmaKarti.jsx` → "karşılaştırma yapılamıyor" kesikli kutusu (10 köşe, gri zemin).
 - `src/components/Giderler.jsx` → "Hatırlatma kapsamı" aç/kapa düğmesi (`aria-pressed`).
+- `src/components/PartManager.jsx` → hammadde bölümünün toplam kutusu (`hammadde-toplam`): gider formunun `normal-ozet`
+  kutusunun yakın kopyası (nötr zemin, kenarlık, 12 köşe), tutarı eski rakamlı satırın mavisiyle (spec 0099 R14, Karar 5).
 - `src/components/stock/PartStokTab.jsx` → "Stoğa Parça Ekle" penceresinin eylem satırı gövde içinde kalır: pencere
   `overflowVisible` (parça listesi pencerenin dışına açılır), alt yuvalı pencere gövdeyi kaydırdığı için listeyi kırpardı
   (spec 0015 R8, F5).

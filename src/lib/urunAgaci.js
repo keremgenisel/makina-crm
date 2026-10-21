@@ -154,15 +154,19 @@ export const elleMaliyetMetni = (p) => tutarMetni(p?.maliyet);
 export const maliyetKaynagi = (p) => (kirilimTutarliMi(p) ? { tur: "kirilim", n: tutarliSatirlar(p).length } : parcaMaliyetiVar(p) ? { tur: "elle" } : null);
 export const KAYNAK_ELLE = "Elle girildi";
 export const kaynakListeMetni = (n) => `${n} tedarikçiden`;
-export const kaynakKartMetni = (n) => `${n} tedarikçinin hammadde kırılımından geliyor`;
-// Triyaj (bulgu 2): gider yetkisi olmayan kullanıcı tedarikçi SAYISINI da görmez (listede ikinci satır kapalı); kartta sayısız ibare.
-export const KAYNAK_KIRILIM_YETKISIZ = "Hammadde kırılımından geliyor";
+// Spec 0099 C5/2, Karar 6: kartın kaynak ibaresi iki kullanıcı türü için tek, sayısız metindir; tedarikçi sayısı yetkili
+// kullanıcıda toplam satırında yazar (yetkisiz kullanıcı sayıyı hiç görmez, 0096 triyaj bulgu 2).
+export const KAYNAK_KIRILIM = "Hammadde kırılımından geliyor";
 export const kirilimdanGeliyorMetni = (k) => `Maliyet hammadde kırılımından geliyor: ${maliyetMetniKurus(k)}`;
 // R4/2: hiç hammadde tedarikçisi işaretlenmemişken bölümün boş durumu; işaretin konduğu yeri adıyla söyler.
 export const HAMMADDE_BOS_METNI = "Henüz hammadde tedarikçisi işaretlenmedi. İşaret Giderler › Tedarikler ve Ekstre ekranındaki tedarikçi formundan konur.";
 export const HAMMADDE_BOLUM_BASLIGI = "Hammadde tedarikçileri";
 export const HAMMADDE_IPUCU = "Bu parçanın hammaddesini veren tedarikçiler ve parça başına tutar (TL, KDV hariç). Tutar girilen satırların toplamı parçanın alış maliyeti olur.";
 // R8: tutarı boş satır varken uyarı (kaydı engellemez).
+// Spec 0099 R4/4, R16, C5: hammadde satırlarının altındaki toplam satırının metinleri (kabın kimliği PartManager.jsx'te).
+export const HAMMADDE_TOPLAM_ETIKETI = "Toplam, parçanın alış maliyeti";
+export const hammaddeToplamSayisi = (n) => `tutarı girilen ${n} tedarikçi`;
+export const HAMMADDE_TOPLAM_HATALI = "Hatalı satır var; toplam yalnız geçerli satırlardan.";
 export const HAMMADDE_TUTARSIZ_UYARI = "Tutarı girilmemiş tedarikçi var; maliyet yalnız tutarı girilmiş satırların toplamıdır.";
 // R24: içe aktarmada kırılımı tutarlı parçanın maliyet hücresi alınmaz.
 export const HAMMADDE_EXCEL_HATASI = "bu parçanın maliyeti hammadde kırılımından geliyor, Excel'deki değer alınmadı.";

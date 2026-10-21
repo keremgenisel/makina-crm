@@ -146,7 +146,7 @@ describe("Spec 0097: parça kartı (R5–R8)", () => {
     duzenle("Ayna");
     expect(screen.getByLabelText("Alış maliyeti").disabled).toBe(true);
     expect(screen.getByLabelText(GECERLILIK_ETIKETI).disabled).toBe(false);
-    expect(screen.getByTestId("maliyet-kirilimdan")).toBeTruthy();
+    expect(screen.getByTestId("hammadde-toplam")).toBeTruthy(); // spec 0099 ile: rakamlı satırın yerine toplam kutusu
     fireEvent.change(screen.getByLabelText("Hammadde tutarı 1"), { target: { value: "200" } });
     tarih("2026-04-01");
     kaydet();

@@ -1,3 +1,6 @@
 <!doctype html>
-<html lang="tr"><head><meta charset="utf-8"><title>0009 ekran görüntüsü</title></head>
+<html lang="tr"><head><meta charset="utf-8"><title>0009 ekran görüntüsü</title>
+<!-- Spec 0099: textarea boyutlandırma tutamağı çalıştırmadan çalıştırmaya iki farklı hâlde çiziliyordu (iki 16×16 kare, 166 piksel
+     sahte fark; 0098 tabanında da görüldü). Kaydırma çubuklarındaki hide-scrollbars düzeltmesinin emsali: kanıtta tutamak çizilmez; formların satır içi resize stilini ezmek için !important. -->
+<style>textarea { resize: none !important; }</style></head>
 <body style="margin:0"><div id="root"></div><script type="module" src="./0009-sayfa.jsx"></script></body></html>

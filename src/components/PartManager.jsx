@@ -6,8 +6,8 @@ import { HataMetni, Ipucu, UyariSeridi, BolumBasligi } from "./tasarim";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { MALIYET_ETIKETI, MALIYET_IPUCU, KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, maliyetGirildiMi, parcaMaliyetDogrula,
   kitAdediDogrula, parcaKitAdetleri, parcaKitPlani, kitleriGuncelle, isaretsizKitteMetni,
-  parcaMaliyetKurus, parcaMaliyetMetni, elleMaliyetMetni, maliyetKaynagi, KAYNAK_ELLE, kaynakListeMetni, kaynakKartMetni, KAYNAK_KIRILIM_YETKISIZ, kirilimdanGeliyorMetni,
-  HAMMADDE_BOS_METNI, HAMMADDE_BOLUM_BASLIGI, HAMMADDE_IPUCU, HAMMADDE_TUTARSIZ_UYARI, hammaddeTedarikciAdi, hammaddeSecilebilirMi,
+  parcaMaliyetKurus, parcaMaliyetMetni, elleMaliyetMetni, maliyetKaynagi, KAYNAK_ELLE, kaynakListeMetni, KAYNAK_KIRILIM, kirilimdanGeliyorMetni, maliyetMetniKurus,
+  HAMMADDE_BOS_METNI, HAMMADDE_BOLUM_BASLIGI, HAMMADDE_IPUCU, HAMMADDE_TUTARSIZ_UYARI, HAMMADDE_TOPLAM_ETIKETI, hammaddeToplamSayisi, HAMMADDE_TOPLAM_HATALI, hammaddeTedarikciAdi, hammaddeSecilebilirMi,
   hammaddeFormu, hammaddeDogrula, maliyetGecmisiYaz, gecmisliKayit, maliyetGecmisiSatirlari, GECERLILIK_ETIKETI, GECERLILIK_IPUCU, GECMIS_BASLIGI } from "../lib/urunAgaci";
 import { useBugun } from "../hooks/useBugun";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
@@ -64,13 +64,15 @@ const ModelBadges = ({ models = [] }) => {
 
 // Spec 0087 R1, R3, R14: TL alış maliyeti (KDV hariç), kuruşlu `TutarInput`; hata kayıt öncesinde alanın altında.
 // Spec 0096 R21: kırılımda tutar varken alan çizilir ama pasiftir ve nedenini yazar (`kirilimK`); R9: kaynak ibaresi (`kaynak`).
+// Spec 0099 R7, R8, R9: kırılımın toplamı yetkili kullanıcıda hammadde satırlarının altında yazar; burada rakamlı satır yalnız
+// kırılım bölümünü görmeyen (gider yetkisi olmayan) kullanıcıya kalır. Kaynak ibaresi iki kullanıcı türü için tek, sayısız metin.
 const MaliyetAlani = ({ value, onChange, hata, kirilimK = null, kaynak = null, giderYetki = false }) => (
   <Field label={MALIYET_ETIKETI}>
     {/* Pasifken eski elle değer gösterilmez (kayıtta R7 gereği silinecek; "kırılımdan geliyor" satırıyla çelişmesin). */}
     <TutarInput value={kirilimK != null ? "" : value ?? ""} onChange={onChange} placeholder="Girilmedi" invalid={!!hata && kirilimK == null} ariaLabel="Alış maliyeti" disabled={kirilimK != null} />
     <HataMetni>{kirilimK == null ? hata || "" : ""}</HataMetni>
-    {kirilimK != null && <div data-testid="maliyet-kirilimdan" style={{ fontSize: 12, fontWeight: 600, color: "var(--blu700, #1d4ed8)", marginTop: 4 }}>{kirilimdanGeliyorMetni(kirilimK)}</div>}
-    {kaynak && <div data-testid="maliyet-kaynagi" style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{kaynak.tur === "kirilim" ? (giderYetki ? kaynakKartMetni(kaynak.n) : KAYNAK_KIRILIM_YETKISIZ) : KAYNAK_ELLE}</div>}
+    {kirilimK != null && !giderYetki && <div data-testid="maliyet-kirilimdan" style={{ fontSize: 12, fontWeight: 600, color: "var(--blu700, #1d4ed8)", marginTop: 4 }}>{kirilimdanGeliyorMetni(kirilimK)}</div>}
+    {kaynak && <div data-testid="maliyet-kaynagi" style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{kaynak.tur === "kirilim" ? KAYNAK_KIRILIM : KAYNAK_ELLE}</div>}
     <Ipucu>{MALIYET_IPUCU}</Ipucu>
   </Field>
 );
@@ -105,11 +107,15 @@ const MaliyetGecmisi = ({ parca }) => {
 // Spec 0096 R3–R4/2, R8, R11, R12, R17/2, R23: parçanın hammadde tedarikçisi satırları. Seçici yalnız hammadde işaretli canlı
 // tedarikçileri listeler (bir parçada bir kez); satırın kendi tedarikçisinin adı HAM diziden çözülür (çöpteki / bulunamayan).
 // Satırlar form biçimindedir (tutar metin); kayıt `hammaddeDogrula`'dan geçer. Parça kartı tedarikçi kaydına yazmaz (C7).
-const HammaddeAlani = ({ satirlar = [], setSatirlar, tedarikciler = [], hatalar = {} }) => {
+// Spec 0099 R2–R6, R15, R16, C1/2: `toplam` ebeveynin `formMaliyeti` sonucudur (kırılım kuruşu ve kaynağın tedarikçi sayısı);
+// bölüm maliyeti yeniden okumaz ve toplamaz. Kutu yalnız maliyet kırılımdan geliyorken, "Tedarikçi ekle"den bağımsız çizilir;
+// hatalı satır ibaresi bölümün zaten yaptığı doğrulamanın sonucundan canlı okunur (R16/2).
+const HammaddeAlani = ({ satirlar = [], setSatirlar, tedarikciler = [], hatalar = {}, toplam = null }) => {
   const secilebilir = tedarikciler.filter(hammaddeSecilebilirMi);
   const secili = new Set(satirlar.map(s => String(s.tedarikciId)).filter(Boolean));
   const kalan = secilebilir.filter(t => !secili.has(String(t.id)));
-  const tutarsiz = hammaddeDogrula(satirlar).tutarsizVar;
+  const dogrulama = hammaddeDogrula(satirlar);
+  const tutarsiz = dogrulama.tutarsizVar;
   const guncelle = (i, alan, deger) => setSatirlar(satirlar.map((s, j) => (j === i ? { ...s, [alan]: deger } : s)));
   return (
     <div data-testid="hammadde-bolumu" style={{ marginTop: 4, marginBottom: 12 }}>
@@ -141,6 +147,20 @@ const HammaddeAlani = ({ satirlar = [], setSatirlar, tedarikciler = [], hatalar 
         {kalan.length > 0 && (
           <div style={{ marginTop: 6 }}>
             <Btn small variant="ghost" onClick={() => setSatirlar([...satirlar, { tedarikciId: "", tutar: "" }])}><Icon name="plus" size={12} /> Tedarikçi ekle</Btn>
+          </div>
+        )}
+        {toplam?.kirilimK != null && (
+          // Görünüm gider formunun `normal-ozet` kutusunun yakın kopyası (Karar 5, sözlükte bilinen borç); tutarın mavisi eski
+          // rakamlı satırdan. Parçalar ayrı öğe, aralarında metin düğümü yok (R4/3).
+          <div data-testid="hammadde-toplam" style={{ marginTop: 8, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 12, padding: "12px 14px", fontSize: 13 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontWeight: 600 }}>{HAMMADDE_TOPLAM_ETIKETI}</span>
+              <span style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <span style={{ color: "var(--n500, #64748b)" }}>{hammaddeToplamSayisi(toplam.kaynak.n)}</span>
+                <b style={{ color: "var(--blu700, #1d4ed8)" }}>{maliyetMetniKurus(toplam.kirilimK)}</b>
+              </span>
+            </div>
+            {!dogrulama.gecerli && <div data-testid="hammadde-toplam-hatali" style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{HAMMADDE_TOPLAM_HATALI}</div>}
           </div>
         )}
         {tutarsiz && <div style={{ marginTop: 6 }}><UyariSeridi aile="uyari" testId="hammadde-tutarsiz">{HAMMADDE_TUTARSIZ_UYARI}</UyariSeridi></div>}
@@ -333,6 +353,9 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     setCustomModels?.(p => kitleriGuncelle(p, kit));
   };
   const submitAdd = () => kaydet("ekle");
+  // Spec 0099 C1/2: pencere başına tek canlı maliyet; maliyet alanının pasifliği ve toplam kutusu aynı sonuçtan türer.
+  const canliEkle = addOpen ? formMaliyeti(form) : null;
+  const canliDuzenle = editId !== null ? formMaliyeti(editForm) : null;
 
   return (
     <div>
@@ -473,8 +496,8 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <PriceFields value={form} onChange={setForm} />
           </Field>
-          <MaliyetAlani value={form.maliyet} onChange={v => setForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...formMaliyeti(form)} giderYetki={giderYetki} />
-          {giderYetki && <HammaddeAlani satirlar={form.hammaddeler || []} setSatirlar={v => setForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} />}
+          <MaliyetAlani value={form.maliyet} onChange={v => setForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...canliEkle} giderYetki={giderYetki} />
+          {giderYetki && <HammaddeAlani satirlar={form.hammaddeler || []} setSatirlar={v => setForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} toplam={canliEkle} />}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={form.tip || "Standart"} onChange={v => setForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />
@@ -525,11 +548,11 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <PriceFields value={editForm} onChange={setEditForm} />
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
-            <MaliyetAlani value={editForm.maliyet} onChange={v => setEditForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...formMaliyeti(editForm)} giderYetki={giderYetki} />
+            <MaliyetAlani value={editForm.maliyet} onChange={v => setEditForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...canliDuzenle} giderYetki={giderYetki} />
             <GecerlilikAlani tarih={tarih} setTarih={setTarih} hata={hatalar.tarih} />
           </div>
           <MaliyetGecmisi parca={parts.find(x => x.id === editId)} />
-          {giderYetki && <HammaddeAlani satirlar={editForm.hammaddeler || []} setSatirlar={v => setEditForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} />}
+          {giderYetki && <HammaddeAlani satirlar={editForm.hammaddeler || []} setSatirlar={v => setEditForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} toplam={canliDuzenle} />}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={editForm.tip || "Standart"} onChange={v => setEditForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />

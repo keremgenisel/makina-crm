@@ -8,7 +8,8 @@ import { useState } from "react";
 import { Settings } from "../../src/components/Settings";
 import { Tedarikciler, HAMMADDE_ISARET_ETIKETI, SIL_PARCA_YONLENDIRME, SIL_KALEM_YONLENDIRME } from "../../src/components/gider/Tedarikciler";
 import { SettingsTrash } from "../../src/components/settings/SettingsTrash";
-import { HAMMADDE_BOS_METNI, HAMMADDE_TUTARSIZ_UYARI, SILINMIS_TEDARIKCI, BULUNAMAYAN_TEDARIKCI, TEDARIKCI_SECILMEDI, KAYNAK_KIRILIM_YETKISIZ } from "../../src/lib/urunAgaci";
+import { HAMMADDE_BOS_METNI, HAMMADDE_TUTARSIZ_UYARI, SILINMIS_TEDARIKCI, BULUNAMAYAN_TEDARIKCI, TEDARIKCI_SECILMEDI, KAYNAK_KIRILIM, hammaddeToplamSayisi } from "../../src/lib/urunAgaci";
+// Spec 0099 ile (C5/2): yetkisiz kullanıcıya özgü eski sabit iki kullanıcı türünün tek metni KAYNAK_KIRILIM oldu, değeri aynı.
 import { KIRILIMDA_TEDARIKCI_NEDENI } from "../../src/lib/gider";
 import { SUZGEC_BOS_METNI, SUZGEC_GIRILMEMIS } from "../../src/components/PartManager";
 
@@ -78,11 +79,15 @@ describe("Spec 0096: parça kartı (R3–R9, R21, R23)", () => {
     expect(within(satir("Ayna dişlisi")).getByTestId("parca-maliyet").textContent).toBe("17.000,00 ₺3 tedarikçiden");
     duzenle("Ayna dişlisi");
     expect(screen.getByLabelText("Alış maliyeti").disabled).toBe(true);
-    expect(screen.getByTestId("maliyet-kirilimdan").textContent).toBe("Maliyet hammadde kırılımından geliyor: 17.000,00 ₺");
-    expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe("3 tedarikçinin hammadde kırılımından geliyor");
+    // Spec 0099 ile (R7, R9): yetkili kullanıcıda rakam ve sayı alanın altında değil, satırların altındaki toplam kutusunda.
+    expect(screen.queryByTestId("maliyet-kirilimdan")).toBeNull();
+    expect(screen.getByTestId("hammadde-toplam").textContent).toContain("17.000,00 ₺");
+    expect(screen.getByTestId("hammadde-toplam").textContent).toContain(hammaddeToplamSayisi(3));
+    expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(KAYNAK_KIRILIM);
     for (const i of [1, 2, 3]) tutar(i, "");
     expect(screen.getByLabelText("Alış maliyeti").disabled).toBe(false);
-    expect(screen.queryByTestId("maliyet-kirilimdan")).toBeNull();
+    // Spec 0099 ile (AC-18, ölçüm 9/2): eski "rakamlı satır kaybolur" beklentisi toplam kutusunun kaybolmasına çevrildi.
+    expect(screen.queryByTestId("hammadde-toplam")).toBeNull();
   });
   it("AC-17: elle girilmiş maliyette kartta 'Elle girildi'", () => {
     render(<Katalog />);
@@ -207,12 +212,14 @@ describe("Spec 0096: gider yetkisi (R17, C11)", () => {
   it("triyaj bulgu 2: yetkisiz kullanıcıda kart da tedarikçi SAYISINI yazmaz (listeyle aynı karar); sayısız ibare çıkar", () => {
     render(<Katalog giderYetki={false} />);
     duzenle("Ayna dişlisi");
-    expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(KAYNAK_KIRILIM_YETKISIZ);
+    expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(KAYNAK_KIRILIM);
     expect(document.body.textContent).not.toMatch(/\d+ tedarikçi/);
     cleanup();
     render(<Katalog />);
     duzenle("Ayna dişlisi");
-    expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe("3 tedarikçinin hammadde kırılımından geliyor");
+    // Spec 0099 ile (R9, Karar 6): yetkili kullanıcıda ibare sayısız; sayı toplam kutusunda.
+    expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(KAYNAK_KIRILIM);
+    expect(screen.getByTestId("hammadde-toplam").textContent).toContain(hammaddeToplamSayisi(3));
   });
   it("AC-6: yetkisiz kullanıcının kaydı kırılımı birebir korur", () => {
     render(<Katalog giderYetki={false} />);

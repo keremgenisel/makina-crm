@@ -744,6 +744,11 @@ const EKRANLAR = {
   "ayarlar-yedekparca-0096-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), []],
   "katalog-parca-yeni": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["~Parça/Yedek Parça Ekle"]],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],
+  // Spec 0099: kırılım toplamının yeri. Yetkisiz kullanıcının penceresi (C3, değişmez), iki tedarikçili ekleme penceresi (AC-19)
+  // ve kırılımsız elle maliyetli parçanın penceresi (R10, değişmez).
+  "katalog-parca-0099-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), ["baslik:Düzenle", "kaydir:Alış maliyeti"]],
+  "katalog-parca-0099-ekle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "Tedarikçi ekle", "sec:Hammadde tedarikçisi 1=31", "doldur:Hammadde tutarı 1=7000", "Tedarikçi ekle", "sec:Hammadde tedarikçisi 2=32", "doldur:Hammadde tutarı 2=9000", "kaydir:Hammadde tedarikçileri"]],
+  "katalog-parca-0099-elle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Alış maliyeti"]],
   "katalog-model-ekmaliyet": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Ek Maliyet Kalemleri"]],
   "katalog-calisan": [ayarlar("calisanlar"), []],
   "musteri-detay": [musteriDetay(), ["~Yeni Sahip"]],
