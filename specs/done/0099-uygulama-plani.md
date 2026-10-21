@@ -1,6 +1,6 @@
 # 0099 Uygulama Planı: hammadde kırılımının toplamı satırların altında
 
-Spec: `specs/0099-kirilim-toplami-satirlarin-altinda.md` (revizyon 3). Onay: Takım Yöneticisi, 2026-10-21 (on öneri, P1–P10).
+Spec: `specs/done/0099-kirilim-toplami-satirlarin-altinda.md` (revizyon 3). Onay: Takım Yöneticisi, 2026-10-21 (on öneri, P1–P10).
 Çalışma yeri: `../wt-0099`, dal `feat/0099-kirilim-toplami`, taban `main` `250dd16`.
 
 ## 1. Ölçülen taban
@@ -92,3 +92,5 @@ Yeni kalıcı alan, veri bölümü, tablo, eylem izni, sunucu kuralı, birleşti
 - **Kanıt aracı düzeltmesi:** textarea boyutlandırma tutamağı çalıştırmadan çalıştırmaya iki hâlde çiziliyordu (iki Tanım kutusunun köşesinde 16×16 kare, 166 piksel sahte fark; spec öncesi kodla iki çekim arasında da). `scripts/evidence/0009-sayfa.html`'e `textarea { resize: none !important; }` eklendi (`hide-scrollbars` emsali; formlar `resize` stilini satır içi verdiği için `!important`). Düzeltmeden sonra spec öncesi kodla üç çekim ve spec sonrası kodla iki çekim kendi aralarında 0 piksel. Uygulamanın kendisine dokunulmadı.
 - **Kanıt:** taban `0099-taban-piksel-raporu.json` (13 ekran × 2 tema, 0 fark); `0099-piksel-raporu.json`: `katalog-parca-0096-kirilim`, `-tutarsiz`, `-hata` ve `katalog-parca-0099-ekle` değişti (onaylı); `katalog-parca`, `-yeni`, `-0096-bos`, `-0097-gecmis`, `-0097-hata`, `ayarlar-yedekparca-0096-yetkisiz`, `ayarlar-yedekparca-maliyetsiz`, `katalog-parca-0099-yetkisiz` ve `-elle` 0 piksel. Çizim hatası yok.
 - **Atıf:** CLAUDE.md'nin `specs/done/0099-uygulama-plani.md` atfı done'a taşınana kadar `tests/spec-atiflari.test.js` `TASINACAK` listesinde.
+- **Triyaj (4 bulgu):** AC-21 artık kaydın yapıldığını (yazım casusu, pencere kapanır) ölçer; AC-24 kitli parçada adet değiştirilerek kurulur ve geçerli tutarlı kontrol testiyle eşleşir; `toplam.kaynak.n` yedeksiz; araç kuralı CLAUDE.md'de. İki bozmayla ölçüldü (kayıt hep engelli → AC-20/21/24 kontrol kırılır; negatif tutar engellemez → AC-24 kırılır).
+- **Kapanış kanıtı:** `0099-kapanis-piksel-raporu.json` (son kod ↔ son kod, 26 görüntü, 0 fark); eşlemedeki dört `degisti` kaydı bu rapora `ayni` olarak yönlendirildi.

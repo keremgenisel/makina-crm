@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, plan onayı 2026-10-21; plan `specs/0099-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (revizyon 3; plan `specs/done/0099-uygulama-plani.md`; commit `3ed51c9`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog › Yedek Parça Tanımları: parça ekleme ve düzenleme pencerelerinin maliyet ve hammadde bölümleri (`src/components/PartManager.jsx`), ekran metinlerinin sabitleri (`src/lib/urunAgaci.js`); kayıt niteliğinde iki dosya: `docs/tasarim-sozlugu.md` (bilinen borç listesi) ve `docs/evidence/kanit-eslemesi.json` (üç kaydın beklentisi); kanıt aracına üç yeni ekran (`scripts/evidence/0009-sayfa.jsx`) |
@@ -181,26 +181,26 @@ Aşağıdaki dört karar, geliştiriciye verilmeden önce yapılan boşluk anali
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap yok: toplam spec 0096'nın tek okuma yolundan geliyor, ekranda yeni toplama yazılmadı. Tarama ölçütü C1/2'de yazılı ve AC-26 ile ölçüldü; toplam ebeveynin tek `formMaliyeti` çağrısından prop olarak indi.
-- [ ] Aynı sayıyı gösteren ikinci yer (liste hücresi) aynı kaynaktan okumaya devam ediyor (AC-20).
-- [ ] Yeni kalıcı alan **yok**; dört nokta kuralı bu işte uygulanmıyor ve bu açıkça yazıldı.
-- [ ] Yeni veri bölümü **yok**.
-- [ ] Yeni eylem izni **yok**; iş salt çizimdir ve sunucu tarafı değişmedi, bu açıkça yazıldı.
-- [ ] Soft-delete ve çöp kutusu ilişkisi değişmedi.
-- [ ] Kullanıcıya görünen bütün metinler Türkçe; yazdırma çıktısı yok.
-- [ ] Para gösterimi bugünkü biçimleyiciyle; kırılım TL olduğu için çoklu para birimi kuralı bu ekranda doğmuyor ve bu açıkça yazıldı (X3).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: kırılımlı kart (yetkili, `katalog-parca-0096-kirilim`), tutarsız kırılım (`katalog-parca-0096-tutarsiz`), hatalı satır (`katalog-parca-0096-hata`) ve üç **yeni** ekran: `katalog-parca-0099-yetkisiz` (`giderYetki: false`, `PARCA_0096`, adımlar `baslik:Düzenle` + `kaydir:Alış maliyeti`), `katalog-parca-0099-ekle` (`TED_0096` ile ekleme penceresi, iki tedarikçi satırı doldurulmuş) ve `katalog-parca-0099-elle` (kırılımsız, maliyeti dolu parçanın penceresi).
-- [ ] `docs/evidence/kanit-eslemesi.json`'da `src/components/PartManager.jsx`'in üç kaydı (`katalog-parca-0096-kirilim`, `katalog-parca-0096-tutarsiz`, `katalog-parca-0096-hata`) `beklenen: "degisti"` + `onay` ile işaretlendi; kırılımsız beş ekran (`katalog-parca`, `katalog-parca-yeni`, `katalog-parca-0096-bos`, `katalog-parca-0097-gecmis`, `ayarlar-yedekparca-0096-yetkisiz`; plan onayı P7 ile `katalog-parca-0097-hata` da) **0 piksel** fark bekler ve raporla gösterildi; yeni `-yetkisiz` ve `-elle` ekranları spec öncesi kodla çekilen tabanlarına göre 0 piksel bekler (C3'ün görsel kanıtı).
-- [ ] `docs/tasarim-sozlugu.md`'nin "Bilinen borç › Kapsam içindeki yakın kopyalar" listesine `src/components/PartManager.jsx` → hammadde toplam kutusu (gider formunun `normal-ozet` kutusunun yakın kopyası) satırı eklendi (R14).
-- [ ] Karanlık tema işi doğmadı: kullanılan üç token `theme.js`'te tanımlı ve kontrast iki temada da AA üstü (ölçüm 14); `tasarim-kontrast`'ın 0030 bloğuna satır eklenmedi ve bu açıkça yazıldı.
-- [ ] Ters çevrilen **altı** test yeri güncellendi ve her birine "spec 0099 ile" notu düşüldü: `hammadde-0096.test.jsx:11`, `:81`, `:82`, `:85`, `:215` ve `maliyet-gecmisi-0097.test.jsx:149`. `:85`'in beklentisi boş bırakılmadı, toplam satırının kaybolmasına çevrildi (AC-18).
-- [ ] İki sabit adı değişti ve `kaynakKartMetni` silindi (C5/2, AC-28); `kaynakListeMetni` liste hücresinde aynen kaldı.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin spec 0096 bölümü toplamın yerini söyleyecek biçimde güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap yok: toplam spec 0096'nın tek okuma yolundan geliyor, ekranda yeni toplama yazılmadı. Tarama ölçütü C1/2'de yazılı ve AC-26 ile ölçüldü; toplam ebeveynin tek `formMaliyeti` çağrısından prop olarak indi.
+- [x] Aynı sayıyı gösteren ikinci yer (liste hücresi) aynı kaynaktan okumaya devam ediyor (AC-20).
+- [x] Yeni kalıcı alan **yok**; dört nokta kuralı bu işte uygulanmıyor ve bu açıkça yazıldı.
+- [x] Yeni veri bölümü **yok**.
+- [x] Yeni eylem izni **yok**; iş salt çizimdir ve sunucu tarafı değişmedi, bu açıkça yazıldı.
+- [x] Soft-delete ve çöp kutusu ilişkisi değişmedi.
+- [x] Kullanıcıya görünen bütün metinler Türkçe; yazdırma çıktısı yok.
+- [x] Para gösterimi bugünkü biçimleyiciyle; kırılım TL olduğu için çoklu para birimi kuralı bu ekranda doğmuyor ve bu açıkça yazıldı (X3).
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: kırılımlı kart (yetkili, `katalog-parca-0096-kirilim`), tutarsız kırılım (`katalog-parca-0096-tutarsiz`), hatalı satır (`katalog-parca-0096-hata`) ve üç **yeni** ekran: `katalog-parca-0099-yetkisiz` (`giderYetki: false`, `PARCA_0096`, adımlar `baslik:Düzenle` + `kaydir:Alış maliyeti`), `katalog-parca-0099-ekle` (`TED_0096` ile ekleme penceresi, iki tedarikçi satırı doldurulmuş) ve `katalog-parca-0099-elle` (kırılımsız, maliyeti dolu parçanın penceresi).
+- [x] `docs/evidence/kanit-eslemesi.json`'da `src/components/PartManager.jsx`'in üç kaydı (`katalog-parca-0096-kirilim`, `katalog-parca-0096-tutarsiz`, `katalog-parca-0096-hata`) `beklenen: "degisti"` + `onay` ile işaretlendi; kırılımsız beş ekran (`katalog-parca`, `katalog-parca-yeni`, `katalog-parca-0096-bos`, `katalog-parca-0097-gecmis`, `ayarlar-yedekparca-0096-yetkisiz`; plan onayı P7 ile `katalog-parca-0097-hata` da) **0 piksel** fark bekler ve raporla gösterildi; yeni `-yetkisiz` ve `-elle` ekranları spec öncesi kodla çekilen tabanlarına göre 0 piksel bekler (C3'ün görsel kanıtı).
+- [x] `docs/tasarim-sozlugu.md`'nin "Bilinen borç › Kapsam içindeki yakın kopyalar" listesine `src/components/PartManager.jsx` → hammadde toplam kutusu (gider formunun `normal-ozet` kutusunun yakın kopyası) satırı eklendi (R14).
+- [x] Karanlık tema işi doğmadı: kullanılan üç token `theme.js`'te tanımlı ve kontrast iki temada da AA üstü (ölçüm 14); `tasarim-kontrast`'ın 0030 bloğuna satır eklenmedi ve bu açıkça yazıldı.
+- [x] Ters çevrilen **altı** test yeri güncellendi ve her birine "spec 0099 ile" notu düşüldü: `hammadde-0096.test.jsx:11`, `:81`, `:82`, `:85`, `:215` ve `maliyet-gecmisi-0097.test.jsx:149`. `:85`'in beklentisi boş bırakılmadı, toplam satırının kaybolmasına çevrildi (AC-18).
+- [x] İki sabit adı değişti ve `kaynakKartMetni` silindi (C5/2, AC-28); `kaynakListeMetni` liste hücresinde aynen kaldı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin spec 0096 bölümü toplamın yerini söyleyecek biçimde güncellendi.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -266,10 +266,10 @@ Takım Yöneticisi uygulama planının on önerisini 2026-10-21'de onayladı. Sp
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | Revizyon 2 QA turu (3 bloklayıcı, 7 önemli, 7 küçük), revizyon 3 plan onayı (on öneri, P1–P10) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 4 bulgu (2 düşük test zayıflığı, 2 not) |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | AC-21 kaydın yapıldığını ölçmüyordu; AC-24'ün kit yarısı kitsiz parçada kendiliğinden geçiyordu; `?? 0` ölü yedeği; araç kuralı CLAUDE.md'de yoktu. Dördü de düzeltildi ve her biri bozmayla ölçüldü |
+| **Regresyon sayısı** | 0 | Tam takım 387 dosya, 5.049 test yeşil (Electron dahil); dokuz kırılımsız ekran ve yetkisiz kullanıcının penceresi 0 piksel |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Temiz bir çekim gürültünün yokluğunu kanıtlamaz. Kanıt aracı textarea tutamağını çalıştırmadan çalıştırmaya iki hâlde çiziyordu (aynı kodla 166 piksel); ilk düzeltme formların satır içi `resize` stili yüzünden etkisizdi ve üç temiz çekim şans eseriydi, kusur ancak görüntüye bakınca görüldü. Kural: araç düzeltmesinden sonra görüntünün kendisine bakılır. İkinci ders triyajdan: "kayıt aynı kaldı" ve "yazılmadı" iddiaları kaydın engellenmesiyle de geçer; böyle her iddianın yanında kaydın gerçekten yapıldığını (ya da aynı düzenlemenin geçerli hâliyle yazıldığını) gösteren bir kontrol durmalı.
