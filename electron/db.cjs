@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS services (
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
 CREATE TABLE IF NOT EXISTS stock (
-  id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT, parcalar TEXT, deletedAt TEXT, uretimTarihi TEXT, partiId INTEGER
+  id INTEGER PRIMARY KEY, model TEXT, serialNo TEXT, addedDate TEXT, note TEXT, parcalar TEXT, deletedAt TEXT, uretimTarihi TEXT, partiId INTEGER, uretimDurumu TEXT
 );
 
 CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, olusturan TEXT, deletedAt TEXT);
@@ -519,6 +519,8 @@ const CUSTOMERS_SOURCE_STOCK_COLUMN = [["sourceStockId", "INTEGER"]];
 // geri dönen satırın özgün üretim tarihi (plan M3).
 const CUSTOMERS_MALIYET_COLUMNS = [["satisKuru", "REAL"], ["uretimTarihi", "TEXT"], ["partiId", "INTEGER"]];
 const STOCK_URETIM_COLUMN = [["uretimTarihi", "TEXT"], ["partiId", "INTEGER"]];
+// Spec 0100 R1, C2: stoktaki makinanın üretim durumu ("montaj" | "hazir"); boşsa NULL ve okumada gövdeye yazılmaz.
+const STOCK_URETIM_DURUMU_COLUMN = [["uretimDurumu", "TEXT"]];
 const PARTS_TIP_RESIM_COLUMNS = [["tip", "TEXT"], ["resim", "TEXT"]];
 // Spec 0087 R1, C6: parçanın alış maliyeti (TL, KDV hariç, ondalıklı); girilmemişse NULL.
 const PARTS_MALIYET_COLUMN = [["maliyet", "REAL"]];
@@ -845,8 +847,8 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.stock) && !skip.has("stock")) {
     conn.prepare(`DELETE FROM stock`).run();
-    const stmt = conn.prepare(`INSERT INTO stock (id, model, serialNo, addedDate, note, parcalar, deletedAt, uretimTarihi, partiId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const s of data.stock) stmt.run(s.id, s.model ?? null, s.serialNo ?? null, s.addedDate ?? null, s.note ?? null, json(s.parcalar ?? []), s.deletedAt ?? null, s.uretimTarihi ?? null, s.partiId ?? null);
+    const stmt = conn.prepare(`INSERT INTO stock (id, model, serialNo, addedDate, note, parcalar, deletedAt, uretimTarihi, partiId, uretimDurumu) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const s of data.stock) stmt.run(s.id, s.model ?? null, s.serialNo ?? null, s.addedDate ?? null, s.note ?? null, json(s.parcalar ?? []), s.deletedAt ?? null, s.uretimTarihi ?? null, s.partiId ?? null, s.uretimDurumu || null);
   }
 
   if (Array.isArray(data.notes) && !skip.has("notes")) {
@@ -1144,6 +1146,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_NEW_COLUMNS);
   ensureColumns(conn, "stock", STOCK_URETIM_COLUMN);
+  ensureColumns(conn, "stock", STOCK_URETIM_DURUMU_COLUMN);
   for (const table of TABLES_WITH_TRASH) ensureColumns(conn, table, DELETED_AT_COLUMN);
   ensureColumns(conn, "users", USERS_PERMISSIONS_COLUMN);
   ensureColumns(conn, "users", USERS_TOKEN_VERSION_COLUMN);
@@ -1390,9 +1393,12 @@ function readBlobFromDb() {
     };
   });
 
-  const stock = db.prepare(`SELECT * FROM stock`).all().map((s) => ({
+  // Spec 0100 C2, Karar 13: yeni sütun ayıklanır (yayılırsa her satıra `uretimDurumu: null` girer ve bugünkü gövde değişirdi);
+  // boş olmayan her değer korunur, tanınmayan değeri ekran satışa hazır sayar (plan P6).
+  const stock = db.prepare(`SELECT * FROM stock`).all().map(({ uretimDurumu, ...s }) => ({
     ...s,
     parcalar: parseJsonCol(s.parcalar, []),
+    ...(uretimDurumu ? { uretimDurumu } : {}),
   }));
   const notes = db.prepare(`SELECT * FROM notes`).all();
   // Spec 0087 C4: boş maliyet gövdeye yazılmaz (`...p` yayılsaydı her parça `maliyet: null` taşırdı ve maliyeti tanımayan

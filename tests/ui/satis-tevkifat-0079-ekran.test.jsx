@@ -90,7 +90,12 @@ describe("Spec 0079 AC-31: tevkifatsız veride ekranlar birebir aynı", () => {
     if (process.env.YAZ_0079 === "1") { fs.writeFileSync(DOSYA, JSON.stringify(simdi, null, 1)); return; }
     const once = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
     expect(Object.keys(simdi).sort()).toEqual(Object.keys(once).sort());
-    for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(simdi[k], k).toBe(once[k]);
+    // Spec 0100 ile (plan P1): Anasayfa'nın stok kutusu bilinçli değişti ("Stoktaki Makina" → "Satışa Hazır Makina" ve alt satırı).
+    // Üç Anasayfa anahtarında kutunun metni iki taraftan da ayıklanır; testin asıl iddiası (bu spec ekranı değiştirmedi) korunur.
+    const stokKutusuAyikla = (k, t) => (k.startsWith("anasayfa") && typeof t === "string"
+      ? t.replace(/Stoktaki Makina\d+Görmek için tıkla/, "«stok kutusu»").replace(/Satışa Hazır Makina\d+\d+ montajda · \d+ önceki partiden/, "«stok kutusu»") : t);
+    for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(stokKutusuAyikla(k, simdi[k]), k).toBe(stokKutusuAyikla(k, once[k]));
+    expect(Object.keys(once).filter(k => k.startsWith("anasayfa")).every(k => stokKutusuAyikla(k, once[k]) !== once[k] && stokKutusuAyikla(k, simdi[k]) !== simdi[k])).toBe(true);
     expect(Object.keys(simdi.disaAktarma).sort()).toEqual(Object.keys(once.disaAktarma).sort());
     for (const [ad, satirlar] of Object.entries(once.disaAktarma)) {
       // R32: tevkifat sütunları satırın SONUNA eklenir; tevkifatsız kayıtta boştur, eski sütunlar birebir aynı.

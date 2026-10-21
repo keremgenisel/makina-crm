@@ -7,7 +7,9 @@ import path from "node:path";
 
 const oku = (f) => readFileSync(path.join(__dirname, "..", f), "utf-8");
 const EKRANLAR = ["Customers", "SimpleDealers", "Stock", "Finance", "Notes", "Analiz", "Documents"].map(a => `src/components/${a}.jsx`)
-  .concat("src/components/stock/YedekParcaSatisTab.jsx");
+  .concat("src/components/stock/YedekParcaSatisTab.jsx")
+  // Spec 0100 AC-48, R15/2: Makina Stoğu'nun durum süzgeci de sözlükteki segmentli seçiciden.
+  .concat("src/components/stock/MakinaStokTab.jsx");
 
 describe("AC-1: Yedi ekranın hepsinde sekme ve süzgeç çubuğu aynı bileşenden gelir (kaynak taraması)", () => {
   it.each(EKRANLAR)("%s segmentli seçiciyi sözlükten alıyor", (f) => {

@@ -1,0 +1,53 @@
+{
+  "stock": [
+    {
+      "id": 70,
+      "model": "AK100",
+      "serialNo": "T-70",
+      "addedDate": "2026-03-05",
+      "note": "Not",
+      "parcalar": [
+        {
+          "partId": "7",
+          "miktar": 2
+        }
+      ],
+      "deletedAt": null,
+      "uretimTarihi": null,
+      "partiId": null
+    },
+    {
+      "id": 71,
+      "model": "AK120_DSC",
+      "serialNo": "",
+      "addedDate": "2026-04-01",
+      "note": "",
+      "parcalar": [],
+      "deletedAt": null,
+      "uretimTarihi": null,
+      "partiId": 902
+    },
+    {
+      "id": 72,
+      "model": "AK100",
+      "serialNo": "T-72",
+      "addedDate": "2026-05-01",
+      "note": null,
+      "parcalar": [],
+      "deletedAt": null,
+      "uretimTarihi": "2026-02-10",
+      "partiId": 901
+    },
+    {
+      "id": 73,
+      "model": "AK100",
+      "serialNo": "T-73",
+      "addedDate": "2026-06-01",
+      "note": null,
+      "parcalar": [],
+      "deletedAt": "2026-10-01T10:00:00.000Z",
+      "uretimTarihi": null,
+      "partiId": null
+    }
+  ]
+}

@@ -60,8 +60,8 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 
 **Örnek:** `src/components/Giderler.jsx:294`
 **Örnek:** `src/components/Documents.jsx:1112`
-**Örnek:** `src/components/Customers.jsx:489` (düğme kipi, içerik genişliği, sayı rozeti)
-**Örnek:** `src/components/Stock.jsx:54` (sekme kipi)
+**Örnek:** `src/components/Customers.jsx:499` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Stock.jsx:58` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:332` (form içi, düğme kipi, eşit genişlik)
 
@@ -151,8 +151,8 @@ Satış / Finans); bir form bölümünün başında, yanında düğmeler olan ba
 - Tablo başlıkları ve alan etiketleri: bölüm başlığı değildir.
 - Kenarlıksız bir `KartBolum` ile taklit edilmez.
 
-**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:142`
-**Örnek:** `src/components/stock/MakinaStokTab.jsx:244` (düğmeli başlık satırında, alt boşluk 0)
+**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:150`
+**Örnek:** `src/components/stock/MakinaStokTab.jsx:292` (düğmeli başlık satırında, alt boşluk 0)
 
 ## BosDurum
 
@@ -177,7 +177,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
 **Örnek:** `src/components/Giderler.jsx:361`
-**Örnek:** `src/components/Customers.jsx:523` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Customers.jsx:533` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
@@ -238,7 +238,7 @@ Alanın hemen altında kırmızı hata metni. `role="alert"`, boş içerikte hi�
 - Uyarı için başka bir varyant (simgeli, amber) yazılmaz; eski `Warn` spec 0015'te kaldırıldı.
 
 **Örnek:** `src/components/CalisanManager.jsx:220`
-**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:112` (canlı doğrulama, form açılır açılmaz görünür)
+**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:120` (canlı doğrulama, form açılır açılmaz görünür)
 
 ## Ipucu
 

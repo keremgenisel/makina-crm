@@ -555,6 +555,21 @@ const P_ACIK = { id: 902, ad: "2026-2", baslangicAy: "2026-09", bitisAy: null, a
 const PARTI_MUSTERI = MUSTERILER.map(c => ({ ...c, partiId: 901 }));
 const PARTI_STOK = [{ id: 9201, model: "AK100", serialNo: "S-3", addedDate: "2026-09-10", partiId: 902 }, { id: 9202, model: "AK120_DSC", serialNo: "S-4", addedDate: "2026-09-15", partiId: 902 },
   { id: 9203, model: "AK100", serialNo: "S-5", addedDate: "2026-09-18" }];
+// Spec 0100: üretim durumlu stok (montajda, açıkça hazır, durumsuz = hazır, kapanmış partiden kalan), planlı açık parti ve satışlar.
+const P_ACIK_0100 = { ...P_ACIK, planlananAdetler: { AK100: 6, AK120_DSC: 3 } };
+const STOK_0100 = [
+  { id: 9301, model: "AK100", serialNo: "S-31", addedDate: "2026-10-02", partiId: 902, uretimDurumu: "montaj" },
+  { id: 9302, model: "AK100", serialNo: "S-32", addedDate: "2026-09-25", partiId: 902, uretimDurumu: "hazir" },
+  { id: 9303, model: "AK120_DSC", serialNo: "S-33", addedDate: "2026-09-20", partiId: 902 },
+  { id: 9304, model: "AK100", serialNo: "S-34", addedDate: "2026-08-12", partiId: 901 },
+  { id: 9305, model: "AK120_DSC", serialNo: "S-35", addedDate: "2026-08-20", partiId: 901, uretimDurumu: "montaj" },
+  { id: 9306, model: "AK100", serialNo: "", addedDate: "2026-10-05", uretimDurumu: "montaj" },
+];
+const MUSTERI_0100 = MUSTERILER.map((c, i) => (i < 2 ? { ...c, partiId: 902 } : c));
+const stok0100 = (alt, ek = {}) => <Stock factory={{ name: "Altuntaş Makina" }} stock={STOK_0100} setStock={bos} customers={MUSTERI_0100} setCustomers={bos} parts={[]}
+  dealers={DEALERS} yedekParcaSatislar={[]} defaultSubTab={alt} showToast={bos} uretimPartileri={[P_KAPALI, P_ACIK_0100]} giderYetki models={MODELLER} {...ek} />;
+const anasayfa0100 = <Dashboard customers={MUSTERI_0100} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
+  stock={STOK_0100} uretimPartileri={[P_KAPALI, P_ACIK_0100]} />;
 
 // Spec 0088: Makina Maliyeti (dört görünüm). Veri tests/fixtures/0088-veri.js (motor ve ekran testleriyle aynı); `p0`/`musteriler`/`stok`
 // verilirse taşınan Üretim Partileri görünümü 0022'nin kanıt verisiyle çizilir (R23/4).
@@ -856,6 +871,12 @@ const EKRANLAR = {
     setGiderTurleri={bos} giderler={[{ id: 9, tarih: "2026-02-01", turId: 1, tutar: 100 }]} setGiderler={bos} giderTanimlari={[]} setGiderTanimlari={bos} />, ["baslik:Sil"]],
   "stok-makina-parti": [<Stock factory={{ name: "Altuntaş Makina" }} stock={PARTI_STOK} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[]} dealers={DEALERS}
     yedekParcaSatislar={[]} defaultSubTab="makina" showToast={bos} uretimPartileri={[P_KAPALI, P_ACIK]} giderYetki models={MODELLER} />, ["~Stoğa Makina Ekle", "kaydir:Üretim partisi"]],
+  // Spec 0100: durum süzgeçli liste, parti üretim panosu (dolu ve partisiz), Anasayfa kutusu ve penceresi.
+  "stok-0100-durum-suzgec": [stok0100("makina"), ["etiket:Montajda (3)"]],
+  "stok-0100-pano": [stok0100("pano"), []],
+  "stok-0100-pano-bos": [stok0100("pano", { uretimPartileri: [] }), []],
+  "anasayfa-0100-kutu": [anasayfa0100, []],
+  "anasayfa-0100-pencere": [anasayfa0100, ["~Satışa Hazır Makina"]],
   // Spec 0023: ek ödemeler.
   "gider-formu-ek-odeme": [<GiderForm kalem={EK_ODEMELI} giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, ["kaydir:Ek ödemeler (bu ay)"]],
   "giderler-personel-ayrinti-kapali": [<GiderEkrani g0={[...GIDERLER.filter(x => x.turId !== 3), EK_ODEMELI]} />, ["tikla:Gider Türü Kırılımı", "kaydir:Gider Türü Kırılımı"]], // spec 0081: kutu kapalı başlar

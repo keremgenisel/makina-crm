@@ -10,6 +10,7 @@ import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
 import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
 import { satisKuruUygula, uretimTarihiDamgala, partiDamgala } from "../lib/satisKaydi";
+import { serisizDusulecek } from "../lib/stokDurumu";
 import { donenStokUretimTarihi } from "../lib/makinaMaliyeti";
 import { parsePermissions } from "../lib/permissions";
 import { useFilteredList } from "../hooks/useFilteredList";
@@ -27,6 +28,8 @@ export const Customers = ({
   // Gider kaydı (spec 0001 R7): giderYetki formdaki maliyet alanlarını açar; spec 0090 R39 ile silme onayında bağlı gider sayısı yok.
   // rates satış kuru içindir (spec 0002 R12). Spec 0067 R8: makina maliyeti müşteri ekranına artık gelmez.
   giderYetki = false, rates = null,
+  // Spec 0100 R7/2, R7/2a, C13: satış formunun üretim partisi seçicisi; App yalnız gider yetkisiyle dolu verir.
+  uretimPartileri = [],
   // Spec 0098 R1, R8/2: tahsilata hesap seçimi tahsilat hesabı yetkisiyle (`tahsilat_hesap`, perde kalkık); Kasa sekmesine bağlı değil.
   kasaHesaplari = [], tahsilatHesapYetki = false, tahsilatHesapVarsayilan = null,
   // Spec 0040: çek kaydı tahsilatla (ilk satış ödemesi dahil) doğar.
@@ -258,18 +261,25 @@ export const Customers = ({
   // (sourceStockId) yazar; clean üzerinde yerinde değişiklik yapar. Stok satırı silindiği için
   // üretim tarihi ve üretim partisi de burada satış kaydına yazılır (spec 0002 R1b, spec 0022 R2), yoksa kaybolurdu.
   const deductMachineStock = (clean, { _stokSerisiz, _manualSerial }) => {
+    // Spec 0100 R7/2b, Karar 14: stoktan bir satır seçildiyse parti YALNIZ o satırdan gelir; formda önceden seçilmiş parti kayda
+    // girmez (`partiDamgala` formdakini koruduğu için önce silinir; satırın partisi yoksa anahtar hiç yazılmaz).
+    const stoktanDamgala = (srcEntry) => {
+      clean.sourceStockId = srcEntry.id;
+      delete clean.partiId;
+      Object.assign(clean, partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry));
+    };
+    // Triyaj (bulgu 3): serisiz stok seçildiyse formdaki parti, satır yarışta bulunamasa bile kayda girmez (R7/2b). Serili dalda
+    // koşulsuz silinmez: stok hiç yokken seri no elle yazılır ve `_manualSerial` false kalır, o satışın seçilmiş partisi korunmalı.
     if (_stokSerisiz) {
-      const srcEntry = stock.find(s => s.model === clean.model && !s.serialNo);
-      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry)); }
-      setStock(p => {
-        const idx = p.findIndex(s => s.model === clean.model && !s.serialNo);
-        if (idx === -1) return p;
-        return p.filter((_, i) => i !== idx);
-      });
+      delete clean.partiId;
+      // Spec 0100 R6/3, plan P3–P4: serisiz düşüm motorun seçtiği satırı KİMLİKLE düşer (önce satışa hazırın en eskisi). Eskiden
+      // güncelleyici tam dizide (çöp dahil) ilk serisiz satırı arıyordu ve çöpteki satırı düşebiliyordu.
+      const srcEntry = serisizDusulecek(stock, clean.model);
+      if (srcEntry) { stoktanDamgala(srcEntry); setStock(p => p.filter(s => s.id !== srcEntry.id)); }
     } else if (clean.serialNo && !_manualSerial) {
+      // Triyaj (bulgu 4): serili düşüm de kimlikle; tam dizide aynı model ve seriyle duran çöpteki satır silinmez.
       const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
-      if (srcEntry) { clean.sourceStockId = srcEntry.id; Object.assign(clean, partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry)); }
-      setStock(p => p.filter(s => !(s.model === clean.model && s.serialNo === clean.serialNo)));
+      if (srcEntry) { stoktanDamgala(srcEntry); setStock(p => p.filter(s => s.id !== srcEntry.id)); }
     }
   };
 
@@ -720,7 +730,7 @@ export const Customers = ({
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}
-          giderYetki={giderYetki}
+          giderYetki={giderYetki} uretimPartileri={uretimPartileri}
           kasaHesaplari={tahsilatHesapYetki ? kasaHesaplari : null} tahsilatHesapVarsayilan={tahsilatHesapYetki ? tahsilatHesapVarsayilan : null}
         />
       )}

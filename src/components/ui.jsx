@@ -427,11 +427,13 @@ export const AtesRozeti = ({ n, onClick }) => n > 0 ? (
   </button>
 ) : null;
 
-export const StatCard = ({ label, value, sub, color, onClick }) => (
+// Spec 0100 R25/3, C12: `ek` isteğe bağlı ek satır yuvasıdır; verilmediğinde kartın çizimi birebir aynı kalır.
+export const StatCard = ({ label, value, sub, color, onClick, ek }) => (
   <div onClick={onClick} className={`stat-card${onClick ? " stat-card--clickable" : ""}`} style={{ borderLeft: `4px solid ${color}` }}>
     <div style={{ fontSize: 13, color: "var(--n500, #64748b)", fontWeight: 500, marginBottom: 6 }}>{label}</div>
     <div style={{ fontSize: 26, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{value}</div>
     {sub && <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)", marginTop: 4 }}>{sub}</div>}
+    {ek}
   </div>
 );
 

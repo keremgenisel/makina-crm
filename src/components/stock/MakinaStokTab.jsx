@@ -5,9 +5,22 @@ import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, st
 import { netGeriEklenmis, netDusumleri, stokGeriAl, netDusumAyni } from "../../lib/stokHareketi";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
-import { HataMetni, BolumBasligi, KartBolum, BosDurum, Ipucu } from "../tasarim";
+import { HataMetni, BolumBasligi, KartBolum, BosDurum, Ipucu, Segment } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
+import { URETIM_DURUMU, DURUM_ADLARI, DURUM_ETIKETI, ONCEKI_PARTI_ADI, DURUM_SUZGECLERI, uretimDurumuOf, uretimDurumuYaz, stokDurumOzeti,
+  durumSuzgeciUyar, suzgecSayisi, partiSecenekAdi } from "../../lib/stokDurumu";
+
+// Spec 0100 R14, R14/2, Karar 18, plan P7: rozet renkleri tema değişkenlerinden (yedek değer aydınlık temanın değeri). Amber yok:
+// aynı satırdaki Model rozeti amber. Renk tek başına anlam taşımaz, rozet adını da yazar.
+const ROZET = {
+  montaj: { color: "var(--pur700, #6d28d9)", background: "var(--purBg, #f5f3ff)" },
+  hazir: { color: "var(--grn700, #15803d)", background: "var(--grnBg, #f0fdf4)" },
+  onceki: { color: "var(--blu700, #1d4ed8)", background: "var(--bluBg, #eff6ff)" },
+};
+const Rozet = ({ tur, children, testId }) => (
+  <span data-testid={testId} style={{ ...ROZET[tur], display: "inline-block", fontSize: 11.5, fontWeight: 700, borderRadius: 6, padding: "3px 9px", whiteSpace: "nowrap" }}>{children}</span>
+);
 
 export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null,
   // Spec 0002 M3: çöpteki müşteriler, eski geri dönen satırın özgün üretim tarihini düzenlemede sabitlemek için.
@@ -17,14 +30,21 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
   const [showAllParts, setShowAllParts] = useState(false);
+  const [durumSuzgec, setDurumSuzgec] = useState("tumu");
   const { lockLoading: stockLockLoading, lockConflict: stockLock, forceAcquire: forceStockLock } = useLock("stock", modal?.edit?.id ?? null);
 
   const inputStyle = { width: "100%", boxSizing: "border-box", padding: "8px 12px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none", fontFamily: "inherit" };
 
-  const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE } = useFilteredList(stock, {
+  // Spec 0100 R16, R16/2, R31: özet satırı süzgeçsiz bütün canlı stoğu sayar; satır durumları (rozet, süzgeç) aynı sonuçtan.
+  const ozet = useMemo(() => stokDurumOzeti({ stock, uretimPartileri }), [stock, uretimPartileri]);
+  // R15/3, R15/4, plan P2: durum süzgeci kancanın ikinci süzgecidir; rozet sayıları arama + model süzgecinden sonraki kümeden.
+  const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE, oncesi } = useFilteredList(stock, {
     searchFields: ["model", "serialNo", "note"],
     filterFn: s => !modelFilter || s.model === modelFilter,
+    ikinciFiltre: s => durumSuzgeciUyar(ozet.satirlar.get(s.id), durumSuzgec),
   });
+  // Triyaj (bulgu 6): süzgeçli küme yalnız stok, arama, model süzgeci ve parti listesi değişince yeniden sayılır.
+  const suzgecOzeti = useMemo(() => stokDurumOzeti({ stock: oncesi, uretimPartileri }), [stock, search, modelFilter, uretimPartileri]);
 
   const byModel = {};
   stock.forEach(s => { byModel[s.model] = (byModel[s.model] || 0) + 1; });
@@ -38,7 +58,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const updateParcaRow = (i, key, val) => setForm(p => ({ ...p, parcalar: p.parcalar.map((r, idx) => idx === i ? { ...r, [key]: val } : r) }));
   const removeParcaRow = (i) => setForm(p => ({ ...p, parcalar: p.parcalar.filter((_, idx) => idx !== i) }));
 
-  const openAdd  = () => { setForm({ model: "", serialNo: "", addedDate: today(), note: "", parcalar: [] }); setShowAllParts(false); setModal("add"); };
+  // Spec 0100 R2: stoğa yeni eklenen makina Montajda doğar.
+  const openAdd  = () => { setForm({ model: "", serialNo: "", addedDate: today(), note: "", parcalar: [], uretimDurumu: URETIM_DURUMU.MONTAJ }); setShowAllParts(false); setModal("add"); };
   const openEdit = s => { setForm({ ...s, parcalar: s.parcalar || [] }); setShowAllParts(false); setModal({ edit: s }); };
 
   // Makina üretiminde kit parçalarını stoktan düş. Stok hiçbir zaman eksiye düşmez (kırparak düşer);
@@ -146,6 +167,22 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         </div>
       )}
 
+      {stock.length > 0 && (<>
+        {/* Spec 0100 R16, R16/2: süzgeçsiz bütün canlı stok; Anasayfa kutusuyla tutan rakam budur. */}
+        <div data-testid="stok-ozet" style={{ display: "flex", flexWrap: "wrap", gap: 16, fontSize: 13, color: "var(--n600, #475569)", marginBottom: 10 }}>
+          <span>Toplam <b>{ozet.toplam}</b></span>
+          <span>{DURUM_ADLARI.montaj} <b>{ozet.montajda}</b></span>
+          <span>{DURUM_ADLARI.hazir} <b>{ozet.hazir}</b></span>
+          <span>{ONCEKI_PARTI_ADI} <b>{ozet.oncekiParti}</b></span>
+        </div>
+        {/* R15, R15/2: süzgeç sözlükteki segmentli seçicinin düğme kipinden; sayılar süzgeçli kümeden (R15/3). */}
+        <div style={{ marginBottom: 14 }}>
+          <Segment kip="dugme" genislik="icerik" ariaLabel="Üretim durumu süzgeci" value={durumSuzgec}
+            onChange={v => { setDurumSuzgec(v); setPage(1); }}
+            options={DURUM_SUZGECLERI.map(o => ({ ...o, sayi: suzgecSayisi(suzgecOzeti, o.value) }))} />
+        </div>
+      </>)}
+
       {modelFilter && (
         <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 13, color: "var(--n500, #64748b)" }}>Filtre:</span>
@@ -174,7 +211,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
-              {["Model", "Seri Numarası", "Stoğa Giriş", "Not", ""].map(h => (
+              {["Model", "Durum", "Seri Numarası", "Stoğa Giriş", "Not", ""].map(h => (
                 <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>{h}</th>
               ))}
             </tr>
@@ -186,6 +223,11 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
                 <td style={{ padding: "13px 16px" }}><span style={{ fontSize: 12, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>{s.model}</span>
                   {giderYetki && s.partiId != null && partiAdi.get(String(s.partiId)) && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 5 }}>Parti: {partiAdi.get(String(s.partiId))}</div>}</td>
+                {/* Spec 0100 R13, R14, R12: durum rozeti ve altında, partisi kapanmışsa "önceki partiden kaldı" (parti adı yazmaz, R11). */}
+                <td style={{ padding: "13px 16px" }}>
+                  <Rozet tur={uretimDurumuOf(s)} testId="stok-durum-rozeti">{DURUM_ADLARI[uretimDurumuOf(s)]}</Rozet>
+                  {ozet.satirlar.get(s.id)?.onceki && <div style={{ marginTop: 5 }}><Rozet tur="onceki" testId="stok-onceki-rozeti">{ONCEKI_PARTI_ADI}</Rozet></div>}
+                </td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: s.serialNo ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontFamily: s.serialNo ? "monospace" : "inherit", fontWeight: 600 }}>{s.serialNo || "(seri no atanmamış)"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n500, #64748b)" }}>{fmtTR(s.addedDate)}</td>
                 <td title={s.note || undefined} style={{ padding: "13px 16px", fontSize: 12, color: "var(--n500, #64748b)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
@@ -230,6 +272,12 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
           </Field>
           <Field label="Seri Numarası (opsiyonel)"><Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="Boş bırakılabilir — sonra atanır" /></Field>
           <Field label="Stoğa Giriş Tarihi"><Input type="date" value={form.addedDate || ""} onChange={e => setForm(p => ({ ...p, addedDate: e.target.value }))} /></Field>
+          {/* Spec 0100 R4, R4/2, plan P5: durum elle; değer kayıtta yalnız seçiciye dokunulunca yazılır. */}
+          <Field label={DURUM_ETIKETI}>
+            <Segment kip="dugme" genislik="icerik" ariaLabel={DURUM_ETIKETI} value={uretimDurumuOf(form)}
+              onChange={v => setForm(p => uretimDurumuYaz(p, v))}
+              options={[URETIM_DURUMU.MONTAJ, URETIM_DURUMU.HAZIR].map(v => ({ value: v, label: DURUM_ADLARI[v] }))} />
+          </Field>
           {form.uretimTarihi && (
             <div data-testid="stok-uretim-tarihi" style={{ fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "7px 10px", marginBottom: 12 }}>
               Makinanın özgün üretim tarihi <b>{fmtTR(form.uretimTarihi)}</b>. Maliyet hesabı stoğa giriş tarihini değil bu tarihi kullanır.
@@ -242,7 +290,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
               <Select aria-label="Üretim partisi" value={form.partiId != null ? String(form.partiId) : ""}
                 onChange={e => { const v = e.target.value; setForm(p => ({ ...p, partiId: v === "" ? null : uretimPartileri.find(x => String(x.id) === v)?.id ?? null })); }}>
                 <option value="">Partisiz (ortak gider üretim ayından)</option>
-                {uretimPartileri.map(x => <option key={x.id} value={String(x.id)}>{x.ad}{x.bitisAy ? "" : " (açık)"}</option>)}
+                {uretimPartileri.map(x => <option key={x.id} value={String(x.id)}>{partiSecenekAdi(x)}</option>)}
                 {form.partiId != null && !uretimPartileri.some(x => String(x.id) === String(form.partiId)) && <option value={String(form.partiId)}>Silinmiş parti</option>}
               </Select>
               <Ipucu>Parti parti üretimde, partinin sürdüğü ayların ortak gideri partinin makinalarına dağılır. Satışta bağ korunur.</Ipucu>

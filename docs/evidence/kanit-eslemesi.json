@@ -6250,6 +6250,26 @@
         "rapor": "docs/evidence/0079-taban-piksel-raporu.json",
         "ekran": "musteri-formu-0079",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "musteri-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "musteri-formu-ilk-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "musteri-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "musteri-formu-ilk-odeme",
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [
@@ -6550,6 +6570,59 @@
         "rapor": "docs/evidence/0065-piksel-raporu.json",
         "ekran": "makina-stok-formu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "stok-alt-sekme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "stok-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "makina-stok-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "stok-makina-parti",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "stok-0100-durum-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "stok-alt-sekme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "stok-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "makina-stok-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R13"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "stok-makina-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R13"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "stok-0100-durum-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R13"
       }
     ],
     "src/components/stock/PartStokTab.jsx": [
@@ -9476,6 +9549,30 @@
       {
         "rapor": "docs/evidence/0097-taban-piksel-raporu.json",
         "ekran": "maliyet-ayarlar-rol-uyari"
+      }
+    ],
+    "src/components/stock/PartiUretimPanosu.jsx": [
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "stok-0100-pano",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-taban-piksel-raporu.json",
+        "ekran": "stok-0100-pano-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "stok-0100-pano",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R18"
+      },
+      {
+        "rapor": "docs/evidence/0100-piksel-raporu.json",
+        "ekran": "stok-0100-pano-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-21 · spec 0100 R18"
       }
     ]
   }

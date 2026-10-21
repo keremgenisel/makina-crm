@@ -15,17 +15,24 @@ import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { logAction, hareketDuzenlemeKaydi } from "../lib/audit";
 import { OdemeHatirlatmaKarti, OdemeHatirlatmaPenceresi } from "./gider/OdemeHatirlatma";
+import { stokDurumOzeti, kutuModelleri, kutuAltSatiri, kalanModelMetni, KUTU_ETIKETI, ORTUSME_CUMLESI, STOK_BOS_METNI, DURUM_ADLARI } from "../lib/stokDurumu";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onEvrakKaydet = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [], onGoYedekParca = null,
   // Ödeme hatırlatıcısı (spec 0003 R10): yalnız gider yetkisiyle; yetkisizde App boş dizi verir.
   giderYetki = false, giderler = [], giderTurleri = [], tedarikciler = [], giderAyarlari = {}, onGoGiderHatirlatma = null,
   // Spec 0024 R17: hatırlatıcıdaki "Ödendi" ödeme penceresini açar; ödeme hareket kaydıdır.
   hesapHareketleri = [], setHesapHareketleri = null, kasaHesaplari = [], kasaYetki = false,
+  // Spec 0100 R30/2, C13: parti listesi KAPISIZ gelir (yalnız "önceki partiden" sayısı için); parti adı hiçbir yerde çizilmez.
+  uretimPartileri = [],
   // Spec 0053 R10, R14 (plan Q9): pencerede çek yöntemleri; App yalnız kasa yetkisiyle verir.
   cekler = [], setCekler = null }) => {
   const canCust = makeCanDo(serverPermissions, "customerActions");
   const canEvrak = makeCanDo(serverPermissions, "evrakActions");
   const [showDebtors, setShowDebtors] = useState(false);
+  const [showStok, setShowStok] = useState(false);
+  // Spec 0100 R25–R29, R31: kutu ve pencere aynı motor sonucundan; ekran saymaz ve sıralamaz.
+  const stokOzeti = useMemo(() => stokDurumOzeti({ stock, uretimPartileri }), [stock, uretimPartileri]);
+  const kutuModel = kutuModelleri(stokOzeti);
   const canGider = makeCanDo(serverPermissions, "giderActions");
   const [showHatirlatma, setShowHatirlatma] = useState(false);
   const bugunYerel = useBugun();
@@ -365,7 +372,19 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 14, marginBottom: 20 }}>
         <StatCard label="Toplam Müşteri"    value={customers.length}  sub="Görmek için tıkla" color="var(--brand, #e85d1a)" onClick={onGoCustomers} />
         <StatCard label="Toplam Bayi"       value={dealers.length}    sub="Görmek için tıkla" color="var(--blu500, #3b82f6)" onClick={onGoDealers} />
-        <StatCard label="Stoktaki Makina"   value={stock.length}      sub="Görmek için tıkla" color="#8b5cf6" onClick={onGoStock} />
+        {/* Spec 0100 R25–R26/2, Karar 2, 8, 15, plan P12: büyük sayı satışa hazır adedi; alt satır montajda ve önceki partiden; en çok üç
+            model; tıklanınca model penceresi (Stok'a gitme pencerenin düğmesinde). */}
+        <StatCard label={KUTU_ETIKETI} value={stokOzeti.hazir} sub={kutuAltSatiri(stokOzeti)} color="#8b5cf6" onClick={() => setShowStok(true)}
+          ek={kutuModel.liste.length > 0 && (
+            <div data-testid="stok-kutu-modelleri" style={{ marginTop: 6, display: "grid", gap: 2 }}>
+              {kutuModel.liste.map(m => (
+                <div key={m.anahtar} data-testid="stok-kutu-model" style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12, color: "var(--n600, #475569)" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.model}</span><b>{m.hazir}</b>
+                </div>
+              ))}
+              {kutuModel.kalan > 0 && <div data-testid="stok-kutu-kalan" style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>{kalanModelMetni(kutuModel.kalan)}</div>}
+            </div>
+          )} />
         <StatCard label="Servis Kayıtları"  value={services.length}   color="#f59e0b" />
         <StatCard label="Garanti Süresi Dolan" value={expiredCount}    sub="Görmek için tıkla" color="var(--red500, #ef4444)" onClick={onGoExpired} />
         <StatCard label="Borçlu Firma"       value={borcluCount}       sub="Görmek için tıkla" color="var(--red600, #dc2626)" onClick={() => setShowDebtors(true)} />
@@ -616,6 +635,50 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
           hareketler={hesapHareketleri} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki} odemeYetkisi={canGider("gider_odeme") && !!setHesapHareketleri}
           bugun={bugunYerel} onKaydet={hatOdemeKaydet} onSil={hatOdemeSil} onDuzenle={hatOdemeDuzenle} onClose={() => setHatOdeme(null)} giderler={giderler} yururlukAy={giderAyarlari?.yururlukAy || null}
           cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler} tedarikciler={tedarikciler} />
+      )}
+      {showStok && (
+        // Triyaj (bulgu 5), spec 0015: düğmeler Modal'ın footer yuvasında (boşluk yuvanın kendisinden).
+        <Modal title={KUTU_ETIKETI} onClose={() => setShowStok(false)} maxWidth={620}
+          footer={<>
+            <Btn variant="ghost" onClick={() => setShowStok(false)}>Kapat</Btn>
+            <Btn onClick={() => { setShowStok(false); onGoStock && onGoStock(); }}>Stokta Görüntüle →</Btn>
+          </>}>
+          {/* Spec 0100 R27–R29: model tablosu ve toplam; örtüşme cümlesi; "Stokta Görüntüle" kutunun eski gezinmesi (R27/2). */}
+          <div data-testid="stok-penceresi">
+            {stokOzeti.toplam === 0 ? (
+              <div data-testid="stok-penceresi-bos" style={{ padding: "30px 0", textAlign: "center", color: "var(--n400, #94a3b8)" }}>{STOK_BOS_METNI}</div>
+            ) : (<>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: "var(--n100, #f8fafc)" }}>
+                    {["Model", DURUM_ADLARI.hazir, DURUM_ADLARI.montaj, "Önceki partiden"].map((h, i) => (
+                      <th key={h} style={{ padding: "9px 12px", textAlign: i ? "right" : "left", fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {stokOzeti.modeller.map(m => (
+                    <tr key={m.anahtar} data-testid="stok-penceresi-satir" style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}>
+                      <td style={{ padding: "9px 12px", fontWeight: 600 }}>{m.model}</td>
+                      <td style={{ padding: "9px 12px", textAlign: "right" }}>{m.hazir}</td>
+                      <td style={{ padding: "9px 12px", textAlign: "right" }}>{m.montajda}</td>
+                      <td style={{ padding: "9px 12px", textAlign: "right" }}>{m.oncekiParti}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr data-testid="stok-penceresi-toplam" style={{ background: "var(--n100, #f8fafc)", fontWeight: 700 }}>
+                    <td style={{ padding: "9px 12px" }}>Toplam</td>
+                    <td style={{ padding: "9px 12px", textAlign: "right" }}>{stokOzeti.hazir}</td>
+                    <td style={{ padding: "9px 12px", textAlign: "right" }}>{stokOzeti.montajda}</td>
+                    <td style={{ padding: "9px 12px", textAlign: "right" }}>{stokOzeti.oncekiParti}</td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div data-testid="stok-ortusme" style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 10 }}>{ORTUSME_CUMLESI}</div>
+            </>)}
+          </div>
+        </Modal>
       )}
       {showDebtors && (
         <Modal wide title="Borçlu Firmalar" onClose={() => setShowDebtors(false)}>

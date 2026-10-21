@@ -202,6 +202,15 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && JSON.stringify(b.parts.find(p => p.id === 53)?.maliyetGecmisi) === JSON.stringify(gecmis));
 }
 
+// Spec 0100 AC-38 (C2): temiz kurulumda stok satırının üretim durumu ilk oturumda yazılır; durumsuz satırda alan yok.
+{
+  let h = null;
+  try { dbmod.writeBlobToDb({ stock: [{ id: 81, model: "AK100", serialNo: "M-1", uretimDurumu: "montaj" }, { id: 82, model: "AK100", serialNo: "M-2" }] }); } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0100: temiz kurulumda uretimDurumu sütunu var ve yazıldı; durumsuz satırda alan yok", h === null
+    && b.stock.find(x => x.id === 81)?.uretimDurumu === "montaj" && !("uretimDurumu" in b.stock.find(x => x.id === 82)));
+}
+
 // Spec 0088 AC-43: temiz kurulumda kâr katsayısı, Extra Kalıp fiyatı, planlanan adetler ve maliyet ayarları ilk oturumda yazılır.
 {
   let h = null;

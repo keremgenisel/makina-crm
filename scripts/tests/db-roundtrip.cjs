@@ -671,6 +671,31 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0097 AC-37: kardeş maliyet alanı TL olarak aynen (geçmiş onu değiştirmez)", c.parts.find(p => p.id === 7)?.maliyet === 120.5);
 }
 
+// ── Spec 0100 AC-38, AC-45 (C2, Karar 13): stok satırının üretim durumu. Durumu olmayan satırların okunan gövdesi spec öncesi
+// koddan üretilmiş fikstürle birebir aynı (boş durum gövdede hiç yok, `null` olarak da değil); iki değer gidiş dönüşte korunur;
+// tanınmayan dolu değer de korunur (plan P6: ekran onu satışa hazır sayar, eski istemci yeni değeri silmesin).
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0100-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0100-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  check("spec 0100 AC-45: durumsuz stok satırlarının gövdesi spec öncesiyle birebir", esit(b.stock, once.stock));
+  check("spec 0100 AC-45: boş durum gövdede hiç yok", b.stock.every(x => !("uretimDurumu" in x)));
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.stock[0].uretimDurumu = "montaj";
+  girdi.stock[1].uretimDurumu = "hazir";
+  girdi.stock[2].uretimDurumu = "";
+  girdi.stock[3].uretimDurumu = "kalite";
+  dbmod.writeBlobToDb(girdi);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  const st = (id) => c.stock.find(x => x.id === id);
+  check("spec 0100 AC-38: iki değer gidiş dönüşte korunur", st(70)?.uretimDurumu === "montaj" && st(71)?.uretimDurumu === "hazir");
+  check("spec 0100 AC-38: boş dize olarak yazılan durum gövdede yok", !("uretimDurumu" in st(72)));
+  check("spec 0100 plan P6: tanınmayan dolu değer okumada korunur", st(73)?.uretimDurumu === "kalite");
+}
+
 // ── Spec 0088 AC-43, AC-44 (C7, C8, C8/2): tür rolü (meta JSON), modelin kâr katsayısı ve Extra Kalıp fiyatı, partinin
 // planlanan adetleri, appSettings.maliyetAyarlari. Rolsüz tür, katsayısız model, plansız parti ve maliyet ayarı olmayan
 // uygulama ayarlarının okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı.

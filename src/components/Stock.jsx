@@ -5,6 +5,8 @@ import { MakinaStokTab } from "./stock/MakinaStokTab";
 import { PartStokTab }   from "./stock/PartStokTab";
 import { UretimFormu }   from "./stock/UretimFormu";
 import { YedekParcaSatisTab } from "./stock/YedekParcaSatisTab";
+import { PartiUretimPanosu } from "./stock/PartiUretimPanosu";
+import { PANO_SEKME_ADI } from "../lib/stokDurumu";
 import { Segment } from "./tasarim";
 
 export const Stock = ({
@@ -34,8 +36,10 @@ export const Stock = ({
   // ama stok zaten açıksa bu effect sekmeyi değiştirir).
   useEffect(() => { if (yedekOdakId != null) setSubTab("yedeksatis"); }, [yedekOdakId]);
 
+  // Spec 0100 R18, R22, plan P8: parti üretim panosu Makina Stoğu'nun arkasında, yalnız gider yetkisiyle (parti verisi).
   const TABS = [
     ["makina", "Makina Stoğu"],
+    ...(giderYetki ? [["pano", PANO_SEKME_ADI]] : []),
     ["parca",  "Parça/Yedek Parça Stoğu"],
     ["yedeksatis", "Yedek Parça Satışı"],
     ["uretim", "Kalıp Üretim"],
@@ -60,6 +64,9 @@ export const Stock = ({
           parts={parts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog}
           canDoStock={canDoStock} serverPermissions={serverPermissions} copMusteriler={copMusteriler} uretimPartileri={uretimPartileri} giderYetki={giderYetki} />
+      )}
+      {subTab === "pano" && giderYetki && (
+        <PartiUretimPanosu stock={stock} customers={customers} uretimPartileri={uretimPartileri} />
       )}
       {subTab === "parca" && (
         <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}

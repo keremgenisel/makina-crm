@@ -73,6 +73,10 @@ describe("AC-8: Karanlık temada altı bileşenin de metni okunabilir ve kenarl�
 describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => {
   // [yer, ön plan, zemin, kullanıldığı dosya]
   const METIN_0030 = [
+    // Spec 0100 AC-49, R14/2, C7: Makina Stoğu'nun üç rozet çifti (Montajda, Satışa hazır, Önceki partiden kaldı).
+    ["Stok 'Montajda' rozeti", "pur700", "purBg", "src/components/stock/MakinaStokTab.jsx"],
+    ["Stok 'Satışa hazır' rozeti", "grn700", "grnBg", "src/components/stock/MakinaStokTab.jsx"],
+    ["Stok 'Önceki partiden kaldı' rozeti", "blu700", "bluBg", "src/components/stock/MakinaStokTab.jsx"],
     ["Anasayfa kredi kartı rozeti", "purTx", "purBg2", "src/components/Dashboard.jsx"],
     ["Tahsis/Stok 'anlaşmasız servis' rozeti", "pur700", "purBg2", "src/components/stock/TahsisModal.jsx"],
     ["Pano KALIP rozeti", "purTx", "purBg", "src/components/KargoPanosu.jsx"],

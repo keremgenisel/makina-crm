@@ -3,6 +3,7 @@ import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/consta
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani } from "../../lib/utils";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
+import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi } from "../../lib/stokDurumu";
 import { useLock } from "../../hooks/useLock";
 import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
@@ -20,8 +21,15 @@ export const CustomerAddEditForm = ({
   kasaHesaplari = null, tahsilatHesapVarsayilan = null,
   // Spec 0002 (R15, plan M8): üretim tarihi ve satış kuru satırı yalnız gider yetkisiyle çizilir.
   giderYetki = false,
+  // Spec 0100 R7/2, R7/2a, C13: stoktan seçilmeden yapılan satışın üretim partisi (yalnız gider yetkisiyle dolu gelir).
+  uretimPartileri = [],
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
+  // Spec 0100 R7/2a, R7/2b: parti seçicisi stok seçicisinin çizildiği iki kipte ve yalnız stoktan satır seçilmemişken.
+  const stokSatirlari = (stock && form.model) ? stock.filter(s => s.model === form.model) : [];
+  const seriBekleyenDuzenleme = !!(modal?.edit && form.seriNoBekliyor && !modal.edit.serialNo);
+  const stoktanSecildi = !!form._stokSerisiz || (!form._manualSerial && !!form.serialNo && stokSatirlari.some(s => s.serialNo === form.serialNo));
+  const partiSecicisi = giderYetki && (modal === "add" || seriBekleyenDuzenleme) && !stoktanSecildi;
   const { lockLoading, lockConflict, forceAcquire } = useLock("customer", modal?.edit?.id ?? null);
 
   // Seri no yarışı önleyici kilit: stoktan bir seri seçildiği anda o seri kilitlenir,
@@ -193,7 +201,8 @@ export const CustomerAddEditForm = ({
                   if (e.target.value === "__manual__") {
                     setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "", _kitTipler: [] }));
                   } else if (e.target.value === "__serisiz__") {
-                    const firstSerisiz = stockForModel.find(s => !s.serialNo);
+                    // Spec 0100 R6/3, plan P3: kit ön doldurması düşülecek makinanın kendisinden (motorun seçimi).
+                    const firstSerisiz = serisizDusulecek(stockForModel, form.model);
                     setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "", ...getKitAutoFill(firstSerisiz) }));
                   } else {
                     const stockEntry = stockForModel.find(s => s.serialNo === e.target.value);
@@ -201,8 +210,9 @@ export const CustomerAddEditForm = ({
                   }
                 }}>
                   <option value="">Stoktan seçin... ({stockForModel.length} adet)</option>
-                  {serili.map(s => <option key={s.id} value={s.serialNo}>{s.serialNo}</option>)}
-                  {serisiz.length > 0 && <option value="__serisiz__">Seri no'suz stoktan düş ({serisiz.length} adet), seri no sonra atanır</option>}
+                  {/* Spec 0100 R6, R6/2: durum yalnız serili seçenekte; serisiz tek seçenek durum kırılımını yazar. */}
+                  {serili.map(s => <option key={s.id} value={s.serialNo}>{seriliSecenekMetni(s)}</option>)}
+                  {serisiz.length > 0 && <option value="__serisiz__">{serisizSecenekMetni(stockForModel, form.model)}</option>}
                   <option value="__manual__">Manuel gir (stok dışı / eski müşteri)</option>
                 </Select>
                 {form._stokSerisiz ? (
@@ -364,6 +374,22 @@ export const CustomerAddEditForm = ({
           <div style={{ alignSelf: "center" }}><Ipucu>
             Stoktan satışta stoğa giriş tarihi otomatik yazılır. Boşsa stok hareketinden veya satış tarihinden tahmin edilir. Ortak gider payı bu tarihin ayından hesaplanır.
           </Ipucu></div>
+        </div>
+      )}
+      {/* Spec 0100 R7/2–R7/2b, Karar 10, 14, 21, plan P13: stoktan makina seçilmeden yapılan satışın üretim partisi. Yalnız gider
+          yetkisiyle ve stok seçicisinin çizildiği iki kipte; stoktan bir satır seçilince çizilmez (parti o satırdan gelir). Boş seçim
+          alanı kayıttan siler. */}
+      {partiSecicisi && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Field label="Üretim partisi">
+            <Select aria-label="Üretim partisi" value={form.partiId != null ? String(form.partiId) : ""}
+              onChange={e => { const v = e.target.value; const p0 = uretimPartileri.find(x => String(x.id) === v); setForm(p => { const { partiId: _e, ...k } = p; return p0 ? { ...k, partiId: p0.id } : k; }); }}>
+              <option value="">Partisiz</option>
+              {uretimPartileri.map(x => <option key={x.id} value={String(x.id)}>{partiSecenekAdi(x)}</option>)}
+              {form.partiId != null && !uretimPartileri.some(x => String(x.id) === String(form.partiId)) && <option value={String(form.partiId)}>Silinmiş parti</option>}
+            </Select>
+          </Field>
+          <div style={{ alignSelf: "center" }}><Ipucu>Stoktan makina seçilmeden yapılan satış (ön sipariş) partiye buradan bağlanır; seçilmezse satış partisiz kalır.</Ipucu></div>
         </div>
       )}
 

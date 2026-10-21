@@ -235,7 +235,10 @@ describe("Spec 0096: kaynak taramaları", () => {
     expect(readFileSync("docs/tasarim-sozlugu.md", "utf8")).toMatch(/İstisna \(spec 0096 C14\):\*\* Ayarlar › Katalog › Parça\/Yedek Parça'nın \*\*hammadde tedarikçisi süzgeci\*\* `Select`/);
   });
   it("AC-22 (kaynak): useFilteredList imzası değişmedi; sayfa sıfırlaması süzgeci yazan fonksiyonda", () => {
-    expect(kod("src/hooks/useFilteredList.js")).toMatch(/export const useFilteredList = \(data, \{ searchFields, searchFn, filterFn, sortFn, perPage = 10 \} = \{\}\) =>/);
+    // Spec 0100 ile (plan P2): kanca isteğe bağlı `ikinciFiltre` aldı (parametresiz çağrı birebir eski); 0096'nın iddiası olan "parça
+    // listesi kancayı değiştirmeden sıfırlar" korunur: PartManager ikinci süzgeci kullanmaz.
+    expect(kod("src/hooks/useFilteredList.js")).toMatch(/export const useFilteredList = \(data, \{ searchFields, searchFn, filterFn, ikinciFiltre, sortFn, perPage = 10 \} = \{\}\) =>/);
+    expect(kod("src/components/PartManager.jsx")).not.toMatch(/ikinciFiltre/);
     expect(kod("src/components/PartManager.jsx")).toMatch(/const setSuzgec = \(v\) => \{ setSuzgecRaw\(v\); setPage\(1\); \};/);
   });
   it("C11 (plan P1): tedarikçi listesi parça paneline kapılı, App'ten Ayarlar'a ve yedeğe ham gider", () => {
