@@ -1,6 +1,6 @@
 # 0101 uygulama planı: stoktaki makinanın kalıp çapı
 
-Spec: `specs/0101-stok-makina-kalip-capi.md` (revizyon 3). Plan Takım Yöneticisi tarafından 2026-10-22'de onaylandı;
+Spec: `specs/done/0101-stok-makina-kalip-capi.md` (revizyon 3). Plan Takım Yöneticisi tarafından 2026-10-22'de onaylandı;
 onaylanan öneriler spec'e "Plan turu kararları" (Karar 23–35) olarak işlendi.
 
 Çalışma kopyası `../wt0101`, dal `feat/0101-kalip-capi`, taban `origin/main` `1c95b1a`.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, plan turu 2026-10-22) |
+| **Durum** | Tamamlandı (revizyon 3; uygulama commit `83eb615`, dal `feat/0101-kalip-capi`, 2026-10-22) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Stok › Makina Stoğu (ekleme ve düzenleme penceresi, liste), müşteri ekleme formunun stoktan makina seçicisi, müşteri silinince stoğa dönen satır, Ayarlar › Veri Yönetimi › Dışa Aktar'ın Stok paketi; `stock` tablosunun yeni alanı; `src/lib/utils.js` (biçimleme ve ön doldurma), `src/components/ui.jsx` (paylaşılan alan); `docs/tasarim-sozlugu.md` (paylaşılan alanın sözlük satırı); `docs/evidence/kanit-eslemesi.json`; `tests/ui/stok-durumu-0100.test.jsx` (AC-4'ün sütun sayısı); `tests/server-authz.test.js` (AC-33) |
@@ -574,44 +574,44 @@ Yeni ekran önerisi: `stok-0101-kalip-capi` (çapı girilmiş iki satırlı list
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Çapın boşluk kuralı ve ön doldurma kararı React'sız fonksiyonlarda yazıldı ve kendi testleri var; arayüz yalnız
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Çapın boşluk kuralı ve ön doldurma kararı React'sız fonksiyonlarda yazıldı ve kendi testleri var; arayüz yalnız
       gösteriyor ve kendi boşluk denetimini yazmıyor.
-- [ ] Aynı değeri gösteren her yer (`fmtKalipCapi`) aynı kaynağı kullanıyor; ikinci birleştirme yolu yok (AC-32).
-- [ ] Yeni kalıcı alan dört nokta kuralıyla eklendi ve `db-roundtrip` ile `db-clean-install`e girdi; okuma ayıklamalı
+- [x] Aynı değeri gösteren her yer (`fmtKalipCapi`) aynı kaynağı kullanıyor; ikinci birleştirme yolu yok (AC-32).
+- [x] Yeni kalıcı alan dört nokta kuralıyla eklendi ve `db-roundtrip` ile `db-clean-install`e girdi; okuma ayıklamalı
       (boş sütun gövdeye yazılmaz, spec 0100 deseni) ve `fmtKalipCapi`'nin aynası `db.cjs`'e yazılmadı (C3, AC-8).
-- [ ] Spec öncesi gövde fikstürünün **üçlüsü** hazır: `tests/fixtures/0101-govde-girdisi.cjs`,
+- [x] Spec öncesi gövde fikstürünün **üçlüsü** hazır: `tests/fixtures/0101-govde-girdisi.cjs`,
       `tests/fixtures/0101-govde-once.json` ve üreten betik `scripts/tests/0101-govde-fikstur.cjs`; altın dosya
       spec'ten **önceki** kodla üretildi ve girdi serili, serisiz (`serialNo: ""`), partili, üretim tarihli, kitli ve
       çöpteki satırı kapsıyor (ölçüm 24, AC-50).
-- [ ] İki **önkoşul** test spec'ten önce yazıldı ve yeşil görüldü: `fmtKalipCapi`'nin kendi testi (AC-38) ve müşteri
+- [x] İki **önkoşul** test spec'ten önce yazıldı ve yeşil görüldü: `fmtKalipCapi`'nin kendi testi (AC-38) ve müşteri
       formundaki çap alanının davranış testi (AC-29); ikisi de bugün yok (ölçüm 14, ölçüm 21).
-- [ ] Boş çapın tek yazıcısı `utils.kalipCapiYaz`'dır ve `MakinaStokTab.save()`'in **iki dalında da** çağrılıyor;
+- [x] Boş çapın tek yazıcısı `utils.kalipCapiYaz`'dır ve `MakinaStokTab.save()`'in **iki dalında da** çağrılıyor;
       `onChange`'de temizleme yapılmıyor (R2/2, AC-36).
-- [ ] Paylaşılan alan `ui.jsx`'te, `Field` başlığını içinde taşıyor, üç kutu `aria-label` alıyor ve başlık metni
+- [x] Paylaşılan alan `ui.jsx`'te, `Field` başlığını içinde taşıyor, üç kutu `aria-label` alıyor ve başlık metni
       ekran dosyalarında yazılı değil (R7/2, R7/3, AC-40).
-- [ ] Liste sütununun yeri Karar 9'a göre (Durum'un sağında, yedi sütun) ve spec 0100 AC-4'ün testi "spec 0101 ile"
+- [x] Liste sütununun yeri Karar 9'a göre (Durum'un sağında, yedi sütun) ve spec 0100 AC-4'ün testi "spec 0101 ile"
       notuyla güncellendi (AC-41); "Ters çevrilen kriterler" tablosu dolduruldu.
-- [ ] Stok seçicisinin boş seçeneği hiçbir alana dokunmuyor (R11/2, AC-42) ve ezme nesne düzeyinde (R12/2, AC-43).
-- [ ] Maliyet motorunun karşılaştırması rakam düzeyinde yapıldı, `kayit` alanı ayıklandı ve `0088-maliyet-once.json`
+- [x] Stok seçicisinin boş seçeneği hiçbir alana dokunmuyor (R11/2, AC-42) ve ezme nesne düzeyinde (R12/2, AC-43).
+- [x] Maliyet motorunun karşılaştırması rakam düzeyinde yapıldı, `kayit` alanı ayıklandı ve `0088-maliyet-once.json`
       ile `0092-havuz-once.json` yenilenmedi (C8, AC-34, AC-45).
-- [ ] `docs/tasarim-sozlugu.md`'ye paylaşılan alanın satırı eklendi (C7/2, AC-49).
-- [ ] Yeni veri bölümü yok; `stock` bölümünün bugünkü `BLOB_SECTIONS` / `SECTION_GROUP` / `BOLUM_SEKMELERI` /
+- [x] `docs/tasarim-sozlugu.md`'ye paylaşılan alanın satırı eklendi (C7/2, AC-49).
+- [x] Yeni veri bölümü yok; `stock` bölümünün bugünkü `BLOB_SECTIONS` / `SECTION_GROUP` / `BOLUM_SEKMELERI` /
       `MERGE_KEYS` kayıtlarına dokunulmadı (ölçümle yazıldı).
-- [ ] **Yeni eylem izni eklenmedi** ve sunucu tarafı değişmedi; ölçü saf `tests/server-authz.test.js` bloğu (AC-33)
+- [x] **Yeni eylem izni eklenmedi** ve sunucu tarafı değişmedi; ölçü saf `tests/server-authz.test.js` bloğu (AC-33)
       ve `serverAuth.cjs`'in değişmediğini sabitleyen kaynak taraması (AC-44); yeni Electron turu açılmadı.
-- [ ] Soft-delete simetrisi: çöp kutusu ve geri alma yolları çapı taşıyor (AC-26, AC-27).
-- [ ] Kullanıcıya görünen metinler Türkçe. Yazdırma çıktısı eklenmedi (stok ekranının çıktısı yok), müşteri
+- [x] Soft-delete simetrisi: çöp kutusu ve geri alma yolları çapı taşıyor (AC-26, AC-27).
+- [x] Kullanıcıya görünen metinler Türkçe. Yazdırma çıktısı eklenmedi (stok ekranının çıktısı yok), müşteri
       yazdırmasının TR/EN anahtarları değişmedi.
-- [ ] Para gösterilmiyor; çoklu para kuralı bu işe uygulanmaz (açıkça yazıldı).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi; boş durumun iki dalı (AC-14) ve çapsız satır (AC-13) dâhil.
+- [x] Para gösterilmiyor; çoklu para kuralı bu işe uygulanmaz (açıkça yazıldı).
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi; boş durumun iki dalı (AC-14) ve çapsız satır (AC-13) dâhil.
       Kanıt kayıtları yalnız bu işin raporuna yazıldı, geçmiş raporların on altı kaydı çevrilmedi (AC-48).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır. Electron testleri de koşuldu
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır. Electron testleri de koşuldu
       (`db-roundtrip`, `db-clean-install`; `server-authz` saf testtir, Electron zincirine girmez).
-- [ ] `CLAUDE.md` güncellendi (yeni alan, paylaşılan alan bileşeni ve zincirin tamamlanması).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] `CLAUDE.md` güncellendi (yeni alan, paylaşılan alan bileşeni ve zincirin tamamlanması).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -664,10 +664,10 @@ Toplam 23 bulgu: 4 Bloklayıcı, 11 Önemli, 8 Küçük. Hepsi Takım Yöneticis
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | Revizyon 2 QA turu (23 bulgu), revizyon 3 plan onayı (on üç öneri, Karar 23–35) ve uygulama bulguları (Karar 36–38) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 3 düşük bulgu (yanlış yorum, stok listesindeki kısmi çap gösterimi açık bulgu olarak Karar 39, karar sırası ve iki spec kopyası) |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçü de belge ve gösterim düzeyinde; davranış hatası yok |
+| **Regresyon sayısı** | 0 | Tam takım 397 dosya, 5.200 test yeşil (Electron dahil); müşteri formu ve detayı ekranları 0 piksel; kapanış kanıtı 10 görüntü 0 fark |
+| **Kaçan hata** | 0 | Var olan bir hata uygulama turunda düzeltildi: seçicinin boş seçeneği ilk serisiz satırın kitini sessizce yazıyordu (R11/2, spec QA turunda bulunmuştu) |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Önkoşul testi ölçümün kendisini sınar: spec'in "boş parçalar atlanır" iddiası fonksiyonun **yorumundan** okunmuştu ve önkoşul testi ilk koşuda kırıldı (`"50 x  x "`). Kural: bir spec ölçümünü bir fonksiyonun davranışına dayandırıyorsa davranış kodla ya da koşturularak ölçülür, yorumla değil; yanlış yorum da aynı işte düzeltilir ki bir sonraki spec aynı yanlışı yapmasın. İkinci ders 0100'ünkiyle aynı: değişen ekran listesi tahminle değil görüntü aracının raporuyla kapanır (`stok-alt-sekme` boş stokla çiziliyordu).

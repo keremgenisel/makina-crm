@@ -170,7 +170,7 @@ describe("Spec 0101: kaynak taramaları", () => {
     expect(Object.keys(e).some(k => k.endsWith("src/components/ui.jsx"))).toBe(false);
   });
   it("triyaj (bulgu 3): spec'in karar numaraları sıralı ve açık bulgu Karar 39'da kayıtlı", () => {
-    const sp = oku("specs/0101-stok-makina-kalip-capi.md");
+    const sp = oku("specs/done/0101-stok-makina-kalip-capi.md");
     const kararlar = sp.slice(0, sp.indexOf("## Acceptance Criteria")).split("\n").map(l => /^(\d+)\. \*\*/.exec(l)?.[1]).filter(Boolean).map(Number);
     expect(kararlar).toEqual(Array.from({ length: kararlar.length }, (_, i) => i + 1));
     expect(kararlar.at(-1)).toBe(39);

@@ -6647,34 +6647,29 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "rapor": "docs/evidence/0101-kapanis-piksel-raporu.json",
         "ekran": "makina-stok-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "rapor": "docs/evidence/0101-kapanis-piksel-raporu.json",
         "ekran": "stok-makina-parti",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "rapor": "docs/evidence/0101-kapanis-piksel-raporu.json",
         "ekran": "stok-0100-durum-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "rapor": "docs/evidence/0101-kapanis-piksel-raporu.json",
         "ekran": "stok-0101-kalip-capi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "rapor": "docs/evidence/0101-kapanis-piksel-raporu.json",
         "ekran": "stok-0101-form-capli",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0101-piksel-raporu.json",
