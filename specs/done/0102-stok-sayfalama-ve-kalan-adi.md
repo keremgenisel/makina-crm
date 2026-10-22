@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, plan turu 2026-10-22) |
+| **Durum** | Tamamlandı (revizyon 3; uygulama commit `fe5e8e6`, dal `feat/0102-stok-sayfalama`, 2026-10-22) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Stok › Makina Stoğu (liste), Stok › Parti Üretim Panosu (özet kartları, tablo başlığı, ipucu); `src/lib/stokDurumu.js` (iki yeni ekran metni sabiti: ad ve ipucu cümlesi); `docs/tasarim-sozlugu.md` (Sayfalama bölümünün üçüncü istisna maddesi); `scripts/evidence/0009-sayfa.jsx` (yeni uzun liste ekranı ve fikstürü); `docs/evidence/kanit-eslemesi.json`, `docs/evidence/0102-piksel-raporu.json`, `docs/evidence/0102-kapanis-piksel-raporu.json`; `tests/ui/stok-durumu-0100.test.jsx` (AC-22'nin metni ve AC-46 testinin yeniden yazılması) |
@@ -595,37 +595,37 @@ sayfasız çizimini ölçen kriterler (AC-1, AC-2) de yenidir.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap içeren iş yok: bu spec motora dokunmuyor (R17), bu açıkça yazıldı ve motor testleri dokunulmadan yeşil.
-- [ ] Aynı sayıyı üreten başka ekran yok; panonun sayıları tek motordan geliyor (C5).
-- [ ] Yeni kalıcı alan yok; dört nokta kuralı devreye girmiyor ve bu açıkça yazıldı (R16).
-- [ ] Yeni veri bölümü yok; `BLOB_SECTIONS` zinciri değişmedi (AC-33).
-- [ ] **Yeni eylem izni eklenmedi**: iki değişiklik de salt görünüm (AC-34).
-- [ ] Soft-delete edilen kayıt yok; çöp kutusu simetrisi etkilenmiyor.
-- [ ] Kullanıcıya görünen bütün metinler Türkçe; yazdırma çıktısı yok, çeviri anahtarı gerekmiyor.
-- [ ] Para gösterimi yok (pano para göstermez, spec 0100 R23).
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi: değişen pano ekranı, yeni uzun liste ekranı (on dört satır) ve boş
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap içeren iş yok: bu spec motora dokunmuyor (R17), bu açıkça yazıldı ve motor testleri dokunulmadan yeşil.
+- [x] Aynı sayıyı üreten başka ekran yok; panonun sayıları tek motordan geliyor (C5).
+- [x] Yeni kalıcı alan yok; dört nokta kuralı devreye girmiyor ve bu açıkça yazıldı (R16).
+- [x] Yeni veri bölümü yok; `BLOB_SECTIONS` zinciri değişmedi (AC-33).
+- [x] **Yeni eylem izni eklenmedi**: iki değişiklik de salt görünüm (AC-34).
+- [x] Soft-delete edilen kayıt yok; çöp kutusu simetrisi etkilenmiyor.
+- [x] Kullanıcıya görünen bütün metinler Türkçe; yazdırma çıktısı yok, çeviri anahtarı gerekmiyor.
+- [x] Para gösterimi yok (pano para göstermez, spec 0100 R23).
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi: değişen pano ekranı, yeni uzun liste ekranı (on dört satır) ve boş
       durumlar.
-- [ ] Kanıt kayıtları kapanış raporuyla `ayni`ye çevrildi; kendi raporunda `degisti` kaydı bırakılmadı (C7, AC-42).
-- [ ] Tasarım sözlüğünün Sayfalama istisnası **üçüncü madde** olarak yazıldı; kuralın kendisi, "elle `setPage(1)`
+- [x] Kanıt kayıtları kapanış raporuyla `ayni`ye çevrildi; kendi raporunda `degisti` kaydı bırakılmadı (C7, AC-42).
+- [x] Tasarım sözlüğünün Sayfalama istisnası **üçüncü madde** olarak yazıldı; kuralın kendisi, "elle `setPage(1)`
       yazılmaz" maddesi ve 0084'ün istisnası dokunulmadı (AC-18, ölçüm 4).
-- [ ] Spec 0100'ün R15/4 ve AC-46'sı ters çevrildi: testi silinip yeniden yazıldı ve "spec 0102 ile" notunu taşıyor
+- [x] Spec 0100'ün R15/4 ve AC-46'sı ters çevrildi: testi silinip yeniden yazıldı ve "spec 0102 ile" notunu taşıyor
       (AC-39).
-- [ ] Liste kabına yükseklik sınırı, ikinci kaydırma çubuğu ya da "daha fazla göster" eklenmedi (AC-37); liste
+- [x] Liste kabına yükseklik sınırı, ikinci kaydırma çubuğu ya da "daha fazla göster" eklenmedi (AC-37); liste
       sanallaştırılmadı ve yeni bağımlılık girmedi (AC-41).
-- [ ] İki süzgeç işleyicisinden yalnız `setPage(1)` çağrıları kalktı; model kartının aç kapası ve durum süzgecinin
+- [x] İki süzgeç işleyicisinden yalnız `setPage(1)` çağrıları kalktı; model kartının aç kapası ve durum süzgecinin
       değeri korundu (AC-38).
-- [ ] Panonun yeni adı ve ipucu cümlesi `stokDurumu.js`'te iki sabit; ekran kendi metnini yazmıyor (AC-40). İpucunda
+- [x] Panonun yeni adı ve ipucu cümlesi `stokDurumu.js`'te iki sabit; ekran kendi metnini yazmıyor (AC-40). İpucunda
       eksi işareti "−" olarak korundu (AC-23).
-- [ ] Hız ölçümü 0080'in biçiminde: üç yüz satır, 10.000 ms eşik, 60.000 ms zaman aşımı, süreler `console.log` ile
+- [x] Hız ölçümü 0080'in biçiminde: üç yüz satır, 10.000 ms eşik, 60.000 ms zaman aşımı, süreler `console.log` ile
       yazıldı, arama kutusu ölçümden önce bulundu (AC-19, AC-20).
-- [ ] "Önceki değerle aynı" kriterleri dokunulmamış 0100 testlerine bağlandı; yeni altın dosya üretilmedi
+- [x] "Önceki değerle aynı" kriterleri dokunulmamış 0100 testlerine bağlandı; yeni altın dosya üretilmedi
       (AC-6, AC-7, AC-28, AC-29, AC-32).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin 0100 ve 0062 bölümleri güncellendi (Makina Stoğu'nun sayfalanmaması ve panonun yeni sütun adı).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin 0100 ve 0062 bölümleri güncellendi (Makina Stoğu'nun sayfalanmaması ve panonun yeni sütun adı).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -663,10 +663,10 @@ sayfasız çizimini ölçen kriterler (AC-1, AC-2) de yenidir.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | Onaylandıktan sonra Requirements, Constraints veya Acceptance Criteria kaç kez değişti? |
-| **Düzeltme turu sayısı** | | İş kaç kez geri döndü? |
-| **Bulgu gerçek/gürültü oranı** | / | Gözden geçirmede çıkan bulgulardan kaçı gerçek sorundu? |
-| **Regresyon sayısı** | | Bu iş yüzünden bozulan, daha önce çalışan davranış sayısı. |
-| **Kaçan hata** | | Kullanıcının gerçek uygulamada bulduğu hata sayısı. |
+| **Spec revizyon sayısı** | 3 | Revizyon 2 QA turu (23 bulgu), revizyon 3 plan onayı (on öneri, Karar 24–33) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: 4 düşük bulgu (AC-24 ekran testi eski kodla da geçiyordu; yerine yazılan testin adında AC-39 yoktu; düşen R15/4'ü anan yorum; CLAUDE.md'de "dokuz çağrı" ve iki spec kopyası) |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Biri testin gücüyle ilgili (boş ölçüt), üçü belge ve adlandırma |
+| **Regresyon sayısı** | 0 | Tam takım 399 dosya, 5.232 test yeşil (Electron dahil); kanıt turunda 16 görüntü 0 fark, kapanış kanıtı 4 görüntü 0 fark |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Yokluk iddiası (`not.toMatch`) yazıldığı gibi değil, eski kodla koşturularak ölçülür: `\bKalan\b` panonun bitişik metninde (…Satıldı1Kalan5…) kelime sınırı bulamadığı için eski kodla da yeşildi ve yalnız mutasyonla görüldü. Kural: bir "X artık yok" testi yazılınca X'i geri koyup testin kırıldığı gösterilir; ölçüt birleşik `textContent` yerine tek tek öğeler olur.

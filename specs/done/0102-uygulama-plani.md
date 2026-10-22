@@ -1,6 +1,6 @@
 # 0102 uygulama planı: Makina Stoğu sayfalanmaz, panonun kalan sütunu "Planlanandan kalan"
 
-Spec: `specs/0102-stok-sayfalama-ve-kalan-adi.md` (revizyon 3). Plan Takım Yöneticisi tarafından 2026-10-22'de onaylandı;
+Spec: `specs/done/0102-stok-sayfalama-ve-kalan-adi.md` (revizyon 3). Plan Takım Yöneticisi tarafından 2026-10-22'de onaylandı;
 onaylanan öneriler spec'e "Plan turu kararları" (Karar 24–33) olarak işlendi.
 
 Çalışma kopyası `../wt0102`, dal `feat/0102-stok-sayfalama`, taban `origin/main` `d24b9de`.

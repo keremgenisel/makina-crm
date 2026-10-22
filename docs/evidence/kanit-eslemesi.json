@@ -6682,10 +6682,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0102-piksel-raporu.json",
+        "rapor": "docs/evidence/0102-kapanis-piksel-raporu.json",
         "ekran": "stok-0102-uzun-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0102 Karar 9"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0102-piksel-raporu.json",
@@ -9656,10 +9655,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0102-piksel-raporu.json",
+        "rapor": "docs/evidence/0102-kapanis-piksel-raporu.json",
         "ekran": "stok-0100-pano",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0102 Karar 9"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0102-piksel-raporu.json",
