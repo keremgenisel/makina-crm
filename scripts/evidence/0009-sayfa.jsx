@@ -574,6 +574,9 @@ const STOK_0101 = [
   { id: 9302, model: "AK120_DSC", serialNo: "K-2", addedDate: "2026-09-15", uretimDurumu: "montaj", kalipCapi: { en: "60", yukseklik: "90", boy: "120" } },
   { id: 9303, model: "AK100", serialNo: "", addedDate: "2026-09-18" },
 ];
+// Spec 0102 (Karar 14, AC-43): sayfa boyutunun (10) üstünde on dört makina; sayfalamanın kalktığının görünür kanıtı.
+const STOK_0102 = Array.from({ length: 14 }, (_, i) => ({ id: 9401 + i, model: i % 3 ? "AK100" : "AK120_DSC", serialNo: `U-${String(i + 1).padStart(2, "0")}`,
+  addedDate: `2026-09-${String(i + 1).padStart(2, "0")}`, ...(i % 4 === 0 ? { uretimDurumu: "montaj" } : {}) }));
 const anasayfa0100 = <Dashboard customers={MUSTERI_0100} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
   stock={STOK_0100} uretimPartileri={[P_KAPALI, P_ACIK_0100]} />;
 
@@ -881,6 +884,7 @@ const EKRANLAR = {
   "stok-0100-durum-suzgec": [stok0100("makina"), ["etiket:Montajda (3)"]],
   "stok-0101-kalip-capi": [stok0100("makina", { stock: STOK_0101 }), []],
   "stok-0101-form-capli": [stok0100("makina", { stock: STOK_0101 }), ["~Stoğa Makina Ekle", "doldur:Çap=50", "doldur:Arka Ölçü=80", "doldur:Boy=115"]],
+  "stok-0102-uzun-liste": [stok0100("makina", { stock: STOK_0102 }), []],
   "stok-0100-pano": [stok0100("pano"), []],
   "stok-0100-pano-bos": [stok0100("pano", { uretimPartileri: [] }), []],
   "anasayfa-0100-kutu": [anasayfa0100, []],

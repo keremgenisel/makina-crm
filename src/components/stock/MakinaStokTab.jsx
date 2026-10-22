@@ -4,7 +4,7 @@ import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, fmtKalipCapi, kalipCapiYaz } from "../../lib/utils";
 import { netGeriEklenmis, netDusumleri, stokGeriAl, netDusumAyni } from "../../lib/stokHareketi";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict, KalipCapiFields } from "../ui";
+import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, LockConflict, KalipCapiFields } from "../ui";
 import { HataMetni, BolumBasligi, KartBolum, BosDurum, Ipucu, Segment } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
@@ -37,8 +37,9 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
 
   // Spec 0100 R16, R16/2, R31: özet satırı süzgeçsiz bütün canlı stoğu sayar; satır durumları (rozet, süzgeç) aynı sonuçtan.
   const ozet = useMemo(() => stokDurumOzeti({ stock, uretimPartileri }), [stock, uretimPartileri]);
-  // R15/3, R15/4, plan P2: durum süzgeci kancanın ikinci süzgecidir; rozet sayıları arama + model süzgecinden sonraki kümeden.
-  const { search, setSearch, page, setPage, filtered, paged, perPage: PER_PAGE, oncesi } = useFilteredList(stock, {
+  // R15/3, plan P2 (R15/4 spec 0102 ile düştü, liste sayfalanmıyor): durum süzgeci kancanın ikinci süzgecidir; rozet sayıları arama + model süzgecinden sonraki kümeden.
+  // Spec 0102 R1, R6, C1: liste sayfalanmaz; kanca arama, süzgeçler ve rozet kümesi için kalır, ekran tam kümeyi (filtered) çizer.
+  const { search, setSearch, filtered, oncesi } = useFilteredList(stock, {
     searchFields: ["model", "serialNo", "note"],
     filterFn: s => !modelFilter || s.model === modelFilter,
     ikinciFiltre: s => durumSuzgeciUyar(ozet.satirlar.get(s.id), durumSuzgec),
@@ -157,7 +158,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
           {Object.entries(byModel).map(([m, n]) => {
             const active = modelFilter === m;
             return (
-              <div key={m} onClick={() => { setModelFilter(active ? null : m); setPage(1); }}
+              <div key={m} onClick={() => setModelFilter(active ? null : m)}
                 style={{ background: active ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)", borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 4px rgba(0,0,0,.08)", borderLeft: `4px solid ${active ? "var(--orTx, #c2410c)" : "var(--brand, #e85d1a)"}`, cursor: "pointer" }}
                 title="Bu modeldeki makinaları göster">
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--n900, #0f172a)" }}>{m}</div>
@@ -179,7 +180,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         {/* R15, R15/2: süzgeç sözlükteki segmentli seçicinin düğme kipinden; sayılar süzgeçli kümeden (R15/3). */}
         <div style={{ marginBottom: 14 }}>
           <Segment kip="dugme" genislik="icerik" ariaLabel="Üretim durumu süzgeci" value={durumSuzgec}
-            onChange={v => { setDurumSuzgec(v); setPage(1); }}
+            onChange={v => setDurumSuzgec(v)}
             options={DURUM_SUZGECLERI.map(o => ({ ...o, sayi: suzgecSayisi(suzgecOzeti, o.value) }))} />
         </div>
       </>)}
@@ -219,7 +220,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             </tr>
           </thead>
           <tbody>
-            {paged.map(s => (
+            {filtered.map(s => (
               <tr key={s.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)" }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                 onMouseLeave={e => e.currentTarget.style.background = ""}>
@@ -244,7 +245,6 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             ))}
           </tbody>
         </table>
-        <Pagination total={filtered.length} page={page} setPage={setPage} perPage={PER_PAGE} />
       </KartBolum>
       )}
 

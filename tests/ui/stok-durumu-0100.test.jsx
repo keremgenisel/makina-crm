@@ -142,13 +142,15 @@ describe("Spec 0100: liste, rozetler ve özet (R13–R17/2)", () => {
     // "S-10" → S-100 … S-109 (on satır)
     expect(screen.getByRole("button", { name: "Tümü (10)" })).toBeTruthy();
   });
-  it("AC-46 (R15/4): durum süzgeci değişince liste birinci sayfaya döner", () => {
-    const COK = Array.from({ length: 25 }, (_, i) => stk(300 + i, { addedDate: `2026-09-${String(i + 1).padStart(2, "0")}`, uretimDurumu: i < 3 ? "montaj" : "hazir" }));
+  // spec 0102 ile (Karar 11, AC-39): 0100'ün R15/4 ve AC-46'sı ("süzgeç değişince birinci sayfaya döner") düştü, liste
+  // artık sayfalanmıyor. Yerine: süzgeç değişince eşleşen bütün satırlar görünür, sayfa düğmesi yok.
+  it("AC-39 / 0100 AC-46 (spec 0102 ile): durum süzgeci değişince eşleşen bütün satırlar görünür, sayfa düğmesi yok", () => {
+    const COK = Array.from({ length: 25 }, (_, i) => stk(300 + i, { addedDate: `2026-09-${String(i + 1).padStart(2, "0")}`, uretimDurumu: i < 13 ? "montaj" : "hazir" }));
     render(<Ekran s0={COK} />);
-    fireEvent.click(screen.getByRole("button", { name: "3" }));
-    expect(listeSerileri()).toHaveLength(5);
+    expect(listeSerileri()).toHaveLength(25);
     fireEvent.click(suzgec("Montajda"));
-    expect(listeSerileri()).toEqual(["S-300", "S-301", "S-302"]);
+    expect(listeSerileri()).toEqual(COK.slice(0, 13).map(s => s.serialNo));
+    expect(document.querySelector(".page-btn, .page-num")).toBeNull();
   });
   it("AC-9 / AC-47 (R17/2): süzgeçten boş dönen liste 'Aramanıza uyan makina yok.'; boş stok 'Stokta makina yok.'", () => {
     render(<Ekran s0={[stk(1, { uretimDurumu: "hazir" })]} partiler={[]} />);
@@ -185,7 +187,8 @@ describe("Spec 0100: Parti Üretim Panosu (R18–R24)", () => {
     render(<Ekran alt="pano" />);
     expect(screen.getByLabelText("Üretim partisi").value).toBe("902");
     const sayi = (k) => within(pano()).getByTestId(`pano-sayi-${k}`).textContent;
-    expect(["planlanan", "montajda", "hazir", "satildi", "kalan"].map(sayi)).toEqual(["Planlanan9", "Montajda1", "Satışa hazır2", "Satıldı2", "Kalan4"]);
+    // spec 0102 ile (R10, AC-21): beşinci sayının adı "Planlanandan kalan"; sayı ve öteki dört metin aynı.
+    expect(["planlanan", "montajda", "hazir", "satildi", "kalan"].map(sayi)).toEqual(["Planlanan9", "Montajda1", "Satışa hazır2", "Satıldı2", "Planlanandan kalan4"]);
   });
   it("AC-57 / AC-24: model satırları planlanana göre azalan; planı olmayan model üretilenlerden çizilir", () => {
     render(<Ekran alt="pano" s0={[...STOK, stk(8, { model: "AK300", partiId: 902 }), stk(9, { model: "", partiId: 902 })]} />);

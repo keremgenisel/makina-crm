@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Field, Select, StatCard } from "../ui";
 import { KartBolum, BosDurum, Ipucu } from "../tasarim";
-import { partiUretimOzeti, panoVarsayilanParti, partiSecenekAdi, DURUM_ADLARI, PANO_BOS_PARTI, PANO_BOS_VERI, FAZLA_IBARESI } from "../../lib/stokDurumu";
+import { partiUretimOzeti, panoVarsayilanParti, partiSecenekAdi, DURUM_ADLARI, PANO_BOS_PARTI, PANO_BOS_VERI, FAZLA_IBARESI, PANO_KALAN_ADI, PANO_KALAN_IPUCU } from "../../lib/stokDurumu";
 
 // Spec 0100 R18–R24, C10: seçilen üretim partisinin planlanan, montajda, satışa hazır, satıldı ve kalan sayıları. Yalnız okur, para
 // göstermez (R23); kapısı çağıranda (`giderYetki`, R22, Karar 11). Bütün sayılar motordan (C1, C11); ekran saymaz ve sıralamaz.
 const SUTUNLAR = [
-  ["planlanan", "Planlanan"], ["montajda", DURUM_ADLARI.montaj], ["hazir", DURUM_ADLARI.hazir], ["satildi", "Satıldı"], ["kalan", "Kalan"],
+  ["planlanan", "Planlanan"], ["montajda", DURUM_ADLARI.montaj], ["hazir", DURUM_ADLARI.hazir], ["satildi", "Satıldı"], ["kalan", PANO_KALAN_ADI],
 ];
 const hucre = { padding: "11px 14px", fontSize: 13, textAlign: "right" };
 const baslik = { padding: "11px 14px", fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" };
@@ -60,7 +60,7 @@ export const PartiUretimPanosu = ({ stock = [], customers = [], uretimPartileri 
             </tfoot>
           </table>
         </KartBolum>
-        <Ipucu>Kalan = planlanan − (montajda + satışa hazır + satıldı). Satılan makina partiye bağlı müşteri kayıtlarından sayılır.</Ipucu>
+        <Ipucu>{PANO_KALAN_IPUCU}</Ipucu>
       </>)}
     </div>
   );

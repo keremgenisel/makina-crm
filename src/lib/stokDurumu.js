@@ -114,6 +114,10 @@ export const partiSecenekAdi = (p) => `${p.ad}${partiAcikMi(p) ? " (açık)" : "
 export const PANO_BOS_PARTI = "Henüz üretim partisi yok.";
 export const PANO_BOS_VERI = "Bu partide plan ve makina yok.";
 export const FAZLA_IBARESI = "plandan fazla üretildi";
+// Spec 0102 R10–R12, Karar 18: beşinci sayının TEK adı (kart, başlık, ipucu) ve ipucu cümlesi; cümle adı buradan kurar,
+// eksi işareti "−" karakteridir (Karar 13). Motorun `kalan` alanı ve ölçüm kimlikleri değişmez (C5).
+export const PANO_KALAN_ADI = "Planlanandan kalan";
+export const PANO_KALAN_IPUCU = `${PANO_KALAN_ADI} = planlanan − (montajda + satışa hazır + satıldı). Satılan makina partiye bağlı müşteri kayıtlarından sayılır.`;
 
 // R18/2, plan P9: en son başlayan açık parti; açık parti yoksa en son başlayan canlı parti; eşitlikte ad.
 export const panoVarsayilanParti = (partiler) => {

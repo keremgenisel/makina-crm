@@ -6680,6 +6680,32 @@
         "rapor": "docs/evidence/0101-piksel-raporu.json",
         "ekran": "stok-alt-sekme",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0102-piksel-raporu.json",
+        "ekran": "stok-0102-uzun-liste",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0102 Karar 9"
+      },
+      {
+        "rapor": "docs/evidence/0102-piksel-raporu.json",
+        "ekran": "stok-makina-parti",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0102-piksel-raporu.json",
+        "ekran": "stok-0100-durum-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0102-piksel-raporu.json",
+        "ekran": "stok-0101-kalip-capi",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0102-piksel-raporu.json",
+        "ekran": "stok-bos",
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/PartStokTab.jsx": [
@@ -9626,6 +9652,17 @@
       },
       {
         "rapor": "docs/evidence/0100-kapanis-piksel-raporu.json",
+        "ekran": "stok-0100-pano-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0102-piksel-raporu.json",
+        "ekran": "stok-0100-pano",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0102 Karar 9"
+      },
+      {
+        "rapor": "docs/evidence/0102-piksel-raporu.json",
         "ekran": "stok-0100-pano-bos",
         "beklenen": "ayni"
       }

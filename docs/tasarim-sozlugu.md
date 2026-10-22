@@ -339,6 +339,12 @@ sayfalanır; elle pager yazılmaz.
   satırı listesi sayfalanmaz: dönem listesi yılda dört satırdır (aylık kipte on iki), bir dönemin ödeme satırı listesi en çok
   birkaç satırdır. `tests/sayfalama-0062.test.js`'in `LISTELER` tablosuna kayıt eklenmez (klasör taraması yalnız elle pager
   yazılmasını yasaklar; kayıt eklemek tersine sayfalama ister).
+- **İstisna (spec 0102):** Stok › **Makina Stoğu** listesi sayfalanmaz; aramadan, model ve üretim durumu süzgecinden geçen
+  bütün makinalar tek seferde çizilir (liste bir sayım listesi gibi okunur: partideki makinaları seri seri gözden geçirme,
+  tarayıcı araması). Liste kabına yükseklik sınırı ya da ikinci kaydırma eklenmez, liste sanallaştırılmaz. Arama ve
+  süzgeçler `useFilteredList`'ten gelmeye devam eder; ekran kancadan sayfa dilimi yerine tam kümeyi okur. Yavaşlama
+  görülürse sayfalama ayrı bir spec'le geri gelir. Stok'un öteki alt sekmeleri sayfalı kalır; `LISTELER` tablosuna kayıt
+  eklenmez (0084 C6 ile aynı neden).
 
 ## Bilinen borç
 
