@@ -696,6 +696,40 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0100 plan P6: tanınmayan dolu değer okumada korunur", st(73)?.uretimDurumu === "kalite");
 }
 
+// ── Spec 0101 AC-4, AC-5, AC-8, AC-50 (C1, C2, C3, Karar 31): stok satırının kalıp çapı. Çapı olmayan satırların okunan
+// gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı (alan gövdede hiç yok, `null` olarak da değil); dolu çap
+// gidiş dönüşte aynı nesne (parçalar kırpılmadan); boş sütun, 'null' ve bozuk JSON anahtar yazdırmaz.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0101-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0101-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  check("spec 0101 AC-5: çapsız stok satırlarının gövdesi spec öncesiyle birebir", esit(b.stock, once.stock));
+  check("spec 0101 AC-5: boş çap gövdede hiç yok", b.stock.every(x => !("kalipCapi" in x)));
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.stock[0].kalipCapi = { en: "50", yukseklik: "80", boy: "115" };
+  girdi.stock[1].kalipCapi = { en: " 50 ", yukseklik: "  ", boy: "" };
+  girdi.stock[3].kalipCapi = { en: "40", yukseklik: "70", boy: "100" }; // çöpteki satır
+  dbmod.writeBlobToDb(girdi);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  const st = (id) => c.stock.find(x => x.id === id);
+  check("spec 0101 AC-4: dolu çap gidiş dönüşte aynı nesne", esit(st(80)?.kalipCapi, { en: "50", yukseklik: "80", boy: "115" }));
+  check("spec 0101 AC-37: boşluklu parçalar kırpılmadan saklanır", esit(st(81)?.kalipCapi, { en: " 50 ", yukseklik: "  ", boy: "" }));
+  check("spec 0101 AC-4: çöpteki satır çapını taşır", esit(st(83)?.kalipCapi, { en: "40", yukseklik: "70", boy: "100" }) && !!st(83)?.deletedAt);
+  check("spec 0101 AC-8: çapsız satırlarda alan yok", !("kalipCapi" in st(82)) && !("kalipCapi" in st(84)));
+  const yol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(yol);
+  ham.prepare(`UPDATE stock SET kalipCapi = 'null' WHERE id = 82`).run();
+  ham.prepare(`UPDATE stock SET kalipCapi = '{bozuk' WHERE id = 84`).run();
+  ham.close();
+  dbmod.migrateFromJsonIfNeeded();
+  const d = dbmod.readBlobFromDb();
+  check("spec 0101 AC-8: 'null' ve bozuk JSON sütunu anahtar yazdırmaz", !("kalipCapi" in d.stock.find(x => x.id === 82)) && !("kalipCapi" in d.stock.find(x => x.id === 84)));
+}
+
 // ── Spec 0088 AC-43, AC-44 (C7, C8, C8/2): tür rolü (meta JSON), modelin kâr katsayısı ve Extra Kalıp fiyatı, partinin
 // planlanan adetleri, appSettings.maliyetAyarlari. Rolsüz tür, katsayısız model, plansız parti ve maliyet ayarı olmayan
 // uygulama ayarlarının okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı.

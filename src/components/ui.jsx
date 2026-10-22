@@ -1,4 +1,4 @@
-import React, { useId, useState, useEffect, useRef, useLayoutEffect, cloneElement, isValidElement, Children } from "react";
+import React, { useId, useState, useEffect, useRef, useLayoutEffect, cloneElement, isValidElement, Children, Fragment } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CITY_SUPPLEMENT, ODEME_YONTEMLERI } from "../lib/constants";
 import { ILCELER } from "../lib/map/ilceler";
 import { aramaNormalize, parseMoney } from "../lib/utils";
@@ -516,6 +516,24 @@ export const Pagination = ({ total, page, setPage, perPage = 10 }) => {
   );
 };
 
+
+// Makina kalıp çapı: üç kutu (Çap × Arka Ölçü × Boy), tek bir {en, yukseklik, boy} nesnesi yazar. Spec 0101 R7–R7/3:
+// müşteri formu ve stok formu bu bileşeni çağırır (CountryCityFields ile aynı sınıf: başlığı da içinde taşır, ikinci kopya
+// yazılmaz). onChange bütün nesneyi verir; boş nesneyi temizlemek çağıranın kayıt yolunun işidir (stokta utils.kalipCapiYaz).
+const KALIP_CAPI_PARCALARI = [["en", "Çap"], ["yukseklik", "Arka Ölçü"], ["boy", "Boy"]];
+export const KalipCapiFields = ({ value, onChange, label = "Makina Kalıp Çapı" }) => (
+  <Field label={label}>
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      {KALIP_CAPI_PARCALARI.map(([anahtar, ad], i) => (
+        <Fragment key={anahtar}>
+          {i > 0 && <span style={{ color: "var(--n400, #94a3b8)", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>}
+          <Input value={value?.[anahtar] || ""} placeholder={ad} aria-label={ad}
+            onChange={e => onChange({ ...(value || {}), [anahtar]: e.target.value })} />
+        </Fragment>
+      ))}
+    </div>
+  </Field>
+);
 
 // Ülke + Şehir (+ gerekiyorsa İlçe) alanları — API'den gelen şehir listesini kullanır,
 // tüm formlarda ortak. İlçe yalnız Türkiye'nin belirli illerinde çıkar (ILCE_ILLERI);

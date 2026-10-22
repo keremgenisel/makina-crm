@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
-import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani } from "../../lib/utils";
-import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
+import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani, kalipCapiOnDoldur } from "../../lib/utils";
+import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, KalipCapiFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
 import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi } from "../../lib/stokDurumu";
 import { useLock } from "../../hooks/useLock";
@@ -202,11 +202,17 @@ export const CustomerAddEditForm = ({
                     setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "", _kitTipler: [] }));
                   } else if (e.target.value === "__serisiz__") {
                     // Spec 0100 R6/3, plan P3: kit ön doldurması düşülecek makinanın kendisinden (motorun seçimi).
+                    // Spec 0101 R13: kalıp çapı da aynı satırdan.
                     const firstSerisiz = serisizDusulecek(stockForModel, form.model);
-                    setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "", ...getKitAutoFill(firstSerisiz) }));
+                    setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "", ...getKitAutoFill(firstSerisiz), ...kalipCapiOnDoldur(firstSerisiz) }));
+                  } else if (e.target.value === "") {
+                    // Spec 0101 R11/2, Karar 10: boş seçenek bir makina seçimi değildir. Serisiz satırların seri no'su tam
+                    // olarak "" olduğu için eskiden ilk serisiz satır bulunuyor, kit (ve çap) sessizce ondan doluyordu.
+                    setForm(p => ({ ...p, _stokSerisiz: false, serialNo: "" }));
                   } else {
+                    // Spec 0101 R11, R12, R12/2: çapı doluysa formdakini bütün olarak ezer, boşsa forma dokunmaz.
                     const stockEntry = stockForModel.find(s => s.serialNo === e.target.value);
-                    setForm(p => ({ ...p, _stokSerisiz: false, serialNo: e.target.value, ...getKitAutoFill(stockEntry) }));
+                    setForm(p => ({ ...p, _stokSerisiz: false, serialNo: e.target.value, ...getKitAutoFill(stockEntry), ...kalipCapiOnDoldur(stockEntry) }));
                   }
                 }}>
                   <option value="">Stoktan seçin... ({stockForModel.length} adet)</option>
@@ -263,18 +269,8 @@ export const CustomerAddEditForm = ({
           );
         })()}
       </Field>
-      <Field label="Makina Kalıp Çapı">
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <Input value={form.kalipCapi?.en || ""} placeholder="Çap"
-            onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), en: e.target.value } }))} />
-          <span style={{ color: "var(--n400, #94a3b8)", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>
-          <Input value={form.kalipCapi?.yukseklik || ""} placeholder="Arka Ölçü"
-            onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), yukseklik: e.target.value } }))} />
-          <span style={{ color: "var(--n400, #94a3b8)", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>×</span>
-          <Input value={form.kalipCapi?.boy || ""} placeholder="Boy"
-            onChange={e => setForm(p => ({ ...p, kalipCapi: { ...(p.kalipCapi || {}), boy: e.target.value } }))} />
-        </div>
-      </Field>
+      {/* Spec 0101 R7: paylaşılan alan (ui.jsx); stok formu da aynı bileşeni çağırır. */}
+      <KalipCapiFields value={form.kalipCapi} onChange={kc => setForm(p => ({ ...p, kalipCapi: kc }))} />
       </div>
 
       <Field label={`Kalıp Ölçüleri (${(form.kaliplar || []).length} kalıp)`}>

@@ -171,6 +171,8 @@ export interface StockItem {
   uretimTarihi?: ISODate | null;
   note?: string;
   parcalar?: unknown;
+  /** Spec 0101 R1: makinanın kalıp çapı {en, yukseklik, boy} (müşteri kaydıyla aynı şekil); boşsa alan yok. */
+  kalipCapi?: { en?: string; yukseklik?: string; boy?: string };
   deletedAt?: ISODate | null;
 }
 

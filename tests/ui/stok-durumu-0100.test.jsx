@@ -34,7 +34,8 @@ const kaydet = () => fireEvent.click(screen.getByRole("button", { name: /Kaydet/
 const kayit = (id) => durum.stock.find(s => s.id === id);
 const durumSeci = (ad) => fireEvent.click(within(screen.getByRole("group", { name: "Üretim durumu" })).getByRole("button", { name: ad }));
 const suzgec = (ad) => within(screen.getByRole("group", { name: "Üretim durumu süzgeci" })).getByRole("button", { name: new RegExp(`^${ad} \\(\\d+\\)$`) });
-const listeSerileri = () => [...document.querySelectorAll("tbody tr")].map(tr => tr.querySelectorAll("td")[2]?.textContent);
+// spec 0101 ile: "Kalıp Çapı" sütunu Durum'un sağına girdiği için Seri Numarası dördüncü hücre (indeks 3).
+const listeSerileri = () => [...document.querySelectorAll("tbody tr")].map(tr => tr.querySelectorAll("td")[3]?.textContent);
 const rozet = (seri) => within(satir(seri)).getByTestId("stok-durum-rozeti").textContent;
 const oncekiVar = (seri) => !!within(satir(seri)).queryByTestId("stok-onceki-rozeti");
 
@@ -81,10 +82,12 @@ describe("Spec 0100: durum alanı ve form (R1–R4/2)", () => {
 });
 
 describe("Spec 0100: liste, rozetler ve özet (R13–R17/2)", () => {
-  it("AC-4: Durum sütunu Model'in hemen sağında, tablo altı sütun", () => {
+  // spec 0101 ile (R9/2, AC-41): "Durum Model'in hemen sağında" korunur; tablo altı yerine yedi sütun ("Kalıp Çapı" Durum'un sağında).
+  it("AC-4: Durum sütunu Model'in hemen sağında, tablo yedi sütun (spec 0101 ile)", () => {
     render(<Ekran />);
     const basliklar = [...document.querySelectorAll("thead th")].map(th => th.textContent);
-    expect(basliklar).toEqual(["Model", "Durum", "Seri Numarası", "Stoğa Giriş", "Not", ""]);
+    expect(basliklar.indexOf("Durum")).toBe(basliklar.indexOf("Model") + 1);
+    expect(basliklar).toEqual(["Model", "Durum", "Kalıp Çapı", "Seri Numarası", "Stoğa Giriş", "Not", ""]);
   });
   it("AC-5 / AC-49: rozet adını yazar ve rengi tema değişkeninden gelir", () => {
     render(<Ekran />);

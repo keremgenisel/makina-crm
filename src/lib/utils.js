@@ -258,7 +258,7 @@ export const stripAutoPrint = (html) => {
   return html.slice(0, open) + html.slice(close + 7);
 };
 export const fmt = (n) => new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(n);
-// Makina kalıp çapı nesnesini "50 x 80 x 115" metnine çevir (boş parçalar atlanır)
+// Makina kalıp çapı nesnesini "50 x 80 x 115" metnine çevir (boş parçalar kırpılır, yeri korunur: {en:"50"} → "50 x  x ")
 export const fmtKalipCapi = (kc) => {
   if (!kc || typeof kc !== "object") return "";
   // Sıra: Çap, Arka Ölçü, Boy — Yeni Müşteri formundaki alan sırasıyla aynı (kc.yukseklik = "Arka Ölçü")
@@ -266,6 +266,17 @@ export const fmtKalipCapi = (kc) => {
   if (parts.every(p => !p)) return "";
   return parts.join(" x ");
 };
+// Spec 0101 R2/2, Karar 14, Karar 27: stok satırının kalıp çapının TEK yazıcısı (spec 0100 `uretimDurumuYaz` emsali).
+// Alanı her çağrıda siler; çap dolu sayılırsa (tek ölçüt fmtKalipCapi, R3) sığ kopyayla geri yazar. Parçalar kırpılmaz
+// (Karar 13): boşluk denetimi yalnız anahtarın yazılıp yazılmayacağına karar verir.
+export const kalipCapiYaz = (kayit, kc) => {
+  const { kalipCapi: _eski, ...rest } = kayit || {};
+  return fmtKalipCapi(kc) ? { ...rest, kalipCapi: { ...kc } } : rest;
+};
+// Spec 0101 R12, R12/2, R15: stoktan makina seçilince müşteri formuna yazılacak çap ("yazılacak alanlar nesnesi, yoksa boş
+// nesne"; getKitAutoFill biçimi). Çap doluysa nesne bütün olarak yazılır (parça parça birleştirilmez), boşsa forma dokunulmaz.
+export const kalipCapiOnDoldur = (stokSatiri) =>
+  fmtKalipCapi(stokSatiri?.kalipCapi) ? { kalipCapi: { ...stokSatiri.kalipCapi } } : {};
 
 // Eski (3'lü: Faturalı Yurt İçi/Faturalı İhracat/Faturasız, ya da çok eski Faturalı/Faturasız)
 // değerleri yeni 4'lü sisteme çevir (geriye uyumluluk): Faturalı/Faturasız × Yurtiçi/Yurtdışı

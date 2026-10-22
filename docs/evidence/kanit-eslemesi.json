@@ -6270,6 +6270,31 @@
         "rapor": "docs/evidence/0100-piksel-raporu.json",
         "ekran": "musteri-formu-ilk-odeme",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "musteri-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "musteri-formu-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "musteri-formu-ilk-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "musteri-formu-0079",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "musteri-formu-0094-ilce",
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [
@@ -6619,6 +6644,46 @@
       {
         "rapor": "docs/evidence/0100-kapanis-piksel-raporu.json",
         "ekran": "stok-0100-durum-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "makina-stok-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "stok-makina-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "stok-0100-durum-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "stok-0101-kalip-capi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "stok-0101-form-capli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-22 · spec 0101 Karar 20"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "stok-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0101-piksel-raporu.json",
+        "ekran": "stok-alt-sekme",
         "beklenen": "ayni"
       }
     ],

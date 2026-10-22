@@ -305,6 +305,14 @@ Kuruşlu tutar alanı `TutarInput` (`src/components/gider/GiderAlanlari.jsx`) ya
 korur; biçimleme ve çözümleme yalnız `src/lib/tutarGirdisi.js`'tedir. Form durumu ham metni tutar ("80000",
 "1234,56"). Oran alanı `sym="%"` ile çizilir ve ayraç almaz. Tam sayılı `MoneyInput` (`ui.jsx`) ayrıdır (0045 X1).
 
+## Bileşik alanlar (spec 0101)
+
+Birkaç kutudan oluşup tek bir veri parçasını yazan alanlar `ui.jsx`'te tek bileşendir ve başlığını (`Field`) kendi içinde
+taşır; ekran yalnız değeri ve geri çağırımı verir, kutuları yeniden çizmez. Bugün iki tane var: `CountryCityFields`
+(ülke, şehir, gerekiyorsa ilçe) ve `KalipCapiFields` ("Makina Kalıp Çapı": Çap × Arka Ölçü × Boy, `{en, yukseklik, boy}`
+nesnesi; müşteri formu ve stok formu çağırır, üç kutu `aria-label` taşır). Boş değeri temizlemek bileşenin değil kayıt
+yolunun işidir (stokta `utils.kalipCapiYaz`). Kaynak taraması: `tests/kalip-capi-0101.test.js`.
+
 ## Sayfalama (spec 0062)
 
 Tanım gereği büyüyen her liste paylaşılan `Pagination` (`ui.jsx`) ve `usePagination` / `useFilteredList` kancalarıyla

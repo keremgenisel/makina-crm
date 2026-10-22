@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { logAction, snapshotOnceki } from "../../lib/audit";
-import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus } from "../../lib/utils";
+import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, fmtKalipCapi, kalipCapiYaz } from "../../lib/utils";
 import { netGeriEklenmis, netDusumleri, stokGeriAl, netDusumAyni } from "../../lib/stokHareketi";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict } from "../ui";
+import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, LockConflict, KalipCapiFields } from "../ui";
 import { HataMetni, BolumBasligi, KartBolum, BosDurum, Ipucu, Segment } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
@@ -90,7 +90,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
     if (modal === "add") {
       bumpId(stock);
       const nid = uid();
-      setStock(p => p.some(s => s.id === nid) ? p : [{ ...form, id: nid }, ...p]);
+      // Spec 0101 R2/2, AC-36: kayıt nesnesi iki dalda da tek yazıcıdan geçer (boş çap gövdeye girmez).
+      setStock(p => p.some(s => s.id === nid) ? p : [kalipCapiYaz({ ...form, id: nid }, form.kalipCapi), ...p]);
       deductParts(form.parcalar || [], nid);
       logAction({ serverPermissions, action: "olusturuldu", entity: "stok_makina", entityId: nid, entityName: form.model, detail: { serialNo: form.serialNo } });
       showToast("Stok makinası kaydedildi.");
@@ -104,7 +105,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       // not değişebileceği için özgün tarih (çöpteki müşteriden, ESKİ model+seriyle) şimdi satıra yazılır.
       const eski = stock.find(x => x.id === stockId);
       const tarihTasi = eski && geriDonenStokMu(eski) && !eski.uretimTarihi ? geriDonenStokTarihi(eski, copMusteriler, partStockLog) : "";
-      const kayit = tarihTasi ? { ...form, uretimTarihi: tarihTasi } : form;
+      const kayit = kalipCapiYaz(tarihTasi ? { ...form, uretimTarihi: tarihTasi } : form, form.kalipCapi);
       setStock(p => p.map(s => s.id === stockId ? kayit : s));
       if (!kitAyni) deductParts(form.parcalar || [], stockId);
       logAction({ serverPermissions, action: "duzenlendi", entity: "stok_makina", entityId: stockId, entityName: form.model, detail: { onceki: snapshotOnceki(stock.find(x => x.id === stockId)) } });
@@ -211,7 +212,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--n100, #f8fafc)" }}>
-              {["Model", "Durum", "Seri Numarası", "Stoğa Giriş", "Not", ""].map(h => (
+              {/* Spec 0101 R9, Karar 9: Kalıp Çapı Durum'un sağında, Seri Numarası'nın önünde (yedi sütun). */}
+              {["Model", "Durum", "Kalıp Çapı", "Seri Numarası", "Stoğa Giriş", "Not", ""].map(h => (
                 <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>{h}</th>
               ))}
             </tr>
@@ -228,6 +230,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
                   <Rozet tur={uretimDurumuOf(s)} testId="stok-durum-rozeti">{DURUM_ADLARI[uretimDurumuOf(s)]}</Rozet>
                   {ozet.satirlar.get(s.id)?.onceki && <div style={{ marginTop: 5 }}><Rozet tur="onceki" testId="stok-onceki-rozeti">{ONCEKI_PARTI_ADI}</Rozet></div>}
                 </td>
+                <td data-testid="stok-kalip-capi" style={{ padding: "13px 16px", fontSize: 12, color: "var(--n500, #64748b)", whiteSpace: "nowrap" }}>{fmtKalipCapi(s.kalipCapi) || "—"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: s.serialNo ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)", fontFamily: s.serialNo ? "monospace" : "inherit", fontWeight: 600 }}>{s.serialNo || "(seri no atanmamış)"}</td>
                 <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n500, #64748b)" }}>{fmtTR(s.addedDate)}</td>
                 <td title={s.note || undefined} style={{ padding: "13px 16px", fontSize: 12, color: "var(--n500, #64748b)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.note || "—"}</td>
@@ -271,6 +274,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
             <HataMetni>{!form.model ? "Model seçilmedi" : ""}</HataMetni>
           </Field>
           <Field label="Seri Numarası (opsiyonel)"><Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="Boş bırakılabilir — sonra atanır" /></Field>
+          {/* Spec 0101 R6, R6/2, C6: Seri Numarası'nın hemen altı; hiçbir yetkiye bağlı değil. Temizlik kayıtta (kalipCapiYaz). */}
+          <KalipCapiFields value={form.kalipCapi} onChange={kc => setForm(p => ({ ...p, kalipCapi: kc }))} />
           <Field label="Stoğa Giriş Tarihi"><Input type="date" value={form.addedDate || ""} onChange={e => setForm(p => ({ ...p, addedDate: e.target.value }))} /></Field>
           {/* Spec 0100 R4, R4/2, plan P5: durum elle; değer kayıtta yalnız seçiciye dokunulunca yazılır. */}
           <Field label={DURUM_ETIKETI}>

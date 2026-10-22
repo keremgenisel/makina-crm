@@ -1584,3 +1584,31 @@ describe("spec 0098: tahsilat hesabı yetkisi sunucu denetimine girmez", () => {
     expect(readFileSync("electron/server.cjs", "utf8")).not.toMatch(/tahsilat_hesap/);
   });
 });
+
+// Spec 0101 R24, R24/2, Karar 12: kalıp çapı yeni izin ve sunucu kuralı getirmez. Stok bölümünün grup kısıtı bugüne kadar
+// hiç ölçülmüyordu (spec ölçüm 18): `stockActions: []` kullanıcısı bölümü yazamaz, stok izni olan kullanıcı çapı da yazar.
+describe("Spec 0101: stok satırının kalıp çapı", () => {
+  const eski = { stock: [{ id: 1, model: "AK100", serialNo: "S-1", addedDate: "2026-09-01" }] };
+  const yeni = { stock: [{ id: 1, model: "AK100", serialNo: "S-1", addedDate: "2026-09-01", kalipCapi: { en: "50", yukseklik: "80", boy: "115" } }] };
+  it("AC-33: stockActions: [] kullanıcısı stok bölümünde reddedilir", () => {
+    const ro = JSON.stringify({ tabs: ["dashboard", "stock"], stockActions: [] });
+    const r = yazmaYetkisiVar(ro, "user", degisenBolumler(eski, yeni), eski, yeni);
+    expect(r.ok).toBe(false);
+    expect(r.reddedilenBolum).toBe("stock");
+    expect(yazmaYetkisiVar(READONLY, "user", ["stock"], eski, yeni).reddedilenBolum).toBe("stock");
+  });
+  it("AC-33: stok yazma izni olan kullanıcı çapı da yazar (alan düzeyinde denetim yok)", () => {
+    const stokcu = JSON.stringify({ tabs: ["dashboard", "stock"], stockActions: ["stock_makina_add", "stock_makina_edit"] });
+    expect(degisenBolumler(eski, yeni)).toEqual(["stock"]);
+    expect(yazmaYetkisiVar(stokcu, "user", ["stock"], eski, yeni).ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, stokcu, "user").ok).toBe(true);
+  });
+  it("AC-44: serverAuth.cjs bu işte değişmedi (stok için alan izni yok, eylem kimlikleri ve eşlemeler aynı)", async () => {
+    expect(ALAN_IZINLERI.stock).toBeUndefined();
+    expect(EYLEM_IDLERI.stock).toEqual({ ekle: "stock_makina_add", sil: "stock_makina_delete" });
+    expect(SECTION_GROUP.stock).toBe("stockActions");
+    expect(BOLUM_SEKMELERI.stock).toEqual(["stock", "customers", "settings"]);
+    const { readFileSync } = await import("node:fs");
+    expect(readFileSync("electron/serverAuth.cjs", "utf8")).not.toMatch(/kalipCapi/);
+  });
+});

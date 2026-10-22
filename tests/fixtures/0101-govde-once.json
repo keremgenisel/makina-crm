@@ -1,0 +1,66 @@
+{
+  "stock": [
+    {
+      "id": 80,
+      "model": "AK100",
+      "serialNo": "K-80",
+      "addedDate": "2026-03-05",
+      "note": "Not",
+      "parcalar": [
+        {
+          "partId": "7",
+          "miktar": 2
+        }
+      ],
+      "deletedAt": null,
+      "uretimTarihi": null,
+      "partiId": null
+    },
+    {
+      "id": 81,
+      "model": "AK120_DSC",
+      "serialNo": "",
+      "addedDate": "2026-04-01",
+      "note": "",
+      "parcalar": [],
+      "deletedAt": null,
+      "uretimTarihi": null,
+      "partiId": 902
+    },
+    {
+      "id": 82,
+      "model": "AK100",
+      "serialNo": "K-82",
+      "addedDate": "2026-05-01",
+      "note": null,
+      "parcalar": [],
+      "deletedAt": null,
+      "uretimTarihi": "2026-02-10",
+      "partiId": 901,
+      "uretimDurumu": "hazir"
+    },
+    {
+      "id": 83,
+      "model": "AK100",
+      "serialNo": "K-83",
+      "addedDate": "2026-06-01",
+      "note": null,
+      "parcalar": [],
+      "deletedAt": "2026-10-01T10:00:00.000Z",
+      "uretimTarihi": null,
+      "partiId": null
+    },
+    {
+      "id": 84,
+      "model": "AK100",
+      "serialNo": "",
+      "addedDate": "2026-07-01",
+      "note": null,
+      "parcalar": [],
+      "deletedAt": null,
+      "uretimTarihi": null,
+      "partiId": null,
+      "uretimDurumu": "montaj"
+    }
+  ]
+}

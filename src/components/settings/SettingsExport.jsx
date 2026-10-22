@@ -143,6 +143,10 @@ export const finansOzetiSatirlari = (oz, services = [], tarih = new Date().toLoc
 // (çalışana ciro ya da kendi çekimizle çalışana ödeme) HİÇ listelenmez: tek kişiye yapılmış ödemedir ve 0047 gizlilik sınırı
 // çalışan adını da kişi bazlı ödemeyi de (tutar, tarih) çıktıdan dışlar (R27, TY kararı 2026-10-02: tamamen çıkar). Tahsilatı
 // çöpte olan bağlı çek listelenmez (portföyle aynı kural).
+// Spec 0101 R10, Karar 25: stok dışa aktarmasının başlığı ve satırı (Excel ve CSV aynı diziden). Çap Model'in hemen sağında,
+// çapsızda boş dize (fmtKalipCapi).
+export const STOK_EXPORT_HEAD = ["Model", "Makina Kalıp Çapı", "Seri No", "Stoğa Giriş Tarihi", "Not"];
+export const stokExportRow = (s) => [s.model, fmtKalipCapi(s.kalipCapi), s.serialNo, s.addedDate, s.note];
 export const CEK_EXPORT_HEAD = ["Yön", "Çek No", "Banka", "Keşideci", "Tür", "Tutar", "Para Birimi", "Vade", "Alınma / Yazılma Tarihi", "Durum", "Müşteri / Kimden", "Alacaklı", "Tahsilata Bağlı"];
 export const cekExportRow = (c, pById, customers = []) => {
   if (c?.alacakliTur === "calisan") return null;
@@ -261,8 +265,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportStock = async (mode = "download") => {
-    const head = ["Model", "Seri No", "Stoğa Giriş Tarihi", "Not"];
-    const rows = [head, ...stock.map(s => [s.model, s.serialNo, s.addedDate, s.note])];
+    const rows = [STOK_EXPORT_HEAD, ...stock.map(stokExportRow)];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Stok"); openExportMailXLSXBase64(b64, "stok.xlsx", "Stok Listesi"); return; }
       await downloadXlsx(rows, "stok.xlsx", "Stok"); flash("ok", "Stok listesi Excel olarak indirildi.");

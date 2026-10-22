@@ -211,6 +211,16 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.stock.find(x => x.id === 81)?.uretimDurumu === "montaj" && !("uretimDurumu" in b.stock.find(x => x.id === 82)));
 }
 
+// Spec 0101 AC-6 (C1): temiz kurulumda stok satırının kalıp çapı ilk oturumda yazılıp geri okunur; çapsız satırda alan yok.
+{
+  let h = null;
+  const kc = { en: "50", yukseklik: "80", boy: "115" };
+  try { dbmod.writeBlobToDb({ stock: [{ id: 91, model: "AK100", serialNo: "KC-1", kalipCapi: kc }, { id: 92, model: "AK100", serialNo: "KC-2" }] }); } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0101 AC-6: temiz kurulumda kalipCapi sütunu var ve yazıldı; çapsız satırda alan yok", h === null
+    && JSON.stringify(b.stock.find(x => x.id === 91)?.kalipCapi) === JSON.stringify(kc) && !("kalipCapi" in b.stock.find(x => x.id === 92)));
+}
+
 // Spec 0088 AC-43: temiz kurulumda kâr katsayısı, Extra Kalıp fiyatı, planlanan adetler ve maliyet ayarları ilk oturumda yazılır.
 {
   let h = null;

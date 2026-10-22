@@ -568,6 +568,12 @@ const STOK_0100 = [
 const MUSTERI_0100 = MUSTERILER.map((c, i) => (i < 2 ? { ...c, partiId: 902 } : c));
 const stok0100 = (alt, ek = {}) => <Stock factory={{ name: "Altuntaş Makina" }} stock={STOK_0100} setStock={bos} customers={MUSTERI_0100} setCustomers={bos} parts={[]}
   dealers={DEALERS} yedekParcaSatislar={[]} defaultSubTab={alt} showToast={bos} uretimPartileri={[P_KAPALI, P_ACIK_0100]} giderYetki models={MODELLER} {...ek} />;
+// Spec 0101: kalıp çapı girilmiş iki satır ve çapsız bir satır (hücrede "—").
+const STOK_0101 = [
+  { id: 9301, model: "AK100", serialNo: "K-1", addedDate: "2026-09-10", uretimDurumu: "hazir", kalipCapi: { en: "50", yukseklik: "80", boy: "115" } },
+  { id: 9302, model: "AK120_DSC", serialNo: "K-2", addedDate: "2026-09-15", uretimDurumu: "montaj", kalipCapi: { en: "60", yukseklik: "90", boy: "120" } },
+  { id: 9303, model: "AK100", serialNo: "", addedDate: "2026-09-18" },
+];
 const anasayfa0100 = <Dashboard customers={MUSTERI_0100} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
   stock={STOK_0100} uretimPartileri={[P_KAPALI, P_ACIK_0100]} />;
 
@@ -873,6 +879,8 @@ const EKRANLAR = {
     yedekParcaSatislar={[]} defaultSubTab="makina" showToast={bos} uretimPartileri={[P_KAPALI, P_ACIK]} giderYetki models={MODELLER} />, ["~Stoğa Makina Ekle", "kaydir:Üretim partisi"]],
   // Spec 0100: durum süzgeçli liste, parti üretim panosu (dolu ve partisiz), Anasayfa kutusu ve penceresi.
   "stok-0100-durum-suzgec": [stok0100("makina"), ["etiket:Montajda (3)"]],
+  "stok-0101-kalip-capi": [stok0100("makina", { stock: STOK_0101 }), []],
+  "stok-0101-form-capli": [stok0100("makina", { stock: STOK_0101 }), ["~Stoğa Makina Ekle", "doldur:Çap=50", "doldur:Arka Ölçü=80", "doldur:Boy=115"]],
   "stok-0100-pano": [stok0100("pano"), []],
   "stok-0100-pano-bos": [stok0100("pano", { uretimPartileri: [] }), []],
   "anasayfa-0100-kutu": [anasayfa0100, []],

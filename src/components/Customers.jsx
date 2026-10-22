@@ -5,7 +5,7 @@ import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { servisParcaGeriAl } from "../lib/servisStok";
 import { netDusumleri, IADE_TIPI } from "../lib/stokHareketi";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCount, normalizeSaleType, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, normalizeSaleType, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
 import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
@@ -456,7 +456,7 @@ export const Customers = ({
         const kitParcalar = kitLog.map(l => ({ partId: String(l.partId), miktar: l.adet }));
         bumpId(stock);
         const newStockId = uid();
-        setStock(p => [{ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), uretimTarihi: donenStokUretimTarihi(c, partStockLog), ...(c.partiId != null ? { partiId: c.partiId } : {}), note: GERI_DONEN_STOK_NOTU, parcalar: kitParcalar }, ...p]);
+        setStock(p => [kalipCapiYaz({ id: newStockId, model: c.model, serialNo: c.serialNo || "", addedDate: today(), uretimTarihi: donenStokUretimTarihi(c, partStockLog), ...(c.partiId != null ? { partiId: c.partiId } : {}), note: GERI_DONEN_STOK_NOTU, parcalar: kitParcalar }, c.kalipCapi), ...p]); // Spec 0101 R19, R20: müşterinin çapı taşınır, boşsa anahtar yok
 
         if (kitLog.length > 0 && setPartStockLog) {
           kitLog.forEach(l => kitRestoredIds.add(String(l.partId)));
