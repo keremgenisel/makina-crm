@@ -1,6 +1,6 @@
 # 0103 uygulama planı: satılmış makinanın partisi sonradan düzeltilebilir
 
-Spec: `specs/0103-satilmis-makinanin-partisi-duzeltilir.md` (revizyon 4). Plan Takım Yöneticisi tarafından 2026-10-23'te
+Spec: `specs/done/0103-satilmis-makinanin-partisi-duzeltilir.md` (revizyon 4). Plan Takım Yöneticisi tarafından 2026-10-23'te
 onaylandı; onaylanan öneriler spec'e "Plan turu kararları" (Karar 28–37) olarak işlendi.
 
 Çalışma kopyası `../wt0103`, dal `feat/0103-parti-duzeltme`, taban `origin/main` `520bcdb`.

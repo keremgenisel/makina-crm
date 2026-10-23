@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 4, plan turu 2026-10-23) |
+| **Durum** | Tamamlandı (revizyon 4; uygulama commit `be86973`, dal `feat/0103-parti-duzeltme`, 2026-10-23) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteri ekleme ve düzenleme formu (`src/components/customers/CustomerAddEditForm.jsx`: `partiSecicisi` koşulu ve parti seçicisinin ipucu metni; `isStockSerialPick`'in kip koşuluna dokunulmaz); `scripts/evidence/0009-sayfa.jsx` (yeni kanıt ekranı ve fikstürü); `docs/evidence/kanit-eslemesi.json`, `docs/evidence/0103-taban-piksel-raporu.json`, `docs/evidence/0103-piksel-raporu.json`, `docs/evidence/0103-kapanis-piksel-raporu.json`; `tests/ui/stok-durumu-0100-satis.test.jsx` (düzenleme kipinde seçicinin çizilmediğini sabitleyen testin yeniden yazılması) ve `tests/ui/stok-durumu-0100-app.test.jsx` (AC-41'in düzenleme ikizi) |
@@ -397,8 +397,14 @@ Toplam **18 bulgu: 1 Bloklayıcı, 6 Önemli, 11 Küçük**; tamamı Takım Yön
 
 | | |
 |---|---|
-| **Uygulama commit** | |
-| **Dal** | |
-| **Kapsam dışı kalanlar** | |
-| **Ölçülen sapmalar** | |
-| **Görsel kanıt** | |
+| **Uygulama commit** | `be86973` (kapanış ayrı commit) |
+| **Dal** | `feat/0103-parti-duzeltme` (taban `520bcdb`) |
+| **Spec revizyon sayısı** | 4 (revizyon 3 QA turu, 18 bulgu; revizyon 4 plan onayı, on öneri, Karar 28–37) |
+| **Düzeltme turu sayısı** | 1. Triyaj: 2 düşük bulgu; AC-7 testi kaydın partisini ölçmüyordu (düzenek anında yazıyordu, `ertele` kipi eklendi, triyajın mutasyonu artık kırıyor), belge düzeni (iki spec kopyası, CLAUDE.md plan yolu) kapanışta |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 |
+| **Regresyon / kaçan hata** | 0 / 0. Tam takım 400 dosya, 5.261 test yeşil (Electron dahil, `ui/kilit-0064` dahil) |
+| **Kapsam dışı kalanlar** | X1–X12 aynen; kök neden (X9) spec 0104'te |
+| **Ölçülen sapmalar** | `git diff --name-only 520bcdb be86973` (kanıt görüntüleri hariç): `CLAUDE.md`, `docs/evidence/kanit-eslemesi.json`, `docs/tasarim-sozlugu.md` (HataMetni örneği 120 → 123; BolumBasligi örneğinin `:150` atfı bu işten önce de yanlış satırı gösteriyordu, kapsam dışı, dokunulmadı), `scripts/evidence/0009-sayfa.jsx`, iki spec dosyası, `src/components/customers/CustomerAddEditForm.jsx` (tek kaynak dosyası), `tests/parti-duzeltme-0103.test.js`, `tests/ui/stok-durumu-0100-app.test.jsx`, `tests/ui/stok-durumu-0100-satis.test.jsx`. DoD 3'ten sapma: AC-23 casusla da ölçüldü (Karar 29) |
+| **Görsel kanıt** | Taban `0103-taban-piksel-raporu.json` (eski kod ↔ eski kod, 12 görüntü 0 fark), iş raporu `0103-piksel-raporu.json` (beş müşteri formu ekranı ve müşteri detayı 0 fark, yeni ekran "önce görüntüsü yok"), kapanış `0103-kapanis-piksel-raporu.json` (2 görüntü 0 fark; eşleme kaydı buraya `ayni`) |
+
+**Bu spec'ten çıkarılan ders:** Test düzeneği güncelleyiciyi anında çalıştırıyorsa, kaydı `setCustomers` çağrısından **sonra** değiştiren kod yolu (ekleme kolunun stoktan damgalaması) testte görünmez ve test damgadan önceki kaydı ölçer; 0101'de `sourceStockId`'de, burada `partiId`'de aynı tuzağa düşüldü. Kural: ekleme kolunun kayda yazdığı alanı ölçen test React'ın sırasıyla (ertelenen güncelleyici) çalışır.
