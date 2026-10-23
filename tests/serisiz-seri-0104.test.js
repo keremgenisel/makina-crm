@@ -77,7 +77,7 @@ describe("Spec 0104: değişmeyenler (AC-21, R14)", () => {
     expect(k).not.toMatch(/data-testid="stokta-duran-seri"/);
   });
   it("triyaj (bulgu 2): planın sürüm notu Karar 36'nın sonucunu ve eski kayıtların yolunu söyler", () => {
-    const plan = oku(fs.existsSync(path.join(kok, "specs/0104-uygulama-plani.md")) ? "specs/0104-uygulama-plani.md" : "specs/done/0104-uygulama-plani.md");
+    const plan = oku("specs/done/0104-uygulama-plani.md");
     const not = plan.slice(plan.indexOf("## 4. Sürüm notu"));
     expect(not).toMatch(/Stoktan eklenen satışlar artık partiye ve üretim tarihine bağlanıyor; eski kayıtların partisi müşteri düzenlemesinden düzeltilebilir\./);
     expect(not).toMatch(/Manuel gir/);

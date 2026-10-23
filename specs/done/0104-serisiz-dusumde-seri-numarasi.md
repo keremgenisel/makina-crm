@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 4, plan turu 2026-10-23) |
+| **Durum** | Tamamlandı (revizyon 4; uygulama commit `6d87636`, dal `feat/0104-serisiz-seri`, 2026-10-23) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteri ekleme ve seri numarası bekleyen düzenleme formunun stok seçicisi (`src/components/customers/CustomerAddEditForm.jsx:200-246`: serisiz dalda `aria-label`'lı seri numarası girişi, iki ekran metni, stok seçicisinin seri bekleyen düzenlemedeki kapısı ve model değişiminde işaretlerin sıfırlanması); `Customers.jsx`'in serisiz dalında yalnız bir bildirim (C1 istisnası, R17); `scripts/evidence/0009-sayfa.jsx` (yeni kanıt ekranı ve stoklu fikstürü); `docs/evidence/kanit-eslemesi.json`, `docs/evidence/0104-taban-piksel-raporu.json`, `docs/evidence/0104-piksel-raporu.json`, `docs/evidence/0104-kapanis-piksel-raporu.json`; `tests/ui/stok-durumu-0100-satis.test.jsx` ya da yeni bir test dosyası ve `tests/ui/stok-durumu-0100-app.test.jsx` (AC-27) |
@@ -376,8 +376,14 @@ Toplam **18 bulgu: 2 Bloklayıcı, 6 Önemli, 10 Küçük**; tamamı Takım Yön
 
 | | |
 |---|---|
-| **Uygulama commit** | |
-| **Dal** | |
-| **Kapsam dışı kalanlar** | |
-| **Ölçülen sapmalar** | |
-| **Görsel kanıt** | |
+| **Uygulama commit** | `6d87636` (kapanış ayrı commit) |
+| **Dal** | `feat/0104-serisiz-seri` (taban `d9033b6`, 0103 sonrası) |
+| **Spec revizyon sayısı** | 4 (revizyon 3 QA turu, 18 bulgu; revizyon 4 plan onayı, dokuz öneri, Karar 27–35); uygulama turunda Karar 36, triyajda Karar 37 |
+| **Düzeltme turu sayısı** | 1. Triyaj: 5 bulgu (1 orta, 1 düşük-orta, 3 düşük): eski kayıtlarda çift düşüm (uyarı + sürüm notu, Karar 37), sürüm notu Karar 36'nın sonucunu söylemiyordu, test yorumu bayattı ve sıra hatasını ekran testleri göremiyordu (`ertele: false` bekçisi eklendi), R18 ipucusu sözlük dışı kırmızıydı (`Ipucu`), belge düzeni (kapanışta) |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 |
+| **Regresyon / kaçan hata** | 0 / 0. Var olan bir hata uygulama turunda bulundu ve düzeltildi: stoktan eklenen satışlarda damgalar kayda girmiyordu (Karar 36) |
+| **Kapsam dışı kalanlar** | X1–X10 aynen. Açık: Karar 36 öncesi kayıtlarda eksik `sourceStockId`/`uretimTarihi` için düzeltme yolu yok; çift düşüm riskindeki kayıtların yedekte sayımı yapılmadı (Karar 37) |
+| **Ölçülen sapmalar** | `git diff --name-only d9033b6 6d87636` (kanıt görüntüleri hariç): `CLAUDE.md`, `docs/evidence/kanit-eslemesi.json`, `scripts/evidence/0009-sayfa.jsx` (yeni `secenek:` adımı, Karar 31), iki spec dosyası, `src/components/Customers.jsx` (R17/b bildirimi ve Karar 36'nın sıra değişikliği, C1'in iki istisnası), `src/components/customers/CustomerAddEditForm.jsx`, `tests/serisiz-seri-0104.test.js`, `tests/ui/serisiz-seri-0104.test.jsx`, `tests/ui/stok-durumu-0100-app.test.jsx` |
+| **Görsel kanıt** | Taban `0104-taban-piksel-raporu.json` (eski kod ↔ eski kod, 14 görüntü 0 fark), iş raporu `0104-piksel-raporu.json` (altı müşteri formu ekranı ve müşteri detayı 0 fark, yeni ekran "önce görüntüsü yok"), kapanış `0104-kapanis-piksel-raporu.json` (son kod ↔ iş raporu, 16 görüntü 0 fark; triyaj değişiklikleri hiçbir ekranı değiştirmedi; eşleme kaydı buraya `ayni`) |
+
+**Bu spec'ten çıkarılan ders:** İki spec boyunca (0101, 0103) "test düzeneğinin yapaylığı" diye not edilen davranış, gerçek uygulamanın hatasıydı: düzenek güncelleyiciyi bir biçimde, React başka bir biçimde çalıştırıyordu ve düzenek iki durumda da hatayı gizledi. Kural: test düzeneği bir kayıt alanını göremiyorsa bu düzeneğin değil kodun sorunu sayılır ve aynı yol gerçek App'te ölçülür; ekleme kolunu ölçen testlerden en az biri gerçek App'te koşar.

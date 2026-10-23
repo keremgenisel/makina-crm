@@ -6327,10 +6327,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0104-piksel-raporu.json",
+        "rapor": "docs/evidence/0104-kapanis-piksel-raporu.json",
         "ekran": "musteri-formu-0104-stok",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-23 · spec 0104 Karar 7"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0104-piksel-raporu.json",

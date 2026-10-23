@@ -1,6 +1,6 @@
 # 0104 uygulama planı: serisiz stok satırı düşülürken seri numarası girilebilir
 
-Spec: `specs/0104-serisiz-dusumde-seri-numarasi.md` (revizyon 4). Plan Takım Yöneticisi tarafından 2026-10-23'te onaylandı;
+Spec: `specs/done/0104-serisiz-dusumde-seri-numarasi.md` (revizyon 4). Plan Takım Yöneticisi tarafından 2026-10-23'te onaylandı;
 onaylanan öneriler spec'e "Plan turu kararları" (Karar 27–35) olarak işlendi.
 
 Çalışma kopyası `../wt0104`, dal `feat/0104-serisiz-seri`, taban `origin/main` `d9033b6` (0103 sonrası).
