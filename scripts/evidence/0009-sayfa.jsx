@@ -577,6 +577,8 @@ const STOK_0101 = [
 // Spec 0102 (Karar 14, AC-43): sayfa boyutunun (10) üstünde on dört makina; sayfalamanın kalktığının görünür kanıtı.
 const STOK_0102 = Array.from({ length: 14 }, (_, i) => ({ id: 9401 + i, model: i % 3 ? "AK100" : "AK120_DSC", serialNo: `U-${String(i + 1).padStart(2, "0")}`,
   addedDate: `2026-09-${String(i + 1).padStart(2, "0")}`, ...(i % 4 === 0 ? { uretimDurumu: "montaj" } : {}) }));
+// Spec 0103 (Karar 9): seri no'su dolu, TL, üretim tarihli, partisi açık partiye bağlı satılmış kayıt; düzenleme kipinde parti seçicisi.
+const MUSTERI_0103 = MUSTERILER.map(c => (c.id === 500 ? { ...c, currency: "TRY", serialNo: c.serialNo || "AK100-2026-031", uretimTarihi: "2026-09-12", partiId: 902 } : c));
 const anasayfa0100 = <Dashboard customers={MUSTERI_0100} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
   stock={STOK_0100} uretimPartileri={[P_KAPALI, P_ACIK_0100]} />;
 
@@ -1280,6 +1282,8 @@ const EKRANLAR = {
   "harita-0094-eslesmeyen": [<div style={{ height: 820 }}><Harita customers={[...HARITA_0094_IL, { id: 9419, name: "Excel Kaydı", country: "Türkiye", city: "Aydın", ilce: "Kusadasi" }]} dealers={[]} factory={null} baslangicUlke="Türkiye" baslangicIl="Aydın" /></div>, ['bekle:[data-ad="Kuşadası"]']],
   // R6: müşteri formunda Sakarya seçiliyken İlçe alanı.
   "musteri-formu-0094-ilce": [<Customers customers={[{ ...MUSTERI_LISTE[0], country: "Türkiye", city: "Sakarya", ilce: "Sapanca" }]} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS} initialDetailId={MUSTERI_LISTE[0].id} />, ["~Düzenle", "kaydir:İlçe"]],
+  "musteri-formu-0103-parti": [<Customers customers={MUSTERI_0103} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS}
+    giderYetki uretimPartileri={[P_KAPALI, P_ACIK]} initialDetailId={500} />, ["~Düzenle", "kaydir:Üretim partisi"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);

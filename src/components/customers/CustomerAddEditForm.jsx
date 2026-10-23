@@ -3,7 +3,7 @@ import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/consta
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani, kalipCapiOnDoldur } from "../../lib/utils";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, KalipCapiFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
-import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi } from "../../lib/stokDurumu";
+import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi, PANO_SEKME_ADI } from "../../lib/stokDurumu";
 import { useLock } from "../../hooks/useLock";
 import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
@@ -25,11 +25,14 @@ export const CustomerAddEditForm = ({
   uretimPartileri = [],
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
-  // Spec 0100 R7/2a, R7/2b: parti seçicisi stok seçicisinin çizildiği iki kipte ve yalnız stoktan satır seçilmemişken.
+  // Spec 0103 R1/2, R4 (0100 R7/2a'nın kip yarısını ters çevirir): parti seçicisi gider yetkisiyle ekleme ve BÜTÜN düzenleme
+  // kiplerinde çizilir; stoktan seçim ölçütü (0100 R7/2b) yalnız stok seçicisinin çizildiği iki kipte uygulanır, öteki
+  // düzenlemede stokta duran aynı seriyle bir satır seçiciyi gizlemesin.
   const stokSatirlari = (stock && form.model) ? stock.filter(s => s.model === form.model) : [];
   const seriBekleyenDuzenleme = !!(modal?.edit && form.seriNoBekliyor && !modal.edit.serialNo);
   const stoktanSecildi = !!form._stokSerisiz || (!form._manualSerial && !!form.serialNo && stokSatirlari.some(s => s.serialNo === form.serialNo));
-  const partiSecicisi = giderYetki && (modal === "add" || seriBekleyenDuzenleme) && !stoktanSecildi;
+  const stokSecicisiKipi = modal === "add" || seriBekleyenDuzenleme;
+  const partiSecicisi = giderYetki && !(stokSecicisiKipi && stoktanSecildi);
   const { lockLoading, lockConflict, forceAcquire } = useLock("customer", modal?.edit?.id ?? null);
 
   // Seri no yarışı önleyici kilit: stoktan bir seri seçildiği anda o seri kilitlenir,
@@ -372,9 +375,9 @@ export const CustomerAddEditForm = ({
           </Ipucu></div>
         </div>
       )}
-      {/* Spec 0100 R7/2–R7/2b, Karar 10, 14, 21, plan P13: stoktan makina seçilmeden yapılan satışın üretim partisi. Yalnız gider
-          yetkisiyle ve stok seçicisinin çizildiği iki kipte; stoktan bir satır seçilince çizilmez (parti o satırdan gelir). Boş seçim
-          alanı kayıttan siler. */}
+      {/* Spec 0100 R7/2–R7/2b, spec 0103 R1–R8/2: satışın üretim partisi. Yalnız gider yetkisiyle; ekleme ve bütün düzenleme
+          kiplerinde (satılmış kaydın partisi buradan düzeltilir). Stok seçicisinin kiplerinde stoktan bir satır seçilince çizilmez
+          (parti o satırdan gelir). Boş seçim alanı kayıttan siler. */}
       {partiSecicisi && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Üretim partisi">
@@ -385,7 +388,7 @@ export const CustomerAddEditForm = ({
               {form.partiId != null && !uretimPartileri.some(x => String(x.id) === String(form.partiId)) && <option value={String(form.partiId)}>Silinmiş parti</option>}
             </Select>
           </Field>
-          <div style={{ alignSelf: "center" }}><Ipucu>Stoktan makina seçilmeden yapılan satış (ön sipariş) partiye buradan bağlanır; seçilmezse satış partisiz kalır.</Ipucu></div>
+          <div style={{ alignSelf: "center" }}><Ipucu>{`Stoktan makina seçilmeden yapılan satış partiye buradan bağlanır. Kaydedilmiş bir satışın partisi de buradan düzeltilir; seçilmezse satış partisiz kalır ve ${PANO_SEKME_ADI}'nun satılan adedinde görünmez.`}</Ipucu></div>
         </div>
       )}
 

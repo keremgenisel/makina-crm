@@ -6295,6 +6295,37 @@
         "rapor": "docs/evidence/0101-piksel-raporu.json",
         "ekran": "musteri-formu-0094-ilce",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0103-piksel-raporu.json",
+        "ekran": "musteri-formu-0103-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-23 · spec 0103 Karar 9"
+      },
+      {
+        "rapor": "docs/evidence/0103-piksel-raporu.json",
+        "ekran": "musteri-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0103-piksel-raporu.json",
+        "ekran": "musteri-formu-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0103-piksel-raporu.json",
+        "ekran": "musteri-formu-ilk-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0103-piksel-raporu.json",
+        "ekran": "musteri-formu-0079",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0103-piksel-raporu.json",
+        "ekran": "musteri-formu-0094-ilce",
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [

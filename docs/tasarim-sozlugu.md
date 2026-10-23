@@ -238,7 +238,7 @@ Alanın hemen altında kırmızı hata metni. `role="alert"`, boş içerikte hi�
 - Uyarı için başka bir varyant (simgeli, amber) yazılmaz; eski `Warn` spec 0015'te kaldırıldı.
 
 **Örnek:** `src/components/CalisanManager.jsx:220`
-**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:120` (canlı doğrulama, form açılır açılmaz görünür)
+**Örnek:** `src/components/customers/CustomerAddEditForm.jsx:123` (canlı doğrulama, form açılır açılmaz görünür)
 
 ## Ipucu
 
