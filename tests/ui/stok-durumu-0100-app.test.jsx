@@ -90,4 +90,52 @@ describe("Spec 0100: gerçek App", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Parti Üretim Panosu" }));
     expect([panoSayisi("satildi"), panoSayisi("kalan")]).toEqual(["Satıldı2", "Planlanandan kalan1"]);
   });
+
+  // Spec 0104 AC-27 (AC-16, Karar 16): serisiz seçenekle seri numarası girilerek yapılan satış partiye bağlı doğar ve panonun
+  // satılan adedine girer. Kendi verisini kurar (paylaşılan veri() değişmez).
+  it("AC-27 (spec 0104): serisiz stoktan numarası girilerek satılan makina panonun satılan adedine girer", async () => {
+    const v = veri();
+    v.standardModels = [{ model: "AK100", sogutma: "", kapasite: "", kalip: "" }];
+    v.stock.push(stk(4, { serialNo: "", addedDate: "2026-09-05" }));
+    const kayitlar = await ac(v);
+    const panoSayisi = (k) => within(screen.getByTestId("parti-uretim-panosu")).getByTestId(`pano-sayi-${k}`).textContent;
+    menu("Stok");
+    fireEvent.click(screen.getByRole("tab", { name: "Parti Üretim Panosu" }));
+    expect(panoSayisi("satildi")).toBe("Satıldı1");
+    menu("Müşteriler");
+    fireEvent.click(screen.getByText("Yeni Müşteri"));
+    fireEvent.change(screen.getByPlaceholderText("Satın alan firma / kişi"), { target: { value: "Serisiz Satış AŞ" } });
+    const ok = screen.getAllByText(/^[▼▲]$/).find(e => e.previousElementSibling?.tagName === "SPAN" && e.parentElement.style.userSelect === "none");
+    fireEvent.click(ok.parentElement);
+    fireEvent.click(screen.getAllByText("AK100").find(e => e.tagName === "DIV" && e.style.fontWeight === "700"));
+    fireEvent.change(screen.getByText(/Stoktan seçin/).closest("select"), { target: { value: "__serisiz__" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Seri numarası" }), { target: { value: "AK100-2026-099" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    await waitFor(() => expect(kayitlar.some(d => d.customers?.some(c => c.name === "Serisiz Satış AŞ" && c.serialNo === "AK100-2026-099"
+      && c.partiId === 902 && c.sourceStockId === 4 && !c.seriNoBekliyor))).toBe(true));
+    menu("Stok");
+    fireEvent.click(screen.getByRole("tab", { name: "Parti Üretim Panosu" }));
+    expect(panoSayisi("satildi")).toBe("Satıldı2");
+  });
+
+  // Spec 0104 Karar 36: ekleme kolunun stoktan damgaları gerçek App'te kayda girer (eskiden React güncelleyiciyi hemen çalıştırıp
+  // kaydın kopyasını damgasız alıyordu; stok satırı düşüyor ama sourceStockId, partiId ve uretimTarihi kayda girmiyordu).
+  it("Karar 36 (spec 0104): serili stok satırından yeni müşteri eklenince damgalar kayda girer", async () => {
+    const v = veri();
+    v.standardModels = [{ model: "AK100", sogutma: "", kapasite: "", kalip: "" }];
+    v.stock[1].uretimTarihi = "2026-08-20";
+    const kayitlar = await ac(v);
+    menu("Müşteriler");
+    fireEvent.click(screen.getByText("Yeni Müşteri"));
+    fireEvent.change(screen.getByPlaceholderText("Satın alan firma / kişi"), { target: { value: "Serili AŞ" } });
+    const ok = screen.getAllByText(/^[▼▲]$/).find(e => e.previousElementSibling?.tagName === "SPAN" && e.parentElement.style.userSelect === "none");
+    fireEvent.click(ok.parentElement);
+    fireEvent.click(screen.getAllByText("AK100").find(e => e.tagName === "DIV" && e.style.fontWeight === "700"));
+    fireEvent.change(screen.getByText(/Stoktan seçin/).closest("select"), { target: { value: "S-2" } });
+    fireEvent.click(screen.getByText("Kaydet"));
+    await waitFor(() => expect(kayitlar.some(d => d.customers?.some(c => c.name === "Serili AŞ"))).toBe(true));
+    const son = kayitlar.at(-1);
+    expect(son.customers.find(c => c.name === "Serili AŞ")).toMatchObject({ serialNo: "S-2", sourceStockId: 2, partiId: 902, uretimTarihi: "2026-08-20" });
+    expect(son.stock.map(s => s.id)).toEqual([1, 3]);
+  });
 });

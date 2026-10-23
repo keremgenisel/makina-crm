@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
-import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani, kalipCapiOnDoldur } from "../../lib/utils";
+import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani, kalipCapiOnDoldur, trLower } from "../../lib/utils";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, KalipCapiFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
 import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi, PANO_SEKME_ADI } from "../../lib/stokDurumu";
@@ -177,7 +177,7 @@ export const CustomerAddEditForm = ({
             {models.map(m => (
               <div
                 key={m.model}
-                onClick={() => { setForm(p => ({ ...p, model: m.model })); setModelPicker(false); }}
+                onClick={() => { setForm(p => ({ ...p, model: m.model, ...(p._stokSerisiz && p.model !== m.model ? { _stokSerisiz: false, serialNo: "" } : {}) })); setModelPicker(false); }}
                 style={{ padding: "10px 12px", borderRadius: 8, cursor: "pointer", border: "2px solid", borderColor: form.model === m.model ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)", background: form.model === m.model ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)" }}
               >
                 <div style={{ fontWeight: 700, fontSize: 13, color: "var(--n900, #0f172a)" }}>{m.model}</div>
@@ -197,9 +197,19 @@ export const CustomerAddEditForm = ({
           const serili = stockForModel.filter(s => s.serialNo);
           const serisiz = stockForModel.filter(s => !s.serialNo);
           const isSerialPendingEdit = modal?.edit && form.seriNoBekliyor && !modal.edit.serialNo;
-          if ((modal === "add" || isSerialPendingEdit) && stock && form.model && stockForModel.length > 0 && !form._manualSerial) {
+          // Spec 0104 R16, Karar 10, 27: stoktan zaten düşülmüş (sourceStockId'li) seri bekleyen kayıtta stok seçicisi çizilmez;
+          // düz giriş yazılınca _manualSerial işaretlenir, böylece kayıt yolu ikinci bir satır düşmez.
+          const stokBagliBekleyen = !!(isSerialPendingEdit && modal.edit.sourceStockId);
+          // Spec 0104 R18, Karar 29: serisiz dalda girilen numara bu modelin bir stok satırında duruyor mu (kırpılmış, Türkçe küçük).
+          const seriAnahtari = (v) => trLower(String(v || "").trim());
+          const stoktaDuranSeri = !!form._stokSerisiz && !!seriAnahtari(form.serialNo)
+            && stockForModel.some(s => s.serialNo && seriAnahtari(s.serialNo) === seriAnahtari(form.serialNo));
+          if ((modal === "add" || isSerialPendingEdit) && !stokBagliBekleyen && stock && form.model && stockForModel.length > 0 && !form._manualSerial) {
             return (
               <>
+                {/* Triyaj (bulgu 1): spec 0104 Karar 36'dan önce stoktan serisiz eklenen satışların stoğu düşülmüş ama kayda
+                    sourceStockId yazılmamıştı; veri bu kaydı ayırt etmiyor, bu yüzden yalnız uyarı (engel değil). */}
+                {isSerialPendingEdit && <Ipucu>{SERI_BEKLEYEN_CIFT_DUSUM_IPUCU}</Ipucu>}
                 <Select value={form._stokSerisiz ? "__serisiz__" : (form.serialNo || "")} onChange={e => {
                   if (e.target.value === "__manual__") {
                     setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "", _kitTipler: [] }));
@@ -225,9 +235,17 @@ export const CustomerAddEditForm = ({
                   <option value="__manual__">Manuel gir (stok dışı / eski müşteri)</option>
                 </Select>
                 {form._stokSerisiz ? (
-                  <div style={{ fontSize: 11, color: "var(--amb600, #d97706)", marginTop: 5, fontWeight: 600 }}>
-                    Seri no'suz satış yapılıyor, stoktan 1 adet düşülecek. Seri no'yu sonra "Müşteriyi Düzenle" bölümünden girebilirsiniz.
-                  </div>
+                  <>
+                    {/* Spec 0104 R1–R5, Karar 1, 8, 30: numara serisiz düşümle aynı ekranda; yalnız satış kaydına yazılır, kayıt yolu değişmez. */}
+                    <div style={{ marginTop: 6 }}>
+                      <Input aria-label="Seri numarası" value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="AK140-2026-001" />
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--amb600, #d97706)", marginTop: 5, fontWeight: 600 }}>
+                      Stoktan 1 adet düşülecek. Seri numarasını şimdi girebilir ya da boş bırakıp sonra 'Müşteriyi Düzenle' bölümünden girebilirsiniz.
+                    </div>
+                    {/* Triyaj (bulgu 4): engellemeyen ipucu sözlüğün Ipucu'su (hata dili değil). */}
+                    {stoktaDuranSeri && <Ipucu>Bu seri numarası stokta duruyor; o makinayı satmak için listeden serili satırı seçin.</Ipucu>}
+                  </>
                 ) : serialLock ? (
                   <div style={{ fontSize: 11, color: "var(--red600, #dc2626)", marginTop: 5, fontWeight: 700 }}>
                     ⚠ Bu seri no şu anda {serialLock.lockedBy || "başka bir kullanıcı"} tarafından işleniyor. Kaydetmek için farklı bir seri seçin
@@ -246,16 +264,18 @@ export const CustomerAddEditForm = ({
           }
           return (
             <>
-              <Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} placeholder="AK140-2026-001" autoFocus={form._manualSerial} />
-              {(modal === "add" || isSerialPendingEdit) && form._manualSerial && stockForModel.length > 0 && (
+              <Input value={form.serialNo || ""} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value, ...(stokBagliBekleyen ? { _manualSerial: true } : {}) }))} placeholder="AK140-2026-001" autoFocus={form._manualSerial && !stokBagliBekleyen} />
+              {(modal === "add" || isSerialPendingEdit) && !stokBagliBekleyen && form._manualSerial && stockForModel.length > 0 && (
                 <button onClick={() => setForm(p => ({ ...p, _manualSerial: false, serialNo: "" }))}
                   style={{ marginTop: 5, fontSize: 11, color: "var(--brand, #e85d1a)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>
                   Stoktan seçime dön
                 </button>
               )}
-              {(modal === "add" || isSerialPendingEdit) && form._manualSerial && (
+              {(modal === "add" || isSerialPendingEdit) && !stokBagliBekleyen && form._manualSerial && (
                 <Ipucu>
-                  Manuel girilen seri no stoktan düşülmez (eski müşteri kaydı için uygundur).
+                  {/* Spec 0104 R12, R12/2, Karar 5, 12: son cümle yalnız dönülecek stok varken (düğmenin koşulu). */}
+                  Manuel girilen seri no stoktan düşülmez; stok dışı makina ve eski müşteri kaydı için uygundur.
+                  {stockForModel.length > 0 && " Stoktaki bir makinayı satıyorsanız 'Stoktan seçime dön' düğmesine basın."}
                 </Ipucu>
               )}
               {(modal === "add" || isSerialPendingEdit) && stock && form.model && stockForModel.length === 0 && (
@@ -542,3 +562,6 @@ export const CustomerAddEditForm = ({
     </Modal>
   );
 };
+
+// Spec 0104 triyaj (bulgu 1): seri bekleyen düzenlemenin stok seçicisinin üstündeki uyarı.
+export const SERI_BEKLEYEN_CIFT_DUSUM_IPUCU = "Bu kayıt stoktan seri no'suz satıldıysa stok zaten düşülmüştür; numarayı 'Manuel gir' ile yazın, stoktan yeniden düşmeyin.";

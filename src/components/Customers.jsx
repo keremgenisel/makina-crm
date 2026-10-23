@@ -275,7 +275,7 @@ export const Customers = ({
       // Spec 0100 R6/3, plan P3–P4: serisiz düşüm motorun seçtiği satırı KİMLİKLE düşer (önce satışa hazırın en eskisi). Eskiden
       // güncelleyici tam dizide (çöp dahil) ilk serisiz satırı arıyordu ve çöpteki satırı düşebiliyordu.
       const srcEntry = serisizDusulecek(stock, clean.model);
-      if (srcEntry) { stoktanDamgala(srcEntry); setStock(p => p.filter(s => s.id !== srcEntry.id)); }
+      if (srcEntry) { stoktanDamgala(srcEntry); setStock(p => p.filter(s => s.id !== srcEntry.id)); } else showToast("Stoktan düşülecek satır bulunamadı, satış stok bağı olmadan kaydedildi", "warn"); // spec 0104 R17/b: kaydın şekli aynı
     } else if (clean.serialNo && !_manualSerial) {
       // Triyaj (bulgu 4): serili düşüm de kimlikle; tam dizide aynı model ve seriyle duran çöpteki satır silinmez.
       const srcEntry = stock.find(s => s.model === clean.model && s.serialNo === clean.serialNo);
@@ -314,6 +314,7 @@ export const Customers = ({
         customerId: newId, currency: clean.currency, tarih: odemeTarih, ayar: appSettings?.krediKartiKomisyonlari, kdvOran: odemeKdvOran, yeniId: uid, kartTaban: clean,
       });
       clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
+      if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial }); // spec 0104 Karar 36: damgalar kayıt yazılmadan ÖNCE (React güncelleyiciyi hemen çalıştırıp kopyayı damgasız alıyordu)
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
       if (yeniOdemeler.length > 0 && setPayments) {
         setPayments(p => [...yeniOdemeler, ...p]);
@@ -322,7 +323,6 @@ export const Customers = ({
         const yeniCekler = cekSatirlari.map((r, i) => (r.yontem === "Çek" ? yeniCek(cekDogrula(r.cek || {}, { cekler }).kayit, yeniOdemeler[i].id, odemeTarih, uid()) : null)).filter(Boolean);
         if (yeniCekler.length && setCekler) setCekler(p => [...p, ...yeniCekler]);
       }
-      if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
       // "Stoktan düş" tipli seçimler partStock'tan 1 adet düşülür (kit'ten gelenleri atlat — makina stoka eklenirken zaten düşülmüştür)
       const { toDeduct } = stokSecimDiff({ yeni: clean.tipSecimleri, kitTipler: _kitTipler || [], partTypeDefs });
       if (toDeduct.length > 0 && setPartStock) {

@@ -579,6 +579,12 @@ const STOK_0102 = Array.from({ length: 14 }, (_, i) => ({ id: 9401 + i, model: i
   addedDate: `2026-09-${String(i + 1).padStart(2, "0")}`, ...(i % 4 === 0 ? { uretimDurumu: "montaj" } : {}) }));
 // Spec 0103 (Karar 9): seri no'su dolu, TL, üretim tarihli, partisi açık partiye bağlı satılmış kayıt; düzenleme kipinde parti seçicisi.
 const MUSTERI_0103 = MUSTERILER.map(c => (c.id === 500 ? { ...c, currency: "TRY", serialNo: c.serialNo || "AK100-2026-031", uretimTarihi: "2026-09-12", partiId: 902 } : c));
+// Spec 0104 (Karar 7): müşteri formunun stok seçicisi; aynı modelden iki serisiz ve bir serili stok satırı.
+const STOK_0104 = [
+  { id: 9501, model: "AK100_DS", serialNo: "", addedDate: "2026-09-02", uretimDurumu: "montaj", partiId: 902, parcalar: [] },
+  { id: 9502, model: "AK100_DS", serialNo: "", addedDate: "2026-09-08", partiId: 902, parcalar: [] },
+  { id: 9503, model: "AK100_DS", serialNo: "AK100-2026-040", addedDate: "2026-09-12", partiId: 902, parcalar: [] },
+];
 const anasayfa0100 = <Dashboard customers={MUSTERI_0100} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
   stock={STOK_0100} uretimPartileri={[P_KAPALI, P_ACIK_0100]} />;
 
@@ -1284,6 +1290,8 @@ const EKRANLAR = {
   "musteri-formu-0094-ilce": [<Customers customers={[{ ...MUSTERI_LISTE[0], country: "Türkiye", city: "Sakarya", ilce: "Sapanca" }]} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS} initialDetailId={MUSTERI_LISTE[0].id} />, ["~Düzenle", "kaydir:İlçe"]],
   "musteri-formu-0103-parti": [<Customers customers={MUSTERI_0103} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS}
     giderYetki uretimPartileri={[P_KAPALI, P_ACIK]} initialDetailId={500} />, ["~Düzenle", "kaydir:Üretim partisi"]],
+  "musteri-formu-0104-stok": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={STOK_0104} setStock={bos} dealers={DEALERS}
+    uretimPartileri={[P_KAPALI, P_ACIK]} />, ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:Seri no'suz stoktan düş", "doldur:Seri numarası=AK100-2026-045", "kaydir:Seri Numarası"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);
@@ -1303,6 +1311,16 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       const el = document.querySelector(`input[aria-label="${etiket}"]`) || (etiketOgesi && document.getElementById(etiketOgesi.htmlFor)) || document.querySelector(`input[placeholder="${etiket}"]`);
       if (el) { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, deger); el.dispatchEvent(new Event("input", { bubbles: true })); }
       else console.warn("alan yok: " + etiket);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("secenek:")) {
+      // Spec 0104 Karar 31: etiketsiz açılır liste; metni verilen başla başlayan seçeneği taşıyan ilk liste o seçeneğe geçer.
+      const bas = metin.slice(8);
+      const el = [...document.querySelectorAll("select")].find(x => [...x.options].some(o => o.textContent.startsWith(bas)));
+      const o = el && [...el.options].find(x => x.textContent.startsWith(bas));
+      if (o) { Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(el, o.value); el.dispatchEvent(new Event("change", { bubbles: true })); }
+      else console.warn("seçenek yok: " + bas);
       await bekle(300);
       continue;
     }
