@@ -10,6 +10,8 @@ import { yansitilanKomisyon } from "../../../lib/krediKarti";
 import { satisTevkifatRozeti } from "../../../lib/satisTevkifat";
 import { Icon, Btn, AtesRozeti } from "../../ui";
 import { KartBolum, BosDurum } from "../../tasarim";
+import { kalipDurumuTuret, extraKalipAnahtari, KALIP_DURUMU_ETIKETI } from "../../../lib/musteriDurumu";
+import { KalipDurumuSecici } from "../DurumSecici";
 
 const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
 const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
@@ -74,6 +76,7 @@ export const MachineTimeline = ({
   onTahsilTaksit = null,
   dosyaAdet = null,
   onDosyaBadge = null,
+  durumBaglami = null, onPartSaleKalipDurumu = null, // spec 0106 R12, R12/2: Extra Kalıp satırının kalıp durumu seçicisi
 }) => {
   // Odaklı satıra kaydır (genel aramadan "servis" veya "Extra Kalıp" sonucuna tıklanınca)
   const odakRef = useRef(null);
@@ -341,6 +344,15 @@ export const MachineTimeline = ({
                             style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: p.odendi === false ? "var(--redBr, #fecaca)" : "var(--grnBr, #bbf7d0)", background: p.odendi === false ? "var(--redBg, #fef2f2)" : "var(--grnBg, #f0fdf4)", color: p.odendi === false ? "var(--red600, #dc2626)" : "var(--grn700, #15803d)" }}>
                             {p.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                           </button>
+                        )}
+                        {/* Spec 0106 R12/2, AC-39: Extra Kalıp satışının kalıp durumu, ödeme anahtarının komşusu, cust_kalip_edit ile. */}
+                        {canDo("cust_kalip_edit") && onPartSaleKalipDurumu && (
+                          <span data-testid={`extra-kalip-durumu-${p.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--n600, #475569)", fontWeight: 600, whiteSpace: "nowrap" }}>
+                            {KALIP_DURUMU_ETIKETI}
+                            <KalipDurumuSecici value={p.kalipDurumu} ariaLabel={`${p.ad || "Extra Kalıp"} kalıp durumu`}
+                              turetilen={kalipDurumuTuret(p, extraKalipAnahtari(p.id), durumBaglami?.harita)}
+                              onChange={v => onPartSaleKalipDurumu(p, v)} />
+                          </span>
                         )}
                         {p.odendi && p.yontem === "Çek" && !p.ucretsizMi && canDo("cust_kalip_payment") && onTogglePartSaleCekTahsil && (
                           <button onClick={() => onTogglePartSaleCekTahsil(p)}

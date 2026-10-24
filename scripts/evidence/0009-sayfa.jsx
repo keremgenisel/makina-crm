@@ -328,6 +328,29 @@ const MUSTERI_LISTE = [
   { id: 503, name: "Eski Fırın", model: "AK120_DSC", serialNo: "S-4", currency: "TRY", installDate: "2020-04-01", warrantyEnd: "2022-04-01" },
   { id: 504, name: "Seri Bekleyen", model: "AK100", serialNo: "", seriNoBekliyor: true, currency: "TRY", installDate: "2026-09-01" },
 ];
+// Spec 0106: müşteri satırlarının durum pilleri (mockup'taki satırlar). Form 900'ün satırları kalıp durumlarını türetir;
+// ANKARA DÖNER'in Extra Kalıp satışı hazır, müşteri listesindeki aynası kümeye girmez.
+const k0106 = (ad, olcu, ek = {}) => ({ ad, olcu, ...ek });
+const MUSTERI_0106 = [
+  { id: 861, name: "LEZZET BAHÇESİ", model: "AK120_DS", serialNo: "F04231002", currency: "TRY", installDate: "2023-03-19", warrantyEnd: "2025-03-19", kaliplar: [k0106("Y50", "50x110"), k0106("Y55", "55x125")] },
+  { id: 862, name: "ANKARA DÖNER", model: "AK120_DS", serialNo: "F04229410", currency: "TRY", installDate: "2025-06-21", warrantyEnd: "2027-06-21", makinaDurumu: "teslim", kaliplar: [k0106("Y45", "45x110", { partSaleId: 872 })] },
+  { id: 863, name: "FLORYA UN", model: "AK100_DSC", serialNo: "F04230990", currency: "TRY", installDate: "2023-10-03", warrantyEnd: "2025-10-03", kaliplar: [k0106("Y50", "50x110"), k0106("Y55", "55x125"), k0106("K40", "40x40"), k0106("O70", "70x140", { uretimFormGonder: true, uretimFormId: 870 })] },
+  { id: 864, name: "BAL KÖFTE & BURGER", model: "SWP140_DSC", serialNo: "", seriNoBekliyor: true, currency: "TRY", installDate: "2026-11-11", warrantyEnd: "2028-11-11", makinaDurumu: "montaj", kalanBorc: 12000, kaliplar: [k0106("Y60", "60x125", { uretimFormGonder: true })] },
+  { id: 865, name: "UFUK MAKİNA", model: "AK140_DSC", serialNo: "F04234777", currency: "TRY", installDate: "2026-10-02", warrantyEnd: "2028-10-02", makinaDurumu: "hazir", kaliplar: [k0106("Y55", "55x125"), k0106("Y60", "60x125"), k0106("K40", "40x40")] },
+  { id: 866, name: "ÇÖMLEK GIDA", model: "AK100_DS", serialNo: "F04234801", currency: "TRY", installDate: "2026-08-14", warrantyEnd: "2028-08-14", makinaDurumu: "hazir", kaliplar: [k0106("Y55", "55x125", { uretimFormId: 870 }), k0106("Y60", "60x125", { kalipDurumu: "teslim" })] },
+  { id: 867, name: "OX CO Sp. z o.o.", model: "AK120_DSC", serialNo: "F04234925", currency: "TRY", installDate: "2026-09-30", warrantyEnd: "2028-09-30", makinaDurumu: "montaj", kalanBorc: 25000,
+    kaliplar: [k0106("Y55", "55x125", { uretimFormGonder: true, uretimFormId: 870 }), k0106("Y60", "60x125", { uretimFormGonder: true, uretimFormId: 870 }), k0106("K40", "40x40", { kalipDurumu: "teslim" }), k0106("O70", "70x140", { kalipDurumu: "teslim" })] },
+];
+const FORM_0106 = [{ id: 870, baslangicTarihi: "2026-10-01", satirlar: [
+  { id: 1, kaynakTip: "musteri", kaynakId: 863, kalipIdx: 3, tamamlandi: false },
+  { id: 2, kaynakTip: "musteri", kaynakId: 866, kalipIdx: 0, tamamlandi: true },
+  { id: 3, kaynakTip: "musteri", kaynakId: 867, kalipIdx: 0, tamamlandi: false },
+  { id: 4, kaynakTip: "musteri", kaynakId: 867, kalipIdx: 1, tamamlandi: false },
+  { id: 5, kaynakTip: "extra_kalip", kaynakId: 872, tamamlandi: true },
+] }];
+const PS_0106 = [{ id: 872, customerId: 862, tur: "Kalıp", ad: "Y45", olcu: "45x110", ucret: 18000, currency: "TRY", tarih: "2026-10-12", faturaTipi: "Faturalı Yurtiçi", odendi: true, uretimFormId: 870 }];
+const musteri0106 = (ek = {}) => <Customers customers={MUSTERI_0106} setCustomers={bos} partSales={PS_0106} setPartSales={bos} services={[]} payments={[]} dealers={DEALERS}
+  stock={[]} setStock={bos} uretimFormlari={FORM_0106} kalipDefs={["Y45", "Y50", "Y55", "Y60", "K40", "O70"].map((ad, i) => ({ id: i + 1, ad }))} {...ek} />;
 const BAYI_LISTE = [...DEALERS, { id: 4, name: "Akdeniz Servis", bayiMi: false, anlasmaliServisMi: true, city: "Antalya", country: "Türkiye" }];
 const BAYI_KALIP = [{ id: 9, customerId: 500, tur: "Kalıp", ad: "Hamburger", ucret: 1000, currency: "TRY", tarih: "2026-07-10", faturaTipi: "Faturasız Yurtiçi", odendi: false, satisFirma: "Ege Bayi" }];
 const YP_SATIS = [
@@ -1302,6 +1325,10 @@ const EKRANLAR = {
     giderYetki uretimPartileri={[P_KAPALI, P_ACIK]} initialDetailId={500} />, ["~Düzenle", "kaydir:Üretim partisi"]],
   "musteri-formu-0104-stok": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={STOK_0104} setStock={bos} dealers={DEALERS}
     uretimPartileri={[P_KAPALI, P_ACIK]} />, ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:Seri no'suz stoktan düş", "doldur:Seri numarası=AK100-2026-045", "kaydir:Seri Numarası"]],
+  "musteriler-0106-piller": [musteri0106(), []],
+  "musteriler-0106-suzgec": [musteri0106(), ["etiket:Teslim Bekleyenler (3)"]],
+  "musteri-formu-0106-durum": [musteri0106({ initialDetailId: 867 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
+  "musteri-detay-0106-kalip": [musteri0106({ initialDetailId: 862 }), ["kaydir:Kalıp Verildi"]],
   "musteri-formu-0105-model": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={STOK_0105} setStock={bos} dealers={DEALERS}
     appSettings={AYAR_0105} />, ["~Yeni Müşteri", "tikla:Model seçin...", "kaydir:AK120_DSC"]],
 };

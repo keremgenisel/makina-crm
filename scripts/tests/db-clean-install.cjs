@@ -221,6 +221,23 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && JSON.stringify(b.stock.find(x => x.id === 91)?.kalipCapi) === JSON.stringify(kc) && !("kalipCapi" in b.stock.find(x => x.id === 92)));
 }
 
+// Spec 0106 AC-31 (C2): temiz kurulumda üç durum sütunu (müşteri, müşteri kalıbı, Extra Kalıp) ilk oturumda yazılıp geri okunur.
+{
+  let h = null;
+  try {
+    dbmod.writeBlobToDb({
+      customers: [{ id: 95, name: "D AŞ", model: "AK100", makinaDurumu: "montaj", kaliplar: [{ ad: "Y55", olcu: "55", kalipDurumu: "teslim" }, { ad: "K40", olcu: "40" }] }, { id: 96, name: "E AŞ", kaliplar: [] }],
+      partSales: [{ id: 97, customerId: 95, tur: "Kalıp", ad: "Y45", kalipDurumu: "hazir" }, { id: 98, customerId: 95, tur: "Kalıp", ad: "Y46" }],
+    });
+  } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  const m = b.customers.find(x => x.id === 95);
+  check("spec 0106 AC-31: temiz kurulumda makinaDurumu ve iki kalipDurumu sütunu var ve yazıldı; boşlar gövdede yok", h === null
+    && m?.makinaDurumu === "montaj" && m.kaliplar[0].kalipDurumu === "teslim" && !("kalipDurumu" in m.kaliplar[1])
+    && !("makinaDurumu" in b.customers.find(x => x.id === 96))
+    && b.partSales.find(x => x.id === 97)?.kalipDurumu === "hazir" && !("kalipDurumu" in b.partSales.find(x => x.id === 98)));
+}
+
 // Spec 0088 AC-43: temiz kurulumda kâr katsayısı, Extra Kalıp fiyatı, planlanan adetler ve maliyet ayarları ilk oturumda yazılır.
 {
   let h = null;

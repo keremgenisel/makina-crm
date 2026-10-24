@@ -84,10 +84,21 @@ describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => 
     ["Gider formu personel notu", "pur900", "purBg", "src/components/GiderForm.jsx"],
     ["Gider formu kalem tutarı kutusu", "n600", "purBg3", "src/components/GiderForm.jsx"],
     ["Farklı teslimat adresi vurgusu", "brand", "ambBg3", "src/components/KargoPanosu.jsx"],
+    // Spec 0106 AC-24, R22/3: müşteri satırının yedi durum pili; renkler kütüphanede durduğu için kayıtların dosyası kütüphanedir.
+    ["Müşteri pili 'ÖDEME BEKLİYOR'", "red700", "redBg2", "src/lib/musteriDurumu.js"],
+    ["Müşteri pili 'MONTAJ YAPILIYOR'", "pur700", "purBg", "src/lib/musteriDurumu.js"],
+    ["Müşteri pili 'MAKİNA HAZIR'", "grn700", "grnBg", "src/lib/musteriDurumu.js"],
+    ["Müşteri pili 'KALIP SİPARİŞİ BEKLİYOR'", "amb700", "ambBg2", "src/lib/musteriDurumu.js"],
+    ["Müşteri pili 'KALIP SİPARİŞ VERİLDİ'", "n600", "n150", "src/lib/musteriDurumu.js"],
+    ["Müşteri pili 'KALIP ÜRETİMDE'", "blu700", "bluBg", "src/lib/musteriDurumu.js"],
+    ["Müşteri pili 'KALIP HAZIR · TESLİM BEKLİYOR'", "teal2", "tealBg", "src/lib/musteriDurumu.js"],
   ];
   const KENAR_0030 = [
     ["Pano KALIP / personel rozeti", "purBr", "purBg", "src/components/gider/GiderAlanlari.jsx"],
     ["Çalışan ve gider formu kutusu", "purBg2", "purBg3", "src/components/CalisanManager.jsx"],
+    ["Müşteri pili 'ÖDEME BEKLİYOR' (triyaj bulgu 4)", "redBr", "redBg2", "src/lib/musteriDurumu.js"],
+    ["Müşteri pili 'KALIP SİPARİŞ VERİLDİ'", "n200", "n150", "src/lib/musteriDurumu.js"],
+    ["Müşteri pili 'KALIP HAZIR · TESLİM BEKLİYOR'", "tealBr", "tealBg", "src/lib/musteriDurumu.js"],
   ];
   it.each(METIN_0030)("%s: karanlıkta WCAG AA ya da aydınlıktakinin en az yüzde 95'i", (_y, on, zemin) => {
     expect(T[on], on).toBeTruthy();
@@ -101,6 +112,34 @@ describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => 
     for (const [y, a, b, f] of [...METIN_0030, ...KENAR_0030]) {
       const s = readFileSync(path.join(__dirname, "..", f), "utf-8");
       for (const t of [a, b]) expect(s, `${y}: ${t}`).toContain(`var(--${t},`);
+    }
+  });
+});
+
+// Spec 0106 AC-24, R18/2, Karar 35: renkli altı pilin metin tonları iki temada birbirinden en az 26 derece ayrılır (turuncu ile
+// amber 9 derecede ayırt edilemiyordu) ve hiçbir pil ikinci bir pille aynı token çiftini kullanmaz. Değerler kütüphanenin pil
+// tablosundan okunur; kütüphane bir rengi değiştirirse ölçüm de değişir.
+describe("Spec 0106 AC-24: müşteri durum pillerinin ton ayrımı", () => {
+  const ton = (hex) => {
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (!d) return 0;
+    const x = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return (x * 60 + 360) % 360;
+  };
+  const tokenAdi = (v) => /var\(--([A-Za-z0-9]+),/.exec(v)[1];
+  it("altı renkli pil iki temada en az 26 derece ayrık; token çiftleri benzersiz", async () => {
+    const { PILLER } = await import("../src/lib/musteriDurumu");
+    const ciftler = Object.values(PILLER).map(p => [tokenAdi(p.renk), tokenAdi(p.zemin)]);
+    expect(new Set(ciftler.map(c => c.join("/"))).size).toBe(ciftler.length);
+    const renkli = ciftler.map(c => c[0]).filter(t => !/^n\d/.test(t));
+    expect(renkli).toHaveLength(6);
+    for (const tema of ["acik", "koyu"]) {
+      for (let i = 0; i < renkli.length; i++) for (let j = i + 1; j < renkli.length; j++) {
+        const fark = Math.abs(ton(T[renkli[i]][tema]) - ton(T[renkli[j]][tema]));
+        // Takım Yöneticisi 2026-10-24 (Karar 41): spec'in ölçüm hassasiyeti tam derece; kırmızı/amber aydınlıkta 25,96 → 26.
+        expect(Math.round(Math.min(fark, 360 - fark)), `${tema}: ${renkli[i]} / ${renkli[j]}`).toBeGreaterThanOrEqual(26);
+      }
     }
   });
 });

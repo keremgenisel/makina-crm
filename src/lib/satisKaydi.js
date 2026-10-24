@@ -1,6 +1,7 @@
 // Makina satış kaydına yazılan iki snapshot alanı (spec 0002 C4 istisnaları 1 ve 2): satış kuru ve üretim
 // tarihi. Saf fonksiyonlar; Customers.jsx kayıt yollarında çağrılır.
 import { CURRENCIES } from "./constants";
+import { uretimDurumuOf } from "./stokDurumu";
 
 const paraOf = (c) => (CURRENCIES.includes(c?.currency) ? c.currency : "TRY");
 const gunFarki = (a, b) => Math.round((new Date(`${b}T00:00:00`) - new Date(`${a}T00:00:00`)) / 86400000);
@@ -37,4 +38,12 @@ export const uretimTarihiDamgala = (kayit, stokSatiri) => {
 export const partiDamgala = (kayit, stokSatiri) => {
   if (!kayit || kayit.partiId != null || stokSatiri?.partiId == null) return kayit;
   return { ...kayit, partiId: stokSatiri.partiId };
+};
+
+// Spec 0106 R2, R2/2, Karar 39: stoktan satışta stok satırının EKRANDA GÖRÜNEN üretim durumu müşteri kaydına damgalanır (alanı boş
+// satır Makina Stoğu'nda "Satışa hazır" durduğu için "hazir"). `uretimDurumuOf` müşteri tarafında yalnız burada, yazma anında
+// çağrılır (R6/2, AC-35). Formda elle seçilmiş değer önceliklidir (`uretimTarihiDamgala` emsali); stok satırı yoksa kayıt aynen döner.
+export const makinaDurumuDamgala = (kayit, stokSatiri) => {
+  if (!kayit || kayit.makinaDurumu || !stokSatiri) return kayit;
+  return { ...kayit, makinaDurumu: uretimDurumuOf(stokSatiri) };
 };

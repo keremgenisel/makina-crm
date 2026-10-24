@@ -5,6 +5,8 @@ import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal,
 import { HataMetni, Ipucu, BolumBasligi, BosDurum } from "../tasarim";
 import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi, PANO_SEKME_ADI, modelStokSayaci, modelStokOku, modelStokMetni } from "../../lib/stokDurumu";
 import { uretimdeSuzulmusModeller, URETIM_DEGIL_IBARESI } from "../../lib/uretimdekiModeller";
+import { durumYaz, kalipDurumuTuret, aynaSatirMi, aynaDurumu, musteriKalipAnahtari, KALIP_DURUM_ADLARI, AYNA_SATIR_IBARESI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
+import { MakinaDurumuSecici, KalipDurumuSecici } from "./DurumSecici";
 import { useLock } from "../../hooks/useLock";
 import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
@@ -26,6 +28,8 @@ export const CustomerAddEditForm = ({
   uretimPartileri = [],
   // Spec 0105 R24, C2: ayar bütün olarak gelir ve yalnız süzme yardımcısına verilir; varsayılan "hepsi üretimde".
   appSettings = {},
+  // Spec 0106 R26/2: Customers'ın bir kez kurduğu üretim formu haritası ve Extra Kalıp grubu (kalıp seçicisinin "Otomatik" etiketi).
+  durumBaglami = null,
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
   // Spec 0105 R9/2, C4, Karar 23: stok sayacı çizim başına bir kez, yalnız `{ stock }` ile; kart modelini anahtarla okur.
@@ -314,7 +318,7 @@ export const CustomerAddEditForm = ({
 
       <Field label={`Kalıp Ölçüleri (${(form.kaliplar || []).length} kalıp)`}>
         {(form.kaliplar || []).map((k, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr auto 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr auto auto 36px", gap: 8, alignItems: "center", marginBottom: 8 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n400, #94a3b8)", whiteSpace: "nowrap" }}>{i + 1}.</span>
             <SearchSelect value={k.ad || ""} placeholder="Kalıp seçin..." searchPlaceholder="Kalıp ara..."
               options={kalipDefs.map(d => ({ value: d.ad, label: d.ad }))}
@@ -339,6 +343,23 @@ export const CustomerAddEditForm = ({
                 style={{ width: 15, height: 15, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
               Üretim formuna gönder
             </label>
+            {/* Spec 0106 R11, R11/2, R7/2: kalıp durumu seçicisi; ayna satırda (Extra Kalıp satışının kopyası) seçici yok, durum
+                satıştan okunur ve salt okunur yazılır. */}
+            {aynaSatirMi(k) ? (
+              <span data-testid="ayna-kalip-durumu" style={{ width: 210, fontSize: 12, color: "var(--n600, #475569)", whiteSpace: "nowrap" }}>
+                {KALIP_DURUM_ADLARI[aynaDurumu(k, form, durumBaglami?.grup, durumBaglami?.harita)] || "—"} <span style={{ color: "var(--n400, #94a3b8)" }}>· {AYNA_SATIR_IBARESI}</span>
+              </span>
+            ) : (
+              <div style={{ width: 210 }}>
+              <KalipDurumuSecici value={k.kalipDurumu} ariaLabel={`${i + 1}. kalıp durumu`}
+                turetilen={kalipDurumuTuret(k, musteriKalipAnahtari(form.id, i), durumBaglami?.harita)}
+                onChange={v => setForm(p => {
+                  const arr = [...(p.kaliplar || [])];
+                  arr[i] = durumYaz(arr[i], "kalipDurumu", v);
+                  return { ...p, kaliplar: arr };
+                })} />
+              </div>
+            )}
             <button type="button" title="Bu kalıbı sil"
               onClick={() => setForm(p => {
                 const arr = (p.kaliplar || []).filter((_, idx) => idx !== i);
@@ -399,6 +420,12 @@ export const CustomerAddEditForm = ({
         </Field>
         <Field label="Garanti Bitiş (otomatik)">
           <Input type="date" value={form.warrantyEnd || ""} onChange={e => setForm(p => ({ ...p, warrantyEnd: e.target.value }))} />
+        </Field>
+      </div>
+      {/* Spec 0106 R4, R4/2, Karar 19: makina durumu Garanti Bitiş ile gider yetkisi bloğu arasında, hiçbir yetki perdesinde değil. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label={MAKINA_DURUMU_ETIKETI}>
+          <MakinaDurumuSecici value={form.makinaDurumu} onChange={v => setForm(p => durumYaz(p, "makinaDurumu", v))} />
         </Field>
       </div>
       {giderYetki && (

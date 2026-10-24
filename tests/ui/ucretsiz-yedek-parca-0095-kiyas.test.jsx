@@ -18,7 +18,8 @@ import { SimpleDealers } from "../../src/components/SimpleDealers";
 import { Customers } from "../../src/components/Customers";
 import { YedekParcaSatisTab } from "../../src/components/stock/YedekParcaSatisTab";
 import { SettingsExport } from "../../src/components/settings/SettingsExport";
-import { CUSTOMERS, PAYMENTS, SERVICES, PART_SALES, YEDEK, DEALERS, PARTS, KDV, FAB } from "../fixtures/0095-veri";
+import { CUSTOMERS, PAYMENTS, SERVICES, PART_SALES, YEDEK, DEALERS, PARTS, KDV, FAB } from "../fixtures/0095-veri";import { ayikla0106 } from "../fixtures/0106-ayikla";
+
 
 const DOSYA = "tests/fixtures/0095-ekran-once.json";
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-20T10:00:00") }); });
@@ -98,7 +99,9 @@ describe("Spec 0095 AC-27: işaretsiz veride ekranlar birebir aynı", () => {
     // Üç Anasayfa anahtarında kutunun metni iki taraftan da ayıklanır; testin asıl iddiası (bu spec ekranı değiştirmedi) korunur.
     const stokKutusuAyikla = (k, t) => (k.startsWith("anasayfa") && typeof t === "string"
       ? t.replace(/Stoktaki Makina\d+Görmek için tıkla/, "«stok kutusu»").replace(/Satışa Hazır Makina\d+\d+ montajda · \d+ önceki partiden/, "«stok kutusu»") : t);
-    for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(stokKutusuAyikla(k, simdi[k]), k).toBe(stokKutusuAyikla(k, once[k]));
+    // Spec 0106 ile: müşteri listesinin Durum sütunu ve pilleri, altıncı süzgeç pili ve detaydaki durum seçicileri bilinçli eklendi;
+    // iki taraftan da ayıklanır (tests/fixtures/0106-ayikla.js), testin asıl iddiası korunur.
+    for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(ayikla0106(stokKutusuAyikla(k, simdi[k])), k).toBe(ayikla0106(stokKutusuAyikla(k, once[k])));
     expect(Object.keys(once).filter(k => k.startsWith("anasayfa")).every(k => stokKutusuAyikla(k, once[k]) !== once[k] && stokKutusuAyikla(k, simdi[k]) !== simdi[k])).toBe(true);
     expect(Object.keys(simdi.disaAktarma).sort()).toEqual(Object.keys(once.disaAktarma).sort());
     for (const [ad, satirlar] of Object.entries(once.disaAktarma)) {

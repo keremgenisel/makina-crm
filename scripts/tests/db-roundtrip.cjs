@@ -730,6 +730,35 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0101 AC-8: 'null' ve bozuk JSON sütunu anahtar yazdırmaz", !("kalipCapi" in d.stock.find(x => x.id === 82)) && !("kalipCapi" in d.stock.find(x => x.id === 84)));
 }
 
+// ── Spec 0106 AC-30 (C2, C2/2): müşterinin makina durumu, müşteri kalıbının ve Extra Kalıp satışının kalıp durumu. Durum alanı
+// olmayan kayıtların okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı (alan gövdede hiç yok, `null` olarak da
+// değil); dolu değerler gidiş dönüşte aynı; çöpteki kayıtlar alanı taşır.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0106-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0106-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  check("spec 0106 AC-30: durumsuz müşteri kayıtlarının gövdesi spec öncesiyle birebir", esit(b.customers, once.customers));
+  check("spec 0106 AC-30: durumsuz Extra Kalıp satışlarının gövdesi spec öncesiyle birebir", esit(b.partSales, once.partSales));
+  check("spec 0106 AC-30: boş durum gövdede hiç yok", b.customers.every(c => !("makinaDurumu" in c) && c.kaliplar.every(k => !("kalipDurumu" in k))) && b.partSales.every(p => !("kalipDurumu" in p)));
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.customers[0].makinaDurumu = "hazir";
+  girdi.customers[0].kaliplar[1].kalipDurumu = "teslim";
+  girdi.customers[2].makinaDurumu = "teslim"; // çöpteki kayıt
+  girdi.partSales[1].kalipDurumu = "uretimde";
+  girdi.partSales[2].kalipDurumu = "hazir"; // çöpteki satış
+  dbmod.writeBlobToDb(girdi);
+  dbmod.close(); dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  const mu = (id) => c.customers.find(x => x.id === id);
+  const ps = (id) => c.partSales.find(x => x.id === id);
+  check("spec 0106 AC-30: makinaDurumu gidiş dönüşte aynı", mu(601)?.makinaDurumu === "hazir" && mu(603)?.makinaDurumu === "teslim" && !!mu(603)?.deletedAt && !("makinaDurumu" in mu(602)));
+  check("spec 0106 AC-30: müşteri kalıbının kalipDurumu gidiş dönüşte aynı, boş kalıpta alan yok",
+    mu(601)?.kaliplar[1]?.kalipDurumu === "teslim" && mu(601).kaliplar[1].uretimFormGonder === true && !("kalipDurumu" in mu(601).kaliplar[0]) && !("kalipDurumu" in mu(601).kaliplar[3]));
+  check("spec 0106 AC-30: Extra Kalıp satışının kalipDurumu gidiş dönüşte aynı", ps(702)?.kalipDurumu === "uretimde" && ps(703)?.kalipDurumu === "hazir" && !("kalipDurumu" in ps(701)));
+}
+
 // ── Spec 0088 AC-43, AC-44 (C7, C8, C8/2): tür rolü (meta JSON), modelin kâr katsayısı ve Extra Kalıp fiyatı, partinin
 // planlanan adetleri, appSettings.maliyetAyarlari. Rolsüz tür, katsayısız model, plansız parti ve maliyet ayarı olmayan
 // uygulama ayarlarının okunan gövdesi spec öncesi koddan üretilmiş fikstürle birebir aynı.

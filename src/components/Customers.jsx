@@ -9,7 +9,8 @@ import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, 
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
 import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
-import { satisKuruUygula, uretimTarihiDamgala, partiDamgala } from "../lib/satisKaydi";
+import { satisKuruUygula, uretimTarihiDamgala, partiDamgala, makinaDurumuDamgala } from "../lib/satisKaydi";
+import { uretimFormHaritasi, extraKalipGrupla, satirDurumu, TESLIM_SUZGECI, DURUM_SUTUNU } from "../lib/musteriDurumu";
 import { serisizDusulecek } from "../lib/stokDurumu";
 import { donenStokUretimTarihi } from "../lib/makinaMaliyeti";
 import { parsePermissions } from "../lib/permissions";
@@ -19,6 +20,7 @@ import { Icon, Btn, ConfirmDialog, Pagination, DraftRestoreBar } from "./ui";
 import { Segment, KartBolum, BosDurum, UyariSeridi } from "./tasarim";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
 import { CustomerAddEditForm } from "./customers/CustomerAddEditForm";
+import { DurumPilleri } from "./customers/DurumPili";
 
 export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
@@ -30,6 +32,8 @@ export const Customers = ({
   giderYetki = false, rates = null,
   // Spec 0100 R7/2, R7/2a, C13: satış formunun üretim partisi seçicisi; App yalnız gider yetkisiyle dolu verir.
   uretimPartileri = [],
+  // Spec 0106 R31–R33: kalıp durumunun türetildiği üretim formları; App kapısız verir, varsayılan "form yok".
+  uretimFormlari = [],
   // Spec 0098 R1, R8/2: tahsilata hesap seçimi tahsilat hesabı yetkisiyle (`tahsilat_hesap`, perde kalkık); Kasa sekmesine bağlı değil.
   kasaHesaplari = [], tahsilatHesapYetki = false, tahsilatHesapVarsayilan = null,
   // Spec 0040: çek kaydı tahsilatla (ilk satış ödemesi dahil) doğar.
@@ -108,6 +112,12 @@ export const Customers = ({
     customers.forEach(c => { if (customerHasAnyDebt(c, services, partSales, factoryName, yedekParcaSatislar, { payments, kdvRates })) ids.add(c.id); });
     return ids;
   }, [customers, services, partSales, factoryName, yedekParcaSatislar, payments, kdvRates]);
+  // Spec 0106 R26/2, Karar 36, C7: üretim formu haritası ve Extra Kalıp grubu bir kez kurulur; aynı bağlam forma ve detaya iletilir.
+  // Satır başına durum tek haritada: hücre, süzgeç ölçütü ve süzgeç sayısı onu okur. Bayilerde hesaplanmaz (R13).
+  const durumBaglami = useMemo(() => ({ harita: uretimFormHaritasi(uretimFormlari), grup: extraKalipGrupla(partSales) }), [uretimFormlari, partSales]);
+  const satirDurumlari = useMemo(() => (isCustomer
+    ? new Map(customers.map(c => [c.id, satirDurumu(c, { ...durumBaglami, borclu: debtorIds.has(c.id) })]))
+    : new Map()), [isCustomer, customers, durumBaglami, debtorIds]);
 
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
     // Menüdeki genel arama gibi, makinanın eski sahiplerinin adıyla da eşleşsin.
@@ -121,6 +131,7 @@ export const Customers = ({
       if (listFilter === "warranty-active") return c.warrantyEnd && c.warrantyEnd >= today();
       if (listFilter === "debt") return debtorIds.has(c.id);
       if (listFilter === "serial-pending") return c.seriNoBekliyor && !c.serialNo;
+      if (listFilter === TESLIM_SUZGECI.deger) return !!satirDurumlari.get(c.id)?.teslimBekliyor;
       return true;
     },
   });
@@ -266,7 +277,7 @@ export const Customers = ({
     const stoktanDamgala = (srcEntry) => {
       clean.sourceStockId = srcEntry.id;
       delete clean.partiId;
-      Object.assign(clean, partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry));
+      Object.assign(clean, makinaDurumuDamgala(partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry), srcEntry)); // spec 0106 Karar 39
     };
     // Triyaj (bulgu 3): serisiz stok seçildiyse formdaki parti, satır yarışta bulunamasa bile kayda girmez (R7/2b). Serili dalda
     // koşulsuz silinmez: stok hiç yokken seri no elle yazılır ve `_manualSerial` false kalır, o satışın seçilmiş partisi korunmalı.
@@ -503,6 +514,7 @@ export const Customers = ({
             { value: "warranty", label: "Garantisi Bitenler", sayi: customers.filter(c => c.warrantyEnd && c.warrantyEnd < today()).length },
             ...(isCustomer ? [{ value: "debt", label: "Borçlu Firmalar", sayi: debtorIds.size }] : []),
             ...(isCustomer ? [{ value: "serial-pending", label: "Seri No Bekleyen", sayi: customers.filter(c => c.seriNoBekliyor && !c.serialNo).length }] : []),
+            ...(isCustomer ? [{ value: TESLIM_SUZGECI.deger, label: TESLIM_SUZGECI.etiket, sayi: customers.filter(c => satirDurumlari.get(c.id)?.teslimBekliyor).length }] : []),
           ]} />
         {isCustomer && (
           <button onClick={() => { setGroupByFirm(g => !g); setPage(1); }}
@@ -543,6 +555,7 @@ export const Customers = ({
                 { h: "Satış Yapan", key: null },
                 { h: "Ülke / Şehir", key: null },
                 { h: "Model", key: "model" },
+                ...(isCustomer ? [{ h: DURUM_SUTUNU, key: null }] : []),
                 { h: "Seri No", key: null },
                 { h: "Kalıp Sayısı", key: null },
                 { h: "Makina Kalıp Çapı", key: null },
@@ -607,6 +620,7 @@ export const Customers = ({
                   <td style={{ padding: "13px 16px", fontSize: 13, color: "var(--n600, #475569)" }}>{resolveSatisYapan(c.satisYapan, factory) || "—"}</td>
                   <td style={{ padding: "13px 16px", fontSize: 13 }}>{c.country && c.city ? `${c.country} / ${c.city}` : c.city || c.country || "—"}</td>
                   <td style={{ padding: "13px 16px" }}>{c.model ? <span style={{ fontSize: 12, background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", borderRadius: 6, padding: "2px 8px", fontWeight: 600 }}>{c.model}</span> : <span style={{ color: "var(--n300, #cbd5e1)" }}>—</span>}</td>
+                  {isCustomer && <td data-testid="durum-hucresi" style={{ padding: "9px 16px" }}><DurumPilleri piller={satirDurumlari.get(c.id)?.piller || []} /></td>}
                   <td style={{ padding: "13px 16px", fontSize: 12, color: "var(--n600, #475569)", fontFamily: "monospace" }}>
                     {c.serialNo
                       ? c.serialNo
@@ -658,7 +672,7 @@ export const Customers = ({
         <CustomerDetailModal
           gorusmeler={gorusmeler} setGorusmeler={setGorusmeler}
           dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={dosyaCevrimdisi}
-          detailView={detailView}
+          detailView={detailView} durumBaglami={durumBaglami}
           odakServisId={focusServiceId}
           odakKalipId={focusKalipId}
           odakGorusmeId={focusGorusmeId}
@@ -730,7 +744,7 @@ export const Customers = ({
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} appSettings={appSettings}
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}
-          giderYetki={giderYetki} uretimPartileri={uretimPartileri}
+          giderYetki={giderYetki} uretimPartileri={uretimPartileri} durumBaglami={durumBaglami}
           kasaHesaplari={tahsilatHesapYetki ? kasaHesaplari : null} tahsilatHesapVarsayilan={tahsilatHesapYetki ? tahsilatHesapVarsayilan : null}
         />
       )}

@@ -39,7 +39,8 @@ app.whenReady().then(async () => {
       const s = await senaryo(html, genislik);
       const ad = `pencere ${genislik}px`;
       if (!s) { check(`${ad}: çubuk çizildi`, false); continue; }
-      check(`${ad}: beş süzgeç var`, s.dugmeler.length === 5, JSON.stringify(s.dugmeler.map(d => d.ad)));
+      // Spec 0106 ile (R23): altıncı süzgeç "Teslim Bekleyenler"; çubuk aynı kurallarla sarar.
+      check(`${ad}: altı süzgeç var`, s.dugmeler.length === 6, JSON.stringify(s.dugmeler.map(d => d.ad)));
       check(`${ad}: hiçbir düğme pencereden taşmıyor`, s.dugmeler.every(d => d.left >= -0.5 && d.right <= s.pencere + 0.5), JSON.stringify(s.dugmeler));
       check(`${ad}: hiçbir etiket kesilmiyor`, s.dugmeler.every(d => !d.kesik), JSON.stringify(s.dugmeler.filter(d => d.kesik).map(d => d.ad)));
       check(`${ad}: sayfa yatay taşmıyor`, !s.belgeTasma);

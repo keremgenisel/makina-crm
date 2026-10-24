@@ -71,6 +71,7 @@ describe("Spec 0104 AC-6 (önkoşul, Karar 32): boş numaralı serisiz satış s
       yetkili2Ad: "", yetkili2Tel: "", adres: "", city: "", country: "Türkiye", model: M0, kaliplar: [], bantlar: [],
       installDate: "2026-10-23", warrantyEnd: "2028-10-23", faturali: "Faturalı Yurtiçi", faturaBedeli: "", fabrikaSatisBedeli: "",
       komisyon: "", serialNo: "", seriNoBekliyor: true, satisKuru: null, kalanBorc: 0, sourceStockId: 73, uretimTarihi: "2026-09-05", partiId: 902,
+      makinaDurumu: "hazir", // Spec 0106 ile (R2, R2/2): stoktan satışta satırın görünen durumu damgalanır (73 alanı boş → satışa hazır)
     });
     expect(durum.stock.map(x => x.id)).toEqual([72, 74]);
   });
