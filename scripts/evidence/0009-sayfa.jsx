@@ -124,6 +124,9 @@ if (ekran.startsWith("kilit-")) {
     window.crmStorage = new Proxy({ restore: async () => yedek }, { get: (o, k) => o[k] ?? (async () => null) });
   }
 }
+// Spec 0106 kapanışı: form taslakları (useFormDraft) Electron oturumunda çalıştırmadan çalıştırmaya kalıyor ve "Yarım kalan
+// taslak bulundu" şeridini ekrandan ekrana değişken çizdiriyordu (müşteri formu ekranlarında sahte fark). Her sayfa temiz başlar.
+try { for (const k of Object.keys(localStorage)) if (k.startsWith("crmdraft:")) localStorage.removeItem(k); } catch { /* yoksay */ }
 // Spec 0086 (R12, revizyon 3 P1): seçmeli geri yüklemenin paket listesi yalnız bir yedek seçilince çizilir; üç ekran sahte
 // yedekle "Yedekten Geri Yükle" adımına kadar gider (Kasa'lı varsayılan, Kasa'sız, gidersiz). Aynı yedek kilit-geri-yukleme'de.
 if (ekran.startsWith("ayarlar-backup-paketler")) {

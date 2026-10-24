@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, plan turu 2026-10-24) |
+| **Durum** | Tamamlandı (revizyon 3, plan turu 2026-10-24; uygulama commit `d7aacc0`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Yeni saf kütüphane `src/lib/musteriDurumu.js`; müşteri formunun Makina ve Kalıp bölümleri (`src/components/customers/CustomerAddEditForm.jsx:163-358`, kalıp satırı ızgarası `:317`); müşteri detayının kalıp listesi (`src/components/customers/CustomerDetailModal.jsx:1090-1101`); Extra Kalıp satırlarının durum seçicisi (`src/components/customers/detail/MachineTimeline.jsx:147`, `:324-351`); müşteri listesinin yeni Durum sütunu ve süzgeç pili (`src/components/Customers.jsx:538-575`); yeni `uretimFormlari` prop'u (`src/components/Customers.jsx:23-48`, App'in tek çağrısı `src/App.jsx:1702`); satışta damgalama (`src/lib/satisKaydi.js`, `Customers.deductMachineStock`); `electron/db.cjs` **üç** yeni sütun (iki yeni alan adı); `tests/tasarim-kontrast.test.js` 0030 bloğu; kanıt aracı ve `docs/evidence/kanit-eslemesi.json` |
@@ -383,19 +383,19 @@ Taban raporu bu spec'ten önceki kodla çekilir, kapanışta yeniden çekilir. K
 
 ## Definition of Done
 
-- [ ] Kırk dört kabul kriterinin hepsi karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Bütün kurallar `src/lib/musteriDurumu.js`'te; ekranlar yalnız çiziyor ve kaynak taraması bunu sabitliyor (R25, R27, AC-28).
-- [ ] Üç yeni sütun dört nokta kuralıyla açıldı, üç tablonun okuması ayıklamalı, göç yok (C2, C2/2, C3, AC-30, AC-31).
-- [ ] Yeni izin, sunucu kuralı ve birleştirme kuralı eklenmediği taramayla doğrulandı (R30, AC-32).
-- [ ] Kullanıcıya görünen bütün metinler Türkçe; "MAKİNA" yazımı kullanıldı (C5).
-- [ ] Görsel kanıt alındı, değişen ekranlar iş sürerken `degisti` + `onay` ile kaydedildi, değişmeyenler 0 piksel; kapanışta taban raporu yeniden çekildi ve bütün kayıtlar `ayni`ye çevrildi (C9, AC-44).
-- [ ] Pil paleti ölçüldü: yedi pil iki temada kontrast eşiğini geçer, ton ayrımı en az 26 derece (R18/2, AC-24).
-- [ ] Yeni `uretimFormlari` prop'u varsayılanıyla eklendi ve otuz beş düzenek yeşil (R31, R33, AC-40).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] CLAUDE.md'nin ilgili bölümü güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Kırk dört kabul kriterinin hepsi karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Bütün kurallar `src/lib/musteriDurumu.js`'te; ekranlar yalnız çiziyor ve kaynak taraması bunu sabitliyor (R25, R27, AC-28).
+- [x] Üç yeni sütun dört nokta kuralıyla açıldı, üç tablonun okuması ayıklamalı, göç yok (C2, C2/2, C3, AC-30, AC-31).
+- [x] Yeni izin, sunucu kuralı ve birleştirme kuralı eklenmediği taramayla doğrulandı (R30, AC-32).
+- [x] Kullanıcıya görünen bütün metinler Türkçe; "MAKİNA" yazımı kullanıldı (C5).
+- [x] Görsel kanıt alındı, değişen ekranlar iş sürerken `degisti` + `onay` ile kaydedildi, değişmeyenler 0 piksel; kapanışta taban raporu yeniden çekildi ve bütün kayıtlar `ayni`ye çevrildi (C9, AC-44).
+- [x] Pil paleti ölçüldü: yedi pil iki temada kontrast eşiğini geçer, ton ayrımı en az 26 derece (R18/2, AC-24).
+- [x] Yeni `uretimFormlari` prop'u varsayılanıyla eklendi ve otuz beş düzenek yeşil (R31, R33, AC-40).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] CLAUDE.md'nin ilgili bölümü güncellendi.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -434,10 +434,14 @@ Taban raporu bu spec'ten önceki kodla çekilir, kapanışta yeniden çekilir. K
 
 | | |
 |---|---|
-| **Uygulama commit** | |
-| **Dal** | |
-| **Spec revizyon sayısı** | |
-| **Düzeltme turu sayısı** | |
-| **Testler** | |
-| **Görsel kanıt** | |
-| **Bilinen sınırlar** | |
+| **Uygulama commit** | `d7aacc0` (kapanış ayrı commit) |
+| **Dal** | `feat/0106-musteri-durumu` (taban `52651a1`) |
+| **Spec revizyon sayısı** | 3 (revizyon 2 QA turu, 22 bulgu; revizyon 3 plan onayı, on öneri, Karar 31–40); uygulamada Karar 41 (ton ayrımı tam dereceyle, TY), triyajda Karar 42–43 |
+| **Düzeltme turu sayısı** | 1. Triyaj: 5 bulgu (1 orta, 4 düşük): R9/2 kayma davranışı yanlış yazılmıştı (başka kalıbın durumu görünebilir; Extra Kalıp silme tetikleyicisi; test ve sürüm notu), formdaki elle seçimin önceliği belgelenmemişti (Karar 42), satışı bulunamayan ayna satır boş yazıyordu ("—"), ödeme pili hover'da kayboluyordu (redBr kenarı, Karar 43), belge düzeni (kapanışta) |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 |
+| **Regresyon / kaçan hata** | 0 / 0. Spec'in ölçümü (26 derece) tam dereceye yuvarlanmıştı; test 25,96'yı yakaladı, TY kararıyla yuvarlanarak ölçülür |
+| **Testler** | `musteri-durumu-0106` (saf, taramalar), `ui/musteri-durumu-0106` (liste, süzgeç, form, detay, zaman çizelgesi, harita casusu, triyaj), `ui/musteri-durumu-0106-app` (gerçek App damgası, önizlemesiz seçici), `tasarim-kontrast` (yedi pil, iki kenar, ton ayrımı), `db-roundtrip.cjs`, `db-clean-install.cjs`; "spec 0106 ile" güncellenenler 0104 AC-6, 0079 ve 0095 kıyasları, `suzgec-yerlesim` (Electron, altı süzgeç). Yedi mutasyon ve bir veritabanı mutasyonu yakalandı |
+| **Görsel kanıt** | İş turunda taban eski kod ↔ eski kod 114 görüntü 0 fark (Karar 36 emsali: bu sonuç kapanışta yeniden çekilen taban raporunun yerine burada durur). İş raporu `0106-piksel-raporu.json`: 25 ekran değişti (makina durumu satırı her detayda, seçici her formda; spec'in tablosundan fazla, uygulama notu), 4 yeni ekran; Stok, pano, Kalıp Üretim Formu ve Anasayfa 0 piksel (C10). Kapanış: `0106-taban-piksel-raporu.json` son kod ↔ onaylı görüntüler, 122 görüntü 0 fark; 34 kayıt `ayni`. Kapanışta araçta belirlenimsizlik bulundu ve düzeltildi: önceki çalışmadan kalan form taslağı ("Yarım kalan taslak bulundu" şeridi) müşteri formu ekranlarında sahte fark üretiyordu; sayfa artık `crmdraft:` anahtarlarını silerek başlar |
+| **Bilinen sınırlar** | `kalipIdx` konum bağı (R9/2, X11, README açık bulgu); `partSaleId`'siz eski ayna satırlar çift sayılır (R17/3); taşınan Extra Kalıp'ın aynası eski müşteride kalır (README açık bulgu); sunucu iki alanı bölüm düzeyinde güvenir (R30/2); süzgeç ilk gün 0 (sürüm notu) |
+
+**Bu spec'ten çıkarılan ders:** Spec'teki sayısal eşik ölçüm hassasiyetiyle birlikte yazılmalı; "26 derece" tam dereceye yuvarlanmış bir ölçümdü ve testte 25,96 olarak döndü. Kanıt aracında `localStorage` çalıştırmalar arasında kalıyor; bir ekran durumu yerel depoya yazıyorsa sayfa başında temizlenmeli, yoksa sahte fark ancak kapanış çekiminde görünür.

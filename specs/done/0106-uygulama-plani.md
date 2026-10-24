@@ -1,6 +1,6 @@
 # 0106 uygulama planı: müşteri satırları makina ve kalıp durumunu renkli pille gösterir
 
-Spec: `specs/0106-musteri-satirlarinda-makina-ve-kalip-durumu.md` (revizyon 3). Plan Takım Yöneticisi tarafından 2026-10-24'te
+Spec: `specs/done/0106-musteri-satirlarinda-makina-ve-kalip-durumu.md` (revizyon 3). Plan Takım Yöneticisi tarafından 2026-10-24'te
 onaylandı; onaylanan öneriler spec'e "Plan turu kararları" (Karar 31–40) olarak işlendi. Mockup tuvali plana göre güncellendi:
 https://claude.ai/artifact/Ujpo2sqN6FETmuJ7apr942
 
@@ -95,3 +95,10 @@ Kapanışta (C9, AC-44) taban son kodla yeniden çekilir, bütün kayıtlar `ayn
   satışı silinirse sonraki kalıplar başka bir kalıbın durumunu gösterebilir (ör. "hazır"); gerekirse durum kalıbın seçicisinden
   elle yazılır. Kalıcı çözüm (kalıba kimlik) ayrı iştir.
 - Ödeme pilinin ince kenarı, borçlu satırın üzerine gelindiğinde pilin seçilebilmesi içindir.
+
+## 6. Kapanış
+
+- Taban son kodla, onaylı görüntüler taban alınarak yeniden çekildi: 122 görüntü 0 fark; 34 kayıt `ayni`.
+- Kanıt aracı düzeltmesi: `scripts/evidence/0009-sayfa.jsx` her sayfada `crmdraft:` taslak anahtarlarını siler (önceki
+  çalışmadan kalan taslak müşteri formu ekranlarında şerit çizdiriyordu). Triyaj turundaki silme deseni `0106-taban-*.jpg`
+  dosyalarını da silmişti; kapanış tabanıyla yeniden üretildiler.
