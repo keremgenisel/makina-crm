@@ -1,6 +1,6 @@
 # 0105 uygulama planı: müşteri formunun model seçicisi üretimdeki modelleri ve stok adedini gösterir
 
-Spec: `specs/0105-model-secicisi-uretimdekiler-ve-stok-adedi.md` (revizyon 3). Plan Takım Yöneticisi tarafından 2026-10-24'te
+Spec: `specs/done/0105-model-secicisi-uretimdekiler-ve-stok-adedi.md` (revizyon 3). Plan Takım Yöneticisi tarafından 2026-10-24'te
 onaylandı; onaylanan öneriler spec'e "Plan turu kararları" (Karar 31–39) olarak işlendi.
 
 Çalışma kopyası `../wt0105`, dal `feat/0105-model-secici`, taban `origin/main` `fb0e902`.

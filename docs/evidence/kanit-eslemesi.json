@@ -6362,10 +6362,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "rapor": "docs/evidence/0105-taban-piksel-raporu.json",
         "ekran": "musteri-formu-0105-model",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-24 · spec 0105 Karar 12"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0105-piksel-raporu.json",
@@ -6904,10 +6903,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "rapor": "docs/evidence/0105-taban-piksel-raporu.json",
         "ekran": "katalog-model-uretimde",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-24 · spec 0105 Karar 11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/KalipManager.jsx": [

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (revizyon 3, plan turu 2026-10-24) |
+| **Durum** | Tamamlandı (revizyon 3, plan turu 2026-10-24; uygulama commit `a1e1a82`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteri ekleme ve düzenleme formunun model seçicisi (`src/components/customers/CustomerAddEditForm.jsx:167-191`); `src/lib/uretimdekiModeller.js` (yeni saf yardımcı `uretimdeSuzulmusModeller`, ipucu metni); `src/lib/stokDurumu.js` (yeni saf stok sayacı); `src/components/Customers.jsx` (forma `appSettings` iletimi); **iki** tarama dosyası: `tests/uretimdeki-modeller-0091.test.js` (izinli liste `:146`, desen `:152`) ve `tests/plan-adetler-0093.test.js` (desen `:18`, ikinci izinli liste `:88`, ipucunun tam dizesi `:54`, meta-assertion `:100`); `tests/ui/uretimdeki-modeller-0091.test.jsx` (AC-33 ters çevrilir, ipucu desenleri `:106-107`); `scripts/evidence/0009-sayfa.jsx` (yeni kanıt ekranı), `docs/evidence/kanit-eslemesi.json`, `docs/evidence/0105-piksel-raporu.json` ve kapanışta yeniden çekilen `docs/evidence/0105-taban-piksel-raporu.json` |
@@ -294,17 +294,17 @@ Ek karar: seçiciye arama kutusu eklenmez (X4).
 
 ## Definition of Done
 
-- [ ] Otuz iki kabul kriterinin hepsi karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Süzme kuralı `uretimdekiModeller.js`'te `uretimdeSuzulmusModeller` adıyla (R23), stok sayısı `stokDurumu.js`'te saf fonksiyon olarak yazıldı; form yalnız çiziyor ve ayarı bütün olarak alıyor (C2, C4, R24) ve kaynak taraması C9'un deseniyle bunu sabitliyor.
-- [ ] Ters çevrilen kriterlerin testleri "spec 0105 ile" notuyla güncellendi; 0091 AC-33'ün testi işaret verisiyle yeniden yazıldı; ipucunun **beş** bağlı yeri (ölçüm 16 ve uygulama notu) ve okuyucu taramasının **iki** kopyası (ölçüm 17) birlikte güncellendi.
-- [ ] Yeni kalıcı alan, veri bölümü, izin ve sunucu kuralı **eklenmediği** AC-23'ün içerik taramalarıyla doğrulandı (C1, Karar 21) ve commit'in değişen dosya listesi (`git diff --name-only`) SCORECARD'a yazıldı.
-- [ ] Kullanıcıya görünen bütün metinler Türkçe; yazdırma çıktısı yok.
-- [ ] Görsel kanıt alındı: yeni ekran ve `katalog-model-uretimde` onaylı değişiklik, diğer yedi müşteri formu ekranı 0 piksel; kapanışta taban raporu yeniden çekildi ve iki kayıt `ayni`ye çevrildi (Karar 13, AC-32).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] CLAUDE.md'nin ilgili bölümü güncellendi (işaretin üçüncü tüketicisi ve müşteri formunun model seçicisi).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
+- [x] Otuz iki kabul kriterinin hepsi karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Süzme kuralı `uretimdekiModeller.js`'te `uretimdeSuzulmusModeller` adıyla (R23), stok sayısı `stokDurumu.js`'te saf fonksiyon olarak yazıldı; form yalnız çiziyor ve ayarı bütün olarak alıyor (C2, C4, R24) ve kaynak taraması C9'un deseniyle bunu sabitliyor.
+- [x] Ters çevrilen kriterlerin testleri "spec 0105 ile" notuyla güncellendi; 0091 AC-33'ün testi işaret verisiyle yeniden yazıldı; ipucunun **beş** bağlı yeri (ölçüm 16 ve uygulama notu) ve okuyucu taramasının **iki** kopyası (ölçüm 17) birlikte güncellendi.
+- [x] Yeni kalıcı alan, veri bölümü, izin ve sunucu kuralı **eklenmediği** AC-23'ün içerik taramalarıyla doğrulandı (C1, Karar 21) ve commit'in değişen dosya listesi (`git diff --name-only`) SCORECARD'a yazıldı.
+- [x] Kullanıcıya görünen bütün metinler Türkçe; yazdırma çıktısı yok.
+- [x] Görsel kanıt alındı: yeni ekran ve `katalog-model-uretimde` onaylı değişiklik, diğer yedi müşteri formu ekranı 0 piksel; kapanışta taban raporu yeniden çekildi ve iki kayıt `ayni`ye çevrildi (Karar 13, AC-32).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] CLAUDE.md'nin ilgili bölümü güncellendi (işaretin üçüncü tüketicisi ve müşteri formunun model seçicisi).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] SCORECARD dolduruldu ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -337,12 +337,16 @@ Toplam **18 bulgu: 1 Bloklayıcı, 8 Önemli, 9 Küçük**; tamamı Takım Yöne
 
 ## SCORECARD
 
-| Ölçüt | Değer | Not |
-|---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| | |
+|---|---|
+| **Uygulama commit** | `a1e1a82` (kapanış ayrı commit) |
+| **Dal** | `feat/0105-model-secici` (taban `fb0e902`, bağımlılık güncellemesi sonrası) |
+| **Spec revizyon sayısı** | 3 (revizyon 2 QA turu, 18 bulgu; revizyon 3 plan onayı, dokuz öneri, Karar 31–39); uygulamada Karar 34, 38 ve 39'a not, ipucunun beşinci bağlı yeri |
+| **Düzeltme turu sayısı** | 1. Triyaj: 4 bulgu, hepsi düşük ve belge/kapanış: AC-32 kapanışta (Karar 13), spec revizyonunun esası worktree kopyası, bağlı yer sayısı "beş"e düzeltildi (bekçi testi eklendi), CLAUDE.md kapanış eksikleri |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 |
+| **Regresyon / kaçan hata** | 0 / 0. Spec ölçümü bir yeri eksik saymıştı (ipucu dört değil beş yerde bağlı); tam test koşusu buldu |
+| **Kapsam dışı kalanlar** | X1–X10 aynen |
+| **Ölçülen sapmalar** | `git diff --name-only fb0e902 a1e1a82` (kanıt görüntüleri hariç): `CLAUDE.md`, `docs/evidence/0105-piksel-raporu.json`, `docs/evidence/0105-taban-piksel-raporu.json`, `docs/evidence/kanit-eslemesi.json`, `docs/tasarim-sozlugu.md` (Karar 34), `scripts/evidence/0009-sayfa.jsx`, iki spec dosyası, `src/components/Customers.jsx`, `src/components/customers/CustomerAddEditForm.jsx`, `src/lib/stokDurumu.js`, `src/lib/uretimdekiModeller.js`, `tests/model-secici-0105.test.js`, `tests/plan-adetler-0093.test.js`, `tests/spec-atiflari.test.js`, `tests/ui/model-secici-0105.test.jsx`, `tests/ui/plan-adetler-0093.test.jsx`, `tests/ui/uretimdeki-modeller-0091.test.jsx`, `tests/uretimdeki-modeller-0091.test.js`. Sunucu, veritabanı, izin, birleştirme dosyası yok (AC-23) |
+| **Görsel kanıt** | İş turunda taban eski kod ↔ eski kod 16 görüntü 0 fark (Karar 36: bu sonuç kapanışta yeniden çekilen taban raporunun yerine burada durur). İş raporu `0105-piksel-raporu.json`: `katalog-model-uretimde` değişti (21208 / 21059 piksel), yedi müşteri formu ekranı 0, `musteri-formu-0105-model` önce görüntüsü yok. Kapanış (Karar 13): `0105-taban-piksel-raporu.json` son kod ↔ onaylı görüntüler, 18 görüntü 0 fark; iki kayıt buraya `ayni` |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** Bir metnin "kaç yerde bağlı" olduğunu kaynakta saymak yetmez, test klasörünün tamamında metnin ayırt edici parçasını aramak gerekir; QA turu dört yer saydı, beşincisi ancak tam koşuda kırılınca bulundu. Bekçi testi artık bağlı yerleri dosya kümesi olarak sabitliyor.
