@@ -107,6 +107,18 @@ export const serisizSecenekMetni = (stock, model) => {
   return `Seri no'suz stoktan düş: ${parcalar.join(", ")}`;
 };
 
+// Spec 0105 R9–R14, R25, Karar 23, 35: müşteri formunun model kartlarındaki stok adedi. Sayaç çizim başına bir kez kurulur,
+// girdisi yalnız `{ stock }` (parti listesi verilmez); kart kendi modelini `modelStokOku` ile ANAHTARLA okur, diziyi gezmez
+// (özetin `modeller` dizisi satışa hazıra göre sıralı, katalog sırası bozulurdu). Anahtar özetin normalizasyonudur (R4/2).
+export const STOKTA_YOK = "Stokta yok";
+const STOK_SIFIR = Object.freeze({ toplam: 0, hazir: 0, montajda: 0 });
+export const modelStokSayaci = ({ stock } = {}) => new Map(stokDurumOzeti({ stock }).modeller.map(m => [m.anahtar, { toplam: m.toplam, hazir: m.hazir, montajda: m.montajda }]));
+export const modelStokOku = (sayac, model) => sayac?.get(modelAnahtari(model)) || STOK_SIFIR;
+export const modelStokMetni = ({ hazir = 0, montajda = 0 } = {}) => {
+  const parcalar = [hazir ? `${hazir} ${trLower(DURUM_ADLARI.hazir)}` : null, montajda ? `${montajda} ${trLower(DURUM_ADLARI.montaj)}` : null].filter(Boolean);
+  return parcalar.length ? parcalar.join(" · ") : STOKTA_YOK;
+};
+
 // ── Parti Üretim Panosu (R18–R24) ───────────────────────────────────────────────────────────────────────────────────────────
 export const PANO_SEKME_ADI = "Parti Üretim Panosu";
 // Triyaj (bulgu 2), C5: parti seçicilerinin "(açık)" eki tek ölçütten (`partiAcikMi`); ekranlar bitiş ayına kendisi bakmaz.

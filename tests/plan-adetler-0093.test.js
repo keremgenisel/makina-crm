@@ -14,8 +14,8 @@ const tara = (d) => readdirSync(d).flatMap(e => { const p = `${d}/${e}`; return 
 const PARTI = "src/components/maliyet/PartiHesabi.jsx";
 const ph = kod(PARTI);
 const govde = ph.slice(ph.indexOf("export const PartiHesabi"));
-// İşareti OKUYAN adlar (R12/2): modül yolu değil.
-const OKUYAN = /uretimdeOlmayanModeller|\bURETIM_ALANI\b|uretimdeMi\b|uretimdeOlmayanlar\b|uretimIsareti(Degistir|Tasi|Dusur)\b/;
+// İşareti OKUYAN adlar (R12/2): modül yolu değil. Spec 0105 ile (C3, Karar 18): müşteri formunun süzme yardımcısı da okuyan addır.
+const OKUYAN = /uretimdeOlmayanModeller|\bURETIM_ALANI\b|uretimdeMi\b|uretimdeOlmayanlar\b|uretimIsareti(Degistir|Tasi|Dusur)\b|uretimdeSuzulmusModeller\b/;
 const kutuphanedenAlinan = (f) => [...kod(f).matchAll(/import \{([^}]*)\} from "[./]*lib\/uretimdekiModeller"/g)].flatMap(m => m[1].split(",").map(s => s.trim()).filter(Boolean));
 
 describe("Spec 0093: süzme tek yerde (R1/2, C1, C2, C2/2, C6)", () => {
@@ -51,7 +51,8 @@ describe("Spec 0093: süzme tek yerde (R1/2, C1, C2, C2/2, C6)", () => {
 
 describe("Spec 0093: metinler (R8/2, R11, R11/2, R12)", () => {
   it("AC-16/2: ipucu R8/2'nin birebir metni; Parti Hesabı'nın tablosunu etkilenmeyenler arasında sayar", () => {
-    expect(URETIM_ISARETI_IPUCU).toBe("\"Üretimde\" işareti Makina Maliyeti › Model Maliyetleri'ni ve Parti Hesabı'nın planlanan adetler penceresini süzer; Parti Hesabı'nın model-adet tablosu, model seçicileri, Analiz ve makina kayıtları etkilenmez.");
+    // Spec 0105 ile (R22/2, Karar 17): üçüncü tüketici müşteri formu; etkilenmeyen seçiciler "stok ve Evrak" diye daraldı.
+    expect(URETIM_ISARETI_IPUCU).toBe("\"Üretimde\" işareti Makina Maliyeti › Model Maliyetleri'ni, Parti Hesabı'nın planlanan adetler penceresini ve müşteri formunun model seçicisini süzer; Parti Hesabı'nın model-adet tablosu, stok ve Evrak model seçicileri, Analiz ve makina kayıtları etkilenmez.");
   });
   it("AC-17/2: 'üretimde değil' ibaresi tek yerde; URETIM_METIN onu yeniden dışa verir", () => {
     expect(URETIM_DEGIL_IBARESI).toBe("üretimde değil");
@@ -87,7 +88,7 @@ describe("Spec 0093: işaret okuma yolu (C4, C7, R12/2)", () => {
     expect(govde).toMatch(/m\.uretimde !== false/);
     expect(kutuphanedenAlinan(PARTI)).toEqual(["URETIM_DEGIL_IBARESI"]);
     expect(kutuphanedenAlinan("src/components/maliyet/ModelMaliyetleri.jsx")).toEqual(["URETIM_DEGIL_IBARESI"]);
-    const izinli = new Set(["src/lib/uretimdekiModeller.js", "src/components/ModelsManager.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/Settings.jsx", "src/App.jsx"]);
+    const izinli = new Set(["src/lib/uretimdekiModeller.js", "src/components/ModelsManager.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/Settings.jsx", "src/App.jsx", "src/components/customers/CustomerAddEditForm.jsx"]);
     expect(tara("src").filter(f => OKUYAN.test(kod(f)) && !izinli.has(f))).toEqual([]);
   });
   it("AC-23 / AC-24: 0091'in izinli küme güvencesi silinmedi, daraltıldı; üç test 'spec 0093 ile' notlu", () => {
@@ -98,7 +99,8 @@ describe("Spec 0093: işaret okuma yolu (C4, C7, R12/2)", () => {
     expect(a).toMatch(/Spec 0093 ile/);
     const u = readFileSync("tests/ui/uretimdeki-modeller-0091.test.jsx", "utf8");
     expect(u.match(/[Ss]pec 0093 ile/g).length).toBeGreaterThanOrEqual(3);
-    expect(u).toContain("expect(URETIM_ISARETI_IPUCU).toMatch(/model seçicileri, Analiz/);");
+    // Spec 0105 ile (Karar 17): 0091 testinin deseni yeni literale çevrildi.
+    expect(u).toContain("expect(URETIM_ISARETI_IPUCU).toMatch(/stok ve Evrak model seçicileri, Analiz/);");
     expect(u).toMatch(/queryByLabelText\("AK160 planlanan adedi"\)\)\.toBeNull\(\)/);
   });
 });

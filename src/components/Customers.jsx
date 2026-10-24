@@ -727,7 +727,7 @@ export const Customers = ({
           draftBar={<DraftRestoreBar draft={draft} onRestore={restoreDraft} onDiscard={discardDraft} />}
           stock={stock} models={models} kalipDefs={kalipDefs} parts={parts} partTypeDefs={partTypeDefs}
           dealers={dealers} factory={factory} kdvRates={kdvRates} payments={payments}
-          krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
+          krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari} appSettings={appSettings}
           geoData={geoData} loadingGeo={loadingGeo}
           addLabel={addLabel} entity={entity}
           giderYetki={giderYetki} uretimPartileri={uretimPartileri}

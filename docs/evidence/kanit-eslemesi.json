@@ -6360,6 +6360,47 @@
         "rapor": "docs/evidence/0104-piksel-raporu.json",
         "ekran": "musteri-formu-0103-parti",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "musteri-formu-0105-model",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-24 · spec 0105 Karar 12"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "musteri-formu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "musteri-formu-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "musteri-formu-ilk-odeme",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "musteri-formu-0079",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "musteri-formu-0094-ilce",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "musteri-formu-0103-parti",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "musteri-formu-0104-stok",
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [
@@ -6861,6 +6902,12 @@
         "rapor": "docs/evidence/0093-taban-piksel-raporu.json",
         "ekran": "katalog-model-ekmaliyet",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0105-piksel-raporu.json",
+        "ekran": "katalog-model-uretimde",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-24 · spec 0105 Karar 11"
       }
     ],
     "src/components/KalipManager.jsx": [

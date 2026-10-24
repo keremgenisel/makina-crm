@@ -103,8 +103,9 @@ describe("Spec 0091: Makina Modelleri paneli (R1–R5, R28)", () => {
     render(<Katalog />);
     expect(screen.getByTestId("uretim-isareti-ipucu").textContent).toBe(URETIM_ISARETI_IPUCU);
     // Spec 0093 ile (R8/2): kapsam planlanan adetler penceresini de sayar; ikinci ifade aynen (0093 AC-16'nın "söylemeye devam eder" yarısı).
-    expect(URETIM_ISARETI_IPUCU).toMatch(/Makina Maliyeti › Model Maliyetleri'ni ve Parti Hesabı'nın planlanan adetler penceresini süzer/);
-    expect(URETIM_ISARETI_IPUCU).toMatch(/model seçicileri, Analiz/);
+    // Spec 0105 ile (R22/2, Karar 17): üçüncü tüketici müşteri formunun model seçicisi; etkilenmeyen seçiciler "stok ve Evrak".
+    expect(URETIM_ISARETI_IPUCU).toMatch(/Makina Maliyeti › Model Maliyetleri'ni, Parti Hesabı'nın planlanan adetler penceresini ve müşteri formunun model seçicisini süzer/);
+    expect(URETIM_ISARETI_IPUCU).toMatch(/stok ve Evrak model seçicileri, Analiz/);
   });
 });
 
@@ -265,16 +266,21 @@ describe("Spec 0091: dokunulmayanlar (R21, R22)", () => {
     expect(screen.getByTestId("model-satiri-AK100")).toBeTruthy();
     expect(tabloSatirlari()).toHaveLength(7);
   });
-  it("AC-33: müşteri makinası formunun model seçicisi üretimde olmayan modeli listeler", () => {
+  // Spec 0105 ile (AC-33 ters çevrildi, ölçüm 9): eski test forma işaret vermiyordu ve bu spec'ten sonra da kendiliğinden yeşil
+  // kalırdı. Şimdi işaret verisiyle: müşteri formu üretimde olmayan modeli listelemez; işaretsiz model listelenir.
+  it("AC-33 (spec 0105 ile ters): müşteri makinası formunun model seçicisi üretimde olmayan modeli listelemez", () => {
     function F() {
       const [form, setForm] = useState({ id: 1, name: "A", kaliplar: [] });
       return <CustomerAddEditForm modal={{ edit: { id: 1 } }} form={form} setForm={setForm} save={vi.fn()} onClose={vi.fn()} stock={[]} models={[...V.STANDART, ...V.OZEL.filter(m => !m.deletedAt)]}
+        appSettings={{ uretimdeOlmayanModeller: V.URETIMDE_DISI }}
         dealers={[]} factory={{ name: "Altuntaş" }} kdvRates={{}} payments={[]} geoData={null} loadingGeo={false} entity="customer" />;
     }
     render(<F />);
     fireEvent.click(screen.getByText("Model seçin..."));
-    expect(screen.getByText("AK160")).toBeTruthy();
-    expect(screen.getByText("AK240")).toBeTruthy();
+    expect(V.URETIMDE_DISI).toEqual(expect.arrayContaining(["AK160", "AK240"]));
+    expect(screen.queryByText("AK160")).toBeNull();
+    expect(screen.queryByText("AK240")).toBeNull();
+    expect(screen.getByText("AK100")).toBeTruthy();
   });
   it("AC-34: stok makina formunun model seçicisi üretimde olmayan modeli listeler", () => {
     render(<MakinaStokTab stock={[]} setStock={vi.fn()} models={[...V.STANDART, ...V.OZEL.filter(m => !m.deletedAt)]} showToast={vi.fn()}

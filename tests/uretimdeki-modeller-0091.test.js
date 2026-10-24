@@ -143,12 +143,14 @@ describe("Spec 0091: motor (R25–R27, C12, C14)", () => {
 
 describe("Spec 0091: taramalar ve değişmeyenler", () => {
   // App.jsx yalnız yükleme yolunda alanı gövdeden taşır (triyaj bulgu 1); süzme ve okuma yapmaz.
-  const izinli = new Set(["src/lib/uretimdekiModeller.js", "src/components/ModelsManager.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/Settings.jsx", "src/App.jsx"]);
+  // Spec 0105 ile (C3, Karar 10, 18): müşteri formu işareti kütüphanenin süzme yardımcısıyla okur; liste yalnız formla genişler,
+  // desen yardımcının adını da kapsar (aksi hâlde form taramaya hiç girmezdi). Kopyası tests/plan-adetler-0093.test.js'te.
+  const izinli = new Set(["src/lib/uretimdekiModeller.js", "src/components/ModelsManager.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/Settings.jsx", "src/App.jsx", "src/components/customers/CustomerAddEditForm.jsx"]);
   it("AC-33 / AC-34 / AC-35 / AC-36 / AC-37 / AC-43 (R20–R22, R29): işareti yalnız katalog paneli ve maliyet ekranı okur", () => {
     // Spec 0093 ile (R12/2, AC-23): tarama modül yolundan değil işareti OKUYAN adlardan yapılır; iki maliyet görünümü kütüphaneden
     // yalnız "üretimde değil" metin sabitini alır (bu, işaret okumak değildir). PartiHesabi'nin eski "uretimde hiç geçmez" satırı
     // ters çevrildi (0091 R29, AC-43): pencere satırın kendi `uretimde` alanıyla süzer; bekçisi tests/plan-adetler-0093.test.js.
-    const okuyan = tara("src").filter(f => /uretimdeOlmayanModeller|\bURETIM_ALANI\b|uretimdeMi\b|uretimdeOlmayanlar\b|uretimIsareti(Degistir|Tasi|Dusur)\b/.test(kod(f)));
+    const okuyan = tara("src").filter(f => /uretimdeOlmayanModeller|\bURETIM_ALANI\b|uretimdeMi\b|uretimdeOlmayanlar\b|uretimIsareti(Degistir|Tasi|Dusur)\b|uretimdeSuzulmusModeller\b/.test(kod(f)));
     expect(okuyan.filter(f => !izinli.has(f))).toEqual([]);
     expect(okuyan).not.toContain("src/components/maliyet/PartiHesabi.jsx");
     expect(kod("src/components/Analiz.jsx")).not.toMatch(/uretimde/);

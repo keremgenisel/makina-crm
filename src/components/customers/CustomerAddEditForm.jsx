@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { SALE_TYPES, CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
 import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani, kalipCapiOnDoldur, trLower } from "../../lib/utils";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, KalipCapiFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
-import { HataMetni, Ipucu, BolumBasligi } from "../tasarim";
-import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi, PANO_SEKME_ADI } from "../../lib/stokDurumu";
+import { HataMetni, Ipucu, BolumBasligi, BosDurum } from "../tasarim";
+import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi, PANO_SEKME_ADI, modelStokSayaci, modelStokOku, modelStokMetni } from "../../lib/stokDurumu";
+import { uretimdeSuzulmusModeller, URETIM_DEGIL_IBARESI } from "../../lib/uretimdekiModeller";
 import { useLock } from "../../hooks/useLock";
 import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
@@ -23,8 +24,12 @@ export const CustomerAddEditForm = ({
   giderYetki = false,
   // Spec 0100 R7/2, R7/2a, C13: stoktan seçilmeden yapılan satışın üretim partisi (yalnız gider yetkisiyle dolu gelir).
   uretimPartileri = [],
+  // Spec 0105 R24, C2: ayar bütün olarak gelir ve yalnız süzme yardımcısına verilir; varsayılan "hepsi üretimde".
+  appSettings = {},
 }) => {
   const [modelPicker, setModelPicker] = useState(false);
+  // Spec 0105 R9/2, C4, Karar 23: stok sayacı çizim başına bir kez, yalnız `{ stock }` ile; kart modelini anahtarla okur.
+  const stokSayaci = useMemo(() => modelStokSayaci({ stock }), [stock]);
   // Spec 0103 R1/2, R4 (0100 R7/2a'nın kip yarısını ters çevirir): parti seçicisi gider yetkisiyle ekleme ve BÜTÜN düzenleme
   // kiplerinde çizilir; stoktan seçim ölçütü (0100 R7/2b) yalnız stok seçicisinin çizildiği iki kipte uygulanır, öteki
   // düzenlemede stokta duran aynı seriyle bir satır seçiciyi gizlemesin.
@@ -172,22 +177,33 @@ export const CustomerAddEditForm = ({
           <span style={{ color: form.model ? "var(--n900, #0f172a)" : "var(--n400, #94a3b8)" }}>{form.model || "Model seçin..."}</span>
           <span style={{ color: "var(--n400, #94a3b8)", fontSize: 12 }}>{modelPicker ? "▲" : "▼"}</span>
         </div>
-        {modelPicker && (
+        {modelPicker && (() => {
+          // Spec 0105 R1–R8/2, Karar 31, 32: ızgara süzülmüş listeyi katalog sırasıyla çizer; özgün ve formdaki model korunur,
+          // stokta canlı satırı olan model kalır. Boş liste iki ayrı durumla anlatılır.
+          const kartlar = uretimdeSuzulmusModeller(appSettings, models, {
+            korunan: [modal?.edit?.model, form.model],
+            stoktaMi: ad => modelStokOku(stokSayaci, ad).toplam > 0,
+          });
+          if (!(models || []).length) return <div style={{ marginTop: 8 }}><BosDurum testId="bos-model-secici" baslik={MODEL_BOS_KATALOG.baslik} metin={MODEL_BOS_KATALOG.metin} /></div>;
+          if (!kartlar.length) return <div style={{ marginTop: 8 }}><BosDurum testId="bos-model-secici-uretimde" baslik={MODEL_BOS_URETIMDE.baslik} metin={MODEL_BOS_URETIMDE.metin} /></div>;
+          return (
           <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {models.map(m => (
+            {kartlar.map(({ m, uretimde }) => (
               <div
                 key={m.model}
                 onClick={() => { setForm(p => ({ ...p, model: m.model, ...(p._stokSerisiz && p.model !== m.model ? { _stokSerisiz: false, serialNo: "" } : {}) })); setModelPicker(false); }}
                 style={{ padding: "10px 12px", borderRadius: 8, cursor: "pointer", border: "2px solid", borderColor: form.model === m.model ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)", background: form.model === m.model ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)" }}
               >
-                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--n900, #0f172a)" }}>{m.model}</div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--n900, #0f172a)" }}>{m.model}{!uretimde && <span style={{ fontWeight: 400, color: "var(--n500, #64748b)" }}> · {URETIM_DEGIL_IBARESI}</span>}</div>
                 <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 2 }}>{m.sogutma}</div>
                 <div style={{ fontSize: 11, color: "var(--brand, #e85d1a)", fontWeight: 600 }}>{m.kapasite}</div>
                 <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)" }}>Ø {m.kalip}</div>
+                <div data-testid={`model-stok-${m.model}`} style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 2 }}>{modelStokMetni(modelStokOku(stokSayaci, m.model))}</div>
               </div>
             ))}
           </div>
-        )}
+          );
+        })()}
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
@@ -565,3 +581,6 @@ export const CustomerAddEditForm = ({
 
 // Spec 0104 triyaj (bulgu 1): seri bekleyen düzenlemenin stok seçicisinin üstündeki uyarı.
 export const SERI_BEKLEYEN_CIFT_DUSUM_IPUCU = "Bu kayıt stoktan seri no'suz satıldıysa stok zaten düşülmüştür; numarayı 'Manuel gir' ile yazın, stoktan yeniden düşmeyin.";
+// Spec 0105 R8/2, Karar 37: model ızgarasının iki boş durumu (katalog boş; katalog dolu, hepsi üretimde değil).
+export const MODEL_BOS_KATALOG = { baslik: "Tanımlı makina modeli yok", metin: "Modeller Ayarlar › Katalog › Makina Modelleri'nde tanımlanır." };
+export const MODEL_BOS_URETIMDE = { baslik: "Üretimde işaretli model yok", metin: "Bütün modeller üretimde değil olarak işaretli. İşaret Ayarlar › Katalog › Makina Modelleri'ndeki \"Üretimde\" kutusundan değiştirilir." };

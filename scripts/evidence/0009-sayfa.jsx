@@ -585,6 +585,16 @@ const STOK_0104 = [
   { id: 9502, model: "AK100_DS", serialNo: "", addedDate: "2026-09-08", partiId: 902, parcalar: [] },
   { id: 9503, model: "AK100_DS", serialNo: "AK100-2026-040", addedDate: "2026-09-12", partiId: 902, parcalar: [] },
 ];
+// Spec 0105: model ızgarası açık. Varsayılan altı model; ikisi üretimde değil, biri (SWP140_DSC) stokta satırı olduğu için
+// ibareyle kalır. AK100_DS karışık (2 satışa hazır, 1 montajda), AK120_DS yalnız montajda, kalanlar stoksuz.
+const AYAR_0105 = { uretimdeOlmayanModeller: ["AK100_DSC", "SWP140_DSC"] };
+const STOK_0105 = [
+  { id: 9601, model: "AK100_DS", serialNo: "", addedDate: "2026-09-02", parcalar: [] },
+  { id: 9602, model: "AK100_DS", serialNo: "AK100-2026-051", addedDate: "2026-09-08", uretimDurumu: "hazir", parcalar: [] },
+  { id: 9603, model: "AK100_DS", serialNo: "", addedDate: "2026-09-12", uretimDurumu: "montaj", parcalar: [] },
+  { id: 9604, model: "AK120_DS", serialNo: "", addedDate: "2026-09-15", uretimDurumu: "montaj", parcalar: [] },
+  { id: 9605, model: "SWP140_DSC", serialNo: "SWP-2025-007", addedDate: "2025-11-03", parcalar: [] },
+];
 const anasayfa0100 = <Dashboard customers={MUSTERI_0100} dealers={DEALERS} services={[]} payments={[]} rates={{ usd: 41.25, eur: 48.1 }} factory={{ name: "Altuntaş Makina" }}
   stock={STOK_0100} uretimPartileri={[P_KAPALI, P_ACIK_0100]} />;
 
@@ -1292,6 +1302,8 @@ const EKRANLAR = {
     giderYetki uretimPartileri={[P_KAPALI, P_ACIK]} initialDetailId={500} />, ["~Düzenle", "kaydir:Üretim partisi"]],
   "musteri-formu-0104-stok": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={STOK_0104} setStock={bos} dealers={DEALERS}
     uretimPartileri={[P_KAPALI, P_ACIK]} />, ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:Seri no'suz stoktan düş", "doldur:Seri numarası=AK100-2026-045", "kaydir:Seri Numarası"]],
+  "musteri-formu-0105-model": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={STOK_0105} setStock={bos} dealers={DEALERS}
+    appSettings={AYAR_0105} />, ["~Yeni Müşteri", "tikla:Model seçin...", "kaydir:AK120_DSC"]],
 };
 
 window.__EKRANLAR = Object.keys(EKRANLAR);
