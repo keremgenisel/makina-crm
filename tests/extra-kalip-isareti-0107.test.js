@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import {
-  musteriKalibiBekliyorMu, aynaUretimFormuMetni, extraKalipGrupla,
+  musteriKalibiBekliyorMu, aynaUretimFormuMetni, extraKalipGrupla, uretimFormHaritasi,
   URETIM_FORMU_GONDERILDI, URETIM_FORMU_GONDERILMEDI,
 } from "../src/lib/musteriDurumu.js";
 import { enEskiBekleyenKalipTarihi } from "../src/components/stock/UretimFormu.jsx";
@@ -15,13 +15,15 @@ const kok = path.join(__dirname, "..");
 const oku = (f) => readFileSync(path.join(kok, f), "utf-8");
 const yorumsuz = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 
+// Spec 0108 ile (R3/2, R18): ölçüt artık bağ anahtarını ve haritayı alır; yönler aynı, bağlı kalıp canlı formda satırıyla.
 describe("Spec 0107: musteriKalibiBekliyorMu (R16)", () => {
+  const harita = uretimFormHaritasi([{ id: 9, satirlar: [{ kaynakTip: "musteri", kaynakId: 1, kalipIdx: 0 }] }]);
   it("işaretli ve bağsız müşteri kalıbı bekler; ayna, bağlı ya da işaretsiz kalıp beklemez", () => {
-    expect(musteriKalibiBekliyorMu({ ad: "Y55", uretimFormGonder: true })).toBe(true);
-    expect(musteriKalibiBekliyorMu({ ad: "Y55", uretimFormGonder: true, uretimFormId: 9 })).toBe(false);
-    expect(musteriKalibiBekliyorMu({ ad: "Y55" })).toBe(false);
-    expect(musteriKalibiBekliyorMu({ ad: "Y45", uretimFormGonder: true, partSaleId: 710 })).toBe(false);
-    expect(musteriKalibiBekliyorMu(null)).toBe(false);
+    expect(musteriKalibiBekliyorMu({ ad: "Y55", uretimFormGonder: true }, 1, 0, harita)).toBe(true);
+    expect(musteriKalibiBekliyorMu({ ad: "Y55", uretimFormGonder: true, uretimFormId: 9 }, 1, 0, harita)).toBe(false);
+    expect(musteriKalibiBekliyorMu({ ad: "Y55" }, 1, 0, harita)).toBe(false);
+    expect(musteriKalibiBekliyorMu({ ad: "Y45", uretimFormGonder: true, partSaleId: 710 }, 1, 0, harita)).toBe(false);
+    expect(musteriKalibiBekliyorMu(null, 1, 0, harita)).toBe(false);
   });
 });
 

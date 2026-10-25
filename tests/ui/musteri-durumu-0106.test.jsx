@@ -143,12 +143,13 @@ describe("Spec 0106: müşteri listesi (R13–R22)", () => {
     kur({ customers: [{ ...MUSTERI, kaliplar: [MUSTERI.kaliplar[3]], makinaDurumu: M.TESLIM }], partSales: [EXTRA], uretimFormlari: [FORM_900] });
     expect(pillerOf("Durum AŞ")).toEqual(["KALIP HAZIR · TESLİM BEKLİYOR"]);
   });
+  // Spec 0108 ile (R15, U1): form yokken damgalı ama işaretsiz kalıp (Y60) ve Extra Kalıp bekliyor; yalnız işaretli Y55 gönderildi.
   it("AC-40: uretimFormlari verilmezse çökmez; kalıplar bekliyor ya da gönderildi türetir", () => {
     kur({ customers: [MUSTERI], partSales: [EXTRA] });
-    expect(pillerOf("Durum AŞ")).toEqual(["MONTAJ YAPILIYOR", "KALIP SİPARİŞİ BEKLİYOR 1/4"]);
+    expect(pillerOf("Durum AŞ")).toEqual(["MONTAJ YAPILIYOR", "KALIP SİPARİŞİ BEKLİYOR 3/4"]);
     cleanup();
     kur({ customers: [{ ...MUSTERI, makinaDurumu: undefined }], partSales: [EXTRA] });
-    expect(pillerOf("Durum AŞ")).toEqual(["KALIP SİPARİŞ VERİLDİ 3/4"]);
+    expect(pillerOf("Durum AŞ")).toEqual(["KALIP SİPARİŞ VERİLDİ 1/4"]);
   });
 });
 

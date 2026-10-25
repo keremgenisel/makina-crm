@@ -14,6 +14,7 @@ import { turHaritasi, kirilimdaGecenTedarikciler, KIRILIMDA_TEDARIKCI_NEDENI } f
 import { copHareketGeriAlmaNedeni } from "../../lib/kasa";
 import { makeCanDo } from "../../lib/permissions";
 import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
+import { uretimFormDonemMetni } from "../stock/uretimFormPrint";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -334,7 +335,7 @@ export const SettingsTrash = ({
       const sahip = d.dealerId ? (rawDealers.find(x => x.id === d.dealerId)?.name || "—") : trashCustomerName(d.customerId);
       items.push({ key: `dosya-${d.id}`, type: "Dosya", label: `${sahip} · ${d.ad || ""}`, deletedAt: d.deletedAt, restore: () => restoreDosya(d), purge: () => purgeDosya(d) });
     });
-    rawUretimFormlari.filter(u => u.deletedAt).forEach(u => items.push({ key: `uretim-${u.id}`, type: "Üretim Formu", label: `${u.tarih || "—"}${u.not ? " · " + u.not : ""}`, deletedAt: u.deletedAt, restore: () => restoreUretimFormu(u), purge: () => purgeUretimFormu(u) }));
+    rawUretimFormlari.filter(u => u.deletedAt).forEach(u => items.push({ key: `uretim-${u.id}`, type: "Üretim Formu", label: `${uretimFormDonemMetni(u)}${u.not ? " · " + u.not : ""}`, deletedAt: u.deletedAt, restore: () => restoreUretimFormu(u), purge: () => purgeUretimFormu(u) }));
     rawPartTypeDefs.filter(t => t.deletedAt).forEach(t => items.push({ key: `parttype-${t.id}`, type: "Parça Tipi", label: t.ad || "—", deletedAt: t.deletedAt, restore: () => restorePartTypeDef(t), purge: () => purgePartTypeDef(t) }));
     rawCalisanlar.filter(c => c.deletedAt).forEach(c => items.push({ key: `calisan-${c.id}`, type: "Çalışan", label: c.ad || "—", deletedAt: c.deletedAt, restore: () => restoreCalisan(c), purge: () => purgeCalisan(c) }));
     rawYedekParcaSatislar.filter(s => s.deletedAt).forEach(s => {

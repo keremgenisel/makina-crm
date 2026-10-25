@@ -69,14 +69,16 @@ describe("Spec 0106: kalıp durumu ve türetme (R7–R10)", () => {
   it("AC-8: gönder işaretli, form kimliği boş: gönderildi", () => { expect(turet({ uretimFormGonder: true })).toBe(K.GONDERILDI); });
   it("AC-9: bağlı satır bitmemiş: üretimde", () => { expect(turet({ uretimFormGonder: true, uretimFormId: 900 })).toBe(K.URETIMDE); });
   it("AC-10: bağlı satır tamamlandı: hazır", () => { expect(turet({ uretimFormId: 900 }, MD.musteriKalipAnahtari(1, 1))).toBe(K.HAZIR); });
-  it("AC-11: form çöpte ya da satır yok: gönderildi", () => {
-    expect(turet({ uretimFormId: 901 }, MD.musteriKalipAnahtari(1, 3))).toBe(K.GONDERILDI);
-    expect(turet({ uretimFormId: 900 }, MD.musteriKalipAnahtari(1, 5))).toBe(K.GONDERILDI);
-    expect(turet({ uretimFormId: 999 })).toBe(K.GONDERILDI);
+  // Spec 0108 ile (R15, plan turu U1): kopmuş bağ "hiç forma girmemiş" okunur; işaretsiz damgalı kalıp bekliyor, işaretli gönderildi.
+  it("AC-11: form çöpte ya da satır yok: işaretsizse bekliyor, işaretliyse gönderildi (spec 0108 ile)", () => {
+    expect(turet({ uretimFormId: 901 }, MD.musteriKalipAnahtari(1, 3))).toBe(K.BEKLIYOR);
+    expect(turet({ uretimFormId: 900 }, MD.musteriKalipAnahtari(1, 5))).toBe(K.BEKLIYOR);
+    expect(turet({ uretimFormId: 999 })).toBe(K.BEKLIYOR);
+    expect(turet({ uretimFormGonder: true, uretimFormId: 999 })).toBe(K.GONDERILDI);
   });
   it("Karar 31: anahtar form kimliğiyle aranır; başka formdaki aynı üçlü bağ kurmaz", () => {
     const h = MD.uretimFormHaritasi([{ id: 5, satirlar: [{ kaynakTip: "musteri", kaynakId: 1, kalipIdx: 0, tamamlandi: true }] }, { id: 6, satirlar: [] }]);
-    expect(MD.kalipDurumuTuret({ uretimFormId: 6 }, MD.musteriKalipAnahtari(1, 0), h)).toBe(K.GONDERILDI);
+    expect(MD.kalipDurumuTuret({ uretimFormId: 6 }, MD.musteriKalipAnahtari(1, 0), h)).toBe(K.BEKLIYOR); // spec 0108 ile
     expect(MD.kalipDurumuTuret({ uretimFormId: 5 }, MD.musteriKalipAnahtari(1, 0), h)).toBe(K.HAZIR);
   });
   it("AC-12: Extra Kalıp aynı kurallarla, bağı extra_kalip:<id>", () => {
@@ -161,9 +163,9 @@ describe("Spec 0106: pil (R14–R21/2)", () => {
     expect(MD.satirDurumu(musteri([{ uretimFormId: 900 }], {}), { harita }).teslimBekliyor).toBe(false);
     expect(MD.satirDurumu({ id: 1, kaliplar: [{}, { uretimFormId: 900 }] }, { harita }).teslimBekliyor).toBe(true);
   });
-  it("AC-40, AC-42: form listesi verilmezse çökmez; bütün kalıplar bekliyor ya da gönderildi", () => {
+  it("AC-40, AC-42: form listesi verilmezse çökmez; bütün kalıplar bekliyor ya da gönderildi (spec 0108 ile: işaretsiz damgalı bekliyor)", () => {
     const h = MD.uretimFormHaritasi(undefined);
-    expect(MD.kalipKumesi({ id: 1, kaliplar: [{}, { uretimFormGonder: true }, { uretimFormId: 3 }] }, undefined, h)).toEqual([K.BEKLIYOR, K.GONDERILDI, K.GONDERILDI]);
+    expect(MD.kalipKumesi({ id: 1, kaliplar: [{}, { uretimFormGonder: true }, { uretimFormId: 3 }] }, undefined, h)).toEqual([K.BEKLIYOR, K.GONDERILDI, K.BEKLIYOR]);
     expect(MD.satirDurumu({}, {}).piller).toEqual([]);
   });
   it("AC-29: 1000 müşteri ve 50 formda harita bir kez, toplam süre eşiğin altında", () => {

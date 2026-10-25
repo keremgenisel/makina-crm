@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { uid, stripAutoPrint } from "../../lib/utils";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../../lib/audit";
@@ -7,24 +7,26 @@ import { fmtKalipCapi } from "../../lib/utils";
 import { Btn, Icon, Modal, LockConflict, DateInput } from "../ui";
 import { useLock } from "../../hooks/useLock";
 import { KartBolum, BosDurum, UyariSeridi } from "../tasarim";
-import { buildPrintHtml, groupByMusteri, fmtDate } from "./uretimFormPrint";
+import { buildPrintHtml, groupByMusteri, fmtDate, uretimFormDonemMetni } from "./uretimFormPrint";
 import { emptyRow } from "./uretimFormModel";
 import { UretimSatirEkleModal } from "./UretimSatirEkleModal";
-import { musteriKalibiBekliyorMu } from "../../lib/musteriDurumu";
+import { musteriKalibiBekliyorMu, extraKalipBekliyorMu, uretimFormHaritasi, formSilinceDonenSayisi, formSilmeDonusMetni } from "../../lib/musteriDurumu";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-// Bekleyen (müşteri tarafında musteriKalibiBekliyorMu, Extra Kalıp'ta işaretli ve bağsız) kalıpların EN ESKİ tarihi — müşteri kalıbı: installDate,
+// Bekleyen kalıpların (spec 0108: bağı canlı olmayanlar, musteriDurumu ölçütü) EN ESKİ tarihi — müşteri kalıbı: installDate,
 // Extra Kalıp: ps.tarih. Yeni üretim formu başlangıcını buna çekip "Bekleyen Kalıpları Getir" hepsini yakalar.
 // Sayım (Dashboard.pendingKaliplarCount) tarihten bağımsız; getirme tarih-aralığı bağlı olduğu için gerekli.
-export const enEskiBekleyenKalipTarihi = (customers = [], partSales = []) => {
+// Spec 0108 R18/2: üçüncü argüman `uretimFormlari`; harita çağrı başına bir kez kurulur.
+export const enEskiBekleyenKalipTarihi = (customers = [], partSales = [], uretimFormlari = []) => {
+  const harita = uretimFormHaritasi(uretimFormlari);
   let en = "";
   for (const c of customers) {
     if (c.deletedAt || !c.installDate) continue;
-    if ((c.kaliplar || []).some(musteriKalibiBekliyorMu) && (!en || c.installDate < en)) en = c.installDate;
+    if ((c.kaliplar || []).some((k, i) => musteriKalibiBekliyorMu(k, c.id, i, harita)) && (!en || c.installDate < en)) en = c.installDate;
   }
   for (const ps of partSales) {
-    if (ps.deletedAt || !ps.uretimFormGonder || ps.uretimFormId || !ps.tarih) continue;
+    if (ps.deletedAt || !ps.tarih || !extraKalipBekliyorMu(ps, harita)) continue;
     if (!en || ps.tarih < en) en = ps.tarih;
   }
   return en;
@@ -83,12 +85,15 @@ export function UretimFormu({
   const { lockLoading, lockConflict, forceAcquire } = useLock("uretim_formu", lockEntityId);
   const [addModal, setAddModal] = useState(false);
   const [delConfirm, setDelConfirm]     = useState(null);
+  // Spec 0108 R13: silme onayında dönecek kalıp sayısı, ölçütün kendisiyle (onay açıkken bir kez).
+  const silDonen = useMemo(() => (delConfirm == null ? 0
+    : formSilinceDonenSayisi(uretimFormlari.find(f => f.id === delConfirm), { customers, partSales, uretimFormlari })), [delConfirm, uretimFormlari, customers, partSales]);
 
   // ── Form listesi işlemleri ──────────────────────────────────────────────────
   const openNew = () => {
     const f = emptyForm();
     // Bekleyen kalıplar geçmiş tarihliyse başlangıcı en eskiye çek (bitiş bugün kalır) → hepsi getirilebilir.
-    const en = enEskiBekleyenKalipTarihi(customers, partSales);
+    const en = enEskiBekleyenKalipTarihi(customers, partSales, uretimFormlari);
     if (en && en < f.baslangicTarihi) f.baslangicTarihi = en;
     setForm(f);
     setEditId("new");
@@ -223,6 +228,8 @@ export function UretimFormu({
     );
 
     const newRows = [];
+    // Spec 0108 R3, C2/2: bağ canlılığı kayıtlı formlardan, tıklama başına bir kez (açık formun taslağı okunmaz, R8/2).
+    const harita = uretimFormHaritasi(uretimFormlari);
 
     // Müşteri kalıpları — installDate tarih aralığında
     for (const c of customers) {
@@ -231,7 +238,7 @@ export function UretimFormu({
       if (!tarih || tarih < baslangicTarihi || tarih > bitisTarihi) continue;
       (c.kaliplar || []).forEach((k, i) => {
         // Spec 0107 R8, R8/2: ayna satır ve forma eklenmiş kalıp atlanır; forEach indeksi korunur (kalipIdx konumdur).
-        if (!musteriKalibiBekliyorMu(k)) return;
+        if (!musteriKalibiBekliyorMu(k, c.id, i, harita)) return;
         if (already.has(`musteri:${c.id}:${i}`)) return;
         const def = kalipDefs.find(d => d.ad === k.ad);
         newRows.push({
@@ -256,8 +263,7 @@ export function UretimFormu({
     // Extra kalıp satışı kalıpları — her partSale kaydı tek bir kalıptır
     for (const ps of partSales) {
       if (ps.deletedAt) continue;
-      if (!ps.uretimFormGonder) continue;
-      if (ps.uretimFormId) continue;
+      if (!extraKalipBekliyorMu(ps, harita)) continue; // spec 0108 R5, R18
       const tarih = ps.tarih || "";
       if (!tarih || tarih < baslangicTarihi || tarih > bitisTarihi) continue;
       if (already.has(`extra_kalip:${ps.id}`)) continue;
@@ -509,9 +515,7 @@ export function UretimFormu({
             {sorted.map((f, i) => {
               const done = f.satirlar.filter(r => r.tamamlandi).length;
               const allDone = f.satirlar.length > 0 && done === f.satirlar.length;
-              const bas = f.baslangicTarihi || f.tarih || "";
-              const bit = f.bitisTarihi || f.tarih || "";
-              const donemStr = bas === bit ? fmtDate(bas) : `${fmtDate(bas)} – ${fmtDate(bit)}`;
+              const donemStr = uretimFormDonemMetni(f); // spec 0108 R14/2: Çöp Kutusu da aynı metni okur
               return (
                 <tr key={f.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", background: i % 2 === 0 ? "var(--surface, #ffffff)" : "var(--n100, #f8fafc)" }}>
                   <td style={{ padding: "10px 12px", fontWeight: 600 }}>{donemStr || "—"}</td>
@@ -556,6 +560,7 @@ export function UretimFormu({
           }
         >
           <div style={{ fontSize: 13 }}>Bu üretim formu çöp kutusuna taşınacak. Ayarlar → Çöp Kutusu'ndan geri alabilirsiniz.</div>
+          {silDonen > 0 && <div data-testid="uretim-sil-donus" style={{ fontSize: 13, marginTop: 8 }}>{formSilmeDonusMetni(silDonen)}</div>}
         </Modal>
       )}
     </div>

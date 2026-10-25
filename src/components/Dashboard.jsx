@@ -15,7 +15,7 @@ import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { logAction, hareketDuzenlemeKaydi } from "../lib/audit";
 import { OdemeHatirlatmaKarti, OdemeHatirlatmaPenceresi } from "./gider/OdemeHatirlatma";
-import { musteriKalibiBekliyorMu } from "../lib/musteriDurumu";
+import { musteriKalibiBekliyorMu, extraKalipBekliyorMu, uretimFormHaritasi } from "../lib/musteriDurumu";
 import { stokDurumOzeti, kutuModelleri, kutuAltSatiri, kalanModelMetni, KUTU_ETIKETI, ORTUSME_CUMLESI, STOK_BOS_METNI, DURUM_ADLARI } from "../lib/stokDurumu";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onEvrakKaydet = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [], onGoYedekParca = null,
@@ -194,19 +194,20 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
       && !teklifKaydedildiMi(t, { customers, partSales, yedekParcaSatislar, parts }));
   }, [teklifler, customers, partSales, yedekParcaSatislar, parts]);
 
+  // Spec 0108 R3, R19: bağın canlılığı formlardan; harita ekranda bir kez, bağımlılık listesinde uretimFormlari (yoksa form çöpe
+  // atılınca sayaç bayat kalırdı).
   const pendingKaliplarCount = useMemo(() => {
+    const harita = uretimFormHaritasi(uretimFormlari);
     let count = 0;
     for (const c of customers) {
       // Spec 0107 R9: ayna satır sayılmaz (aynı kalıp partSales döngüsünde bir kez sayılır).
-      for (const k of (c.kaliplar || [])) {
-        if (musteriKalibiBekliyorMu(k)) count++;
-      }
+      (c.kaliplar || []).forEach((k, i) => { if (musteriKalibiBekliyorMu(k, c.id, i, harita)) count++; });
     }
     for (const ps of partSales) {
-      if (ps.uretimFormGonder && !ps.uretimFormId && !ps.deletedAt) count++;
+      if (!ps.deletedAt && extraKalipBekliyorMu(ps, harita)) count++;
     }
     return count;
-  }, [customers, partSales]);
+  }, [customers, partSales, uretimFormlari]);
 
   // Aranacaklar: takip tarihi gelmiş/geçmiş, tamamlanmamış görüşmeler (F7)
   const aranacaklar = useMemo(() =>

@@ -69,13 +69,16 @@ export const uretimFormHaritasi = (uretimFormlari) => {
   return harita;
 };
 
-// R8, R8/2: türetme yalnız kaydın kendi işaretlerini okur. Form ya da satır bulunamazsa `gonderildi` (Karar 17).
+// Spec 0108 R2: bağ canlı = kimlik dolu, o kimlikte çöpte olmayan form var ve o formda bu kalıbın satırı var. Harita yoksa boş
+// sayılır, yani "hiç canlı form yok" (R20, bilinen sınır). Dönüş canlı bağın satırı ya da null.
+const canliSatir = (k, anahtar, harita) => (doluMu(k?.uretimFormId) ? harita?.get(String(k.uretimFormId))?.get(anahtar) || null : null);
+export const bagCanliMi = (k, anahtar, harita) => !!canliSatir(k, anahtar, harita);
+// R8, R8/2: türetme yalnız kaydın kendi işaretlerini okur. Spec 0108 R15 ve plan turu kararı (U1): bağ canlı değilse kalıp hiç
+// forma girmemiş gibi okunur; işaretliyse `gonderildi`, işaretsizse (0107'nin bıraktığı damgalı, işaretsiz kayıt) `bekliyor`.
+// 0106 Karar 17'nin "kopmuş bağ = gonderildi" varsayılanı işaretsiz kayıtta ters çevrildi.
 export const kalipDurumuTuret = (k, anahtar, harita) => {
-  if (doluMu(k?.uretimFormId)) {
-    const satir = harita?.get(String(k.uretimFormId))?.get(anahtar);
-    if (!satir) return KALIP_DURUMU.GONDERILDI;
-    return satir.tamamlandi ? KALIP_DURUMU.HAZIR : KALIP_DURUMU.URETIMDE;
-  }
+  const satir = canliSatir(k, anahtar, harita);
+  if (satir) return satir.tamamlandi ? KALIP_DURUMU.HAZIR : KALIP_DURUMU.URETIMDE;
   return k?.uretimFormGonder ? KALIP_DURUMU.GONDERILDI : KALIP_DURUMU.BEKLIYOR;
 };
 // R10: alan doluysa yazılan değer kazanır.
@@ -111,9 +114,44 @@ export const aynaUretimFormuMetni = (k, musteri, grup) => {
   if (!ps) return "—";
   return ps.uretimFormGonder || doluMu(ps.uretimFormId) ? URETIM_FORMU_GONDERILDI : URETIM_FORMU_GONDERILMEDI;
 };
-// Spec 0107 R16: müşteri kalıbı üretim formu için bekliyor mu? Ayna satırın saklı işareti okunmaz (R8–R12); getirme,
-// Anasayfa sayacı ve yeni formun başlangıç tarihi bunu çağırır. 0108 yalnız bu gövdeyi değiştirir (R16/2).
-export const musteriKalibiBekliyorMu = (k) => !aynaSatirMi(k) && !!k?.uretimFormGonder && !k?.uretimFormId;
+// Spec 0108 R1–R5, R18: bekleyen kalıp ölçütünün tek saf çekirdeği. Elle yazılmış "Hazır" ya da "Teslim edildi" koşulsuz
+// kısa devre yapar (R4/2; türetilmiş durum değil). İşaret ya da bağ dolu (R1/2, 0107 R6/2 ile aynı soru) ve bağ canlı değilse
+// bekler. Getirme, Anasayfa sayacı ve yeni formun başlangıç tarihi iki sarmalayıcıyı çağırır.
+const ELLE_BITTI = new Set([KALIP_DURUMU.HAZIR, KALIP_DURUMU.TESLIM]);
+export const kalipBekliyorMu = (k, anahtar, harita) => {
+  if (!k || ELLE_BITTI.has(elleKalipDurumu(k))) return false;
+  if (!k.uretimFormGonder && !doluMu(k.uretimFormId)) return false;
+  return !bagCanliMi(k, anahtar, harita);
+};
+// Spec 0107 R16 → 0108 R18: müşteri kalıbı; ayna satır önce atlanır (0108 R17), saklı işareti okunmaz.
+export const musteriKalibiBekliyorMu = (k, musteriId, i, harita) => !aynaSatirMi(k) && kalipBekliyorMu(k, musteriKalipAnahtari(musteriId, i), harita);
+export const extraKalipBekliyorMu = (ps, harita) => kalipBekliyorMu(ps, extraKalipAnahtari(ps?.id), harita);
+
+// Spec 0108 R13–R13/3: form çöpe atılınca bekleyen listesine dönecek kalıp sayısı. Aynı ölçütle, bu form çıkarılmış haritada;
+// yalnız kaynağı duran (canlı müşteri ya da canlı Extra Kalıp) ve damgası bu formu gösteren satırlar. Satır sayısı değildir.
+export const formSilinceDonenSayisi = (form, { customers = [], partSales = [], uretimFormlari = [] } = {}) => {
+  if (!form) return 0;
+  const harita = uretimFormHaritasi((uretimFormlari || []).filter(f => String(f?.id) !== String(form.id)));
+  const musteriler = new Map((customers || []).filter(c => c && !c.deletedAt).map(c => [String(c.id), c]));
+  const satislar = new Map((partSales || []).filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
+  const gorulen = new Set();
+  let n = 0;
+  for (const r of Array.isArray(form.satirlar) ? form.satirlar : []) {
+    const a = satirAnahtari(r);
+    if (!a || gorulen.has(a)) continue;
+    gorulen.add(a);
+    if (r.kaynakTip === "musteri") {
+      const c = musteriler.get(String(r.kaynakId));
+      const k = c?.kaliplar?.[r.kalipIdx];
+      if (k && String(k.uretimFormId) === String(form.id) && musteriKalibiBekliyorMu(k, c.id, r.kalipIdx, harita)) n++;
+    } else {
+      const ps = satislar.get(String(r.kaynakId));
+      if (ps && String(ps.uretimFormId) === String(form.id) && extraKalipBekliyorMu(ps, harita)) n++;
+    }
+  }
+  return n;
+};
+export const formSilmeDonusMetni = (n) => `Formdaki ${n} kalıp hemen bekleyen kalıplar listesine döner; formu geri alırsanız listeden yeniden çıkar.`;
 
 // R17, R17/2: küme = ayna olmayan müşteri kalıpları + o kayda bağlı canlı Extra Kalıp satışları. Dönüş: durum listesi.
 export const kalipKumesi = (musteri, grup, harita) => {

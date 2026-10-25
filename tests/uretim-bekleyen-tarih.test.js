@@ -11,7 +11,9 @@ describe("enEskiBekleyenKalipTarihi — yeni form başlangıç tarihi", () => {
       { id: 2, installDate: "2026-01-01", kaliplar: [{ ad: "K", uretimFormGonder: true, uretimFormId: 9 }] }, // zaten forma eklendi → sayılmaz
     ];
     const partSales = [{ id: 20, tur: "Kalıp", tarih: "2026-03-15", uretimFormGonder: true }]; // bekliyor
-    expect(enEskiBekleyenKalipTarihi(customers, partSales)).toBe("2026-03-15"); // en eski bekleyen
+    // Spec 0108 ile (AC-32): 9 numaralı form düzeneğe eklendi; bağ canlı olduğu için kalıp yine sayılmaz.
+    const formlar = [{ id: 9, satirlar: [{ kaynakTip: "musteri", kaynakId: 2, kalipIdx: 0 }] }];
+    expect(enEskiBekleyenKalipTarihi(customers, partSales, formlar)).toBe("2026-03-15"); // en eski bekleyen
   });
 
   it("bekleyen yoksa boş döner (başlangıç bugünde kalır)", () => {

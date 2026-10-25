@@ -13,6 +13,7 @@ import { Finance } from "../../src/components/Finance";
 import { Customers } from "../../src/components/Customers";
 import { SimpleDealers } from "../../src/components/SimpleDealers";
 import { Stock } from "../../src/components/Stock";
+import { UretimFormu } from "../../src/components/stock/UretimFormu";
 import { KargoDetayModal } from "../../src/components/KargoPanosu";
 import { Notes } from "../../src/components/Notes";
 import { Analiz } from "../../src/components/Analiz";
@@ -354,6 +355,14 @@ const FORM_0106 = [{ id: 870, baslangicTarihi: "2026-10-01", satirlar: [
 const PS_0106 = [{ id: 872, customerId: 862, tur: "Kalıp", ad: "Y45", olcu: "45x110", ucret: 18000, currency: "TRY", tarih: "2026-10-12", faturaTipi: "Faturalı Yurtiçi", odendi: true, uretimFormId: 870 }];
 const musteri0106 = (ek = {}) => <Customers customers={MUSTERI_0106} setCustomers={bos} partSales={PS_0106} setPartSales={bos} services={[]} payments={[]} dealers={DEALERS}
   stock={[]} setStock={bos} uretimFormlari={FORM_0106} kalipDefs={["Y45", "Y50", "Y55", "Y60", "K40", "O70"].map((ad, i) => ({ id: i + 1, ad }))} {...ek} />;
+// Spec 0108: iki kalıbı (müşteri kalıbı + Extra Kalıp) damgalı form ve yalnız elle eklenmiş satırlı form.
+const FORM_0108_DOLU = { id: 880, baslangicTarihi: "2026-10-01", bitisTarihi: "2026-10-31", not: "Ekim partisi", kapali: false, satirlar: [
+  { id: 1, kaynakTip: "musteri", kaynakId: 867, kalipIdx: 0, kalipAdi: "Y55", musteriAdi: "OX CO Sp. z o.o." },
+  { id: 2, kaynakTip: "extra_kalip", kaynakId: 872, kalipAdi: "Y45", musteriAdi: "ANKARA DÖNER" }] };
+const FORM_0108_BOS = { id: 881, baslangicTarihi: "2026-09-15", bitisTarihi: "2026-09-15", kapali: true, satirlar: [{ id: 3, kaynakTip: null, kalipAdi: "Elle eklenen" }] };
+const MUSTERI_0108 = MUSTERI_0106.map(c => c.id === 867 ? { ...c, kaliplar: c.kaliplar.map((k, i) => i === 0 ? { ...k, uretimFormId: 880 } : k) } : c);
+const uretim0108 = (formlar) => <UretimFormu uretimFormlari={formlar} setUretimFormlari={bos} customers={MUSTERI_0108}
+  partSales={[{ ...PS_0106[0], uretimFormGonder: true, uretimFormId: 880 }]} kalipDefs={[]} showToast={bos} />;
 const BAYI_LISTE = [...DEALERS, { id: 4, name: "Akdeniz Servis", bayiMi: false, anlasmaliServisMi: true, city: "Antalya", country: "Türkiye" }];
 const BAYI_KALIP = [{ id: 9, customerId: 500, tur: "Kalıp", ad: "Hamburger", ucret: 1000, currency: "TRY", tarih: "2026-07-10", faturaTipi: "Faturasız Yurtiçi", odendi: false, satisFirma: "Ege Bayi" }];
 const YP_SATIS = [
@@ -1332,6 +1341,15 @@ const EKRANLAR = {
   "musteriler-0106-suzgec": [musteri0106(), ["etiket:Teslim Bekleyenler (3)"]],
   "musteri-formu-0106-durum": [musteri0106({ initialDetailId: 867 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
   "musteri-detay-0106-kalip": [musteri0106({ initialDetailId: 862 }), ["kaydir:Kalıp Verildi"]],
+  // Spec 0108: silme onayı dönecek kalıp sayısını yazar (satırlı form) ve dönecek kalıbı olmayan formda cümle yok; Çöp Kutusu'nda
+  // üretim formu dönem metni ve notuyla. Liste en yeni formu üstte çizer; "satir-son-dugme:n" n. satırın silme düğmesine basar.
+  "uretim-formu-0108-sil-onay": [uretim0108([FORM_0108_DOLU, FORM_0108_BOS]), ["satir-son-dugme:1"]],
+  "uretim-formu-0108-sil-onay-bos": [uretim0108([FORM_0108_DOLU, FORM_0108_BOS]), ["satir-son-dugme:2"]],
+  "ayarlar-cop-0108-uretim": [<SettingsTrash rawCustomers={[]} rawServices={[]} rawPartSales={[]} rawPayments={[]} rawDealers={[]} rawStock={[]} rawNotes={[]}
+    rawKalipDefs={[]} rawParts={[]} rawCustomModels={[]} rawTeklifler={[]} rawFaturalar={[]} rawGorusmeler={[]} rawDosyalar={[]}
+    rawUretimFormlari={[{ ...FORM_0108_DOLU, deletedAt: "2026-10-20T10:00:00.000Z" }, { ...FORM_0108_BOS, deletedAt: "2026-10-21T10:00:00.000Z" }]}
+    setCustomers={bos} setServices={bos} setPartSales={bos} setPayments={bos} setDealers={bos} setStock={bos} setNotes={bos} setKalipDefs={bos} setParts={bos}
+    setCustomModels={bos} setTeklifler={bos} setFaturalar={bos} setUretimFormlari={bos} setGorusmeler={bos} setDosyalar={bos} appSettings={{}} showToast={bos} />, []],
   // Spec 0107: müşteri formunda ayna satırın salt okunur ibaresi (satış 872 bağlı, işaretsiz: AC-27) ve dar kap (AC-36);
   // transform taşıyan kap sabit konumlu pencerenin kapsayıcısı olur, pencere 760 px'e sığar. Düzenleme formu işaretli kayıtla.
   "musteri-formu-0107-ayna": [musteri0106({ initialDetailId: 862 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
@@ -1423,6 +1441,14 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       for (let i = 0; i < 200 && !document.querySelector(secici); i++) await bekle(100);
       if (!document.querySelector(secici)) console.warn("beklenen öğe gelmedi: " + secici);
       await bekle(500);
+      continue;
+    }
+    if (metin.startsWith("satir-son-dugme:")) {
+      // Spec 0108: yalnız simgeli satır düğmeleri (üretim formu listesi); n. tablo satırının son düğmesi (silme).
+      const n = Number(metin.slice(16)) || 1;
+      const hedef = [...(document.querySelectorAll("tbody tr")[n - 1]?.querySelectorAll("button") || [])].pop();
+      if (hedef) hedef.click(); else console.warn("satır düğmesi yok");
+      await bekle(300);
       continue;
     }
     if (metin.startsWith("tikla:")) {

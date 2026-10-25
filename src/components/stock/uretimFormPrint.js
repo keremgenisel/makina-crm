@@ -5,6 +5,13 @@
 /** "YYYY-MM-DD" → "DD.MM.YYYY" (boşsa "—"). */
 export const fmtDate = d => d ? d.split("-").reverse().join(".") : "—";
 
+/** Spec 0108 R14/2: formun dönem metni; form listesi ve Çöp Kutusu aynı yerden okur. Eski tek alan `tarih`e, o da yoksa "—"ya düşer. */
+export const uretimFormDonemMetni = (f) => {
+  const bas = f?.baslangicTarihi || f?.tarih || "";
+  const bit = f?.bitisTarihi || f?.tarih || "";
+  return bas === bit ? fmtDate(bas) : `${fmtDate(bas)} – ${fmtDate(bit)}`;
+};
+
 /** Satırları müşteriye göre gruplar (ilk görülme sırasını korur). */
 export function groupByMusteri(satirlar) {
   const order = [];

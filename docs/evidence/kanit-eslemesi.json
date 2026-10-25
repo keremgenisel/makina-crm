@@ -5928,6 +5928,11 @@
         "rapor": "docs/evidence/0096-taban-piksel-raporu.json",
         "ekran": "cop-kutusu-0078",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0108-taban-piksel-raporu.json",
+        "ekran": "ayarlar-cop-0108-uretim",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -7331,6 +7336,16 @@
       {
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "stok-bos-uretim",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0108-taban-piksel-raporu.json",
+        "ekran": "uretim-formu-0108-sil-onay",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0108-taban-piksel-raporu.json",
+        "ekran": "uretim-formu-0108-sil-onay-bos",
         "beklenen": "ayni"
       }
     ],
