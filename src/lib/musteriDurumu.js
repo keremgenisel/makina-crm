@@ -76,10 +76,13 @@ export const bagCanliMi = (k, anahtar, harita) => !!canliSatir(k, anahtar, harit
 // R8, R8/2: türetme yalnız kaydın kendi işaretlerini okur. Spec 0108 R15 ve plan turu kararı (U1): bağ canlı değilse kalıp hiç
 // forma girmemiş gibi okunur; işaretliyse `gonderildi`, işaretsizse (0107'nin bıraktığı damgalı, işaretsiz kayıt) `bekliyor`.
 // 0106 Karar 17'nin "kopmuş bağ = gonderildi" varsayılanı işaretsiz kayıtta ters çevrildi.
+// Spec 0110 R1, R1/3: işareti ve damgası ikisi de boş kalıp sipariş değildir, `teslim` türetir. Ölçüt alanların boşluğudur,
+// bağın canlılığı değil: damga taşıyan kayıt hiçbir hâlde `teslim` türetmez (bekleyen kalıp teslim görünmesin, R6/2).
 export const kalipDurumuTuret = (k, anahtar, harita) => {
   const satir = canliSatir(k, anahtar, harita);
   if (satir) return satir.tamamlandi ? KALIP_DURUMU.HAZIR : KALIP_DURUMU.URETIMDE;
-  return k?.uretimFormGonder ? KALIP_DURUMU.GONDERILDI : KALIP_DURUMU.BEKLIYOR;
+  if (k?.uretimFormGonder) return KALIP_DURUMU.GONDERILDI;
+  return doluMu(k?.uretimFormId) ? KALIP_DURUMU.BEKLIYOR : KALIP_DURUMU.TESLIM;
 };
 // R10: alan doluysa yazılan değer kazanır.
 export const kalipDurumuOf = (k, anahtar, harita) => elleKalipDurumu(k) || kalipDurumuTuret(k, anahtar, harita);
@@ -169,16 +172,15 @@ export const makinaPili = (kayit) => {
   if (d === MAKINA_DURUMU.HAZIR) return PILLER.makinaHazir;
   return null;
 };
-// R18–R21/2: gösterilebilir durumların en geri kalmışı; `bekliyor` yalnız makina durumu doluyken (teslim dahil) gösterilir;
-// sayı "o durumdaki / kümenin toplamı" (payda bastırılanları da sayar), tek kalıplı kümede sayı yok.
-export const kalipPili = (durumlar, makinaDurumuDolu) => {
-  const liste = Array.isArray(durumlar) ? durumlar : [];
-  const gosterilebilir = liste.filter(d => d !== KALIP_DURUMU.TESLIM && (d !== KALIP_DURUMU.BEKLIYOR || makinaDurumuDolu));
+// R18, R19: gösterilebilir durumların en geri kalmışı. Spec 0110 R8–R10: payda gösterilebilir kümedir (teslim edilmiş kalıp
+// sayılmaz), küme türdeşse (tek kalıp dahil) sayı yazılmaz; `bekliyor` kapısı kalktı, pil makina durumuna bakmaz.
+export const kalipPili = (durumlar) => {
+  const gosterilebilir = (Array.isArray(durumlar) ? durumlar : []).filter(d => d !== KALIP_DURUMU.TESLIM);
   if (!gosterilebilir.length) return null;
   const enGeri = KALIP_SIRASI.find(d => gosterilebilir.includes(d));
   const pil = PILLER[enGeri];
-  const sayi = liste.filter(d => d === enGeri).length;
-  return { ...pil, durum: enGeri, metin: liste.length > 1 ? `${pil.metin} ${sayi}/${liste.length}` : pil.metin };
+  const sayi = gosterilebilir.filter(d => d === enGeri).length;
+  return { ...pil, durum: enGeri, metin: sayi < gosterilebilir.length ? `${pil.metin} ${sayi}/${gosterilebilir.length}` : pil.metin };
 };
 export const odemePili = (borclu) => (borclu ? PILLER.odeme : null);
 
@@ -186,7 +188,7 @@ export const odemePili = (borclu) => (borclu ? PILLER.odeme : null);
 export const satirDurumu = (musteri, { harita, grup, borclu = false } = {}) => {
   const makina = makinaDurumuOf(musteri);
   const durumlar = kalipKumesi(musteri, grup, harita);
-  const piller = [odemePili(borclu), makinaPili(musteri), kalipPili(durumlar, makina != null)].filter(Boolean);
+  const piller = [odemePili(borclu), makinaPili(musteri), kalipPili(durumlar)].filter(Boolean);
   return { piller, teslimBekliyor: makina === MAKINA_DURUMU.HAZIR || durumlar.includes(KALIP_DURUMU.HAZIR) };
 };
 // R23: süzgeç ölçütü (makina hazır ya da en az bir kalıp hazır).

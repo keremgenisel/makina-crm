@@ -65,7 +65,8 @@ describe("Spec 0106: makina durumu (R1, R2/2, R6/2)", () => {
 });
 
 describe("Spec 0106: kalıp durumu ve türetme (R7–R10)", () => {
-  it("AC-7: işaretsiz kalıp bekliyor", () => { expect(turet({})).toBe(K.BEKLIYOR); });
+  // Spec 0110 ile (R1): işareti ve damgası boş kalıp sipariş değildir, teslim türetir.
+  it("AC-7: işaretsiz, damgasız kalıp teslim (spec 0110 ile)", () => { expect(turet({})).toBe(K.TESLIM); });
   it("AC-8: gönder işaretli, form kimliği boş: gönderildi", () => { expect(turet({ uretimFormGonder: true })).toBe(K.GONDERILDI); });
   it("AC-9: bağlı satır bitmemiş: üretimde", () => { expect(turet({ uretimFormGonder: true, uretimFormId: 900 })).toBe(K.URETIMDE); });
   it("AC-10: bağlı satır tamamlandı: hazır", () => { expect(turet({ uretimFormId: 900 }, MD.musteriKalipAnahtari(1, 1))).toBe(K.HAZIR); });
@@ -85,11 +86,11 @@ describe("Spec 0106: kalıp durumu ve türetme (R7–R10)", () => {
     expect(turet({ uretimFormId: 900 }, MD.extraKalipAnahtari(77))).toBe(K.HAZIR);
     expect(turet({ uretimFormId: 900 }, MD.extraKalipAnahtari(78))).toBe(K.URETIMDE);
     expect(turet({ uretimFormGonder: true }, MD.extraKalipAnahtari(79))).toBe(K.GONDERILDI);
-    expect(turet({}, MD.extraKalipAnahtari(79))).toBe(K.BEKLIYOR);
+    expect(turet({}, MD.extraKalipAnahtari(79))).toBe(K.TESLIM); // spec 0110 ile (R1/2)
   });
   it("AC-13: elle yazılan değer kazanır", () => {
     expect(MD.kalipDurumuOf({ uretimFormId: 900, kalipDurumu: K.TESLIM }, MD.musteriKalipAnahtari(1, 0), harita)).toBe(K.TESLIM);
-    expect(MD.kalipDurumuOf({ kalipDurumu: "abc" }, MD.musteriKalipAnahtari(1, 0), harita)).toBe(K.BEKLIYOR);
+    expect(MD.kalipDurumuOf({ kalipDurumu: "abc" }, MD.musteriKalipAnahtari(1, 0), harita)).toBe(K.TESLIM); // spec 0110 ile (R1)
   });
   it("AC-14: ilk seçenek 'Otomatik (<türetilen>)' ve boş değer yazar", () => {
     const s = MD.kalipSecenekleri(K.URETIMDE);
@@ -123,26 +124,29 @@ describe("Spec 0106 R9/2 (triyaj bulgu 1): kalipIdx konumdur, kalıp silinince b
 
 describe("Spec 0106: pil (R14–R21/2)", () => {
   const musteri = (kaliplar, ek = {}) => ({ id: 1, kaliplar, ...ek });
-  const pil = (m, grup = new Map()) => MD.kalipPili(MD.kalipKumesi(m, grup, harita), MD.makinaDurumuOf(m) != null);
+  const pil = (m, grup = new Map()) => MD.kalipPili(MD.kalipKumesi(m, grup, harita)); // spec 0110 ile (R10): ikinci parametre yok
   it("AC-16: borçlu satır ödeme pili taşır", () => {
     expect(MD.satirDurumu(musteri([]), { borclu: true }).piller).toEqual([MD.PILLER.odeme]);
   });
-  it("AC-18: en geri kalmış durum: bekliyor + hazır → bekliyor", () => {
-    expect(pil(musteri([{}, { uretimFormId: 900 }], { makinaDurumu: M.MONTAJ })).durum).toBe(K.BEKLIYOR);
+  // Spec 0110 ile (R1, R3): bekliyor artık yalnız elle yazılarak doğar; kural (en geri kalmış durum) aynen.
+  it("AC-18: en geri kalmış durum: bekliyor + hazır → bekliyor (spec 0110 ile: bekliyor elle)", () => {
+    expect(pil(musteri([{ kalipDurumu: K.BEKLIYOR }, { uretimFormId: 900 }], { makinaDurumu: M.MONTAJ })).durum).toBe(K.BEKLIYOR);
   });
-  it("AC-19: sayı o durumdaki / toplam; tek kalıpta sayı yok; payda bastırılanları da sayar", () => {
+  // Spec 0110 ile (R8, R9): payda gösterilebilir küme, teslim edilmiş kalıp sayılmaz; türdeş kümede sayı yazılmaz.
+  it("AC-19: tek kalıpta ve türdeş kümede sayı yok; payda teslimi saymaz (spec 0110 ile)", () => {
     // 0. kalıbın form satırı bitmemiş (üretimde), 1. kalıp elle üretimde; 1. konumun satırı tamamlandı olduğu için elle değer kazanır.
-    expect(pil(musteri([{ uretimFormId: 900 }, { uretimFormId: 900, kalipDurumu: K.URETIMDE }, { kalipDurumu: K.TESLIM }, { kalipDurumu: K.TESLIM }], { makinaDurumu: M.MONTAJ })).metin).toBe("KALIP ÜRETİMDE 2/4");
+    expect(pil(musteri([{ uretimFormId: 900 }, { uretimFormId: 900, kalipDurumu: K.URETIMDE }, { kalipDurumu: K.TESLIM }, { kalipDurumu: K.TESLIM }], { makinaDurumu: M.MONTAJ })).metin).toBe("KALIP ÜRETİMDE");
     expect(pil(musteri([{ uretimFormId: 900 }])).metin).toBe("KALIP ÜRETİMDE");
-    expect(pil(musteri([{}, {}, {}, { kalipDurumu: K.URETIMDE }])).metin).toBe("KALIP ÜRETİMDE 1/4");
+    expect(pil(musteri([{}, {}, {}, { kalipDurumu: K.URETIMDE }])).metin).toBe("KALIP ÜRETİMDE");
   });
   it("AC-20: hepsi teslim ya da kalıpsız kayıt pil taşımaz", () => {
     expect(pil(musteri([{ kalipDurumu: K.TESLIM }], { makinaDurumu: M.HAZIR }))).toBeNull();
     expect(pil(musteri([], { makinaDurumu: M.HAZIR }))).toBeNull();
   });
-  it("AC-21: bekliyor yalnız makina durumu doluyken (teslim dahil); boşken ileri durum çizilir, kalmazsa pil yok", () => {
+  // Spec 0110 ile (R1, R10): işaretsiz kalıp teslim türetir ve kapı kalktı; makina durumu dolu kayıtta da pil yok.
+  it("AC-21: işaretsiz kalıp makina durumundan bağımsız pilsiz (spec 0110 ile); ileri durum çizilir, kalmazsa pil yok", () => {
     expect(pil(musteri([{}]))).toBeNull();
-    expect(pil(musteri([{}], { makinaDurumu: M.TESLIM })).durum).toBe(K.BEKLIYOR);
+    expect(pil(musteri([{}], { makinaDurumu: M.TESLIM }))).toBeNull();
     expect(pil(musteri([{}, { kalipDurumu: K.URETIMDE }, { kalipDurumu: K.HAZIR }], {})).durum).toBe(K.URETIMDE);
     expect(pil(musteri([{}, { kalipDurumu: K.TESLIM }], {}))).toBeNull();
   });
@@ -163,9 +167,9 @@ describe("Spec 0106: pil (R14–R21/2)", () => {
     expect(MD.satirDurumu(musteri([{ uretimFormId: 900 }], {}), { harita }).teslimBekliyor).toBe(false);
     expect(MD.satirDurumu({ id: 1, kaliplar: [{}, { uretimFormId: 900 }] }, { harita }).teslimBekliyor).toBe(true);
   });
-  it("AC-40, AC-42: form listesi verilmezse çökmez; bütün kalıplar bekliyor ya da gönderildi (spec 0108 ile: işaretsiz damgalı bekliyor)", () => {
+  it("AC-40, AC-42: form listesi verilmezse çökmez; işaretsiz damgasız teslim (spec 0110 ile), işaretli gönderildi, damgalı bekliyor", () => {
     const h = MD.uretimFormHaritasi(undefined);
-    expect(MD.kalipKumesi({ id: 1, kaliplar: [{}, { uretimFormGonder: true }, { uretimFormId: 3 }] }, undefined, h)).toEqual([K.BEKLIYOR, K.GONDERILDI, K.BEKLIYOR]);
+    expect(MD.kalipKumesi({ id: 1, kaliplar: [{}, { uretimFormGonder: true }, { uretimFormId: 3 }] }, undefined, h)).toEqual([K.TESLIM, K.GONDERILDI, K.BEKLIYOR]);
     expect(MD.satirDurumu({}, {}).piller).toEqual([]);
   });
   it("AC-29: 1000 müşteri ve 50 formda harita bir kez, toplam süre eşiğin altında", () => {
@@ -177,7 +181,7 @@ describe("Spec 0106: pil (R14–R21/2)", () => {
     const sonuc = musteriler.map(m => MD.satirDurumu(m, { harita: h, grup: new Map() }));
     const sure = performance.now() - t0;
     expect(casus).toHaveBeenCalledTimes(1);
-    expect(sonuc[0].piller[1].metin).toBe("KALIP SİPARİŞİ BEKLİYOR 2/3");
+    expect(sonuc[0].piller[1].metin).toBe("KALIP HAZIR · TESLİM BEKLİYOR"); // spec 0110 ile (R1, R8, R9): iki eski kalıp teslim, payda 1
     expect(sure).toBeLessThan(500);
   });
 });

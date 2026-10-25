@@ -76,7 +76,8 @@ describe("Spec 0109 önkoşul (eski kodla yazıldı ve yeşil görüldü)", () =
     kur({ stock: STOK });
     yeniMusteri(); modelSec(M0); stokSec("S-1");
     fireEvent.click(screen.getByText("+ Kalıp Ekle"));
-    expect(screen.getByRole("combobox", { name: "1. kalıp durumu" }).options[0].textContent).toBe("Otomatik (Sipariş bekliyor)");
+    // Spec 0110 ile (R1, R18): yeni eklenen, işaretsiz kalıp teslim türetir; etiket mekanizması aynen.
+    expect(screen.getByRole("combobox", { name: "1. kalıp durumu" }).options[0].textContent).toBe("Otomatik (Teslim edildi)");
   });
   it("AC-21: model değişiminde kit ve kalıp çapı durur (bugünkü davranış, X1)", () => {
     kur({ stock: [stk(5, { kalipCapi: { en: "50", yukseklik: "10", boy: "110" } }), stk(6, { model: M1 })] });

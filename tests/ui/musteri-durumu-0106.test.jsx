@@ -114,7 +114,8 @@ const secici = (etiket) => screen.getByRole("combobox", { name: etiket });
 describe("Spec 0106: müşteri listesi (R13–R22)", () => {
   it("AC-17 / AC-22: montaj mor, kalıp en geri durumla sayılı; sıra ödeme, makina, kalıp", () => {
     kur({ customers: [{ ...MUSTERI, kalanBorc: 100 }], partSales: [EXTRA], uretimFormlari: [FORM_900] });
-    expect(pillerOf("Durum AŞ")).toEqual(["ÖDEME BEKLİYOR", "MONTAJ YAPILIYOR", "KALIP SİPARİŞİ BEKLİYOR 1/4"]);
+    // Spec 0110 ile (R1, R8, R9): işaretsiz K40 teslim türetir ve paydaya girmez; küme {üretimde, hazır, hazır}.
+    expect(pillerOf("Durum AŞ")).toEqual(["ÖDEME BEKLİYOR", "MONTAJ YAPILIYOR", "KALIP ÜRETİMDE 1/3"]);
     const pil = satir("Durum AŞ").querySelectorAll('[data-testid="durum-pili"]')[1];
     expect(pil.style.color).toBe("var(--pur700, #6d28d9)");
     expect(pil.style.background).toBe("var(--purBg, #f5f3ff)");
@@ -144,12 +145,13 @@ describe("Spec 0106: müşteri listesi (R13–R22)", () => {
     expect(pillerOf("Durum AŞ")).toEqual(["KALIP HAZIR · TESLİM BEKLİYOR"]);
   });
   // Spec 0108 ile (R15, U1): form yokken damgalı ama işaretsiz kalıp (Y60) ve Extra Kalıp bekliyor; yalnız işaretli Y55 gönderildi.
-  it("AC-40: uretimFormlari verilmezse çökmez; kalıplar bekliyor ya da gönderildi türetir", () => {
+  // Spec 0110 ile (R1, R8, R10): damgasız K40 teslim, paydaya girmez; bekliyor kapısı kalktı, makina durumu boşken de aynı pil.
+  it("AC-40: uretimFormlari verilmezse çökmez; kalıplar bekliyor, gönderildi ya da teslim türetir", () => {
     kur({ customers: [MUSTERI], partSales: [EXTRA] });
-    expect(pillerOf("Durum AŞ")).toEqual(["MONTAJ YAPILIYOR", "KALIP SİPARİŞİ BEKLİYOR 3/4"]);
+    expect(pillerOf("Durum AŞ")).toEqual(["MONTAJ YAPILIYOR", "KALIP SİPARİŞİ BEKLİYOR 2/3"]);
     cleanup();
     kur({ customers: [{ ...MUSTERI, makinaDurumu: undefined }], partSales: [EXTRA] });
-    expect(pillerOf("Durum AŞ")).toEqual(["KALIP SİPARİŞ VERİLDİ 1/4"]);
+    expect(pillerOf("Durum AŞ")).toEqual(["KALIP SİPARİŞİ BEKLİYOR 2/3"]);
   });
 });
 
@@ -161,7 +163,7 @@ describe("Spec 0106 triyaj", () => {
     expect(screen.getByTestId("ayna-kalip-durumu").textContent).toBe("— · Extra Kalıp satışından");
     fireEvent.click(screen.getByText("İptal"));
     detayAc("Durum AŞ");
-    expect(screen.getByTestId("ayna-kalip-durumu").textContent).toBe("— · Extra Kalıp satışından");
+    expect(screen.queryByTestId("ayna-kalip-durumu")).toBeNull(); // spec 0110 ile (R13, R17): detayda ayna ibaresi yok
   });
   it("bulgu 4: ödeme pili ince redBr kenarı taşır; satırın hover zemini pil zeminiyle aynı olsa da pil ayırt edilir", () => {
     kur({ customers: [BORCLU] });
@@ -234,7 +236,7 @@ describe("Spec 0106: müşteri formu (R4, R4/2, R10, R11)", () => {
     const s1 = secici("1. kalıp durumu");
     expect(s1.options[0].textContent).toBe("Otomatik (Üretimde)");
     expect(secici("2. kalıp durumu").options[0].textContent).toBe("Otomatik (Hazır)");
-    expect(secici("3. kalıp durumu").options[0].textContent).toBe("Otomatik (Sipariş bekliyor)");
+    expect(secici("3. kalıp durumu").options[0].textContent).toBe("Otomatik (Teslim edildi)"); // spec 0110 ile (R1, R18)
     fireEvent.change(s1, { target: { value: K.TESLIM } });
     fireEvent.click(screen.getByText("Kaydet"));
     await bekle();
@@ -263,24 +265,20 @@ describe("Spec 0106: müşteri detayı ve zaman çizelgesi (R5, R11/2, R12/2)", 
     rerender();
     expect(screen.getByTestId("detay-makina-durumu")).toBeTruthy();
   });
-  it("AC-38 / R11/2: kalıp bölümü satır listesi; ayna satırda seçici yok; yazım tam dizide", () => {
-    const BASKA = { ...TEMIZ, id: 520, name: "Başka AŞ", deletedAt: undefined };
-    const { durum } = kur({ customers: [MUSTERI, BASKA], partSales: [EXTRA], uretimFormlari: [FORM_900] });
+  // Spec 0110 ile (R13, R17, R19): detay yarısı ters çevrildi; kart 0106 öncesi sade hâlinde, satır düzeni ve seçici yok.
+  it("AC-38 / R11/2: kalıp kartı yalnız etiketleri çizer (spec 0110 ile)", () => {
+    kur({ customers: [MUSTERI], partSales: [EXTRA], uretimFormlari: [FORM_900] });
     detayAc("Durum AŞ");
-    const satirlar = screen.getAllByTestId("detay-kalip-satiri");
-    expect(satirlar).toHaveLength(4);
-    expect(within(satirlar[3]).queryByRole("combobox")).toBeNull();
-    expect(within(satirlar[3]).getByTestId("ayna-kalip-durumu").textContent).toBe("Hazır · Extra Kalıp satışından");
-    fireEvent.change(within(satirlar[2]).getByRole("combobox"), { target: { value: K.HAZIR } });
-    expect(durum.customers.find(c => c.id === 610).kaliplar[2].kalipDurumu).toBe(K.HAZIR);
-    expect(durum.customers.find(c => c.id === 520)).toEqual(BASKA);
+    expect(screen.queryAllByTestId("detay-kalip-satiri")).toHaveLength(0);
+    expect(screen.queryByTestId("ayna-kalip-durumu")).toBeNull();
+    expect(screen.getByText("Kalıplar (4)")).toBeTruthy();
   });
   it("AC-39: detayın seçicileri cust_detail_edit ile, Extra Kalıp seçicisi cust_kalip_edit ile", () => {
     kur({ customers: [MUSTERI], partSales: [EXTRA], uretimFormlari: [FORM_900], serverPermissions: { role: "user", permissions: JSON.stringify({ customerActions: ["cust_kalip_edit"] }) } });
     detayAc("Durum AŞ");
     expect(within(screen.getByTestId("detay-makina-durumu")).queryByRole("combobox")).toBeNull();
     expect(within(screen.getByTestId("detay-makina-durumu")).getByText("Montajda")).toBeTruthy();
-    expect(screen.getAllByTestId("detay-kalip-satiri").every(r => !within(r).queryByRole("combobox"))).toBe(true);
+    expect(screen.queryAllByTestId("detay-kalip-satiri")).toHaveLength(0); // spec 0110 ile (R13): kartta satır ve seçici yok
     expect(within(screen.getByTestId("extra-kalip-durumu-710")).getByRole("combobox")).toBeTruthy();
     cleanup();
     kur({ customers: [MUSTERI], partSales: [EXTRA], uretimFormlari: [FORM_900], serverPermissions: { role: "user", permissions: JSON.stringify({ customerActions: ["cust_detail_edit"] }) } });

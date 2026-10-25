@@ -127,11 +127,16 @@ describe("Spec 0107: kaynak taramaları", () => {
 // ekranı değişmiş gösterir (C7), yani taban raporu eski kodun (işaretsiz kutunun) görüntüsünü taşımaz.
 describe("Spec 0107: kanıt kayıtları (triyaj bulgu 2)", () => {
   const YENI = ["musteri-formu-0107-ayna", "musteri-formu-0107-ayna-dar", "kalip-formu-0107-duzenle"];
-  it("üç kayıt beklenen 'ayni' ile 0107 taban raporuna bağlı ve orada 0 fark", () => {
+  // Spec 0110 ile (plan turu Karar 24): üç ekranın arkasındaki müşteri listesi değişti; kayıtlar 0110 raporuna taşındı
+  // (uygulamada `degisti`, kapanışta 0110 tabanıyla `ayni`). 0107 tabanının kendisi 0 fark kalır.
+  it("üç kayıt eşlemede; 0107 tabanında 0 fark, kayıt 0107 tabanında 'ayni' ya da 0110 raporlarında (spec 0110 ile)", () => {
     const { dosyalar } = JSON.parse(oku("docs/evidence/kanit-eslemesi.json"));
     const kayitlar = Object.values(dosyalar).flat().filter(k => YENI.includes(k.ekran));
     expect(kayitlar.map(k => k.ekran).sort()).toEqual([...YENI].sort());
-    for (const k of kayitlar) expect(k).toMatchObject({ rapor: "docs/evidence/0107-taban-piksel-raporu.json", beklenen: "ayni" });
+    for (const k of kayitlar) {
+      expect(k.rapor === "docs/evidence/0107-taban-piksel-raporu.json" ? k.beklenen : "0110", k.ekran).toMatch(/^(ayni|0110)$/);
+      if (k.rapor !== "docs/evidence/0107-taban-piksel-raporu.json") expect(k.rapor).toMatch(/^docs\/evidence\/0110-(taban-)?piksel-raporu\.json$/);
+    }
     const taban = JSON.parse(oku("docs/evidence/0107-taban-piksel-raporu.json"));
     expect(taban.filter(r => YENI.some(e => r.ad.startsWith(e + "-"))).every(r => r.piksel === 0)).toBe(true);
   });

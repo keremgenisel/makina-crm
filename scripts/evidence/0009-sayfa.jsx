@@ -1352,6 +1352,12 @@ const EKRANLAR = {
   "musteriler-0106-suzgec": [musteri0106(), ["etiket:Teslim Bekleyenler (3)"]],
   "musteri-formu-0106-durum": [musteri0106({ initialDetailId: 867 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
   "musteri-detay-0106-kalip": [musteri0106({ initialDetailId: 862 }), ["kaydir:Kalıp Verildi"]],
+  // Spec 0110: detay penceresinin kalıp kartı kaydırılmadan (0106 ekranı zaman çizelgesine kayıyor); OX CO'nun dört kalıbı.
+  "musteri-detay-0110-kalip": [musteri0106({ initialDetailId: 867 }), ["kaydir:Kalıplar (4)"]],
+  // Spec 0110 R18 (triyaj bulgu 1): türetilen etiket metni. FLORYA UN'un Y50, Y55 ve K40'ı elle değersiz, işaretsiz ve
+  // damgasız: seçiciler "Otomatik (Teslim edildi)". Çizelge için ANKARA DÖNER'in Extra Kalıp'ı damgasız ve işaretsiz.
+  "musteri-formu-0110-teslim": [musteri0106({ initialDetailId: 863 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
+  "musteri-detay-0110-cizelge": [musteri0106({ initialDetailId: 862, partSales: [{ ...PS_0106[0], uretimFormId: undefined }] }), ["kaydir:Kalıp Verildi"]],
   // Spec 0108: silme onayı dönecek kalıp sayısını yazar (satırlı form) ve dönecek kalıbı olmayan formda cümle yok; Çöp Kutusu'nda
   // üretim formu dönem metni ve notuyla. Liste en yeni formu üstte çizer; "satir-son-dugme:n" n. satırın silme düğmesine basar.
   "uretim-formu-0108-sil-onay": [uretim0108([FORM_0108_DOLU, FORM_0108_BOS]), ["satir-son-dugme:1"]],

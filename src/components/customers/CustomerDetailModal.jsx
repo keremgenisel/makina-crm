@@ -43,8 +43,8 @@ import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
 import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle, kalipGuncelle } from "../../lib/kalipSatisi";
-import { durumYaz, makinaDurumuOf, kalipDurumuTuret, aynaSatirMi, aynaDurumu, musteriKalipAnahtari, MAKINA_DURUM_ADLARI, KALIP_DURUM_ADLARI, AYNA_SATIR_IBARESI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
-import { MakinaDurumuSecici, KalipDurumuSecici } from "./DurumSecici";
+import { durumYaz, makinaDurumuOf, MAKINA_DURUM_ADLARI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
+import { MakinaDurumuSecici } from "./DurumSecici";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -1101,29 +1101,15 @@ export const CustomerDetailModal = ({
             )}
             {Array.isArray(detailView.kaliplar) && detailView.kaliplar.length > 0 && (
               <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} style={{ marginBottom: 16 }} title={`Kalıplar (${detailView.kaliplar.length})`}>
-                {/* Spec 0106 R11, R11/2, Karar 20, 38: satır listesi; solda ölçü ve ad (Extra Kalıp kırmızı tint'i bugünkü sezgiyle), sağda
-                    durum seçicisi. Seçicinin çizilip çizilmeyeceği yalnız `partSaleId` ile (ayna satır salt okunur). */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {/* Spec 0110 R13, R19: 0106 öncesi sade kart; kalıp durumu detayda gösterilmez (yazma yolu form ve zaman çizelgesi). */}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {detailView.kaliplar.map((k, i) => {
                     const extraSatistan = k.partSaleId != null || i >= detailView.kaliplar.length - detailKalipSatisAdedi;
                     return (
-                      <div key={i} data-testid="detay-kalip-satiri" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                      <span title={extraSatistan ? "Extra Kalıp Satışı'ndan" : ""}
+                      <span key={i} title={extraSatistan ? "Extra Kalıp Satışı'ndan" : ""}
                         style={{ fontSize: 12, fontWeight: 700, background: extraSatistan ? "var(--redBg2, #fee2e2)" : "var(--ambBg3, #fff7ed)", color: extraSatistan ? "var(--red800, #991b1b)" : "var(--orTx, #c2410c)", border: `1px solid ${extraSatistan ? "#fca5a5" : "var(--ambBr3, #fed7aa)"}`, borderRadius: 8, padding: "6px 12px" }}>
                         {[k.olcu, k.ad].filter(Boolean).join(" — ")}
                       </span>
-                      {aynaSatirMi(k) ? (
-                        <span data-testid="ayna-kalip-durumu" style={{ fontSize: 12, color: "var(--n600, #475569)" }}>
-                          {KALIP_DURUM_ADLARI[aynaDurumu(k, detailView, durumBaglami?.grup, durumBaglami?.harita)] || "—"} <span style={{ color: "var(--n400, #94a3b8)" }}>· {AYNA_SATIR_IBARESI}</span>
-                        </span>
-                      ) : canDo("cust_detail_edit") ? (
-                        <div style={{ minWidth: 220 }}>
-                          <KalipDurumuSecici value={k.kalipDurumu} ariaLabel={`${[k.olcu, k.ad].filter(Boolean).join(" — ") || `${i + 1}. kalıp`} durumu`}
-                            turetilen={kalipDurumuTuret(k, musteriKalipAnahtari(detailView.id, i), durumBaglami?.harita)}
-                            onChange={v => setCustomers(p => p.map(c => c.id === detailView.id ? { ...c, kaliplar: (c.kaliplar || []).map((x, j) => (j === i ? durumYaz(x, "kalipDurumu", v) : x)) } : c))} />
-                        </div>
-                      ) : null}
-                      </div>
                     );
                   })}
                 </div>

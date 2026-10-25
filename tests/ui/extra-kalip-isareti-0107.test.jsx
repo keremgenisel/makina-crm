@@ -65,18 +65,19 @@ describe("Spec 0107 önkoşul (eski kodla yazıldı ve yeşil görüldü)", () =
     duzenle("İşaret AŞ");
     expect(kutu().checked).toBe(true);
   });
-  it("AC-28: ayna satırın 0106 ibaresi müşteri formunda ve detayda harfi harfine aynı", () => {
+  // Spec 0110 ile (R1, R13, R17, R18): işaretsiz Extra Kalıp teslim türetir ve detaydaki ibare kalktı; "aynı" iddiası konusuz.
+  it("AC-28: ayna satırın 0106 ibaresi müşteri formunda; detayda yok (spec 0110 ile)", () => {
     kur({ customers: [MUSTERI], partSales: [EXTRA] });
     duzenle("İşaret AŞ");
-    expect(screen.getByTestId("ayna-kalip-durumu").textContent).toBe("Sipariş bekliyor · Extra Kalıp satışından");
+    expect(screen.getByTestId("ayna-kalip-durumu").textContent).toBe("Teslim edildi · Extra Kalıp satışından");
     fireEvent.click(screen.getByText("İptal"));
     detayAc("İşaret AŞ");
-    expect(screen.getByTestId("ayna-kalip-durumu").textContent).toBe("Sipariş bekliyor · Extra Kalıp satışından");
+    expect(screen.queryByTestId("ayna-kalip-durumu")).toBeNull();
   });
   it("AC-26: işaretli ayna satır kalıp pilini değiştirmez (küme aynayı atlar)", () => {
     kur({ customers: [{ ...MUSTERI, makinaDurumu: "teslim", kaliplar: [{ ...MUSTERI.kaliplar[1], uretimFormGonder: true }] }], partSales: [EXTRA] });
     const piller = [...satir("İşaret AŞ").querySelectorAll('[data-testid="durum-pili"]')].map(e => e.textContent);
-    expect(piller).toEqual(["KALIP SİPARİŞİ BEKLİYOR"]);
+    expect(piller).toEqual([]); // spec 0110 ile (R1, R11): küme yalnız işaretsiz Extra Kalıp, teslim türetir, pil yok
   });
 });
 
