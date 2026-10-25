@@ -1,6 +1,6 @@
 # 0110 uygulama planı
 
-Spec: `specs/0110-kalip-durumu-gecmisi-susar.md` (QA turu ve plan turu Karar 17–24). Dal `feat/0110-kalip-durumu`, taban `69bc571`.
+Spec: `specs/done/0110-kalip-durumu-gecmisi-susar.md` (QA turu ve plan turu Karar 17–24). Dal `feat/0110-kalip-durumu`, taban `69bc571`.
 
 ## 1. Dosyalar
 

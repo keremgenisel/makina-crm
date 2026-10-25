@@ -192,7 +192,7 @@ describe("Spec 0110: kapanış belge düzeni", () => {
 // Triyaj bulgu 1: türetilen etiket metninin değişimi (R18) iki kanıt ekranında görünür; fikstürün kalıpları elle değersiz kalır.
 describe("Spec 0110 triyaj: etiket değişiminin kanıtı (R18, AC-22, AC-26)", () => {
   const EKRANLAR = { "musteri-formu-0110-teslim": "src/components/customers/CustomerAddEditForm.jsx", "musteri-detay-0110-cizelge": "src/components/customers/detail/MachineTimeline.jsx" };
-  it("iki ekran iş raporunda değişti, tabanda 0 fark; kayıtları kendi dosyalarında R18 onayıyla", () => {
+  it("iki ekran iş raporunda değişti, tabanda 0 fark; kayıtları kendi dosyalarında (uygulamada R18 onayıyla)", () => {
     const is = JSON.parse(oku("docs/evidence/0110-piksel-raporu.json"));
     const taban = JSON.parse(oku("docs/evidence/0110-taban-piksel-raporu.json"));
     const { dosyalar } = JSON.parse(oku("docs/evidence/kanit-eslemesi.json"));
@@ -202,8 +202,10 @@ describe("Spec 0110 triyaj: etiket değişiminin kanıtı (R18, AC-22, AC-26)", 
       expect(r.every(x => x.piksel > 0), ekran).toBe(true);
       expect(taban.filter(x => x.ad.startsWith(ekran + "-")).every(x => x.piksel === 0), ekran).toBe(true);
       const k = dosyalar[dosya].find(x => x.ekran === ekran);
-      expect(k?.onay, ekran).toMatch(/spec 0110 R18$/);
-      expect(k.beklenen, ekran).toBe(k.rapor.endsWith("0110-taban-piksel-raporu.json") ? "ayni" : "degisti"); // kapanışta tabana taşınır
+      // Uygulamada iş raporunda `degisti` + R18 onayı; kapanışta 0110 tabanında `ayni` (onay düşer, AC-11c).
+      const tabanda = k.rapor.endsWith("0110-taban-piksel-raporu.json");
+      expect(k.beklenen, ekran).toBe(tabanda ? "ayni" : "degisti");
+      if (!tabanda) expect(k.onay, ekran).toMatch(/spec 0110 R18$/);
     }
   });
   it("fikstür: FLORYA UN'un ilk üç kalıbı ve ekranın Extra Kalıp'ı elle değersiz, işaretsiz ve damgasız (türetilen etiket çizilir)", () => {

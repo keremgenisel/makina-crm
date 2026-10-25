@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-10-25; plan turu 2026-10-25, Karar 17–24) |
+| **Durum** | Tamamlandı (QA turu ve plan turu 2026-10-25, Karar 17–24; uygulama commit `e00cdd7`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | `src/lib/musteriDurumu.js`: türetme (`:79-83`), kalıp kümesi (`:157-163`), pil (`:174-182`), satır durumu (`:186-191`); müşteri detay penceresinin kalıp kartı (`src/components/customers/CustomerDetailModal.jsx:1088-1102` aralığına döner, bugün `:1103-1130`). Yalnız **türetilen etiket metni** değişen iki ekran: müşteri formunun kalıp ızgarası (`src/components/customers/CustomerAddEditForm.jsx:366`, `:372`) ve zaman çizelgesinin Extra Kalıp seçicisi (`src/components/customers/detail/MachineTimeline.jsx:353`); ikisi de `kalipDurumuTuret`'i çağırır ve R18 ile kayda geçer (QA turu K-1) |
@@ -326,3 +326,20 @@ Bir geliştirici başlamadan önce cevapsız kalan sorular çıkarıldı, her bi
 | K-8 | Küçük | AC-15'in taraması ikinci argümanı geçiren test yardımcısını kapsamıyor | Kriter o satırı da kapsar | AC-15, ölçüm 24 |
 | K-9 | Küçük | R17 kalkan `detay-kalip-satiri` kimliğini okuyan iki test satırını saymıyor | İki atıf yazılır; `DurumPilleri`'nin metin anahtarı da kayda geçer | R17/2, C9 |
 | K-10 | Küçük | R16 "yazma yolu kapanmaz" diyor ama yolun derinleştiğini söylemiyor | Bedel yazılır; yolun kapanmadığı ölçülerek doğrulanır | R16/2, AC-29, Karar 15, ölçüm 20 |
+
+---
+
+## SCORECARD
+
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Uygulama commit** | `e00cdd7` | Dal `feat/0110-kalip-durumu`, taban `69bc571`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (B-1–B-3, Ö-1–Ö-6, K-1–K-10), plan turu (Karar 17–23); uygulama turunda Karar 24 (TY onayı) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: üç bulgu (1 orta-düşük, 2 düşük): R18'in etiket değişimi hiçbir kanıt ekranında görünmüyordu (iki yeni ekran); spec'in sayımları kendi kararlarıyla çelişiyordu; README satırı ve açık bulgu dalda yoktu |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 416 dosya, 5582 test (Electron dahil); lint 0 hata; tip denetimi temiz |
+| **Kaçan hata** | 0 | Davranış hatası yok; kaçan üç şey belgeydi (sayım, kanıt kapsamı, README) |
+
+**Görsel kanıt:** 18 ekran × 2 tema; iş raporunda yedi eski ekran (müşteri listesi, süzgeç, form, detay ve pencere arkasındaki liste yüzünden üç 0107 ekranı) ve üç yeni ekran değişti; Stok, Anasayfa, Çöp Kutusu ve üretim formu 0 fark; taban son kodla 36 görüntü 0 fark.
+
+**Bu spec'ten çıkarılan ders:** Modal pencereli bir kanıt ekranı arkadaki listeyi de çizer; liste değişince pencerenin içeriği aynı kalsa da ekran değişir, yani "değişmeyecek kayıt" hesabı pencerenin arkasını da saymalı. Bir kanıt ekranının bir davranışı gösterdiğini iddia etmeden önce fikstürün o davranışa gerçekten girdiğini doğrulamak gerekir: elle değer taşıyan kalıp türetilen etiketi hiç çizmez. Uygulama turunda değişen bir sayım (ters çevrilen beklentiler) spec'in bütün kopyalarında aynı anda düzeltilmeli; karar satırına yazılıp başlık, AC ve DoD'de bırakılan eski sayı triyaja kalır.
