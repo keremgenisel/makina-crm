@@ -1,0 +1,192 @@
+{
+  "BLOB_SECTIONS": [
+    "customers",
+    "services",
+    "partSales",
+    "payments",
+    "dealers",
+    "stock",
+    "notes",
+    "parts",
+    "partStock",
+    "partStockLog",
+    "gorusmeler",
+    "dosyalar",
+    "kalipDefs",
+    "standardModels",
+    "customModels",
+    "factory",
+    "appSettings",
+    "teklifler",
+    "faturalar",
+    "uretimFormlari",
+    "partTypeDefs",
+    "calisanlar",
+    "yedekParcaSatislar",
+    "giderler",
+    "giderTanimlari",
+    "giderTurleri",
+    "tedarikciler",
+    "uretimPartileri",
+    "kasaHesaplari",
+    "hesapHareketleri",
+    "cekler",
+    "kasaKapsamDisi"
+  ],
+  "MERGE_KEYS": [
+    "customers",
+    "teklifler",
+    "partSales",
+    "services",
+    "payments",
+    "gorusmeler",
+    "dosyalar",
+    "uretimFormlari",
+    "faturalar",
+    "calisanlar",
+    "yedekParcaSatislar",
+    "giderTurleri",
+    "tedarikciler",
+    "giderTanimlari",
+    "giderler",
+    "uretimPartileri",
+    "kasaHesaplari",
+    "hesapHareketleri",
+    "cekler",
+    "kasaKapsamDisi",
+    "partStockLog",
+    "dealers",
+    "notes",
+    "stock",
+    "parts",
+    "kalipDefs",
+    "partTypeDefs",
+    "customModels"
+  ],
+  "EYLEM_IDLERI": {
+    "customers": {
+      "ekle": "cust_add",
+      "sil": "cust_delete"
+    },
+    "services": {
+      "ekle": "cust_service_add",
+      "sil": "cust_service_delete"
+    },
+    "partSales": {
+      "ekle": "cust_kalip_add",
+      "sil": "cust_kalip_delete"
+    },
+    "payments": {
+      "ekle": "cust_payment_add",
+      "sil": "cust_payment_edit"
+    },
+    "cekler": {
+      "ekle": "cust_payment_add",
+      "sil": "cust_payment_edit"
+    },
+    "gorusmeler": {
+      "ekle": "cust_gorusme_add",
+      "sil": "cust_gorusme_del"
+    },
+    "dosyalar": {
+      "ekle": "cust_dosya_add",
+      "sil": "cust_dosya_del",
+      "bayi": {
+        "grup": "dealerActions",
+        "ekle": "dealer_dosya_add",
+        "sil": "dealer_dosya_del"
+      }
+    },
+    "dealers": {
+      "ekle": "dealer_add",
+      "sil": "dealer_delete"
+    },
+    "faturalar": {
+      "ekle": "evrak_fatura_add",
+      "sil": "evrak_fatura_delete"
+    },
+    "stock": {
+      "ekle": "stock_makina_add",
+      "sil": "stock_makina_delete"
+    },
+    "uretimFormlari": {
+      "ekle": "stock_uretim_add",
+      "sil": "stock_uretim_delete"
+    },
+    "yedekParcaSatislar": {
+      "ekle": "yedek_parca_add",
+      "sil": "yedek_parca_delete"
+    },
+    "notes": {
+      "ekle": "not_add",
+      "sil": "not_delete"
+    },
+    "giderler": {
+      "ekle": "gider_add",
+      "sil": "gider_delete"
+    },
+    "giderTanimlari": {
+      "ekle": "gider_tanim",
+      "sil": "gider_tanim"
+    },
+    "giderTurleri": {
+      "ekle": "gider_tanim",
+      "sil": "gider_tanim"
+    },
+    "uretimPartileri": {
+      "ekle": "gider_tanim",
+      "sil": "gider_tanim"
+    },
+    "tedarikciler": {
+      "ekle": "tedarikci_add",
+      "sil": "tedarikci_delete"
+    },
+    "kasaHesaplari": {
+      "ekle": "kasa_hesap",
+      "sil": "kasa_hesap"
+    },
+    "kasaKapsamDisi": {
+      "ekle": "kasa_hesap",
+      "sil": "kasa_hesap"
+    },
+    "hesapHareketleri": {},
+    "teklifler": {}
+  },
+  "AYAR_ALAN_SEKMELERI": {
+    "kdvRates": [
+      "settings"
+    ],
+    "kdvRate": [
+      "settings"
+    ],
+    "autoBackup": [
+      "settings"
+    ],
+    "backupFolder": [
+      "settings"
+    ],
+    "frequency": [
+      "settings"
+    ],
+    "pinnedPartIds": [
+      "settings",
+      "stock"
+    ],
+    "musteriSutunlari": [
+      "settings"
+    ],
+    "analizGizliModeller": [
+      "settings"
+    ],
+    "giderAyarlari": [
+      "settings"
+    ],
+    "maliyetAyarlari": [
+      "settings",
+      "maliyet"
+    ],
+    "uretimdeOlmayanModeller": [
+      "settings"
+    ]
+  }
+}

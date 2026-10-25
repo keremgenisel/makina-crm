@@ -5,6 +5,7 @@ import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal,
 import { HataMetni, Ipucu, BolumBasligi, BosDurum } from "../tasarim";
 import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi, PANO_SEKME_ADI, modelStokSayaci, modelStokOku, modelStokMetni } from "../../lib/stokDurumu";
 import { uretimdeSuzulmusModeller, URETIM_DEGIL_IBARESI } from "../../lib/uretimdekiModeller";
+import { makinaDurumuOnDoldur, MAKINA_DURUMU_KAYNAK } from "../../lib/satisKaydi";
 import { durumYaz, kalipDurumuTuret, aynaSatirMi, aynaDurumu, aynaUretimFormuMetni, musteriKalipAnahtari, KALIP_DURUM_ADLARI, AYNA_SATIR_IBARESI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
 import { MakinaDurumuSecici, KalipDurumuSecici } from "./DurumSecici";
 import { useLock } from "../../hooks/useLock";
@@ -12,6 +13,14 @@ import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "../SatisTevkifatAlani";
 import { satisTevkifatOzeti, makinaKartTabaniEskiMi } from "../../lib/satisTevkifat";
+
+// Spec 0109 R1, R1/2, R5–R7, R17: makina durumunun ön doldurması ve temizliği. Ön doldurma koşulsuz ezer ve işareti ONDOLDU yapar.
+// Temizlik (triyaj bulgu 1, Karar 21) YALNIZ değer bir stok satırından geldiyse (ONDOLDU) alanı siler ve işareti ELLE yapar
+// (kayıtta damgalanmaz, stok dışı satışta alan doğmaz, 0106 R3); kayıttan gelen ya da elle seçilen değere dokunmaz (R9/3).
+const makinaDurumuOndoldu = (stokSatiri) => ({ ...makinaDurumuOnDoldur(stokSatiri), [MAKINA_DURUMU_KAYNAK.ALAN]: MAKINA_DURUMU_KAYNAK.ONDOLDU });
+const makinaDurumuTemizle = (p) => (p[MAKINA_DURUMU_KAYNAK.ALAN] === MAKINA_DURUMU_KAYNAK.ONDOLDU
+  ? { ...durumYaz(p, "makinaDurumu", ""), [MAKINA_DURUMU_KAYNAK.ALAN]: MAKINA_DURUMU_KAYNAK.ELLE }
+  : p);
 
 export const CustomerAddEditForm = ({
   modal, form, setForm, save, onClose,
@@ -195,7 +204,7 @@ export const CustomerAddEditForm = ({
             {kartlar.map(({ m, uretimde }) => (
               <div
                 key={m.model}
-                onClick={() => { setForm(p => ({ ...p, model: m.model, ...(p._stokSerisiz && p.model !== m.model ? { _stokSerisiz: false, serialNo: "" } : {}) })); setModelPicker(false); }}
+                onClick={() => { setForm(p => ({ ...(p.model !== m.model ? makinaDurumuTemizle(p) : p), model: m.model, ...(p._stokSerisiz && p.model !== m.model ? { _stokSerisiz: false, serialNo: "" } : {}) })); setModelPicker(false); }}
                 style={{ padding: "10px 12px", borderRadius: 8, cursor: "pointer", border: "2px solid", borderColor: form.model === m.model ? "var(--brand, #e85d1a)" : "var(--n200, #e2e8f0)", background: form.model === m.model ? "var(--ambBg3, #fff7ed)" : "var(--surface, #ffffff)" }}
               >
                 <div style={{ fontWeight: 700, fontSize: 13, color: "var(--n900, #0f172a)" }}>{m.model}{!uretimde && <span style={{ fontWeight: 400, color: "var(--n500, #64748b)" }}> · {URETIM_DEGIL_IBARESI}</span>}</div>
@@ -232,20 +241,21 @@ export const CustomerAddEditForm = ({
                 {isSerialPendingEdit && <Ipucu>{SERI_BEKLEYEN_CIFT_DUSUM_IPUCU}</Ipucu>}
                 <Select value={form._stokSerisiz ? "__serisiz__" : (form.serialNo || "")} onChange={e => {
                   if (e.target.value === "__manual__") {
-                    setForm(p => ({ ...p, _manualSerial: true, _stokSerisiz: false, serialNo: "", _kitTipler: [] }));
+                    setForm(p => ({ ...makinaDurumuTemizle(p), _manualSerial: true, _stokSerisiz: false, serialNo: "", _kitTipler: [] })); // spec 0109 R6
                   } else if (e.target.value === "__serisiz__") {
                     // Spec 0100 R6/3, plan P3: kit ön doldurması düşülecek makinanın kendisinden (motorun seçimi).
                     // Spec 0101 R13: kalıp çapı da aynı satırdan.
                     const firstSerisiz = serisizDusulecek(stockForModel, form.model);
-                    setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "", ...getKitAutoFill(firstSerisiz), ...kalipCapiOnDoldur(firstSerisiz) }));
+                    // Spec 0109 R3: makina durumu da aynı satırdan (ön doldurma; kayıt anında gerçek satırdan yeniden yazılır).
+                    setForm(p => ({ ...p, _stokSerisiz: true, serialNo: "", ...getKitAutoFill(firstSerisiz), ...kalipCapiOnDoldur(firstSerisiz), ...makinaDurumuOndoldu(firstSerisiz) }));
                   } else if (e.target.value === "") {
                     // Spec 0101 R11/2, Karar 10: boş seçenek bir makina seçimi değildir. Serisiz satırların seri no'su tam
                     // olarak "" olduğu için eskiden ilk serisiz satır bulunuyor, kit (ve çap) sessizce ondan doluyordu.
-                    setForm(p => ({ ...p, _stokSerisiz: false, serialNo: "" }));
+                    setForm(p => ({ ...makinaDurumuTemizle(p), _stokSerisiz: false, serialNo: "" })); // spec 0109 R5
                   } else {
                     // Spec 0101 R11, R12, R12/2: çapı doluysa formdakini bütün olarak ezer, boşsa forma dokunmaz.
                     const stockEntry = stockForModel.find(s => s.serialNo === e.target.value);
-                    setForm(p => ({ ...p, _stokSerisiz: false, serialNo: e.target.value, ...getKitAutoFill(stockEntry), ...kalipCapiOnDoldur(stockEntry) }));
+                    setForm(p => ({ ...p, _stokSerisiz: false, serialNo: e.target.value, ...getKitAutoFill(stockEntry), ...kalipCapiOnDoldur(stockEntry), ...makinaDurumuOndoldu(stockEntry) })); // spec 0109 R1, R1/2
                   }
                 }}>
                   <option value="">Stoktan seçin... ({stockForModel.length} adet)</option>
@@ -432,7 +442,7 @@ export const CustomerAddEditForm = ({
       {/* Spec 0106 R4, R4/2, Karar 19: makina durumu Garanti Bitiş ile gider yetkisi bloğu arasında, hiçbir yetki perdesinde değil. */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Field label={MAKINA_DURUMU_ETIKETI}>
-          <MakinaDurumuSecici value={form.makinaDurumu} onChange={v => setForm(p => durumYaz(p, "makinaDurumu", v))} />
+          <MakinaDurumuSecici value={form.makinaDurumu} onChange={v => setForm(p => ({ ...durumYaz(p, "makinaDurumu", v), [MAKINA_DURUMU_KAYNAK.ALAN]: MAKINA_DURUMU_KAYNAK.ELLE }))} />
         </Field>
       </div>
       {giderYetki && (

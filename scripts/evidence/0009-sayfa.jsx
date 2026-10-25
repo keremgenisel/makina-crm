@@ -620,6 +620,12 @@ const STOK_0104 = [
   { id: 9502, model: "AK100_DS", serialNo: "", addedDate: "2026-09-08", partiId: 902, parcalar: [] },
   { id: 9503, model: "AK100_DS", serialNo: "AK100-2026-040", addedDate: "2026-09-12", partiId: 902, parcalar: [] },
 ];
+// Spec 0109: biri montajda biri satışa hazır iki serili satır.
+const STOK_0109 = [
+  { id: 9601, model: "AK100_DS", serialNo: "AK100-2026-051", addedDate: "2026-09-02", uretimDurumu: "montaj", parcalar: [] },
+  { id: 9602, model: "AK100_DS", serialNo: "AK100-2026-052", addedDate: "2026-09-08", uretimDurumu: "hazir", parcalar: [] },
+];
+const musteri0109 = () => <Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={STOK_0109} setStock={bos} dealers={DEALERS} />;
 // Spec 0105: model ızgarası açık. Varsayılan altı model; ikisi üretimde değil, biri (SWP140_DSC) stokta satırı olduğu için
 // ibareyle kalır. AK100_DS karışık (2 satışa hazır, 1 montajda), AK120_DS yalnız montajda, kalanlar stoksuz.
 const AYAR_0105 = { uretimdeOlmayanModeller: ["AK100_DSC", "SWP140_DSC"] };
@@ -1337,6 +1343,11 @@ const EKRANLAR = {
     giderYetki uretimPartileri={[P_KAPALI, P_ACIK]} initialDetailId={500} />, ["~Düzenle", "kaydir:Üretim partisi"]],
   "musteri-formu-0104-stok": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={STOK_0104} setStock={bos} dealers={DEALERS}
     uretimPartileri={[P_KAPALI, P_ACIK]} />, ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:Seri no'suz stoktan düş", "doldur:Seri numarası=AK100-2026-045", "kaydir:Seri Numarası"]],
+  // Spec 0109: stok satırı seçilince makina durumu ön doldurulur (montajda serili → Montajda, satışa hazır serili → Hazır);
+  // "Manuel gir" alanı temizler. Kendi fikstürü: bugünkü fikstürlerde montajda serili satır yok (spec ölçüm 20).
+  "musteri-formu-0109-montaj": [musteri0109(), ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:AK100-2026-051", "kaydir:Makina durumu"]],
+  "musteri-formu-0109-hazir": [musteri0109(), ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:AK100-2026-052", "kaydir:Makina durumu"]],
+  "musteri-formu-0109-manuel": [musteri0109(), ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:AK100-2026-051", "secenek:Manuel gir", "kaydir:Makina durumu"]],
   "musteriler-0106-piller": [musteri0106(), []],
   "musteriler-0106-suzgec": [musteri0106(), ["etiket:Teslim Bekleyenler (3)"]],
   "musteri-formu-0106-durum": [musteri0106({ initialDetailId: 867 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],

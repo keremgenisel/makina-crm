@@ -9,7 +9,7 @@ import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, 
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
 import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
-import { satisKuruUygula, uretimTarihiDamgala, partiDamgala, makinaDurumuDamgala } from "../lib/satisKaydi";
+import { satisKuruUygula, uretimTarihiDamgala, partiDamgala, makinaDurumuDamgala, MAKINA_DURUMU_KAYNAK } from "../lib/satisKaydi";
 import { uretimFormHaritasi, extraKalipGrupla, satirDurumu, TESLIM_SUZGECI, DURUM_SUTUNU } from "../lib/musteriDurumu";
 import { serisizDusulecek } from "../lib/stokDurumu";
 import { donenStokUretimTarihi } from "../lib/makinaMaliyeti";
@@ -271,13 +271,18 @@ export const Customers = ({
   // paylaşır: seçilen (veya serisiz) stok satırını düşer ve kaynağı müşteriye
   // (sourceStockId) yazar; clean üzerinde yerinde değişiklik yapar. Stok satırı silindiği için
   // üretim tarihi ve üretim partisi de burada satış kaydına yazılır (spec 0002 R1b, spec 0022 R2), yoksa kaybolurdu.
-  const deductMachineStock = (clean, { _stokSerisiz, _manualSerial }) => {
+  const deductMachineStock = (clean, { _stokSerisiz, _manualSerial, _makinaDurumuKaynak }) => {
+    // Spec 0109 R9/2, R17, Karar 7, 9: kapı burada. Ön doldurulan değer bir öngörüdür: düşürülür, damga gerçekten düşülen satırdan
+    // yazar (satır bulunamazsa alan hiç yazılmaz). Elle değer (ya da formun temizlediği alan) hiç damgalanmaz. İşaret yoksa
+    // (değer kayıttan) bugünkü kural: damga yalnız alan boşsa yazar. Damgalayıcının imzası değişmez.
+    if (_makinaDurumuKaynak === MAKINA_DURUMU_KAYNAK.ONDOLDU) delete clean.makinaDurumu;
+    const durumDamgasi = _makinaDurumuKaynak === MAKINA_DURUMU_KAYNAK.ELLE ? (k => k) : makinaDurumuDamgala;
     // Spec 0100 R7/2b, Karar 14: stoktan bir satır seçildiyse parti YALNIZ o satırdan gelir; formda önceden seçilmiş parti kayda
     // girmez (`partiDamgala` formdakini koruduğu için önce silinir; satırın partisi yoksa anahtar hiç yazılmaz).
     const stoktanDamgala = (srcEntry) => {
       clean.sourceStockId = srcEntry.id;
       delete clean.partiId;
-      Object.assign(clean, makinaDurumuDamgala(partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry), srcEntry)); // spec 0106 Karar 39
+      Object.assign(clean, durumDamgasi(partiDamgala(uretimTarihiDamgala(clean, srcEntry), srcEntry), srcEntry)); // spec 0106 Karar 39, 0109
     };
     // Triyaj (bulgu 3): serisiz stok seçildiyse formdaki parti, satır yarışta bulunamasa bile kayda girmez (R7/2b). Serili dalda
     // koşulsuz silinmez: stok hiç yokken seri no elle yazılır ve `_manualSerial` false kalır, o satışın seçilmiş partisi korunmalı.
@@ -307,7 +312,7 @@ export const Customers = ({
     if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
     {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...temiz } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, _makinaDurumuKaynak, ...temiz } = form; // spec 0109 R12, R18
       const clean = satisTevkifatUygula(temiz, form, temiz.faturali); // spec 0079 R5: ekleme kolu
       // Faturasız satışta fatura bedeli kavramı yok → hayalet değer kalmasın (kaynak temizliği).
       if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
@@ -325,7 +330,7 @@ export const Customers = ({
         customerId: newId, currency: clean.currency, tarih: odemeTarih, ayar: appSettings?.krediKartiKomisyonlari, kdvOran: odemeKdvOran, yeniId: uid, kartTaban: clean,
       });
       clean.kalanBorc = Math.max(0, calcKalanBorc({ ...clean, id: newId }, payments, kdvRates) - ilkOdemeAlinanTutar);
-      if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial }); // spec 0104 Karar 36: damgalar kayıt yazılmadan ÖNCE (React güncelleyiciyi hemen çalıştırıp kopyayı damgasız alıyordu)
+      if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial, _makinaDurumuKaynak }); // spec 0104 Karar 36: damgalar kayıt yazılmadan ÖNCE (React güncelleyiciyi hemen çalıştırıp kopyayı damgasız alıyordu)
       setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);
       if (yeniOdemeler.length > 0 && setPayments) {
         setPayments(p => [...yeniOdemeler, ...p]);
@@ -360,7 +365,7 @@ export const Customers = ({
     } else {
       const tevkifatHata = satisTevkifatDogrula(form, form.faturali); // spec 0079 R6
       if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
-      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, ...temiz } = form;
+      const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, _makinaDurumuKaynak, ...temiz } = form; // spec 0109 R12, R18
       const clean = satisTevkifatUygula(temiz, form, temiz.faturali); // spec 0079 R5: düzenleme kolu
       // Faturalı → Faturasız çevrilince eski fatura bedeli kayıtta kalmasın (kaynak temizliği).
       if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
@@ -370,7 +375,7 @@ export const Customers = ({
       Object.assign(clean, satisKuruUygula(modal.edit, clean, rates, today()));
       clean.kalanBorc = calcKalanBorc(clean, payments, kdvRates);
       setCustomers(p => p.map(c => c.id === clean.id ? clean : c));
-      if (wasSerialPending && setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });
+      if (wasSerialPending && setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial, _makinaDurumuKaynak });
       // Tip seçimleri değişmişse eski stoğu geri al, yeni seçimi düş (yalnız "stoktan düş" tipler, kit'ten gelenleri atlat)
       if (setPartStock) {
         const { toRestore, toDeduct } = stokSecimDiff({

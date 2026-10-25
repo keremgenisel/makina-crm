@@ -20,15 +20,16 @@ describe("Spec 0104: düşüm kuralı (AC-20, C1)", () => {
     expect(k).toMatch(/\} else if \(clean\.serialNo && !_manualSerial\) \{/);
     expect(k).toMatch(/const srcEntry = stock\.find\(s => s\.model === clean\.model && s\.serialNo === clean\.serialNo\);/);
   });
+  // Spec 0109 ile (R18): iki çağrı geçici işareti de geçirir; sıra kuralı aynen.
   it("Karar 36: ekleme kolunda düşüm kayıt yazılmadan önce; düzenleme kolu aynen", () => {
     const k = oku(MUS);
     const ekle = k.slice(k.indexOf("const doAdd = () => {"), k.indexOf("const doAdd = () => {") + 6000);
-    const dus = ekle.indexOf("if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial });");
+    const dus = ekle.indexOf("if (setStock) deductMachineStock(clean, { _stokSerisiz, _manualSerial, _makinaDurumuKaynak });");
     const yaz = ekle.indexOf("setCustomers(p => p.some(c => c.id === newId) ? p : [{ ...clean, id: newId }, ...p]);");
     expect(dus).toBeGreaterThan(0);
     expect(yaz).toBeGreaterThan(dus);
-    expect((k.match(/deductMachineStock\(clean, \{ _stokSerisiz, _manualSerial \}\)/g) || []).length).toBe(2);
-    expect(k).toMatch(/setCustomers\(p => p\.map\(c => c\.id === clean\.id \? clean : c\)\);\n\s+if \(wasSerialPending && setStock\) deductMachineStock\(clean, \{ _stokSerisiz, _manualSerial \}\);/);
+    expect((k.match(/deductMachineStock\(clean, \{ _stokSerisiz, _manualSerial, _makinaDurumuKaynak \}\)/g) || []).length).toBe(2);
+    expect(k).toMatch(/setCustomers\(p => p\.map\(c => c\.id === clean\.id \? clean : c\)\);\n\s+if \(wasSerialPending && setStock\) deductMachineStock\(clean, \{ _stokSerisiz, _manualSerial, _makinaDurumuKaynak \}\);/);
   });
   it("AC-20: satisKaydi.js ve stokDurumu.js bu işin adlarını anmaz", () => {
     for (const f of ["src/lib/satisKaydi.js", "src/lib/stokDurumu.js"]) expect(oku(f), f).not.toMatch(/spec 0104|stokBagliBekleyen|stoktaDuranSeri/);

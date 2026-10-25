@@ -33,7 +33,8 @@ const sat = async (kayitlar, ad, secim) => {
   fireEvent.click(screen.getAllByText("AK100").find(e => e.tagName === "DIV" && e.style.fontWeight === "700"));
   if (secim === "manuel") fireEvent.change(screen.getByPlaceholderText("AK140-2026-001"), { target: { value: "MAN-1" } });
   else fireEvent.change(screen.getByText(/Stoktan seçin/).closest("select"), { target: { value: secim } });
-  // Triyaj bulgu 2 (Karar 42): damga kayıt anında yazılır; stok satırı seçilince seçici önizleme göstermez.
+  // Triyaj bulgu 2 (Karar 42): damga kayıt anında yazılır. Spec 0109 ile: seçici stok satırından ön doldurulur (önizleme
+  // görünür); kayda yine gerçekten düşülen satırın durumu yazılır (damga beklentileri aynen).
   onizleme.push(screen.getByRole("combobox", { name: "Makina durumu" }).value);
   fireEvent.click(screen.getByText("Kaydet"));
   await waitFor(() => expect(kayitlar.some(d => d.customers?.some(c => c.name === ad))).toBe(true));
@@ -48,7 +49,7 @@ describe("Spec 0106: gerçek App", () => {
     expect(await sat(kayitlar, "Hazır AŞ", "S-2")).toMatchObject({ sourceStockId: 2, makinaDurumu: "hazir" });
     expect(await sat(kayitlar, "Boş AŞ", "S-3")).toMatchObject({ sourceStockId: 3, makinaDurumu: "hazir" });
     expect(await sat(kayitlar, "Serisiz AŞ", "__serisiz__")).toMatchObject({ sourceStockId: 4, makinaDurumu: "hazir" });
-    expect(onizleme.slice(-4)).toEqual(["", "", "", ""]);
+    expect(onizleme.slice(-4)).toEqual(["montaj", "hazir", "hazir", "hazir"]); // spec 0109 ile (ters çevrildi)
     const tr = screen.getByText("Montaj AŞ").closest("tr");
     expect(tr.querySelector('[data-testid="durum-pili"]').textContent).toBe("MONTAJ YAPILIYOR");
   });

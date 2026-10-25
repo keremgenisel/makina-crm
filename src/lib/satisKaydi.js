@@ -45,5 +45,11 @@ export const partiDamgala = (kayit, stokSatiri) => {
 // çağrılır (R6/2, AC-35). Formda elle seçilmiş değer önceliklidir (`uretimTarihiDamgala` emsali); stok satırı yoksa kayıt aynen döner.
 export const makinaDurumuDamgala = (kayit, stokSatiri) => {
   if (!kayit || kayit.makinaDurumu || !stokSatiri) return kayit;
-  return { ...kayit, makinaDurumu: uretimDurumuOf(stokSatiri) };
+  return { ...kayit, ...makinaDurumuOnDoldur(stokSatiri) };
 };
+// Spec 0109 R11/2, Karar 10: formun ön doldurması ve damga aynı yardımcıdan (utils'teki çap ön doldurma emsali): yazılacak alanlar
+// nesnesi, satır yoksa boş nesne. `uretimDurumuOf` müşteri tarafında yine yalnız bu dosyada.
+export const makinaDurumuOnDoldur = (stokSatiri) => (stokSatiri ? { makinaDurumu: uretimDurumuOf(stokSatiri) } : {});
+// Spec 0109 R17, R18: formun geçici işareti (kayda yazılmaz). Yok = değer kayıttan geldi; ONDOLDU = stok satırı seçildi
+// (kayıt anında düşürülür, damga gerçek satırdan yazar); ELLE = kullanıcı dokundu ya da form alanı temizledi (damgalanmaz).
+export const MAKINA_DURUMU_KAYNAK = Object.freeze({ ALAN: "_makinaDurumuKaynak", ONDOLDU: "ondoldu", ELLE: "elle" });

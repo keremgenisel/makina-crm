@@ -6362,7 +6362,7 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0104-kapanis-piksel-raporu.json",
+        "rapor": "docs/evidence/0109-taban-piksel-raporu.json",
         "ekran": "musteri-formu-0104-stok",
         "beklenen": "ayni"
       },
@@ -6489,6 +6489,21 @@
       {
         "rapor": "docs/evidence/0107-taban-piksel-raporu.json",
         "ekran": "musteri-formu-0107-ayna-dar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0109-taban-piksel-raporu.json",
+        "ekran": "musteri-formu-0109-montaj",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0109-taban-piksel-raporu.json",
+        "ekran": "musteri-formu-0109-hazir",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0109-taban-piksel-raporu.json",
+        "ekran": "musteri-formu-0109-manuel",
         "beklenen": "ayni"
       }
     ],
