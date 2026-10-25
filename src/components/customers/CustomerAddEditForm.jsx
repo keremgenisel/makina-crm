@@ -5,7 +5,7 @@ import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal,
 import { HataMetni, Ipucu, BolumBasligi, BosDurum } from "../tasarim";
 import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi, PANO_SEKME_ADI, modelStokSayaci, modelStokOku, modelStokMetni } from "../../lib/stokDurumu";
 import { uretimdeSuzulmusModeller, URETIM_DEGIL_IBARESI } from "../../lib/uretimdekiModeller";
-import { durumYaz, kalipDurumuTuret, aynaSatirMi, aynaDurumu, musteriKalipAnahtari, KALIP_DURUM_ADLARI, AYNA_SATIR_IBARESI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
+import { durumYaz, kalipDurumuTuret, aynaSatirMi, aynaDurumu, aynaUretimFormuMetni, musteriKalipAnahtari, KALIP_DURUM_ADLARI, AYNA_SATIR_IBARESI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
 import { MakinaDurumuSecici, KalipDurumuSecici } from "./DurumSecici";
 import { useLock } from "../../hooks/useLock";
 import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
@@ -333,6 +333,12 @@ export const CustomerAddEditForm = ({
                 arr[i] = { ...arr[i], olcu: e.target.value };
                 return { ...p, kaliplar: arr, kalipSayisi: arr.length };
               })} />
+            {/* Spec 0107 R5, R6/4: ayna satırda kutu yok; Extra Kalıp'ın işareti salt okunur, kendi öğesinde. */}
+            {aynaSatirMi(k) ? (
+              <span data-testid="ayna-uretim-formu" style={{ fontSize: 12, color: "var(--n600, #475569)", whiteSpace: "nowrap" }}>
+                {aynaUretimFormuMetni(k, form, durumBaglami?.grup)}
+              </span>
+            ) : (
             <label style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", fontSize: 12, color: "var(--n600, #475569)", cursor: "pointer" }}>
               <input type="checkbox" checked={!!k.uretimFormGonder}
                 onChange={e => setForm(p => {
@@ -343,6 +349,7 @@ export const CustomerAddEditForm = ({
                 style={{ width: 15, height: 15, accentColor: "var(--brand, #e85d1a)", cursor: "pointer" }} />
               Üretim formuna gönder
             </label>
+            )}
             {/* Spec 0106 R11, R11/2, R7/2: kalıp durumu seçicisi; ayna satırda (Extra Kalıp satışının kopyası) seçici yok, durum
                 satıştan okunur ve salt okunur yazılır. */}
             {aynaSatirMi(k) ? (

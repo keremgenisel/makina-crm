@@ -15,6 +15,7 @@ import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { logAction, hareketDuzenlemeKaydi } from "../lib/audit";
 import { OdemeHatirlatmaKarti, OdemeHatirlatmaPenceresi } from "./gider/OdemeHatirlatma";
+import { musteriKalibiBekliyorMu } from "../lib/musteriDurumu";
 import { stokDurumOzeti, kutuModelleri, kutuAltSatiri, kalanModelMetni, KUTU_ETIKETI, ORTUSME_CUMLESI, STOK_BOS_METNI, DURUM_ADLARI } from "../lib/stokDurumu";
 
 export const Dashboard = ({ customers, dealers, services, stock = [], partSales = [], yedekParcaSatislar = [], parts = [], payments = [], rates, ratesErr, factory = null, onGoStock, onGoCustomers, onGoDealers, onGoDealerDebtors, onGoExpired, onGoDebtors, onGoCustomerDetail, onGoWarrantyActive, onGoSerialPending, teklifler = [], onEvrakKaydet = null, onDismissTeklif = null, serverPermissions = null, uretimFormlari = [], onGoUretim = null, gorusmeler = [], setGorusmeler = null, teklifTakipGun = 7, onOpenTeklif = null, onDismissTakip = null, kdvRates = [], onGoYedekParca = null,
@@ -196,8 +197,9 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const pendingKaliplarCount = useMemo(() => {
     let count = 0;
     for (const c of customers) {
+      // Spec 0107 R9: ayna satır sayılmaz (aynı kalıp partSales döngüsünde bir kez sayılır).
       for (const k of (c.kaliplar || [])) {
-        if (k.uretimFormGonder && !k.uretimFormId) count++;
+        if (musteriKalibiBekliyorMu(k)) count++;
       }
     }
     for (const ps of partSales) {

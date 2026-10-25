@@ -10,17 +10,18 @@ import { KartBolum, BosDurum, UyariSeridi } from "../tasarim";
 import { buildPrintHtml, groupByMusteri, fmtDate } from "./uretimFormPrint";
 import { emptyRow } from "./uretimFormModel";
 import { UretimSatirEkleModal } from "./UretimSatirEkleModal";
+import { musteriKalibiBekliyorMu } from "../../lib/musteriDurumu";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-// Bekleyen (uretimFormGonder && !uretimFormId) kalıpların EN ESKİ tarihi — müşteri kalıbı: installDate,
+// Bekleyen (müşteri tarafında musteriKalibiBekliyorMu, Extra Kalıp'ta işaretli ve bağsız) kalıpların EN ESKİ tarihi — müşteri kalıbı: installDate,
 // Extra Kalıp: ps.tarih. Yeni üretim formu başlangıcını buna çekip "Bekleyen Kalıpları Getir" hepsini yakalar.
 // Sayım (Dashboard.pendingKaliplarCount) tarihten bağımsız; getirme tarih-aralığı bağlı olduğu için gerekli.
 export const enEskiBekleyenKalipTarihi = (customers = [], partSales = []) => {
   let en = "";
   for (const c of customers) {
     if (c.deletedAt || !c.installDate) continue;
-    if ((c.kaliplar || []).some(k => k.uretimFormGonder && !k.uretimFormId) && (!en || c.installDate < en)) en = c.installDate;
+    if ((c.kaliplar || []).some(musteriKalibiBekliyorMu) && (!en || c.installDate < en)) en = c.installDate;
   }
   for (const ps of partSales) {
     if (ps.deletedAt || !ps.uretimFormGonder || ps.uretimFormId || !ps.tarih) continue;
@@ -229,8 +230,8 @@ export function UretimFormu({
       const tarih = c.installDate || "";
       if (!tarih || tarih < baslangicTarihi || tarih > bitisTarihi) continue;
       (c.kaliplar || []).forEach((k, i) => {
-        if (!k.uretimFormGonder) return;
-        if (k.uretimFormId) return; // başka bir forma zaten eklendi
+        // Spec 0107 R8, R8/2: ayna satır ve forma eklenmiş kalıp atlanır; forEach indeksi korunur (kalipIdx konumdur).
+        if (!musteriKalibiBekliyorMu(k)) return;
         if (already.has(`musteri:${c.id}:${i}`)) return;
         const def = kalipDefs.find(d => d.ad === k.ad);
         newRows.push({

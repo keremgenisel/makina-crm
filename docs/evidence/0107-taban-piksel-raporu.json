@@ -1,0 +1,464 @@
+[
+  {
+    "ad": "musteri-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺290.000 ödenmemiş bakiyesi var. Devam"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺290.000 ödenmemiş bakiyesi var. Devam"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-uretim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-uretim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-bolumler-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Sunucu bağlantısı yok: dosya listesi görünür ama ekleme, açma ve indir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-bolumler-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Sunucu bağlantısı yok: dosya listesi görünür ama ekleme, açma ve indir"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-yeni-sahip-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺240.000 ödenmemiş bakiyesi var. Ayrıc"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-yeni-sahip-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu",
+      "Mevcut sahip sahiplik geçmişine taşınacak, makina kaydı yeni sahibin b",
+      "Bu makinenin devredilmeden önce ₺240.000 ödenmemiş bakiyesi var. Ayrıc"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-hatirlatma-0084-aydinlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-hatirlatma-0084-karanlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-hatirlatma-taksit-aydinlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-hatirlatma-taksit-karanlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0100-kutu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0100-kutu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0100-pencere-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0100-pencere-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-kart-rozetleri-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-kart-rozetleri-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-tahsis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-tahsis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-0067-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-0067-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-tahsilat-cek-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-tahsilat-cek-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-tahsilat-hesap-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-tahsilat-hesap-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0092-kart-aydinlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0092-kart-karanlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0092-hatirlatma-aydinlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0092-hatirlatma-karanlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-tahsilat-hesap-penceresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-tahsilat-hesap-penceresi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0062-hatirlatma-aydinlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0062-hatirlatma-karanlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0062-hatirlatma-sayfa2-aydinlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "anasayfa-0062-hatirlatma-sayfa2-karanlik.png",
+    "boyut": "2880x1832",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-ilk-odeme-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-ilk-odeme-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-tahsilat-hesap-satir-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-tahsilat-hesap-satir-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-kalip-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-kalip-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0079-kart-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0079-kart-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0094-ilce-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0094-ilce-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0103-parti-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0103-parti-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0104-stok-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0104-stok-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteriler-0106-piller-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteriler-0106-piller-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteriler-0106-suzgec-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteriler-0106-suzgec-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0106-durum-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0106-durum-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-0106-kalip-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-detay-0106-kalip-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0107-ayna-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0107-ayna-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0107-ayna-dar-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0107-ayna-dar-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0107-duzenle-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kalip-formu-0107-duzenle-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0105-model-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "musteri-formu-0105-model-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

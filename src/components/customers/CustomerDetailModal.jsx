@@ -415,7 +415,8 @@ export const CustomerDetailModal = ({
     const kalemFiyat = (parseMoney(ps.ucret) - yansitilanKomisyon(ps)) || (ps.ucret || "");
     setPkForm({
       id: ps.id, customerId: ps.customerId,
-      kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: kalemFiyat }],
+      // Spec 0107 R1, R2: kayıt yolunun kalıp satırından okuduğu her alan burada taşınır (yoksa kayıt işareti silerdi).
+      kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: kalemFiyat, uretimFormGonder: !!ps.uretimFormGonder }],
       tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi, hesapId: ps.hesapId ?? null,
       yontem: ps.yontem || "Nakit", vadeTarihi: ps.vadeTarihi || "", tahsilEdildi: !!ps.tahsilEdildi,
       taksitSayisi: ps.taksitSayisi || "", kkYansit: !!(ps.kartKomisyonu && ps.kartKomisyonu.yansitildi),

@@ -6475,6 +6475,16 @@
         "rapor": "docs/evidence/0106-taban-piksel-raporu.json",
         "ekran": "musteri-formu-0106-durum",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0107-taban-piksel-raporu.json",
+        "ekran": "musteri-formu-0107-ayna",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0107-taban-piksel-raporu.json",
+        "ekran": "musteri-formu-0107-ayna-dar",
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [
@@ -6745,6 +6755,11 @@
       {
         "rapor": "docs/evidence/0079-taban-piksel-raporu.json",
         "ekran": "kalip-formu-0079-kart",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0107-taban-piksel-raporu.json",
+        "ekran": "kalip-formu-0107-duzenle",
         "beklenen": "ayni"
       }
     ],

@@ -14,6 +14,9 @@ export const KALIP_DURUMU_ETIKETI = "Kalıp durumu";
 export const AYNA_SATIR_IBARESI = "Extra Kalıp satışından";
 export const DURUM_SUTUNU = "Durum";
 export const TESLIM_SUZGECI = Object.freeze({ deger: "teslim-bekleyen", etiket: "Teslim Bekleyenler" });
+// Spec 0107 R17: ayna satırda kutunun yerine çizilen salt okunur ibare.
+export const URETIM_FORMU_GONDERILDI = "Üretim formuna gönderildi";
+export const URETIM_FORMU_GONDERILMEDI = "Üretim formuna gönderilmedi";
 
 // R15, R16, R18, R22: pil metinleri ve renkleri tek yerde (C5: "MAKİNA"; C6: ayraç orta nokta). Makina pilleri Stok rozetlerinin
 // token'larıyla birebir aynı (R16/2); kalıp paleti amber / nötr / mavi / teal (R18/2). Yalnız nötr ve teal kenar taşır.
@@ -95,11 +98,22 @@ export const extraKalipGrupla = (partSales) => {
 };
 // R7/2, R17/2: `partSaleId` taşıyan satır bir Extra Kalıp satışının aynasıdır.
 export const aynaSatirMi = (k) => k?.partSaleId != null;
-// R7/2, R11/2: ayna satırın durumu bağlı satıştan okunur; satış bulunamazsa null.
+// R7/2, R11/2: ayna satırın bağlı satışı (canlı Extra Kalıp grubundan); bulunamazsa null.
+const aynaSatisi = (k, musteri, grup) => (grup?.get(String(musteri?.id)) || []).find(p => String(p.id) === String(k?.partSaleId)) || null;
 export const aynaDurumu = (k, musteri, grup, harita) => {
-  const ps = (grup?.get(String(musteri?.id)) || []).find(p => String(p.id) === String(k?.partSaleId));
+  const ps = aynaSatisi(k, musteri, grup);
   return ps ? kalipDurumuOf(ps, extraKalipAnahtari(ps.id), harita) : null;
 };
+// Spec 0107 R6, R6/2, R6/3: ayna satırın üretim formu ibaresi bağlı satıştan. İşaret ya da bağ doluysa "gönderildi"
+// (bağ dolu ama işaret silinmiş eski kayıt 0106 hücresiyle çelişmesin); satış (ya da bağlam) yoksa "—".
+export const aynaUretimFormuMetni = (k, musteri, grup) => {
+  const ps = aynaSatisi(k, musteri, grup);
+  if (!ps) return "—";
+  return ps.uretimFormGonder || doluMu(ps.uretimFormId) ? URETIM_FORMU_GONDERILDI : URETIM_FORMU_GONDERILMEDI;
+};
+// Spec 0107 R16: müşteri kalıbı üretim formu için bekliyor mu? Ayna satırın saklı işareti okunmaz (R8–R12); getirme,
+// Anasayfa sayacı ve yeni formun başlangıç tarihi bunu çağırır. 0108 yalnız bu gövdeyi değiştirir (R16/2).
+export const musteriKalibiBekliyorMu = (k) => !aynaSatirMi(k) && !!k?.uretimFormGonder && !k?.uretimFormId;
 
 // R17, R17/2: küme = ayna olmayan müşteri kalıpları + o kayda bağlı canlı Extra Kalıp satışları. Dönüş: durum listesi.
 export const kalipKumesi = (musteri, grup, harita) => {

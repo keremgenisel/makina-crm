@@ -1332,6 +1332,11 @@ const EKRANLAR = {
   "musteriler-0106-suzgec": [musteri0106(), ["etiket:Teslim Bekleyenler (3)"]],
   "musteri-formu-0106-durum": [musteri0106({ initialDetailId: 867 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
   "musteri-detay-0106-kalip": [musteri0106({ initialDetailId: 862 }), ["kaydir:Kalıp Verildi"]],
+  // Spec 0107: müşteri formunda ayna satırın salt okunur ibaresi (satış 872 bağlı, işaretsiz: AC-27) ve dar kap (AC-36);
+  // transform taşıyan kap sabit konumlu pencerenin kapsayıcısı olur, pencere 760 px'e sığar. Düzenleme formu işaretli kayıtla.
+  "musteri-formu-0107-ayna": [musteri0106({ initialDetailId: 862 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
+  "musteri-formu-0107-ayna-dar": [<div style={{ width: 760, height: "100vh", transform: "translateZ(0)", overflow: "hidden" }}>{musteri0106({ initialDetailId: 862 })}</div>, ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
+  "kalip-formu-0107-duzenle": [musteri0106({ initialDetailId: 862, partSales: [{ ...PS_0106[0], uretimFormGonder: true }] }), ["tikla:Kalıp Verildi"]],
   "musteri-formu-0105-model": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={STOK_0105} setStock={bos} dealers={DEALERS}
     appSettings={AYAR_0105} />, ["~Yeni Müşteri", "tikla:Model seçin...", "kaydir:AK120_DSC"]],
 };
