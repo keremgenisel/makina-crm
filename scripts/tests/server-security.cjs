@@ -110,6 +110,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   // Spec 0007 C6: yalnız Bayiler sekmeli kullanıcı (Bayi Aracılığıyla Kalıp Satışı).
   dbmod.createUser("bayiKalipci", bcrypt.hashSync("bayi123", 10), "user", JSON.stringify({ tabs: ["dealers"], customerActions: ["cust_kalip_add"] }));
   dbmod.createUser("evrakKalipsiz", bcrypt.hashSync("evrak456", 10), "user", JSON.stringify({ tabs: ["evrak"], customerActions: ["cust_edit"], stockActions: ["yedek_parca_add"] }));
+  // Spec 0111 R18/2 (plan turu Karar 13): yalnız düzenleme izni; stok ve bayi boyutu tanımlı, ekleme/silme içermez.
+  dbmod.createUser("topluDuzenleyici", bcrypt.hashSync("toplu123", 10), "user", JSON.stringify({ tabs: ["customers"], customerActions: ["cust_yedek_parca_edit"], stockActions: ["stock_makina_edit"], dealerActions: [] }));
 
   // Başlangıç verisi
   dbmod.writeBlobToDb({
@@ -718,6 +720,27 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...bkA, dataVersion: undefined,
       customers: bkA.customers.map(c => (c.id === 9500 ? { ...c, kaliplar: [...(c.kaliplar || []), { ad: "Köfte", olcu: "", partSaleId: 9520 }], kalipSayisi: (c.kaliplar || []).length + 1 } : c)),
       partSales: [...(bkA.partSales || []), { id: 9520, customerId: 9500, tur: "Kalıp", ad: "Köfte", ucret: 500, satisFirma: "Ege Bayi" }] }, bkA.dataVersion, bkTok)).status === 200);
+  // Spec 0111 AC-20, AC-21, AC-35: toplu yedek parça düzenlemesi yerinde güncellenir; satır eklemeyen ve çıkarmayan yazım
+  // ekleme/silme izni istemez. Önce admin iki satırlı bir parti yazar, sonra yalnız düzenleme izinli kullanıcı dener.
+  const tdK = (id, o = {}) => ({ id, batchId: 9600, aliciTipi: "musteri", musteriId: 1, partId: "1", miktar: 2, birimFiyat: 100, currency: "TRY", kargoDurum: "", ...o });
+  let tdA = await gUst(adminTok);
+  await postData({ ...tdA, dataVersion: undefined, yedekParcaSatislar: [...(tdA.yedekParcaSatislar || []), tdK(9601), tdK(9602)] }, tdA.dataVersion, adminTok);
+  const tdTok = (await login("topluDuzenleyici", "toplu123")).body.token;
+  tdA = await gUst(tdTok);
+  const tdYaz = (fn, ek = {}) => postData({ ...tdA, dataVersion: undefined, yedekParcaSatislar: fn(tdA.yedekParcaSatislar), ...ek }, tdA.dataVersion, tdTok);
+  check("toplu düzenleme (spec 0111 AC-21): yalnız düzenleme izinli kullanıcı partiye satır EKLEYEMEZ → 403",
+    (await tdYaz(l => [...l, tdK(9603)])).status === 403);
+  check("toplu düzenleme (spec 0111 AC-21): yalnız düzenleme izinli kullanıcı partiden satır ÇIKARAMAZ (çöpe damga) → 403",
+    (await tdYaz(l => l.map(x => (x.id === 9602 ? { ...x, deletedAt: "2026-10-26T09:00:00.000Z" } : x)))).status === 403);
+  check("toplu düzenleme (spec 0111 AC-35): kargo durumunu değiştiren toplu düzenleme → 403",
+    (await tdYaz(l => l.map(x => (x.batchId === 9600 ? { ...x, kargoDurum: "Hazırlanıyor" } : x)))).status === 403);
+  const tdSonuc = await tdYaz(l => l.map(x => (x.id === 9601 ? { ...x, birimFiyat: 150 } : x.id === 9602 ? { ...x, miktar: 3 } : x)),
+    { partStockLog: [...(tdA.partStockLog || []), { id: 9690, partId: "1", miktar: -1, tip: "bayi_satis", referansId: 9602, tarih: "2026-10-26", notlar: "" }] });
+  check("toplu düzenleme (spec 0111 AC-20): satır eklemeyen ve çıkarmayan düzenleme stok hareketiyle → 200", tdSonuc.status === 200);
+  const tdSon = await gUst(adminTok);
+  check("toplu düzenleme (spec 0111 AC-1): kimlikler aynı, çöpe düşen yok, değerler yerinde",
+    tdSon.yedekParcaSatislar.filter(x => x.batchId === 9600).map(x => [x.id, x.birimFiyat, x.miktar, !!x.deletedAt]).join("|") === "9601,150,2,false|9602,100,3,false");
+
   const eSon = await gUst(adminTok);
   check("evrak (spec 0006): üretilen kayıtlar kalıcı (belge bağlarıyla)",
     eSon.yedekParcaSatislar.some(x => x.id === 9511 && x.teklifId === 9599 && x.teklifKalemId === "p1") && eSon.partSales.some(x => x.id === 9510 && x.teklifKalemId === "k1")

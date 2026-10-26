@@ -3,6 +3,7 @@
 import { uid, today, yerelBugun, fmtTR, parseMoney, simdiYerel, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "./utils";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "./satisTevkifat";
 import { yedekParcaDus } from "./yedekParcaStok";
+import { netDusumleri, netDusumAyni } from "./stokHareketi";
 import { yerelServisEkle } from "./yerelServis";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
 
@@ -20,7 +21,8 @@ export const ucretsizUygula = (rec, form) => {
 };
 // Alıcı müşterinin (makina kaydı) garanti durumu (R4, R4/2): ölçüt `warrantyEnd >= bugün`, bugün YEREL gündür
 // (`ServiceForm`'un `today()` satırı UTC'dir ve bilinçli olarak değişmedi, X9). Alıcı yoksa null.
-// Spec 0095 R23 (triyaj): karışık partinin toplu düzenlemesi partiyi yeniden kurar; ücretsiz satır saklı fiyatıyla ücretli doğar.
+// Spec 0095 R23 (triyaj) → spec 0111 C10: işaret form düzeyindedir; toplu düzenleme form işaretini partinin bütün satırlarına
+// uygular, yani karışık partide ücretsiz satır saklı fiyatıyla ücretli olur.
 export const KARISIK_PARTI_UYARISI = "Bu partide ücretsiz satır var; kaydedince ücretli olur, ayrı düzenleyin.";
 export const GARANTI_UYARISI = "Bu makinanın garantisi aktif görünmüyor; parça yine de ücretsiz kaydedilebilir.";
 export const garantiDurumu = (musteri, bugun = yerelBugun()) => {
@@ -194,3 +196,128 @@ export const aliciAd = (s, dealers = [], customers = []) => {
   if (s?.disFirma) return s.disFirmaAd || "(dış firma)"; // anlaşmasız dış firma alıcı (kayıtlı bayi değil)
   return (dealers.find(d => d.id === s?.dealerId)?.name) || "(bayi yok)";
 };
+
+// ── Toplu satışın yerinde düzenlenmesi (spec 0111) ───────────────────────────────────────────────────────────────────
+export const TOPLU_PARTI_DEGISTI = "Bu parti başka bir bilgisayarda değişti, pencereyi kapatıp yeniden açın.";
+export const TOPLU_SATIR_HATASI = "Kayıt yapılmadı: işaretli satırları düzeltin ya da satırı çöp düğmesiyle çıkarın.";
+export const TOPLU_BOS_HATASI = "En az bir yedek parça ekleyin (parça + miktar).";
+export const TOPLU_GUNCELLENDI = "Toplu yedek parça satışı güncellendi.";
+export const TOPLU_BAYIYE_GECTI = "Toplu yedek parça satışı güncellendi. Alıcı artık bu makina değil, satış bu makinanın geçmişinden çıktı; Stok sekmesinden düzenlenebilir.";
+export const TOPLU_BASKA_MUSTERIYE_GECTI = "Toplu yedek parça satışı güncellendi ve başka bir müşterinin makinasına taşındı; satış artık o makinanın geçmişinde görünür.";
+// R9/2 (triyaj): kayıttan sonraki bildirim. Ölçüt alıcının açık olan makina olup olmadığıdır, yalnız alıcı türü değil.
+export const topluBildirimi = (form, makinaId) => (form?.aliciTipi !== "musteri" ? TOPLU_BAYIYE_GECTI
+  : String(form.musteriId ?? "") !== String(makinaId ?? "") ? TOPLU_BASKA_MUSTERIYE_GECTI : TOPLU_GUNCELLENDI);
+
+// R10: otomatik tam tahsis = tek satır, miktarı kaydın miktarı, müşterisi kaydın alıcısı, seri no ve serbest metin boş. Tarih ölçüte girmez (R10/2).
+export const otomatikTamTahsisMi = (kayit) => {
+  const t = Array.isArray(kayit?.tahsisler) ? kayit.tahsisler : [];
+  return t.length === 1 && kayit.aliciTipi === "musteri" && kayit.musteriId != null
+    && Number(t[0].miktar) === Number(kayit.miktar) && String(t[0].customerId) === String(kayit.musteriId)
+    && !t[0].serialNo && !t[0].makinaSerbest;
+};
+// R10–R12: miktar ve alıcı değişmediyse dokunulmaz; otomatik tam tahsis yeni miktar ve alıcıyla yeniden damgalanır (kendi
+// tarihi korunur), alıcı bayi olduysa boşalır; elle yapılmış tahsis olduğu gibi kalır.
+export const tahsisYenile = (eski, rec) => {
+  const t = Array.isArray(eski?.tahsisler) ? eski.tahsisler : [];
+  const miktarDegisti = Number(eski?.miktar) !== Number(rec?.miktar);
+  const aliciDegisti = eski?.aliciTipi !== rec?.aliciTipi || String(eski?.musteriId ?? "") !== String(rec?.musteriId ?? "");
+  if (!miktarDegisti && !aliciDegisti) return t;
+  if (!otomatikTamTahsisMi(eski)) return t;
+  if (rec.aliciTipi !== "musteri" || !rec.musteriId) return [];
+  return [{ ...t[0], miktar: rec.miktar, customerId: Number(rec.musteriId) }];
+};
+
+// Formun satıra ait olmayan alanları (ortak alanlar); satır ve form içi işaretler kayda girmez.
+const ortakAlanlar = (form) => {
+  const { satirlar, _satirHatalari, _kilitId, batchEdit, _karisikUcretsiz, _odendiAcilis, _acilisIdleri, ...ortak } = form || {};
+  return ortak;
+};
+
+/**
+ * R17: toplu (aynı batchId) satışın düzenleme kararı. React'sız ve saftır; kimlik ve zaman parametreden gelir (R17/2).
+ * Girdi: partinin canlı kayıtları, form (ortak alanlar + `satirlar[]`, her satır geldiği kaydın kimliğini `_kayitId` ile taşır).
+ * Çıktı: { ok, guncellenen, eklenen, silinen (kimlik), silmeDamgasi, stok: [{ islem: "geriAl", kayitId } | { islem: "dus",
+ * partId, miktar, kayitId }] } ya da { ok:false, hata, satirHatalari? }. Ya hep ya hiç: hata varsa hiçbir liste dönmez.
+ */
+export function topluDuzenlemePlani(eskiler, form, { partStock = [], partStockLog = [], ayar = null, kdvRates = undefined, yeniId, olusturmaZamani, silmeDamgasi, bugun = null } = {}) {
+  const canli = (eskiler || []).filter(s => s && !s.deletedAt);
+  const kayitlar = new Map(canli.map(s => [String(s.id), s]));
+  const satirlar = Array.isArray(form?.satirlar) ? form.satirlar : [];
+  // R2/2: satırın taşıdığı kimlik partide yoksa yeni kayıt sayılmaz, düzenleme bütünüyle reddedilir.
+  if (satirlar.some(s => s && s._kayitId != null && !kayitlar.has(String(s._kayitId)))) return { ok: false, hata: TOPLU_PARTI_DEGISTI };
+  // Triyaj (R2/3): form açılırken partide olmayan canlı kayıt (başka bilgisayarın eklediği satır) "çıkarıldı" sayılmaz, reddedilir.
+  if (Array.isArray(form?._acilisIdleri)) {
+    const acilis = new Set(form._acilisIdleri.map(String));
+    if (canli.some(s => !acilis.has(String(s.id)))) return { ok: false, hata: TOPLU_PARTI_DEGISTI };
+  }
+  // Triyaj (R6/4): formdaki "Ödendi" kutusuna dokunulduysa (açılış değerinden farklı) değer ücretli bütün satırlara yazılır;
+  // dokunulmadıysa her satır kendi ödeme durumunu korur (0109 Karar 21 emsali).
+  const odemeDokunuldu = form?._odendiAcilis !== undefined && !!form.odendi !== !!form._odendiAcilis;
+  // R1/2, R1/3: listede duran satırın değeri geçersizse kayıt bütünüyle reddedilir; silme yalnız satırın çıkarılmasıyla olur.
+  const satirHatalari = {};
+  satirlar.forEach((s, i) => {
+    if (!s?.partId) satirHatalari[i] = "Yedek parça seçin.";
+    else if (!((parseInt(s.miktar) || 0) > 0)) satirHatalari[i] = "Miktar 0'dan büyük olmalı.";
+  });
+  const hataSayisi = Object.keys(satirHatalari).length;
+  if (hataSayisi) return { ok: false, hata: hataSayisi === satirlar.length ? TOPLU_BOS_HATASI : TOPLU_SATIR_HATASI, satirHatalari };
+  if (!satirlar.length) return { ok: false, hata: TOPLU_BOS_HATASI };
+  const ortak = ortakAlanlar(form);
+  const kurulan = [];
+  for (const s of satirlar) {
+    const eski = s._kayitId != null ? kayitlar.get(String(s._kayitId)) : null;
+    // R7, R7/2: formun göstermediği teklif bağı ve kart anlık görüntüsü güncellenen kaydın kendisinden.
+    const satirFormu = {
+      ...ortak, partId: s.partId, miktar: s.miktar, birimFiyat: s.birimFiyat, batchId: form.batchId ?? null,
+      teklifId: eski ? (eski.teklifId ?? null) : null, teklifKalemId: eski ? (eski.teklifKalemId ?? null) : null,
+      ...(eski?.kartKomisyonu ? { kartKomisyonu: eski.kartKomisyonu } : {}),
+    };
+    const r = yedekParcaRec(satirFormu, ayar, kdvRates);
+    if (!r.ok) return { ok: false, hata: r.hata };
+    kurulan.push({ eski, satirFormu, rec: r.rec });
+  }
+  const kullanilan = new Set(kurulan.filter(k => k.eski).map(k => String(k.eski.id)));
+  const silinenKayitlar = canli.filter(s => !kullanilan.has(String(s.id)));
+  // R13–R15/2: taban = anlık görüntü + bu düzenlemede geri alınan bütün net düşümler; satırlar form sırasıyla düşer.
+  const taban = new Map();
+  const tabanOf = (pid) => { if (!taban.has(pid)) taban.set(pid, totalMiktar(partStock, pid)); return taban.get(pid); };
+  const geriAl = (kayitId) => {
+    stok.push({ islem: "geriAl", kayitId });
+    for (const [pid, adet] of netDusumleri(partStockLog, kayitId, "bayi_satis")) taban.set(pid, tabanOf(pid) + adet);
+  };
+  const stok = [];
+  silinenKayitlar.forEach(s => geriAl(s.id));
+  const guncellenen = [], eklenen = [], dusulecek = [];
+  let yeniSira = 0;
+  for (const { eski, satirFormu, rec } of kurulan) {
+    if (eski) {
+      let k = yedekParcaGuncelle(eski, rec, satirFormu);
+      // R6/3: ödeme durumu satır başınadır; form işaretiyle ücretsizse ödeme durumu yoktur (0095 R7/2). panoGizli birleştirmeyle kalır.
+      if (!k.ucretsizMi) {
+        if (!odemeDokunuldu) k = { ...k, odendi: !!eski.odendi, tahsilatTarihi: eski.tahsilatTarihi ?? null };
+        else if (!form.odendi) k = { ...k, odendi: false, tahsilatTarihi: null };
+        else {
+          // Zaten ödenmiş satır tarihini korur; yeni işaretlenen satıra tek tık anahtarının kuralıyla o gün (çek ve kartta boş).
+          const cekKK = k.yontem === "Çek" || k.yontem === "Kredi Kartı";
+          k = { ...k, odendi: true, tahsilatTarihi: eski.odendi ? (eski.tahsilatTarihi ?? null) : (cekKK ? null : bugun) };
+        }
+      }
+      k = { ...k, tahsisler: tahsisYenile(eski, k) };
+      guncellenen.push(k);
+      if (!netDusumAyni(partStockLog, eski.id, "bayi_satis", [k])) { geriAl(eski.id); dusulecek.push(k); }
+    } else {
+      const id = yeniId(yeniSira++);
+      const k = { ...rec, id, olusturmaZamani, tahsisler: musteriTahsisi(rec) };
+      eklenen.push(k);
+      dusulecek.push(k);
+    }
+  }
+  for (const k of dusulecek) {
+    const pid = String(k.partId);
+    const dusulen = Math.min(k.miktar, Math.max(0, tabanOf(pid)));
+    taban.set(pid, tabanOf(pid) - dusulen);
+    if (dusulen > 0) stok.push({ islem: "dus", partId: pid, miktar: dusulen, kayitId: k.id });
+  }
+  return { ok: true, guncellenen, eklenen, silinen: silinenKayitlar.map(s => s.id), silmeDamgasi, stok };
+}
+

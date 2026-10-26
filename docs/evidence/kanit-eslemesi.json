@@ -6727,6 +6727,34 @@
         "rapor": "docs/evidence/0110-taban-piksel-raporu.json",
         "ekran": "musteri-detay-0110-kalip",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "musteri-detay-0111-toplu-fabrika",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0111 Karar 22"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "musteri-detay-0111-toplu-adres",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0111 Karar 22"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "musteri-detay-0111-satir-hatasi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0111 Karar 22"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "kilit-toplu-yedek-parca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0111 Karar 22"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "musteri-detay-ucretsiz"
       }
     ],
     "src/components/ServiceForm.jsx": [
@@ -6853,6 +6881,28 @@
         "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-ucretsiz-uyari",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "musteri-detay-0111-toplu-fabrika",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0111 Karar 22"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "musteri-detay-0111-toplu-adres",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0111 Karar 22"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "musteri-detay-0111-satir-hatasi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0111 Karar 22"
+      },
+      {
+        "rapor": "docs/evidence/0111-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-ucretsiz"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [

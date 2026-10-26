@@ -112,7 +112,7 @@ if (ekran === "ayarlar-server-istemci") {
 // Spec 0064 R34: kilitli ekranlar. Görüntü aracı ikinci kullanıcıyı simüle edemez; kilit köprüsü sahte kurulur ve listelenen
 // alanlar (ayar panelinde panel kimliğiyle) başka kullanıcının ("ayse") elindedir. Yalnız "kilit-*" ekranlarında.
 if (ekran.startsWith("kilit-")) {
-  const KILITLI = { "kilit-gider-formu": ["gider"], "kilit-odeme-penceresi": ["gider"], "kilit-katalog-paneli": ["ayar:models"], "kilit-cop-kutusu": ["ayar:trash"], "kilit-geri-yukleme": [] }[ekran] || [];
+  const KILITLI = { "kilit-toplu-yedek-parca": ["yedek_parca:9601"], "kilit-gider-formu": ["gider"], "kilit-odeme-penceresi": ["gider"], "kilit-katalog-paneli": ["ayar:models"], "kilit-cop-kutusu": ["ayar:trash"], "kilit-geri-yukleme": [] }[ekran] || [];
   const kilitli = (t, id) => KILITLI.includes(t) || KILITLI.includes(`${t}:${id}`);
   window.crmLocks = {
     acquire: async (t, id, force) => (kilitli(t, id) && !force ? { ok: false, lockedBy: "ayse", lockedAt: "2026-09-23T09:55:00" } : { ok: true }),
@@ -253,6 +253,14 @@ const YP_0095 = [
   { id: 9503, aliciTipi: "bayi", dealerId: 3, partId: "7", miktar: 4, birimFiyat: 350, currency: "TRY", tarih: "2026-10-12", tahsisler: [], ...UCZ_0095 },
   { id: 9504, aliciTipi: "bayi", dealerId: 4, partId: "7", miktar: 1, birimFiyat: 0, currency: "TRY", tarih: "2026-10-10", fabrikaTeslim: true, tahsisler: [], ...UCZ_0095 },
 ];
+// Spec 0111: Kutu Gıda'ya iki kalemli yedek parça partisi; fabrika teslim ve farklı teslimat adresli iki hâli.
+const YP_0111 = (o = {}) => [9601, 9602].map((id, i) => ({ id, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: i + 2, birimFiyat: 750 + i * 250, currency: "TRY",
+  tarih: "2026-10-20", faturaTipi: "Faturalı Yurtiçi", batchId: 960, odendi: false, yontem: "Nakit", kargoDurum: "", olusturmaZamani: "2026-10-20T10:00:00",
+  tahsisler: [{ miktar: i + 2, customerId: 500, serialNo: "", makinaSerbest: "", tarih: "2026-10-20" }], ...o }));
+const ADRES_0111 = { teslimatFarkli: true, teslimatAd: "Kutu Gıda Depo", teslimatTel: "0232 555 10 10", teslimatAdres: "Kemalpaşa OSB 12. Sokak No 4", teslimatUlke: "Türkiye", teslimatSehir: "İzmir", teslimatIlce: "Kemalpaşa" };
+const detay0111 = (o) => <Customers customers={MUSTERILER} setCustomers={bos} partSales={[]} services={[]} payments={[]} yedekParcaSatislar={YP_0111(o)} setYedekParcaSatislar={bos}
+  dealers={BAYI_LISTE} parts={[{ id: 7, ad: "Rulman" }]} partStock={[{ id: 1, partId: "7", miktar: 20 }]} partStockLog={[]} setPartStock={bos} setPartStockLog={bos}
+  setServices={bos} setPartSales={bos} calisanlar={CAL} initialDetailId={500} showToast={bos} aktifKullanici="kerem" />;
 const MUSTERI_0095_BITMIS = MUSTERILER.map(c => (c.id === 500 ? { ...c, warrantyEnd: "2025-08-10" } : c));
 const MUSTERI_0095_AKTIF = MUSTERILER.map(c => (c.id === 500 ? { ...c, warrantyEnd: "2028-08-10" } : c));
 const SATIS_0079 = { ...SATIS, customers: MUSTERI_0079, services: SERVIS_0079, partSales: KALIP_0079, yedekParcaSatislar: YP_0079 };
@@ -1321,6 +1329,12 @@ const EKRANLAR = {
   "bayi-detay-ucretsiz": [bayiDetay(3, { yedekParcaSatislar: YP_0095 }), ["kaydir:Yedek Parça Geçmişi"]],
   "musteri-detay-ucretsiz": [<Customers customers={MUSTERILER} setCustomers={bos} partSales={[]} services={[]} payments={[]} yedekParcaSatislar={YP_0095} dealers={BAYI_LISTE}
     parts={[{ id: 7, ad: "Rulman" }]} setServices={bos} setPartSales={bos} setYedekParcaSatislar={bos} calisanlar={CAL} initialDetailId={500} />, ["kaydir:Makina Geçmişi"]],
+
+  // Spec 0111: toplu form ortak alanları birincil kayıttan (R6): fabrika teslim seçili, farklı adres dolu; satır hatası (R1/3); kilit (R21).
+  "musteri-detay-0111-toplu-fabrika": [detay0111({ fabrikaTeslim: true }), ["*Yedek Parça (Fabrika Teslim) (2 kalem)", "kaydir:Teslim Şekli"]],
+  "musteri-detay-0111-toplu-adres": [detay0111(ADRES_0111), ["*Yedek Parça (Kargo) (2 kalem)", "kaydir:Açık Adres"]],
+  "musteri-detay-0111-satir-hatasi": [detay0111(), ["*Yedek Parça (Kargo) (2 kalem)", "doldur:Adet=0", "Kaydet", "kaydir:Miktar 0'dan büyük olmalı."]],
+  "kilit-toplu-yedek-parca": [detay0111(), ["*Yedek Parça (Kargo) (2 kalem)", "kaydir:Bu kayıt şu an düzenleniyor"]],
 
   "giderler-0079-kdv": [<GiderEkrani satis={SATIS_0079} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0081: kutu kapalı başlar
   "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],

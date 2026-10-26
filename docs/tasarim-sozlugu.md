@@ -60,7 +60,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 
 **Örnek:** `src/components/Giderler.jsx:294`
 **Örnek:** `src/components/Documents.jsx:1112`
-**Örnek:** `src/components/Customers.jsx:515` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Customers.jsx:516` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:58` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:332` (form içi, düğme kipi, eşit genişlik)
@@ -177,7 +177,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
 **Örnek:** `src/components/Giderler.jsx:361`
-**Örnek:** `src/components/Customers.jsx:550` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Customers.jsx:551` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi

@@ -1612,3 +1612,59 @@ describe("Spec 0101: stok satırının kalıp çapı", () => {
     expect(readFileSync("electron/serverAuth.cjs", "utf8")).not.toMatch(/kalipCapi/);
   });
 });
+
+// Spec 0111 R18, R18/2, C8: toplu yedek parça düzenlemesi yerinde güncellediği için, satır eklemeyen ve çıkarmayan bir düzenleme
+// artık ekleme/silme izni istemez. İzin kümesi R18/2: müşteri detayının düzenleme izni + boş olmayan ama ekleme/silme/düzenleme
+// içermeyen stok dizisi + TANIMLI bayi dizisi (plan turu Karar 13: tanımsız `dealerActions` tam yetki sayılır ve
+// `dealer_yedek_parca_add` ile ekleme, `dealer_delete` ile bölüm kapısı geçerdi). Sunucu kodu değişmedi; bu blok ölçümdür.
+describe("Spec 0111: toplu yedek parça düzenlemesi sunucuda", () => {
+  const kullanici = JSON.stringify({ tabs: ["dashboard", "customers"], customerActions: ["cust_yedek_parca_edit"], stockActions: ["stock_makina_edit"], dealerActions: [] });
+  const k = (id, o = {}) => ({ id, batchId: 50, aliciTipi: "musteri", musteriId: 1001, partId: "81", miktar: 2, birimFiyat: 100, currency: "TRY", kargoDurum: "", ...o });
+  const log = (id, referansId, miktar, tip = "bayi_satis") => ({ id, partId: "81", miktar, tip, referansId, tarih: "2026-10-01", notlar: "" });
+  const eski = { yedekParcaSatislar: [k(101), k(102)], partStock: [{ id: 1, partId: "81", miktar: 6 }], partStockLog: [log(1, 101, -2), log(2, 102, -2)] };
+  const yaz = (yeni) => {
+    const bolumler = degisenBolumler(eski, yeni);
+    const b = yazmaYetkisiVar(kullanici, "user", bolumler, eski, yeni);
+    return b.ok ? eylemDenetimi(eski, yeni, kullanici, "user") : b;
+  };
+
+  it("AC-20: satır eklemeyen ve çıkarmayan düzenleme (fiyat + miktar, stok hareketiyle) 200", () => {
+    const yeni = {
+      yedekParcaSatislar: [k(101, { birimFiyat: 150 }), k(102, { miktar: 3 })],
+      partStock: [{ id: 1, partId: "81", miktar: 5 }],
+      partStockLog: [...eski.partStockLog, log(3, 102, 2, "bayi_satis_iade"), log(4, 102, -3)],
+    };
+    expect(degisenBolumler(eski, yeni).sort()).toEqual(["partStock", "partStockLog", "yedekParcaSatislar"]);
+    expect(yaz(yeni).ok).toBe(true);
+  });
+
+  it("AC-21: aynı kullanıcı satır eklerse yedek parça ekleme izni, çıkarırsa silme izni ister ve reddedilir", () => {
+    const ekle = yaz({ ...eski, yedekParcaSatislar: [...eski.yedekParcaSatislar, k(103)] });
+    expect(ekle.ok).toBe(false);
+    expect(ekle.islem).toBe("ekle");
+    const sil = yaz({ ...eski, yedekParcaSatislar: [k(101), k(102, { deletedAt: "2026-10-26T09:00:00.000Z" })] });
+    expect(sil.ok).toBe(false);
+    expect(sil.islem).toBe("sil");
+  });
+
+  it("AC-31: stockActions: [] olan aynı düzenleme bölüm kapısından reddedilir (C8 bilinen sınırı, kapı gevşetilmez)", () => {
+    const stoksuz = JSON.stringify({ tabs: ["dashboard", "customers"], customerActions: ["cust_yedek_parca_edit"], stockActions: [], dealerActions: [] });
+    const yeni = { ...eski, yedekParcaSatislar: [k(101, { birimFiyat: 150 }), k(102)] };
+    const r = yazmaYetkisiVar(stoksuz, "user", degisenBolumler(eski, yeni), eski, yeni);
+    expect(r.ok).toBe(false);
+    expect(r.reddedilenBolum).toBe("yedekParcaSatislar");
+  });
+
+  it("Karar 13: bayi boyutu tanımsız bırakılırsa ekleme bayi izninden geçer (izin kümesinin neden üç boyutu sabitlediği)", () => {
+    const tanimsiz = JSON.stringify({ tabs: ["dashboard", "customers"], customerActions: ["cust_yedek_parca_edit"], stockActions: ["stock_makina_edit"] });
+    const yeni = { ...eski, yedekParcaSatislar: [...eski.yedekParcaSatislar, k(103)] };
+    expect(eylemDenetimi(eski, yeni, tanimsiz, "user").ok).toBe(true);
+  });
+
+  it("AC-35: kargo durumunu değiştiren toplu düzenleme yedek_parca_edit ister ve reddedilir; dokunmayan aynı düzenleme 200", () => {
+    const kargo = yaz({ ...eski, yedekParcaSatislar: [k(101, { kargoDurum: "Hazırlanıyor" }), k(102, { kargoDurum: "Hazırlanıyor" })] });
+    expect(kargo.ok).toBe(false);
+    expect(kargo.gerekli).toBe("yedek_parca_edit");
+    expect(yaz({ ...eski, yedekParcaSatislar: [k(101, { notlar: "x" }), k(102, { notlar: "x" })] }).ok).toBe(true);
+  });
+});

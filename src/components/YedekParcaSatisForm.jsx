@@ -1,7 +1,7 @@
 import { CUR_SYM, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
-import { Ipucu, Segment, UyariSeridi } from "./tasarim";
+import { Ipucu, Segment, UyariSeridi, HataMetni } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
 import { satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
@@ -47,10 +47,13 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
   // Ekleme modunda birden çok parça satılabilir → form.satirlar [{partId, miktar, birimFiyat}].
   // Düzenlemede tek kayıt düzenlenir (form.partId/miktar/birimFiyat, satırlar kullanılmaz).
   const satirlar = form.satirlar && form.satirlar.length ? form.satirlar : [{ partId: "", miktar: "", birimFiyat: "" }];
-  const setSatir = (i, alan, deger) => setForm(p => ({ ...p, satirlar: (p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]).map((s, idx) => idx === i ? { ...s, [alan]: deger } : s) }));
-  const satirEkle = () => setForm(p => ({ ...p, satirlar: [...(p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]), { partId: "", miktar: "", birimFiyat: "" }] }));
-  const satirSil = (i) => setForm(p => ({ ...p, satirlar: (p.satirlar || []).filter((_, idx) => idx !== i) }));
-  const parcaSec = (i, prc) => setForm(p => ({ ...p, satirlar: (p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]).map((s, idx) => idx === i ? { ...s, partId: String(prc.id), birimFiyat: s.birimFiyat || partFiyatForCurrency(prc, p.currency || "TRY") || "" } : s) }));
+  // Spec 0111 R2: toplu düzenlemede satır geldiği kaydın kimliğini (`_kayitId`) yayılmayla taşır; yeni satır kimliksiz doğar.
+  // Satır hataları (R1/2) satırlar değişince düşer: konumlar kayabilir.
+  const hatasiz = (p) => { const { _satirHatalari, ...k } = p; return k; };
+  const setSatir = (i, alan, deger) => setForm(p => ({ ...hatasiz(p), satirlar: (p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]).map((s, idx) => idx === i ? { ...s, [alan]: deger } : s) }));
+  const satirEkle = () => setForm(p => ({ ...hatasiz(p), satirlar: [...(p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]), { partId: "", miktar: "", birimFiyat: "" }] }));
+  const satirSil = (i) => setForm(p => ({ ...hatasiz(p), satirlar: (p.satirlar || []).filter((_, idx) => idx !== i) }));
+  const parcaSec = (i, prc) => setForm(p => ({ ...hatasiz(p), satirlar: (p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]).map((s, idx) => idx === i ? { ...s, partId: String(prc.id), birimFiyat: s.birimFiyat || partFiyatForCurrency(prc, p.currency || "TRY") || "" } : s) }));
   const toplam = isEdit
     ? miktar * birim
     : satirlar.reduce((s, r) => s + (parseInt(r.miktar) || 0) * parseMoney(r.birimFiyat), 0);
@@ -223,6 +226,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                       style={{ background: "none", border: "none", cursor: satirlar.length <= 1 ? "default" : "pointer", color: satirlar.length <= 1 ? "var(--n300, #cbd5e1)" : "var(--red600, #dc2626)", padding: "8px 4px" }}>
                       <Icon name="trash" size={15} />
                     </button>
+                    {form._satirHatalari?.[i] ? <div data-testid={`satir-hatasi-${i}`} style={{ gridColumn: "1 / -1" }}><HataMetni>{form._satirHatalari[i]}</HataMetni></div> : null}
                   </div>
                 );
               })}

@@ -31,10 +31,12 @@ import { deriveCustomerDetail } from "./detail/deriveCustomerDetail";
 import { ServiceForm } from "../ServiceForm";
 import { PartSaleForm } from "../PartSaleForm";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
-import { yeniYedekParcaSatisCoklu, yedekParcaRec, satisPartisi, yedekParcaGuncelle } from "../../lib/yedekParcaSatis";
+import { yeniYedekParcaSatisCoklu, yedekParcaRec, satisPartisi, yedekParcaGuncelle, topluDuzenlemePlani, kargoPlanlandiMi, topluBildirimi } from "../../lib/yedekParcaSatis";
 import { yedekParcaGeriAl, yedekParcaDus } from "../../lib/yedekParcaStok";
 import { netDusum, netDusumAyni } from "../../lib/stokHareketi";
 import { useLock } from "../../hooks/useLock";
+import { useKilitListesi } from "../../hooks/useKilitListesi";
+import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { useFormDraft } from "../../hooks/useFormDraft";
 import { renderMailTemplate } from "../../lib/mailTemplates";
 import { yerelServisEkle } from "../../lib/yerelServis";
@@ -61,6 +63,8 @@ export const CustomerDetailModal = ({
   isCustomer,
   canDo = () => true,
   serverPermissions = null,
+  // Spec 0111 R21: toplu düzenlemenin kayıt anında kilit denetimi kendi kilidimizi başkasınınki saymasın.
+  aktifKullanici = null,
   // Spec 0106 R26/2: Customers'ın kurduğu üretim formu haritası ve Extra Kalıp grubu.
   durumBaglami = null,
   customers, setCustomers,
@@ -111,7 +115,9 @@ export const CustomerDetailModal = ({
   const { lockConflict: detailLock, forceAcquire: forceDetailLock } = useLock("customer", detailView?.id ?? null);
   // Yedek parça (kargo) satışı DÜZENLERKEN "yedek_parca" kilidi al — Stok sekmesi ve Servis/Kargo
   // Panosu ile aynı alanı paylaşır, aynı satış aynı anda iki yerden düzenlenemez.
-  const { lockConflict: ypLock, forceAcquire: forceYpLock } = useLock("yedek_parca", ypForm?.id ?? null);
+  // Spec 0111 R21: toplu düzenleme partinin birincil kaydının kilidini alır (`_kilitId`).
+  const { lockConflict: ypLock, forceAcquire: forceYpLock } = useLock("yedek_parca", ypForm?.id ?? ypForm?._kilitId ?? null);
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
 
   const todayStr = today();
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -299,11 +305,16 @@ export const CustomerDetailModal = ({
         batchEdit: true, batchId: rec.batchId,
         aliciTipi: rec.aliciTipi, musteriId: rec.musteriId, dealerId: rec.dealerId,
         currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi, hesapId: rec.hesapId ?? null,
+        // Spec 0111 R6: formun gösterdiği ortak alanlar birincil kayıttan (teslim şekli, farklı adres, tevkifat); R21 kilit anahtarı.
+        _kilitId: rec.id, _acilisIdleri: grup.map(s => s.id), _odendiAcilis: !!rec.odendi, fabrikaTeslim: !!rec.fabrikaTeslim, teslimatFarkli: !!rec.teslimatFarkli,
+        teslimatAd: rec.teslimatAd || "", teslimatTel: rec.teslimatTel || "", teslimatAdres: rec.teslimatAdres || "",
+        teslimatUlke: rec.teslimatUlke || "", teslimatSehir: rec.teslimatSehir || "", teslimatIlce: rec.teslimatIlce || "",
+        ...(rec.tevkifatli ? { tevkifatli: true, tevkifatPay: rec.tevkifatPay, tevkifatPayda: rec.tevkifatPayda } : {}),
         yontem: rec.yontem || "Nakit", vadeTarihi: rec.vadeTarihi || "", tahsilEdildi: !!rec.tahsilEdildi,
         taksitSayisi: rec.taksitSayisi || "", kkYansit, kartTarihi: rec.kartKomisyonu?.bazTarih || "",
         kargoFirma: rec.kargoFirma, kargoTakipNo: rec.kargoTakipNo, kargoTarih: rec.kargoTarih, kargoDurum: rec.kargoDurum,
         kargoSorumlusu: rec.kargoSorumlusu, panoDusmeZamani: rec.panoDusmeZamani, notlar: rec.notlar,
-        satirlar: grup.map(s => ({ partId: s.partId, miktar: String(s.miktar), birimFiyat: ypKalemBirim(s) })),
+        satirlar: grup.map(s => ({ _kayitId: s.id, partId: s.partId, miktar: String(s.miktar), birimFiyat: ypKalemBirim(s) })),
         // Spec 0095 R13, R23: işaret form düzeyindedir. Karışık partide (düzenlemeyle oluşur) işaret yalnız bütün satırlar
         // ücretsizse gelir: yeniden kayıt ücretli bir satırın borcunu sessizce silmesin, tersine ücretsiz satır görünür borç olur.
         ...(grup.length > 0 && grup.every(satisUcretsizMi) ? { ucretsizMi: true } : {}),
@@ -316,29 +327,33 @@ export const CustomerDetailModal = ({
   };
   const saveYedekParca = () => {
     if (ypForm.batchEdit) {
-      // Toplu düzenleme: eski gruptaki kayıtları sil (stok geri al) + satırlardan yeniden oluştur.
-      // Alıcı müşteri olduğundan yeni satırlar otomatik bu makinaya tahsis edilir (tahsis korunur).
-      const satirlar = (ypForm.satirlar || []).filter(s => s.partId && (parseInt(s.miktar) || 0) > 0);
-      if (!satirlar.length) { showToast("En az bir yedek parça ekleyin (parça + miktar).", "err"); return; }
+      // Spec 0111: toplu düzenleme yerinde güncellenir. Karar saf fonksiyonda (R17); burada yalnız uygulanır. Satır çıkarılmadıkça
+      // hiçbir kayıt silinmez, kimlik, parti kimliği ve oluşturma zamanı durur.
       const eskiler = (yedekParcaSatislar || []).filter(s => s.batchId === ypForm.batchId && !s.deletedAt);
-      const geriGelen = {}; // partId → eski satıştan stoğa geri gelen miktar (sentetik stok için)
-      for (const s of eskiler) {
-        const dus = netDusum(partStockLog, s.id, "bayi_satis", s.partId); // spec 0065 R7: karşı hareketler düşülür
-        geriGelen[String(s.partId)] = (geriGelen[String(s.partId)] || 0) + dus;
+      const kilit = baskasiKilitli("yedek_parca", eskiler.map(s => s.id)); // R21: kayıt anında partinin bütün kayıtları
+      if (kilit) { showToast(kilitRedMesaji(kilit), "err"); return; }
+      const plan = topluDuzenlemePlani(eskiler, ypForm, {
+        partStock, partStockLog, ayar: appSettings?.krediKartiKomisyonlari, kdvRates,
+        yeniId: () => uid(), olusturmaZamani: simdiYerel(), silmeDamgasi: new Date().toISOString(), bugun: today(),
+      });
+      if (!plan.ok) {
+        if (plan.satirHatalari) setYpForm(p => ({ ...p, _satirHatalari: plan.satirHatalari }));
+        showToast(plan.hata, "err");
+        return;
       }
-      eskiler.forEach(s => yedekParcaGeriAl(s.id, setPartStock, setPartStockLog));
-      const eskiIds = new Set(eskiler.map(s => s.id));
-      const damga = new Date().toISOString();
-      setYedekParcaSatislar(p => p.map(s => eskiIds.has(s.id) ? { ...s, deletedAt: damga } : s));
-      const bilinen = new Set((partStock || []).map(ps => String(ps.partId)));
-      const sanalStok = [
-        ...(partStock || []).map(ps => ({ ...ps, miktar: (ps.miktar || 0) + (geriGelen[String(ps.partId)] || 0) })),
-        ...Object.keys(geriGelen).filter(pid => !bilinen.has(pid)).map(pid => ({ id: "_g" + pid, partId: pid, miktar: geriGelen[pid] })),
-      ];
-      const r = yeniYedekParcaSatisCoklu({ ...ypForm, batchId: null }, { setYedekParcaSatislar, setPartStock, setPartStockLog, partStock: sanalStok, ayar: appSettings?.krediKartiKomisyonlari, kdvRates });
-      if (!r.ok) { showToast(r.hata, "err"); return; }
-      r.ids.forEach(id => logAction({ serverPermissions, action: "duzenlendi", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
-      showToast("Toplu yedek parça satışı güncellendi.");
+      plan.stok.forEach(o => (o.islem === "geriAl"
+        ? yedekParcaGeriAl(o.kayitId, setPartStock, setPartStockLog)
+        : yedekParcaDus(o.partId, o.miktar, o.kayitId, setPartStock, setPartStockLog)));
+      const guncel = new Map(plan.guncellenen.map(k => [k.id, k]));
+      const sil = new Set(plan.silinen);
+      // Eklenen kayıt dizinin SONUNA: birincil kayıt (dizideki ilk canlı) ve partinin dosya bağı yerinde kalsın (X8).
+      setYedekParcaSatislar(p => [...p.map(s => guncel.has(s.id) ? guncel.get(s.id) : sil.has(s.id) ? { ...s, deletedAt: plan.silmeDamgasi } : s), ...plan.eklenen]);
+      // R20/2: eklenen satır yeni kargodur; ekleyen bilgisayarda bastırılır, diğerlerinde alarm çalar (yeniYedekParcaSatis emsali).
+      plan.eklenen.forEach(k => { if (!kargoPlanlandiMi(k, simdiYerel())) yerelServisEkle(k.id); });
+      plan.guncellenen.forEach(k => logAction({ serverPermissions, action: "duzenlendi", entity: "yedek_parca_satis", entityId: k.id, entityName: detailView?.name }));
+      plan.eklenen.forEach(k => logAction({ serverPermissions, action: "olusturuldu", entity: "yedek_parca_satis", entityId: k.id, entityName: detailView?.name }));
+      plan.silinen.forEach(id => logAction({ serverPermissions, action: "silindi", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
+      showToast(topluBildirimi(ypForm, detailView?.id)); // R9/2
       setYpForm(null);
       return;
     }
@@ -1512,7 +1527,7 @@ export const CustomerDetailModal = ({
         />
       )}
 
-      {ypForm && ((ypLock && ypForm.id) ? (
+      {ypForm && ((ypLock && (ypForm.id || ypForm._kilitId)) ? (
         <Modal title="Yedek Parça Satışını Düzenle" onClose={() => setYpForm(null)}>
           <LockConflict lockedBy={ypLock.lockedBy} lockedAt={ypLock.lockedAt} onForce={forceYpLock} onCancel={() => setYpForm(null)} />
         </Modal>

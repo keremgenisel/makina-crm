@@ -38,6 +38,7 @@ export const Customers = ({
   kasaHesaplari = [], tahsilatHesapYetki = false, tahsilatHesapVarsayilan = null,
   // Spec 0040: çek kaydı tahsilatla (ilk satış ödemesi dahil) doğar.
   cekler = [], setCekler = null,
+  aktifKullanici = null, // spec 0111 R21: detay penceresinin toplu düzenleme kilit denetimi
   gorusmeler = [], setGorusmeler = null,
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false,
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
@@ -689,7 +690,7 @@ export const Customers = ({
           onSwitchMachine={setDetailViewId}
           onOpenEdit={openEdit}
           canDo={canDo}
-          kasaHesaplari={kasaHesaplari} tahsilatHesapYetki={tahsilatHesapYetki} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} cekler={cekler} setCekler={setCekler}
+          kasaHesaplari={kasaHesaplari} tahsilatHesapYetki={tahsilatHesapYetki} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} cekler={cekler} setCekler={setCekler} aktifKullanici={aktifKullanici}
           onOpenAddForFirm={openAddForFirm}
           isCustomer={isCustomer}
           customers={customers} setCustomers={setCustomers}
