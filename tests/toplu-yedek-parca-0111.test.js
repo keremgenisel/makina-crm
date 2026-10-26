@@ -328,3 +328,22 @@ describe("Spec 0111 triyaj: bildirim (R9/2)", () => {
     expect(topluBildirimi({ aliciTipi: "bayi", dealerId: 71 }, 1001)).toBe(TOPLU_BAYIYE_GECTI);
   });
 });
+
+// Kapanış belge düzeni (0110 emsali). Plan specs/done'a taşındığında CLAUDE.md'nin 0111 bölümü commit satırını taşır, spec atıf
+// testinin taşınacaklar listesi boşalır, eski spec kopyası kalmaz ve kanıt kayıtları tabanda `ayni`dır. Taşınmadan önce sınanmaz.
+describe("Spec 0111: kapanış belge düzeni", () => {
+  it("plan done'daysa: CLAUDE.md 0111 bölümünde 'Tamamlandı: commit', TASINACAK'ta 0111 yok, eski kopya yok, kanıt tabanda ayni", async () => {
+    const { existsSync } = await import("node:fs");
+    if (!existsSync(path.join(kok, "specs/done/0111-uygulama-plani.md"))) return;
+    const claude = oku("CLAUDE.md");
+    const bolum = claude.slice(claude.indexOf("(spec 0111, plan"), claude.indexOf("(spec 0110, plan"));
+    expect(bolum).toMatch(/Tamamlandı: commit `[0-9a-f]{7}`/);
+    expect(bolum).not.toMatch(/specs\/0111-/);
+    expect(oku("tests/spec-atiflari.test.js")).not.toMatch(/TASINACAK = \[[^\]]*0111/);
+    expect(existsSync(path.join(kok, "specs/0111-toplu-yedek-parca-duzenlemesi-yerinde.md"))).toBe(false);
+    const kanit = JSON.parse(oku("docs/evidence/kanit-eslemesi.json")).dosyalar;
+    const kayitlar = Object.values(kanit).flat().filter(k => k.rapor.includes("/0111-"));
+    expect(kayitlar.length).toBeGreaterThan(0);
+    expect(kayitlar.filter(k => k.beklenen === "degisti" || k.onay)).toEqual([]);
+  });
+});

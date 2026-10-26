@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (revizyon 3: plan turu Karar 13–23 ve triyaj R2/3, R6/4, R9/2, AC-46–49, 2026-10-26) |
+| **Durum** | Tamamlandı (revizyon 3: plan turu Karar 13–23 ve triyaj R2/3, R6/4, R9/2, AC-46–49, 2026-10-26; uygulama commit `50c070f`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteri detay penceresinin yedek parça satışı düzenlemesi (`src/components/customers/CustomerDetailModal.jsx:291-316` form açılışı, `:318-344` toplu kayıt kolu, `:114` kayıt kilidi, `:1515` çakışma ekranı), yeni saf karar fonksiyonu (`src/lib/yedekParcaSatis.js`; bugünkü `yedekParcaRec` `:37-110`, `yedekParcaGuncelle` `:113`, `musteriTahsisi` `:126-133`, `yeniYedekParcaSatisCoklu` `:159-180` değişmez, yalnız `:23` yorumu düzeltilir), form satırının kimlik taşıması (`src/components/YedekParcaSatisForm.jsx:49-53`). Dolaylı: Çöp Kutusu'nun yedek parça satırı (`src/components/settings/SettingsTrash.jsx:344`) artık bu yoldan beslenmez |
@@ -326,10 +326,13 @@ Takım Yöneticisi 2026-10-26'da QA turunun **21 bulgusunun hepsini** analistin 
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `50c070f` | Dal `feat/0111-toplu-yedek-parca`, taban `ae2236c`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (B-1–B-3, Ö-1–Ö-7, K-1–K-11), plan turu (Karar 13–23; Karar 13 uygulamada ölçülerek bulundu), triyaj (R2/3, R6/4, R9/2, AC-46–49) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: beş bulgu (1 orta-yüksek, 1 orta, 1 düşük-orta, 2 düşük): formdaki Ödendi kutusu yok sayılıyordu; form açıkken başka bilgisayarın eklediği satır çöpe gidiyordu; ekleyen bilgisayarda alarm bastırması testsizdi; başka müşteriye taşımada bildirim yanlıştı; ana dizindeki spec kopyası eskiydi |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 419 dosya, 5656 test (Electron dahil); lint 0 hata; tip denetimi temiz |
+| **Kaçan hata** | 2 | Ödendi kutusu gerilemesi ve eşzamanlı ekleme; ikisi de spec'in R6/3 ve R2/2'sinin kapsamadığı yönlerdi, triyajda yakalandı |
 
-**Bu spec'ten çıkarılan ders:**
+**Görsel kanıt:** 56 ekran × 2 tema; dört yeni ekran (fabrika teslimli ve farklı adresli toplu form, satır hatası, kilit) değişti, var olan 52 ekran eski kodla 0 piksel; taban son kodla 112 görüntü 0 fark.
+
+**Bu spec'ten çıkarılan ders:** "Satır başına korunur" kuralı yazılırken formda o alanın görünür bir denetimi olup olmadığına bakılmalı: görünür kutu kayıtta yok sayılırsa sessiz gerileme olur, doğru kalıp "dokunulduysa yaz" işaretidir (0109 Karar 21). Bir kümeyi "formda yok = çıkarıldı" diye okumak eşzamanlı eklemeyi siler; ret ölçütü iki yönlü yazılmalı (formdaki kimlik partide yok, partideki kimlik açılışta yok). Sunucu izin kümesi ölçülürken bütün boyutlar tanımlı yazılmalı: tanımsız boyut tam yetki sayılır.

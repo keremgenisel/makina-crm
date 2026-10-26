@@ -1,6 +1,6 @@
 # 0111 Uygulama planı: toplu yedek parça satışı yerinde düzenlenir
 
-Spec: `specs/0111-toplu-yedek-parca-duzenlemesi-yerinde.md` (revizyon 3: plan turu Karar 13–23, triyaj R2/3, R6/4, R9/2). Dal `feat/0111-toplu-yedek-parca`, taban `ae2236c` (v3.50.0).
+Spec: `specs/done/0111-toplu-yedek-parca-duzenlemesi-yerinde.md` (revizyon 3: plan turu Karar 13–23, triyaj R2/3, R6/4, R9/2). Dal `feat/0111-toplu-yedek-parca`, taban `ae2236c` (v3.50.0). Tamamlandı: uygulama commit `50c070f`.
 
 ## 1. Dosyalar
 
