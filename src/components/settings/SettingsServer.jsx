@@ -187,6 +187,7 @@ export function SettingsServer({ flash, settingsGroups = [], version = "" }) {
   const [regenConfirm, setRegenConfirm] = useState(false); // TLS sertifikası yenileme onayı
   const [tlsOnlyConfirm, setTlsOnlyConfirm] = useState(false); // yalnız-HTTPS açma onayı
   const [connTrust, setConnTrust] = useState(null); // istemci bağlan formu TLS parmak izi onayı { fp, mismatch }
+  const [kullaniciNesli, setKullaniciNesli] = useState(0); // spec 0112 R11: Kullanıcı Yönetimi her yüklemede artırır, kart tazelenir
   const [connTrustChecked, setConnTrustChecked] = useState(false); // parmak izini karşılaştırdım onayı
   const [connTrustMode, setConnTrustMode] = useState(null); // null | "trust" | "force" — onaylanan güven bu akışta sürer
 
@@ -347,9 +348,9 @@ export function SettingsServer({ flash, settingsGroups = [], version = "" }) {
           </div>
         </KartBolum>
         {/* Spec 0085 R13, R17: kart yalnız sunucu PC'de ve sunucu çalışırken; istemci dalı değişmez. */}
-        {running && <BagliBilgisayarlar version={version} />}
+        {running && <BagliBilgisayarlar version={version} tazele={kullaniciNesli} />}
         {running && <SettingsTwoFactor flash={flash} />}
-        {running && <KartBolum title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} /></KartBolum>}
+        {running && <KartBolum title="Kullanıcı Yönetimi" icon="settings"><UserManager flash={flash} settingsGroups={settingsGroups} onKullaniciDegisti={() => setKullaniciNesli(n => n + 1)} /></KartBolum>}
       </>
     );
   }

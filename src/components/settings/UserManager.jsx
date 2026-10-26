@@ -13,7 +13,7 @@ import { gorunurSekmeler } from "../../lib/permissions";
 // Kullanıcı yönetimi paneli (sunucu modunda). SettingsServer.jsx'ten ayrıldı: kullanıcı
 // listeleme/ekleme/silme, rol/sekme/işlem izinleri düzenleme, şifre değiştirme, oturum
 // kapatma, 2FA sıfırlama. İzin tanımları serverPermissionDefs.js'ten gelir.
-export function UserManager({ flash, settingsGroups = [] }) {
+export function UserManager({ flash, settingsGroups = [], onKullaniciDegisti = null }) {
   const allSettingIds      = [...settingsGroups.flatMap(g => g.items.map(i => i.id)), DANGER_SECTION.id];
   const allActionIds       = CUSTOMER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
   const allDealerActionIds = DEALER_ACTION_GROUPS.flatMap(g => g.items.map(i => i.id));
@@ -55,7 +55,7 @@ export function UserManager({ flash, settingsGroups = [] }) {
     setLoading(true);
     const res = await window.appServer.apiRequest({ method: "GET", path: "/api/users" });
     setLoading(false);
-    if (res?.ok) setUsers(res.data);
+    if (res?.ok) { setUsers(res.data); onKullaniciDegisti?.(); } // spec 0112 R11: bağlı bilgisayarlar kartı listeyi tazeler
   };
   useEffect(() => { load(); }, []);
 

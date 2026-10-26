@@ -929,6 +929,21 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("2FA sıfırlama olayı kaydedildi", secAll.rows.some(r => r.action === "2fa_sifirlandi" && r.target === "tfa"));
   const secByAction = await (await api("/api/security-log?action=giris_basarili", {}, adminTok)).json();
   check("action filtresi yalnız giris_basarili döner", secByAction.rows.every(r => r.action === "giris_basarili"));
+  // ── Spec 0112 AC-15, C1: kullanıcı silmek denetim izini silmez. Silinen kullanıcının giriş kaydı (sürümüyle) durur,
+  // üstüne silmenin kendi `kullanici_silindi` kaydı eklenir; bu eylem kartın saydığı iki eylemden biri değildir. ─────────
+  {
+    dbmod.createUser("silinecek0112", bcrypt.hashSync("silin123", 10), "user", null);
+    const gs = await api("/auth/login", { method: "POST", headers: { "X-App-Surum": "9.2.0" }, body: JSON.stringify({ username: "silinecek0112", password: "silin123" }) });
+    check("spec 0112 AC-15: silinecek kullanıcı sürüm başlığıyla giriş yapar", gs.status === 200);
+    const sid = dbmod.getUserByUsername("silinecek0112").id;
+    check("spec 0112 AC-15: yönetici kullanıcıyı siler → 200", (await api(`/api/users/${sid}`, { method: "DELETE" }, adminTok)).status === 200);
+    check("spec 0112 AC-15: kullanıcı listeden düştü", !(await (await api("/api/users", {}, adminTok)).json()).some(u => u.username === "silinecek0112"));
+    const giris = (await (await api("/api/security-log?action=giris_basarili&limit=500", {}, adminTok)).json()).rows.filter(r => r.actor === "silinecek0112");
+    check("spec 0112 AC-15: silinen kullanıcının giriş kaydı ve sürümü Kullanıcı Geçmişi'nde aynen durur",
+      giris.length === 1 && JSON.parse(giris[0].detail || "{}").istemciSurum === "9.2.0");
+    const silindi = (await (await api("/api/security-log?action=kullanici_silindi&limit=500", {}, adminTok)).json()).rows;
+    check("spec 0112 AC-15: silmenin kendi kullanici_silindi kaydı eklendi", silindi.some(r => r.target === "silinecek0112"));
+  }
   // ── Spec 0085: istemci sürümü başlığı (R5–R8, R20; AC-8, AC-11, AC-12, AC-13, AC-32) ──────────
   // Başlık yalnız kayda yazılır: kırpılır, hiçbir karar ona bakmaz. Başlıksız istekte anahtar hiç yazılmaz.
   {

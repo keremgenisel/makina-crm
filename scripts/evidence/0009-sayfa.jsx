@@ -63,7 +63,7 @@ if (ekran === "ayarlar-0068-auditlog") {
 // Spec 0085 (R23, revizyon 3 P1): Kullanıcı Geçmişi'nde sürüm rozeti ve sunucu PC'deki "Bağlı bilgisayarlar ve sürümleri"
 // kartı. Araçta köprü yok: güvenlik geçmişi (yerel IPC) ve sunucu kipindeki appServer sahte kurulur. Araç Settings'e
 // version="3.39.0" verdiği için kartın tabanı v3.39.0; satırlar biri eski, biri güncel, biri sürümsüz, biri geri döngü (sayılmaz).
-if (ekran === "ayarlar-guvenlik-gecmisi" || ekran === "ayarlar-server-sunucu") {
+if (ekran === "ayarlar-guvenlik-gecmisi" || ekran === "ayarlar-server-sunucu" || ekran.startsWith("ayarlar-server-0112")) {
   const SATIRLAR = [
     { id: 9, ts: "2026-09-23T09:40:00.000Z", actor: "muhasebe", action: "oturum_yenilendi", target: "muhasebe", ip: "192.168.1.21", detail: JSON.stringify({ istemciSurum: "3.39.0" }) },
     { id: 8, ts: "2026-09-23T09:10:00.000Z", actor: "servis", action: "giris_basarili", target: null, ip: "192.168.1.30", detail: JSON.stringify({ rol: "user", ikiAdimli: false, istemciSurum: "3.38.0" }) },
@@ -73,10 +73,17 @@ if (ekran === "ayarlar-guvenlik-gecmisi" || ekran === "ayarlar-server-sunucu") {
     { id: 4, ts: "2026-09-21T16:00:00.000Z", actor: "admin", action: "kullanici_eklendi", target: "depo", ip: "192.168.1.10", detail: null },
   ];
   window.securityLog = { get: async (q = {}) => { const r = SATIRLAR.filter(x => !q.action || x.action === q.action); return { ok: true, rows: r.slice(q.offset || 0, (q.offset || 0) + (q.limit || 10)), total: r.length }; }, clear: async () => ({ ok: true }) };
-  if (ekran === "ayarlar-server-sunucu") {
+  if (ekran === "ayarlar-server-sunucu" || ekran.startsWith("ayarlar-server-0112")) {
+    // Spec 0112 C8: kart kullanıcı listesiyle süzülür. Varsayılan ekranda dört hesap da var (üç satır); "suzulmus"ta servis
+    // silinmiş, "bos"ta yalnız admin kalmış, "okunamadi"da liste ucu hata döner (bütün satırlar + ibare).
+    const u = (id, username, role = "user") => ({ id, username, role, is_active: 1, totp_enabled: 0, permissions: null, created_at: "2026-09-01 10:00:00" });
+    const KULLANICILAR = { "ayarlar-server-0112-suzulmus": [u(1, "admin", "admin"), u(2, "muhasebe"), u(4, "depo")], "ayarlar-server-0112-bos": [u(1, "admin", "admin")] }[ekran]
+      || [u(1, "admin", "admin"), u(2, "muhasebe"), u(3, "servis"), u(4, "depo")];
     const t = {
       getConfig: async () => ({ isServer: true, running: true, port: 3000, ips: ["192.168.1.10"] }),
-      apiRequest: async ({ path = "" } = {}) => ({ ok: true, status: 200, data: /2fa/.test(path) ? { enabled: false } : [] }),
+      apiRequest: async ({ path = "" } = {}) => (path === "/api/users"
+        ? (ekran === "ayarlar-server-0112-okunamadi" ? { error: "Sunucuya bağlı değil" } : { ok: true, status: 200, data: KULLANICILAR })
+        : { ok: true, status: 200, data: /2fa/.test(path) ? { enabled: false } : [] }),
     };
     window.appServer = new Proxy(t, { get: (o, k) => o[k] ?? (String(k).startsWith("on") ? () => () => {} : async () => null) });
   }
@@ -1171,6 +1178,10 @@ const EKRANLAR = {
   "ayarlar-0068-auditlog": [ayarlar("auditlog"), []],
   // Spec 0085 (R23, P1): sahte köprüyle sunucu kipi (kart) ve Kullanıcı Geçmişi (sürüm rozeti).
   "ayarlar-server-sunucu": [ayarlar("server"), []],
+  // Spec 0112: süzülmüş liste (silinmiş kullanıcı yok), süzme sonrası boş durum, liste okunamadı (bütün satırlar + ibare).
+  "ayarlar-server-0112-suzulmus": [ayarlar("server"), ["kaydir:Bağlı bilgisayarlar ve sürümleri"]],
+  "ayarlar-server-0112-bos": [ayarlar("server"), ["kaydir:Bağlı bilgisayarlar ve sürümleri"]],
+  "ayarlar-server-0112-okunamadi": [ayarlar("server"), ["kaydir:Bağlı bilgisayarlar ve sürümleri"]],
   "ayarlar-guvenlik-gecmisi": [ayarlar("securitylog"), []],
   "ayarlar-0068-export-cek": [ayarlar("export", { kasaVeriYetki: true, cekler: CEK68 }), ["tikla:Müşteri & Servis (5)"]],
   "giderler-0068-tedarikci-sil": [<GiderEkrani tedler={[{ id: 14, ad: "Akın Hırdavat" }, ...TED]} />, ["Tedarikler ve Ekstre", "baslik:Sil"]],

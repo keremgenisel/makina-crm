@@ -157,11 +157,13 @@ describe("Spec 0085 B: kaynak taramaları", () => {
     expect(oz).toContain("surumDahaYeni(sunucuSurum, surum)");
     for (const k of [oz, kart]) { expect(k).not.toMatch(/\.split\(["']\.["']\)/); expect(k).not.toMatch(/parseInt/); }
   });
-  it("AC-23, C6: kart HTTP ucunu çağırmaz, yalnız IPC'den okur", () => {
+  // Spec 0112 C6 ile daraltıldı: kart kullanıcı listesini var olan /api/users ucundan apiRequest ile okur (tek erişilebilir yol);
+  // güvenlik geçmişini HTTP ucundan okuma yasağı ve IPC okuması aynen durur.
+  it("AC-23, C6: kart güvenlik geçmişini HTTP ucundan okumaz, yalnız IPC'den okur", () => {
     const kart = yorumsuz(oku("src/components/settings/BagliBilgisayarlar.jsx"));
-    expect(kart).not.toContain("apiRequest");
     expect(kart).not.toContain("/api/security-log");
     expect(kart).toContain("window.securityLog?.get(");
+    expect([...kart.matchAll(/path:\s*"([^"]+)"/g)].map(m => m[1])).toEqual(["/api/users"]);
   });
 });
 
