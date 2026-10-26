@@ -340,6 +340,21 @@ const FINANS = ({ rapor = null, g = GIDERLER, musteriler = MUSTERILER }) => (
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})} />
 );
 
+// Spec 0113: ödeme işareti olan dört bedel kutusu tahsil edileni sayar. Kutu Gıda'ya karışık kayıtlar (biri ödenmedi, biri çekle
+// ödenmiş ama tahsil edilmemiş); tahsilsiz ekranda hiçbiri tahsil edilmemiş (kutular sıfır, kart bloğu çizilir).
+const T0113 = (o = {}) => ({ currency: "TRY", faturaTipi: "Faturalı Yurtiçi", odendi: true, yontem: "Nakit", ...o });
+const KALIP_0113 = (odendi) => [T0113({ id: 11301, customerId: 500, tur: "Kalıp", ad: "Hamburger", ucret: 10000, tarih: "2026-09-05", satisFirma: "Altuntaş Makina", odendi }),
+  T0113({ id: 11302, customerId: 500, tur: "Kalıp", ad: "Köfte", ucret: 6000, tarih: "2026-09-08", satisFirma: "Altuntaş Makina", odendi: false })];
+const SERVIS_0113 = (odendi) => [T0113({ id: 11311, customerId: 500, date: "2026-09-10", type: "Garanti Dışı", islemFirma: "Altuntaş Makina", servisUcreti: "2500", parcaUcreti: "800", parcaCurrency: "TRY", odendi }),
+  T0113({ id: 11312, customerId: 500, date: "2026-09-12", type: "Garanti Dışı", islemFirma: "Ege Bayi", servisUcreti: "1000", parcaUcreti: "1200", parcaCurrency: "TRY", odendi }),
+  T0113({ id: 11313, customerId: 500, date: "2026-09-14", type: "Garanti Dışı", islemFirma: "Ege Bayi", servisUcreti: "0", parcaUcreti: "700", parcaCurrency: "TRY", yontem: "Çek", tahsilEdildi: false, odendi }),
+  T0113({ id: 11314, customerId: 500, date: "2026-09-16", type: "Garanti Dışı", islemFirma: "Ege Bayi", servisUcreti: "0", parcaUcreti: "400", parcaCurrency: "TRY", odendi: false })];
+const YP_0113 = (odendi) => [T0113({ id: 11321, aliciTipi: "musteri", musteriId: 500, partId: "7", miktar: 2, birimFiyat: 750, tarih: "2026-09-18", tahsisler: [], odendi })];
+const FINANS_0113 = ({ odendi = true }) => (
+  <Finance customers={MUSTERILER} services={SERVIS_0113(odendi)} dealers={BAYI_LISTE} partSales={KALIP_0113(odendi)} yedekParcaSatislar={YP_0113(odendi)}
+    factory={{ name: "Altuntaş Makina" }} rates={{}} payments={[]} teklifler={[]} serverPermissions={null} />
+);
+
 // Spec 0014: sekme ve süzgeç çubuklarının yedi ekranı. Müşteriler süzgeçlerin sayılarını göstersin diye çeşitli durumlar.
 const MUSTERI_LISTE = [
   ...MUSTERILER,
@@ -1327,6 +1342,10 @@ const EKRANLAR = {
     parts={[{ id: 7, ad: "Rulman" }]} setServices={bos} setPartSales={bos} setYedekParcaSatislar={bos} calisanlar={CAL} initialDetailId={500} />, ["kaydir:Makina Geçmişi"]],
   "stok-yedek-0079": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERI_0079} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
     dealers={DEALERS} yedekParcaSatislar={YP_0079} defaultSubTab="yedeksatis" showToast={bos} />, ["~Kutu Gıda"]],
+  // Spec 0113: dört tahsil kutusu (karışık ve hiçbiri tahsil edilmemiş), Anlaşmalı Servis detay penceresi (sütun, neden, alt toplam).
+  "finans-0113-karisik": [<FINANS_0113 />, ["Göster", "kaydir:Gelir & Tahsilat"]],
+  "finans-0113-tahsilsiz": [<FINANS_0113 odendi={false} />, ["Göster", "kaydir:Gelir & Tahsilat"]],
+  "finans-0113-anlasmali": [<FINANS_0113 />, ["Göster", "*Tahsil Edilen Anlaşmalı Servis Parçası"]],
   "finans-0079-kdv": [<FINANS musteriler={MUSTERI_0079} />, ["Göster", "kaydir:KDV Karşılaştırması"]],
   // Spec 0095: garanti içi ücretsiz verme (form, garanti uyarısı, Stok satırı, kargo detay penceresi, bayi ve müşteri detayı).
   "yedek-parca-formu-ucretsiz": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı" customers={MUSTERI_0095_AKTIF}

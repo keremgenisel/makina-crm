@@ -6214,6 +6214,30 @@
         "rapor": "docs/evidence/0081-piksel-raporu.json",
         "ekran": "finans",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0113-piksel-raporu.json",
+        "ekran": "finans",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-27 · spec 0113 R16/2, R10, R18"
+      },
+      {
+        "rapor": "docs/evidence/0113-piksel-raporu.json",
+        "ekran": "finans-0113-karisik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-27 · spec 0113 R16/2, R10, R18"
+      },
+      {
+        "rapor": "docs/evidence/0113-piksel-raporu.json",
+        "ekran": "finans-0113-tahsilsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-27 · spec 0113 R16/2, R10, R18"
+      },
+      {
+        "rapor": "docs/evidence/0113-piksel-raporu.json",
+        "ekran": "finans-0113-anlasmali",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-27 · spec 0113 R16/2, R10, R18"
       }
     ],
     "src/components/Notes.jsx": [

@@ -306,9 +306,14 @@ describe("Spec 0095: Finans", () => {
     const KARTLAR = ["Toplam Alacak", "Toplam Bedel", "Ödenmesi Muhtemel KDV"];
     finans([]); const yok = KARTLAR.map(kart); cleanup();
     finans([ucz()]); const ucretsiz = KARTLAR.map(kart); cleanup();
-    finans([yp()]); const ucretli = KARTLAR.map(kart);
+    finans([yp()]); const ucretli = KARTLAR.map(kart); cleanup();
+    // Spec 0113 ile: "Toplam Bedel" kartının servis, parça ve kalıp bileşenleri artık tahsil edileni sayar; ödenmemiş ücretli
+    // ikiz onu değiştirmez. Ölçümün anlamlı olduğu "Toplam Bedel" için tahsil edilmiş ikizle gösterilir.
+    finans([yp({ odendi: true, yontem: "Nakit" })]); const ucretliTahsil = KARTLAR.map(kart);
     expect(ucretsiz).toEqual(yok);
-    KARTLAR.forEach((k, i) => expect(ucretli[i], k).not.toBe(yok[i]));
+    expect(ucretli[0], "Toplam Alacak").not.toBe(yok[0]);
+    expect(ucretliTahsil[1], "Toplam Bedel").not.toBe(yok[1]);
+    expect(ucretli[2], "Ödenmesi Muhtemel KDV").not.toBe(yok[2]);
   });
 });
 

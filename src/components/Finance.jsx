@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { CURRENCIES, DEFAULT_KDV_RATES } from "../lib/constants";
-import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, isFaturali, isYurtIci, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, kalipBorcTarafi, satisTahsilEdildi, resolveSatisYapan, altuntasParcaBedeli, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { fmt, fmtCur, fmtTR, parseMoney, kalipCountAtSale, isFaturali, isYurtIci, isAltuntasServisi, isServisUcretliMi, isParcaUcretliMi, kalipBorcTarafi, satisTahsilEdildi, satisUcretsizMi, tahsilBeklemeNedeni, resolveSatisYapan, altuntasParcaBedeli, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { usePagination } from "../hooks/usePagination";
 import { Modal, Pagination, Icon, Btn, DateInput } from "./ui";
 import { buildAylikRaporHtml } from "../lib/printTemplates";
@@ -16,6 +16,17 @@ import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 import { Segment, KartBolum, BosDurum } from "./tasarim";
 
 const RANGE_LABELS = { all: "Tüm Zamanlar", thisMonth: "Bu Ay", thisYear: "Bu Yıl", lastYear: "Geçen Yıl", custom: "Özel Tarih" };
+// Spec 0113 R16/2 (Karar 9): ödendi işareti olan dört bedel kutusu tahsil edileni sayar; adlar ve ortak ek tek yerde.
+export const TAHSIL_KART_ADLARI = {
+  servis: "Tahsil Edilen Servis Ücreti",
+  parca: "Tahsil Edilen Parça Ücreti",
+  anlasmali: "Tahsil Edilen Anlaşmalı Servis Parçası",
+  kalip: "Tahsil Edilen Extra Kalıp Bedeli",
+};
+export const TAHSIL_EK = "tahsil edilen tutar; tahsil edilmeyen, tarih filtresinden bağımsız Toplam Alacak kartında";
+// Spec 0113 R10 (Karar 2): büyük kart karışık esaslıdır ve bunu söyler.
+export const TOPLAM_BEDEL_ALT_YAZI = "Fabrika Satış Bedeli (satış anında) + tahsil edilen Servis, Parça ve Extra Kalıp (KDV hariç)";
+export const TAHSIL_ALT_TOPLAM_ETIKETI = "Tahsil edilen alt toplamı (KDV hariç)";
 
 export const Finance = ({ customers, services: servicesHam = [], dealers = [], partSales: partSalesHam = [], yedekParcaSatislar: yedekParcaHam = [], factory = null, kdvRates = DEFAULT_KDV_RATES, rates, payments: paymentsHam = [], teklifler = [], serverPermissions = null, giderYetki = false, giderler = [], giderTurleri = [], giderYururlukAy = null,
   // Spec 0047 R2: Aylık Gider ve Kasa Raporu düğmesi; veri App'in tek memosundan, yalnız kasa yetkisiyle.
@@ -85,8 +96,8 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
   // sadece bir useMemo içine taşındı.
   const {
     totalMakina, totalKalip, satilanExtraKalipSayisi, satilanYedekParcaSayisi,
-    gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
-    toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
+    gercekCiro, komisyon, toplamBedelKdv,
+    odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
     toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
     anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
     kdvMakina, kdvServis, kdvParca, kdvKalip,
@@ -144,8 +155,13 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     const gercekCiro = empty3();   // gerçek satış bedelleri (fiili ciro)
     const komisyon = empty3(), toplamCiro = empty3();
     const faturaBedeliToplam = empty3(); // resmi faturada yazan tutar (KDV hariç — KDV'si kdvMakina'da)
-    // Faturalı Yurtiçi satış/servis/parça/kalıplardan doğan KDV — "Ödenmesi Muhtemel" kartının bileşenleri
+    // Spec 0113 R14/2: iki paralel birikim kümesi. TAHSİL kümesi (servisUcreti, parcaUcreti, anlasmaliParcaSatisi,
+    // kalipSatisi ve kdvServis/kdvParca/kdvAnlasmaliParca/kdvKalip) dört bedel kutusunu, kendi KDV satırlarını ve "Toplam
+    // Bedel" kartının dört bileşenini besler: yalnız tahsil edilmiş kayıt (satisTahsilEdildi, `bugun` geçilmez, R2/4).
+    // TAHAKKUK kümesi (*Tahakkuk) yalnız "Ödenmesi Muhtemel KDV" kartını besler (KDV fatura kesilince doğar, R13).
     const kdvMakina = empty3(), kdvServis = empty3(), kdvParca = empty3(), kdvKalip = empty3();
+    const kdvServisTahakkuk = empty3(), kdvParcaTahakkuk = empty3(), kdvAnlasmaliTahakkuk = empty3(), kdvKalipTahakkuk = empty3();
+    const tahsil = (r) => satisTahsilEdildi(r); // tek tanım (C1); bugün argümanı yok, alacak tarafıyla aynı varsayılan
     // Faturasız satışlarda fatura bedeli kasıtlı olarak gerçek satış bedelinden daha düşük tutulabiliyor
     // (bkz. müşteri formundaki "Gerçek bedelden farklı olabilir" notu) — bu yüzden "gelir" sayılırken
     // her zaman gerçek bedel (Fabrika Satış Bedeli, yoksa faturaya düş) kullanılmalı, ham faturaBedeli değil.
@@ -173,6 +189,8 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     const servisUcreti = empty3();
     svcInRange.filter(s => (s.type === "Garanti Dışı" || s.type === "Periyodik Bakım") && isAltuntasServisi(s, factoryName)).forEach(s => {
       const kdv = tahsilEdilecekKdv(s.faturaTipi, s.servisUcreti, s.date, kdvRates, s);
+      kdvServisTahakkuk[cur(s.currency)] += kdv;
+      if (!tahsil(s)) return; // spec 0113 R1, R5: servisin tek ödeme işareti işçiliği ve parçayı birlikte düşürür
       servisUcreti[cur(s.currency)] += parseMoney(s.servisUcreti) + kdv;
       kdvServis[cur(s.currency)] += kdv;
     });
@@ -183,7 +201,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     // alınmış olsalar da) burada değil, ayrı "Anlaşmalı Servislere Satılan Parça Bedeli" kartında
     // sayılır — aksi halde aynı satış iki karta birden girip toplamı şişirirdi.
     const parcaUcreti = empty3();
-    // Anlaşmalı servis firmalarına satılan parça bedeli — Toplam Parça Ücreti Bedeli'nden ayrı,
+    // Anlaşmalı servis firmalarına satılan parça bedeli — Tahsil Edilen Parça Ücreti kartından ayrı,
     // çift sayılmayan bir kırılım (anlaşmalı firma Altuntaş'tan gerçekten parça satın aldıysa, bkz. isAltuntasServisi).
     const anlasmaliParcaSatisi = empty3();
     const kdvAnlasmaliParca = empty3();
@@ -191,6 +209,8 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
       if (isParcaUcretliMi(s)) {
         const bedel = altuntasParcaBedeli(s);
         const kdv = tahsilEdilecekKdv(s.faturaTipi, bedel, s.date, kdvRates, s);
+        (isAltuntasServisi(s, factoryName) ? kdvParcaTahakkuk : kdvAnlasmaliTahakkuk)[cur(s.parcaCurrency)] += kdv;
+        if (!tahsil(s)) return;
         if (isAltuntasServisi(s, factoryName)) {
           parcaUcreti[cur(s.parcaCurrency)] += bedel + kdv;
           kdvParca[cur(s.parcaCurrency)] += kdv;
@@ -203,6 +223,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     // Kredi kartı komisyonu müşteriye yansıtıldıysa (servis+parça matrahına gömülü, yansitildi=true),
     // komisyon banka gideridir; servis cirosuna girmemeli. İşçilik/parça oranında düşülür (KDV değişmez).
     svcInRange.forEach(s => {
+      if (!tahsil(s)) return; // spec 0113 R7: komisyon yalnız kutuda sayılan (tahsil edilmiş) kayıttan düşülür
       const yk = yansitilanKomisyon(s);
       if (yk <= 0) return;
       const isc = isServisUcretliMi(s, factoryName) ? parseMoney(s.servisUcreti) : 0;
@@ -217,17 +238,21 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
       const bedel = kargoBedel(s);
       if (bedel <= 0) return;
       const k = cur(s.currency), kdv = tahsilEdilecekKdv(s.faturaTipi, bedel, s.tarih, kdvRates, s), yk = yansitilanKomisyon(s);
+      (s.aliciTipi === "musteri" ? kdvParcaTahakkuk : kdvAnlasmaliTahakkuk)[k] += kdv;
+      if (!tahsil(s)) return; // spec 0113 R6
       if (s.aliciTipi === "musteri") { parcaUcreti[k] += bedel + kdv - yk; kdvParca[k] += kdv; }
       else { anlasmaliParcaSatisi[k] += bedel + kdv - yk; kdvAnlasmaliParca[k] += kdv; }
     });
     const kalipSatisi = empty3(); // Extra Kalıp sekmesinde sonradan verilen kalıplar
     kalipSatisInRange.forEach(p => {
       const kdv = tahsilEdilecekKdv(p.faturaTipi, p.ucret, p.tarih, kdvRates, p);
+      kdvKalipTahakkuk[cur(p.currency)] += kdv; // plan turu Karar 20: tahakkuk KDV kartı ücretsiz kalıpta da değişmez
+      // Spec 0113 R8/2: ücretsiz işaretli kalıp bedeli tahsil edilmiş bir satış değildir; ödendi işaretli olsa da kutuya girmez.
+      if (satisUcretsizMi(p) || !tahsil(p)) return;
       // Yansıtılan komisyon KDV matrahına dahil (p.ucret grossed) ama ciro değil → banka gideri, düş.
       kalipSatisi[cur(p.currency)] += parseMoney(p.ucret) + kdv - yansitilanKomisyon(p);
       kdvKalip[cur(p.currency)] += kdv;
     });
-    const toplamExtraKalip = kalipSatisi;
 
 
     // ── 3 büyük özet kartı ──
@@ -241,17 +266,19 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
       CURRENCIES.forEach(k => { r[k] = (a[k] || 0) - (b[k] || 0); });
       return r;
     };
-    // anlasmaliParcaSatisi/kdvAnlasmaliParca de dahil — Toplam Parça Ücreti Bedeli kartında ayrı
+    // anlasmaliParcaSatisi/kdvAnlasmaliParca de dahil — Tahsil Edilen Parça Ücreti kartında ayrı
     // gösteriliyor olması bu satışın Altuntaş cirosu olmadığı anlamına gelmiyor, sadece tahsilatın
     // müşteriden değil anlaşmalı firmadan yapıldığı anlamına geliyor (bkz. isAltuntasServisi).
+    // Spec 0113 R10, R10/2: makina bileşeni tahakkuk, dört bileşen tahsil kümesinden; kartın KDV satırı kendi bileşenlerinin KDV'si.
     const toplamCiromuz = sumObj(toplamCiro, servisUcreti, parcaUcreti, anlasmaliParcaSatisi, kalipSatisi);
-    const odenmesiMuhtemel = sumObj(kdvMakina, kdvServis, kdvParca, kdvAnlasmaliParca, kdvKalip);
+    const toplamBedelKdv = sumObj(kdvMakina, kdvServis, kdvParca, kdvAnlasmaliParca, kdvKalip);
+    const odenmesiMuhtemel = sumObj(kdvMakina, kdvServisTahakkuk, kdvParcaTahakkuk, kdvAnlasmaliTahakkuk, kdvKalipTahakkuk);
 
     // KDV'siz görünüm: kartların ana rakamı KDV hariç, KDV kartın altında ayrıca gösterilir
     // (Ödenmesi Muhtemel KDV ve Toplam Alacak hariç — ikisi de kapsam dışı, ayrı sebeplerle:
     // ilki zaten KDV'nin kendisi, ikincisi müşterinin kendi kalanBorc'undaki KDV payı ödemeler
     // ana para/KDV ayrımı yapmadan düşüldüğü için tam doğru ayrıştırılamıyor).
-    const toplamCiromuzNet = subObj(toplamCiromuz, odenmesiMuhtemel);
+    const toplamCiromuzNet = subObj(toplamCiromuz, toplamBedelKdv);
     const servisUcretiNet = subObj(servisUcreti, kdvServis);
     const parcaUcretiNet = subObj(parcaUcreti, kdvParca);
     const toplamExtraKalipNet = subObj(kalipSatisi, kdvKalip);
@@ -274,7 +301,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     (payments || []).filter(p => inRange(p.tarih)).forEach(komisyonTopla);
 
     // ── Toplam Kredi Kartı ile Satış — yalnızca ödeme yöntemi Kredi Kartı olan satış/tahsilatların toplamı.
-    // Kart, KDV DAHİL tutardan çekilir; ama kart (Toplam Parça Ücreti Bedeli gibi) KDV HARİÇ gösterilir:
+    // Kart, KDV DAHİL tutardan çekilir; ama kart (Tahsil Edilen Parça Ücreti gibi) KDV HARİÇ gösterilir:
     // ana rakam = matrah (KDV hariç), KDV altta ayrıca. krediKartiSatisKdv o KDV'yi toplar. Makina ödemesinde
     // (payment) fatura tipi olmadığından KDV, müşterinin efektif KDV oranıyla (KDV/(KDV dahil satış tabanı)) ayrılır.
     const krediKartiSatis = empty3(), krediKartiSatisKdv = empty3();
@@ -370,8 +397,8 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
 
     return {
       totalMakina, totalKalip, satilanExtraKalipSayisi, satilanYedekParcaSayisi,
-      gercekCiro, komisyon, toplamCiro, servisUcreti, parcaUcreti, toplamExtraKalip,
-      toplamCiromuz, odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
+      gercekCiro, komisyon, toplamBedelKdv,
+      odenmesiMuhtemel, alacak, modelRows, sellerRows, monthly, maxMonthly,
       toplamCiromuzNet, servisUcretiNet, parcaUcretiNet, toplamExtraKalipNet, faturaBedeliToplam,
       anlasmaliParcaSatisiNet, kdvAnlasmaliParca,
       kdvMakina, kdvServis, kdvParca, kdvKalip,
@@ -420,11 +447,21 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
           parcaUcreti: ucret,
           kdv,
           currency: s.parcaCurrency || "TRY",
-          odendi: s.odendi,
+          // Spec 0113 R18/2: sütun türetilmiş ölçütten (kartla aynı), ödendi işaretli ama beklemedeyse nedeniyle; satır süzülmez.
+          tahsilEdildi: satisTahsilEdildi(s),
+          neden: tahsilBeklemeNedeni(s),
         };
       })
       .sort((a, b) => b.tarih.localeCompare(a.tarih));
   }, [services, customers, range, customStart, customEnd, factoryName, kdvRates]);
+
+  // Spec 0113 R18 (Karar 6): pencerenin kendi kapsamı için tahsil edilen alt toplamı (arama süzgecinden bağımsız, para birimi başına).
+  const anlasmaliTahsilToplami = useMemo(() => {
+    const r = {};
+    // Kartla aynı para birimi kuralı: tanınmayan birim TL kovasına (Finans'ın cur() kuralı; triyaj, AC-25 ile AC-26 birlikte).
+    anlasmaliServisDetay.filter(x => x.tahsilEdildi).forEach(x => { const k = CURRENCIES.includes(x.currency) ? x.currency : "TRY"; r[k] = (r[k] || 0) + x.parcaUcreti; });
+    return r;
+  }, [anlasmaliServisDetay]);
 
   const anlasmaliFiltered = useMemo(() => {
     if (!anlasmaliSearch.trim()) return anlasmaliServisDetay;
@@ -607,7 +644,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
 
       {/* ÖZET KARTLARI — diğer kartlardan daha büyük, her zaman yan yana 3'lü */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 28 }}>
-        <MultiCard label="Toplam Bedel" obj={toplamCiromuzNet} kdvObj={odenmesiMuhtemel} color="var(--brand, #e85d1a)" sub="Fabrika Satış Bedeli + Servis + Parça + Extra Kalıp (KDV hariç)" size="large" />
+        <MultiCard label="Toplam Bedel" obj={toplamCiromuzNet} kdvObj={toplamBedelKdv} color="var(--brand, #e85d1a)" sub={TOPLAM_BEDEL_ALT_YAZI} size="large" />
         <MultiCard label="Toplam Alacak" obj={alacak} color="var(--red600, #dc2626)" sub="Tarih filtresinden bağımsız, her zaman güncel bakiye" size="large" />
         <MultiCard label="Ödenmesi Muhtemel KDV" obj={odenmesiMuhtemel} color="var(--teal, #0d9488)" sub="Faturalı Yurtiçi satışlardan doğan KDV toplamı" size="large" />
       </div>
@@ -634,12 +671,12 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginBottom: 20 }}>
         <MultiCard label="Toplam Fabrika Satış Bedeli" obj={gercekCiro} color="var(--grn600, #16a34a)" sub="Müşterilerden gelen gerçek satış bedeli" />
         <MultiCard label="Toplam Fatura Bedeli" obj={faturaBedeliToplam} kdvObj={kdvMakina} color="#6366f1" sub="Resmi faturada yazan tutar (KDV hariç)" />
-        <MultiCard label="Toplam Servis Ücreti Bedeli" obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub="Garanti dışı servisler (KDV hariç)" />
-        <MultiCard label="Toplam Parça Ücreti Bedeli" obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub="Servis kayıtlarındaki Altuntaş Makina tarafından değişen parça ücretleri + müşterilere satılan yedek parça (kargo ve fabrika teslim) satışları (KDV hariç)" />
+        <MultiCard label={TAHSIL_KART_ADLARI.servis} obj={servisUcretiNet} kdvObj={kdvServis} color="#f59e0b" sub={`Garanti dışı servisler (KDV hariç) · ${TAHSIL_EK}`} />
+        <MultiCard label={TAHSIL_KART_ADLARI.parca} obj={parcaUcretiNet} kdvObj={kdvParca} color="#0ea5e9" sub={`Servis kayıtlarındaki Altuntaş Makina tarafından değişen parça ücretleri + müşterilere satılan yedek parça (kargo ve fabrika teslim) satışları (KDV hariç) · ${TAHSIL_EK}`} />
         <div onClick={canDoFin("fin_anlasmali_detay") ? () => setShowAnlasmaliModal(true) : undefined} style={{ cursor: "pointer" }} title="Detay için tıklayın">
-          <MultiCard label="Toplam Anlaşmalı Servislere Satılan Parça Bedeli" obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub="Anlaşmalı servis firmalarına satılan parçalar + bayilere satılan yedek parça (kargo ve fabrika teslim) satışları (KDV hariç) · detay için tıklayın" />
+          <MultiCard label={TAHSIL_KART_ADLARI.anlasmali} obj={anlasmaliParcaSatisiNet} kdvObj={kdvAnlasmaliParca} color="#a855f7" sub={`Anlaşmalı servis firmalarına satılan parçalar + bayilere satılan yedek parça (kargo ve fabrika teslim) satışları (KDV hariç) · ${TAHSIL_EK} · detay için tıklayın`} />
         </div>
-        <MultiCard label="Toplam Extra Kalıp Satış Bedeli" obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub="Extra Kalıp sekmesi satışları (KDV hariç)" />
+        <MultiCard label={TAHSIL_KART_ADLARI.kalip} obj={toplamExtraKalipNet} kdvObj={kdvKalip} color="#db2777" sub={`Extra Kalıp sekmesi satışları (KDV hariç) · ${TAHSIL_EK}`} />
         <MultiCard label="Toplam Ödenen Komisyon" obj={komisyon} color="var(--red600, #dc2626)" sub="Gider (düşülür)" />
         <div onClick={canDoFin("fin_kart_detay") ? () => setShowKartModal(true) : undefined} style={{ cursor: canDoFin("fin_kart_detay") ? "pointer" : undefined }} title={canDoFin("fin_kart_detay") ? "Detay için tıklayın" : undefined}>
           <MultiCard label="Toplam Kredi Kartı ile Satış" obj={krediKartiSatisNet} kdvObj={krediKartiSatisKdv} color="#8b5cf6" sub={"Ödeme yöntemi kredi kartı olan satış/tahsilat toplamı (KDV hariç)" + (canDoFin("fin_kart_detay") ? " · detay için tıklayın" : "")} />
@@ -719,7 +756,7 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--n100, #f8fafc)" }}>
-                {["Tarih", "Müşteri Firma", "Servis Firması", "Parça Ücreti", "KDV", "Durum"].map(h => (
+                {["Tarih", "Müşteri Firma", "Servis Firması", "Parça Ücreti", "KDV", "Tahsil edildi"].map(h => (
                   <th key={h} style={{ padding: "8px 12px", textAlign: ["Parça Ücreti", "KDV"].includes(h) ? "right" : "left", fontSize: 11, fontWeight: 700, color: "var(--n600, #475569)", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>{h}</th>
                 ))}
               </tr>
@@ -733,9 +770,10 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
                   <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", fontWeight: 700, color: moneyVisible ? "#a855f7" : "var(--n400, #94a3b8)" }}>{M(fmtCur(r.parcaUcreti, r.currency))}</td>
                   <td style={{ padding: "9px 12px", fontSize: 13, textAlign: "right", color: moneyVisible ? "var(--teal, #0d9488)" : "var(--n400, #94a3b8)" }}>{r.kdv > 0 ? M(fmtCur(r.kdv, r.currency)) : "—"}</td>
                   <td style={{ padding: "9px 12px", fontSize: 13 }}>
-                    <span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700, background: r.odendi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: r.odendi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>
-                      {r.odendi ? "Ödendi" : "Ödenmedi"}
+                    <span data-testid="anlasmali-tahsil" style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 700, background: r.tahsilEdildi ? "var(--grnBg2, #dcfce7)" : "var(--redBg2, #fee2e2)", color: r.tahsilEdildi ? "var(--grn600, #16a34a)" : "var(--red600, #dc2626)" }}>
+                      {r.tahsilEdildi ? "Tahsil edildi" : "Tahsil edilmedi"}
                     </span>
+                    {r.neden && <div data-testid="anlasmali-tahsil-neden" style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 3 }}>{r.neden}</div>}
                   </td>
                 </tr>
               ))}
@@ -743,6 +781,11 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
           </table>
           )}
           <Pagination total={anlasmaliFiltered.length} page={anlasmaliPage} setPage={setAnlasmaliPage} perPage={ANLASMALI_PER_PAGE} />
+          <div data-testid="anlasmali-tahsil-alt-toplam" style={{ marginTop: 12, fontSize: 13, fontWeight: 700, textAlign: "right" }}>
+            {TAHSIL_ALT_TOPLAM_ETIKETI}: {Object.keys(anlasmaliTahsilToplami).length
+              ? Object.entries(anlasmaliTahsilToplami).map(([pb, t]) => M(fmtCur(t, pb))).join(" · ")
+              : M(fmtCur(0, "TRY"))}
+          </div>
         </Modal>
       )}
 

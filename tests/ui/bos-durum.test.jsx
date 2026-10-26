@@ -8,7 +8,7 @@ import { render, screen, cleanup, fireEvent, within } from "@testing-library/rea
 import { Customers } from "../../src/components/Customers";
 import { SimpleDealers } from "../../src/components/SimpleDealers";
 import { Stock } from "../../src/components/Stock";
-import { Finance } from "../../src/components/Finance";
+import { Finance, TAHSIL_KART_ADLARI } from "../../src/components/Finance";
 import { Documents } from "../../src/components/Documents";
 import { Notes } from "../../src/components/Notes";
 import { Analiz } from "../../src/components/Analiz";
@@ -102,7 +102,7 @@ describe("Finans", () => {
   });
   it("AC-2: Anlaşmalı servis ve kredi kartı pencerelerinde kayıt yokken 'Kayıt bulunamadı'", () => {
     FIN();
-    fireEvent.click(screen.getByText("Toplam Anlaşmalı Servislere Satılan Parça Bedeli"));
+    fireEvent.click(screen.getByText(TAHSIL_KART_ADLARI.anlasmali) /* spec 0113 R16/2 ile ad sabitten */);
     expect(say(/^Kayıt bulunamadı$/)).toBe(1);
     fireEvent.keyDown(window, { key: "Escape" });
     fireEvent.click(screen.getByText("Toplam Kredi Kartı ile Satış"));

@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-// Yedek parça (kargo) satışları Finance'a girer: müşteriye satış → Toplam Parça Ücreti Bedeli,
+// Yedek parça (kargo) satışları Finance'a girer: müşteriye satış → Tahsil Edilen Parça Ücreti (spec 0113 öncesi "Toplam Parça Ücreti Bedeli"),
 // bayiye satış → Anlaşmalı/Bayi Parça Bedeli; adet sayacına dahil.
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 
 afterEach(cleanup);
-import { Finance } from "../../src/components/Finance";
+import { Finance, TAHSIL_KART_ADLARI } from "../../src/components/Finance";
 
 const customers = [{ id: 1, name: "ABC Makina", currency: "TRY" }];
 const dealers = [{ id: 5, name: "Bayi X" }];
@@ -31,9 +31,9 @@ describe("Finance — yedek parça (kargo) satışları", () => {
   it("müşteri satışı Parça Ücreti'ne, bayi satışı Anlaşmalı/Bayi Parça'ya girer", () => {
     renderFinance();
     fireEvent.click(screen.getByTitle("Tutarları göster")); // tutarlar görünsün
-    const parcaKart = screen.getByText("Toplam Parça Ücreti Bedeli").parentElement;
+    const parcaKart = screen.getByText(TAHSIL_KART_ADLARI.parca) /* spec 0113 R16/2 ile ad sabitten */.parentElement;
     expect(within(parcaKart).getByText(/333/)).toBeTruthy();          // müşteri: 3×111
-    const anlasmaliKart = screen.getByText("Toplam Anlaşmalı Servislere Satılan Parça Bedeli").parentElement;
+    const anlasmaliKart = screen.getByText(TAHSIL_KART_ADLARI.anlasmali) /* spec 0113 R16/2 ile ad sabitten */.parentElement;
     expect(within(anlasmaliKart).getByText(/110/)).toBeTruthy();      // bayi: 2×55
   });
 

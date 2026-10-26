@@ -3,7 +3,7 @@
 // girilenle aynı sayılır; silme ve müşteri kaskadı onlara da aynı davranır.
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
-import { Finance } from "../../src/components/Finance";
+import { Finance, TAHSIL_KART_ADLARI } from "../../src/components/Finance";
 import { teklifUretimPlani } from "../../src/lib/evrakUretim";
 import { evrakAdimlariniYaz } from "../../src/lib/evrakUygula";
 import { hesaplaAylikRapor } from "../../src/lib/aylikRapor";
@@ -29,14 +29,23 @@ function uret() {
 }
 
 describe("Evrak'tan üretilen kayıtlar hesaplarda", () => {
-  it("AC-24: yedek parça satışı Finans ve aylık raporda aynı net tutar (333)", () => {
+  // Spec 0113 ile ters çevrildi (0006 AC-24): Evrak'tan üretilen yedek parça satışı ödenmemiş doğar. Aylık rapor tahakkuk
+  // esaslı kaldı (333), Finans'ın kutusu tahsil edileni sayar (0); eşitlik güvencesi tahsil edilmiş kayda daraldı.
+  it("AC-24: yedek parça satışı aylık raporda 333; Finans kutusunda tahsil edilene kadar 0, tahsil edilince aynı net tutar", () => {
     const { d } = uret();
     const rapor = hesaplaAylikRapor({ customers: d.customers, services: [], partSales: d.partSales, payments: [], teklifler: [], dealers: [], yedekParcaSatislar: d.yedekParcaSatislar }, "2026-07", {});
     expect(rapor.yedekKargoTutar.TRY).toBe(333);
-    render(<Finance customers={d.customers} services={[]} dealers={[]} partSales={d.partSales} yedekParcaSatislar={d.yedekParcaSatislar}
-      factory={{ name: "Altuntaş Makina" }} rates={{}} payments={[]} teklifler={[]} serverPermissions={null} />);
-    fireEvent.click(screen.getByTitle("Tutarları göster"));
-    expect(within(screen.getByText("Toplam Parça Ücreti Bedeli").parentElement).getByText(/333/)).toBeTruthy();
+    const kutu = (ypler) => {
+      render(<Finance customers={d.customers} services={[]} dealers={[]} partSales={d.partSales} yedekParcaSatislar={ypler}
+        factory={{ name: "Altuntaş Makina" }} rates={{}} payments={[]} teklifler={[]} serverPermissions={null} />);
+      fireEvent.click(screen.getByTitle("Tutarları göster"));
+      const t = screen.getByText(TAHSIL_KART_ADLARI.parca).parentElement.textContent;
+      cleanup();
+      return t;
+    };
+    expect(d.yedekParcaSatislar.every(s => !s.odendi)).toBe(true);
+    expect(kutu(d.yedekParcaSatislar)).not.toMatch(/333/);
+    expect(kutu(d.yedekParcaSatislar.map(s => ({ ...s, odendi: true, yontem: "Nakit" })))).toMatch(/333/);
   });
   it("AC-25: Extra Kalıp satışı aylık raporda ve Analiz'de elle girilen Extra Kalıp gibi sayılır", () => {
     const { d } = uret();

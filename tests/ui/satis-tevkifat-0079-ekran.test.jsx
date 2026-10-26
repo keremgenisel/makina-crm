@@ -19,6 +19,7 @@ import { Customers } from "../../src/components/Customers";
 import { YedekParcaSatisTab } from "../../src/components/stock/YedekParcaSatisTab";
 import { SettingsExport } from "../../src/components/settings/SettingsExport";
 import { CUSTOMERS, PAYMENTS, SERVICES, PART_SALES, YEDEK, DEALERS, PARTS, KDV, FAB } from "../fixtures/0079-veri";import { ayikla0106 } from "../fixtures/0106-ayikla";
+import { ayikla0113 } from "../fixtures/0113-ayikla";
 
 
 const DOSYA = "tests/fixtures/0079-ekran-once.json";
@@ -97,7 +98,11 @@ describe("Spec 0079 AC-31: tevkifatsız veride ekranlar birebir aynı", () => {
       ? t.replace(/Stoktaki Makina\d+Görmek için tıkla/, "«stok kutusu»").replace(/Satışa Hazır Makina\d+\d+ montajda · \d+ önceki partiden/, "«stok kutusu»") : t);
     // Spec 0106 ile: müşteri listesinin Durum sütunu ve pilleri, altıncı süzgeç pili ve detaydaki durum seçicileri bilinçli eklendi;
     // iki taraftan da ayıklanır (tests/fixtures/0106-ayikla.js), testin asıl iddiası korunur.
-    for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(ayikla0106(stokKutusuAyikla(k, simdi[k])), k).toBe(ayikla0106(stokKutusuAyikla(k, once[k])));
+    // Spec 0113 C8: Finans'ın dört tahsil kutusu ve "Toplam Bedel" kartı iki taraftan da ayıklanır (tests/fixtures/0113-ayikla.js).
+    const finansAyikla = (k, t) => (k === "finans" ? ayikla0113(t) : t);
+    for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(ayikla0106(stokKutusuAyikla(k, finansAyikla(k, simdi[k]))), k).toBe(ayikla0106(stokKutusuAyikla(k, finansAyikla(k, once[k]))));
+    expect(ayikla0113(once.finans)).not.toBe(once.finans); // ayıklama eski altında gerçekten iş yapıyor
+    expect(ayikla0113(simdi.finans)).not.toBe(simdi.finans); // ve yeni çıktıda da
     expect(Object.keys(once).filter(k => k.startsWith("anasayfa")).every(k => stokKutusuAyikla(k, once[k]) !== once[k] && stokKutusuAyikla(k, simdi[k]) !== simdi[k])).toBe(true);
     expect(Object.keys(simdi.disaAktarma).sort()).toEqual(Object.keys(once.disaAktarma).sort());
     for (const [ad, satirlar] of Object.entries(once.disaAktarma)) {

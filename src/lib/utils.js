@@ -688,6 +688,14 @@ export const satisTahsilEdildi = (s, bugun = today()) => {
   if (s?.yontem === "Kredi Kartı") return kartTahsilEdildiMi(s?.kartKomisyonu, bugun);
   return true;
 };
+// Spec 0113 R18/2: ödendi işaretli ama tahsil edilmemiş kaydın kısa nedeni (Finans'ın Anlaşmalı Servis detay penceresi).
+// Ölçütü yeniden yazmaz: tahsil edilmişse ya da ödendi işareti yoksa null; yalnız beklemenin adını seçer.
+export const TAHSIL_NEDEN_CEK = "Çek tahsil edilmedi";
+export const TAHSIL_NEDEN_KART = "Kart blokajı sürüyor";
+export const tahsilBeklemeNedeni = (s) => {
+  if (!s?.odendi || satisTahsilEdildi(s)) return null;
+  return s?.yontem === "Kredi Kartı" ? TAHSIL_NEDEN_KART : TAHSIL_NEDEN_CEK;
+};
 // Bir tahsil edilmiş kaydın "para hangi gün girdi" tarihi — rapordaki "giren para" bunu aya gruplar:
 //  1) tahsilatTarihi alanı doluysa onu kullan ("ödendi"/çek-tahsil tıklandığı gün yazılır),
 //  2) Kredi Kartı ise bloke paranın hesaba geçtiği gün (kartKomisyonu.hesabaGecis),
