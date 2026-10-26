@@ -5464,28 +5464,24 @@
     ],
     "src/components/settings/BagliBilgisayarlar.jsx": [
       {
-        "rapor": "docs/evidence/0112-piksel-raporu.json",
+        "rapor": "docs/evidence/0112-taban-piksel-raporu.json",
         "ekran": "ayarlar-server-sunucu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0112 C8, AC-29"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0112-piksel-raporu.json",
+        "rapor": "docs/evidence/0112-taban-piksel-raporu.json",
         "ekran": "ayarlar-server-0112-suzulmus",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0112 C8, AC-29"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0112-piksel-raporu.json",
+        "rapor": "docs/evidence/0112-taban-piksel-raporu.json",
         "ekran": "ayarlar-server-0112-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0112 C8, AC-29"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0112-piksel-raporu.json",
+        "rapor": "docs/evidence/0112-taban-piksel-raporu.json",
         "ekran": "ayarlar-server-0112-okunamadi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-26 · spec 0112 C8, AC-29"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsApp.jsx": [

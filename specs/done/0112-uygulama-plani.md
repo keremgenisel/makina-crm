@@ -1,6 +1,6 @@
 # 0112 Uygulama planı: bağlı bilgisayarlar kartı silinmiş kullanıcıyı listelemez
 
-Spec: `specs/0112-bagli-bilgisayarlar-silinmis-kullanici.md` (revizyon 2, plan turu Karar 13–19). Dal `feat/0112-bagli-bilgisayarlar`, taban `c1d1df5`.
+Spec: `specs/done/0112-bagli-bilgisayarlar-silinmis-kullanici.md` (revizyon 2, plan turu Karar 13–19). Dal `feat/0112-bagli-bilgisayarlar`, taban `c1d1df5`. Tamamlandı: uygulama commit `cc47239`.
 
 ## 1. Dosyalar
 

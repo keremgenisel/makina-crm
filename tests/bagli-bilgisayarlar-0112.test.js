@@ -94,3 +94,20 @@ describe("Spec 0112: kaynak taramaları", () => {
     expect(kart()).not.toMatch(/<button|<Btn\b/);
   });
 });
+
+// Kapanış belge düzeni (0110, 0111 emsali). Plan specs/done'a taşındığında CLAUDE.md'nin 0112 bölümü commit satırını taşır,
+// TASINACAK boşalır, eski spec kopyası kalmaz ve kanıt kayıtları tabanda `ayni`dır. Taşınmadan önce sınanmaz.
+describe("Spec 0112: kapanış belge düzeni", () => {
+  it("plan done'daysa: 'Tamamlandı: commit', TASINACAK'ta 0112 yok, eski kopya yok, kanıt tabanda ayni", () => {
+    if (!fs.existsSync(path.join(KOK, "specs/done/0112-uygulama-plani.md"))) return;
+    const claude = oku("CLAUDE.md");
+    const bolum = claude.slice(claude.indexOf("(spec 0112, plan"), claude.indexOf("(spec 0111, plan"));
+    expect(bolum).toMatch(/Tamamlandı: commit `[0-9a-f]{7}`/);
+    expect(bolum).not.toMatch(/specs\/0112-/);
+    expect(oku("tests/spec-atiflari.test.js")).not.toMatch(/TASINACAK = \[[^\]]*0112/);
+    expect(fs.existsSync(path.join(KOK, "specs/0112-bagli-bilgisayarlar-silinmis-kullanici.md"))).toBe(false);
+    const kayitlar = Object.values(JSON.parse(oku("docs/evidence/kanit-eslemesi.json")).dosyalar).flat().filter(k => k.rapor.includes("/0112-"));
+    expect(kayitlar.length).toBeGreaterThan(0);
+    expect(kayitlar.filter(k => k.beklenen === "degisti" || k.onay)).toEqual([]);
+  });
+});

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (revizyon 2: plan turu Karar 13–19, 2026-10-26) |
+| **Durum** | Tamamlandı (revizyon 2: plan turu Karar 13–19, 2026-10-26; uygulama commit `cc47239`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Sunucu Bağlantısı'ndaki "Bağlı bilgisayarlar ve sürümleri" kartı (`src/components/settings/BagliBilgisayarlar.jsx`) ve saf özeti (`src/lib/surumOzeti.js` `surumOzeti`); tazeleme sinyali için `src/components/settings/UserManager.jsx` (geri çağırım) ve `src/components/settings/SettingsServer.jsx:350-352` (sayaç, R11); kart yine yalnız orada çizilir. Ayrıca `src/lib/kilitAlanlari.js:75` gerekçesi (R15), `docs/evidence/kanit-eslemesi.json` kaydı (C8) ve 0085'in iki test dosyası (C6) |
@@ -265,10 +265,13 @@ QA boşluk turunda yirmi bir boşluk çıktı ve Takım Yöneticisi 2026-10-26'd
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `cc47239` | Dal `feat/0112-bagli-bilgisayarlar`, taban `c1d1df5`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (B-1–B-3, Ö-1–Ö-7, K-1–K-11), plan turu (Karar 13–19) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: iki düşük bulgu: yeniden okumanın iki kuralı (bekleme durumuna dönmeme, eski cevabın atılması) testsizdi; ana dizindeki spec kopyası eskiydi |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 421 dosya, 5687 test (Electron dahil); lint 0 hata; tip denetimi temiz; 0085'in dokuz kart testi dokunulmadan |
+| **Kaçan hata** | 0 | Davranış hatası yok; kaçan iki şey test kapsamı ve belgeydi |
 
-**Bu spec'ten çıkarılan ders:**
+**Görsel kanıt:** 6 ekran × 2 tema; sunucu ekranı ve üç yeni ekran (süzülmüş liste, hepsi silinmiş, liste okunamadı) değişti; Kullanıcı Geçmişi ve istemci ekranı 0 fark; taban son kodla 0 fark.
+
+**Bu spec'ten çıkarılan ders:** Bir efektin "eski cevabı at" ve "yeniden okurken durumu sıfırlama" kuralları kodda doğru olsa da kendiliğinden testli değildir: her istek anında dönen sahte köprüler yarışı hiç üretmez, cevapları elle çözülen bir düzenek gerekir. Kaynak taramaları yalnız kendi spec'lerinin dosyalarını değil bütün dizini tarar: yeni bir bileşende iç durum için seçilen dize (`"bekliyor"`) ya da testteki örnek sürüm başka bir spec'in taramasına takılabilir; ilk tam takım koşusu bunu erken gösterir.
