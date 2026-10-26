@@ -86,3 +86,22 @@ describe("Spec 0113: kaynak taramaları", () => {
     expect(ayikla0113(parca(TAHSIL_KART_ADLARI.servis))).toBe("Toplam Bedel[0113]Toplam Alacak₺0x[0113 dört kutu]Toplam Ödenen Komisyon₺0");
   });
 });
+
+// Kapanış belge düzeni (0111, 0112 emsali). Plan specs/done'a taşındığında CLAUDE.md'nin 0113 bölümü commit satırını taşır,
+// TASINACAK boşalır, eski spec kopyası kalmaz, kanıt kayıtları tabanda `ayni`dır ve R8/2'nin açık maddesi SCORECARD'da yazılıdır.
+describe("Spec 0113: kapanış belge düzeni", () => {
+  it("plan done'daysa: 'Tamamlandı: commit', TASINACAK'ta 0113 yok, eski kopya yok, kanıt tabanda ayni, açık madde yazılı", () => {
+    const { existsSync } = require("node:fs");
+    if (!existsSync(path.join(kok, "specs/done/0113-uygulama-plani.md"))) return;
+    const claude = oku("CLAUDE.md");
+    const bolum = claude.slice(claude.indexOf("(spec 0113, plan"), claude.indexOf("(spec 0112, plan"));
+    expect(bolum).toMatch(/Tamamlandı: commit `[0-9a-f]{7}`/);
+    expect(bolum).not.toMatch(/specs\/0113-/);
+    expect(oku("tests/spec-atiflari.test.js")).not.toMatch(/TASINACAK = \[[^\]]*0113/);
+    expect(existsSync(path.join(kok, "specs/0113-finans-bedel-kutulari-tahsilat-esasli.md"))).toBe(false);
+    const kayitlar = Object.values(JSON.parse(oku("docs/evidence/kanit-eslemesi.json")).dosyalar).flat().filter(k => k.rapor.includes("/0113-"));
+    expect(kayitlar.length).toBeGreaterThan(0);
+    expect(kayitlar.filter(k => k.beklenen === "degisti" || k.onay)).toEqual([]);
+    expect(oku("specs/done/0113-finans-bedel-kutulari-tahsilat-esasli.md")).toMatch(/\*\*Açık madde:\*\* R8\/2/);
+  });
+});

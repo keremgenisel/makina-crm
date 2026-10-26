@@ -1,6 +1,6 @@
 # 0113 Uygulama planı: ödeme işareti olan bedel kutuları yalnız tahsil edileni gösterir
 
-Spec: `specs/0113-finans-bedel-kutulari-tahsilat-esasli.md` (revizyon 2, plan turu Karar 17–24). Dal `feat/0113-finans-tahsil`, taban `bdbc80e`.
+Spec: `specs/done/0113-finans-bedel-kutulari-tahsilat-esasli.md` (revizyon 2, plan turu Karar 17–24). Dal `feat/0113-finans-tahsil`, taban `bdbc80e`. Tamamlandı: uygulama commit `f45a356`.
 
 ## 1. Dosyalar
 

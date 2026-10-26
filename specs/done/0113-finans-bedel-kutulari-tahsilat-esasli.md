@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (revizyon 2: plan turu Karar 17–24, 2026-10-27) |
+| **Durum** | Tamamlandı (revizyon 2: plan turu Karar 17–24, 2026-10-27; uygulama commit `f45a356`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Finans ekranının dört bedel kutusu ve KDV alt rakamları: servis ücreti (`src/components/Finance.jsx:174-178`, kart `:637`), parça ücreti ve anlaşmalı servis parçası (`:189-202` servis parçası, `:218-222` yedek parça kargo, kartlar `:638`, `:640`), Extra Kalıp (`:223-230`, kart `:642`); büyük "Toplam Bedel" kartının bu dört payı (`:247`, `:610`); Anlaşmalı Servis detay penceresi (`:391-427`). Tahsil edilmişlik ölçütü var olan tek okuma yolundan gelir (`src/lib/utils.js:685-690` `satisTahsilEdildi`). QA turunda eklenenler: iki paralel birikim kümesi (R14/2), detay penceresinin ödendi sütunu (`:418`), dört kartın ad sabitleri (R16/2) ve bu adları tanıması gereken iki kıyas ayıklaması, `CLAUDE.md`'nin iki yeri (yeni Finans bölümü ve "Printing and export"un Finans Özeti cümlesi). Dokunulmayan ama adıyla yazılanlar: `src/components/settings/SettingsExport.jsx:111-137` (Finans Özeti Excel, C7), `Dashboard.jsx`, model ve bayi kırılımı ile 12 aylık trend (R20/2) |
@@ -316,10 +316,15 @@ QA boşluk turunda yirmi bir boşluk çıktı ve Takım Yöneticisi 2026-10-26'd
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `f45a356` | Dal `feat/0113-finans-tahsil`, taban `bdbc80e`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (B-1–B-3, Ö-1–Ö-7, K-1–K-11), plan turu (Karar 17–24) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: dört bulgu (1 düşük-orta, 3 düşük): KDV kartının değişmezliği yalnız Extra Kalıp kolunda testliydi; Karar 20 testsizdi; detay penceresinin alt toplamı aramaya karşı testsizdi ve tanınmayan para birimini kartla aynı kovaya koymuyordu (kod düzeltmesi); spec kopyası ve DoD ifadesi |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 423 dosya, 5725 test (Electron dahil); lint 0 hata; tip denetimi temiz |
+| **Kaçan hata** | 1 | Alt toplamın tanınmayan para birimi kovası (AC-25 ile AC-26 birlikte bozulurdu); triyajda yakalandı |
 
-**Bu spec'ten çıkarılan ders:**
+**Açık madde:** R8/2'nin ücretsiz işaretli Extra Kalıp ölçümü yapılamadı (yedek verilmedi, Karar 21, ölçüm 25); DoD maddesi işaretsiz kaldı. Kural sıfır kayıtta da doğru çalışır ve testli; etkinin sıfır olması beklenir ama ölçülmedi, sürüm notunda yazılı.
+
+**Görsel kanıt:** 9 ekran × 2 tema; bütün Finans ekranları yeni adlar ve uzayan alt yazılar yüzünden değişti, üç yeni ekran (karışık tahsil, hiçbiri tahsil edilmemiş, detay penceresi); taban son kodla 0 fark.
+
+**Bu spec'ten çıkarılan ders:** Bir kartı birden çok kol besliyorsa "değişmez" kuralı her kol için ayrı ölçülmeli: tek kolla yazılmış test, öteki kolların bağını kıran bir hatayı yalnız tesadüfen başka bir fikstür ödenmemiş kayıt taşıdığı için yakalar. İki ayrı hesap yolu aynı rakamı tutturmak zorundaysa (kart ve pencerenin alt toplamı) bütün kurallarını, kenar dallar dahil (tanınmayan para birimi), aynı yardımcıdan almalı. Eski kod bir alanı hiç okumuyorsa, o alanın bütün kayıtlarda "nötr" değere çekildiği veride yeni kodun eski altına eşitliği, "bugünkü etki sıfır" iddiasının ucuz ve güçlü bir kanıtıdır.
