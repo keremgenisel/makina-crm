@@ -6041,6 +6041,11 @@
         "rapor": "docs/evidence/0110-taban-piksel-raporu.json",
         "ekran": "musteriler-0106-suzgec",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114b-taban-piksel-raporu.json",
+        "ekran": "musteriler-0114-pil",
+        "beklenen": "ayni"
       }
     ],
     "src/components/SimpleDealers.jsx": [
@@ -7521,6 +7526,11 @@
       {
         "rapor": "docs/evidence/0110-taban-piksel-raporu.json",
         "ekran": "musteri-detay-0110-cizelge",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114b-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-0114",
         "beklenen": "ayni"
       }
     ],

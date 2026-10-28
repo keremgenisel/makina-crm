@@ -267,6 +267,10 @@ Takım Yöneticisi planın on iki önerisini (Ö-1–Ö-12) analistin önerisiyl
 
 **Karar 42. Müşteri detayının "KDV Miktarı" hücresi ihraç kayıtlı makinada boş kalmaz.** Hücre tahsil edilecek KDV'yi (0) yazar, alt satırında faturadaki ham KDV "Faturada `<tutar>` · ertelenir" olarak durur (`ihracKayitli.js` `ihracKdvHucreMetni`; 0079'un "Toplam … · alıcı beyan eder …" emsali). *Gerekçe:* R9'un amacı faturadaki ham KDV'nin görünür kalmasıdır; hücre boş kalınca 50.000 TL yalnız Kalan Borç kartının küçük satırında geçiyordu. İşaretsiz makinada hücre değişmez.
 
+### Kapanış sonrası ek karar (2026-10-28)
+
+**Karar 43. Satış tipi pili işareti gösterir.** Müşteri listesinin Fatura sütunu ve Makina Geçmişi'nin satış olayındaki pil, işaretli makinada "İhraç Kayıtlı" yazar ve rozetle aynı teal tonunu alır (`ihracKayitli.js` `satisTipiSecimi` + `satisTipiPilStili`; yeni token yok). *Gerekçe:* kullanıcı listede işaretli makinanın sıradan "Faturalı Yurtiçi" göründüğünü bildirdi; R26/2 bu sütunu saymamıştı. Kayıt, rapor ve dışa aktarma değişmez (satış tipi "Faturalı Yurtiçi" kalır, R33 ve R34 aynen); işaretsiz kayıtta iki pil birebir aynı (kanıt `0114b-piksel-raporu.json`).
+
 ### Karar kaydı
 
 | # | Derece | Konu | Karar |

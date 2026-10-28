@@ -3,7 +3,7 @@
 // işaret ayrı alandır (R1, C1: SALE_TYPES dört değerde kalır). Kapı, seçim çevrimi, tek yazıcı, doğrulama ve bütün ekran
 // metinleri burada; hesabın kendisi utils.js `satisKdvBolumu`'ndadır (C3, tek kapı). Gider motoruna bağlanmaz, React almaz (R5/2).
 // Tevkifatla karıştırmayın (C4): tevkifatta KDV'nin bir kısmını alıcı beyan eder, burada KDV'nin tamamı ertelenir.
-import { SALE_TYPES } from "./constants";
+import { SALE_TYPES, SALE_TYPE_STYLE } from "./constants";
 import { isFaturali, isYurtIci, normalizeSaleType, satisKdvBolumu, satisUcretsizMi } from "./utils";
 import { TEVKIFAT_ALANLARI } from "./satisTevkifat";
 
@@ -29,6 +29,13 @@ export const satisTipiSecimi = (kayit) => (etkinMi(kayit) ? IHRAC_SECENEK : norm
 export const satisTipiUygula = (secim, alan = "faturaTipi") => (secim === IHRAC_SECENEK
   ? { [alan]: FY, ihracKayitli: true, tevkifatli: false, tevkifatPay: null, tevkifatPayda: null }
   : { [alan]: secim, ihracKayitli: false });
+
+// Satış tipi pilinin rengi (müşteri listesinin Fatura sütunu, Makina Geçmişi'nin satış olayı). Seçim satisTipiSecimi'nden
+// gelir: işaretli makinada pil "İhraç Kayıtlı" yazar ve rozetle aynı teal tonunu alır (yeni token yok, R26/3); dört tip bugünkü
+// SALE_TYPE_STYLE renginde, tanınmayan değer gri.
+const IHRAC_PIL_STILI = { bg: "var(--tealBg, #f0fdfa)", fg: "var(--teal2, #0f766e)" };
+const BILINMEYEN_PIL_STILI = { bg: "var(--n150, #f1f5f9)", fg: "var(--n600, #475569)" };
+export const satisTipiPilStili = (secim) => (secim === IHRAC_SECENEK ? IHRAC_PIL_STILI : SALE_TYPE_STYLE[secim] || BILINMEYEN_PIL_STILI);
 
 // R6/2, C12: alanın TEK yazıcısı. Kayıttan önce siler, yalnız kapı açık, form işaretli ve satış ücretsiz değilken `true` yazar
 // (kapalı değer yazılmaz, C5). İşaret açıkken tevkifat alanları da silinir (R7/2, 2. katman). Ücretsiz yedek parçada fatura yoktur

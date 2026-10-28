@@ -3,7 +3,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { SALE_TYPES } from "../src/lib/constants";
+import { SALE_TYPES, SALE_TYPE_STYLE } from "../src/lib/constants";
 import {
   calcKDV, satisKdvBolumu, tahsilEdilecekKdv, tahsilKdvOrani, calcKalanBorc, ihracKayitliEtkinMi, normalizeSaleType,
 } from "../src/lib/utils";
@@ -12,7 +12,7 @@ import {
   ihracKayitliSecilebilirMi, satisTipiSecimi, satisTipiUygula, ihracKayitliUygula, ihracKayitliDogrula, satisTipiSecenekleri,
   IHRAC_SECENEK, IHRAC_IBARE, IHRAC_TEVKIFAT_NEDENI, IHRAC_TEVKIFAT_HATASI, IHRAC_EXPORT_HEAD, ihracKayitliExportHucreleri,
   ihracKayitliRozeti, ihracRozetGosterilirMi, IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, IHRAC_RAPOR_SATIRLARI,
-  IHRAC_KART_ETIKETI, ihracKayitliFormu,
+  IHRAC_KART_ETIKETI, ihracKayitliFormu, satisTipiPilStili,
 } from "../src/lib/ihracKayitli";
 import { kartTabanKaydi, kartTabanIsaretle, kartTabaniEskiMi, makinaKartTabaniEskiMi, satisTevkifatOzeti, satisTevkifatRozeti } from "../src/lib/satisTevkifat";
 import { kalipKartHesabi, kalipSatisOrtak, kalipGuncelle, kalipSatisiEkle } from "../src/lib/kalipSatisi";
@@ -189,6 +189,14 @@ describe("Spec 0114 A: seçim çevrimi ve tek yazıcı", () => {
     const p = topluDuzenlemePlani(parti, form, { yeniId: () => 99, olusturmaZamani: "t", silmeDamgasi: "d", bugun: "2026-10-28" });
     expect(p.ok).toBe(true);
     expect(p.guncellenen.map(k => k.ihracKayitli)).toEqual([true, true]);
+  });
+  it("Ek düzeltme: satış tipi pilinin rengi; ihraç teal, dört tip SALE_TYPE_STYLE'dan, tanınmayan gri", () => {
+    expect(satisTipiPilStili(IHRAC_SECENEK)).toEqual({ bg: "var(--tealBg, #f0fdfa)", fg: "var(--teal2, #0f766e)" });
+    for (const t of SALE_TYPES) expect(satisTipiPilStili(t), t).toEqual(SALE_TYPE_STYLE[t]);
+    expect(satisTipiPilStili("Bilinmeyen")).toEqual({ bg: "var(--n150, #f1f5f9)", fg: "var(--n600, #475569)" });
+    // İki pil aynı kaynaktan okur, kendi renk tablosunu yazmaz (tarama).
+    for (const f of ["src/components/Customers.jsx", "src/components/customers/detail/MachineTimeline.jsx"]) expect(kodu(f), f).not.toMatch(/SALE_TYPE_STYLE/);
+    expect(kodu("src/components/customers/detail/deriveCustomerDetail.js")).toMatch(/tip: satisTipiSecimi\(detailView\)/);
   });
   it("ihracKayitliFormu: yalnız etkin işareti forma taşır", () => {
     expect(ihracKayitliFormu({ faturaTipi: FY, ...IK })).toEqual(IK);

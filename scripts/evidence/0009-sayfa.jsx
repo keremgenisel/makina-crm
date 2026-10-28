@@ -1398,6 +1398,8 @@ const EKRANLAR = {
   "kilit-toplu-yedek-parca": [detay0111(), ["*Yedek Parça (Kargo) (2 kalem)", "kaydir:Bu kayıt şu an düzenleniyor"]],
 
   "giderler-0079-kdv": [<GiderEkrani satis={SATIS_0079} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0081: kutu kapalı başlar
+  // Spec 0114 ek düzeltme: satış tipi pili işaretli makinada teal "İhraç Kayıtlı" (müşteri listesi ve Makina Geçmişi).
+  "musteriler-0114-pil": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, []],
   "giderler-0114-kdv": [<GiderEkrani satis={SATIS_0114} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0114 R18/2
   "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],
   "servis-formu-yazdir-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0079[0], MUSTERI_0079, undefined, {}) }} />, []],

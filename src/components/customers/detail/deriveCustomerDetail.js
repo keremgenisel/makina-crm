@@ -7,6 +7,7 @@ import {
   sumBekleyenCek, isCekVadesiGecmis, cekBekliyorMu, parcaAdi, yedekParcaBedeli, isYedekParcaBorcluMu, tahsilEdilecekKdv, tahsilKdvOrani, UCRETSIZ_IBARESI,
 } from "../../../lib/utils";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "../../../lib/krediKarti";
+import { satisTipiSecimi } from "../../../lib/ihracKayitli";
 
 export function deriveCustomerDetail({ detailView, services, partSales, payments, kdvRates, models, todayStr, factoryName, yedekParcaSatislar = [], dealers = [], parts = [], customers = [] }) {
     const detailHistory = detailView
@@ -21,7 +22,7 @@ export function deriveCustomerDetail({ detailView, services, partSales, payments
         ev.push({
           kind: "sale", date: isDevir && lastSoldDate ? lastSoldDate : detailView.installDate, color: "var(--grn600, #16a34a)",
           title: isDevir ? "2. El Devir" : "Satış",
-          tip: normalizeSaleType(detailView.faturali),
+          tip: satisTipiSecimi(detailView), // spec 0114 ek düzeltme: ihraç kayıtlı makinada "İhraç Kayıtlı"
           desc: `${detailView.name}${detailView.fabrikaSatisBedeli ? " · " + fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""}${(detailView.kaliplar || []).length ? " · " + detailView.kaliplar.length + " kalıp" : ""}`,
         });
       }

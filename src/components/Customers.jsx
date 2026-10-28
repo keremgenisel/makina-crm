@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
-import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES, SALE_TYPE_STYLE } from "../lib/constants";
+import { ALTUNMAK_MODELS, DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { servisParcaGeriAl } from "../lib/servisStok";
 import { netDusumleri, IADE_TIPI } from "../lib/stokHareketi";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, normalizeSaleType, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
+import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
-import { ihracKayitliUygula, ihracKayitliDogrula } from "../lib/ihracKayitli";
+import { ihracKayitliUygula, ihracKayitliDogrula, satisTipiSecimi, satisTipiPilStili } from "../lib/ihracKayitli";
 import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
 import { satisKuruUygula, uretimTarihiDamgala, partiDamgala, makinaDurumuDamgala, MAKINA_DURUMU_KAYNAK } from "../lib/satisKaydi";
 import { uretimFormHaritasi, extraKalipGrupla, satirDurumu, TESLIM_SUZGECI, DURUM_SUTUNU } from "../lib/musteriDurumu";
@@ -647,8 +647,9 @@ export const Customers = ({
                   </td>
                   <td style={{ padding: "13px 16px" }}>
                     {c.faturali ? (() => {
-                      const tip = normalizeSaleType(c.faturali);
-                      const stil = SALE_TYPE_STYLE[tip] || { bg: "var(--n150, #f1f5f9)", fg: "var(--n600, #475569)" };
+                      // Spec 0114 ek düzeltme: ihraç kayıtlı makina "İhraç Kayıtlı" pili taşır (seçim ve renk ihracKayitli.js'ten).
+                      const tip = satisTipiSecimi(c);
+                      const stil = satisTipiPilStili(tip);
                       return (
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: stil.bg, color: stil.fg }}>
                           {tip}

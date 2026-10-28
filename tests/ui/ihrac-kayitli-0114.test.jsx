@@ -21,7 +21,7 @@ import { Finance } from "../../src/components/Finance";
 import { SettingsExport } from "../../src/components/settings/SettingsExport";
 import {
   IHRAC_SECENEK, IHRAC_ACIKLAMA, IHRAC_IBARE, IHRAC_FATURA_NOTU, IHRAC_PARCA_SINIRI, IHRAC_TEVKIFAT_NEDENI, IHRAC_KART_ETIKETI,
-  IHRAC_KART_NOTU, IHRAC_OZET_ETIKETLERI, ihracKdvHucreMetni, IHRAC_KOPYALANDI, IHRAC_KOPYALANAMADI, IHRAC_EXPORT_HEAD, ihracKayitliRozeti, ihracKayitliBorcMetni,
+  IHRAC_KART_NOTU, IHRAC_OZET_ETIKETLERI, ihracKdvHucreMetni, satisTipiPilStili, IHRAC_KOPYALANDI, IHRAC_KOPYALANAMADI, IHRAC_EXPORT_HEAD, ihracKayitliRozeti, ihracKayitliBorcMetni,
 } from "../../src/lib/ihracKayitli";
 import { SATIS_TEVKIFAT_NOTU_TAHSIL, SATIS_TEVKIFAT_KART_UYARISI } from "../../src/lib/satisTevkifat";
 import { fmtCur } from "../../src/lib/utils";
@@ -224,6 +224,25 @@ describe("Spec 0114 D: rozet ve Kalan Borç satırı (AC-36–AC-40, AC-61–AC-
     cleanup();
     detay(M, 2);
     expect(hucre()).toBe(`KDV Miktarı${fmtCur(20000)}`);
+  });
+  it("Ek düzeltme (satış tipi pili): müşteri listesinin Fatura sütunu işaretli makinada teal 'İhraç Kayıtlı', işaretsizde bugünkü pil", () => {
+    render(<Customers customers={M} setCustomers={vi.fn()} services={[]} partSales={[]} payments={[]} dealers={[]} parts={PARTS} kdvRates={KDV} gorusmeler={[]} dosyalar={[]} />);
+    const pil = (ad) => [...screen.getByText(ad).closest("tr").querySelectorAll("span")].find(s => SALE_TYPES.includes(s.textContent) || s.textContent === IHRAC_SECENEK);
+    expect(pil(CUSTOMERS[0].name).textContent).toBe(IHRAC_SECENEK);
+    expect(pil(CUSTOMERS[0].name).style.background).toContain("--tealBg");
+    expect(pil(CUSTOMERS[0].name).style.color).toContain("--teal2");
+    expect(pil(CUSTOMERS[1].name).textContent).toBe(FY);
+    expect(satisTipiPilStili(FY).bg).toBe("#d1fae5");
+    expect(pil(CUSTOMERS[1].name).style.background).toBe("rgb(209, 250, 229)"); // SALE_TYPE_STYLE değişmedi
+  });
+  it("Ek düzeltme (satış tipi pili): Makina Geçmişi'nin satış olayı işaretli makinada teal 'İhraç Kayıtlı', işaretsizde bugünkü pil", () => {
+    detay(M, 1);
+    expect(screen.getByTestId("satis-tipi-pili").textContent).toBe(IHRAC_SECENEK);
+    expect(screen.getByTestId("satis-tipi-pili").style.background).toContain("--tealBg");
+    cleanup();
+    detay(M, 2);
+    expect(screen.getByTestId("satis-tipi-pili").textContent).toBe(FY);
+    expect(screen.getByTestId("satis-tipi-pili").style.background).toBe("rgb(209, 250, 229)"); // SALE_TYPE_STYLE değişmedi
   });
   it("AC-38 / AC-40: işaretsiz kayıt rozet taşımaz; işaretli kaydı olmayan müşteride borç satırı yok", () => {
     detay(M, 2, { partSales: [PART_SALES[2]] });

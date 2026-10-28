@@ -132,7 +132,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
-**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:95` (eylem yuvası, alt başlık)
+**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:94` (eylem yuvası, alt başlık)
 
 ## BolumBasligi
 
