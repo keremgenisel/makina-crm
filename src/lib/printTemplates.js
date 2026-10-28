@@ -2,7 +2,8 @@ import LOGO from "../assets/logo.avif?inline";
 import { sayi, st, gecenAyEki, altBaslik, gun, detayTablo, rozet, rozetSatiri, bolum, belgeAcilis } from "./raporSunumu";
 import { today, todayTR, fmtTR, fmtCur, parseMoney, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster, satisKdvBolumu, UCRETSIZ_IBARESI } from "./utils";
 import { COUNTRY_EN } from "./constants";
-import { IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_SATIRLARI, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, ihracRaporAdet } from "./ihracKayitli";
+import { IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_SATIRLARI, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, ihracRaporAdet,
+  IHRAC_DETAY_BASLIK, IHRAC_DETAY_SUTUNLARI, TEVKIFAT_DETAY_BASLIK, TEVKIFAT_DETAY_SUTUNLARI } from "./ihracKayitli";
 
 // TIRNAK da kaçırılır: bu değerler yalnız metin düğümlerinde değil, HTML ÖZNİTELİĞİ içinde
 // de kullanılıyor (ör. alt="${esc(...)}"). Tırnak kaçmazsa öznitelikten çıkılıp olay
@@ -1683,7 +1684,7 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Faturadaki toplam KDV", paraSatir(tev.toplamKdv))}
     ${st("Alıcının beyan edeceği KDV (tevkifat)", paraSatir(tev.aliciBeyan))}
     ${st("Bizim beyan edeceğimiz KDV", paraSatir(tev.bizBeyan))}
-  </table>
+  </table>${detayTablo(TEVKIFAT_DETAY_BASLIK, TEVKIFAT_DETAY_SUTUNLARI, (tev.detay || []).map(d => [d.firma, d.tur, gun(d.tarih), paraSatir(d.matrah), paraSatir(d.toplamKdv), paraSatir(d.aliciBeyan)]), ["left", "left", "left", "right", "right", "right"])}
   <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Alıcının beyan edeceği KDV bilgi amaçlıdır; KDV özetine ve açık alacağa girmez.</div>`)}` : "";
   // Spec 0114 R29–R31, R30/2, R33/2: ihraç kayıtlı teslim yoksa kutu ve iki dipnot hiç basılmaz (rapor birebir eski). Rakamlar
   // motorun ihracKayitliTeslim nesnesinden; kutu tahakkuk esaslıdır, beşinci satır matraha eşittir (R29/2).
@@ -1695,7 +1696,7 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st(IHRAC_RAPOR_SATIRLARI.toplamKdv, paraSatir(ihr.toplamKdv))}
     ${st(IHRAC_RAPOR_SATIRLARI.ertelenenKdv, paraSatir(ihr.ertelenenKdv))}
     ${st(IHRAC_RAPOR_SATIRLARI.faturaToplami, paraSatir(ihr.faturaToplami))}
-  </table>
+  </table>${detayTablo(IHRAC_DETAY_BASLIK, IHRAC_DETAY_SUTUNLARI, (ihr.detay || []).map(d => [d.firma, d.tur, gun(d.tarih), paraSatir(d.matrah), paraSatir(d.ertelenenKdv)]), ["left", "left", "left", "right", "right"])}
   <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">${IHRAC_RAPOR_DIPNOTU}</div>`)}` : "";
   const netKdvBaslik = (net, kdv) => `Net <b style="color:#fff;">${paraSatir(net)}</b> · KDV ${paraSatir(kdv)}`;
   const komVar = Object.values(rapor.bankaKomisyonuTutar || {}).some(v => v > 0);

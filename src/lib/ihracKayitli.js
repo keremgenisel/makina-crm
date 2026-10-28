@@ -88,7 +88,13 @@ export const IHRAC_RAPOR_BASLIK = "İHRAÇ KAYITLI TESLİMLER";
 export const ihracRaporAdet = (adet) => `${adet} teslim`;
 export const IHRAC_RAPOR_SATIRLARI = { matrah: "Matrah (KDV hariç)", toplamKdv: "Faturadaki toplam KDV", ertelenenKdv: "Ertelenen KDV",
   faturaToplami: "Tahsil edilecek fatura toplamı" };
-export const IHRAC_RAPOR_DIPNOTU = "Ertelenen KDV bilgi amaçlıdır; KDV özetine ve açık alacağa girmez. Tahsil edilecek fatura toplamı matraha eşittir, çünkü KDV tahsil edilmez. Fatura tipi kırılımındaki \"Faturalı Yurtiçi\" satırının KDV'si ertelenen KDV'yi içermez.";
+// Karar 44 ile kırılım cümlesi kalktı: ihraç kayıtlı teslim fatura tipi kırılımında kendi satırındadır (R33/2'nin sorunu kalmadı).
+export const IHRAC_RAPOR_DIPNOTU = "Ertelenen KDV bilgi amaçlıdır; KDV özetine ve açık alacağa girmez. Tahsil edilecek fatura toplamı matraha eşittir, çünkü KDV tahsil edilmez.";
+// Karar 45: iki kutunun firma firma detayı (kime, ne kadar).
+export const IHRAC_DETAY_BASLIK = "İHRAÇ KAYITLI TESLİMLER (firma firma · eskiden yeniye)";
+export const IHRAC_DETAY_SUTUNLARI = ["Firma", "Tür", "Tarih", "Matrah", "Ertelenen KDV"];
+export const TEVKIFAT_DETAY_BASLIK = "TEVKİFATLI SATIŞLAR (firma firma · eskiden yeniye)";
+export const TEVKIFAT_DETAY_SUTUNLARI = ["Firma", "Tür", "Tarih", "Matrah", "Toplam KDV", "Alıcının beyanı"];
 export const IHRAC_KDV_OZETI_DIPNOTU = "İhraç kayıtlı teslim var: yukarıdaki KDV rakamları ertelenen KDV'yi içermez; tutarı için \"İhraç Kayıtlı Teslimler\" kutusuna bakın.";
 // R34: dışa aktarma sütunları (müşteri, Extra Kalıp, yedek parça raporlarının sonunda; işaretsizde boş).
 export const IHRAC_EXPORT_HEAD = ["İhraç Kayıtlı", "Ertelenen KDV"];

@@ -271,6 +271,10 @@ Takım Yöneticisi planın on iki önerisini (Ö-1–Ö-12) analistin önerisiyl
 
 **Karar 43. Satış tipi pili işareti gösterir.** Müşteri listesinin Fatura sütunu ve Makina Geçmişi'nin satış olayındaki pil, işaretli makinada "İhraç Kayıtlı" yazar ve rozetle aynı teal tonunu alır (`ihracKayitli.js` `satisTipiSecimi` + `satisTipiPilStili`; yeni token yok). *Gerekçe:* kullanıcı listede işaretli makinanın sıradan "Faturalı Yurtiçi" göründüğünü bildirdi; R26/2 bu sütunu saymamıştı. Kayıt, rapor ve dışa aktarma değişmez (satış tipi "Faturalı Yurtiçi" kalır, R33 ve R34 aynen); işaretsiz kayıtta iki pil birebir aynı (kanıt `0114b-piksel-raporu.json`).
 
+**Karar 44. Fatura tipi kırılımında kendi satırı (R33, AC-47 ve AC-68'i ters çevirir; kullanıcı isteği 2026-10-28).** Aylık Faaliyet Raporu'nun makina, Extra Kalıp ve yedek parça fatura tipi kırılımlarında ihraç kayıtlı teslim "İhraç Kayıtlı" satırında durur ("Faturalı Yurtiçi"nin hemen arkasında; KDV sütunu boş, çünkü tahsil edilecek KDV sıfır); "Satılan makinalar" detayının Fatura sütunu da bu tipi yazar. Servis kırılımı değişmez (servis işaretlenemez). Kayıtta satış tipi yine "Faturalı Yurtiçi"dir (C1); ayrım yalnız rapordadır (`satisTipiSecimi`). R33/2'nin dipnot cümlesi kalktı. *Gerekçe:* kullanıcı satışın öteki fatura tipleri gibi görünmesini istedi; R33'ün endişesi (yeni satış tipi değeri) veri modelinde değil yalnız raporun satır anahtarında olduğu için C1 bozulmaz.
+
+**Karar 45. Tevkifatlı satışlar ve ihraç kayıtlı teslimler firma firma (kullanıcı isteği 2026-10-28).** İki kutunun altında detay tablosu: tevkifatta Firma, Tür, Tarih, Matrah, Toplam KDV, Alıcının beyanı; ihraç kayıtlıda Firma, Tür, Tarih, Matrah, Ertelenen KDV. Satır kutunun sayım anahtarıyla birikir (parti ve servis tek satır), tutarlar kutunun kuralıyla (para birimi başına; ihraçta tanınmayan para birimi TL); satır toplamları kutu rakamlarına eşittir (testli). Rapor nesnesinde iki kutuya `detay` listesi eklendi; tevkifatsız ve ihraçsız ayda rapor birebir eski.
+
 ### Karar kaydı
 
 | # | Derece | Konu | Karar |

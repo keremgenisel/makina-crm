@@ -82,6 +82,10 @@ Makina, Extra Kalıp ve yedek parça satışında satış tipi listesine "İhra�
 
 Müşteri listesinin Fatura sütunu (`Customers.jsx`) ve Makina Geçmişi'nin satış olayı (`deriveCustomerDetail.js` `tip`, `MachineTimeline.jsx`) satış tipini `satisTipiSecimi`'nden, rengini `satisTipiPilStili`'nden okur; iki ekran `SALE_TYPE_STYLE`'ı artık doğrudan okumaz (tarama). Testler: U "Ek düzeltme (satış tipi pili)" iki test, S "Ek düzeltme: satış tipi pilinin rengi"; iki bozmayla ölçüldü. Kanıt `0114b-piksel-raporu.json` (liste, gruplu liste, 0106 pilleri, 0079 detayı ve müşteri formu 0 piksel; yeni `musteriler-0114-pil` ve iki 0114 detay ekranı değişti), taban `0114b-taban-piksel-raporu.json` (0 fark). Sürüm notuna eklenecek cümle: "Müşteri listesinde ve makina geçmişinde ihraç kayıtlı satış kendi pilini taşır."
 
+## 6c. Rapor ayrıntısı (Karar 44, 45)
+
+`aylikRapor.js`: `ftEkle` kaydı alır ve ihraç kayıtlı kaydı "İhraç Kayıtlı" satırına koyar (`FT_SIRA`: Faturalı Yurtiçi'nin arkasında); `satisDetay.faturaTipi` `satisTipiSecimi`; `kdvBol` etiket (firma, tür) alır ve iki kutu için `detay` biriktirir. `printTemplates.js`: iki kutunun altında `detayTablo`. Testler: S "AC-46 / Karar 44", üç "Karar 45" testi, "Karar 44 / 45 (çıktı)"; ters çevrilen "AC-44 / Karar 44" (eski AC-68); genişletilen `satis-tevkifat-0079` AC-43 (nesne `detay` taşır, toplamlar kutuya eşit) ve AC-30 kıyası (tevkifat detayı iki taraftan ayıklanır, ayıklamanın iş yaptığı ölçülür). Üç bozmayla ölçüldü. Sürüm notuna eklenecek cümle: "Aylık Faaliyet Raporu'nda ihraç kayıtlı satışlar fatura tipi kırılımında kendi satırında görünür; tevkifatlı satışlar ve ihraç kayıtlı teslimler firma firma listelenir."
+
 ## 7. Açık bulgular
 
 - **Extra Kalıp düzenleme formu tevkifatı taşımıyor (0079'dan beri).** `CustomerDetailModal.openEditPartSale` tevkifat alanlarını forma kopyalamıyor; tevkifatlı bir Extra Kalıp düzenlenip kaydedilince tevkifat siliniyor. Bugünkü veride tevkifatlı Extra Kalıp yok (spec ölçüm 3). Düzeltme tek satır ve testle gelmeli; ayrı iş (spec'in README satırında ve `CLAUDE.md`'de de yazılı).

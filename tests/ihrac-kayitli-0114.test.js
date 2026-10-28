@@ -12,7 +12,7 @@ import {
   ihracKayitliSecilebilirMi, satisTipiSecimi, satisTipiUygula, ihracKayitliUygula, ihracKayitliDogrula, satisTipiSecenekleri,
   IHRAC_SECENEK, IHRAC_IBARE, IHRAC_TEVKIFAT_NEDENI, IHRAC_TEVKIFAT_HATASI, IHRAC_EXPORT_HEAD, ihracKayitliExportHucreleri,
   ihracKayitliRozeti, ihracRozetGosterilirMi, IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, IHRAC_RAPOR_SATIRLARI,
-  IHRAC_KART_ETIKETI, ihracKayitliFormu, satisTipiPilStili,
+  IHRAC_KART_ETIKETI, ihracKayitliFormu, satisTipiPilStili, IHRAC_DETAY_BASLIK, TEVKIFAT_DETAY_BASLIK,
 } from "../src/lib/ihracKayitli";
 import { kartTabanKaydi, kartTabanIsaretle, kartTabaniEskiMi, makinaKartTabaniEskiMi, satisTevkifatOzeti, satisTevkifatRozeti } from "../src/lib/satisTevkifat";
 import { kalipKartHesabi, kalipSatisOrtak, kalipGuncelle, kalipSatisiEkle } from "../src/lib/kalipSatisi";
@@ -240,13 +240,44 @@ describe("Spec 0114 C: KDV karşılaştırması ve Finans ile rapor", () => {
     const rapor = hesaplaAylikRapor(VERI, "2026-09", SECENEK).ihracKayitliTeslim;
     expect(satisKdvAylar(VERI, ["2026-09"], SECENEK).ertelenen).toEqual(rapor.ertelenenKdv);
   });
-  it("AC-46 / AC-47 / R33: rapor KDV toplamı ertelenen KDV'yi saymaz; işaretli makina 'Faturalı Yurtiçi' satırında, beşinci satır yok", () => {
+  // Spec 0114 Karar 44 ile (R33 ve AC-47 ters çevrildi, kullanıcı isteği 2026-10-28): ihraç kayıtlı teslim fatura tipi
+  // kırılımında kendi satırındadır ("Faturalı Yurtiçi"nin hemen arkasında), satış detayında da kendi tipiyle. KDV toplamı kuralı aynen.
+  it("AC-46 / Karar 44: KDV toplamı ertelenen KDV'yi saymaz; makina, kalıp ve yedek parça kırılımlarında 'İhraç Kayıtlı' kendi satırında", () => {
     const r = hesaplaAylikRapor(VERI, "2026-09", SECENEK);
     const isaretsiz = hesaplaAylikRapor({ ...VERI, customers: VERI.customers.map(({ ihracKayitli: _ik, ...c }) => c) }, "2026-09", SECENEK);
     expect(isaretsiz.toplamKdv.TRY - r.toplamKdv.TRY).toBe(40000);
-    const tipler = r.makinaFaturaKirilimi.map(x => x.tip ?? x.faturaTipi ?? x.ad);
-    expect(tipler).not.toContain(IHRAC_SECENEK);
-    expect(JSON.stringify(r.makinaFaturaKirilimi)).toContain(FY);
+    const satir = (k, t) => r[k].find(x => x.faturaTipi === t);
+    expect(r.makinaFaturaKirilimi.map(x => x.faturaTipi)).toEqual([FY, IHRAC_SECENEK, "Faturalı Yurtdışı"]);
+    expect(satir("makinaFaturaKirilimi", IHRAC_SECENEK)).toEqual({ faturaTipi: IHRAC_SECENEK, adet: 1, net: { TRY: 200000 }, kdv: {} });
+    expect(satir("makinaFaturaKirilimi", FY)).toMatchObject({ adet: 2, net: { TRY: 200000 }, kdv: { TRY: 30000 } }); // işaretsiz + tevkifatlı
+    expect(satir("extraKalipFaturaKirilimi", IHRAC_SECENEK)).toMatchObject({ adet: 2, net: { TRY: 70000 }, kdv: {} });
+    expect(satir("yedekKargoFaturaKirilimi", IHRAC_SECENEK)).toMatchObject({ adet: 4 });
+    expect(r.servisFaturaKirilimi.map(x => x.faturaTipi)).not.toContain(IHRAC_SECENEK);
+    expect(r.satisDetay.find(x => x.firma === CUSTOMERS[0].name).faturaTipi).toBe(IHRAC_SECENEK);
+    expect(r.satisDetay.find(x => x.firma === CUSTOMERS[1].name).faturaTipi).toBe(FY);
+    // işaretsiz veride kırılım satırları bugünkü dört tipten ibaret
+    expect(isaretsiz.makinaFaturaKirilimi.map(x => x.faturaTipi)).toEqual([FY, "Faturalı Yurtdışı"]);
+  });
+  it("Karar 45: ihraç kayıtlı kutusunun detayı firma firma (kime, ne kadar); satır sayısı teslim adedine, toplamlar kutuya eşit", () => {
+    const r = hesaplaAylikRapor(VERI, "2026-09", SECENEK).ihracKayitliTeslim;
+    expect(r.detay).toHaveLength(r.adet);
+    expect(r.detay[0]).toEqual({ firma: CUSTOMERS[0].name, tur: "Makina", tarih: "2026-09-10", matrah: { TRY: 200000 }, ertelenenKdv: { TRY: 40000 } });
+    expect(r.detay.map(d => d.tur)).toEqual(["Makina", "Extra Kalıp", "Extra Kalıp", "Yedek parça", "Yedek parça", "Yedek parça", "Yedek parça"]);
+    expect(r.detay.find(d => d.matrah.USD)).toMatchObject({ firma: CUSTOMERS[1].name, matrah: { USD: 1000 }, ertelenenKdv: { USD: 200 } });
+    const topla = (alan) => r.detay.reduce((t, d) => { for (const [k, v] of Object.entries(d[alan])) t[k] = Math.round(((t[k] || 0) + v) * 100) / 100; return t; }, {});
+    expect(topla("matrah")).toEqual(r.matrah);
+    expect(topla("ertelenenKdv")).toEqual(r.ertelenenKdv);
+  });
+  it("Karar 45: toplu yedek parça partisi tek detay satırıdır", () => {
+    const yp = [41, 42].map(id => ({ ...YEDEK[0], id, batchId: 900, tarih: "2026-09-25" }));
+    const r = hesaplaAylikRapor({ ...VERI, yedekParcaSatislar: [...YEDEK, ...yp] }, "2026-09", SECENEK).ihracKayitliTeslim;
+    const parti = r.detay.filter(d => d.tarih === "2026-09-25");
+    expect(parti).toHaveLength(1);
+    expect(parti[0]).toMatchObject({ matrah: { TRY: 20000 }, ertelenenKdv: { TRY: 4000 } });
+  });
+  it("Karar 45: tevkifatlı satışların detayı firma firma; toplamlar kutuya eşit", () => {
+    const r = hesaplaAylikRapor(VERI, "2026-09", SECENEK).tevkifatliSatis;
+    expect(r.detay).toEqual([{ firma: CUSTOMERS[2].name, tur: "Makina", tarih: "2026-09-14", matrah: { TRY: 100000 }, toplamKdv: { TRY: 20000 }, aliciBeyan: { TRY: 10000 } }]);
   });
   it("R31: ayında teslim yoksa rapor nesnesinde alan hiç yok", () => {
     expect(hesaplaAylikRapor(VERI, "2026-08", SECENEK)).not.toHaveProperty("ihracKayitliTeslim");
@@ -277,10 +308,24 @@ describe("Spec 0114 E: aylık rapor kutusu", () => {
     const kalip = (id) => ({ ...PART_SALES[0], id, batchId: 901 });
     expect(hesaplaAylikRapor({ ...VERI, partSales: [...PART_SALES, kalip(51), kalip(52)] }, "2026-09", SECENEK).ihracKayitliTeslim.adet).toBe(8);
   });
-  it("AC-44 / AC-68: dipnot ertelenen KDV'nin KDV özetine ve açık alacağa girmediğini ve kırılımın KDV'sini yazar", () => {
-    expect(html()).toContain(IHRAC_RAPOR_DIPNOTU.replace(/"/g, "\""));
+  // Spec 0114 Karar 44 ile AC-68 ters çevrildi: kırılımda kendi satırı olduğu için "Faturalı Yurtiçi satırının KDV'si …" cümlesi kalktı.
+  it("AC-44 / Karar 44: dipnot ertelenen KDV'nin KDV özetine ve açık alacağa girmediğini yazar; kırılım cümlesi yok", () => {
+    expect(html()).toContain(IHRAC_RAPOR_DIPNOTU);
     expect(IHRAC_RAPOR_DIPNOTU).toMatch(/KDV özetine ve açık alacağa girmez/);
-    expect(IHRAC_RAPOR_DIPNOTU).toMatch(/"Faturalı Yurtiçi" satırının KDV'si ertelenen KDV'yi içermez/);
+    expect(IHRAC_RAPOR_DIPNOTU).not.toMatch(/Faturalı Yurtiçi/);
+  });
+  it("Karar 44 / 45 (çıktı): kırılım tablosunda 'İhraç Kayıtlı' satırı; iki kutunun altında firma firma detay tablosu", () => {
+    const h = html();
+    expect(h).toMatch(/<td[^>]*>İhraç Kayıtlı<\/td>/);
+    for (const b of [IHRAC_DETAY_BASLIK, TEVKIFAT_DETAY_BASLIK]) expect(h).toContain(b);
+    const ihrKutu = h.slice(h.indexOf(IHRAC_RAPOR_BASLIK), h.indexOf(IHRAC_RAPOR_DIPNOTU));
+    expect(ihrKutu).toContain(IHRAC_DETAY_BASLIK);
+    expect(ihrKutu).toContain(CUSTOMERS[0].name);
+    expect(ihrKutu).toContain(CUSTOMERS[1].name);
+    const tevKutu = h.slice(h.indexOf("TEVKİFATLI SATIŞLAR"), h.indexOf(IHRAC_RAPOR_BASLIK));
+    expect(tevKutu).toContain(CUSTOMERS[2].name);
+    expect(tevKutu).not.toContain(CUSTOMERS[0].name);
+    expect(html("2026-08")).not.toContain(IHRAC_DETAY_BASLIK);
   });
   it("AC-45 / AC-69 / R31: teslim olmayan ayda kutu ve iki dipnot hiç basılmaz; teslim olan ayda KDV özetinin altında kardeş dipnot", () => {
     const bos = html("2026-08");

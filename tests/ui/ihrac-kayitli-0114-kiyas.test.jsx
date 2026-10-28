@@ -80,7 +80,16 @@ describe("Spec 0114 AC-30: işaretsiz veride ekran, motor ve dışa aktarma bire
     if (process.env.YAZ_0114 === "1") { fs.writeFileSync(DOSYA, JSON.stringify(simdi, null, 1)); return; }
     const once = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
     expect(Object.keys(simdi).sort()).toEqual(Object.keys(once).sort());
-    for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(simdi[k], k).toEqual(once[k]);
+    // Spec 0114 Karar 45 ile: tevkifatlı satış kutusu firma firma detayını da taşır (rapor nesnesinde `detay`, HTML'de kutunun
+    // altında tablo). İkisi yalnız bu ekten ayıklanır; geri kalan her şey spec öncesiyle birebir. Ayıklamanın iş yaptığı ölçülür.
+    const detaysiz = (k, v) => {
+      if (k.startsWith("rapor:") && v.tevkifatliSatis) { const { detay: _d, ...t } = v.tevkifatliSatis; return { ...v, tevkifatliSatis: t }; }
+      if (k.startsWith("raporHtml:")) return v.replace(/<[^<]*TEVKİFATLI SATIŞLAR \(firma firma[\s\S]*?<\/table>/, "");
+      return v;
+    };
+    expect(simdi["raporHtml:2026-09"]).toContain("TEVKİFATLI SATIŞLAR (firma firma");
+    expect(detaysiz("raporHtml:2026-09", simdi["raporHtml:2026-09"])).not.toContain("TEVKİFATLI SATIŞLAR (firma firma");
+    for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(detaysiz(k, simdi[k]), k).toEqual(once[k]);
     expect(once.finans).toContain("KDV Karşılaştırması"); // kart gerçekten çizildi, kıyas boş metne bakmıyor
     expect(once["raporHtml:2026-09"]).toContain("TEVKİFATLI SATIŞLAR");
     // R34: iki yeni sütun satırın SONUNA eklenir; işaretsiz satırda boştur, eski sütunlar birebir aynı.

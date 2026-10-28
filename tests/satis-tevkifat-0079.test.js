@@ -217,10 +217,17 @@ describe("Spec 0079 C: türev rakamlar", () => {
     const r = hesaplaAylikRapor(veri, "2026-09", { kdvRates: KDV20 });
     // makina 10.000 + servis 600 + anlaşmalı parça 100 + kalıp 1.280 + yedek 30 = 12.010 TL; USD yedek 100 × %20 = 20, 5/10 → 10
     expect(r.toplamKdv).toEqual({ TRY: 12010, USD: 10 });
-    expect(r.tevkifatliSatis).toEqual({
+    // Spec 0114 Karar 45 ile: nesne firma firma `detay` listesini de taşır; kutu rakamları aynen, detay toplamları onlara eşit.
+    const { detay, ...kutu } = r.tevkifatliSatis;
+    expect(kutu).toEqual({
       adet: 6, matrah: { TRY: 120500, USD: 100 }, toplamKdv: { TRY: 24100, USD: 20 },
       aliciBeyan: { TRY: 12090, USD: 10 }, bizBeyan: { TRY: 12010, USD: 10 },
     });
+    expect(detay).toHaveLength(6);
+    const topla = (alan) => detay.reduce((t, d) => { for (const [k, v] of Object.entries(d[alan] || {})) t[k] = Math.round(((t[k] || 0) + v) * 100) / 100; return t; }, {});
+    expect(topla("matrah")).toEqual(kutu.matrah);
+    expect(topla("toplamKdv")).toEqual(kutu.toplamKdv);
+    expect(topla("aliciBeyan")).toEqual(kutu.aliciBeyan);
     // Alacak: makina bakiyesi kaydın kalanBorc'u (uygulama yazar); servis 1.100, kalıp 9.280 (bayide), yedek 1.530 + 110 USD.
     const alacak = (ad) => r.alacakDetay.find(x => x.firma === ad)?.tutar;
     expect(alacak("Ege Bayi")).toEqual({ TRY: 9280 + 1530 });
