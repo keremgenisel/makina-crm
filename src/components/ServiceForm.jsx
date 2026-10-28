@@ -9,12 +9,13 @@ import { SatisTipiSecici } from "./SatisTipiSecici";
 import { satisTevkifatDogrula, satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
+import { KalipAtolyeAlani } from "./KalipAtolyeAlani";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [], kasaHesaplari = null, hesapVarsayilan = null }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [], kasaHesaplari = null, hesapVarsayilan = null, partTypeDefs = null }) => {
   // Teknisyen: firma çalışanları (Ayarlar) açılır listeden seçilir; listede olmayan harici usta için
   // "Diğer (elle yaz)" seçeneği serbest metin kutusu açar. Açılır liste, seçili olsa bile TÜM çalışanları
   // gösterir (datalist gibi önce silmek gerekmez).
@@ -472,6 +473,9 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           </Field>
         </>
       )}
+
+      {/* Spec 0115: kalıbın kendisi atölyeye girecek mi (her servis türünde ve onarım yerinde, R10/2) */}
+      <KalipAtolyeAlani form={form} setForm={setForm} musteri={selectedCust} parts={parts} partTypeDefs={partTypeDefs} />
 
       {(svUcretliTipi || !parcaUcretsizMi) && (
         <div style={{ display: "grid", gridTemplateColumns: svUcretliTipi ? "1fr 1fr" : "1fr", gap: 12 }}>

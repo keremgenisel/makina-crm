@@ -10139,6 +10139,33 @@
         "ekran": "stok-yedek-0114",
         "beklenen": "ayni"
       }
+    ],
+    "src/components/KalipAtolyeAlani.jsx": [
+      {
+        "rapor": "docs/evidence/0115-taban-piksel-raporu.json",
+        "ekran": "servis-formu-0115-kapali",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0115-taban-piksel-raporu.json",
+        "ekran": "servis-formu-0115-acik",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0115-taban-piksel-raporu.json",
+        "ekran": "servis-formu-0115-kayitli",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0115-taban-piksel-raporu.json",
+        "ekran": "servis-formu-0115-bos-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0115-taban-piksel-raporu.json",
+        "ekran": "servis-formu-0115-ad-hata",
+        "beklenen": "ayni"
+      }
     ]
   }
 }

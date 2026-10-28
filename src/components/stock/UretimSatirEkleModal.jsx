@@ -2,11 +2,15 @@ import { useState, useMemo } from "react";
 import { Btn, Icon, Modal } from "../ui";
 import { fmtKalipCapi } from "../../lib/utils";
 import { emptyRow } from "./uretimFormModel";
+import { AYNA_SATIR_IBARESI } from "../../lib/musteriDurumu";
+import { BASKA_FORMDA_IBARESI } from "../../lib/kalipTamiri";
 
 // "Manuel Satır Ekle" modalı — UretimFormu'ndan ayrıldı. Kendi arama/seçim state'ini
 // kapsüller; dışarıya yalnız iki bağ verir: onClose (kapat) ve onAdd(newRows) (seçilen
 // kalıpları forma ekle). Açılışta taze mount olur, böylece her açılış temiz başlar.
-export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, onAdd }) {
+// `baskaFormdakiler`: başka canlı formda satırı olan kaynak anahtarları (`musteri:<id>:<idx>`, `extra_kalip:<id>`); o kalıplar
+// pasif çizilir ve seçilemez (spec 0115 triyajı).
+export function UretimSatirEkleModal({ customers = [], kalipDefs = [], baskaFormdakiler = null, onClose, onAdd }) {
   const [custSearch, setCustSearch]     = useState("");
   const [kalipSearch] = useState("");
   const [selMusteri, setSelMusteri]     = useState(null);
@@ -24,9 +28,12 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
     if (selMusteri) {
       const cust = customers.find(c => c.id === selMusteri.id);
       const kaliplarArr = cust?.kaliplar || [];
-      return kaliplarArr.map(k => {
+      // Spec 0115 R40, R40/3: dizi konumu (kalipIdx) ve ayna bağı (partSaleId) satırın kaynak bağı için taşınır.
+      return kaliplarArr.map((k, i) => {
         const def = kalipDefs.find(d => d.ad === k.ad);
-        return { id: def?.id ?? null, ad: k.ad || "", kod: def?.kod || "", resim: def?.resim || "", olcu: k.olcu || "" };
+        const anahtar = k.partSaleId != null ? `extra_kalip:${k.partSaleId}` : `musteri:${selMusteri.id}:${i}`;
+        return { id: def?.id ?? null, ad: k.ad || "", kod: def?.kod || "", resim: def?.resim || "", olcu: k.olcu || "", kalipIdx: i, partSaleId: k.partSaleId ?? null,
+          baskaFormda: !!baskaFormdakiler?.has(anahtar) };
       });
     }
     const q = kalipSearch.trim().toLocaleLowerCase("tr");
@@ -35,7 +42,7 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
       (k.ad || "").toLocaleLowerCase("tr").includes(q) ||
       (k.kod || "").toLocaleLowerCase("tr").includes(q)
     ).slice(0, 40);
-  }, [kalipDefs, kalipSearch, selMusteri, customers]);
+  }, [kalipDefs, kalipSearch, selMusteri, customers, baskaFormdakiler]);
 
   const pickMusteri = (c) => {
     setSelMusteri(c);
@@ -50,6 +57,7 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
   };
 
   const toggleKalip = (idx) => {
+    if (filtKaliplar[idx]?.baskaFormda) return;
     const next = new Set(selKalipIdxs);
     if (next.has(idx)) next.delete(idx); else next.add(idx);
     setSelKalipIdxs(next);
@@ -79,6 +87,10 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
         makinaKalipCapi: draftRow.makinaKalipCapi || "",
         torna: draftRow.torna || "",
         kalipOlcusu: k?.olcu || draftRow.kalipOlcusu || "",
+        // Spec 0115 R40, R40/3, Karar 35: kaynak bağı. Ayna satır Extra Kalıp bağıyla yazılır (aynaya damga atılmaz, 0107).
+        ...(k?.partSaleId != null
+          ? { kaynakTip: "extra_kalip", kaynakId: k.partSaleId, kalipIdx: null }
+          : k?.kalipIdx != null ? { kaynakTip: "musteri", kaynakId: selMusteri.id, kalipIdx: k.kalipIdx } : {}),
       };
     });
     onAdd(newRows);
@@ -152,8 +164,8 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
                 ) : filtKaliplar.map((k, idx) => {
                   const isSel = selKalipIdxs.has(idx);
                   return (
-                    <div key={idx} onClick={() => toggleKalip(idx)} style={{
-                      padding: "9px 10px", cursor: "pointer", borderRadius: 8, marginBottom: 3,
+                    <div key={idx} onClick={() => toggleKalip(idx)} aria-disabled={k.baskaFormda || undefined} data-testid={k.baskaFormda ? "manuel-baska-formda" : undefined} style={{
+                      padding: "9px 10px", cursor: k.baskaFormda ? "not-allowed" : "pointer", borderRadius: 8, marginBottom: 3, opacity: k.baskaFormda ? 0.5 : 1,
                       display: "flex", alignItems: "center", gap: 10,
                       background: isSel ? "var(--ambBg4, #fff7f3)" : "transparent",
                       border: isSel ? "1.5px solid var(--brand, #e85d1a)" : "1.5px solid transparent",
@@ -164,9 +176,9 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], onClose, 
                       }
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: isSel ? 700 : 500, fontSize: 13, color: isSel ? "var(--brand, #e85d1a)" : "var(--n800, #1e293b)" }}>{k.ad}</div>
-                        {(k.kod || k.olcu) && (
+                        {(k.kod || k.olcu || k.partSaleId != null || k.baskaFormda) && (
                           <div style={{ fontSize: 11, color: "var(--n400, #94a3b8)", marginTop: 1 }}>
-                            {[k.kod, k.olcu].filter(Boolean).join(" · ")}
+                            {[k.kod, k.olcu, k.partSaleId != null ? AYNA_SATIR_IBARESI : "", k.baskaFormda ? BASKA_FORMDA_IBARESI : ""].filter(Boolean).join(" · ")}
                           </div>
                         )}
                       </div>

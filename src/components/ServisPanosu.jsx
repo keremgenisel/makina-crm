@@ -19,6 +19,9 @@ import { yeniYedekParcaSatisCoklu, kargoPlanlandiMi } from "../lib/yedekParcaSat
 import { useKilitListesi } from "../hooks/useKilitListesi";
 import { useLock } from "../hooks/useLock";
 import { printServiceForm as printServiceFormTemplate } from "../lib/printTemplates";
+import { tamirDogrula, tamirListesiKur, tamirYaz, tamirListesi, tamirSatirHaritasi, tamirOzeti, tamirFormIdleri, tamirlariTamamla,
+  TAMIR_BILDIRIMI, TAMIR_ONAY_BASLIGI, tamirOnayMetni, TAMIR_ONAY_DUGMESI, TAMIR_ONAY_KAPAT, TAMIR_KILITLI, TAMIR_ISARETLENDI } from "../lib/kalipTamiri";
+import { TamirRozeti } from "./TamirRozeti";
 
 // Servis Panosu (Kanban) — servisin iş durumu: Bekliyor / Yapılıyor / Tamamlandı. Kartlar
 // sürükle-bırakla sütun değiştirir (durum), her kartta teknisyen (firma çalışanı) seçilir.
@@ -82,6 +85,9 @@ export const ServisPanosu = ({
   // Spec 0098 R4/2: tahsilat hesabı alanı. App bu iki prop'u tek kapıdan (`tahsilatHesapYetki`) verir; pano yeni mekanizma kurmaz,
   // formlara bugünkü imzalarla iletir. Ayrı pencerede (ServisPencere) verilmez, alan orada bilerek yoktur (R4/3, X8).
   kasaHesaplari = null, tahsilatHesapVarsayilan = null,
+  // Spec 0115 R11/2, R32, R32/2: üretim formları ve parça tipleri salt okunur; `setUretimFormlari` yalnız ana pencere sekmesinden
+  // verilir (kiosk ve ayrı pencere vermez, C13). `uretimYetki` = Stok sekmesi görünür (R27/2).
+  uretimFormlari = [], setUretimFormlari = null, uretimYetki = false, partTypeDefs = null,
 }) => {
   const canDo = makeCanDo(serverPermissions, "customerActions");
   const canKargoDuzenle = makeCanDo(serverPermissions, "stockActions")("yedek_parca_edit");
@@ -125,6 +131,24 @@ export const ServisPanosu = ({
   // diye canlı listeye bakıp reddederiz (yumuşak koruma). Spec 0064 R28: liste ve denetim ortak kancada.
   const { baskasiKilitli } = useKilitListesi(aktifKullanici);
   const kilitReddet = (k) => showToast(`Bu kayıt "${k.locked_by}" tarafından düzenleniyor, taşınamadı.`, "err");
+  // Spec 0115 R20/2, C3: rozetin ve üretim formu satırının tek kaynağı aynı harita.
+  const tamirHarita = useMemo(() => tamirSatirHaritasi(uretimFormlari), [uretimFormlari]);
+  // R27/2: kapı iki şartlı (Stok sekmesi + eylem izni); kioskta stockActions tanımsız olduğu için tek şart yanlış pozitif verir.
+  const tamirYazabilir = !!setUretimFormlari && uretimYetki && makeCanDo(serverPermissions, "stockActions")("stock_uretim_edit");
+  const [tamirOnay, setTamirOnay] = useState(null); // { servisId, firma, bitmemis, formaGirmemis }
+  const tamirTamamla = () => {
+    const sv = services.find(s => s.id === tamirOnay?.servisId);
+    setTamirOnay(null);
+    if (!sv || !tamirYazabilir) return;
+    const formIds = tamirFormIdleri(sv, tamirHarita);
+    // R27/4, Karar 38: ilgili bütün formların kilidi anlık listeyle; biri başkasındaysa hiçbir şey yazılmaz.
+    const k = formIds.length ? baskasiKilitli("uretim_formu", formIds) : null;
+    if (k) { showToast(TAMIR_KILITLI(k.locked_by), "err"); return; }
+    const oz = tamirOzeti(sv, tamirHarita);
+    setUretimFormlari(p => tamirlariTamamla(p, sv));
+    formIds.forEach(id => logAction({ serverPermissions, action: "duzenlendi", entity: "uretim_formu", entityId: id, detail: { tamirServisId: sv.id } }));
+    showToast(TAMIR_ISARETLENDI(oz.bitmemis - oz.formaGirmemis));
+  };
 
   // Servis DÜZENLERKEN, o servisin müşterisi için kilit al — müşteri detayındaki düzenlemeyle
   // AYNI kilit alanını ("customer") paylaşır, böylece kiosk + ofis aynı kaydı aynı anda düzenleyemez.
@@ -396,6 +420,15 @@ export const ServisPanosu = ({
       return u;
     }));
     auditServis("durum_degisti", id, { durum });
+    // Spec 0115 R26, R27/3, Karar 9: taşıma engellenmez; bitmemiş tamir varsa taşımadan SONRA onay penceresi (kapısı geçmeyen
+    // kullanıcıda düz bildirim, R28).
+    if (durum === "Tamamlandı" && sv && sv.durum !== "Tamamlandı") {
+      const oz = tamirOzeti(sv, tamirHarita);
+      if (oz.bitmemis > 0) {
+        if (tamirYazabilir && oz.bitmemis > oz.formaGirmemis) setTamirOnay({ servisId: sv.id, firma: custMap[Number(sv.customerId)]?.name || "", bitmemis: oz.bitmemis, formaGirmemis: oz.formaGirmemis });
+        else showToast(TAMIR_BILDIRIMI(oz.bitmemis), "err");
+      }
+    }
   };
   const teknisyenDegistir = (id, tech) => {
     if (!setServices || !canDo("cust_service_edit")) return;
@@ -515,6 +548,9 @@ export const ServisPanosu = ({
     // Spec 0079 R6/3: CustomerDetailModal.saveService'in birebir kopyası; doğrulama, kart tabanı ve alan yazımı ikisinde birden.
     const tevkifatHata = satisTevkifatDogrula(form, form.faturaTipi);
     if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
+    // Spec 0115 R14, Karar 52: CustomerDetailModal.saveService ile aynı doğrulama (C3; tarama ikisini birlikte arar).
+    const tamirD = tamirDogrula(form);
+    if (!tamirD.gecerli) { setForm(f => ({ ...f, _tamirHatalari: tamirD })); showToast(tamirD.hata, "err"); return; }
     const kartTaban = kartTabanKaydi(form);
     const cust = customers.find(c => c.id === Number(form.customerId));
     // Komisyon yansıtma: servisUcreti + parça fiyatları KDV matrahına ölçeklenir (CustomerDetailModal.saveService
@@ -539,14 +575,16 @@ export const ServisPanosu = ({
     const parcaUcretiAltuntastan = degisenParcalarSave.filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const svBillable = servisUcretiSave + (parcaUcretsizMi ? 0 : parcaUcreti);
     const svKdvDahil = svBillable + tahsilEdilecekKdv(form.faturaTipi, svBillable, form.date, kdvRates, kartTaban);
-    const rec = satisTevkifatUygula({ ...form, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
+    const recTevkifat = satisTevkifatUygula({ ...form, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
       customerId: form.customerId ? Number(form.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: form.currency,
       vadeTarihi: form.yontem === "Çek" ? (form.vadeTarihi || "") : "",
       tahsilEdildi: form.yontem === "Çek" ? !!form.tahsilEdildi : false,
       taksitSayisi: form.yontem === "Kredi Kartı" ? (form.taksitSayisi ?? null) : null,
       kartKomisyonu: form.yontem === "Kredi Kartı" ? kartTabanIsaretle(yansitSnap || kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, kkAyar, kkTarih, false), kartTaban) : null }, form, form.faturaTipi);
+    // Spec 0115 R7/3, C3: kimlikler kurucuda, tek yazıcı tamirYaz (kutu kapalıysa alan kayıtta yok).
+    if (svModal === "add" || tamirListesi(form).some(g => g.id == null)) bumpId(customers, services);
+    const rec = tamirYaz(recTevkifat, tamirListesiKur(form, uid));
     if (svModal === "add") {
-      bumpId(customers, services);
       const newId = uid();
       // Yeni servis "Bekliyor" ile açılır → fabrikaya giriş anı damgalanır (elle girilmişse korunur).
       const yeniRec = { ...rec, id: newId };
@@ -616,6 +654,7 @@ export const ServisPanosu = ({
         })()}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
           <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: stil.fg, background: stil.bg, border: `1px solid ${stil.br}` }}>{sv.type}</span>
+          <TamirRozeti ozet={tamirOzeti(sv, tamirHarita)} />
           {sv.repairPlace && <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>{sv.repairPlace}</span>}
           <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>{sv.date ? `Talep ${fmtTR(sv.date)}` : "—"}</span>
         </div>
@@ -905,10 +944,16 @@ export const ServisPanosu = ({
           form={form} setForm={setForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar} kasaHesaplari={kasaHesaplari} hesapVarsayilan={tahsilatHesapVarsayilan}
+          partTypeDefs={partTypeDefs}
           onSave={kaydet} onCancel={() => setSvModal(null)}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}
         />
       ))}
+
+      {tamirOnay && (
+        <ConfirmDialog title={TAMIR_ONAY_BASLIGI} message={tamirOnayMetni(tamirOnay.firma, tamirOnay.bitmemis, tamirOnay.formaGirmemis)}
+          icon="check" confirmIcon="check" confirmVariant="primary" confirmLabel={TAMIR_ONAY_DUGMESI} cancelLabel={TAMIR_ONAY_KAPAT} onConfirm={tamirTamamla} onCancel={() => setTamirOnay(null)} />
+      )}
 
       {/* Per-servis süre analizi — o kartın kendi zaman çizelgesi ve süreleri */}
       {analizSv && (() => {

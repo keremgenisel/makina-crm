@@ -17,7 +17,7 @@ export const KILIT_ALANLARI = {
   partstock: { etiket: "Parça stoğu", pencereler: ["src/components/stock/PartStokTab.jsx"] },
   stock: { etiket: "Makina stoğu", pencereler: ["src/components/stock/MakinaStokTab.jsx"] },
   "stok-seri": { etiket: "Stok seri numarası", pencereler: ["src/components/customers/CustomerAddEditForm.jsx"] },
-  uretim_formu: { etiket: "Üretim formu", pencereler: ["src/components/stock/UretimFormu.jsx"] },
+  uretim_formu: { etiket: "Üretim formu", pencereler: ["src/components/stock/UretimFormu.jsx", "src/components/ServisPanosu.jsx"] }, // spec 0115 R27/4
   // ── Spec 0064 ──
   // R1, R25: gider formu, Giderler'in ve Anasayfa'nın ödeme penceresi, ödeme planı (ödendi ve hedef anahtarları pencere açar),
   // çöpe taşıma onayı (triyaj). Kasa (kapsam dışı) ve Çek Portföyü (ciro / Çek Yaz kaydı, R36) kalemin kilidine anlık bakar.

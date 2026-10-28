@@ -156,7 +156,8 @@ CREATE TABLE IF NOT EXISTS services (
   fabrikaGirisZamani TEXT, bakimBaslangicZamani TEXT, bitisZamani TEXT,
   yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER, taksitSayisi INTEGER, kartKomisyonu TEXT,
   tahsilatTarihi TEXT, hesapId INTEGER,
-  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER
+  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER,
+  atolyeKaliplari TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
@@ -436,6 +437,9 @@ const CEKLER_0049_COLUMNS = [["yon", "TEXT"], ["tutar", "REAL"], ["currency", "T
 // ...rest ile otomatik okunur; yalnız CREATE + ensureColumns + INSERT gerekir. services/part_sales/yedek_parca_satis.
 const TAHSILAT_TARIHI_COLUMN = [["tahsilatTarihi", "TEXT"]];
 const DEALERS_NEW_COLUMNS = [["bayiMi", "INTEGER"], ["anlasmaliServisMi", "INTEGER"]];
+// Spec 0115 R8/2, C11: servisin atölyeye giren kalıp listesi (JSON). Boş liste NULL yazılır, okuma ayıklar.
+const SERVICES_ATOLYE_KALIP_COLUMN = [["atolyeKaliplari", "TEXT"]];
+const atolyeKalipYaz = (liste) => (Array.isArray(liste) && liste.length > 0 ? JSON.stringify(liste) : null);
 const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "INTEGER"], ["fabrikaNotu", "TEXT"]];
 // "İşlemi Yapan Firma" = "Diğer" (anlaşmasız dış servis) seçilince yalnız servise kaydedilen firma
 // bilgileri — müşteri/bayi kaydı oluşturulmaz. Bu sütunlar olmadan renderer'ın yazdığı değerler
@@ -703,13 +707,13 @@ function populateAll(conn, data, skip = new Set()) {
         islemFirma, parcaAltuntastanMi, deletedAt,
         islemFirmaAd, islemFirmaYetkili, islemFirmaTel, islemFirmaUlke, islemFirmaSehir, islemFirmaAdres, durum, panoGizli,
         fabrikaGirisZamani, bakimBaslangicZamani, bitisZamani, yontem, vadeTarihi, tahsilEdildi, taksitSayisi, kartKomisyonu, tahsilatTarihi, hesapId,
-        tevkifatli, tevkifatPay, tevkifatPayda)
+        tevkifatli, tevkifatPay, tevkifatPayda, atolyeKaliplari)
       VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati, @fabrikaNotu,
         @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi,
         @islemFirma, @parcaAltuntastanMi, @deletedAt,
         @islemFirmaAd, @islemFirmaYetkili, @islemFirmaTel, @islemFirmaUlke, @islemFirmaSehir, @islemFirmaAdres, @durum, @panoGizli,
         @fabrikaGirisZamani, @bakimBaslangicZamani, @bitisZamani, @yontem, @vadeTarihi, @tahsilEdildi, @taksitSayisi, @kartKomisyonu, @tahsilatTarihi, @hesapId,
-        @tevkifatli, @tevkifatPay, @tevkifatPayda)
+        @tevkifatli, @tevkifatPay, @tevkifatPayda, @atolyeKaliplari)
     `);
     for (const s of data.services) {
       stmt.run({
@@ -726,7 +730,7 @@ function populateAll(conn, data, skip = new Set()) {
         yontem: s.yontem ?? null, vadeTarihi: s.vadeTarihi ?? null, tahsilEdildi: s.yontem === "Çek" ? toInt(s.tahsilEdildi) : null,
         taksitSayisi: s.taksitSayisi ?? null, kartKomisyonu: s.kartKomisyonu ? json(s.kartKomisyonu) : null,
         tahsilatTarihi: s.tahsilatTarihi ?? null, hesapId: s.hesapId ?? null,
-        ...tevkifatYaz(s),
+        ...tevkifatYaz(s), atolyeKaliplari: atolyeKalipYaz(s.atolyeKaliplari),
       });
     }
   }
@@ -1106,6 +1110,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "payments", KART_KOMISYON_COLUMNS);
   ensureColumns(conn, "payments", PAYMENTS_HESAP_COLUMN);
   ensureColumns(conn, "services", SATIS_HESAP_COLUMN);
+  ensureColumns(conn, "services", SERVICES_ATOLYE_KALIP_COLUMN); // spec 0115
   ensureColumns(conn, "part_sales", SATIS_HESAP_COLUMN);
   ensureColumns(conn, "yedek_parca_satis", SATIS_HESAP_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_CALISAN_COLUMN);
@@ -1246,6 +1251,31 @@ function kasaSekmeGocu(conn) {
   return { atlandi: false, guncellenen };
 }
 
+// Spec 0115 R4–R4/3, C5, Karar 49, 57: kalıp revize parçalarının bir kerelik tip göçü. Plan saf çekirdekte
+// (electron/kalipTamiriGocuSaf.mjs). Parça tipi satırı yoksa ya da liste boşsa hiçbir şey yazılmaz, bayrak da yazılmaz
+// (bir sonraki açılışta yeniden denenir; App sistem tiplerini o zaman tohumlamış olur). Yedek alınmaz.
+const KALIP_TAMIRI_GOCU_BAYRAGI = "kalipTamiriGocu0115";
+const { kalipTamiriGocPlani } = require("./kalipTamiriGocuSaf.mjs");
+function kalipTamiriGocu(conn, simdi = Date.now()) {
+  if (conn.prepare(`SELECT value FROM meta WHERE key = ?`).get(KALIP_TAMIRI_GOCU_BAYRAGI)) return { atlandi: true, tasinan: 0 };
+  const satir = conn.prepare(`SELECT value FROM meta WHERE key = 'partTypeDefs'`).get();
+  if (!satir) return { atlandi: false, yazildi: false, tasinan: 0 };
+  const tipler = parseJsonCol(satir.value, null);
+  const parcalar = conn.prepare(`SELECT id, ad, tip, deletedAt FROM parts`).all();
+  const plan = kalipTamiriGocPlani(tipler, parcalar, { simdi });
+  if (!plan.yaz) return { atlandi: false, yazildi: false, tasinan: 0 };
+  conn.transaction(() => {
+    if (plan.tipler) {
+      conn.prepare(`UPDATE meta SET value = ? WHERE key = 'partTypeDefs'`).run(JSON.stringify(plan.tipler));
+      const yeniAd = plan.tipler[plan.tipler.length - 1].ad;
+      const guncelle = conn.prepare(`UPDATE parts SET tip = ? WHERE id = ?`);
+      for (const id of plan.parcalar) guncelle.run(yeniAd, id);
+    }
+    conn.prepare(`INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(KALIP_TAMIRI_GOCU_BAYRAGI, new Date(simdi).toISOString());
+  })();
+  return { atlandi: false, yazildi: true, tasinan: plan.parcalar.length };
+}
+
 function migrateFromJsonIfNeeded() {
   if (!Database) return; // native modül yüklenemedi, eski JSON modunda kal
 
@@ -1261,6 +1291,7 @@ function migrateFromJsonIfNeeded() {
       applyColumnMigrations(db);
       kasaGocu(db, dbPath);
       kasaSekmeGocu(db);
+      kalipTamiriGocu(db);
       pruneAuditLog(db);
       pruneSecurityLog(db);
       active = true;
@@ -1288,6 +1319,7 @@ function migrateFromJsonIfNeeded() {
     applyColumnMigrations(conn);
     kasaGocu(conn); // temiz kurulum: taşınacak kayıt yok, yalnız bayrak yazılır
     kasaSekmeGocu(conn); // kullanıcı yok, yalnız işaret: sonradan açılan kullanıcılar yeni kurala tabidir
+    kalipTamiriGocu(conn); // tip listesi yok: hiçbir şey yazmaz, ikinci açılışta denenir (R4/2)
     db = conn;
     active = true;
     return;
@@ -1327,6 +1359,7 @@ function migrateFromJsonIfNeeded() {
     conn.transaction(() => populateAll(conn, parsed))();
     kasaGocu(conn); // data.json yedeği zaten kalıyor (migrated backup)
     kasaSekmeGocu(conn);
+    kalipTamiriGocu(conn);
     conn.close();
 
     fs.renameSync(tmpPath, dbPath);
@@ -1403,9 +1436,11 @@ function readBlobFromDb() {
   }));
 
   const services = db.prepare(`SELECT * FROM services`).all().map((row) => {
-    const { customer_id, degisenParcalar, odendi, parcaUcretsizMi, parcaGarantiDisi, parcaAltuntastanMi, panoGizli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, ...rest } = row;
+    const { customer_id, degisenParcalar, odendi, parcaUcretsizMi, parcaGarantiDisi, parcaAltuntastanMi, panoGizli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, atolyeKaliplari, ...rest } = row;
+    const atolye = parseJsonCol(atolyeKaliplari, null);
     return {
       ...rest,
+      ...(Array.isArray(atolye) && atolye.length > 0 ? { atolyeKaliplari: atolye } : {}), // spec 0115 C11: yalnız dolu liste
       ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), // spec 0079 R33
       customerId: customer_id,
       degisenParcalar: parseJsonCol(degisenParcalar, []),
@@ -1902,7 +1937,7 @@ function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, date
 }
 
 module.exports = {
-  migrateFromJsonIfNeeded, kasaGocu, kasaSekmeGocu, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
+  migrateFromJsonIfNeeded, kasaGocu, kasaSekmeGocu, kalipTamiriGocu, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
   getMetaValue, setMetaValue, getDataVersion, bumpDataVersion,
   getRateBucket, setRateBucket, deleteRateBucket, pruneRateBuckets,
   getUserByUsername, getUserById, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,

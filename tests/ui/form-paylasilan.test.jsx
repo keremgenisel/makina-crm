@@ -23,7 +23,11 @@ const tumEtiketler = () => [...sonPencere().querySelectorAll("label")].map(l => 
 // Spec 0095 R1 ile güncellendi: yedek parça formunda "Garanti içi, ücretsiz verildi" kutusu yeni alandır; dört açılış noktasında
 // birer kez bulunur (aşağıda), diğer formlarda hiç yoktur. Geri kalan etiketler öncesiyle birebir aynıdır.
 const UCRETSIZ_ETIKETI = "Garanti içi, ücretsiz verildi";
-const etiketler = () => { const t = tumEtiketler(); expect(t.filter(e => e === TEVKIFAT_ETIKETI)).toHaveLength(1); return t.filter(e => e !== TEVKIFAT_ETIKETI && e !== UCRETSIZ_ETIKETI); };
+// Spec 0115 R10 ile güncellendi (0015 AC-9/AC-10 genişletildi): servis formunda "Kalıp atölyeye girecek" kutusu yeni alandır;
+// iki servis açılış noktasında birer kez bulunur (aşağıda), diğer formlarda hiç yoktur. Geri kalan etiketler öncesiyle birebir aynıdır.
+const KALIP_KUTU_ETIKETI = "Kalıp atölyeye girecek";
+const kalipKutuSayisi = () => tumEtiketler().filter(e => e === KALIP_KUTU_ETIKETI).length;
+const etiketler = () => { const t = tumEtiketler(); expect(t.filter(e => e === TEVKIFAT_ETIKETI)).toHaveLength(1); return t.filter(e => e !== TEVKIFAT_ETIKETI && e !== UCRETSIZ_ETIKETI && e !== KALIP_KUTU_ETIKETI); };
 const ucretsizEtiketSayisi = () => tumEtiketler().filter(e => e === UCRETSIZ_ETIKETI).length;
 const tikla = (re) => fireEvent.click(screen.getAllByRole("button").filter(b => re.test(b.textContent.trim())).pop());
 const musteri = () => render(<Customers customers={M} setCustomers={vi.fn()} partSales={[]} services={[]} payments={[]} dealers={D} parts={P}
@@ -147,12 +151,13 @@ const ONCE = {
 // Dönüşüm öncesi onay kutusu ve açılır liste sayıları (müşteri detayından açılışta).
 // Spec 0079 R1 ile güncellendi: her formda bir onay kutusu daha (tevkifat); oran seçicisi kutu kapalıyken çizilmez.
 // Spec 0095 R1 ile güncellendi: yedek parça formunda bir onay kutusu daha var ("Garanti içi, ücretsiz verildi"; 3 → 4).
-const SAYI = {"servis":{"kutu":2,"liste":6},"kalip":{"kutu":3,"liste":3},"yp":{"kutu":4,"liste":2}};
+// Spec 0115 ile güncellendi (0015 AC-7 ters çevrildi): servis formunda "Kalıp atölyeye girecek" kutusu (2 → 3).
+const SAYI = {"servis":{"kutu":3,"liste":6},"kalip":{"kutu":3,"liste":3},"yp":{"kutu":4,"liste":2}};
 
 describe("Paylaşılan formlar", () => {
   it("AC-9: Servis formu müşteri detayından ve Servis ve Kargo Panosu'ndan aynı biçimde açılır (öncesiyle ve birbiriyle aynı)", () => {
-    musteri(); tikla(/Yeni Servis Talebi/); const a = etiketler(); cleanup();
-    pano(); tikla(/Yeni Servis Talebi/); const b = etiketler();
+    musteri(); tikla(/Yeni Servis Talebi/); expect(kalipKutuSayisi()).toBe(1); const a = etiketler(); cleanup();
+    pano(); tikla(/Yeni Servis Talebi/); expect(kalipKutuSayisi()).toBe(1); const b = etiketler();
     expect(a).toEqual(ONCE.servisMusteri);
     expect(b).toEqual(ONCE.servisPano);
     expect(a).toEqual(b);
@@ -169,11 +174,11 @@ describe("Paylaşılan formlar", () => {
     delete window.appFiles;
   });
   it("AC-10: Extra Kalıp formu müşteri detayından ve bayi kartından aynı biçimde çalışır (öncesiyle aynı)", () => {
-    musteri(); tikla(/Extra Kalıp Satışı/); expect(etiketler()).toEqual(ONCE.kalipMusteri); cleanup();
-    bayi(); tikla(/Bayi Aracılığıyla Kalıp Satışı/); expect(etiketler()).toEqual(ONCE.kalipBayi);
+    musteri(); tikla(/Extra Kalıp Satışı/); expect(kalipKutuSayisi()).toBe(0); expect(etiketler()).toEqual(ONCE.kalipMusteri); cleanup();
+    bayi(); tikla(/Bayi Aracılığıyla Kalıp Satışı/); expect(kalipKutuSayisi()).toBe(0); expect(etiketler()).toEqual(ONCE.kalipBayi);
   });
   it("AC-11: Yedek parça formu dört açılış noktasında da aynı biçimde çalışır (öncesiyle aynı)", () => {
-    musteri(); tikla(/^Yedek Parça Satışı$/); expect(etiketler()).toEqual(ONCE.ypMusteri); expect(ucretsizEtiketSayisi()).toBe(1); cleanup();
+    musteri(); tikla(/^Yedek Parça Satışı$/); expect(etiketler()).toEqual(ONCE.ypMusteri); expect(ucretsizEtiketSayisi()).toBe(1); expect(kalipKutuSayisi()).toBe(0); cleanup();
     bayi(); tikla(/^Yedek Parça Satışı$/); expect(etiketler()).toEqual(ONCE.ypBayi); expect(ucretsizEtiketSayisi()).toBe(1); cleanup();
     render(<Stock factory={{ name: "A" }} stock={[]} setStock={vi.fn()} customers={M} setCustomers={vi.fn()} parts={P} dealers={D} defaultSubTab="yedeksatis" />);
     tikla(/Yeni Satış/); expect(etiketler()).toEqual(ONCE.ypStok); expect(ucretsizEtiketSayisi()).toBe(1); cleanup();

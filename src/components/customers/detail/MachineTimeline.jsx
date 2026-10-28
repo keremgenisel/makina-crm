@@ -13,6 +13,8 @@ import { Icon, Btn, AtesRozeti } from "../../ui";
 import { KartBolum, BosDurum } from "../../tasarim";
 import { kalipDurumuTuret, extraKalipAnahtari, KALIP_DURUMU_ETIKETI } from "../../../lib/musteriDurumu";
 import { KalipDurumuSecici } from "../DurumSecici";
+import { kalipAtolyedeMi, tamirOzeti, tamirEtiketIcerigi, ATOLYE_KALIPLARI_ETIKETI as KAYIT_ETIKETI } from "../../../lib/kalipTamiri";
+import { TamirRozeti } from "../../TamirRozeti";
 
 const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
 const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
@@ -80,6 +82,7 @@ export const MachineTimeline = ({
   dosyaAdet = null,
   onDosyaBadge = null,
   durumBaglami = null, onPartSaleKalipDurumu = null, // spec 0106 R12, R12/2: Extra Kalıp satırının kalıp durumu seçicisi
+  onPrintTamirEtiket = null, tamirHarita = null, // spec 0115 R34, R38: tamir edilen kalıbın dönüş etiketi (servis satırında)
 }) => {
   // Odaklı satıra kaydır (genel aramadan "servis" veya "Extra Kalıp" sonucuna tıklanınca)
   const odakRef = useRef(null);
@@ -140,6 +143,10 @@ export const MachineTimeline = ({
                         <Icon name="mail" size={11} /> E-posta
                       </button>
                     )}
+                    {onPrintTamirEtiket && kalipAtolyedeMi(sv) && (
+                      <button onClick={() => onPrintTamirEtiket(sv)} title="Kargo Etiketi Yazdır" style={YAZDIR_BTN}><Icon name="print" size={11} /> Etiket</button>
+                    )}
+                    <TamirRozeti ozet={tamirOzeti(sv, tamirHarita)} />
                     {canDo("cust_service_delete") && (
                       <button onClick={() => onDeleteService(sv.id)} title="Servis kaydını sil"
                         style={SIL_BTN}>
@@ -269,6 +276,12 @@ export const MachineTimeline = ({
               {sv && disServisMi(sv) && (sv.islemFirmaYetkili || sv.islemFirmaTel || sv.islemFirmaAdres || sv.islemFirmaUlke || sv.islemFirmaSehir) && (
                 <div style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 3 }}>
                   {[sv.islemFirmaYetkili, sv.islemFirmaTel, [sv.islemFirmaAdres, [sv.islemFirmaSehir, sv.islemFirmaUlke].filter(Boolean).join(", ")].filter(Boolean).join(" · ")].filter(Boolean).join(" · ")}
+                </div>
+              )}
+              {ev.kind === "service" && sv && kalipAtolyedeMi(sv) && (
+                // Spec 0115 R34: atölyeye alınan kalıpların adları (etiketle aynı biçim).
+                <div data-testid="gecmis-atolye-kaliplari" style={{ fontSize: 12, color: "var(--amb800, #92400e)", marginTop: 3 }}>
+                  {KAYIT_ETIKETI}: {tamirEtiketIcerigi(sv).map(x => x.ad).join(", ")}
                 </div>
               )}
               {ev.desc && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 3, lineHeight: 1.5 }}>{ev.desc}</div>}

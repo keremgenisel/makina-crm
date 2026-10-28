@@ -2,6 +2,7 @@ import LOGO from "../assets/logo.avif?inline";
 import { sayi, st, gecenAyEki, altBaslik, gun, detayTablo, rozet, rozetSatiri, bolum, belgeAcilis } from "./raporSunumu";
 import { today, todayTR, fmtTR, fmtCur, parseMoney, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster, satisKdvBolumu, UCRETSIZ_IBARESI } from "./utils";
 import { COUNTRY_EN } from "./constants";
+import { tamirListesi, tamirEtiketIcerigi } from "./kalipTamiri";
 import { IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_SATIRLARI, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, ihracRaporAdet,
   IHRAC_DETAY_BASLIK, IHRAC_DETAY_SUTUNLARI, TEVKIFAT_DETAY_BASLIK, TEVKIFAT_DETAY_SUTUNLARI } from "./ihracKayitli";
 
@@ -84,6 +85,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     yapilanIslemLabel: "Yapılan İşlem",
     girisLabel: "Servise Giriş Tarihi",
     teknisyenLabel: "Teknisyen",
+    atolyeKaliplariLabel: "ATÖLYEYE ALINAN KALIPLAR", // spec 0115 R35/2: yalnız kalıp varken basılır
     servisUcretiLabel: "Servis Ücreti",
     parcaUcretiLabel: "Parça Ücreti",
     toplamLabel: "Toplam",
@@ -131,6 +133,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     yapilanIslemLabel: "Work Performed",
     girisLabel: "Service Entry Date",
     teknisyenLabel: "Technician",
+    atolyeKaliplariLabel: "MOLDS TAKEN INTO WORKSHOP",
     servisUcretiLabel: "Service Fee",
     parcaUcretiLabel: "Parts Fee",
     toplamLabel: "Total",
@@ -317,6 +320,8 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
     [L.yapilanIslemLabel, transPlace(L, sv.repairPlace)],
     [L.girisLabel, fmtTR(sv.date)],
     [L.teknisyenLabel, sv.tech],
+    // Spec 0115 R35, R35/2: atölyeye alınan kalıplar (yalnız liste doluyken)
+    ...(tamirListesi(sv).length ? [[L.atolyeKaliplariLabel, tamirEtiketIcerigi(sv).map(x => x.ad).join(" · ")]] : []),
     // Anlaşmasız dış servis: işlemi yapan firmanın bilgileri (yalnız bu servise kayıtlı)
     ...(disServisMi(sv) ? [
       [L.disServisLabel, islemFirmaGoster(sv)],
@@ -771,6 +776,16 @@ export function kalipEtiketVerisi(grup, { customers = [], factory = null } = {})
   };
 }
 
+// Spec 0115 R37, R37/2, Karar 40: altıncı durum, tamir edilen kalıbın müşteriye dönüşü. Alıcı müşterinin kayıtlı adresi,
+// içerik servisin bütün listesi ("ad · Ölçü"), teslim şekli "Kargo", tarih servis tarihi; ek ibare ve kargo takip alanı yok.
+export function tamirEtiketVerisi(servis, { customers = [], factory = null } = {}) {
+  const s = servis || {};
+  const c = customers.find(x => x.id === Number(s.customerId)) || {};
+  const alici = { firma: c.name || "(müşteri)", yetkili: c.yetkili1Ad || "", tel: c.phone || c.yetkili1Tel || "",
+    adres: c.adres || "", city: c.city || "", ilce: c.ilce || "", country: c.country || "" };
+  return { gonderen: etiketGonderen(factory), alici, icerik: tamirEtiketIcerigi(s), opts: { teslimSekli: "Kargo", tarih: fmtTR(s.date) } };
+}
+
 // Saf HTML üreteci. veri = { gonderen, alici, icerik[], opts }.
 export function buildKargoEtiketiHtml(gonderen, alici, icerik = [], opts = {}) {
   const g = gonderen || {}, a = alici || {}, o = opts || {};
@@ -886,6 +901,7 @@ export function printKargoEtiketi(veri) {
 // Bileşenlerin çağırdığı kısayollar: adaptör + yazdır tek adımda.
 export function yedekParcaEtiketYazdir(grup, deps) { printKargoEtiketi(yedekParcaEtiketVerisi(grup, deps)); }
 export function kalipEtiketYazdir(grup, deps) { printKargoEtiketi(kalipEtiketVerisi(grup, deps)); }
+export function tamirEtiketYazdir(servis, deps) { printKargoEtiketi(tamirEtiketVerisi(servis, deps)); }
 
 // Yazdırma: Makina Servis ve Yedek Parça Geçmişi Raporu
 export function printMachineReport(detailView, detailHistory, partSales, translations = {}, kaseResmi = "", parts = [], factory = null, partTypeDefs = [], yedekParcaSatislar = [], dealers = []) {

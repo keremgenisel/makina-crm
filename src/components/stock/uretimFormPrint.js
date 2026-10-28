@@ -1,6 +1,11 @@
 // Kalıp Üretim Formu yazdırma/PDF şablonu ve yardımcıları.
 // UretimFormu.jsx'ten ayrıldı: saf fonksiyonlar (state'siz), hem yazdırma hem
 // e-posta PDF eki bunları kullanır. groupByMusteri + fmtDate ekranda da kullanılır.
+import { turAdi, tamirSatiriMi } from "../../lib/kalipTamiri";
+
+// Kullanıcı metni HTML'e kaçışlı basılır: tamir satırının adı servis formundaki serbest girişten gelir (kiosk dahil) ve
+// önizleme penceresinde betik çalışır (spec 0115 triyajı; printTemplates.js'in esc'iyle aynı kural, boş değer çağıranda).
+const h = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /** "YYYY-MM-DD" → "DD.MM.YYYY" (boşsa "—"). */
 export const fmtDate = d => d ? d.split("-").reverse().join(".") : "—";
@@ -36,6 +41,7 @@ export function buildPrintHtml(form) {
 
   const colHeaders = `
     <tr>
+      <th style="background:var(--n700, #334155);color:#fff;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--n600, #475569);font-weight:700;width:60px;">Tür</th>
       <th style="background:var(--n700, #334155);color:#fff;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--n600, #475569);font-weight:700;width:90px;">Kalıp Kodu</th>
       <th style="background:var(--n700, #334155);color:#fff;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--n600, #475569);font-weight:700;">Kalıp</th>
       <th style="background:var(--n700, #334155);color:#fff;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--n600, #475569);font-weight:700;width:110px;">Kalıp Ölçüsü</th>
@@ -46,22 +52,25 @@ export function buildPrintHtml(form) {
   const bodyRows = groups.map((g, gi) => {
     const header = `
       <tr>
-        <td colspan="5" style="border:1px solid var(--n700, #334155);padding:6px 12px;background:var(--n800, #1e293b);color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;${gi > 0 ? "border-top:3px solid var(--n900, #0f172a);" : ""}">
-          ${g.musteriAdi || "—"}${g.sehir ? ` &nbsp;—&nbsp; ${g.sehir}` : ""}${g.makinaKodu ? ` &nbsp;—&nbsp; ${g.makinaKodu}` : ""}
+        <td colspan="6" style="border:1px solid var(--n700, #334155);padding:6px 12px;background:var(--n800, #1e293b);color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;${gi > 0 ? "border-top:3px solid var(--n900, #0f172a);" : ""}">
+          ${h(g.musteriAdi || "—")}${g.sehir ? ` &nbsp;—&nbsp; ${h(g.sehir)}` : ""}${g.makinaKodu ? ` &nbsp;—&nbsp; ${h(g.makinaKodu)}` : ""}
         </td>
       </tr>
       ${colHeaders}`;
+    // Spec 0115 R16/2, R36/2: Tür ilk sütun (alanı olmayan eski satır "Üretim"); tamir satırının zemini ayrı ve servis
+    // tarihi Kalıp hücresinde adın altında. Tür hücresi `data-tur` taşır (0115 kıyası onu ayıklar, Karar 47).
     const rows = g.rows.map(r => `
       <tr>
-        <td style="border:1px solid #ccc;padding:5px 8px;text-align:center;font-family:monospace;font-size:10px;background:#e8edf3;">${r.kalipKodu || "—"}</td>
+        <td data-tur style="border:1px solid #ccc;padding:5px 8px;font-size:10px;font-weight:700;background:${tamirSatiriMi(r) ? "#fde68a" : "#e8edf3"};">${turAdi(r)}</td>
+        <td style="border:1px solid #ccc;padding:5px 8px;text-align:center;font-family:monospace;font-size:10px;background:#e8edf3;">${h(r.kalipKodu || "—")}</td>
         <td style="border:1px solid #ccc;padding:5px 8px;background:#e8edf3;">
           <div style="display:flex;align-items:center;gap:7px;">
-            ${r.kalipResim ? `<img src="${r.kalipResim}" style="width:36px;height:27px;object-fit:contain;flex-shrink:0;border:1px solid var(--n200, #e2e8f0);border-radius:3px;">` : ""}
-            <span style="font-weight:600;font-size:10px;">${r.kalipAdi || "—"}</span>
-          </div>
+            ${r.kalipResim ? `<img src="${h(r.kalipResim)}" style="width:36px;height:27px;object-fit:contain;flex-shrink:0;border:1px solid var(--n200, #e2e8f0);border-radius:3px;">` : ""}
+            <span style="font-weight:600;font-size:10px;">${h(r.kalipAdi || "—")}</span>
+          </div>${tamirSatiriMi(r) && r.servisTarihi ? `<div style="font-size:9px;color:#555;margin-top:2px;">Servis: ${fmtDate(r.servisTarihi)}</div>` : ""}
         </td>
-        <td style="border:1px solid #ccc;padding:5px 8px;font-size:10px;background:#e8edf3;">${r.kalipOlcusu || ""}</td>
-        <td style="border:1px solid #ccc;padding:5px 8px;text-align:center;font-size:10px;background:#e8edf3;">${r.makinaKalipCapi || ""}</td>
+        <td style="border:1px solid #ccc;padding:5px 8px;font-size:10px;background:#e8edf3;">${h(r.kalipOlcusu)}</td>
+        <td style="border:1px solid #ccc;padding:5px 8px;text-align:center;font-size:10px;background:#e8edf3;">${h(r.makinaKalipCapi)}</td>
         <td style="border:1px solid #ccc;padding:5px 8px;text-align:center;font-size:14px;color:var(--grn600, #16a34a);background:${r.tamamlandi ? "var(--grnBg, #f0fdf4)" : "var(--tblRow, #e8edf3)"};">${r.tamamlandi ? "✓" : ""}</td>
       </tr>`).join("");
     return header + rows;
@@ -80,10 +89,10 @@ export function buildPrintHtml(form) {
   </style>
 </head><body>
   <h2>KALIP ÜRETİM FORMU</h2>
-  <div class="meta">Dönem: <b>${tarihStr}</b>${form.not ? `&nbsp;·&nbsp;${form.not}` : ""}</div>
+  <div class="meta">Dönem: <b>${tarihStr}</b>${form.not ? `&nbsp;·&nbsp;${h(form.not)}` : ""}</div>
   <table>
     <tbody>
-      ${bodyRows || `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--n400, #94a3b8);">Satır yok</td></tr>`}
+      ${bodyRows || `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--n400, #94a3b8);">Satır yok</td></tr>`}
     </tbody>
   </table>
 </body></html>`;

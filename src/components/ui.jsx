@@ -474,7 +474,7 @@ export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHei
   );
 };
 
-export const ConfirmDialog = ({ message, title = "Emin misiniz?", icon = "trash", onConfirm, onCancel, confirmLabel = "Evet, Sil", confirmIcon = "trash" }) => {
+export const ConfirmDialog = ({ message, title = "Emin misiniz?", icon = "trash", onConfirm, onCancel, confirmLabel = "Evet, Sil", confirmIcon = "trash", cancelLabel = "Vazgeç", confirmVariant = "danger" }) => {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onCancel(); };
     window.addEventListener("keydown", onKey);
@@ -489,8 +489,8 @@ export const ConfirmDialog = ({ message, title = "Emin misiniz?", icon = "trash"
       <div style={{ fontSize: 16, fontWeight: 700, color: "var(--n900, #0f172a)", marginBottom: 8 }}>{title}</div>
       <div style={{ fontSize: 13, color: "var(--n500, #64748b)", marginBottom: 22 }}>{message}</div>
       <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-        <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
-        <Btn variant="danger" onClick={onConfirm}><Icon name={confirmIcon} size={14} /> {confirmLabel}</Btn>
+        <Btn variant="ghost" onClick={onCancel}>{cancelLabel}</Btn>
+        <Btn variant={confirmVariant} onClick={onConfirm}><Icon name={confirmIcon} size={14} /> {confirmLabel}</Btn>
       </div>
     </div>
   </div>

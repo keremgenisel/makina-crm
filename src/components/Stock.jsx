@@ -22,7 +22,7 @@ export const Stock = ({
   copMusteriler = [], uretimPartileri = [], giderYetki = false,
   kasaHesaplari = null, tahsilatHesapVarsayilan = null,
   kalipDefs = [],
-  uretimFormlari = [], setUretimFormlari = () => {},
+  uretimFormlari = [], setUretimFormlari = () => {}, services = [],
   partSales = [], setPartSales = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = () => {},
   dealers = [], kdvRates, calisanlar = [],
@@ -87,7 +87,7 @@ export const Stock = ({
       )}
       {subTab === "uretim" && (
         <UretimFormu
-          uretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari}
+          uretimFormlari={uretimFormlari} setUretimFormlari={setUretimFormlari} services={services}
           customers={customers} setCustomers={setCustomers}
           kalipDefs={kalipDefs}
           partSales={partSales} setPartSales={setPartSales}

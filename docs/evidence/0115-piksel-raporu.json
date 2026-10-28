@@ -1,0 +1,366 @@
+[
+  {
+    "ad": "ayarlar-parcatipi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 173243
+  },
+  {
+    "ad": "ayarlar-parcatipi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 165055
+  },
+  {
+    "ad": "servis-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1647552
+  },
+  {
+    "ad": "servis-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1559946
+  },
+  {
+    "ad": "uretim-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 24570
+  },
+  {
+    "ad": "uretim-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 24551
+  },
+  {
+    "ad": "katalog-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-uretim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-uretim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-pano-0098-hesap-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 796554
+  },
+  {
+    "ad": "servis-pano-0098-hesap-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 797261
+  },
+  {
+    "ad": "servis-pano-0098-hesapsiz-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 896502
+  },
+  {
+    "ad": "servis-pano-0098-hesapsiz-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 897807
+  },
+  {
+    "ad": "servis-pano-kalip-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-pano-kalip-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 792122
+  },
+  {
+    "ad": "servis-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 793824
+  },
+  {
+    "ad": "servis-formu-tahsilat-hesap-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 689666
+  },
+  {
+    "ad": "servis-formu-tahsilat-hesap-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 690538
+  },
+  {
+    "ad": "servis-formu-tahsilat-neden-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 752833
+  },
+  {
+    "ad": "servis-formu-tahsilat-neden-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 754531
+  },
+  {
+    "ad": "servis-formu-0079-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 890739
+  },
+  {
+    "ad": "servis-formu-0079-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 891567
+  },
+  {
+    "ad": "servis-formu-0115-kapali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu serviste kalıp işi kalemi var; kalıp atölyeye girecekse kutuyu işar"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-kapali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu serviste kalıp işi kalemi var; kalıp atölyeye girecekse kutuyu işar"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-acik-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-acik-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-kayitli-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-kayitli-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-bos-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-bos-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-ad-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0115-ad-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "ayarlar-parcatipi-0115-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "ayarlar-parcatipi-0115-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0115-ipucu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0115-ipucu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "uretim-formu-0115-tamir-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "uretim-formu-0115-tamir-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "uretim-formu-0115-bekleyen-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "uretim-formu-0115-bekleyen-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "uretim-formu-0115-kopuk-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "uretim-formu-0115-kopuk-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "uretim-formu-0115-yazdir-aydinlik.png",
+    "boyut": "2880x1872",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "uretim-formu-0115-yazdir-karanlik.png",
+    "boyut": "2880x1872",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-pano-0115-rozet-aydinlik.png",
+    "boyut": "2880x1896",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-pano-0115-rozet-karanlik.png",
+    "boyut": "2880x1896",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-pano-0115-onay-aydinlik.png",
+    "boyut": "2880x1896",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-pano-0115-onay-karanlik.png",
+    "boyut": "2880x1896",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-pano-0115-kiosk-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-pano-0115-kiosk-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "musteri-detay-0115-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "musteri-detay-0115-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-yazdir-0115-aydinlik.png",
+    "boyut": "2880x1880",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-yazdir-0115-karanlik.png",
+    "boyut": "2880x1880",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kargo-etiketi-0115-tamir-aydinlik.png",
+    "boyut": "2880x1876",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kargo-etiketi-0115-tamir-karanlik.png",
+    "boyut": "2880x1876",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-yazdir-0079-aydinlik.png",
+    "boyut": "2880x1880",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-yazdir-0079-karanlik.png",
+    "boyut": "2880x1880",
+    "piksel": 0
+  },
+  {
+    "ad": "uretim-formu-0108-sil-onay-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "uretim-formu-0108-sil-onay-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "uretim-formu-0108-sil-onay-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "uretim-formu-0108-sil-onay-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-cop-0108-uretim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-cop-0108-uretim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

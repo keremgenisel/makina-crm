@@ -11,6 +11,9 @@ import { buildPrintHtml, groupByMusteri, fmtDate, uretimFormDonemMetni } from ".
 import { emptyRow } from "./uretimFormModel";
 import { UretimSatirEkleModal } from "./UretimSatirEkleModal";
 import { musteriKalibiBekliyorMu, extraKalipBekliyorMu, uretimFormHaritasi, formSilinceDonenSayisi, formSilmeDonusMetni } from "../../lib/musteriDurumu";
+import { tamirSatirHaritasi, bekleyenTamirler, tamirSatiriKur, tamirAnahtari, tamirSatiriMi, tamirKaynagi, tamirKaynakMetni, turAdi,
+  bekleyenTamirDugmesi, TAMIR_YOK, TAMIR_EKLENDI, TAMIR_KAYNAK_TIPI } from "../../lib/kalipTamiri";
+import { tamirEtiketYazdir } from "../../lib/printTemplates";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -30,6 +33,15 @@ export const enEskiBekleyenKalipTarihi = (customers = [], partSales = [], uretim
     if (!en || ps.tarih < en) en = ps.tarih;
   }
   return en;
+};
+
+// Spec 0115 R41: satırın kaynak anahtarı; üç kaynak türü ayrı (tanınmayan tür anahtar üretmez).
+const kaynakAnahtari = (r) => {
+  if (!r?.kaynakTip || r.kaynakId == null) return null;
+  if (r.kaynakTip === "musteri") return `musteri:${r.kaynakId}:${r.kalipIdx}`;
+  if (r.kaynakTip === "extra_kalip") return `extra_kalip:${r.kaynakId}`;
+  if (r.kaynakTip === TAMIR_KAYNAK_TIPI) return tamirAnahtari(r.kaynakId, r.kaynakKalipId);
+  return null;
 };
 
 const emptyForm = () => ({
@@ -76,6 +88,8 @@ export function UretimFormu({
   uretimFormlari = [], setUretimFormlari,
   customers = [], kalipDefs = [],
   partSales = [], setPartSales = null, setCustomers = null,
+  // Spec 0115 R18/2, C12: servisler salt okunur; form kaydı servis bölümüne hiçbir şey yazmaz.
+  services = [],
   showToast = () => {}, canDoStock = () => true, serverPermissions = null,
   appSettings = null, factory = null,
 }) {
@@ -110,7 +124,7 @@ export function UretimFormu({
     if (!form) return;
     const isUpdate = uretimFormlari.some(f => f.id === form.id && !f.deletedAt);
 
-    // Kaynaklarda uretimFormId işaretle
+    // Kaynaklarda uretimFormId işaretle. Spec 0115 C12: tamir satırı (servis_tamir) hiçbir kaynağa damga atmaz.
     const custUpdates = {}; // { custId: Set<kalipIdx> }
     const psIds = new Set(); // partSale id'leri (her biri zaten tek kalıp)
     for (const r of form.satirlar) {
@@ -218,14 +232,8 @@ export function UretimFormu({
       return;
     }
 
-    // Hangi kaynaklar bu formda zaten var?
-    const already = new Set(
-      form.satirlar
-        .filter(r => r.kaynakTip && r.kaynakId != null)
-        .map(r => r.kaynakTip === "musteri"
-          ? `musteri:${r.kaynakId}:${r.kalipIdx}`
-          : `extra_kalip:${r.kaynakId}`)
-    );
+    // Hangi kaynaklar bu formda zaten var? Spec 0115 R41: üç kaynak türü ayrı anahtarla (tamir Extra Kalıp anahtarına düşmez).
+    const already = new Set(form.satirlar.map(kaynakAnahtari).filter(Boolean));
 
     const newRows = [];
     // Spec 0108 R3, C2/2: bağ canlılığı kayıtlı formlardan, tıklama başına bir kez (açık formun taslağı okunmaz, R8/2).
@@ -295,7 +303,30 @@ export function UretimFormu({
     showToast(`${newRows.length} kalıp eklendi.`);
   };
 
+  // ── Spec 0115: bekleyen tamirleri getir (R18, Karar 7, 54) ───────────────────
+  // Harita kayıtlı formlardan, açık formun kayıtlı hâli yerine taslağıyla (aynı tamir bir forma iki kez girmesin, R20).
+  const tamirHarita = useMemo(() => tamirSatirHaritasi(form
+    ? [...uretimFormlari.filter(f => f.id !== form.id), form] : uretimFormlari), [uretimFormlari, form]);
+  const bekleyenler = useMemo(() => bekleyenTamirler(services, tamirHarita), [services, tamirHarita]);
+  const collectTamir = () => {
+    if (!form) return;
+    if (form.kapali) { showToast("Bu dönem sonlandırılmış, yeni kalıp eklenemez."); return; }
+    if (bekleyenler.length === 0) { showToast(TAMIR_YOK); return; }
+    const satirlar = bekleyenler.map(({ servis, giris }) => tamirSatiriKur(emptyRow(), servis, giris, customers.find(c => c.id === Number(servis.customerId)), kalipDefs));
+    setForm(f => ({ ...f, satirlar: [...f.satirlar, ...satirlar] })); // R24/2: listenin sonuna
+    showToast(TAMIR_EKLENDI(satirlar.length));
+  };
+  // R38/2, Karar 41: kaynağı kopmuş ya da müşterisi çözülemeyen satırda etiket yok.
+  const tamirEtiketi = (r) => {
+    const sv = tamirKaynagi(r, services);
+    if (!sv || !customers.some(c => c.id === Number(sv.customerId))) return null;
+    return () => tamirEtiketYazdir(sv, { customers, factory });
+  };
+
   // Satır ekleme modalı artık kendi state'iyle bağımsız bir alt-bileşen (UretimSatirEkleModal).
+  // Spec 0115 triyajı: başka canlı formda satırı olan kaynaklar (manuel pencere onları seçtirmez).
+  const baskaFormdakiler = useMemo(() => new Set(uretimFormlari.filter(f => f && !f.deletedAt && f.id !== form?.id)
+    .flatMap(f => (f.satirlar || []).map(kaynakAnahtari)).filter(Boolean)), [uretimFormlari, form?.id]);
   const openAddModal = () => setAddModal(true);
 
   const printForm = () => {
@@ -388,7 +419,7 @@ export function UretimFormu({
                 <>
                   {/* Müşteri başlık satırı */}
                   <tr key={`g-${gi}`}>
-                    <td colSpan={6} style={{
+                    <td colSpan={7} style={{
                       padding: "6px 12px",
                       background: "var(--tblGroup, #1e293b)",
                       color: "#fff",
@@ -403,6 +434,7 @@ export function UretimFormu({
                   </tr>
                   {/* Sütun başlıkları */}
                   <tr key={`g-cols-${gi}`}>
+                    <th style={{ ...thSt, background: "var(--tblHead, #334155)", width: 60 }}>Tür</th>
                     <th style={{ ...thSt, background: "var(--tblHead, #334155)", width: 90 }}>Kalıp Kodu</th>
                     <th style={{ ...thSt, background: "var(--tblHead, #334155)" }}>Kalıp</th>
                     <th style={{ ...thSt, background: "var(--tblHead, #334155)", width: 110 }}>Kalıp Ölçüsü</th>
@@ -412,7 +444,9 @@ export function UretimFormu({
                   </tr>
                   {/* Kalıp satırları */}
                   {g.rows.map((r) => (
-                    <tr key={r.id} style={{ background: r.tamamlandi ? "var(--grnBg, #f0fdf4)" : "var(--tblRow, #e8edf3)" }}>
+                    <tr key={r.id} data-testid={tamirSatiriMi(r) ? "uretim-tamir-satiri" : undefined}
+                      style={{ background: r.tamamlandi ? "var(--grnBg, #f0fdf4)" : tamirSatiriMi(r) ? "var(--ambBg, #fffbeb)" : "var(--tblRow, #e8edf3)" }}>
+                      <td data-tur style={{ ...tdSt, fontSize: 11, fontWeight: 700, color: tamirSatiriMi(r) ? "var(--amb700, #b45309)" : "var(--n600, #475569)" }}>{turAdi(r)}</td>
                       <td style={tdSt}>
                         <input value={r.kalipKodu} onChange={e => updateRow(r.id, "kalipKodu", e.target.value)}
                           style={{ ...cellIn, fontFamily: "monospace" }} placeholder="—" />
@@ -425,6 +459,12 @@ export function UretimFormu({
                           <input value={r.kalipAdi} onChange={e => updateRow(r.id, "kalipAdi", e.target.value)}
                             style={{ ...cellIn, fontWeight: 600 }} placeholder="Kalıp adı" />
                         </div>
+                        {tamirSatiriMi(r) && (
+                          // Spec 0115 R19, R24, Karar 48: servis tarihi kopyası ve canlı kaynak metni.
+                          <div data-testid="uretim-tamir-kaynak" style={{ fontSize: 10.5, color: "var(--n500, #64748b)", marginTop: 2 }}>
+                            {tamirKaynakMetni(r, services)}
+                          </div>
+                        )}
                       </td>
                       <td style={tdSt}>
                         <input value={r.kalipOlcusu} onChange={e => updateRow(r.id, "kalipOlcusu", e.target.value)}
@@ -446,7 +486,13 @@ export function UretimFormu({
                           {r.tamamlandi ? "✓" : ""}
                         </button>
                       </td>
-                      <td style={{ ...tdSt, textAlign: "center" }}>
+                      <td style={{ ...tdSt, textAlign: "center", whiteSpace: "nowrap" }}>
+                        {tamirEtiketi(r) && (
+                          <button type="button" onClick={tamirEtiketi(r)} title="Kargo Etiketi" aria-label="Kargo Etiketi"
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n500, #64748b)", padding: 2, lineHeight: 1 }}>
+                            <Icon name="print" size={15} />
+                          </button>
+                        )}
                         <button onClick={() => deleteRow(r.id)}
                           style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red500, #ef4444)", padding: 2, lineHeight: 1 }}>
                           <Icon name="trash" size={15} />
@@ -464,6 +510,9 @@ export function UretimFormu({
           <Btn small onClick={collectPending}>
             <Icon name="refresh" size={13} /> Bekleyen Kalıpları Getir
           </Btn>
+          <Btn small onClick={collectTamir} testId="bekleyen-tamir-dugmesi">
+            <Icon name="refresh" size={13} /> {bekleyenTamirDugmesi(bekleyenler.length)}
+          </Btn>
           <Btn small variant="ghost" onClick={openAddModal}>
             <Icon name="plus" size={13} /> Manuel Satır Ekle
           </Btn>
@@ -474,6 +523,7 @@ export function UretimFormu({
           <UretimSatirEkleModal
             customers={customers}
             kalipDefs={kalipDefs}
+            baskaFormdakiler={baskaFormdakiler}
             onClose={() => setAddModal(false)}
             onAdd={(rows) => setForm(f => ({ ...f, satirlar: [...f.satirlar, ...rows] }))}
           />

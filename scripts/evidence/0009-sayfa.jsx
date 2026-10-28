@@ -39,6 +39,12 @@ import { odemeleriUygula, turHaritasi, giderKalemDogrula } from "../../src/lib/g
 import { cekleriUygula } from "../../src/lib/cek";
 import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../../src/lib/giderRaporu";
 import { girdi as RAPOR_0059_GIRDI } from "../../tests/fixtures/0059-veri";
+import * as V115 from "../../tests/fixtures/0115-veri.js";
+import { tamirSatiriKur } from "../../src/lib/kalipTamiri";
+import { emptyRow } from "../../src/components/stock/uretimFormModel";
+import { buildPrintHtml as uretimFormuHtml } from "../../src/components/stock/uretimFormPrint";
+import { buildKargoEtiketiHtml, tamirEtiketVerisi } from "../../src/lib/printTemplates";
+import { PartTypeManager } from "../../src/components/PartTypeManager";
 import { hesaplaAylikRapor } from "../../src/lib/aylikRapor";
 import { buildAylikRaporHtml, buildServiceFormHtml } from "../../src/lib/printTemplates";
 import App from "../../src/App";
@@ -734,6 +740,24 @@ const HARITA_0094_IL = [
 ];
 
 // Formu hazır bir durumla çizer (ör. "ödendi" işaretli, ödeme ayrıntı kutusu açık).
+// Spec 0115: kalıp tamiri ekranlarının verisi (tests/fixtures/0115-veri.js üzerine "Kalıp Revize" kalıp işi tipi).
+const TIP_0115 = [...V115.PART_TYPES, { id: "tip_kalip", ad: "Kalıp Revize", renk: "blu", makinaSecici: false, stokDus: false, raporGoster: false, kalipIsi: true, sistem: false }];
+const PARCA_0115 = V115.PARTS.map(p => (p.id === 81 ? { ...p, tip: "Kalıp Revize" } : p));
+const LISTE_0115 = [{ id: 1, ad: "100_ERKEK KALIPLAR REVİZE", olcu: "" }, { id: 2, ad: "HAMBURGER", olcu: "Ø98" }, { id: 3, ad: "KASAP KÖFTE", olcu: "46*80" }];
+const SERVIS_0115 = V115.SERVICES.map(s => (s.id === 41 ? { ...s, atolyeKaliplari: LISTE_0115 } : s));
+const FORM_0115 = { ...V115.URETIM_FORMLARI[0], satirlar: [...V115.URETIM_FORMLARI[0].satirlar,
+  { ...tamirSatiriKur({ ...emptyRow(), id: 9101 }, SERVIS_0115[0], LISTE_0115[0], V115.CUSTOMERS[0], V115.KALIP_DEFS), tamamlandi: true },
+  tamirSatiriKur({ ...emptyRow(), id: 9102 }, SERVIS_0115[0], LISTE_0115[1], V115.CUSTOMERS[0], V115.KALIP_DEFS)] };
+const KIOSK_0115 = { role: "user", permissions: JSON.stringify({ tabs: ["servis"], customerActions: ["cust_service_add", "cust_service_edit"] }) };
+function Pano0115(props) {
+  const [services, setServices] = useState(SERVIS_0115);
+  return <ServisPanosu services={services} setServices={setServices} customers={V115.CUSTOMERS} dealers={[]} parts={PARCA_0115} calisanlar={CAL} showToast={bos}
+    yedekParcaSatislar={[]} setYedekParcaSatislar={bos} dosyalar={[]} setDosyalar={bos} uretimFormlari={[FORM_0115]} setUretimFormlari={bos} uretimYetki partTypeDefs={TIP_0115} {...props} />;
+}
+const pano0115 = (props) => <Pano0115 {...props} />;
+const servis0115 = (ek) => <FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" customers={V115.CUSTOMERS} parts={PARCA_0115} partTypeDefs={TIP_0115}
+  ilk={{ ...V115.SERVICES[0], ...ek }} />;
+
 function FormEkrani({ Bilesen, ilk, ...props }) {
   const [form, setForm] = useState(ilk);
   return <Bilesen form={form} setForm={setForm} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
@@ -1401,6 +1425,33 @@ const EKRANLAR = {
   // Spec 0114 ek düzeltme: satış tipi pili işaretli makinada teal "İhraç Kayıtlı" (müşteri listesi ve Makina Geçmişi).
   "musteriler-0114-pil": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, []],
   "giderler-0114-kdv": [<GiderEkrani satis={SATIS_0114} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0114 R18/2
+  // Spec 0115: kalıp tamiri. Veri tests/fixtures/0115-veri.js (ekran testleriyle aynı küme).
+  "servis-formu-0115-kapali": [servis0115({}), ["kaydir:Kalıp atölyeye girecek"]],
+  "servis-formu-0115-acik": [servis0115({}), ["tikla:Kalıp atölyeye girecek", "kaydir:Atölyeye girecek"]],
+  "servis-formu-0115-kayitli": [servis0115({}), ["tikla:Kalıp atölyeye girecek", "tikla:HAMBURGER · Ø98", "kaydir:Firmanın kayıtlı kalıpları"]],
+  "servis-formu-0115-bos-hata": [<Customers customers={V115.CUSTOMERS} setCustomers={bos} services={V115.SERVICES} setServices={bos} partSales={V115.PART_SALES} setPartSales={bos} payments={[]}
+    dealers={[]} parts={PARCA_0115} kdvRates={V115.KDV} gorusmeler={[]} dosyalar={[]} partTypeDefs={TIP_0115} showToast={bos} setYedekParcaSatislar={bos} initialDetailId={1} />,
+    ["~Garanti Dışı", "tikla:Kalıp atölyeye girecek", "etiket:Atölye kalıbını çıkar 1", "Kaydet", "kaydir:Atölyeye girecek en az bir kalıp seçin."]],
+  "servis-formu-0115-ad-hata": [<Customers customers={V115.CUSTOMERS} setCustomers={bos} services={V115.SERVICES} setServices={bos} partSales={V115.PART_SALES} setPartSales={bos} payments={[]}
+    dealers={[]} parts={PARCA_0115} kdvRates={V115.KDV} gorusmeler={[]} dosyalar={[]} partTypeDefs={TIP_0115} showToast={bos} setYedekParcaSatislar={bos} initialDetailId={1} />,
+    ["~Garanti Dışı", "tikla:Kalıp atölyeye girecek", "Kalıp ekle", "Kaydet", "kaydir:Kalıp adını girin."]],
+  "ayarlar-parcatipi-0115": [<PartTypeManager partTypeDefs={TIP_0115} setPartTypeDefs={bos} parts={PARCA_0115} />, []],
+  "katalog-parca-0115-ipucu": [ayarlar("yedekparca", { parts: [{ id: 81, ad: "100_ERKEK KALIPLAR REVİZE", tip: "Standart" }], partTypeDefs: TIP_0115 }), ["baslik:Düzenle", "kaydir:Parça Tipi"]],
+  "uretim-formu-0115-tamir": [<UretimFormu uretimFormlari={[FORM_0115]} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES}
+    services={SERVIS_0115} kalipDefs={V115.KALIP_DEFS} showToast={bos} />, ["satir-ilk-dugme:1"]],
+  "uretim-formu-0115-bekleyen": [<UretimFormu uretimFormlari={V115.URETIM_FORMLARI} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES}
+    services={SERVIS_0115} kalipDefs={V115.KALIP_DEFS} showToast={bos} />, ["satir-ilk-dugme:1", "kaydir:Bekleyen Tamirleri Getir"]],
+  "uretim-formu-0115-kopuk": [<UretimFormu uretimFormlari={[FORM_0115]} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES}
+    services={[]} kalipDefs={V115.KALIP_DEFS} showToast={bos} />, ["satir-ilk-dugme:1"]],
+  "uretim-formu-0115-yazdir": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: uretimFormuHtml(FORM_0115) }} />, []],
+  "servis-pano-0115-rozet": [pano0115({}), []],
+  "servis-pano-0115-onay": [pano0115({}), ["surukle-servis:41>Tamamlandı"]],
+  "servis-pano-0115-kiosk": [pano0115({ kiosk: true, serverPermissions: KIOSK_0115, setUretimFormlari: null, uretimYetki: false }), ["surukle-servis:41>Tamamlandı"]],
+  "musteri-detay-0115": [<Customers customers={V115.CUSTOMERS} setCustomers={bos} services={SERVIS_0115} setServices={bos} partSales={V115.PART_SALES} setPartSales={bos} payments={[]}
+    dealers={[]} parts={PARCA_0115} kdvRates={V115.KDV} gorusmeler={[]} dosyalar={[]} partTypeDefs={TIP_0115} uretimFormlari={[FORM_0115]} kalipDefs={V115.KALIP_DEFS}
+    factory={V115.FAB} initialDetailId={1} />, ["kaydir:Atölyeye alınan kalıplar"]],
+  "servis-formu-yazdir-0115": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0115[0], V115.CUSTOMERS, V115.KDV, { factory: V115.FAB }) }} />, ["kaydir:ATÖLYEYE ALINAN KALIPLAR"]],
+  "kargo-etiketi-0115-tamir": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: (() => { const v = tamirEtiketVerisi(SERVIS_0115[0], { customers: V115.CUSTOMERS, factory: V115.FAB }); return buildKargoEtiketiHtml(v.gonderen, v.alici, v.icerik, v.opts); })() }} />, []],
   "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],
   "servis-formu-yazdir-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0079[0], MUSTERI_0079, undefined, {}) }} />, []],
   // Spec 0094: Faaliyet Haritası ilçe görünümü. Mevcut il (İstanbul) taban kanıtıdır: kod değişmeden önce ve sonra 0 fark.
@@ -1543,6 +1594,23 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       const n = Number(metin.slice(16)) || 1;
       const hedef = [...(document.querySelectorAll("tbody tr")[n - 1]?.querySelectorAll("button") || [])].pop();
       if (hedef) hedef.click(); else console.warn("satır düğmesi yok");
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("satir-ilk-dugme:")) {
+      // Spec 0115: n. tablo satırının ilk düğmesi (üretim formu listesinde Düzenle).
+      const n = Number(metin.slice(16)) || 1;
+      const hedef = document.querySelectorAll("tbody tr")[n - 1]?.querySelector("button");
+      if (hedef) hedef.click(); else console.warn("satır düğmesi yok");
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("surukle-servis:")) {
+      // Spec 0115: servis kartını sütuna bırakır ("surukle-servis:<id>><sütun başlığı>"); bırakma olayı veriyle gönderilir.
+      const [id, sutunAdi] = metin.slice(15).split(">");
+      const sutun = [...document.querySelectorAll("section")].find(x => x.querySelector("h3")?.textContent === sutunAdi);
+      if (sutun) { const dt = new DataTransfer(); dt.setData("text/plain", "servis:" + id); sutun.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: dt })); }
+      else console.warn("sütun yok: " + sutunAdi);
       await bekle(300);
       continue;
     }

@@ -3,11 +3,12 @@ import { trLower, withDeleted } from "../lib/utils";
 import { PART_TYPE_PALETTE_KEYS, tipRenk } from "../lib/constants";
 import { Icon, Input, Btn, ConfirmDialog } from "./ui";
 import { HataMetni, Ipucu } from "./tasarim";
+import { KALIP_ISI_BAYRAGI, KALIP_ISI_BAYRAK_IPUCU } from "../lib/kalipTamiri";
 
 // Parça tipleri yönetimi. Sistem tipleri (sistem:true) kilitlidir: adı değişmez,
 // silinmez, davranış kutucukları seed değerinde sabittir. Kullanıcının eklediği
 // tipler tamamen serbesttir. ModelsManager gibi bilinçli olarak useSimpleDefList'e
-// bağlanmadı — çok alanlı (3 davranış bayrağı), sistem-kilidi ve silme→Standart'a
+// bağlanmadı — çok alanlı (4 davranış bayrağı; spec 0115 kalipIsi), sistem-kilidi ve silme→Standart'a
 // taşıma davranışı basit {ad} listesine sığmaz.
 
 // Bir davranış bayrağı kutucuğu (chip). Sistem tiplerinde pasif/kilitli görünür.
@@ -30,7 +31,7 @@ const FlagChip = ({ label, on, disabled, onToggle }) => {
 };
 
 export const PartTypeManager = ({ partTypeDefs = [], setPartTypeDefs, parts = [], setParts = null, showToast = () => {} }) => {
-  const [form, setForm] = useState({ ad: "", makinaSecici: false, stokDus: false, raporGoster: false });
+  const [form, setForm] = useState({ ad: "", makinaSecici: false, stokDus: false, raporGoster: false, kalipIsi: false });
   const [editId, setEditId] = useState(null);
   const [editAd, setEditAd] = useState("");
   const [confirmDel, setConfirmDel] = useState(null);
@@ -50,10 +51,11 @@ export const PartTypeManager = ({ partTypeDefs = [], setPartTypeDefs, parts = []
     const yeni = normalizeFlags({
       id: `tip_${Date.now()}`, ad, renk,
       makinaSecici: !!form.makinaSecici, stokDus: !!form.stokDus, raporGoster: !!form.raporGoster,
+      kalipIsi: !!form.kalipIsi, // spec 0115 R1/2: diğer üç bayraktan bağımsız
       sistem: false,
     });
     setPartTypeDefs(p => [...p, yeni]);
-    setForm({ ad: "", makinaSecici: false, stokDus: false, raporGoster: false });
+    setForm({ ad: "", makinaSecici: false, stokDus: false, raporGoster: false, kalipIsi: false });
     showToast("Parça tipi eklendi.");
   };
 
@@ -113,6 +115,8 @@ export const PartTypeManager = ({ partTypeDefs = [], setPartTypeDefs, parts = []
               onToggle={() => setForm(p => ({ ...p, stokDus: !p.stokDus }))} />
             <FlagChip label="Raporda göster" on={form.raporGoster}
               onToggle={() => setForm(p => ({ ...p, raporGoster: !p.raporGoster }))} />
+            <FlagChip label={KALIP_ISI_BAYRAGI} on={form.kalipIsi}
+              onToggle={() => setForm(p => ({ ...p, kalipIsi: !p.kalipIsi }))} />
           </div>
           <Btn onClick={add}><Icon name="plus" size={14} /> Ekle</Btn>
         </div>
@@ -120,6 +124,7 @@ export const PartTypeManager = ({ partTypeDefs = [], setPartTypeDefs, parts = []
         <Ipucu>
           <b>Müşteri formunda seç:</b> yeni müşteri/makina eklerken bu tipteki parça için seçici çıkar. <b>Stoktan düş:</b> seçilen parça
           makinaya atanınca stoktan 1 azalır (müşteri formunda seç şart). <b>Raporda göster:</b> makina yazdırma raporunda listelenir.
+          {" "}<b>{KALIP_ISI_BAYRAGI}:</b> {KALIP_ISI_BAYRAK_IPUCU}
         </Ipucu>
       </div>
 
@@ -160,6 +165,7 @@ export const PartTypeManager = ({ partTypeDefs = [], setPartTypeDefs, parts = []
                 <FlagChip label="Müşteri formunda seç" on={!!t.makinaSecici} disabled={t.sistem} onToggle={() => toggleFlag(t.id, "makinaSecici")} />
                 <FlagChip label="Stoktan düş" on={!!t.stokDus} disabled={t.sistem || !t.makinaSecici} onToggle={() => toggleFlag(t.id, "stokDus")} />
                 <FlagChip label="Raporda göster" on={!!t.raporGoster} disabled={t.sistem} onToggle={() => toggleFlag(t.id, "raporGoster")} />
+                <FlagChip label={KALIP_ISI_BAYRAGI} on={!!t.kalipIsi} disabled={t.sistem} onToggle={() => toggleFlag(t.id, "kalipIsi")} />
               </div>
 
               <div style={{ flexShrink: 0, display: "flex", gap: 6, alignItems: "center" }}>

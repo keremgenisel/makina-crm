@@ -1696,3 +1696,39 @@ describe("Spec 0114: ihraç kayıtlı işaret sunucuda", () => {
     expect(JSON.stringify(ALAN_IZINLERI)).not.toMatch(/ihrac/i);
   });
 });
+
+describe("Spec 0115: kalıp tamiri sunucuda yeni kural istemez (C6)", () => {
+  const yaz = (izin, eski, yeni) => {
+    const b = yazmaYetkisiVar(izin, "user", degisenBolumler(eski, yeni), eski, yeni);
+    return b.ok ? eylemDenetimi(eski, yeni, izin, "user") : b;
+  };
+  const LISTE = [{ id: 1, ad: "100_ERKEK KALIPLAR REVİZE", olcu: "" }];
+  it("AC-69: işaret ve kalıp listesi yazan servis düzenlemesi bugünkü servis izniyle geçer (müşteri ve servis sekmesinden)", () => {
+    const eski = { services: [{ id: 41, customerId: 1, type: "Garanti Dışı", durum: "Yapılıyor", degisenParcalar: [] }] };
+    const yeni = { services: [{ ...eski.services[0], atolyeKaliplari: LISTE }] };
+    expect(degisenBolumler(eski, yeni)).toEqual(["services"]);
+    expect(yaz(JSON.stringify({ tabs: ["customers"], customerActions: ["cust_service_edit"] }), eski, yeni).ok).toBe(true);
+    expect(yaz(JSON.stringify({ tabs: ["servis"], customerActions: ["cust_service_add", "cust_service_edit"] }), eski, yeni).ok).toBe(true); // kiosk
+  });
+  it("AC-70: tamir satırı ekleyen üretim formu yazımı bugünkü Stok izniyle geçer", () => {
+    const eski = { uretimFormlari: [{ id: 31, baslangicTarihi: "2026-10-26", bitisTarihi: "2026-10-26", satirlar: [] }] };
+    const yeni = { uretimFormlari: [{ ...eski.uretimFormlari[0], satirlar: [{ id: 9001, tur: "tamir", kaynakTip: "servis_tamir", kaynakId: 41, kaynakKalipId: 1, kalipIdx: null, servisTarihi: "2026-10-12", kalipAdi: "X", tamamlandi: false }] }] };
+    expect(yaz(JSON.stringify({ tabs: ["stock"], stockActions: ["stock_uretim_edit"] }), eski, yeni).ok).toBe(true);
+    // Panonun düğmesi (yalnız tamamlandı işareti) aynı izinle
+    const bitti = { uretimFormlari: [{ ...yeni.uretimFormlari[0], satirlar: [{ ...yeni.uretimFormlari[0].satirlar[0], tamamlandi: true }] }] };
+    expect(yaz(JSON.stringify({ tabs: ["stock", "servis"], stockActions: ["stock_uretim_edit"], customerActions: ["cust_service_edit"] }), yeni, bitti).ok).toBe(true);
+  });
+  it("C12: Stok sekmeli atölye kullanıcısı servis bölümüne yazamaz (form kaydı servise damga atsaydı 403 alırdı)", () => {
+    const eski = { services: [{ id: 41, customerId: 1 }] };
+    const yeni = { services: [{ id: 41, customerId: 1, uretimFormId: 31 }] };
+    expect(yaz(JSON.stringify({ tabs: ["stock"], stockActions: ["stock_uretim_edit"] }), eski, yeni).ok).toBe(false);
+  });
+  it("AC-71: kalipIsi bayrağını yazan tip tanımı güncellemesi bugünkü Ayarlar izniyle geçer", () => {
+    const eski = { partTypeDefs: [{ id: "standart", ad: "Standart", sistem: true }, { id: "tip_1", ad: "Kalıp Revize", sistem: false }] };
+    const yeni = { partTypeDefs: [eski.partTypeDefs[0], { ...eski.partTypeDefs[1], kalipIsi: true }] };
+    expect(yaz(JSON.stringify({ tabs: ["settings"] }), eski, yeni).ok).toBe(true);
+  });
+  it("C6: alan izinleri ve eylem kimlikleri kalıp tamirini bilmez", () => {
+    expect(JSON.stringify({ ALAN_IZINLERI, EYLEM_IDLERI })).not.toMatch(/atolye|tamir|kalipIsi/i);
+  });
+});

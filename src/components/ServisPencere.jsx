@@ -19,6 +19,7 @@ const BOS = {
   appSettings: null, geoData: null, loadingGeo: false, partStock: [], partStockLog: [],
   dosyalar: [], yedekParcaSatislar: [], partSales: [], serverPermissions: null,
   aktifKullanici: "", kargoYetki: false, kalipYetki: false, dosyaCevrimdisi: false,
+  uretimFormlari: [], partTypeDefs: null, // spec 0115 R11/2, R32: salt okunur (YAZILABILIR'e girmez, C13)
 };
 
 export function ServisPencere() {
@@ -88,7 +89,8 @@ export function ServisPencere() {
           yedekParcaSatislar={withoutDeleted(snap.yedekParcaSatislar)} setYedekParcaSatislar={s.yedekParcaSatislar} kargoYetki={snap.kargoYetki}
           partSales={withoutDeleted(snap.partSales)} setPartSales={s.partSales} kalipYetki={snap.kalipYetki}
           appSettings={snap.appSettings} showToast={showToast} serverPermissions={snap.serverPermissions}
-          aktifKullanici={snap.aktifKullanici} />
+          aktifKullanici={snap.aktifKullanici}
+          uretimFormlari={snap.uretimFormlari} partTypeDefs={snap.partTypeDefs} />
       )}
     </div>
   );

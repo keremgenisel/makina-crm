@@ -42,4 +42,9 @@ describe("çeviri kapsamı", () => {
     expect(DEFAULT_SERVIS_TRANSLATIONS.EN.servisResimleriBaslik).toBe("SERVICE PHOTOS");
     expect(ekrandakiler("servis").has("servisResimleriBaslik")).toBe(true);
   });
+  it("spec 0115 AC-99: atölyeye alınan kalıplar anahtarı iki dilde ve ekranda var", () => {
+    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("ATÖLYEYE ALINAN KALIPLAR");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("MOLDS TAKEN INTO WORKSHOP");
+    expect(ekrandakiler("servis").has("atolyeKaliplariLabel")).toBe(true);
+  });
 });

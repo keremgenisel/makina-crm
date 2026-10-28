@@ -50,4 +50,13 @@ describe("buildPrintHtml", () => {
     const html = buildPrintHtml({ baslangicTarihi: "2026-07-01", bitisTarihi: "2026-07-01", satirlar: [] });
     expect(html).toContain("Satır yok");
   });
+  it("Spec 0115 triyajı: kullanıcı metinleri kaçışlı basılır (tamir satırının adı serbest girişten gelir)", () => {
+    const X = '<img src=x onerror="alert(1)">';
+    const html = buildPrintHtml({ baslangicTarihi: "2026-07-01", bitisTarihi: "2026-07-01", not: X, satirlar: [{
+      musteriId: 1, musteriAdi: X, sehir: X, makinaKodu: X, kalipKodu: X, kalipAdi: X, kalipOlcusu: X, makinaKalipCapi: X,
+      kalipResim: 'x" onerror="alert(2)', tur: "tamir", kaynakTip: "servis_tamir" }] });
+    expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain('onerror="alert');
+    expect(html.split("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;").length - 1).toBe(8);
+  });
 });

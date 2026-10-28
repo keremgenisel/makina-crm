@@ -41,6 +41,12 @@ describe("SQLite katmanı (Electron altında)", () => {
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
   }, 150000);
 
+  it("spec 0115: kalıp revize tip göçü bir kez, yalnız dolu tip listesine; tip listesi yokken hiçbir şey yazmaz (AC-5..AC-9, AC-82..AC-85)", () => {
+    const r = runElectron("kalip-tamiri-gocu.cjs");
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+  }, 150000);
+
   it("temiz kurulumda şema tam (ilk oturumda yeni sütunlara yazma çökmez)", () => {
     const r = runElectron("db-clean-install.cjs");
     expect(r.status).toBe(0);

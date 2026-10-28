@@ -1,9 +1,9 @@
 // Sevk / Kargo Etiketi (100×150 mm) testleri: tek şablon + iki adaptör (yedek parça / kalıp).
-// Kritik davranışlar: (1) beş satış durumunda başlıklar birebir aynı; (2) farklı adres = teslimat
+// Kritik davranışlar: (1) altı durumda (spec 0115 ile beş → altı: tamir edilen kalıbın dönüşü) başlıklar birebir aynı; (2) farklı adres = teslimat
 // firması büyük yazılır, sipariş veren gizli (Seçenek B); (3) kalıp içeriği "ad · Ölçü"; (4) fabrika
 // teslimde kargo/takip boş (—).
 import { describe, it, expect } from "vitest";
-import { buildKargoEtiketiHtml, yedekParcaEtiketVerisi, kalipEtiketVerisi } from "../src/lib/printTemplates";
+import { buildKargoEtiketiHtml, yedekParcaEtiketVerisi, kalipEtiketVerisi, tamirEtiketVerisi } from "../src/lib/printTemplates";
 
 const factory = { evrakFirmaAdi: "ALTUNTAŞ MAKİNA", name: "Altuntaş Makina", adres: "Topçular / Eyüp", city: "İstanbul", country: "Türkiye", phone: "+90 212 000" };
 const parts = [{ id: "p1", ad: "Piston Kolu" }, { id: "p2", ad: "Conta Takımı" }];
@@ -15,18 +15,19 @@ const deps = { parts, dealers, customers, factory };
 // Her etikette KOŞULSUZ bulunan başlıklar (veri ne olursa olsun sabit).
 const SABIT_BASLIKLAR = ["SEVK / KARGO ETİKETİ", "GÖNDEREN", "ALICI", "İÇERİK", "TESLİM ŞEKLİ", "TARİH"];
 
-// Beş durumun etiket HTML'leri.
+// Altı durumun etiket HTML'leri (spec 0115 R37: altıncısı tamir edilen kalıbın müşteriye dönüşü).
 const ypKargo = () => buildKargoEtiketiHtml(...vArgs(yedekParcaEtiketVerisi([{ id: 100, aliciTipi: "bayi", dealerId: 1, partId: "p1", miktar: 5, currency: "TRY", tarih: "2026-07-28", kargoDurum: "Hazırlanıyor", kargoFirma: "Aras", kargoTakipNo: "72501" }], deps)));
 const ypFabrika = () => buildKargoEtiketiHtml(...vArgs(yedekParcaEtiketVerisi([{ id: 101, aliciTipi: "musteri", musteriId: 10, partId: "p2", miktar: 2, tarih: "2026-07-28", fabrikaTeslim: true, kargoFirma: "SILINMELI", kargoTakipNo: "SILINMELI" }], deps)));
 const kalipKargo = () => buildKargoEtiketiHtml(...vArgs(kalipEtiketVerisi([{ id: 200, customerId: 10, ad: "ANK-450", olcu: "45×30×22", tarih: "2026-07-28", kargoDurum: "Kargoya Verildi", kargoFirma: "MNG", kargoTakipNo: "44100" }], deps)));
 const kalipFabrika = () => buildKargoEtiketiHtml(...vArgs(kalipEtiketVerisi([{ id: 201, customerId: 10, ad: "DPX-900", olcu: "90×60×40", tarih: "2026-07-28", fabrikaTeslim: true }], deps)));
 const ypFarkliAdres = () => buildKargoEtiketiHtml(...vArgs(yedekParcaEtiketVerisi([{ id: 102, aliciTipi: "bayi", dealerId: 1, partId: "p1", miktar: 3, currency: "TRY", tarih: "2026-07-28", kargoDurum: "Hazırlanıyor", teslimatFarkli: true, teslimatAd: "Yılmaz Plastik", teslimatTel: "505 246", teslimatAdres: "Atatürk OSB 10007 Sk.", teslimatSehir: "İzmir", teslimatIlce: "Çiğli", teslimatUlke: "Türkiye" }], deps)));
 
+const tamirDonus = () => buildKargoEtiketiHtml(...vArgs(tamirEtiketVerisi({ id: 300, customerId: 10, date: "2026-10-12", atolyeKaliplari: [{ id: 1, ad: "100_ERKEK KALIPLAR REVİZE", olcu: "" }, { id: 2, ad: "HAMBURGER", olcu: "Ø98" }] }, deps)));
 // veri nesnesini builder argümanlarına çevir.
 const vArgs = (v) => [v.gonderen, v.alici, v.icerik, v.opts];
 
-describe("buildKargoEtiketiHtml — beş durumda başlıklar birebir aynı", () => {
-  const htmls = { ypKargo: ypKargo(), ypFabrika: ypFabrika(), kalipKargo: kalipKargo(), kalipFabrika: kalipFabrika(), ypFarkliAdres: ypFarkliAdres() };
+describe("buildKargoEtiketiHtml — altı durumda başlıklar birebir aynı", () => {
+  const htmls = { ypKargo: ypKargo(), ypFabrika: ypFabrika(), kalipKargo: kalipKargo(), kalipFabrika: kalipFabrika(), ypFarkliAdres: ypFarkliAdres(), tamirDonus: tamirDonus() };
   for (const [ad, html] of Object.entries(htmls)) {
     it(`"${ad}" tüm sabit başlıkları içerir`, () => {
       for (const b of SABIT_BASLIKLAR) expect(html).toContain(b);

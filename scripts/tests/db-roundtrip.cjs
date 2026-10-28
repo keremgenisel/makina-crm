@@ -111,9 +111,13 @@ dbmod.writeBlobToDb({
     { id: "konveyor", ad: "Konveyör Saç", renk: "blu", makinaSecici: true, stokDus: true, raporGoster: false, sistem: true, rol: "konveyor" },
     { id: "bant", ad: "Bant", renk: "grn", makinaSecici: true, stokDus: true, raporGoster: true, sistem: true, rol: "bant" },
     { id: "filtre_1", ad: "Filtre", renk: "amb", makinaSecici: true, stokDus: true, raporGoster: true, sistem: false },
+    // Spec 0115 AC-71: dördüncü bayrak meta JSON'da gidip gelir. Adı göçün tipiyle aynı olduğu için yeniden açılışta göç yalnız
+    // bayrağını yazar (Karar 49), liste uzamaz.
+    { id: "tip_kalip", ad: "Kalıp Revize", renk: "pur", makinaSecici: false, stokDus: false, raporGoster: false, kalipIsi: true, sistem: false },
   ],
   services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, hesapId: 97, tevkifatli: true, tevkifatPay: 7, tevkifatPayda: 10, // spec 0079 AC-29
     ihracKayitli: true, // spec 0114 Ö-11: servis tablosunda sütun yok, işaret tutunamaz
+    atolyeKaliplari: [{ id: 91, ad: "100_ERKEK KALIPLAR REVİZE", olcu: "" }, { id: 92, ad: "HAMBURGER", olcu: "Ø98" }], // spec 0115 AC-67
     durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
     fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaAdres: "Organize Sanayi 5. Cadde No:12", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
@@ -447,6 +451,24 @@ check("spec 0095 AC-33: alanı bilmeyen (güncellenmemiş) istemcinin geri gönd
   return !degisenBolumler(blob, eskiIstemci).includes("yedekParcaSatislar")
     && stableStringify(blob.yedekParcaSatislar.filter(s => s.id !== 652)) === stableStringify(eskiIstemci.yedekParcaSatislar.filter(s => s.id !== 652));
 })());
+// Spec 0115 AC-67, AC-27, C11: servisin atölye kalıp listesi JSON sütununda gidip gelir; boş/kapalı kayıtta anahtar HİÇ yok
+// (boş dizi de değil); alanı bilmeyen istemcinin gövdesi bölümü değişmiş göstermez.
+check("spec 0115 AC-67 / AC-27: atolyeKaliplari services'te roundtrip; listesiz serviste anahtar yok", (() => {
+  const s2 = (blob.services || []).find(x => x.id === 2), s3 = (blob.services || []).find(x => x.id === 3);
+  const { degisenBolumler } = require(path.join(root, "electron", "serverAuth.cjs"));
+  const eskiIstemci = JSON.parse(JSON.stringify(blob));
+  return JSON.stringify(s2?.atolyeKaliplari) === JSON.stringify([{ id: 91, ad: "100_ERKEK KALIPLAR REVİZE", olcu: "" }, { id: 92, ad: "HAMBURGER", olcu: "Ø98" }])
+    && !!s3 && !("atolyeKaliplari" in s3) && !degisenBolumler(blob, eskiIstemci).includes("services");
+})());
+check("spec 0115 AC-27: boş liste NULL yazılır (sütunda değer yok)", (() => {
+  const dbPath = dbmod.getDbPath();
+  dbmod.close();
+  const c = new Database(dbPath);
+  const r = c.prepare(`SELECT id, atolyeKaliplari FROM services ORDER BY id`).all();
+  c.close();
+  dbmod.migrateFromJsonIfNeeded();
+  return r.find(x => x.id === 3)?.atolyeKaliplari === null && typeof r.find(x => x.id === 2)?.atolyeKaliplari === "string";
+})());
 // Spec 0114 AC-49, AC-50, C5: ihraç kayıtlı işaret üç tabloda roundtrip eder; kapalı kayıtta anahtar HİÇ yok (false da değil);
 // servis kaydında sütun olmadığı için işaret tutunamaz (plan Ö-11); alanı bilmeyen istemcinin gövdesi bölümü değişmiş göstermez.
 check("spec 0114 AC-49 / AC-50: ihracKayitli customers/part_sales/yedek_parca_satis'ta roundtrip; kapalıda alan yok; serviste yok", (() => {
@@ -488,7 +510,11 @@ check("factory.haritaKonum roundtrip (elle fabrika pin konumu)", (() => { const 
 check("customer.ilce roundtrip (Harita ilçe kırılımı)", (blob.customers || []).find(c => c.id === 500)?.ilce === "Kadıköy");
 check("dealer.ilce roundtrip", (blob.dealers || []).find(d => d.id === 3)?.ilce === "Gebze");
 check("customer.tipSecimleri roundtrip (genel parça tipi seçimleri)", (() => { const t = (blob.customers || []).find(c => c.id === 500)?.tipSecimleri; return t?.konveyor === "9" && t?.bant === "8" && t?.filtre_1 === "5"; })());
-check("partTypeDefs roundtrip (kullanıcı tipi + davranış bayrakları)", (() => { const f = (blob.partTypeDefs || []).find(t => t.id === "filtre_1"); return f?.ad === "Filtre" && f?.makinaSecici === true && f?.stokDus === true && f?.raporGoster === true && f?.sistem === false && (blob.partTypeDefs || []).length === 4; })());
+check("partTypeDefs roundtrip (kullanıcı tipi + davranış bayrakları)", (() => { const f = (blob.partTypeDefs || []).find(t => t.id === "filtre_1"); return f?.ad === "Filtre" && f?.makinaSecici === true && f?.stokDus === true && f?.raporGoster === true && f?.sistem === false && (blob.partTypeDefs || []).length === 5; })()); // spec 0115 ile 4 → 5 (kalıp işi tipi)
+check("spec 0115 AC-71: kalipIsi bayrağı gidip gelir; göç aynı adlı tip varken listeyi uzatmaz", (() => {
+  const t = (blob.partTypeDefs || []).find(x => x.id === "tip_kalip");
+  return t?.kalipIsi === true && (blob.partTypeDefs || []).filter(x => x.ad === "Kalıp Revize").length === 1;
+})());
 check("gorusme tam turu", (() => { const g = (blob.gorusmeler || []).find(x => x.id === 7); return g?.customerId === 500 && g?.not === "Fiyat bekliyor" && g?.takipTarihi === "2026-07-10" && g?.tamamlandi === false && g?.kullanici === "kerem"; })());
 check("gorusme deletedAt tam turu", (() => { const g = (blob.gorusmeler || []).find(x => x.id === 8); return g?.deletedAt === "2026-07-03T10:00:00.000Z" && (blob.gorusmeler || []).find(x => x.id === 7)?.deletedAt == null; })());
 check("dosya künyesi roundtrip (servis bağı)", (() => { const d = (blob.dosyalar || []).find(x => x.id === 20); return d?.customerId === 500 && d?.refType === "servis" && d?.refId === 2 && d?.ad === "imzali-form.pdf" && d?.dosyaAdi === "k1-imzali-form.pdf" && d?.boyut === 12345 && d?.tur === "PDF" && d?.ekleyen === "kerem"; })());

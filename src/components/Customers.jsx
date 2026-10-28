@@ -22,6 +22,7 @@ import { Segment, KartBolum, BosDurum, UyariSeridi } from "./tasarim";
 import { CustomerDetailModal } from "./customers/CustomerDetailModal";
 import { CustomerAddEditForm } from "./customers/CustomerAddEditForm";
 import { DurumPilleri } from "./customers/DurumPili";
+import { tamirSatirHaritasi } from "../lib/kalipTamiri";
 
 export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
@@ -117,6 +118,8 @@ export const Customers = ({
   // Spec 0106 R26/2, Karar 36, C7: üretim formu haritası ve Extra Kalıp grubu bir kez kurulur; aynı bağlam forma ve detaya iletilir.
   // Satır başına durum tek haritada: hücre, süzgeç ölçütü ve süzgeç sayısı onu okur. Bayilerde hesaplanmaz (R13).
   const durumBaglami = useMemo(() => ({ harita: uretimFormHaritasi(uretimFormlari), grup: extraKalipGrupla(partSales) }), [uretimFormlari, partSales]);
+  // Spec 0115 R34: Makina Geçmişi'nin tamir rozeti pano ile aynı haritadan; kalıp durumu bağlamına girmez (C1).
+  const tamirHarita = useMemo(() => tamirSatirHaritasi(uretimFormlari), [uretimFormlari]);
   const satirDurumlari = useMemo(() => (isCustomer
     ? new Map(customers.map(c => [c.id, satirDurumu(c, { ...durumBaglami, borclu: debtorIds.has(c.id) })]))
     : new Map()), [isCustomer, customers, durumBaglami, debtorIds]);
@@ -680,7 +683,7 @@ export const Customers = ({
         <CustomerDetailModal
           gorusmeler={gorusmeler} setGorusmeler={setGorusmeler}
           dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={dosyaCevrimdisi}
-          detailView={detailView} durumBaglami={durumBaglami}
+          detailView={detailView} durumBaglami={durumBaglami} tamirHarita={tamirHarita}
           odakServisId={focusServiceId}
           odakKalipId={focusKalipId}
           odakGorusmeId={focusGorusmeId}

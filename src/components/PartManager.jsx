@@ -3,6 +3,7 @@ import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
 import { CUR_SYM, tipRenk } from "../lib/constants";
 import { Icon, Field, Input, MoneyInput, TutarInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload, Select } from "./ui";
 import { HataMetni, Ipucu, UyariSeridi, BolumBasligi } from "./tasarim";
+import { kalipAdDeseni, parcaKalipIsiMi, PARCA_TIP_IPUCU } from "../lib/kalipTamiri";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { MALIYET_ETIKETI, MALIYET_IPUCU, KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, maliyetGirildiMi, parcaMaliyetDogrula,
   kitAdediDogrula, parcaKitAdetleri, parcaKitPlani, kitleriGuncelle, isaretsizKitteMetni,
@@ -208,6 +209,11 @@ const ModelAdetleri = ({ selected = [], allModels = [], adetler, setAdetler, hat
     </div>
   );
 };
+
+// Spec 0115 R6, R6/2: tipi kalıp işi olmayan, adı kalıp revize desenine uyan parçada ipucu (engel değil). Koşul ad desenini
+// tek kaynağından (kalipAdDeseni) okur; burada ad araması yazılmaz (C14).
+const KalipTipIpucu = ({ kayit, partTypeDefs }) => (kalipAdDeseni(kayit?.ad) && !parcaKalipIsiMi(kayit, partTypeDefs)
+  ? <div data-testid="parca-kalip-tip-ipucu"><Ipucu>{PARCA_TIP_IPUCU}</Ipucu></div> : null);
 
 // Parça tipi seçici — tipler kullanıcı-tanımlı partTypeDefs listesinden gelir.
 const TipSelector = ({ value, onChange, partTypeDefs = [] }) => (
@@ -501,6 +507,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={form.tip || "Standart"} onChange={v => setForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />
+            <KalipTipIpucu kayit={form} partTypeDefs={partTypeDefs} />
           </Field>
           <Field label="Resim">
             <ImageUpload value={form.resim || ""} onChange={v => setForm(p => ({ ...p, resim: v }))} label={form.ad} />
@@ -556,6 +563,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={editForm.tip || "Standart"} onChange={v => setEditForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />
+            <KalipTipIpucu kayit={editForm} partTypeDefs={partTypeDefs} />
           </Field>
           <Field label="Resim">
             <ImageUpload value={editForm.resim || ""} onChange={v => setEditForm(p => ({ ...p, resim: v }))} label={editForm.ad} />

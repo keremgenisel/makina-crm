@@ -17,7 +17,7 @@ import {
   buildMachineReportHtml,
   buildSandikEtiketiHtml,
   DEFAULT_SANDIK_TRANSLATIONS,
-  kalipEtiketYazdir,
+  kalipEtiketYazdir, tamirEtiketYazdir,
   yedekParcaEtiketYazdir,
 } from "../../lib/printTemplates";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
@@ -48,6 +48,7 @@ import { MachineTimeline } from "./detail/MachineTimeline";
 import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle, kalipGuncelle } from "../../lib/kalipSatisi";
 import { durumYaz, makinaDurumuOf, MAKINA_DURUM_ADLARI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
 import { MakinaDurumuSecici } from "./DurumSecici";
+import { tamirDogrula, tamirListesiKur, tamirYaz, tamirListesi } from "../../lib/kalipTamiri";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -67,7 +68,7 @@ export const CustomerDetailModal = ({
   // Spec 0111 R21: toplu düzenlemenin kayıt anında kilit denetimi kendi kilidimizi başkasınınki saymasın.
   aktifKullanici = null,
   // Spec 0106 R26/2: Customers'ın kurduğu üretim formu haritası ve Extra Kalıp grubu.
-  durumBaglami = null,
+  durumBaglami = null, tamirHarita = null, // spec 0115 R34
   customers, setCustomers,
   services, setServices,
   partSales, setPartSales,
@@ -187,6 +188,9 @@ export const CustomerDetailModal = ({
     // tabanı, alan yazımı). Kaynak taraması ikisini birlikte arar.
     const tevkifatHata = satisTevkifatDogrula(svForm, svForm.faturaTipi);
     if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
+    // Spec 0115 R14, Karar 52: kalıp listesi doğrulaması; hatalar geçici form alanına (satırın altında görünür).
+    const tamirD = tamirDogrula(svForm);
+    if (!tamirD.gecerli) { setSvForm(f => ({ ...f, _tamirHatalari: tamirD })); showToast(tamirD.hata, "err"); return; }
     const kartTaban = kartTabanKaydi(svForm);
     // Kalem (yansıtma öncesi) billable = servis + ücretli parça. Komisyon müşteriye yansıtılıyorsa
     // servisUcreti ve parça fiyatları KDV matrahına (kalem+komisyon) ölçeklenerek saklanır (Extra Kalıp deseni,
@@ -213,14 +217,16 @@ export const CustomerDetailModal = ({
     const parcaUcretiAltuntastan = degisenParcalarSave.filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0);
     const svBillable = servisUcretiSave + (parcaUcretsizMi ? 0 : parcaUcreti);
     const svKdvDahil = svBillable + tahsilEdilecekKdv(svForm.faturaTipi, svBillable, svForm.date, kdvRates, kartTaban);
-    const rec = satisTevkifatUygula({ ...svForm, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
+    const recTevkifat = satisTevkifatUygula({ ...svForm, servisUcreti: servisUcretiSave, degisenParcalar: degisenParcalarSave,
       customerId: svForm.customerId ? Number(svForm.customerId) : null, parcaUcretsizMi, parcaUcreti, parcaUcretiAltuntastan, parcaCurrency: svForm.currency,
       vadeTarihi: svForm.yontem === "Çek" ? (svForm.vadeTarihi || "") : "",
       tahsilEdildi: svForm.yontem === "Çek" ? !!svForm.tahsilEdildi : false,
       taksitSayisi: svForm.yontem === "Kredi Kartı" ? (svForm.taksitSayisi ?? null) : null,
       kartKomisyonu: svForm.yontem === "Kredi Kartı" ? kartTabanIsaretle(yansitSnap || kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, kkAyar, kkTarih, false), kartTaban) : null }, svForm, svForm.faturaTipi);
+    // Spec 0115 R7/3, C3: kimlikler burada (kurucu) verilir, tek yazıcı tamirYaz; kutu kapalıysa alan kayıtta yok (R9).
+    if (svModal === "add" || tamirListesi(svForm).some(g => g.id == null)) bumpId(customers, services);
+    const rec = tamirYaz(recTevkifat, tamirListesiKur(svForm, uid));
     if (svModal === "add") {
-      bumpId(customers, services);
       const newId = uid();
       // Yeni servis "Bekliyor" ile açılır → Servis Panosu zaman takibi için fabrikaya giriş anını damgala.
       const yeniRec = { ...rec, id: newId };
@@ -1188,6 +1194,7 @@ export const CustomerDetailModal = ({
               onEditPartSale={openEditPartSale}
               onDeletePartSale={setConfirmDeletePartSaleId}
               onPrintKalipEtiket={(psList) => kalipEtiketYazdir(psList, { customers, factory })}
+              onPrintTamirEtiket={(sv) => tamirEtiketYazdir(sv, { customers, factory })}
               onEditYedekParca={setYedekParcaSatislar ? openEditYedekParca : null}
               onDeleteYedekParca={setYedekParcaSatislar ? setConfirmDeleteYedekParca : null}
               onToggleYedekParcaOdendi={setYedekParcaSatislar ? toggleYedekParcaOdendi : null}
@@ -1201,7 +1208,7 @@ export const CustomerDetailModal = ({
               onDeletePayment={setConfirmDeletePaymentId}
               onToggleServisOdendi={toggleServisOdendi}
               onTogglePartSaleOdendi={togglePartSaleOdendi}
-              durumBaglami={durumBaglami}
+              durumBaglami={durumBaglami} tamirHarita={tamirHarita}
               onPartSaleKalipDurumu={(ps, v) => setPartSales(p => p.map(x => (x.id === ps.id ? durumYaz(x, "kalipDurumu", v) : x)))}
               onTahsilTaksit={tahsilTaksit}
               dosyaAdet={setDosyalar ? dosyaAdet : null}
@@ -1513,7 +1520,7 @@ export const CustomerDetailModal = ({
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
-          geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar}
+          geoData={geoData} loadingGeo={loadingGeo} calisanlar={calisanlar} partTypeDefs={partTypeDefs}
           kasaHesaplari={tahsilatHesapYetki ? kasaHesaplari : null} hesapVarsayilan={tahsilatHesapVarsayilan}
           onSave={saveService} onCancel={() => { svDraft.clearDraft(); setSvModal(null); }}
           dosyalar={dosyalar} dosyaEkleyebilir={!!setDosyalar && canDo("cust_dosya_add")} dosyaCevrimdisi={dosyaCevrimdisi} showToast={showToast}

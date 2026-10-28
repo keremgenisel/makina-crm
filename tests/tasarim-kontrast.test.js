@@ -94,6 +94,9 @@ describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => 
     ["Müşteri pili 'KALIP SİPARİŞ VERİLDİ'", "n600", "n150", "src/lib/musteriDurumu.js"],
     ["Müşteri pili 'KALIP ÜRETİMDE'", "blu700", "bluBg", "src/lib/musteriDurumu.js"],
     ["Müşteri pili 'KALIP HAZIR · TESLİM BEKLİYOR'", "teal2", "tealBg", "src/lib/musteriDurumu.js"],
+    // Spec 0115 Karar 55: tamir rozeti (pano kartı ve Makina Geçmişi) ve üretim formunun Tamir hücresi amber.
+    ["Tamir rozeti 'KALIP ATÖLYEDE'", "amb700", "ambBg", "src/components/TamirRozeti.jsx"],
+    ["Üretim formu Tamir hücresi", "amb700", "ambBg", "src/components/stock/UretimFormu.jsx"],
   ];
   const KENAR_0030 = [
     ["Pano KALIP / personel rozeti", "purBr", "purBg", "src/components/gider/GiderAlanlari.jsx"],
@@ -101,6 +104,7 @@ describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => 
     ["Müşteri pili 'ÖDEME BEKLİYOR' (triyaj bulgu 4)", "redBr", "redBg2", "src/lib/musteriDurumu.js"],
     ["Müşteri pili 'KALIP SİPARİŞ VERİLDİ'", "n200", "n150", "src/lib/musteriDurumu.js"],
     ["Müşteri pili 'KALIP HAZIR · TESLİM BEKLİYOR'", "tealBr", "tealBg", "src/lib/musteriDurumu.js"],
+    ["Tamir rozeti 'KALIP ATÖLYEDE' (spec 0115)", "ambBr", "ambBg", "src/components/TamirRozeti.jsx"],
   ];
   it.each(METIN_0030)("%s: karanlıkta WCAG AA ya da aydınlıktakinin en az yüzde 95'i", (_y, on, zemin) => {
     expect(T[on], on).toBeTruthy();

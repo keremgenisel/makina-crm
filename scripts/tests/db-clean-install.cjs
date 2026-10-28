@@ -37,7 +37,7 @@ try {
     stock: [{ id: 3, model: "AK100", serialNo: "D-1", addedDate: "2026-09-01", note: "Silinen müşteriden geri döndü", uretimTarihi: "2026-05-05", partiId: 35 }],
     uretimFormlari: [{ id: 7, baslangicTarihi: "2026-07-01", bitisTarihi: "2026-07-05", kapali: true, not: "n", satirlar: [] }],
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
-    services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", tevkifatli: true, tevkifatPay: 7, tevkifatPayda: 10, islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00",
+    services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", atolyeKaliplari: [{ id: 51, ad: "K", olcu: "1" }], tevkifatli: true, tevkifatPay: 7, tevkifatPayda: 10, islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00",
       odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 200, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: false } }],
     partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10, ihracKayitli: true, hesapId: 5, satisFirma: "Diğer", satisFirmaAd: "Aracı",
       teslimSekli: "kargo",
@@ -148,6 +148,7 @@ check("spec 0079 AC-34: temiz kurulumda satış tarafının tevkifat sütunları
   return ac((blob.customers || []).find(x => x.id === 1), 5) && ac((blob.services || []).find(x => x.id === 5), 7)
     && ac((blob.partSales || []).find(x => x.id === 6), 2) && ac((blob.yedekParcaSatislar || []).find(x => x.id === 8), 9);
 })());
+check("spec 0115 AC-68: temiz kurulumda atolyeKaliplari sütunu var ve yazıldı", (blob.services || []).find(x => x.id === 5)?.atolyeKaliplari?.[0]?.ad === "K");
 check("spec 0114 AC-51: temiz kurulumda ihracKayitli sütunu üç tabloda var ve yazıldı", (() => {
   const b = (k, id) => (blob[k] || []).find(x => x.id === id);
   return b("customers", 1)?.ihracKayitli === true && b("partSales", 6)?.ihracKayitli === true && b("yedekParcaSatislar", 8)?.ihracKayitli === true
