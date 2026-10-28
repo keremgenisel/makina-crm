@@ -1,6 +1,6 @@
 # 0114 Uygulama planı: ihraç kayıtlı fatura satış tipine eklenir
 
-Spec `specs/0114-ihrac-kayitli-fatura.md` (plan turu Karar 27–41). Dal `feat/0114-ihrac-kayitli`, taban `68fc888` (v3.51.0).
+Spec `specs/done/0114-ihrac-kayitli-fatura.md` (plan turu Karar 27–41, triyaj Karar 42). Tamamlandı: uygulama commit `e3768a8`. Dal `feat/0114-ihrac-kayitli`, taban `68fc888` (v3.51.0).
 
 ## 1. Dosyalar
 

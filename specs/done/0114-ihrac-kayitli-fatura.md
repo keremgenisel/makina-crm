@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (plan `specs/0114-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (revizyon 3: QA turu, plan turu Karar 27–41, triyaj Karar 42, 2026-10-28; uygulama commit `e3768a8`; plan `specs/done/0114-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Satış tipi seçicisinin dört kopyası (`src/components/customers/CustomerAddEditForm.jsx:518-522`, `src/components/PartSaleForm.jsx:145-150`, `src/components/YedekParcaSatisForm.jsx:157-163`, `src/components/ServiceForm.jsx:282`); KDV'nin tek kapısı (`src/lib/utils.js:400-418` `satisKdvBolumu`, `tahsilEdilecekKdv`, `tahsilKdvOrani`); tevkifat kutusu ve özeti (`src/components/SatisTevkifatAlani.jsx`, kapı `src/lib/satisTevkifat.js:16`); müşteri detayının Kalan Borç kartı (`src/components/customers/detail/PaymentSection.jsx:52`) ve Makina Geçmişi rozeti (`src/components/customers/detail/MachineTimeline.jsx:35-43`); Stok yedek parça satırının rozeti (`src/components/stock/YedekParcaSatisTab.jsx:251`); Finans'ın KDV Karşılaştırması kartı (`src/components/gider/KdvKarsilastirmaKarti.jsx:65-71`) ve satış KDV'si köprüsü (`src/lib/giderKdv.js:12`, `src/lib/gider.js` `kdvKarsilastir`); aylık rapor motoru ve çıktısı (`src/lib/aylikRapor.js:572`, `src/lib/printTemplates.js:1676-1686`); üç tabloda yeni kalıcı alan `ihracKayitli` (`electron/db.cjs`: `TEVKIFAT_COLUMNS` emsali `:575-578`, üç okuma `:1379`, `:1457`, `:1468`, `applyColumnMigrations` `:1154`); yeni saf modül `src/lib/ihracKayitli.js` (R5/2); kart tabanının anlık görüntüsü (`src/lib/satisTevkifat.js:45-70` `tabanKaydi`, `kartTabanKaydi`, `kartTabanIsaretle`, `kartTabaniEskiMi`, `makinaKartTabaniEskiMi`); işaretin yazıldığı beş yer (`src/components/Customers.jsx:317` ve `:370`, `src/lib/kalipSatisi.js:9` ve `:82`, `src/lib/yedekParcaSatis.js:79` ve `:115`; 0111'in toplu düzenlemesi `:294` üzerinden aynı yoldan geçer); üç dışa aktarma raporu (`src/components/settings/SettingsExport.jsx:35`, `:207`, `:278` başlıkları ile `:55`, `:222`, `:295` satırları); KDV kartının **iki** çağıranı (`src/components/Finance.jsx:71-80` ve `src/components/Giderler.jsx:125-132`; 0047 raporunun iki argümanlı çağrısı `src/lib/giderRaporu.js:158` değişmez); rozetin teal tonları (`src/lib/theme.js:89-91` `teal`, `teal2`, `tealBg`, `tealBr`; yeni token eklenmez) |
@@ -420,10 +420,17 @@ Takım Yöneticisi planın on iki önerisini (Ö-1–Ö-12) analistin önerisiyl
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `e3768a8` | Dal `feat/0114-ihrac-kayitli`, taban `68fc888` (v3.51.0); kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (B-1–B-3, Ö-1–Ö-7, K-1–K-11), plan turu (Karar 27–41), triyaj (Karar 42) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: dört bulgu (1 düşük-orta, 3 düşük): rapor kutusunun parti sayımı testsizdi; "KDV Miktarı" hücresi işaretli makinada boştu (Karar 42, kod düzeltmesi); servis formunun yalnız satış tipini alması testsizdi; ana dizindeki spec kopyası eskiydi |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 428 dosya, 5807 test (Electron dahil); lint 0 hata |
+| **Kaçan hata** | 1 | "KDV Miktarı" hücresinin boş kalması (R9'un amacına ters); triyajda yakalandı |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** alan alan kurulan iki düzenleme formu (toplu yedek parça, Extra Kalıp) işareti taşımıyordu ve tek yazıcı onu dokunulmadan kaydedilen kayıtta silerdi (Karar 38, düzeltildi); ölçüm 12 0095'in iki tam eşitlikli kıyasını kaçırmıştı (Karar 39, ters çevrilen kriter yine yok).
+
+**Açık madde:** Extra Kalıp düzenleme formu tevkifat alanlarını forma taşımıyor; tevkifatlı Extra Kalıp düzenlenince tevkifat siliniyor (0079'dan beri, plan §7). Ayrı iş.
+
+**Görsel kanıt:** 25 ekran × 2 tema; var olan 14 ekran 0 piksel, 11 yeni ekran bilinçli değişti; taban son kodla 0 fark.
+
+**Bu spec'ten çıkarılan ders:** Bir kayda yeni alan eklenirken "tek yazıcı her çağrıda siler, işaretliyse yazar" deseni ancak yazıcıya giden form alanı taşıyorsa güvenlidir; formu kaydı yayarak değil alan alan kuran düzenleme açılışları (burada iki tane) yeni alanı sessizce siler ve bunu yalnız gerçek uygulamanın kaydettiği gövde gösterir. Bu yüzden düzenleme açılışları spec'te yazım yolları kadar sayılmalı. "İşaretsiz satırda boş sütun kıyası bozmaz" gibi bir iddia, kıyasın önek mi tam eşitlik mi kullandığı her kıyas dosyasında ayrı ayrı okunarak ölçülmeli.
