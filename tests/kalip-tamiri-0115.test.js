@@ -236,3 +236,23 @@ describe("Spec 0115 kaynak taramaları", () => {
     expect(oku("src/components/settings/serverPermissionDefs.js")).not.toMatch(/tamir/i);
   });
 });
+
+// Kapanış belge düzeni (0114 emsali). Plan specs/done'a taşındığında CLAUDE.md'nin 0115 bölümü commit satırını taşır,
+// TASINACAK'ta 0115 yok, eski spec kopyası kalmaz, kanıt kayıtları tabanda `ayni`dır, README satırı Tamamlandı.
+describe("Spec 0115: kapanış belge düzeni", () => {
+  it("plan done'daysa: 'Tamamlandı: commit', TASINACAK'ta 0115 yok, eski kopya yok, kanıt tabanda ayni, README Tamamlandı", () => {
+    if (!fs.existsSync("specs/done/0115-uygulama-plani.md")) return;
+    const claude = oku("CLAUDE.md");
+    const bolum = claude.slice(claude.indexOf("(spec 0115, plan"), claude.indexOf("(spec 0113, plan"));
+    expect(bolum).toMatch(/Tamamlandı: commit `[0-9a-f]{7}`/);
+    expect(bolum).not.toMatch(/specs\/0115-/);
+    expect(oku("tests/spec-atiflari.test.js")).not.toMatch(/TASINACAK = \[[^\]]*0115/);
+    expect(fs.existsSync("specs/0115-kalip-tamiri-atolye-is-listesi.md")).toBe(false);
+    const kayitlar = Object.values(JSON.parse(oku("docs/evidence/kanit-eslemesi.json")).dosyalar).flat().filter(k => k.rapor.includes("/0115-"));
+    expect(kayitlar.length).toBeGreaterThan(0);
+    expect(kayitlar.filter(k => k.beklenen === "degisti" || k.onay)).toEqual([]);
+    const spec = oku("specs/done/0115-kalip-tamiri-atolye-is-listesi.md");
+    expect(spec).toMatch(/\| \*\*Durum\*\* \| Tamamlandı/);
+    expect(oku("specs/README.md")).toMatch(/\| \*\*0115\*\* \| [^|]*\(Tamamlandı\)/);
+  });
+});

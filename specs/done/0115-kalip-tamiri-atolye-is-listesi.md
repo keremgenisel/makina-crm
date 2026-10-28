@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulamada (plan `specs/0115-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (revizyon 2: QA turu ve plan turu Karar 47–59, 2026-10-28; triyaj yedi bulgu; uygulama commit `7661066`; plan `specs/done/0115-uygulama-plani.md`) |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Servis formunun yeni kalıp bölümü (`src/components/ServiceForm.jsx`) ve iki kurucusu (`CustomerDetailModal.saveService`, `ServisPanosu.kaydet`); servis kaydında bir yeni JSON alan (`electron/db.cjs`, `services`); parça tipi tanımına dördüncü davranış bayrağı (`src/lib/constants.js` `INIT_PART_TYPES` emsali, `partTypeDefs` meta JSON) ve paneli (`PartTypeManager`); bir kerelik göç (`electron/db.cjs`, `kasaGocu` emsali); Kalıp Üretim Formu (`src/components/stock/UretimFormu.jsx` satır listesi, `collectPending`, `uretimFormModel.js` satır modeli, `uretimFormPrint.js` çıktı) ve manuel satır penceresi (`UretimSatirEkleModal.jsx`); Servis ve Kargo Panosu kartı ve bırakma işleyicisi (`ServisPanosu.jsx`); Makina Geçmişi satırı (`customers/detail/MachineTimeline.jsx`); Servis Formu çıktısının etiket tablosu ve Kargo Etiketi'nin altıncı durumu (`src/lib/printTemplates.js`); panoya üretim formlarını salt okunur geçiren üç çağrı (`App.jsx` ana pencere ve kiosk, `components/ServisPencere.jsx` köprüsü). **QA turunda eklenenler (2026-10-28):** yeni saf modül `src/lib/kalipTamiri.js` (dedektör, bekleyen tamir, rozet özeti ve metin sabitleri, R3/2); aynı üç çağrıya `partTypeDefs` (öneri için, R11/2) ve `CustomerDetailModal` → `ServiceForm` prop'u; üretim formuna `services` zinciri (`App.jsx` → `components/Stock.jsx` → `stock/UretimFormu.jsx`, R18/2); parça kartının ipucu alanı (`src/components/PartManager.jsx`, R6/2); çeviri anahtarının ekranı (`src/components/settings/SettingsTranslations.jsx`, R35/2); kilit alanı kaydı (`src/lib/kilitAlanlari.js`, R27/4). Dokunulmayan ama adıyla yazılanlar: `src/lib/musteriDurumu.js` (kalıp durumu makinesi, C1), müşteri formunun kalıp ızgarası, `kalipDefs` |
@@ -296,7 +296,7 @@ Takım Yöneticisi yirmi altı bulgunun hepsini analistin önerisiyle onayladı.
 
 ### Plan turunda verilen kararlar (2026-10-28)
 
-Takım Yöneticisi uygulama planındaki on üç önerinin hepsini onayladı (`specs/0115-uygulama-plani.md`).
+Takım Yöneticisi uygulama planındaki on üç önerinin hepsini onayladı (`specs/done/0115-uygulama-plani.md`).
 
 **Karar 47. AC-72'nin üretim formu çıktısı "Tür sütunu dışında birebir" okunur.** *Gerekçe:* R16/2 ve R36/2 Tür sütununu koşulsuz istiyor, yani işaretsiz veride de çıktı değişir. Kıyas Tür başlığını, `data-tur` işaretli hücreleri ve `colspan="6"` → `"5"` dönüşümünü ayıklar ve ayıklamanın gerçekten iş yaptığını da ölçer.
 
@@ -533,10 +533,13 @@ Takım Yöneticisi uygulama planındaki on üç önerinin hepsini onayladı (`sp
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `7661066` | Dal `feat/0115-kalip-tamiri`, taban `86a76b5`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (2026-10-28), plan turu (Karar 47–59) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: yedi bulgu (1 orta-düşük, 5 düşük, 1 belge): taslaktan dönen formda geçici giriş anahtarı çakışıyordu (kod düzeltmesi); pano kurucusunun kalıp doğrulaması, "Kalıpları da bitti işaretle"nin kapsamı (başka servis, çöpteki form) ve kalıpsız serviste etiket düğmesinin yokluğu testsizdi; üretim formu çıktısı kalıp adını kaçışsız basıyordu (eski kusur, yeni yoldan erişilebilir); Manuel Satır Ekle başka formda bağlı kalıbı ikinci forma bağlayabiliyordu (kod düzeltmesi, kalıp pasif çizilir); ana dizindeki spec kopyası eskiydi |
+| **Bulgu gerçek/gürültü oranı** | 7 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 436 dosya, 5918 test (Electron dahil); lint 0 hata |
+| **Kaçan hata** | 2 | Taslak anahtar çakışması ve manuel pencerenin ikinci bağı; ikisi de triyajda yakalandı |
 
-**Bu spec'ten çıkarılan ders:**
+**Görsel kanıt:** 34 ekran × 2 tema; 17 yeni ekran, var olan 17 ekranın 9'u bilinçli değişti (servis formu, parça tipi paneli, pano kartı, üretim formu), 8'i 0 piksel; taban son kodla 0 fark.
+
+**Bu spec'ten çıkarılan ders:** Bileşen içi sayaçla üretilen geçici anahtar, form taslağa yazılıyorsa kalıcı veridir: taslak geri yüklenince sayaç sıfırdan başlar ve eski girişle çakışır, yani geçici anahtarın kaynağı formun kendisi olmalı. Bir kaynak bağını yeni bir yoldan (burada manuel pencere) yazmaya başlayan değişiklik, o bağın "ikinci forma çekilemez" kuralını yalnız eski yolda değil yeni yolda da sınamalı. İki kurucuya kopyalanan doğrulamada metin taraması davranışı korumaz; reddetme dalı her kurucuda ayrı ölçülmeli.

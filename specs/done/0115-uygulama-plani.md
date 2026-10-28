@@ -1,6 +1,6 @@
 # 0115 Uygulama planı: tamire gelen kalıp atölyenin iş listesine düşer
 
-Spec: `specs/0115-kalip-tamiri-atolye-is-listesi.md`. Dal `feat/0115-kalip-tamiri` (`86a76b5f` üstünde). Takım Yöneticisi planın on üç önerisinin hepsini onayladı (spec Karar 47–59).
+Spec: `specs/done/0115-kalip-tamiri-atolye-is-listesi.md`. Tamamlandı: uygulama commit `7661066`. Dal `feat/0115-kalip-tamiri` (`86a76b5f` üstünde). Takım Yöneticisi planın on üç önerisinin hepsini onayladı (spec Karar 47–59).
 
 ## 1. Dosyalar
 
