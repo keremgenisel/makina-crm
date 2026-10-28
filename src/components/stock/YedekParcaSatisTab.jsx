@@ -276,7 +276,8 @@ export const YedekParcaSatisTab = ({
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
             {s.tahsisler.map((t, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", borderRadius: 8, padding: "5px 10px" }}>
-                <span>🔗 <strong>{t.miktar} adet</strong> → {custMap[t.customerId]?.name || t.makinaSerbest || "(makina)"}{custMap[t.customerId]?.serialNo ? ` · S/N ${custMap[t.customerId].serialNo}` : t.serialNo ? ` · S/N ${t.serialNo}` : ""}{t.tarih ? ` · ${fmtTR(t.tarih)}` : ""}</span>
+                {/* Bağlı makinanın modeli seri numarasından önce (kullanıcı isteği 2026-10-28); serbest metinli tahsiste model yok. */}
+                <span data-testid="tahsis-satiri">🔗 <strong>{t.miktar} adet</strong> → {custMap[t.customerId]?.name || t.makinaSerbest || "(makina)"}{custMap[t.customerId]?.model ? ` · ${custMap[t.customerId].model}` : ""}{custMap[t.customerId]?.serialNo ? ` · S/N ${custMap[t.customerId].serialNo}` : t.serialNo ? ` · S/N ${t.serialNo}` : ""}{t.tarih ? ` · ${fmtTR(t.tarih)}` : ""}</span>
                 {canDoStock("yedek_parca_edit") && (
                   <button onClick={() => tahsisSil(s.id, i)} title="Tahsisi kaldır"
                     style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)" }}><Icon name="close" size={15} /></button>

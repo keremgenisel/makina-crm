@@ -6177,6 +6177,11 @@
         "rapor": "docs/evidence/0095-taban-piksel-raporu.json",
         "ekran": "stok-yedek-parca-ucretsiz",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/tahsis-model-taban-piksel-raporu.json",
+        "ekran": "stok-yedek-parca-ucretsiz",
+        "beklenen": "ayni"
       }
     ],
     "src/components/Finance.jsx": [
