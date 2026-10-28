@@ -397,8 +397,14 @@ export const satisTevkifati = (kayit) => {
 };
 // R15, C4: kuruş sınırı yalnız bölmenin içinde. Toplam KDV kuruşa çevrilir, tevkifat (alıcının beyan ettiği) yuvarlanır, bize
 // kalan "toplam eksi tevkifat"tır; iki parça toplam KDV'ye kuruşu kuruşuna eşittir, artık kuruş bizde (0075 ile aynı kural).
+// Spec 0114 R9/2, R10, R12: ihraç kayıtlı teslim. Kapı satış tipi faturalı yurtiçi olan kayıttaki `ihracKayitli` işaretidir
+// (ihracKayitli.js `ihracKayitliSecilebilirMi` ile aynı ifade; o modül bu dosyayı içe aldığı için kapı burada yazılır, test
+// ikisinin eşdeğerliğini sabitler). Başka tipte saklı kalmış işaret yok sayılır (R6). İşaret tevkifatı yener (R12): KDV'nin
+// tamamı ertelenir, tahsil edilecek KDV sıfırdır. `tevkifatli: false` kalır, tevkifat rozeti ve özeti çizilmez.
+export const ihracKayitliEtkinMi = (kayit, saleType) => kayit?.ihracKayitli === true && isFaturali(saleType) && isYurtIci(saleType);
 export const satisKdvBolumu = (saleType, bedel, tarih, kdvRates = DEFAULT_KDV_RATES, kayit = null) => {
   const toplam = calcKDV(saleType, bedel, tarih, kdvRates);
+  if (ihracKayitliEtkinMi(kayit, saleType)) return { toplamKdv: toplam, tevkifat: 0, bizKdv: 0, tevkifatli: false, ihracKayitli: true, ertelenenKdv: toplam };
   const t = satisTevkifati(kayit);
   if (!t || !toplam) return { toplamKdv: toplam, tevkifat: 0, bizKdv: toplam, tevkifatli: false };
   const toplamK = Math.round(toplam * 100);
@@ -412,6 +418,7 @@ export const tahsilEdilecekKdv = (saleType, bedel, tarih, kdvRates = DEFAULT_KDV
 // KDV oranıyla yapılır (yüzde). Etiket oranı ham calcKDV(tip, 100, …) kalır; ikisi karıştırılırsa kartla ödenen tevkifatlı
 // makinada borçtan düşen tutar borcu aşar. Çarpım sırası (oran × kalan pay / payda) 20 × 3/10 gibi oranlarda float artığı bırakmaz.
 export const tahsilKdvOrani = (saleType, tarih, kdvRates = DEFAULT_KDV_RATES, kayit = null) => {
+  if (ihracKayitliEtkinMi(kayit, saleType)) return 0; // spec 0114 R11: kart tabanı ve ödeme ayrıştırması KDV'siz
   const oran = calcKDV(saleType, 100, tarih, kdvRates);
   const t = satisTevkifati(kayit);
   return t && oran ? oran * (t.payda - t.pay) / t.payda : oran;

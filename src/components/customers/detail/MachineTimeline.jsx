@@ -8,6 +8,8 @@ import {
 import { servisSureleri } from "../../../lib/servisAnaliz";
 import { yansitilanKomisyon } from "../../../lib/krediKarti";
 import { satisTevkifatRozeti } from "../../../lib/satisTevkifat";
+import { ihracRozetGosterilirMi } from "../../../lib/ihracKayitli";
+import { IhracKayitliRozeti } from "../../IhracKayitliAlani";
 import { Icon, Btn, AtesRozeti } from "../../ui";
 import { KartBolum, BosDurum } from "../../tasarim";
 import { kalipDurumuTuret, extraKalipAnahtari, KALIP_DURUMU_ETIKETI } from "../../../lib/musteriDurumu";
@@ -32,8 +34,10 @@ const SIL_BTN = { display: "inline-flex", alignItems: "center", gap: 4, fontSize
 
 // Spec 0079 R26: tevkifatlı satışın rozeti (oran ve alıcının beyan edeceği KDV); borç neden fatura toplamından küçük sorusunun
 // cevabı kaydın yanında durur. Tevkifatsız kayıtta hiçbir şey çizilmez.
-const TevkifatRozeti = ({ kayit, tip, bedel, tarih, kdvRates, currency, blok = false }) => {
+// Spec 0114 R26, R26/2: aynı yerde ihraç kayıtlı rozeti (teal, ayrı renk); servis satırı `servis` ile hiç çizmez (AC-63).
+const TevkifatRozeti = ({ kayit, tip, bedel, tarih, kdvRates, currency, blok = false, servis = false }) => {
   const b = satisKdvBolumu(tip, bedel, tarih, kdvRates, kayit);
+  if (b.ihracKayitli) return servis || !ihracRozetGosterilirMi(kayit, tip) ? null : <IhracKayitliRozeti blok={blok} ertelenenMetni={fmtCur(b.ertelenenKdv, currency)} />;
   if (!b.tevkifatli) return null;
   const rozet = (
     <span data-testid="satis-tevkifat-rozeti" style={{ fontSize: 10.5, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" }}>
@@ -433,7 +437,7 @@ export const MachineTimeline = ({
                           <span style={{ fontSize: 12, color: "var(--red600, #dc2626)", fontWeight: 700 }}>
                             {ucgen || <>{label}: {fmtCur(toplam, sv.currency)}{kdv > 0 && <> · KDV dahil: {fmtCur(toplam + kdv, sv.currency)}</>}</>}
                           </span>
-                          <TevkifatRozeti kayit={sv} tip={sv.faturaTipi} bedel={toplam} tarih={sv.date} kdvRates={kdvRates} currency={sv.currency} />
+                          <TevkifatRozeti servis kayit={sv} tip={sv.faturaTipi} bedel={toplam} tarih={sv.date} kdvRates={kdvRates} currency={sv.currency} />
                         </>
                       );
                     }

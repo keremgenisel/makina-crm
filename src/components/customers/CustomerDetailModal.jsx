@@ -24,6 +24,7 @@ import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBt
 import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi } from "../tasarim";
 import { tahsilatHesapDurumu, paraBirimiUyumluMu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle, satisTevkifatBorcMetni } from "../../lib/satisTevkifat";
+import { ihracKayitliFormu, ihracKayitliBorcMetni, ihracKdvHucreMetni } from "../../lib/ihracKayitli";
 import { TahsilatHesapPenceresi, TahsilatHesapAlani, OdemeSatiriHesap, makinaTahsilatDurumu, uyumluHesapId } from "../kasa/TahsilatHesap";
 import { cekDogrula, yeniCek, tahsilatSilinebilirMi, CEK_TURLERI, CEK_DURUM_AD } from "../../lib/cek";
 import { CustomerFilesSection } from "./detail/CustomerFilesSection";
@@ -310,6 +311,7 @@ export const CustomerDetailModal = ({
         teslimatAd: rec.teslimatAd || "", teslimatTel: rec.teslimatTel || "", teslimatAdres: rec.teslimatAdres || "",
         teslimatUlke: rec.teslimatUlke || "", teslimatSehir: rec.teslimatSehir || "", teslimatIlce: rec.teslimatIlce || "",
         ...(rec.tevkifatli ? { tevkifatli: true, tevkifatPay: rec.tevkifatPay, tevkifatPayda: rec.tevkifatPayda } : {}),
+        ...ihracKayitliFormu(rec), // spec 0114 AC-64: toplu düzenleme işareti korur
         yontem: rec.yontem || "Nakit", vadeTarihi: rec.vadeTarihi || "", tahsilEdildi: !!rec.tahsilEdildi,
         taksitSayisi: rec.taksitSayisi || "", kkYansit, kartTarihi: rec.kartKomisyonu?.bazTarih || "",
         kargoFirma: rec.kargoFirma, kargoTakipNo: rec.kargoTakipNo, kargoTarih: rec.kargoTarih, kargoDurum: rec.kargoDurum,
@@ -437,6 +439,7 @@ export const CustomerDetailModal = ({
       taksitSayisi: ps.taksitSayisi || "", kkYansit: !!(ps.kartKomisyonu && ps.kartKomisyonu.yansitildi),
       kartTarihi: ps.kartKomisyonu?.bazTarih || "",
       faturaTipi: ps.faturaTipi || normalizeSaleType(cust?.faturali),
+      ...ihracKayitliFormu({ ...ps, faturaTipi: ps.faturaTipi || normalizeSaleType(cust?.faturali) }), // spec 0114 AC-7
       satisFirma: ps.satisFirma || factoryName, satisFirmaAd: ps.satisFirmaAd || "", satisFirmaYetkili: ps.satisFirmaYetkili || "",
       satisFirmaTel: ps.satisFirmaTel || "", satisFirmaUlke: ps.satisFirmaUlke || "", satisFirmaSehir: ps.satisFirmaSehir || "",
       // Servis ve Kargo Panosu (kargo takibi) alanları — düzenlemede "panoya gönder" toggle'ı seçili
@@ -969,6 +972,7 @@ export const CustomerDetailModal = ({
               detailMainCur={detailMainCur}
               detailBorcFromPrevOwner={detailBorcFromPrevOwner}
               tevkifatBorcMetni={makinaKdv.tevkifatli ? satisTevkifatBorcMetni(detailView, fmtCur(makinaKdv.tevkifat, detailView.currency)) : ""}
+              ihracBorcMetni={makinaKdv.ihracKayitli ? ihracKayitliBorcMetni(fmtCur(makinaKdv.ertelenenKdv, detailView.currency)) : ""}
             />
 
 
@@ -1059,8 +1063,10 @@ export const CustomerDetailModal = ({
                 ["Fabrika Satış Bedeli (KDV'siz)", detailView.fabrikaSatisBedeli ? fmtCur(detailView.fabrikaSatisBedeli, detailView.currency) : ""],
                 ["Fatura Bedeli", faturaBedeliOf(detailView) ? fmtCur(faturaBedeliOf(detailView), detailView.currency) : ""],
                 // Spec 0079 R18, R27: tahsil edilecek KDV; tevkifatlı satışta toplam ve alıcının beyan edeceği kısım da yazılır.
-                ["KDV Miktarı", makinaKdv.bizKdv > 0 ? fmtCur(makinaKdv.bizKdv, detailView.currency) : "",
-                  makinaKdv.tevkifatli ? `Toplam ${fmtCur(makinaKdv.toplamKdv, detailView.currency)} · alıcı beyan eder ${fmtCur(makinaKdv.tevkifat, detailView.currency)}` : ""],
+                // Spec 0114 triyaj 2 (Karar 42): ihraç kayıtlı makinada tahsil edilecek KDV sıfır yazılır, faturadaki ham KDV alt satırda.
+                ["KDV Miktarı", makinaKdv.bizKdv > 0 || (makinaKdv.ihracKayitli && makinaKdv.toplamKdv > 0) ? fmtCur(makinaKdv.bizKdv, detailView.currency) : "",
+                  makinaKdv.tevkifatli ? `Toplam ${fmtCur(makinaKdv.toplamKdv, detailView.currency)} · alıcı beyan eder ${fmtCur(makinaKdv.tevkifat, detailView.currency)}`
+                    : makinaKdv.ihracKayitli && makinaKdv.toplamKdv > 0 ? ihracKdvHucreMetni(fmtCur(makinaKdv.toplamKdv, detailView.currency)) : ""],
                 ["Komisyon", detailView.komisyon ? fmtCur(detailView.komisyon, detailView.currency) : ""],
                 ["Toplam Servis", detailServisNet > 0 ? fmtCur(detailServisNet, detailMainCur) : "", detailServisKdv > 0 ? `KDV: ${fmtCur(detailServisKdv, detailMainCur)}` : ""],
                 ["Extra Kalıp", detailExtraKalipNet > 0 ? fmtCur(detailExtraKalipNet, detailMainCur) : "", detailExtraKalipKdv > 0 ? `KDV: ${fmtCur(detailExtraKalipKdv, detailMainCur)}` : ""],

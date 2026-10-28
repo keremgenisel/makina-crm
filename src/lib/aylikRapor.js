@@ -8,7 +8,7 @@ import {
   kalipBorcTarafi, resolveSatisYapan, isAltuntasServisi, satisTahsilEdildi, faturaBedeliOf, gercekSatisBedeli,
   normalizeSaleType, cekBekliyorMu, odemeGelirTarihi, tahsilEdilecekKdv, tahsilKdvOrani, satisKdvBolumu, yedekParcaBedeli, satisUcretsizMi,
 } from "./utils";
-import { SALE_TYPES } from "./constants";
+import { SALE_TYPES, CURRENCIES } from "./constants";
 import { yansitilanKomisyon, kartTahsilEdildiMi } from "./krediKarti";
 import { sahipsizHaric } from "./sahipsiz";
 import { satisTahsilatKalemleri } from "./satisTahsilat";
@@ -79,8 +79,17 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
   // anlaşmalı servise parça, servis) KDV'yi buradan alır; böylece bilgi rakamı ile beyan edilen KDV aynı tabandan gelir ve kayıt
   // iki kez sayılmaz. Para birimi başına tutulur; tevkifatlı satış yoksa alan raporda hiç bulunmaz (R22/2).
   const tevkifatKayitlari = new Set(), tevMatrah = {}, tevToplamKdv = {}, tevAlici = {}, tevBiz = {};
+  // Spec 0114 R29, R32, R14/2: ihraç kayıtlı teslimlerin bilgi nesnesi aynı turdan (makina, Extra Kalıp, yedek parça; servis
+  // işaretlenemez). Para birimi başına; parti bir teslimdir. Teslim yoksa alan raporda hiç bulunmaz (R31).
+  const ihracKayitlari = new Set(), ihrMatrah = {}, ihrToplamKdv = {}, ihrErtelenen = {};
   const kdvBol = (tip, bedel, tarih, kayit, cur, anahtar) => {
     const b = satisKdvBolumu(tip, bedel, tarih, kdvRates, kayit);
+    if (b.ihracKayitli) {
+      ihracKayitlari.add(anahtar);
+      // AC-20 (plan Karar 33): tanınmayan para birimi Finans'ın kuralıyla TL kovasına düşer (kart TRY rakamını okur).
+      const k = CURRENCIES.includes(cur) ? cur : "TRY";
+      paraEkle(ihrMatrah, k, parseMoney(bedel)); paraEkle(ihrToplamKdv, k, b.toplamKdv); paraEkle(ihrErtelenen, k, b.ertelenenKdv);
+    }
     if (b.tevkifatli) {
       tevkifatKayitlari.add(anahtar);
       paraEkle(tevMatrah, cur, parseMoney(bedel)); paraEkle(tevToplamKdv, cur, b.toplamKdv);
@@ -570,6 +579,8 @@ export const hesaplaAylikRapor = ({ customers = [], services = [], partSales = [
     kdvKalemleri: { satis: satisKdv, servis: servisKdv, extraKalip: extraKalipKdv, anlasmaliParca: anlasmaliParcaKdv, yedekKargo: yedekKargoKdv },
     // Spec 0079 R22: alıcının beyan edeceği KDV bilgi rakamıdır, toplamKdv'ye girmez (C3).
     ...(tevkifatKayitlari.size ? { tevkifatliSatis: { adet: tevkifatKayitlari.size, matrah: tevMatrah, toplamKdv: tevToplamKdv, aliciBeyan: tevAlici, bizBeyan: tevBiz } } : {}),
+    // R29/2: tahsil edilecek fatura toplamı matraha eşittir (KDV tahsil edilmez); kutu tahakkuk esaslıdır.
+    ...(ihracKayitlari.size ? { ihracKayitliTeslim: { adet: ihracKayitlari.size, matrah: ihrMatrah, toplamKdv: ihrToplamKdv, ertelenenKdv: ihrErtelenen, faturaToplami: { ...ihrMatrah } } } : {}),
   };
 };
 

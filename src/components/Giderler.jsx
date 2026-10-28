@@ -129,7 +129,7 @@ export const Giderler = ({
     if (kdvAylar.durum !== "tamam") return { durum: kdvAylar.durum };
     // Spec 0075 R28 (S9): KDV2 bilgi satırı; Finans kartıyla aynı kaynak (dönem kalemlerinin kesilen tevkifatı).
     // Spec 0079 R31/2: alıcının beyan edeceği satış KDV'si Finans'taki kartla aynı kaynaktan (bilgi satırı).
-    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplananKdv.kdv, rapor.indirilecekKdv, tevkifatOzeti(rapor.kalemler, turMap).kesilenK / 100, hesaplananKdv.aliciBeyan.TRY || 0) };
+    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplananKdv.kdv, rapor.indirilecekKdv, tevkifatOzeti(rapor.kalemler, turMap).kesilenK / 100, hesaplananKdv.aliciBeyan.TRY || 0, { ertelenenKdvTL: hesaplananKdv.ertelenen.TRY || 0 }) }; // spec 0114 R18/2
   }, [rapor, kdvAylar, hesaplananKdv, turMap]);
 
   const uretimAyi = mod === "ay" ? ay : ayOf(bugun);

@@ -98,6 +98,7 @@ dbmod.writeBlobToDb({
   customers: [{ id: 500, name: "Müşteri", model: "AK100_DS", fromTeklifId: 101, brutKg: 850, currency: "USD", satisKuru: 41.2345, uretimTarihi: "2026-03-14", partiId: 95,
     faturali: "Faturalı Yurtiçi", faturaBedeli: 600000,
     tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10, // spec 0079 AC-29
+    ihracKayitli: true, // spec 0114 AC-49 (veritabanı katmanı tip ve tevkifatla birlikteliği denetlemez; kural motorda)
     odemePlani: [{ id: 1, vadeTarihi: "2026-08-30", tutar: 100000, odemeId: null }],
     tipSecimleri: { konveyor: "9", bant: "8", filtre_1: "5" },
     city: "İstanbul", ilce: "Kadıköy",
@@ -112,6 +113,7 @@ dbmod.writeBlobToDb({
     { id: "filtre_1", ad: "Filtre", renk: "amb", makinaSecici: true, stokDus: true, raporGoster: true, sistem: false },
   ],
   services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, hesapId: 97, tevkifatli: true, tevkifatPay: 7, tevkifatPayda: 10, // spec 0079 AC-29
+    ihracKayitli: true, // spec 0114 Ö-11: servis tablosunda sütun yok, işaret tutunamaz
     durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
     fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaAdres: "Organize Sanayi 5. Cadde No:12", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
@@ -189,7 +191,7 @@ dbmod.writeBlobToDb({
   uretimPartileri: [{ id: 95, ad: "2026-1", baslangicAy: "2026-01", bitisAy: "2026-03", aciklama: "70 makina", kapanmaZamani: "2026-04-01T10:00:00", kapanisOrtaklari: { "2026-01": 100000, "2026-02": 150050 } },
     { id: 96, ad: "Açık", baslangicAy: "2026-08", bitisAy: null, aciklama: "", deletedAt: "2026-10-01T09:00:00.000Z" }], // spec 0068 R9b: çöpteki parti
   standartGiderler: [{ id: 91, grupId: 91, ad: "Kira", tutar: 20000, baslangicAy: "2026-01", bitisAy: "2026-06" }, { id: 92, grupId: 91, ad: "Kira", tutar: 25000, baslangicAy: "2026-07", bitisAy: null }],
-  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10, // spec 0079 AC-29
+  partSales: [{ id: 600, customerId: 500, tur: "Kalıp", ad: "Adana", olcu: "55x125", ucret: 100, odendi: false, tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10, ihracKayitli: true, // spec 0079 AC-29, spec 0114 AC-49
     hesapId: 98, teklifId: 101, teklifKalemId: "k-kalip-1", uretimFormGonder: true, uretimFormId: 88,
     satisFirma: "Diğer", satisFirmaAd: "Aracı Firma", satisFirmaYetkili: "Mehmet Demir", satisFirmaTel: "05559876543", satisFirmaUlke: "Türkiye", satisFirmaSehir: "İzmir",
     kargoDurum: "Kargoya Verildi", kargoFirma: "Yurtiçi", kargoTakipNo: "KL-1", kargoTarih: "2026-07-20", kargoSorumlusu: "Ahmet", panoDusmeZamani: "2026-07-25T08:00", panoGizli: true, olusturmaZamani: "2026-07-20T14:35:10", fabrikaTeslim: true, teslimSekli: "fabrika",
@@ -210,7 +212,7 @@ dbmod.writeBlobToDb({
       tahsisler: [ { miktar: 2, customerId: 500, serialNo: "S-1", makinaSerbest: "", tarih: "2026-07-20" },
                    { miktar: 1, customerId: null, serialNo: "", makinaSerbest: "Bayi X kendi müşterisi", tarih: "2026-07-21" } ] },
     // Alıcı müşteri (bayiye değil son müşteriye satış) — musteriId dolu, dealerId boş; panoGizli (arşiv) true; fabrika teslim
-    { id: 651, aliciTipi: "musteri", musteriId: 500, partId: "8", miktar: 3, birimFiyat: 50, currency: "TRY", tarih: "2026-07-18", odendi: true, yontem: "Çek", vadeTarihi: "2026-10-01", tahsilEdildi: true, tahsilatTarihi: "2026-10-03", kargoDurum: "Teslim Edildi", panoGizli: true, fabrikaTeslim: true, tahsisler: [] },
+    { id: 651, aliciTipi: "musteri", musteriId: 500, partId: "8", miktar: 3, birimFiyat: 50, currency: "TRY", tarih: "2026-07-18", odendi: true, yontem: "Çek", vadeTarihi: "2026-10-01", tahsilEdildi: true, tahsilatTarihi: "2026-10-03", kargoDurum: "Teslim Edildi", panoGizli: true, fabrikaTeslim: true, tahsisler: [], ihracKayitli: true }, // spec 0114 AC-49
     // Anlaşmasız dış firma alıcı (kayıtlı bayi değil) — bilgiler kayda yazılır
     { id: 652, aliciTipi: "bayi", dealerId: null, disFirma: true, disFirmaAd: "Harici Parça Ltd", disFirmaYetkili: "Veli Kaya", disFirmaTel: "05553334455", disFirmaAdres: "Sanayi Sitesi 3. Blok No:7", disFirmaUlke: "Türkiye", disFirmaSehir: "Ankara", partId: "8", miktar: 2, birimFiyat: 75, currency: "TRY", tarih: "2026-07-19", odendi: false, tahsisler: [], ucretsizMi: true }, // spec 0095 AC-30
   ],
@@ -444,6 +446,27 @@ check("spec 0095 AC-33: alanı bilmeyen (güncellenmemiş) istemcinin geri gönd
   eskiIstemci.yedekParcaSatislar.forEach(s => { if (s.ucretsizMi !== true) delete s.ucretsizMi; });
   return !degisenBolumler(blob, eskiIstemci).includes("yedekParcaSatislar")
     && stableStringify(blob.yedekParcaSatislar.filter(s => s.id !== 652)) === stableStringify(eskiIstemci.yedekParcaSatislar.filter(s => s.id !== 652));
+})());
+// Spec 0114 AC-49, AC-50, C5: ihraç kayıtlı işaret üç tabloda roundtrip eder; kapalı kayıtta anahtar HİÇ yok (false da değil);
+// servis kaydında sütun olmadığı için işaret tutunamaz (plan Ö-11); alanı bilmeyen istemcinin gövdesi bölümü değişmiş göstermez.
+check("spec 0114 AC-49 / AC-50: ihracKayitli customers/part_sales/yedek_parca_satis'ta roundtrip; kapalıda alan yok; serviste yok", (() => {
+  const b = (k, id) => (blob[k] || []).find(x => x.id === id);
+  const var_ = [b("customers", 500), b("partSales", 600), b("yedekParcaSatislar", 651)].every(x => x?.ihracKayitli === true);
+  const yok = [b("customers", 501), b("yedekParcaSatislar", 650), b("services", 2)].every(x => !!x && !("ihracKayitli" in x));
+  const { degisenBolumler } = require(path.join(root, "electron", "serverAuth.cjs"));
+  const eskiIstemci = JSON.parse(JSON.stringify(blob));
+  for (const k of ["customers", "partSales", "yedekParcaSatislar"]) eskiIstemci[k].forEach(x => { if (x.ihracKayitli !== true) delete x.ihracKayitli; });
+  return var_ && yok && !degisenBolumler(blob, eskiIstemci).some(k => ["customers", "partSales", "yedekParcaSatislar"].includes(k));
+})());
+check("spec 0114 AC-49: üç tabloda ihracKayitli sütunu, servis tablosunda yok", (() => {
+  const dbPath = dbmod.getDbPath();
+  dbmod.close();
+  const c = new Database(dbPath);
+  const ad = (t) => c.prepare(`PRAGMA table_info(${t})`).all().map(x => x.name);
+  const ok = ["customers", "part_sales", "yedek_parca_satis"].every(t => ad(t).includes("ihracKayitli")) && !ad("services").includes("ihracKayitli");
+  c.close();
+  dbmod.migrateFromJsonIfNeeded();
+  return ok;
 })());
 check("spec 0095 AC-44: iki tabloda aynı adlı ucretsizMi sütunu", (() => {
   const dbPath = dbmod.getDbPath();

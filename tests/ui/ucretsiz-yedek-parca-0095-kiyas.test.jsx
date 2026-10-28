@@ -112,7 +112,13 @@ describe("Spec 0095 AC-27: işaretsiz veride ekranlar birebir aynı", () => {
     for (const [ad, satirlar] of Object.entries(once.disaAktarma)) {
       const yeni = simdi.disaAktarma[ad];
       const ayikla = yedekSayfasiMi(yeni) ? (s) => s.filter((_, i) => i !== UCRETSIZ_SUTUN) : (s) => s;
-      expect(yeni.map(ayikla), ad).toEqual(satirlar);
+      // Spec 0114 R34 ile: üç raporun satırlarının sonuna iki ihraç sütunu eklendi; işaretsiz satırda boştur (başlıkta adları),
+      // eski sütunlar birebir aynı.
+      expect(yeni.length, ad).toBe(satirlar.length);
+      yeni.map(ayikla).forEach((s, i) => {
+        expect(s.slice(0, satirlar[i].length), `${ad} satır ${i}`).toEqual(satirlar[i]);
+        if (i > 0) expect(s.slice(satirlar[i].length).every(x => x === "" || x == null), `${ad} satır ${i} ek sütun`).toBe(true);
+      });
     }
   });
 });

@@ -1325,7 +1325,9 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
 // Parametresiz çağrı birebir eski çıktıdır (0047 raporu geçirmez).
 // Spec 0079 R22/3, R31: dördüncü parametre tevkifatlı satışta ALICININ beyan edeceği KDV'dir (TL); bilgi satırıdır, farka
 // eklenmez. Verilmezse çıktı birebir eskidir (0075'in üçüncü parametre deseni).
-export const kdvKarsilastir = (hesaplananKdvObj = {}, indirilecekTL = 0, tevkifatTL, satisTevkifatTL) => {
+// Spec 0114 C11, R18: ihraç kayıtlı teslimde ertelenen KDV (TL) beşinci KONUMLU parametre değil adlandırılmış seçenektir;
+// bilgi alanı `ertelenenKdv` üretir, farka girmez. Seçenek verilmeyen çağrının çıktısı birebir eskidir.
+export const kdvKarsilastir = (hesaplananKdvObj = {}, indirilecekTL = 0, tevkifatTL, satisTevkifatTL, { ertelenenKdvTL } = {}) => {
   const hesaplanan = kurus(hesaplananKdvObj?.TRY);
   const ind = kurus(indirilecekTL);
   const fark = hesaplanan - ind;
@@ -1335,6 +1337,7 @@ export const kdvKarsilastir = (hesaplananKdvObj = {}, indirilecekTL = 0, tevkifa
   const sonuc = { hesaplananTL: tl(hesaplanan), indirilecek: tl(ind), fark: tl(fark), odenecek: tl(Math.max(0, fark)), devreden: tl(Math.max(0, -fark)), haricTutarlar };
   if (tevkifatTL !== undefined) sonuc.tevkifatKdv2 = tl(kurus(tevkifatTL));
   if (satisTevkifatTL !== undefined) sonuc.satisTevkifatAlici = tl(kurus(satisTevkifatTL));
+  if (ertelenenKdvTL !== undefined) sonuc.ertelenenKdv = tl(kurus(ertelenenKdvTL));
   return sonuc;
 };
 export const kdvObjTopla = (...objs) => {

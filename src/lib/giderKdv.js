@@ -9,6 +9,8 @@ import { kdvObjTopla } from "./gider";
 // Spec 0079 R22, R31: aynı motor çağrısından tevkifatlı satışta alıcının beyan edeceği KDV (bilgi rakamı, farka girmez).
 export const satisKdvAylar = (veri, aylar = [], secenekler = {}) => {
   const raporlar = aylar.map(ay => hesaplaAylikRapor(veri, ay, secenekler));
-  return { kdv: kdvObjTopla(...raporlar.map(r => r.toplamKdv)), aliciBeyan: kdvObjTopla(...raporlar.map(r => r.tevkifatliSatis?.aliciBeyan)) };
+  // Spec 0114 C9, R18: ertelenen KDV aynı motor çağrısından (Finans ile aylık rapor aynı rakamı üretir).
+  return { kdv: kdvObjTopla(...raporlar.map(r => r.toplamKdv)), aliciBeyan: kdvObjTopla(...raporlar.map(r => r.tevkifatliSatis?.aliciBeyan)),
+    ertelenen: kdvObjTopla(...raporlar.map(r => r.ihracKayitliTeslim?.ertelenenKdv)) };
 };
 export const hesaplananKdvAylar = (veri, aylar = [], secenekler = {}) => satisKdvAylar(veri, aylar, secenekler).kdv;

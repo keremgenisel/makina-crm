@@ -1,12 +1,14 @@
 import { parseMoney, tahsilEdilecekKdv, tahsilKdvOrani } from "./utils";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "./satisTevkifat";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
+import { ihracKayitliUygula, ihracKayitliDogrula } from "./ihracKayitli";
 // Extra Kalıp satışı ortak kayıt yolu (spec 0006 C3). Müşteri detayındaki Extra Kalıp formu ve Evrak'tan
 // üretim AYNI alanları üretir; iki yol ayrışmasın diye kayıt kuruluşu burada tek kaynaktır.
 
 // Form → batch'teki bütün kalıplara uygulanan ortak alanlar (kalem fiyatı ve kredi kartı hariç).
 // Spec 0079 R5, R6/1, R7: tevkifat bütün kalemlere aynı yazılır (bir fatura, bir tevkifat); kapı kapalıysa alanlar silinir.
-export const kalipSatisOrtak = (f, customerId, bugun) => satisTevkifatUygula(kalipSatisOrtakAlanlar(f, customerId, bugun), f, f.faturaTipi);
+// Spec 0114 R6/2: ihraç kayıtlı işaret tek yazıcıdan (ihracKayitliUygula), tevkifatın arkasından.
+export const kalipSatisOrtak = (f, customerId, bugun) => ihracKayitliUygula(satisTevkifatUygula(kalipSatisOrtakAlanlar(f, customerId, bugun), f, f.faturaTipi), f, f.faturaTipi);
 const kalipSatisOrtakAlanlar = (f, customerId, bugun) => ({
   customerId, tur: "Kalıp", tarih: f.tarih || bugun,
   currency: f.currency || "TRY", ucretsizMi: false,
@@ -79,7 +81,7 @@ export const kalipKartHesabi = (f, tarih, kkAyar, kdvRates) => {
   };
 };
 // Düzenleme kolu (R5/1): birleştirilen kayıttan tevkifat alanları formun durumuna göre yazılır ya da silinir.
-export const kalipGuncelle = (eski, alanlar, f) => satisTevkifatUygula({ ...eski, ...alanlar }, f, f.faturaTipi);
+export const kalipGuncelle = (eski, alanlar, f) => ihracKayitliUygula(satisTevkifatUygula({ ...eski, ...alanlar }, f, f.faturaTipi), f, f.faturaTipi);
 
 export const KALIP_MUSTERI_SECILMEDI = "Kalıbın gideceği müşteriyi ve makinayı seçin.";
 
@@ -91,7 +93,7 @@ export const kalipSatisiEkle = (f, { customers = [], setPartSales, setCustomers,
   if (!musteri) return { hata: KALIP_MUSTERI_SECILMEDI };
   const satirlar = (f.kaliplar || []).filter(k => k.ad);
   if (!satirlar.length) return { hata: "En az bir kalıp ekleyin." };
-  const tevkifatHata = satisTevkifatDogrula(f, f.faturaTipi); // spec 0079 R6
+  const tevkifatHata = satisTevkifatDogrula(f, f.faturaTipi) || ihracKayitliDogrula(f, f.faturaTipi); // spec 0079 R6, spec 0114 R12
   if (tevkifatHata) return { hata: tevkifatHata };
   const ortak = kalipSatisOrtak(f, musteri.id, bugun);
   const kalipKart = kalipKartHesabi(f, ortak.tarih, kkAyar, kdvRates);

@@ -269,8 +269,9 @@ describe("Spec 0079 C: türev rakamlar", () => {
     expect(s1.fark).toBe(s2.fark);
   });
   it("AC-28: dışa aktarma satırları tevkifat sütunlarını taşır; Finans Özeti sütunsuz ama toplam KDV'si düşülmüş tutarı sayar", () => {
-    expect(YEDEK_PARCA_EXPORT_HEAD.slice(-2)).toEqual(["Tevkifat Oranı", "Alıcının Beyan Edeceği KDV"]);
-    expect(yedekParcaExportRow(YP[0], { kdvRates: KDV20 }).slice(-2)).toEqual(["9/10", 270]);
+    // Spec 0114 R34 ile: iki ihraç sütunu tevkifat sütunlarının arkasına eklendi; tevkifat sütunları sondan üçüncü ve dördüncü.
+    expect(YEDEK_PARCA_EXPORT_HEAD.slice(-4, -2)).toEqual(["Tevkifat Oranı", "Alıcının Beyan Edeceği KDV"]);
+    expect(yedekParcaExportRow(YP[0], { kdvRates: KDV20 }).slice(-4, -2)).toEqual(["9/10", 270]);
     expect(satisTevkifatExportHucreleri(FY, 100000, "2026-09-10", KDV20, c)).toEqual(["5/10", 10000]);
     expect(satisTevkifatExportHucreleri(FY, 100000, "2026-09-10", KDV20, {})).toEqual(["", ""]);
     const oz = finansOzetiHesapla({ customers: [c], services: SERVIS, partSales: KALIP, kdvRates: KDV20 });

@@ -77,6 +77,8 @@ describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => 
     ["Stok 'Montajda' rozeti", "pur700", "purBg", "src/components/stock/MakinaStokTab.jsx"],
     ["Stok 'Satışa hazır' rozeti", "grn700", "grnBg", "src/components/stock/MakinaStokTab.jsx"],
     ["Stok 'Önceki partiden kaldı' rozeti", "blu700", "bluBg", "src/components/stock/MakinaStokTab.jsx"],
+    // Spec 0114 R26/3 (Karar 23): ihraç kayıtlı rozeti teal; tevkifat rozetinden (mavi) ayrı, yeni token yok.
+    ["İhraç kayıtlı rozeti", "teal2", "tealBg", "src/components/IhracKayitliAlani.jsx"],
     ["Anasayfa kredi kartı rozeti", "purTx", "purBg2", "src/components/Dashboard.jsx"],
     ["Tahsis/Stok 'anlaşmasız servis' rozeti", "pur700", "purBg2", "src/components/stock/TahsisModal.jsx"],
     ["Pano KALIP rozeti", "purTx", "purBg", "src/components/KargoPanosu.jsx"],

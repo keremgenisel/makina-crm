@@ -2,6 +2,7 @@ import LOGO from "../assets/logo.avif?inline";
 import { sayi, st, gecenAyEki, altBaslik, gun, detayTablo, rozet, rozetSatiri, bolum, belgeAcilis } from "./raporSunumu";
 import { today, todayTR, fmtTR, fmtCur, parseMoney, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster, satisKdvBolumu, UCRETSIZ_IBARESI } from "./utils";
 import { COUNTRY_EN } from "./constants";
+import { IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_SATIRLARI, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, ihracRaporAdet } from "./ihracKayitli";
 
 // TIRNAK da kaçırılır: bu değerler yalnız metin düğümlerinde değil, HTML ÖZNİTELİĞİ içinde
 // de kullanılıyor (ör. alt="${esc(...)}"). Tırnak kaçmazsa öznitelikten çıkılıp olay
@@ -1684,6 +1685,18 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Bizim beyan edeceğimiz KDV", paraSatir(tev.bizBeyan))}
   </table>
   <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Alıcının beyan edeceği KDV bilgi amaçlıdır; KDV özetine ve açık alacağa girmez.</div>`)}` : "";
+  // Spec 0114 R29–R31, R30/2, R33/2: ihraç kayıtlı teslim yoksa kutu ve iki dipnot hiç basılmaz (rapor birebir eski). Rakamlar
+  // motorun ihracKayitliTeslim nesnesinden; kutu tahakkuk esaslıdır, beşinci satır matraha eşittir (R29/2).
+  const ihr = rapor.ihracKayitliTeslim;
+  const ihracDipnot = ihr ? `<div style="font-size:9.5px;color:#64748b;margin-top:4px;">${IHRAC_KDV_OZETI_DIPNOTU}</div>` : "";
+  const ihracKutusu = ihr ? `
+  ${bolum(IHRAC_RAPOR_BASLIK, ihracRaporAdet(ihr.adet), `<table>
+    ${st(IHRAC_RAPOR_SATIRLARI.matrah, paraSatir(ihr.matrah))}
+    ${st(IHRAC_RAPOR_SATIRLARI.toplamKdv, paraSatir(ihr.toplamKdv))}
+    ${st(IHRAC_RAPOR_SATIRLARI.ertelenenKdv, paraSatir(ihr.ertelenenKdv))}
+    ${st(IHRAC_RAPOR_SATIRLARI.faturaToplami, paraSatir(ihr.faturaToplami))}
+  </table>
+  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">${IHRAC_RAPOR_DIPNOTU}</div>`)}` : "";
   const netKdvBaslik = (net, kdv) => `Net <b style="color:#fff;">${paraSatir(net)}</b> · KDV ${paraSatir(kdv)}`;
   const komVar = Object.values(rapor.bankaKomisyonuTutar || {}).some(v => v > 0);
 
@@ -1833,7 +1846,7 @@ export function buildAylikRaporHtml(rapor, factory) {
     ${st("Anlaşmalı servis parçası KDV'si", paraSatir(rapor.kdvKalemleri?.anlasmaliParca))}
     <tr><td style="padding:6px 8px 3px 0;font-size:12px;font-weight:800;border-top:2px solid #1a1a1a;">BU AY DOĞAN TOPLAM KDV</td><td style="padding:6px 0 3px;font-weight:800;font-size:13px;text-align:right;border-top:2px solid #1a1a1a;">${paraSatir(rapor.toplamKdv)}</td></tr>
   </table>
-  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Yalnızca Faturalı Yurtiçi işlemler KDV doğurur; faturasız ve yurtdışı işlemler bu toplama girmez. Beyanname öncesi kontrol amaçlıdır.</div>${tevkifatDipnot}`)}${tevkifatKutusu}
+  <div style="font-size:9.5px;color:#94a3b8;margin-top:6px;">Yalnızca Faturalı Yurtiçi işlemler KDV doğurur; faturasız ve yurtdışı işlemler bu toplama girmez. Beyanname öncesi kontrol amaçlıdır.</div>${tevkifatDipnot}${ihracDipnot}`)}${tevkifatKutusu}${ihracKutusu}
 
   ${bolum("VERİLEN TEKLİFLER", "", `
     ${rozetSatiri(rozet(rapor.ayEtiketi, ""))}

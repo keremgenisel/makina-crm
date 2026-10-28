@@ -271,6 +271,14 @@ const detay0111 = (o) => <Customers customers={MUSTERILER} setCustomers={bos} pa
 const MUSTERI_0095_BITMIS = MUSTERILER.map(c => (c.id === 500 ? { ...c, warrantyEnd: "2025-08-10" } : c));
 const MUSTERI_0095_AKTIF = MUSTERILER.map(c => (c.id === 500 ? { ...c, warrantyEnd: "2028-08-10" } : c));
 const SATIS_0079 = { ...SATIS, customers: MUSTERI_0079, services: SERVIS_0079, partSales: KALIP_0079, yedekParcaSatislar: YP_0079 };
+// Spec 0114: ihraç kayıtlı teslim. Kutu Gıda'nın makina, Extra Kalıp ve yedek parça satışı işaretli (0079 kümesinin tevkifatsız hâli);
+// servis işaretlenemez. Eski kod alanı yok sayar (önce çekimi aynı sayfayla).
+const IK14 = { ihracKayitli: true };
+const tevsiz = ({ tevkifatli, tevkifatPay, tevkifatPayda, ...r }) => r;
+const MUSTERI_0114 = MUSTERILER.map(c => (c.id === 500 ? { ...c, ...IK14 } : c));
+const KALIP_0114 = KALIP_0079.map(p => ({ ...tevsiz(p), ...IK14 }));
+const YP_0114 = YP_0079.map(s => ({ ...tevsiz(s), ...IK14 }));
+const SATIS_0114 = { ...SATIS, customers: MUSTERI_0114, services: [], partSales: KALIP_0114, yedekParcaSatislar: YP_0114 };
 // Spec 0060 R1, R2: taksitli stopajlı kira, taksitsiz stopajlı kira, tek hedefli taksitli kalem, dört hedefli personel.
 let n0060 = 9600;
 const k0060 = (f) => giderKalemDogrula(f, { turMap: turHaritasi(TURLER), tedarikciler: TED, uid: () => ++n0060 }).kayit;
@@ -1347,6 +1355,29 @@ const EKRANLAR = {
   "finans-0113-tahsilsiz": [<FINANS_0113 odendi={false} />, ["Göster", "kaydir:Gelir & Tahsilat"]],
   "finans-0113-anlasmali": [<FINANS_0113 />, ["Göster", "*Tahsil Edilen Anlaşmalı Servis Parçası"]],
   "finans-0079-kdv": [<FINANS musteriler={MUSTERI_0079} />, ["Göster", "kaydir:KDV Karşılaştırması"]],
+  // Spec 0114: üç formda işaret açık (açıklama, ibare, fatura notu, yedek parçada sınır satırı, KDV kutusunda beş satır), pasif
+  // tevkifat kutusu, eski tabanlı kart uyarısı, makina formu, müşteri detayında rozet ve borç satırı, Stok rozeti, iki KDV kartı.
+  // İşaret kapalı hâli bugünkü form ekranlarıdır (kalip-formu, yedek-parca-formu, musteri-formu-0079 ...). Hata yolu (AC-11)
+  // formdan üretilemez (R12/2), ekranı yok.
+  "kalip-formu-0114-ihrac": [<FormEkrani Bilesen={PartSaleForm} title="Extra Kalıp Satışı"
+    ilk={{ customerId: 500, tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturalı Yurtiçi", satisFirma: "Altuntaş Makina", fabrikaTeslim: false, kaliplar: [{ ad: "Hamburger", olcu: "100", fiyat: 100000 }], ...IK14 }} />, ["kaydir:Satış Yapan Firma"]],
+  "kalip-formu-0114-ozet": [<FormEkrani Bilesen={PartSaleForm} title="Extra Kalıp Satışı"
+    ilk={{ customerId: 500, tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturalı Yurtiçi", satisFirma: "Altuntaş Makina", fabrikaTeslim: false, kaliplar: [{ ad: "Hamburger", olcu: "100", fiyat: 100000 }], ...IK14 }} />, ["kaydir:Tahsil edilecek fatura toplamı"]],
+  "kalip-formu-0114-kart-uyari": [<FormEkrani Bilesen={PartSaleForm} title="Kaydı Düzenle" krediKartiKomisyonlari={KK_0079}
+    ilk={{ id: 7904, customerId: 500, tur: "Kalıp", tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturalı Yurtiçi", satisFirma: "Altuntaş Makina", ad: "Hamburger", ucret: "8000", fabrikaTeslim: false,
+      kaliplar: [], odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.15, toplamKesinti: 312, blokajGun: 0, yansitildi: false }, ...IK14 }} />, ["kaydir:Bu fatura tevkifatlı"]],
+  "yedek-parca-formu-0114-ihrac": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı"
+    ilk={{ aliciTipi: "musteri", musteriId: 500, currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, satirlar: [{ partId: 7, miktar: 1, birimFiyat: 100000 }], ...IK14 }} />, ["kaydir:Fatura KDV'li kesilir"]],
+  "yedek-parca-formu-0114-ozet": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı"
+    ilk={{ aliciTipi: "musteri", musteriId: 500, currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, satirlar: [{ partId: 7, miktar: 1, birimFiyat: 100000 }], ...IK14 }} />, ["kaydir:Tahsil edilecek fatura toplamı"]],
+  "musteri-formu-0114": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS} initialDetailId={500} />, ["~Düzenle", "kaydir:Fatura KDV'li kesilir"]],
+  "musteri-detay-0114": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={KALIP_0114} services={SERVIS_0079} payments={[]} yedekParcaSatislar={YP_0114} dealers={DEALERS}
+    parts={[{ id: 7, ad: "Rulman" }]} setServices={bos} setPartSales={bos} setYedekParcaSatislar={bos} calisanlar={CAL} initialDetailId={500} />, ["kaydir:Makina Geçmişi"]],
+  "musteri-detay-0114-borc": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={KALIP_0114} services={[]} payments={[]} yedekParcaSatislar={YP_0114} dealers={DEALERS}
+    parts={[{ id: 7, ad: "Rulman" }]} setServices={bos} setPartSales={bos} setYedekParcaSatislar={bos} calisanlar={CAL} initialDetailId={500} />, ["kaydir:Kalan Borç"]],
+  "stok-yedek-0114": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERI_0114} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
+    dealers={DEALERS} yedekParcaSatislar={YP_0114} defaultSubTab="yedeksatis" showToast={bos} />, ["~Kutu Gıda"]],
+  "finans-0114-kdv": [<FINANS musteriler={MUSTERI_0114} />, ["Göster", "kaydir:KDV Karşılaştırması"]],
   // Spec 0095: garanti içi ücretsiz verme (form, garanti uyarısı, Stok satırı, kargo detay penceresi, bayi ve müşteri detayı).
   "yedek-parca-formu-ucretsiz": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı" customers={MUSTERI_0095_AKTIF}
     ilk={{ aliciTipi: "musteri", musteriId: 500, currency: "TRY", tarih: "2026-10-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, ucretsizMi: true, satirlar: [{ partId: 7, miktar: 2, birimFiyat: 750 }] }} />, ["kaydir:Garanti içi, ücretsiz verildi"]],
@@ -1367,6 +1398,7 @@ const EKRANLAR = {
   "kilit-toplu-yedek-parca": [detay0111(), ["*Yedek Parça (Kargo) (2 kalem)", "kaydir:Bu kayıt şu an düzenleniyor"]],
 
   "giderler-0079-kdv": [<GiderEkrani satis={SATIS_0079} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0081: kutu kapalı başlar
+  "giderler-0114-kdv": [<GiderEkrani satis={SATIS_0114} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0114 R18/2
   "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],
   "servis-formu-yazdir-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0079[0], MUSTERI_0079, undefined, {}) }} />, []],
   // Spec 0094: Faaliyet Haritası ilçe görünümü. Mevcut il (İstanbul) taban kanıtıdır: kod değişmeden önce ve sonra 0 fark.

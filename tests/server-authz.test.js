@@ -1668,3 +1668,31 @@ describe("Spec 0111: toplu yedek parça düzenlemesi sunucuda", () => {
     expect(yaz({ ...eski, yedekParcaSatislar: [k(101, { notlar: "x" }), k(102, { notlar: "x" })] }).ok).toBe(true);
   });
 });
+
+// Spec 0114 AC-52, C7: ihraç kayıtlı işaret yeni eylem izni ve sunucu kuralı getirmez. Yalnız işareti değişen bir yazım (makina,
+// Extra Kalıp, yedek parça) bugünkü düzenleme izniyle geçer; alan `ALAN_IZINLERI`'nde değildir ve bölüm düzeyinde güvenilir.
+describe("Spec 0114: ihraç kayıtlı işaret sunucuda", () => {
+  const FY = "Faturalı Yurtiçi";
+  const kullanici = JSON.stringify({ tabs: ["dashboard", "customers", "stock"], customerActions: ["cust_edit", "cust_kalip_edit", "cust_yedek_parca_edit"],
+    stockActions: ["yedek_parca_edit"], dealerActions: [] });
+  const eski = {
+    customers: [{ id: 1, name: "A", faturali: FY, faturaBedeli: 100 }],
+    partSales: [{ id: 21, customerId: 1, tur: "Kalıp", ad: "K", ucret: 10, faturaTipi: FY }],
+    yedekParcaSatislar: [{ id: 31, aliciTipi: "musteri", musteriId: 1, partId: "81", miktar: 1, birimFiyat: 10, faturaTipi: FY, kargoDurum: "" }],
+  };
+  const yaz = (yeni) => {
+    const b = yazmaYetkisiVar(kullanici, "user", degisenBolumler(eski, yeni), eski, yeni);
+    return b.ok ? eylemDenetimi(eski, yeni, kullanici, "user") : b;
+  };
+  it("AC-52: yalnız işareti açılan ya da kapanan makina, Extra Kalıp ve yedek parça yazımı düzenleme izniyle 200", () => {
+    const ac = { customers: [{ ...eski.customers[0], ihracKayitli: true }], partSales: [{ ...eski.partSales[0], ihracKayitli: true }],
+      yedekParcaSatislar: [{ ...eski.yedekParcaSatislar[0], ihracKayitli: true }] };
+    expect(degisenBolumler(eski, ac).sort()).toEqual(["customers", "partSales", "yedekParcaSatislar"]);
+    expect(yaz(ac).ok).toBe(true);
+    const kapali = { ...eski, customers: [{ ...eski.customers[0] }] };
+    expect(degisenBolumler(eski, kapali)).toEqual([]); // kapalı değer gövdeye yazılmadığı için hayalet fark yok (C5)
+  });
+  it("C7: alan izni yalnız durum ve kargo durumunu izler; ihraç işareti listede değil", () => {
+    expect(JSON.stringify(ALAN_IZINLERI)).not.toMatch(/ihrac/i);
+  });
+});

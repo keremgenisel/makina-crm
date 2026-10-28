@@ -237,8 +237,9 @@ describe("Spec 0106: kaynak taramaları", () => {
     expect(db).toMatch(/const CUSTOMERS_MAKINA_DURUMU_COLUMN = \[\["makinaDurumu", "TEXT"\]\];/);
     expect(db).toMatch(/const KALIP_DURUMU_COLUMN = \[\["kalipDurumu", "TEXT"\]\];/);
     for (const t of ['"customers", CUSTOMERS_MAKINA_DURUMU_COLUMN', '"customer_kaliplar", KALIP_DURUMU_COLUMN', '"part_sales", KALIP_DURUMU_COLUMN']) expect(db).toContain(`ensureColumns(conn, ${t})`);
-    expect(db).toMatch(/map\(\(\{ tevkifatli, tevkifatPay, tevkifatPayda, makinaDurumu, \.\.\.c \}\) => \(\{\n\s+\.\.\.c,\n\s+\.\.\.\(makinaDurumu \? \{ makinaDurumu \} : \{\}\),/);
-    expect(db).toMatch(/tevkifatPayda, kalipDurumu, \.\.\.rest \} = row;\n\s+return \{ \.\.\.rest, \.\.\.\(kalipDurumu \? \{ kalipDurumu \} : \{\}\)/);
+    // Spec 0114 ile: okuma ihraç işaretini de destructuring ile ayırır (aynı desen, bir alan daha).
+    expect(db).toMatch(/map\(\(\{ tevkifatli, tevkifatPay, tevkifatPayda, makinaDurumu, (?:ihracKayitli, )?\.\.\.c \}\) => \(\{\n\s+\.\.\.c,\n(?:\s+\.\.\.ihracOku\(ihracKayitli\),[^\n]*\n)?\s+\.\.\.\(makinaDurumu \? \{ makinaDurumu \} : \{\}\),/);
+    expect(db).toMatch(/tevkifatPayda, kalipDurumu, (?:ihracKayitli, )?\.\.\.rest \} = row;\n\s+return \{ \.\.\.rest, \.\.\.\(kalipDurumu \? \{ kalipDurumu \} : \{\}\)/);
     expect(db).toMatch(/if \(k\.kalipDurumu\) item\.kalipDurumu = k\.kalipDurumu;/);
   });
   it("AC-32 (R30, C1): yeni izin, alan denetimi, kilit ve birleştirme kuralı yok", () => {

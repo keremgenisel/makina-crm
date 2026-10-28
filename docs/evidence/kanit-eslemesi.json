@@ -9645,6 +9645,11 @@
         "rapor": "docs/evidence/0079-taban-piksel-raporu.json",
         "ekran": "kalip-formu-0079-kart-uyari",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
+        "ekran": "kalip-formu-0114-kart-uyari",
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/StopajDonemleri.jsx": [
@@ -10080,6 +10085,43 @@
       {
         "rapor": "docs/evidence/0102-piksel-raporu.json",
         "ekran": "stok-0100-pano-bos",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/IhracKayitliAlani.jsx": [
+      {
+        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
+        "ekran": "kalip-formu-0114-ihrac",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
+        "ekran": "kalip-formu-0114-ozet",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-0114-ihrac",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-0114-ozet",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
+        "ekran": "musteri-formu-0114",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
+        "ekran": "musteri-detay-0114",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
+        "ekran": "stok-yedek-0114",
         "beklenen": "ayni"
       }
     ]

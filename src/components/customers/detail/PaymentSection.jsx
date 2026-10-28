@@ -18,6 +18,7 @@ export const PaymentSection = ({
   detailMainCur,
   detailBorcFromPrevOwner,
   tevkifatBorcMetni = "", // spec 0079 R27: borç neden fatura toplamından küçük
+  ihracBorcMetni = "", // spec 0114 R27: ertelenen KDV borca girmez (yalnız makina kaydı)
 }) => {
   if (!detailView) return null;
   if (detailCiro === 0 && detailKalanBorcToplam === 0 && detailEkBorcDigerPB.length === 0 && detailBekleyenCek === 0 && detailBekleyenTaksit === 0) return null;
@@ -50,6 +51,10 @@ export const PaymentSection = ({
           )}
           {tevkifatBorcMetni && (
             <div data-testid="satis-tevkifat-borc" style={{ fontSize: 10.5, color: "var(--n600, #475569)", marginTop: 5 }}>{tevkifatBorcMetni}</div>
+          )}
+          {/* Spec 0114 R27, R27/2: yalnız makina kaydının ertelenen KDV'si; tevkifatın satırıyla prop paylaşmaz (C4). */}
+          {ihracBorcMetni && (
+            <div data-testid="ihrac-kayitli-borc" style={{ fontSize: 10.5, color: "var(--n600, #475569)", marginTop: 5 }}>{ihracBorcMetni}</div>
           )}
           {detailView.isResale && detailBorcFromPrevOwner && (
             <div style={{ fontSize: 10.5, color: "var(--red800, #991b1b)", marginTop: 5, fontStyle: "italic" }}>

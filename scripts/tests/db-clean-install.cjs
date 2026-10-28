@@ -30,7 +30,7 @@ check("temiz kurulumda sqlite aktif", dbmod.isActive());
 let hata = null;
 try {
   dbmod.writeBlobToDb({
-    customers: [{ id: 1, name: "İlk", model: "AK100", brutKg: 500, tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10, // spec 0079 AC-34
+    customers: [{ id: 1, name: "İlk", model: "AK100", brutKg: 500, tevkifatli: true, tevkifatPay: 5, tevkifatPayda: 10, ihracKayitli: true, // spec 0079 AC-34, spec 0114 AC-51
       satisKuru: 38.5, uretimTarihi: "2026-08-01",
       odemePlani: [{ id: 1, vadeTarihi: "2026-09-01", tutar: 1000, odemeId: null }] }],
     teklifler: [{ id: 9, type: "teklif", no: "T-9", firma: "B", aliciTipi: "bayi", dealerId: 2, nihaiMusteriId: 1, uretilenKalemler: ["a"], satirlar: [] }],
@@ -39,12 +39,12 @@ try {
     // Yeni ensureColumns sütunları: anlaşmasız dış firma alanları + servis panosu durumu temiz kurulumda oluşmalı
     services: [{ id: 5, customerId: 1, type: "Periyodik Bakım", tevkifatli: true, tevkifatPay: 7, tevkifatPayda: 10, islemFirma: "Diğer", islemFirmaAd: "Dış Servis", islemFirmaTel: "0500", durum: "Bekliyor", tech: "Ali Veli", panoGizli: true, fabrikaGirisZamani: "2026-07-20T08:00:00",
       odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.1, toplamKesinti: 200, blokajGun: 40, hesabaGecis: "2026-08-31", yansitildi: false } }],
-    partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10, hesapId: 5, satisFirma: "Diğer", satisFirmaAd: "Aracı",
+    partSales: [{ id: 6, customerId: 1, tur: "Kalıp", ad: "K1", tevkifatli: true, tevkifatPay: 2, tevkifatPayda: 10, ihracKayitli: true, hesapId: 5, satisFirma: "Diğer", satisFirmaAd: "Aracı",
       teslimSekli: "kargo",
       teslimatFarkli: true, teslimatAd: "Depo", teslimatAdres: "Cad 1", teslimatSehir: "Bursa", teslimatIlce: "Nilüfer", teslimatUlke: "Türkiye",
       odendi: true, yontem: "Çek", vadeTarihi: "2026-11-01", tahsilEdildi: true }],
     // Temiz kurulumda yedek parça satışı + tahsis child tablosu oluşmalı (yazma çökmemeli)
-    yedekParcaSatislar: [{ id: 8, dealerId: 2, tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10, teklifId: 9, teklifKalemId: "a", partId: "3", miktar: 5, birimFiyat: 90, currency: "TRY", tarih: "2026-07-15", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 54, blokajGun: 0, yansitildi: false }, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN", makinaSerbest: "", tarih: "2026-07-16" }] },
+    yedekParcaSatislar: [{ id: 8, dealerId: 2, tevkifatli: true, tevkifatPay: 9, tevkifatPayda: 10, ihracKayitli: true, teklifId: 9, teklifKalemId: "a", partId: "3", miktar: 5, birimFiyat: 90, currency: "TRY", tarih: "2026-07-15", odendi: true, yontem: "Kredi Kartı", taksitSayisi: 6, kartKomisyonu: { taksit: 6, oran: 9.34, toplamKesinti: 54, blokajGun: 0, yansitildi: false }, kargoDurum: "Hazırlanıyor", tahsisler: [{ miktar: 2, customerId: 1, serialNo: "SN", makinaSerbest: "", tarih: "2026-07-16" }] },
       { id: 81, dealerId: 2, partId: "3", miktar: 1, birimFiyat: 40, currency: "TRY", tarih: "2026-07-17", odendi: false, ucretsizMi: true, tahsisler: [] }], // spec 0095
     calisanlar: [{ id: 9, ad: "Ali Veli" }],
     // Gider kaydı (spec 0001): temiz kurulumda gider tabloları + model alt tablosu + giderAyarlari kolonu oluşmalı
@@ -147,6 +147,11 @@ check("spec 0079 AC-34: temiz kurulumda satış tarafının tevkifat sütunları
   const ac = (x, pay) => x?.tevkifatli === true && x.tevkifatPay === pay && x.tevkifatPayda === 10;
   return ac((blob.customers || []).find(x => x.id === 1), 5) && ac((blob.services || []).find(x => x.id === 5), 7)
     && ac((blob.partSales || []).find(x => x.id === 6), 2) && ac((blob.yedekParcaSatislar || []).find(x => x.id === 8), 9);
+})());
+check("spec 0114 AC-51: temiz kurulumda ihracKayitli sütunu üç tabloda var ve yazıldı", (() => {
+  const b = (k, id) => (blob[k] || []).find(x => x.id === id);
+  return b("customers", 1)?.ihracKayitli === true && b("partSales", 6)?.ihracKayitli === true && b("yedekParcaSatislar", 8)?.ihracKayitli === true
+    && !("ihracKayitli" in b("yedekParcaSatislar", 81));
 })());
 check("spec 0075 AC-37: temiz kurulumda tevkifat sütunları iki tabloda var ve 'tevkifat' satırı yazıldı", (() => { const g = (blob.giderler || []).find(x => x.id === 35); const t = (blob.giderTanimlari || []).find(x => x.id === 32); return g?.tevkifatli === true && g.tevkifatPay === 9 && (g.taksitler || []).some(x => x.hedef === "tevkifat" && x.tutar === 180) && t?.tevkifatli === true && t.tevkifatPayda === 10; })());
 check("spec 0074 AC-33: temiz kurulumda SGK türü ve SGK kalemi yazıldı", (() => { const g = (blob.giderler || []).find(x => x.id === 36); return (blob.giderTurleri || []).find(t => t.id === 38)?.davranis === "sgk" && g?.turId === 38 && g.tutar === 4200; })());

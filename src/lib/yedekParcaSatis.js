@@ -2,6 +2,7 @@
 // modalı ve bayi detay modalı aynı doğrulama + kayıt yolunu kullanır (ayrışmasın diye tek kaynak).
 import { uid, today, yerelBugun, fmtTR, parseMoney, simdiYerel, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "./utils";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "./satisTevkifat";
+import { ihracKayitliUygula, ihracKayitliDogrula } from "./ihracKayitli";
 import { yedekParcaDus } from "./yedekParcaStok";
 import { netDusumleri, netDusumAyni } from "./stokHareketi";
 import { yerelServisEkle } from "./yerelServis";
@@ -59,7 +60,7 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
   const kkTarih = form.kartTarihi || form.tarih || today();   // blokaj KART İŞLEM tarihinden (boşsa satış tarihi)
   const kkFatura = form.faturaTipi || "Faturalı Yurtiçi";
   const ucretsiz = !!form.ucretsizMi; // spec 0095 R7/4: ücretsizde tevkifat doğrulanmaz, kart dalı çalışmaz
-  const tevkifatHata = ucretsiz ? null : satisTevkifatDogrula(form, kkFatura); // spec 0079 R6
+  const tevkifatHata = ucretsiz ? null : (satisTevkifatDogrula(form, kkFatura) || ihracKayitliDogrula(form, kkFatura)); // spec 0079 R6, spec 0114 R12
   if (tevkifatHata) return { ok: false, hata: tevkifatHata };
   // Spec 0079 R13 (revizyon 2): kart tutarı tahsil edilen KDV ile; düzenlemede kayıtlı anlık görüntünün tabanı korunur.
   const taban = kartTabanKaydi(form);
@@ -76,7 +77,7 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     }
     kartKomisyonu = kartTabanIsaretle(kartKomisyonu, taban);
   }
-  return { ok: true, rec: ucretsizUygula(satisTevkifatUygula({
+  return { ok: true, rec: ucretsizUygula(ihracKayitliUygula(satisTevkifatUygula({
     aliciTipi, dealerId, musteriId, partId, miktar,
     // Anlaşmasız dış firma alıcı bilgileri (yalnız bu kayda; bayi/müşteri kaydı oluşturulmaz).
     disFirma,
@@ -108,11 +109,12 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     teklifId: form.teklifId ?? null, teklifKalemId: form.teklifKalemId ?? null,
     // Spec 0044 R1: tahsilatın girdiği hesap; formda alan hiç yoksa kayda dokunulmaz (düzenleme ...rec ile birleşir).
     ...(form.hesapId !== undefined ? { hesapId: form.hesapId ?? null } : {}),
-  }, form, kkFatura), form) }; // spec 0079 R5, R7: toplu satışta her satıra aynı tevkifat; spec 0095 R13: aynı işaret
+  }, form, kkFatura), form, kkFatura), form) }; // spec 0079 R5, R7: toplu satışta her satıra aynı tevkifat; spec 0095 R13: aynı işaret; spec 0114 R6/2: ihraç işareti ucretsizUygula'dan önce
 }
 // Düzenleme kolu (spec 0079 R5/1): `{ ...eski, ...rec }` birleştirmesi eski tevkifat alanlarını silmez; buradan geçer.
 // Spec 0095 R14/2: aynı tuzak işaret için de geçerli; `ucretsizUygula` alanı siler ya da yazar (son adım).
-export const yedekParcaGuncelle = (eski, rec, form) => ucretsizUygula(satisTevkifatUygula({ ...eski, ...rec }, form, rec.faturaTipi), form);
+// Spec 0114 R6/2: ihraç işareti de buradan (ucretsizUygula'dan önce); 0111'in toplu düzenlemesi de bu yoldan geçer.
+export const yedekParcaGuncelle = (eski, rec, form) => ucretsizUygula(ihracKayitliUygula(satisTevkifatUygula({ ...eski, ...rec }, form, rec.faturaTipi), form, rec.faturaTipi), form);
 
 // Yedek parça satışı "planlanmış" mı? = panoya düşme zamanı ileride → o zamana kadar panoda gizli.
 // Servisteki servisPlanlandiMi'nin kargo karşılığı. Damgalar yerel duvar-saati string'i (new Date yerel).

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, SALE_TYPES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
+import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { HataMetni, Ipucu } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
+import { SatisTipiSecici } from "./SatisTipiSecici";
 import { satisTevkifatDogrula, satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
@@ -278,9 +279,8 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           </Select>
         </Field>
         <Field label="Fatura Tipi">
-          <Select value={form.faturaTipi || "Faturalı Yurtiçi"} onChange={e => setForm(p => ({ ...p, faturaTipi: e.target.value }))}>
-            {SALE_TYPES.map(t => <option key={t}>{t}</option>)}
-          </Select>
+          {/* Spec 0114 R4, X5: servis ihraç kayıtlı olamaz; seçici dört seçenekle. */}
+          <SatisTipiSecici kayit={form} ihracDahil={false} onSec={a => setForm(p => ({ ...p, faturaTipi: a.faturaTipi }))} />
         </Field>
       </div>
       {/* Spec 0079 R1, R2: tevkifat kutusu (yalnız faturalı yurtiçi); hata kayıtta bildirimle (R6/2). */}

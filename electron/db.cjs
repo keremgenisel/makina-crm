@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS customers (
   brutKg REAL,
   tipSecimleri TEXT,
   satisKuru REAL, uretimTarihi TEXT, partiId INTEGER,
-  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER,
+  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER, ihracKayitli INTEGER,
   makinaDurumu TEXT
 );
 
@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS part_sales (
   teslimatFarkli INTEGER, teslimatAd TEXT, teslimatTel TEXT, teslimatAdres TEXT, teslimatUlke TEXT, teslimatSehir TEXT, teslimatIlce TEXT,
   yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER, taksitSayisi INTEGER, kartKomisyonu TEXT,
   tahsilatTarihi TEXT, teklifKalemId TEXT, hesapId INTEGER,
-  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER,
+  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER, ihracKayitli INTEGER,
   kalipDurumu TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_partsales_customer ON part_sales(customer_id);
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS yedek_parca_satis (
   teslimatFarkli INTEGER, teslimatAd TEXT, teslimatTel TEXT, teslimatAdres TEXT, teslimatUlke TEXT, teslimatSehir TEXT, teslimatIlce TEXT,
   yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER, taksitSayisi INTEGER, kartKomisyonu TEXT, deletedAt TEXT,
   tahsilatTarihi TEXT, teklifId INTEGER, teklifKalemId TEXT, hesapId INTEGER,
-  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER, ucretsizMi INTEGER
+  tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER, ihracKayitli INTEGER, ucretsizMi INTEGER
 );
 CREATE TABLE IF NOT EXISTS yedek_parca_tahsis (
   id INTEGER PRIMARY KEY,
@@ -580,6 +580,11 @@ const tevkifatOku = (tevkifatli, tevkifatPay, tevkifatPayda) => (toBool(tevkifat
 // (R17) ama okuması `tevkifatOku` emsalidir: kapalı değer gövdeye YAZILMAZ (false da değil; yoksa güncellenmemiş istemcinin
 // gövdesiyle karşılaştırma bölümü değişmiş gösterir, C3/2). `part_sales`'in koşulsuz `toBool(ucretsizMi)` okuması değişmedi.
 const YEDEK_PARCA_UCRETSIZ_COLUMN = [["ucretsizMi", "INTEGER"]];
+// Spec 0114 C5, R5/2: ihraç kayıtlı teslim işareti üç tabloda (customers, part_sales, yedek_parca_satis; servis hariç, R2).
+// Kapalı değer null yazılır ve okumada gövdeye hiç yazılmaz (false da değil; `tevkifatOku` emsali).
+const IHRAC_KAYITLI_COLUMN = [["ihracKayitli", "INTEGER"]];
+const ihracYaz = (g) => (g?.ihracKayitli === true ? 1 : null);
+const ihracOku = (v) => (toBool(v) ? { ihracKayitli: true } : {});
 const ucretsizOku = (ucretsizMi) => (toBool(ucretsizMi) ? { ucretsizMi: true } : {});
 // Spec 0076 R33: kısmen indirilebilen gider (binek araç). İki tablo, dört nokta tablo başına; kapalı kalemde iki sütun null
 // yazılır ve okumada blob'a hiç yazılmaz. Tanımda oran boş olabilir ("ayardaki oran", R8/3): bayrak açık, oran yok.
@@ -638,12 +643,12 @@ function populateAll(conn, data, skip = new Set()) {
       contact, aciklama, model, serialNo, kalipCapi, seriNoBekliyor, satisYapan, installDate, warrantyEnd, faturali,
       faturaBedeli, fabrikaSatisBedeli, komisyon, currency, kalanBorc, isResale, prevOwners, kalip, kalipSayisi, extraKalipFiyati, deletedAt, bantlar,
       konveyorSacId, bantSecimiId, sourceStockId, fromTeklifId, odemePlani, brutKg, tipSecimleri, satisKuru, uretimTarihi, partiId,
-      tevkifatli, tevkifatPay, tevkifatPayda, makinaDurumu)
+      tevkifatli, tevkifatPay, tevkifatPayda, makinaDurumu, ihracKayitli)
     VALUES (@id, @name, @phone, @email, @adres, @city, @ilce, @country, @yetkili1Ad, @yetkili1Tel, @yetkili2Ad, @yetkili2Tel,
       @contact, @aciklama, @model, @serialNo, @kalipCapi, @seriNoBekliyor, @satisYapan, @installDate, @warrantyEnd, @faturali,
       @faturaBedeli, @fabrikaSatisBedeli, @komisyon, @currency, @kalanBorc, @isResale, @prevOwners, @kalip, @kalipSayisi, @extraKalipFiyati, @deletedAt, @bantlar,
       @konveyorSacId, @bantSecimiId, @sourceStockId, @fromTeklifId, @odemePlani, @brutKg, @tipSecimleri, @satisKuru, @uretimTarihi, @partiId,
-      @tevkifatli, @tevkifatPay, @tevkifatPayda, @makinaDurumu)
+      @tevkifatli, @tevkifatPay, @tevkifatPayda, @makinaDurumu, @ihracKayitli)
   `);
   const insertKalip = conn.prepare(`
     INSERT INTO customer_kaliplar (customer_id, ad, olcu, fiyat, part_sale_id, sort_order, uretimFormGonder, uretimFormId, kalipDurumu) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -682,6 +687,7 @@ function populateAll(conn, data, skip = new Set()) {
         partiId: c.partiId ?? null,
         ...tevkifatYaz(c),
         makinaDurumu: c.makinaDurumu || null,
+        ihracKayitli: ihracYaz(c),
       });
       (c.kaliplar || []).forEach((k, idx) => {
         insertKalip.run(c.id, k.ad ?? null, k.olcu ?? null, k.fiyat ?? null, k.partSaleId ?? null, idx, toInt(k.uretimFormGonder), k.uretimFormId ?? null, k.kalipDurumu || null);
@@ -733,13 +739,13 @@ function populateAll(conn, data, skip = new Set()) {
         kargoDurum, kargoFirma, kargoTakipNo, kargoTarih, kargoSorumlusu, panoDusmeZamani, panoGizli, olusturmaZamani, fabrikaTeslim, teslimSekli,
         teslimatFarkli, teslimatAd, teslimatTel, teslimatAdres, teslimatUlke, teslimatSehir, teslimatIlce,
         yontem, vadeTarihi, tahsilEdildi, taksitSayisi, kartKomisyonu, tahsilatTarihi, teklifKalemId, hesapId,
-        tevkifatli, tevkifatPay, tevkifatPayda, kalipDurumu)
+        tevkifatli, tevkifatPay, tevkifatPayda, kalipDurumu, ihracKayitli)
       VALUES (@id, @customer_id, @tur, @ad, @olcu, @tarih, @ucret, @currency, @odendi, @faturaTipi, @ucretsizMi, @batchId, @deletedAt, @teklifId, @uretimFormGonder, @uretimFormId,
         @satisFirma, @satisFirmaAd, @satisFirmaYetkili, @satisFirmaTel, @satisFirmaUlke, @satisFirmaSehir,
         @kargoDurum, @kargoFirma, @kargoTakipNo, @kargoTarih, @kargoSorumlusu, @panoDusmeZamani, @panoGizli, @olusturmaZamani, @fabrikaTeslim, @teslimSekli,
         @teslimatFarkli, @teslimatAd, @teslimatTel, @teslimatAdres, @teslimatUlke, @teslimatSehir, @teslimatIlce,
         @yontem, @vadeTarihi, @tahsilEdildi, @taksitSayisi, @kartKomisyonu, @tahsilatTarihi, @teklifKalemId, @hesapId,
-        @tevkifatli, @tevkifatPay, @tevkifatPayda, @kalipDurumu)
+        @tevkifatli, @tevkifatPay, @tevkifatPayda, @kalipDurumu, @ihracKayitli)
     `);
     for (const p of data.partSales) {
       stmt.run({
@@ -760,6 +766,7 @@ function populateAll(conn, data, skip = new Set()) {
         tahsilatTarihi: p.tahsilatTarihi ?? null, teklifKalemId: p.teklifKalemId ?? null, hesapId: p.hesapId ?? null,
         ...tevkifatYaz(p),
         kalipDurumu: p.kalipDurumu || null,
+        ihracKayitli: ihracYaz(p),
       });
     }
   }
@@ -773,13 +780,13 @@ function populateAll(conn, data, skip = new Set()) {
         disFirma, disFirmaAd, disFirmaYetkili, disFirmaTel, disFirmaAdres, disFirmaUlke, disFirmaSehir,
         teslimatFarkli, teslimatAd, teslimatTel, teslimatAdres, teslimatUlke, teslimatSehir, teslimatIlce,
         yontem, vadeTarihi, tahsilEdildi, taksitSayisi, kartKomisyonu, deletedAt, tahsilatTarihi, teklifId, teklifKalemId, hesapId,
-        tevkifatli, tevkifatPay, tevkifatPayda, ucretsizMi)
+        tevkifatli, tevkifatPay, tevkifatPayda, ucretsizMi, ihracKayitli)
       VALUES (@id, @dealer_id, @musteri_id, @aliciTipi, @partId, @miktar, @birimFiyat, @currency, @tarih, @odendi, @faturaTipi,
         @kargoFirma, @kargoTakipNo, @kargoTarih, @kargoDurum, @kargoSorumlusu, @panoDusmeZamani, @olusturmaZamani, @notlar, @panoGizli, @batchId, @fabrikaTeslim,
         @disFirma, @disFirmaAd, @disFirmaYetkili, @disFirmaTel, @disFirmaAdres, @disFirmaUlke, @disFirmaSehir,
         @teslimatFarkli, @teslimatAd, @teslimatTel, @teslimatAdres, @teslimatUlke, @teslimatSehir, @teslimatIlce,
         @yontem, @vadeTarihi, @tahsilEdildi, @taksitSayisi, @kartKomisyonu, @deletedAt, @tahsilatTarihi, @teklifId, @teklifKalemId, @hesapId,
-        @tevkifatli, @tevkifatPay, @tevkifatPayda, @ucretsizMi)
+        @tevkifatli, @tevkifatPay, @tevkifatPayda, @ucretsizMi, @ihracKayitli)
     `);
     // id'yi SQLite atasın (customer_kaliplar deseni). tahsis saf çocuk kayıt; id uygulamada referans
     // edilmiyor. Eskiden t.id (okumada atanan rowid) ile yeni null'lar karışınca SQLite'ın null için
@@ -803,7 +810,7 @@ function populateAll(conn, data, skip = new Set()) {
         yontem: s.yontem ?? null, vadeTarihi: s.vadeTarihi ?? null, tahsilEdildi: toInt(s.tahsilEdildi),
         taksitSayisi: s.taksitSayisi ?? null, kartKomisyonu: s.kartKomisyonu ? json(s.kartKomisyonu) : null, deletedAt: s.deletedAt ?? null,
         tahsilatTarihi: s.tahsilatTarihi ?? null, teklifId: s.teklifId ?? null, teklifKalemId: s.teklifKalemId ?? null, hesapId: s.hesapId ?? null,
-        ...tevkifatYaz(s), ucretsizMi: s.ucretsizMi === true ? 1 : null,
+        ...tevkifatYaz(s), ucretsizMi: s.ucretsizMi === true ? 1 : null, ihracKayitli: ihracYaz(s),
       });
       (s.tahsisler || []).forEach((t, idx) => {
         tStmt.run(s.id, t.miktar ?? null, t.customerId ?? null, t.serialNo ?? null, t.makinaSerbest ?? null, t.tarih ?? null, idx);
@@ -1152,6 +1159,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "gider_tanimlari", TEVKIFAT_COLUMNS);
   // Spec 0079 R33: tevkifatlı satış faturası (gelir tarafı), dört tablo.
   for (const t of ["customers", "services", "part_sales", "yedek_parca_satis"]) ensureColumns(conn, t, TEVKIFAT_COLUMNS);
+  for (const t of ["customers", "part_sales", "yedek_parca_satis"]) ensureColumns(conn, t, IHRAC_KAYITLI_COLUMN); // spec 0114
   ensureColumns(conn, "giderler", GIDER_KISIT_COLUMNS); // spec 0076 R33
   ensureColumns(conn, "gider_tanimlari", GIDER_KISIT_COLUMNS);
   ensureColumns(conn, "factory", FACTORY_NEW_COLUMNS);
@@ -1373,8 +1381,9 @@ function readBlobFromDb() {
   // Spec 0079 R33/1: üç tevkifat sütunu ayrılır ve yalnız açıkken geri yazılır; ham yayılsaydı her müşteri
   // `tevkifatli: null, …` taşır, alanı tanımayan istemcinin blob'u sürekli "değişmiş" görünürdü.
   // Spec 0106 C2/2: makina durumu ayrılır ve yalnız doluyken geri yazılır (stok okumasının 0100 deseni).
-  const customers = db.prepare(`SELECT * FROM customers`).all().map(({ tevkifatli, tevkifatPay, tevkifatPayda, makinaDurumu, ...c }) => ({
+  const customers = db.prepare(`SELECT * FROM customers`).all().map(({ tevkifatli, tevkifatPay, tevkifatPayda, makinaDurumu, ihracKayitli, ...c }) => ({
     ...c,
+    ...ihracOku(ihracKayitli), // spec 0114 C5
     ...(makinaDurumu ? { makinaDurumu } : {}),
     ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda),
     kalipCapi: parseJsonCol(c.kalipCapi, undefined),
@@ -1453,8 +1462,8 @@ function readBlobFromDb() {
 
   const partSales = db.prepare(`SELECT * FROM part_sales`).all().map((row) => {
     // Spec 0106 C2/2: kalıp durumu ayrılır, yalnız doluyken geri yazılır.
-    const { customer_id, odendi, ucretsizMi, uretimFormGonder, panoGizli, fabrikaTeslim, teslimatFarkli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, kalipDurumu, ...rest } = row;
-    return { ...rest, ...(kalipDurumu ? { kalipDurumu } : {}), ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), customerId: customer_id, odendi: toBool(odendi), ucretsizMi: toBool(ucretsizMi), uretimFormGonder: toBool(uretimFormGonder), panoGizli: toBool(panoGizli), fabrikaTeslim: toBool(fabrikaTeslim), teslimatFarkli: toBool(teslimatFarkli), tahsilEdildi: toBool(tahsilEdildi), kartKomisyonu: parseJsonCol(kartKomisyonu, null) };
+    const { customer_id, odendi, ucretsizMi, uretimFormGonder, panoGizli, fabrikaTeslim, teslimatFarkli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, kalipDurumu, ihracKayitli, ...rest } = row;
+    return { ...rest, ...(kalipDurumu ? { kalipDurumu } : {}), ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), ...ihracOku(ihracKayitli), customerId: customer_id, odendi: toBool(odendi), ucretsizMi: toBool(ucretsizMi), uretimFormGonder: toBool(uretimFormGonder), panoGizli: toBool(panoGizli), fabrikaTeslim: toBool(fabrikaTeslim), teslimatFarkli: toBool(teslimatFarkli), tahsilEdildi: toBool(tahsilEdildi), kartKomisyonu: parseJsonCol(kartKomisyonu, null) };
   });
 
   // Bayiye yedek parça (kargo) satışı + makina tahsisleri (child tablo, satis_id'ye göre gruplanır).
@@ -1464,8 +1473,8 @@ function readBlobFromDb() {
     tahsisBySatis.get(t.satis_id).push({ miktar: t.miktar, customerId: t.customer_id, serialNo: t.serialNo, makinaSerbest: t.makinaSerbest, tarih: t.tarih });
   }
   const yedekParcaSatislar = db.prepare(`SELECT * FROM yedek_parca_satis`).all().map((row) => {
-    const { dealer_id, musteri_id, partId, odendi, panoGizli, fabrikaTeslim, disFirma, teslimatFarkli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, ucretsizMi, ...rest } = row;
-    return { ...rest, ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), ...ucretsizOku(ucretsizMi), dealerId: dealer_id, musteriId: musteri_id, partId: partId != null ? String(partId) : null, odendi: toBool(odendi), panoGizli: toBool(panoGizli), fabrikaTeslim: toBool(fabrikaTeslim), disFirma: toBool(disFirma), teslimatFarkli: toBool(teslimatFarkli), tahsilEdildi: toBool(tahsilEdildi), kartKomisyonu: parseJsonCol(kartKomisyonu, null), tahsisler: tahsisBySatis.get(row.id) || [] };
+    const { dealer_id, musteri_id, partId, odendi, panoGizli, fabrikaTeslim, disFirma, teslimatFarkli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, ucretsizMi, ihracKayitli, ...rest } = row;
+    return { ...rest, ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), ...ucretsizOku(ucretsizMi), ...ihracOku(ihracKayitli), dealerId: dealer_id, musteriId: musteri_id, partId: partId != null ? String(partId) : null, odendi: toBool(odendi), panoGizli: toBool(panoGizli), fabrikaTeslim: toBool(fabrikaTeslim), disFirma: toBool(disFirma), teslimatFarkli: toBool(teslimatFarkli), tahsilEdildi: toBool(tahsilEdildi), kartKomisyonu: parseJsonCol(kartKomisyonu, null), tahsisler: tahsisBySatis.get(row.id) || [] };
   });
 
   const payments = db.prepare(`SELECT * FROM payments`).all().map((row) => {

@@ -74,10 +74,10 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
     if (yururlukKapsami(aralik, giderYururlukAy).durum === "oncesi") return { durum: "oncesi" };
     const gr = hesaplaGiderRaporu({ giderler, turler: giderTurleri, yururlukAy: giderYururlukAy }, aralik);
     const veri = { customers, services: servicesHam, partSales: partSalesHam, payments: paymentsHam, teklifler, dealers, yedekParcaSatislar: yedekParcaHam };
-    const { kdv: hesaplanan, aliciBeyan } = satisKdvAylar(veri, [raporAy], { factoryName, kdvRates, factory, rates });
+    const { kdv: hesaplanan, aliciBeyan, ertelenen } = satisKdvAylar(veri, [raporAy], { factoryName, kdvRates, factory, rates });
     // Spec 0075 R28 (B-5, S9): KDV2 yalnız bilgi satırıdır; değer motordan, Giderler'deki kartla aynı kaynak.
     // Spec 0079 R31: tevkifatlı satışta alıcının beyan edeceği KDV de bilgi satırıdır (farka eklenmez), iki ekranda aynı kaynak.
-    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplanan, gr.indirilecekKdv, tevkifatOzeti(gr.kalemler, turHaritasi(giderTurleri)).kesilenK / 100, aliciBeyan.TRY || 0) };
+    return { durum: "tamam", sonuc: kdvKarsilastir(hesaplanan, gr.indirilecekKdv, tevkifatOzeti(gr.kalemler, turHaritasi(giderTurleri)).kesilenK / 100, aliciBeyan.TRY || 0, { ertelenenKdvTL: ertelenen.TRY || 0 }) }; // spec 0114 R18, C11
   }, [giderYetki, raporAy, giderler, giderTurleri, giderYururlukAy, customers, servicesHam, partSalesHam, paymentsHam, teklifler, dealers, yedekParcaHam, factoryName, kdvRates, factory, rates]);
 
   // Yaklaşık TL karşılığı — döviz kurları App.jsx'te tek noktadan çekilip prop olarak gelir,

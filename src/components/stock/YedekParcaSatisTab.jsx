@@ -15,6 +15,8 @@ import { yedekParcaEtiketYazdir } from "../../lib/printTemplates";
 import { logAction } from "../../lib/audit";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
 import { TahsilatHesapPenceresi, uyumluHesapId } from "../kasa/TahsilatHesap";
+import { ihracRozetGosterilirMi } from "../../lib/ihracKayitli";
+import { IhracKayitliRozeti } from "../IhracKayitliAlani";
 
 // Satışın makina-bağ durumu (bekliyor / kısmi / tam).
 const durumBilgi = (s) => {
@@ -247,7 +249,9 @@ export const YedekParcaSatisTab = ({
             <div style={{ fontSize: grupIci ? 13.5 : 12.5, fontWeight: grupIci ? 700 : 400, color: grupIci ? "var(--n900, #0f172a)" : "var(--n600, #475569)", marginTop: grupIci ? 0 : 2 }}>
               {parcaAdi(part) || "(parça yok)"} · <strong>{s.miktar} adet</strong> · {ucretsiz ? <span data-testid="ucretsiz-ibaresi">{UCRETSIZ_IBARESI}</span> : fmtCur(toplam, s.currency || "TRY")}
               {/* Spec 0079 R26: tevkifatlı satışın rozeti (oran ve alıcının beyan edeceği KDV). */}
-              {(() => { const b = satisKdvBolumu(s.faturaTipi, toplam, s.tarih, kdvRates, s); return b.tevkifatli ? (
+              {/* Spec 0114 R26: ihraç kayıtlı rozeti aynı yerde, teal. */}
+              {(() => { const b = satisKdvBolumu(s.faturaTipi, toplam, s.tarih, kdvRates, s); return b.ihracKayitli && ihracRozetGosterilirMi(s, s.faturaTipi)
+                ? <IhracKayitliRozeti solBosluk ertelenenMetni={fmtCur(b.ertelenenKdv, s.currency || "TRY")} /> : b.tevkifatli ? (
                 <span data-testid="satis-tevkifat-rozeti" style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, borderRadius: 5, padding: "2px 7px", background: "var(--bluBg2, #dbeafe)", color: "var(--blu700, #1d4ed8)" }}>
                   {satisTevkifatRozeti(s, fmtCur(b.tevkifat, s.currency || "TRY"))}
                 </span>) : null; })()}

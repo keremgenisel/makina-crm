@@ -8,6 +8,7 @@ import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlici
 import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, normalizeSaleType, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
+import { ihracKayitliUygula, ihracKayitliDogrula } from "../lib/ihracKayitli";
 import { cekDogrula, yeniCek, musterininCiroluTahsilatlari } from "../lib/cek";
 import { satisKuruUygula, uretimTarihiDamgala, partiDamgala, makinaDurumuDamgala, MAKINA_DURUMU_KAYNAK } from "../lib/satisKaydi";
 import { uretimFormHaritasi, extraKalipGrupla, satirDurumu, TESLIM_SUZGECI, DURUM_SUTUNU } from "../lib/musteriDurumu";
@@ -309,12 +310,12 @@ export const Customers = ({
       if (!d.kayit) { showToast(`İlk ödeme çeki: ${Object.values(d.hatalar)[0]}`); return; }
     }
     // Spec 0079 R6: oran seçilmemiş ya da geçersiz tevkifat kaydedilmez (formda HataMetni de yazar).
-    const tevkifatHata = satisTevkifatDogrula(form, form.faturali);
+    const tevkifatHata = satisTevkifatDogrula(form, form.faturali) || ihracKayitliDogrula(form, form.faturali); // spec 0114 R12
     if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
     {
       // fromTeklifId kayıtta kalır: teklifin kullanıldığının kalıcı kanıtı (satisTamam kaybolsa bile)
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, _makinaDurumuKaynak, ...temiz } = form; // spec 0109 R12, R18
-      const clean = satisTevkifatUygula(temiz, form, temiz.faturali); // spec 0079 R5: ekleme kolu
+      const clean = ihracKayitliUygula(satisTevkifatUygula(temiz, form, temiz.faturali), form, temiz.faturali); // spec 0079 R5, spec 0114 R6/2: ekleme kolu
       // Faturasız satışta fatura bedeli kavramı yok → hayalet değer kalmasın (kaynak temizliği).
       if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
       bumpId(customers, services, partSales, payments);
@@ -364,10 +365,10 @@ export const Customers = ({
       doAdd();
       return;
     } else {
-      const tevkifatHata = satisTevkifatDogrula(form, form.faturali); // spec 0079 R6
+      const tevkifatHata = satisTevkifatDogrula(form, form.faturali) || ihracKayitliDogrula(form, form.faturali); // spec 0079 R6, spec 0114 R12
       if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
       const { _manualSerial, _stokSerisiz, _ilkOdemeSatirlari, _kitTipler, _makinaDurumuKaynak, ...temiz } = form; // spec 0109 R12, R18
-      const clean = satisTevkifatUygula(temiz, form, temiz.faturali); // spec 0079 R5: düzenleme kolu
+      const clean = ihracKayitliUygula(satisTevkifatUygula(temiz, form, temiz.faturali), form, temiz.faturali); // spec 0079 R5, spec 0114 R6/2: düzenleme kolu
       // Faturalı → Faturasız çevrilince eski fatura bedeli kayıtta kalmasın (kaynak temizliği).
       if (!isFaturali(clean.faturali)) clean.faturaBedeli = "";
       const wasSerialPending = modal?.edit?.seriNoBekliyor && !modal.edit.serialNo;

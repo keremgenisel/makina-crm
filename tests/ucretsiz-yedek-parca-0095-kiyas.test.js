@@ -25,7 +25,9 @@ describe("Spec 0095 AC-27: işaretsiz eski kayıtlar spec öncesiyle aynı", () 
     expect(ySimdi.length).toBe(yOnce.length);
     ySimdi.forEach((s, i) => {
       expect(s[UCRETSIZ_SUTUN], `satır ${i}`).toBe("Hayır");
-      expect(sutunsuz(s), `satır ${i}`).toEqual(yOnce[i]);
+      // Spec 0114 R34 ile: satırın sonuna iki ihraç sütunu eklendi; işaretsiz kayıtta boştur, eski sütunlar birebir aynı.
+      expect(sutunsuz(s).slice(0, yOnce[i].length), `satır ${i}`).toEqual(yOnce[i]);
+      expect(sutunsuz(s).slice(yOnce[i].length), `satır ${i} ek sütun`).toEqual(["", ""]);
     });
   });
 });

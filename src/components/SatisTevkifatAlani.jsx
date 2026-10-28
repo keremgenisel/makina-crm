@@ -1,7 +1,8 @@
 // Spec 0079: tevkifatlı satış faturası alanı (makina, servis, Extra Kalıp, yedek parça formları). Kapı, doğrulama ve metinler
 // lib/satisTevkifat.js'ten; bu dosya yalnız çizer. Kutu yalnız faturalı yurtiçide çizilir (R2) ve varsayılan kapalıdır (R1, R3).
 import { HataMetni, Ipucu, UyariSeridi } from "./tasarim";
-import { fmtCur } from "../lib/utils";
+import { fmtCur, ihracKayitliEtkinMi } from "../lib/utils";
+import { IHRAC_TEVKIFAT_NEDENI } from "../lib/ihracKayitli";
 import {
   TEVKIFAT_ORANLARI, satisTevkifatOranEtiketi, satisTevkifatSecilebilirMi, satisTevkifatDogrula,
   SATIS_TEVKIFAT_NOTU_TAHSIL, SATIS_TEVKIFAT_NOTU_CIRO, SATIS_TEVKIFAT_NOTU_SINIR, SATIS_TEVKIFAT_KART_UYARISI,
@@ -12,6 +13,31 @@ import {
 // kartUyarisi: R13/2 koşulu çağırandan (kartTabaniEskiMi / makinaKartTabaniEskiMi); onYeniTaban verilirse "yeni tabanla hesapla".
 export const SatisTevkifatAlani = ({ form, setForm, saleType, hataGoster = true, kartUyarisi = false, onYeniTaban = null }) => {
   if (!satisTevkifatSecilebilirMi(saleType)) return null;
+  // R13/2 kart uyarısı (spec 0114 AC-57: ihraç dalında da, taban işareti farklıysa).
+  const kartUyarisiBlok = kartUyarisi ? (
+    <div data-testid="satis-tevkifat-kart-uyarisi" style={{ marginTop: 8 }}>
+      <UyariSeridi aile="uyari">
+        {SATIS_TEVKIFAT_KART_UYARISI}
+        {onYeniTaban && (
+          <> <button type="button" onClick={onYeniTaban} style={{ marginLeft: 6, fontSize: 12, fontWeight: 700, background: "none", border: "none", padding: 0, color: "var(--brand, #e85d1a)", cursor: "pointer", textDecoration: "underline" }}>
+            Kart komisyonunu yeni tabanla hesapla
+          </button></>
+        )}
+      </UyariSeridi>
+    </div>
+  ) : null;
+  // Spec 0114 R7, R7/3: ihraç kayıtlı teslimde kutu çizilir ama pasif ve İŞARETSİZDİR (seçim formun tevkifatını temizlemiştir);
+  // nedeni yanında yazar, oran seçicisi ve üç not çizilmez. "Pasif ama işaretli" kutu çizilmez (C4).
+  if (ihracKayitliEtkinMi(form, saleType)) return (
+    <div data-testid="satis-tevkifat" style={{ marginBottom: 12 }}>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "var(--n500, #64748b)" }}>
+        <input type="checkbox" aria-label="Bu fatura tevkifatlı" checked={false} disabled readOnly style={{ width: 16, height: 16 }} />
+        Bu fatura tevkifatlı
+      </label>
+      <div data-testid="satis-tevkifat-pasif-nedeni"><Ipucu>{IHRAC_TEVKIFAT_NEDENI}</Ipucu></div>
+      {kartUyarisiBlok}
+    </div>
+  );
   const acik = !!form?.tevkifatli;
   const hata = hataGoster ? satisTevkifatDogrula(form, saleType) : null;
   const deger = acik && form.tevkifatPay && form.tevkifatPayda ? `${form.tevkifatPay}/${form.tevkifatPayda}` : "";
@@ -39,18 +65,7 @@ export const SatisTevkifatAlani = ({ form, setForm, saleType, hataGoster = true,
           <Ipucu>{SATIS_TEVKIFAT_NOTU_SINIR}</Ipucu>
         </div>
       )}
-      {kartUyarisi && (
-        <div data-testid="satis-tevkifat-kart-uyarisi" style={{ marginTop: 8 }}>
-          <UyariSeridi aile="uyari">
-            {SATIS_TEVKIFAT_KART_UYARISI}
-            {onYeniTaban && (
-              <> <button type="button" onClick={onYeniTaban} style={{ marginLeft: 6, fontSize: 12, fontWeight: 700, background: "none", border: "none", padding: 0, color: "var(--brand, #e85d1a)", cursor: "pointer", textDecoration: "underline" }}>
-                Kart komisyonunu yeni tabanla hesapla
-              </button></>
-            )}
-          </UyariSeridi>
-        </div>
-      )}
+      {kartUyarisiBlok}
     </div>
   );
 };

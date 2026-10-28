@@ -3,7 +3,7 @@
 // (gelir motorları gider.js'i içe almaz, R4). Alan adları 0075'in gider tarafıyla bilerek aynıdır (R34): tevkifatli, tevkifatPay,
 // tevkifatPayda. Gider tarafıyla karıştırmayın: orada tevkifatı biz beyan ederiz (KDV2), burada alıcı beyan eder.
 import { TEVKIFAT_ORANLARI } from "./constants";
-import { isFaturali, isYurtIci, satisTevkifati, satisKdvBolumu, parseMoney, tahsilKdvOrani } from "./utils";
+import { isFaturali, isYurtIci, satisTevkifati, satisKdvBolumu, parseMoney, tahsilKdvOrani, ihracKayitliEtkinMi } from "./utils";
 import { kartYansitmaAyrim } from "./krediKarti";
 
 export { TEVKIFAT_ORANLARI };
@@ -42,7 +42,11 @@ export const satisTevkifatUygula = (rec, form, saleType) => {
 // dondurulmuş anlık görüntüsü geriye dönük oynamaz). Anlık görüntü tabanını `tevkifatTaban` ("5/10") alanında taşır; alan
 // yoksa taban tevkifatsızdır (bu spec'ten önceki bütün anlık görüntüler). Dönüş: kart hesabına verilecek "kayıt" (yalnız
 // tevkifat alanları okunur).
+// Spec 0114 R11/2: ihraç kayıtlı satışın anlık görüntüsü `ihracTaban: true` taşır ve KDV'siz taban olarak geri okunur; alanı
+// olmayan eski anlık görüntü ihraçsızdır (0079 R13 ile aynı kural). Dönen nesne bir kayıt değil, kart hesabının tabanıdır
+// (spec 0114 Ö-2: C12 taramasının gerekçeli istisnası).
 const tabanKaydi = (kk) => {
+  if (kk?.ihracTaban === true) return { ihracKayitli: true };
   const m = /^(\d+)\/(\d+)$/.exec(String(kk?.tevkifatTaban || ""));
   return m ? { tevkifatli: true, tevkifatPay: Number(m[1]), tevkifatPayda: Number(m[2]) } : null;
 };
@@ -54,19 +58,26 @@ export const kartTabanKaydi = (form, onceki = form) => {
   if (onceki?.kartKomisyonu && !form?._kartYeniTaban) return tabanKaydi(onceki.kartKomisyonu);
   return satisTevkifatSecilebilirMi(form?.faturaTipi ?? form?.faturali) ? form : null;
 };
+// Taban kaydın kendisiyse (makina tahsilatı müşteri kaydını verir) ihraç kapısı kaydın satış tipiyle sınanır; geri okunan anlık
+// görüntünün tipi yoktur, normalizeSaleType(undefined) faturalı yurtiçidir.
+const tabanIhracMi = (tabanKayit) => ihracKayitliEtkinMi(tabanKayit, tabanKayit?.faturaTipi ?? tabanKayit?.faturali);
 export const kartTabanIsaretle = (kartKomisyonu, tabanKayit) => {
+  if (kartKomisyonu && tabanIhracMi(tabanKayit)) return { ...kartKomisyonu, ihracTaban: true };
   const t = satisTevkifati(tabanKayit);
   return kartKomisyonu && t ? { ...kartKomisyonu, tevkifatTaban: satisTevkifatOranEtiketi(t) } : kartKomisyonu;
 };
 // Formdaki tevkifat (kapıdan geçmiş) ile kayıtlı anlık görüntünün tabanı farklı mı (R13/2 uyarısının koşulu).
-const etkinEtiket = (kayit, saleType) => (satisTevkifatSecilebilirMi(saleType) ? satisTevkifatOranEtiketi(satisTevkifati(kayit)) : "");
+// Spec 0114 R11/2: taban etiketi ihraç işaretini de taşır; ihraç satışında tevkifat yoktur (R7), etiket "ihrac" olur.
+const etkinEtiket = (kayit, saleType) => (ihracKayitliEtkinMi(kayit, saleType) ? "ihrac"
+  : satisTevkifatSecilebilirMi(saleType) ? satisTevkifatOranEtiketi(satisTevkifati(kayit)) : "");
+const anlikEtiket = (kk) => { const t = tabanKaydi(kk); return t?.ihracKayitli ? "ihrac" : satisTevkifatOranEtiketi(satisTevkifati(t)); };
 export const kartTabaniEskiMi = (form, saleType, onceki = form) => !!onceki?.kartKomisyonu && !form?._kartYeniTaban
-  && form?.yontem === "Kredi Kartı" && etkinEtiket(form, saleType) !== satisTevkifatOranEtiketi(satisTevkifati(tabanKaydi(onceki.kartKomisyonu)));
+  && form?.yontem === "Kredi Kartı" && etkinEtiket(form, saleType) !== anlikEtiket(onceki.kartKomisyonu);
 // Makina satışı: tevkifat müşteri kaydında, kart anlık görüntüleri tahsilatlarda. Eski tabanlı kartlı tahsilat var mı.
 export const makinaKartTabaniEskiMi = (form, payments = []) => {
   const istenen = etkinEtiket(form, form?.faturali);
   return (payments || []).some(p => p && !p.deletedAt && p.customerId === form?.id && p.yontem === "Kredi Kartı" && p.kartKomisyonu
-    && satisTevkifatOranEtiketi(satisTevkifati(tabanKaydi(p.kartKomisyonu))) !== istenen);
+    && anlikEtiket(p.kartKomisyonu) !== istenen);
 };
 
 // R24: üç kalıcı not ve koşullu dördüncü (kart) uyarısı. Her biri tek sabit.
@@ -80,7 +91,9 @@ export const SATIS_TEVKIFAT_KART_UYARISI = "Kredi kartı komisyonu tevkifattan �
 export const satisTevkifatOzeti = (saleType, bedel, tarih, kdvRates, kayit) => {
   const matrah = parseMoney(bedel);
   const b = satisKdvBolumu(saleType, matrah, tarih, kdvRates, kayit);
-  return { matrah, toplamKdv: b.toplamKdv, tevkifat: b.tevkifat, bizKdv: b.bizKdv, faturaToplami: matrah + b.bizKdv, tevkifatli: b.tevkifatli };
+  return { matrah, toplamKdv: b.toplamKdv, tevkifat: b.tevkifat, bizKdv: b.bizKdv, faturaToplami: matrah + b.bizKdv, tevkifatli: b.tevkifatli,
+    // Spec 0114 R25 (plan R25): ihraç dalında iki anahtar daha; işaretsiz kayıtta şekil 0079 ile birebir aynı.
+    ...(b.ihracKayitli ? { ihracKayitli: true, ertelenenKdv: b.ertelenenKdv } : {}) };
 };
 
 // R31: KDV Karşılaştırması kartının bilgi satırı (Finans ve Giderler). Gider tarafının "Tevkifatla beyan edilecek KDV (KDV2)"

@@ -741,6 +741,22 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("toplu düzenleme (spec 0111 AC-1): kimlikler aynı, çöpe düşen yok, değerler yerinde",
     tdSon.yedekParcaSatislar.filter(x => x.batchId === 9600).map(x => [x.id, x.birimFiyat, x.miktar, !!x.deletedAt]).join("|") === "9601,150,2,false|9602,100,3,false");
 
+  // Spec 0114 AC-52, C7: ihraç kayıtlı işaret yeni izin ve sunucu kuralı getirmez. Yalnız işareti değişen yazım bugünkü
+  // düzenleme izniyle 200 döner; işaret saklanır, kapatılınca gövdede hiç bulunmaz (C5).
+  let ikA = await gUst(tdTok);
+  const ikYaz = (fn) => postData({ ...ikA, dataVersion: undefined, yedekParcaSatislar: fn(ikA.yedekParcaSatislar) }, ikA.dataVersion, tdTok);
+  check("ihraç kayıtlı (spec 0114 AC-52): yalnız işareti açan yedek parça düzenlemesi düzenleme izniyle → 200",
+    (await ikYaz(l => l.map(x => (x.id === 9601 ? { ...x, faturaTipi: "Faturalı Yurtiçi", ihracKayitli: true } : x)))).status === 200);
+  ikA = await gUst(tdTok);
+  check("ihraç kayıtlı (spec 0114 AC-49): işaret sunucuda saklandı", ikA.yedekParcaSatislar.find(x => x.id === 9601)?.ihracKayitli === true);
+  check("ihraç kayıtlı (spec 0114 AC-52, AC-50): işareti kapatan yazım → 200 ve gövdede alan yok",
+    (await ikYaz(l => l.map(x => { if (x.id !== 9601) return x; const { ihracKayitli, ...r } = x; return r; }))).status === 200
+    && !("ihracKayitli" in (await gUst(adminTok)).yedekParcaSatislar.find(x => x.id === 9601)));
+  const ekTok = (await login("evrakKalipsiz", "evrak456")).body.token;
+  const ekA = await gUst(ekTok);
+  check("ihraç kayıtlı (spec 0114 AC-52): yalnız işareti açan makina düzenlemesi müşteri düzenleme izniyle → 200",
+    (await postData({ ...ekA, dataVersion: undefined, customers: ekA.customers.map(c => (c.id === 1 ? { ...c, faturali: "Faturalı Yurtiçi", ihracKayitli: true } : c)) }, ekA.dataVersion, ekTok)).status === 200);
+
   const eSon = await gUst(adminTok);
   check("evrak (spec 0006): üretilen kayıtlar kalıcı (belge bağlarıyla)",
     eSon.yedekParcaSatislar.some(x => x.id === 9511 && x.teklifId === 9599 && x.teklifKalemId === "p1") && eSon.partSales.some(x => x.id === 9510 && x.teklifKalemId === "k1")
