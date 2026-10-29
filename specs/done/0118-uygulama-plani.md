@@ -1,6 +1,6 @@
 # 0118 Uygulama planı: Manuel Satır Ekle, kalıbın kodu ve bekleyen tamirler
 
-Spec: `specs/0118-manuel-satir-ekle-kod-ve-tamir.md`. Dal `feat/0118-manuel-satir` (`6a5e7ad` üstünde). Takım Yöneticisi planın on önerisinin hepsini onayladı (spec Karar 35–44). Yeni kalıcı alan, veri bölümü, eylem izni, sunucu kuralı ve birleştirme kuralı yok; ölü alan için göç yok (`satirlar` JSON sütunu olduğu için eski satırlardaki değer kayıtta yaşar, okunmaz).
+Spec: `specs/done/0118-manuel-satir-ekle-kod-ve-tamir.md`. Tamamlandı: uygulama commit `b395fb2`. Dal `feat/0118-manuel-satir` (`6a5e7ad` üstünde). Takım Yöneticisi planın on önerisinin hepsini onayladı (spec Karar 35–44). Yeni kalıcı alan, veri bölümü, eylem izni, sunucu kuralı ve birleştirme kuralı yok; ölü alan için göç yok (`satirlar` JSON sütunu olduğu için eski satırlardaki değer kayıtta yaşar, okunmaz).
 
 ## 1. Dosyalar
 

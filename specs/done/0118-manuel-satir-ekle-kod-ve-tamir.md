@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (plan `specs/0118-uygulama-plani.md`, plan turu Karar 35–44) |
+| **Durum** | Tamamlandı (revizyon 2: QA turu ve plan turu Karar 35–44, 2026-10-29; uygulama commit `b395fb2`; plan `specs/done/0118-uygulama-plani.md`) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** Kalıp Üretim Formu'nun "Manuel Satır Ekle" penceresi (`stock/UretimSatirEkleModal.jsx`), onu açan ekran (`stock/UretimFormu.jsx`: pencerenin prop'ları ve dönem kapısı), satır modelindeki ölü alan (`stock/uretimFormModel.js`), iki yeni metin sabiti (`lib/kalipTamiri.js`). Tamir satırı ve bekleyen tamir ölçütü `lib/kalipTamiri.js`'ten okunur, orada yeni **kural** yazılmaz. **Kanıt ve test:** `tests/manuel-satir-0118.test.js`, `tests/ui/manuel-satir-0118.test.jsx`, `tests/fixtures/0115-veri.js` (ölü alanın dördüncü kopyası), `scripts/evidence/0009-sayfa.jsx` (dört yeni ekran), `docs/evidence/0118-piksel-raporu.json`. **Belge:** `CLAUDE.md`'nin 0115 bölümü, `specs/README.md`. |
@@ -176,7 +176,7 @@ Atölye kalıbı tornaya bağlarken CNC programını kalıbın koduyla buluyor, 
 
 ### Plan turunda verilen kararlar (2026-10-29)
 
-Takım Yöneticisi uygulama planındaki on önerinin hepsini onayladı (`specs/0118-uygulama-plani.md`).
+Takım Yöneticisi uygulama planındaki on önerinin hepsini onayladı (`specs/done/0118-uygulama-plani.md`).
 
 35. **Ölü alanın taraması kelime sınırlıdır ve harita verisi gerekçeyle dışarıdadır** (AC-9, AC-30). Desen `\btorna\b`, `torna:` ve `.torna`; `src/lib/map/` taranmaz. *Gerekçe:* düz alt dize taraması harita verisindeki şehir adlarında (ör. Tornavacas) eşleşir; bölge dosyaları üretilmiş veridir, alan adı taşımaz.
 36. **Dört kanıt ekranının kaydı `UretimFormu.jsx` anahtarına yazılır; eski kodla çekildikleri için `beklenen: "degisti"`** (DoD, AC-39). *Gerekçe:* pencere `tasarim.jsx`'i içe almadığı için eşlemede anahtar alamaz (AC-39); pencereyi açan ekran sözlüğü kullanıyor ve kayıt rejimine zaten giriyor.
@@ -328,10 +328,15 @@ Takım Yöneticisi uygulama planındaki on önerinin hepsini onayladı (`specs/0
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `b395fb2` | Dal `feat/0118-manuel-satir`, taban `6a5e7ad`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (B-1–B-6, Ö-1–Ö-11, K-1–K-13, Karar 6–34), plan turu (Karar 35–44) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: üç test boşluğu: tamir satırının müşteri alanları (kurucuya `null` verilse testler geçiyordu), Karar 38'in ipucu ölçütü (alanın değerine bağlanınca geçiyordu), Karar 40'ın dize karşılaştırması (`===` ile geçiyordu). Üçüne iddia eklendi, kod değişmedi |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 442 dosya, 6020 test (Electron dahil, triyaj öncesi); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** ölü alanın düz alt dize taraması harita verisindeki şehir adlarında eşleşiyordu (Karar 35); pencere `tasarim.jsx` almadığı için kanıt eşlemesinde anahtar alamıyordu (Karar 36). Mutasyon ölçümünde ipucunun "yalnız tek kalıp" şartı ilk testlerde yakalanmadı, kodsuz kalıbı önce seçen test eklendi. Kalıbın kendi ölçüsünün manuel ölçüye üstünlüğü testte sabitlendi (X8, açık bulgu).
+
+**Görsel kanıt:** 11 ekran × 2 tema; pencerenin dört hâli değişti, öteki yedi ekran 0 piksel; taban son kodla 0 fark; hiçbir çekimde adım uyarısı yok.
+
+**Bu spec'ten çıkarılan ders:** Kurucuya geçirilen bir argümanın etkisi, kurucunun okuduğu bütün alanlar iddia edilmeden ölçülmüş sayılmaz: "satır doğdu" testi, satırın yarısı boş doğsa da geçer. Bir kuralın gerekçesi "eski veri böyle gelebilir" ise o veri fikstürde bulunmalı; yoksa kural testsiz kalır.
