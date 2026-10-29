@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (plan `specs/0117-uygulama-plani.md`, plan turu Karar 39–52) |
+| **Durum** | Tamamlandı (revizyon 2: QA turu ve plan turu Karar 39–50, uygulamada Karar 51–52, 2026-10-29; uygulama commit `ad28cce`; plan `specs/done/0117-uygulama-plani.md`) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** servis formunun kalıp bölümü (`KalipAtolyeAlani`) ve ona `calisanlar`'ı geçiren `ServiceForm`; iki kurucu (`CustomerDetailModal.saveService`, `ServisPanosu.kaydet`); `lib/kalipTamiri.js` (tek yazıcı, liste başlığı sabiti); `electron/db.cjs` (beş sütun, dört nokta); Servis ve Kargo Panosu'nun servis kartı; Kalıp Üretim Formu'nun satır eylemleri; `printTemplates.js` (servis formu satırı, çeviri varsayılanları, tamir etiketi adaptörü); Çeviriler ekranı; Makina Geçmişi servis satırı. **Kanıt ve test:** `scripts/evidence/0009-sayfa.jsx`, `docs/evidence/kanit-eslemesi.json`, `tests/kalip-tamiri-0115.test.js`, `tests/kalip-tamiri-0115-cikti.test.js`, `tests/ui/kalip-tamiri-0115*.test.jsx`, `tests/ceviri-kapsam.test.js`, `tests/server-authz.test.js`, `scripts/tests/db-roundtrip.cjs`, `scripts/tests/db-clean-install.cjs`. **Belge:** `CLAUDE.md`, `specs/README.md`. Hesap, para ve izin tarafı dokunulmaz (Ö-9'un dosya listesi). |
@@ -204,7 +204,7 @@ Analist yirmi dokuz boşluk çıkardı (6 bloklayıcı, 11 önemli, 12 küçük)
 
 ### Plan turunda verilen kararlar (2026-10-29)
 
-Takım Yöneticisi uygulama planındaki on iki önerinin hepsini onayladı (`specs/0117-uygulama-plani.md`).
+Takım Yöneticisi uygulama planındaki on iki önerinin hepsini onayladı (`specs/done/0117-uygulama-plani.md`).
 
 39. **R18/2 ile AC-50'nin çelişkisi: sevk tarihi yalnız takvimde geçerli `YYYY-AA-GG` ise kullanılır, değilse servis tarihi** (`kalipTamiri.sevkTarihi`). Gerekçe: `"abc"` truthy olduğu için `fmtTR(sevk || date)` bozuk değeri basardı; bu bir okuma kuralıdır, kayıt doğrulanmaz (R7/2 aynen).
 40. **Sevk değerlerini saf `tamirSevkKur(form)` kurar, `tamirYaz` beş anahtarı her çağrıda siler ve yalnız liste doluyken yazar.** Gerekçe: kurucular formu yayarak kayıt kurduğu için anahtarlar kutu kapalıyken de kayda taşınırdı (R9); `tamirListesiKur` deseni.
@@ -380,10 +380,15 @@ Takım Yöneticisi uygulama planındaki on iki önerinin hepsini onayladı (`spe
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `ad28cce` | Dal `feat/0117-kalip-sevki`, taban `5aa988a`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (B-1–B-6, Ö-1–Ö-11, K-1–K-12, Karar 10–38), plan turu (Karar 39–50); uygulamada Karar 51–52 |
+| **Düzeltme turu sayısı** | 1 | Triyaj: iki küçük belge bulgusu: sürüm notu güncellenmemiş istemcinin sevki sildiğini söylüyordu (yanlış: 0115'in yazıcısı öteki anahtarları geri yazar, risk yalnız eski sunucuda); R32 ve DoD'nin ekran listesi Karar 47'nin ölçümünü anmıyordu. İkisine test eklendi |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 440 dosya, 5985 test (Electron dahil, boş makinada); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** kanıt aracı sayfanın adım uyarılarını hiç aktarmıyordu, "bulunamayan adım yok" iddiası ölçülemiyordu (Karar 51); aktarım eklenince 0115'in üç ekranının adımının en baştan bozuk olduğu çıktı ve düzeltildi, 0116'nın iki adımı sonradan doğrulandı. R18/2 ile AC-50 çelişiyordu (Karar 39). Sevk satırında tek etiketli alan ızgarayı uzatıyordu (Karar 52). Düğme kalkınca `tamirKaynagi` içe aktarması da ölü kaldı.
+
+**Görsel kanıt:** 29 ekran × 2 tema; 10 ekran bilinçli değişti, 2 yeni ekran, 17 ekran 0 piksel; taban son kodla 0 fark; hiçbir çekimde adım uyarısı yok.
+
+**Bu spec'ten çıkarılan ders:** Bir kanıt aracının sessizce geçtiği hata, onun ölçtüğü her iddiayı geçersiz kılar: "uyarı yok" demeden önce uyarının çıktıya gerçekten ulaşabildiği bir kez bozuk adımla sınanmalı. Sürüm notu yazarken "güncellenmemiş istemci veriyi siler" cümlesi, eski sürümün yazıcısı okunarak doğrulanmalı; yayarak geri yazan bir yazıcı bilmediği alanı korur.

@@ -1,6 +1,6 @@
 # 0117 Uygulama planı: tamir edilen kalıbın sevki
 
-Spec: `specs/0117-tamir-edilen-kalibin-sevki.md`. Dal `feat/0117-kalip-sevki` (`5aa988a` üstünde). Takım Yöneticisi planın on iki önerisinin hepsini onayladı (spec Karar 39–50); uygulamada iki karar daha verildi (Karar 51–52). Yeni izin, veri bölümü, sunucu kuralı ve birleştirme kuralı yok (C4).
+Spec: `specs/done/0117-tamir-edilen-kalibin-sevki.md`. Tamamlandı: uygulama commit `ad28cce`. Dal `feat/0117-kalip-sevki` (`5aa988a` üstünde). Takım Yöneticisi planın on iki önerisinin hepsini onayladı (spec Karar 39–50); uygulamada iki karar daha verildi (Karar 51–52). Yeni izin, veri bölümü, sunucu kuralı ve birleştirme kuralı yok (C4).
 
 ## 1. Dosyalar
 
