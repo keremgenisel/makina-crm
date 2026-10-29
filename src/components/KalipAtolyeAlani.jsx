@@ -1,8 +1,8 @@
 import { useRef } from "react";
-import { Btn, Icon, Input } from "./ui";
-import { HataMetni, Ipucu, UyariSeridi, BolumBasligi } from "./tasarim";
+import { Btn, Icon, Input, Field } from "./ui";
+import { HataMetni, Ipucu, UyariSeridi, BolumBasligi, Segment } from "./tasarim";
 import {
-  kutuAcikMi, tamirListesi, kalipIsiKalemleri, girisAnahtari, kayitliSeciliMi, kayitliDegistir,
+  kutuAcikMi, tamirListesi, kalipIsiKalemleri, girisAnahtari, kayitliSeciliMi, kayitliDegistir, sevkFabrikaTeslimMi,
   KALIP_KUTU_ETIKETI, KALIP_KUTU_IPUCU, KALIP_ISI_ONERISI, KAYIT_BOLUMU,
 } from "../lib/kalipTamiri";
 
@@ -10,7 +10,9 @@ import {
 // (R10/2). Kutu açılınca liste boşsa kalıp işi tipli kalemler ön doldurulur (Karar 51); üç kaynak: kalemler, firmanın kayıtlı
 // kalıpları, elle giriş (R12). Bölüm kayda hiçbir şey yazmaz: geçici alanlar `_kalipAtolye`, `_tamirHatalari`; kalıcı yazım
 // iki kurucunun `tamirYaz` adımıdır (C3). Öneri yalnız `partTypeDefs` verilince çizilir (R11/2).
-export const KalipAtolyeAlani = ({ form, setForm, musteri = null, parts = [], partTypeDefs = null }) => {
+// Spec 0117 R1–R7: amber kabın sonunda kalıbın dönüşü (yedek parça satışının Teslim Şekli bölümünün aynısı, farklı adres yok).
+// Değerler form anahtarlarıdır; kayda yazan iki kurucunun `tamirYaz(…, tamirSevkKur(form))` adımıdır (R29).
+export const KalipAtolyeAlani = ({ form, setForm, musteri = null, parts = [], partTypeDefs = null, calisanlar = [] }) => {
   // Geçici anahtar: sayaç listedeki en büyük y<n>'den sonra başlar. Form taslaktan dönünce (useFormDraft) eski girişler
   // y1, y2… taşır; bileşen sayacı sıfırdan başlasa yeni giriş aynı anahtarı alır, satır hatası iki satırda görünürdü (triyaj).
   const sayac = useRef(0);
@@ -102,8 +104,39 @@ export const KalipAtolyeAlani = ({ form, setForm, musteri = null, parts = [], pa
             })}
           </div>
           {hatalar?.hata && liste.length === 0 && <div data-testid="atolye-bos-hatasi"><HataMetni>{hatalar.hata}</HataMetni></div>}
+          <SevkBolumu form={form} setForm={setForm} calisanlar={calisanlar} />
         </div>
       )}
+    </div>
+  );
+};
+
+// Spec 0117 R2–R6/2: teslim şekli boşken Kargo; Fabrika Teslim seçilince kargo firması ve takip numarası temizlenir ve çizilmez,
+// tarih ve kişi alanlarının etiketi değişir. Hiçbir alan zorunlu değil, doğrulanmaz (R7, R7/2).
+const SevkBolumu = ({ form, setForm, calisanlar }) => {
+  const fabrika = sevkFabrikaTeslimMi(form);
+  const yaz = (alan) => (e) => { const v = e.target.value; setForm(p => ({ ...p, [alan]: v })); };
+  const adlar = (calisanlar || []).map(c => c?.ad).filter(Boolean);
+  return (
+    <div data-testid="kalip-sevk" style={{ borderTop: "1px dashed var(--ambBr, #fde68a)", paddingTop: 10 }}>
+      <BolumBasligi>{KAYIT_BOLUMU.sevk}</BolumBasligi>
+      <Field label="Teslim Şekli">
+        <Segment kip="dugme" ariaLabel="Kalıp Teslim Şekli" value={fabrika}
+          options={[{ value: true, label: "🏭 Fabrika Teslim" }, { value: false, label: "📦 Kargo" }]}
+          onChange={ft => setForm(p => ({ ...p, kalipFabrikaTeslim: ft, ...(ft ? { kalipKargoFirma: "", kalipKargoTakipNo: "" } : {}) }))} />
+      </Field>
+      <div style={{ display: "grid", gridTemplateColumns: fabrika ? "1fr" : "1.4fr 1.4fr 1fr", gap: 8, marginTop: 8 }}>
+        {!fabrika && <Field label="Kargo Firması"><Input data-testid="kalip-sevk-firma" aria-label="Kalıp kargo firması" value={form.kalipKargoFirma || ""} placeholder="Kargo firması" onChange={yaz("kalipKargoFirma")} /></Field>}
+        {!fabrika && <Field label="Takip No"><Input data-testid="kalip-sevk-takip" aria-label="Kalıp kargo takip no" value={form.kalipKargoTakipNo || ""} placeholder="Takip no" onChange={yaz("kalipKargoTakipNo")} /></Field>}
+        <Field label={fabrika ? "Teslim Tarihi" : "Kargo Tarihi"}>
+          <Input type="date" data-testid="kalip-sevk-tarih" value={form.kalipKargoTarih || ""} onChange={yaz("kalipKargoTarih")} />
+        </Field>
+      </div>
+      <Field label={fabrika ? "Teslim Eden Kişi" : "Kargoyu Veren Kişi"}>
+        <Input list="kalip-sevk-kisi-listesi" data-testid="kalip-sevk-kisi" value={form.kalipKargoSorumlusu || ""} placeholder="Seçin veya yazın..."
+          onChange={yaz("kalipKargoSorumlusu")} />
+        <datalist id="kalip-sevk-kisi-listesi">{adlar.map(a => <option key={a} value={a} />)}</datalist>
+      </Field>
     </div>
   );
 };

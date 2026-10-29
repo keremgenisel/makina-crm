@@ -1427,7 +1427,10 @@ const EKRANLAR = {
   "giderler-0114-kdv": [<GiderEkrani satis={SATIS_0114} />, ["tikla:KDV Karşılaştırması", "kaydir:KDV Karşılaştırması"]], // spec 0114 R18/2
   // Spec 0115: kalıp tamiri. Veri tests/fixtures/0115-veri.js (ekran testleriyle aynı küme).
   "servis-formu-0115-kapali": [servis0115({}), ["kaydir:Kalıp atölyeye girecek"]],
-  "servis-formu-0115-acik": [servis0115({}), ["tikla:Kalıp atölyeye girecek", "kaydir:Atölyeye girecek"]],
+  // Spec 0117: kalıbın dönüşü (sevk bölümü) Kargo ve Fabrika Teslim kipinde, alanlar dolu.
+  "servis-formu-0117-sevk": [servis0115({ atolyeKaliplari: [{ id: 1, ad: "100_ERKEK KALIPLAR REVİZE", olcu: "" }, { id: 2, ad: "HAMBURGER", olcu: "Ø98" }], kalipKargoFirma: "Aras Kargo", kalipKargoTakipNo: "TK-778899", kalipKargoTarih: "2026-10-25", kalipKargoSorumlusu: "Ayşe" }), ["kaydir:Kalıbın dönüşü"]],
+  "servis-formu-0117-fabrika": [servis0115({ atolyeKaliplari: [{ id: 1, ad: "100_ERKEK KALIPLAR REVİZE", olcu: "" }, { id: 2, ad: "HAMBURGER", olcu: "Ø98" }], kalipFabrikaTeslim: true, kalipKargoTarih: "2026-10-25", kalipKargoSorumlusu: "Ayşe" }), ["kaydir:Kalıbın dönüşü"]],
+  "servis-formu-0115-acik": [servis0115({}), ["tikla:Kalıp atölyeye girecek", "kaydir:Servisin kalıp işi kalemleri"]],
   "servis-formu-0115-kayitli": [servis0115({}), ["tikla:Kalıp atölyeye girecek", "tikla:HAMBURGER · Ø98", "kaydir:Firmanın kayıtlı kalıpları"]],
   "servis-formu-0115-bos-hata": [<Customers customers={V115.CUSTOMERS} setCustomers={bos} services={V115.SERVICES} setServices={bos} partSales={V115.PART_SALES} setPartSales={bos} payments={[]}
     dealers={[]} parts={PARCA_0115} kdvRates={V115.KDV} gorusmeler={[]} dosyalar={[]} partTypeDefs={TIP_0115} showToast={bos} setYedekParcaSatislar={bos} initialDetailId={1} />,
@@ -1440,7 +1443,7 @@ const EKRANLAR = {
   "uretim-formu-0115-tamir": [<UretimFormu uretimFormlari={[FORM_0115]} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES}
     services={SERVIS_0115} kalipDefs={V115.KALIP_DEFS} showToast={bos} />, ["satir-ilk-dugme:1"]],
   "uretim-formu-0115-bekleyen": [<UretimFormu uretimFormlari={V115.URETIM_FORMLARI} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES}
-    services={SERVIS_0115} kalipDefs={V115.KALIP_DEFS} showToast={bos} />, ["satir-ilk-dugme:1", "kaydir:Bekleyen Tamirleri Getir"]],
+    services={SERVIS_0115} kalipDefs={V115.KALIP_DEFS} showToast={bos} />, ["satir-ilk-dugme:1", "kaydirgenis:Bekleyen Tamirleri Getir"]],
   "uretim-formu-0115-kopuk": [<UretimFormu uretimFormlari={[FORM_0115]} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES}
     services={[]} kalipDefs={V115.KALIP_DEFS} showToast={bos} />, ["satir-ilk-dugme:1"]],
   "uretim-formu-0115-yazdir": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: uretimFormuHtml(FORM_0115) }} />, []],
@@ -1449,8 +1452,8 @@ const EKRANLAR = {
   "servis-pano-0115-kiosk": [pano0115({ kiosk: true, serverPermissions: KIOSK_0115, setUretimFormlari: null, uretimYetki: false }), ["surukle-servis:41>Tamamlandı"]],
   "musteri-detay-0115": [<Customers customers={V115.CUSTOMERS} setCustomers={bos} services={SERVIS_0115} setServices={bos} partSales={V115.PART_SALES} setPartSales={bos} payments={[]}
     dealers={[]} parts={PARCA_0115} kdvRates={V115.KDV} gorusmeler={[]} dosyalar={[]} partTypeDefs={TIP_0115} uretimFormlari={[FORM_0115]} kalipDefs={V115.KALIP_DEFS}
-    factory={V115.FAB} initialDetailId={1} />, ["kaydir:Atölyeye alınan kalıplar"]],
-  "servis-formu-yazdir-0115": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0115[0], V115.CUSTOMERS, V115.KDV, { factory: V115.FAB }) }} />, ["kaydir:ATÖLYEYE ALINAN KALIPLAR"]],
+    factory={V115.FAB} initialDetailId={1} />, ["kaydir:Servis gören kalıplar"]],
+  "servis-formu-yazdir-0115": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0115[0], V115.CUSTOMERS, V115.KDV, { factory: V115.FAB }) }} />, ["kaydirgenis:SERVİS GÖREN KALIPLAR"]],
   "kargo-etiketi-0115-tamir": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: (() => { const v = tamirEtiketVerisi(SERVIS_0115[0], { customers: V115.CUSTOMERS, factory: V115.FAB }); return buildKargoEtiketiHtml(v.gonderen, v.alici, v.icerik, v.opts); })() }} />, []],
   "aylik-rapor-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildAylikRaporHtml(hesaplaAylikRapor(SATIS_0079, "2026-09", { factoryName: "Altuntaş Makina" }), { name: "Altuntaş Makina" }) }} />, ["kaydir:TEVKİFATLI SATIŞLAR"]],
   "servis-formu-yazdir-0079": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildServiceFormHtml(SERVIS_0079[0], MUSTERI_0079, undefined, {}) }} />, []],
@@ -1557,6 +1560,15 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
         const s = [...document.querySelectorAll("div, span, li, button")].filter(e => e.textContent.trim() === secenek && e.children.length <= 1).pop();
         if (s) { s.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })); s.click(); } else console.warn("seçenek yok: " + metin);
       } else console.warn("arama kutusu yok: " + metin);
+      await bekle(300);
+      continue;
+    }
+    // Spec 0117 Karar 51: `kaydir:` td, th ve düğme içinde aramaz (değiştirilmez, başka ekranların hedefi kaymasın); yazdırma
+    // tablosunun başlık hücresine ve düğmelere `kaydirgenis:` gider.
+    if (metin.startsWith("kaydirgenis:")) {
+      const aranan = metin.slice(12);
+      const hedef = [...document.querySelectorAll("label, div, span, h2, h3, td, th, button")].filter(e => e.textContent.trim().startsWith(aranan) && e.children.length <= 3).pop();
+      if (hedef) hedef.scrollIntoView({ block: "center" }); else console.warn("kaydırılamadı: " + metin);
       await bekle(300);
       continue;
     }

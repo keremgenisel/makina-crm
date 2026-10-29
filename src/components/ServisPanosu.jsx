@@ -18,8 +18,8 @@ import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
 import { yeniYedekParcaSatisCoklu, kargoPlanlandiMi } from "../lib/yedekParcaSatis";
 import { useKilitListesi } from "../hooks/useKilitListesi";
 import { useLock } from "../hooks/useLock";
-import { printServiceForm as printServiceFormTemplate } from "../lib/printTemplates";
-import { tamirDogrula, tamirListesiKur, tamirYaz, tamirListesi, tamirSatirHaritasi, tamirOzeti, tamirFormIdleri, tamirlariTamamla,
+import { printServiceForm as printServiceFormTemplate, tamirEtiketYazdir } from "../lib/printTemplates";
+import { tamirDogrula, tamirListesiKur, tamirYaz, tamirSevkKur, kalipAtolyedeMi, tamirListesi, tamirSatirHaritasi, tamirOzeti, tamirFormIdleri, tamirlariTamamla,
   TAMIR_BILDIRIMI, TAMIR_ONAY_BASLIGI, tamirOnayMetni, TAMIR_ONAY_DUGMESI, TAMIR_ONAY_KAPAT, TAMIR_KILITLI, TAMIR_ISARETLENDI } from "../lib/kalipTamiri";
 import { TamirRozeti } from "./TamirRozeti";
 
@@ -583,7 +583,7 @@ export const ServisPanosu = ({
       kartKomisyonu: form.yontem === "Kredi Kartı" ? kartTabanIsaretle(yansitSnap || kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, kkAyar, kkTarih, false), kartTaban) : null }, form, form.faturaTipi);
     // Spec 0115 R7/3, C3: kimlikler kurucuda, tek yazıcı tamirYaz (kutu kapalıysa alan kayıtta yok).
     if (svModal === "add" || tamirListesi(form).some(g => g.id == null)) bumpId(customers, services);
-    const rec = tamirYaz(recTevkifat, tamirListesiKur(form, uid));
+    const rec = tamirYaz(recTevkifat, tamirListesiKur(form, uid), tamirSevkKur(form));
     if (svModal === "add") {
       const newId = uid();
       // Yeni servis "Bekliyor" ile açılır → fabrikaya giriş anı damgalanır (elle girilmişse korunur).
@@ -703,6 +703,11 @@ export const ServisPanosu = ({
               <option value="">Kim yapıyor?</option>
               {teknListe.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
+            {/* Spec 0117 R12–R14: tamir edilen kalıbın etiketi; durum kapısı yok, kalıpsız ya da müşterisi çözülmeyen serviste yok. */}
+            {kalipAtolyedeMi(sv) && custMap[Number(sv.customerId)] && (
+              <button type="button" title="Kargo Etiketi Yazdır" onClick={() => tamirEtiketYazdir(sv, { customers, factory })}
+                style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Etiket</button>
+            )}
             {tamamlandi && (
               <button type="button" title="Servis Formu yazdır" onClick={() => printServiceForm(sv)}
                 style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Yazdır</button>

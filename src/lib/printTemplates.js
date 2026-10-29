@@ -2,7 +2,7 @@ import LOGO from "../assets/logo.avif?inline";
 import { sayi, st, gecenAyEki, altBaslik, gun, detayTablo, rozet, rozetSatiri, bolum, belgeAcilis } from "./raporSunumu";
 import { today, todayTR, fmtTR, fmtCur, parseMoney, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster, satisKdvBolumu, UCRETSIZ_IBARESI } from "./utils";
 import { COUNTRY_EN } from "./constants";
-import { tamirListesi, tamirEtiketIcerigi } from "./kalipTamiri";
+import { tamirListesi, tamirEtiketIcerigi, sevkTarihi, sevkTeslimSekli } from "./kalipTamiri";
 import { IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_SATIRLARI, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, ihracRaporAdet,
   IHRAC_DETAY_BASLIK, IHRAC_DETAY_SUTUNLARI, TEVKIFAT_DETAY_BASLIK, TEVKIFAT_DETAY_SUTUNLARI } from "./ihracKayitli";
 
@@ -85,7 +85,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     yapilanIslemLabel: "Yapılan İşlem",
     girisLabel: "Servise Giriş Tarihi",
     teknisyenLabel: "Teknisyen",
-    atolyeKaliplariLabel: "ATÖLYEYE ALINAN KALIPLAR", // spec 0115 R35/2: yalnız kalıp varken basılır
+    atolyeKaliplariLabel: "SERVİS GÖREN KALIPLAR", // spec 0115 R35/2: yalnız kalıp varken basılır; spec 0117 R21: yeni ad, anahtar aynı
     servisUcretiLabel: "Servis Ücreti",
     parcaUcretiLabel: "Parça Ücreti",
     toplamLabel: "Toplam",
@@ -133,7 +133,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     yapilanIslemLabel: "Work Performed",
     girisLabel: "Service Entry Date",
     teknisyenLabel: "Technician",
-    atolyeKaliplariLabel: "MOLDS TAKEN INTO WORKSHOP",
+    atolyeKaliplariLabel: "SERVICED MOLDS",
     servisUcretiLabel: "Service Fee",
     parcaUcretiLabel: "Parts Fee",
     toplamLabel: "Total",
@@ -777,13 +777,14 @@ export function kalipEtiketVerisi(grup, { customers = [], factory = null } = {})
 }
 
 // Spec 0115 R37, R37/2, Karar 40: altıncı durum, tamir edilen kalıbın müşteriye dönüşü. Alıcı müşterinin kayıtlı adresi,
-// içerik servisin bütün listesi ("ad · Ölçü"), teslim şekli "Kargo", tarih servis tarihi; ek ibare ve kargo takip alanı yok.
+// içerik servisin bütün listesi ("ad · Ölçü"); ek ibare ve kargo takip alanı yok. Spec 0117 R17–R19/2: teslim şekli ve tarih
+// kayıttan (boşsa "Kargo" ve servis tarihi); `opts` yalnız iki anahtar taşır, kargo firması ve takip numarası girmez.
 export function tamirEtiketVerisi(servis, { customers = [], factory = null } = {}) {
   const s = servis || {};
   const c = customers.find(x => x.id === Number(s.customerId)) || {};
   const alici = { firma: c.name || "(müşteri)", yetkili: c.yetkili1Ad || "", tel: c.phone || c.yetkili1Tel || "",
     adres: c.adres || "", city: c.city || "", ilce: c.ilce || "", country: c.country || "" };
-  return { gonderen: etiketGonderen(factory), alici, icerik: tamirEtiketIcerigi(s), opts: { teslimSekli: "Kargo", tarih: fmtTR(s.date) } };
+  return { gonderen: etiketGonderen(factory), alici, icerik: tamirEtiketIcerigi(s), opts: { teslimSekli: sevkTeslimSekli(s), tarih: fmtTR(sevkTarihi(s)) } };
 }
 
 // Saf HTML üreteci. veri = { gonderen, alici, icerik[], opts }.

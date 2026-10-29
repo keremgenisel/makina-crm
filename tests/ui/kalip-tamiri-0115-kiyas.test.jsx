@@ -76,5 +76,9 @@ describe("Spec 0115 AC-77: işaretsiz servis düzenlemesinin kaydedilen gövdesi
     if (yaz) { kaydet("servisGovdesi", servisler); return; }
     expect(servisler).toEqual(once().servisGovdesi);
     expect(servisler.some(x => "atolyeKaliplari" in x)).toBe(false);
+    // Spec 0117 AC-13, AC-56: sevk bilgisi taşımayan serviste beş sevk anahtarı da gövdeye girmez.
+    for (const k of ["kalipFabrikaTeslim", "kalipKargoFirma", "kalipKargoTakipNo", "kalipKargoTarih", "kalipKargoSorumlusu"]) {
+      expect(servisler.some(x => k in x), k).toBe(false);
+    }
   });
 });

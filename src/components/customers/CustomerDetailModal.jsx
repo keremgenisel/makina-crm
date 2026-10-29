@@ -48,7 +48,7 @@ import { MachineTimeline } from "./detail/MachineTimeline";
 import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle, kalipGuncelle } from "../../lib/kalipSatisi";
 import { durumYaz, makinaDurumuOf, MAKINA_DURUM_ADLARI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
 import { MakinaDurumuSecici } from "./DurumSecici";
-import { tamirDogrula, tamirListesiKur, tamirYaz, tamirListesi } from "../../lib/kalipTamiri";
+import { tamirDogrula, tamirListesiKur, tamirYaz, tamirSevkKur, tamirListesi } from "../../lib/kalipTamiri";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -225,7 +225,7 @@ export const CustomerDetailModal = ({
       kartKomisyonu: svForm.yontem === "Kredi Kartı" ? kartTabanIsaretle(yansitSnap || kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, kkAyar, kkTarih, false), kartTaban) : null }, svForm, svForm.faturaTipi);
     // Spec 0115 R7/3, C3: kimlikler burada (kurucu) verilir, tek yazıcı tamirYaz; kutu kapalıysa alan kayıtta yok (R9).
     if (svModal === "add" || tamirListesi(svForm).some(g => g.id == null)) bumpId(customers, services);
-    const rec = tamirYaz(recTevkifat, tamirListesiKur(svForm, uid));
+    const rec = tamirYaz(recTevkifat, tamirListesiKur(svForm, uid), tamirSevkKur(svForm));
     if (svModal === "add") {
       const newId = uid();
       // Yeni servis "Bekliyor" ile açılır → Servis Panosu zaman takibi için fabrikaya giriş anını damgala.

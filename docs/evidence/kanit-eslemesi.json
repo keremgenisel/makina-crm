@@ -7495,6 +7495,22 @@
         "rapor": "docs/evidence/0108-taban-piksel-raporu.json",
         "ekran": "uretim-formu-0108-sil-onay-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "uretim-formu-0115-tamir",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0117 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "uretim-formu-0115-bekleyen",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "uretim-formu-0115-kopuk",
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/detail/MachineTimeline.jsx": [
@@ -7572,6 +7588,12 @@
         "rapor": "docs/evidence/0114b-taban-piksel-raporu.json",
         "ekran": "musteri-detay-0114",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "musteri-detay-0115",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0117 Karar 7"
       }
     ],
     "src/components/customers/detail/CustomerFilesSection.jsx": [
@@ -10162,6 +10184,47 @@
       {
         "rapor": "docs/evidence/0115-taban-piksel-raporu.json",
         "ekran": "servis-formu-0115-ad-hata",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "servis-formu-0115-acik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0117 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "servis-formu-0115-kayitli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0117 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "servis-formu-0115-bos-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0117 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "servis-formu-0115-ad-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0117 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "servis-formu-0117-sevk",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0117 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "servis-formu-0117-fabrika",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0117 Karar 5"
+      },
+      {
+        "rapor": "docs/evidence/0117-piksel-raporu.json",
+        "ekran": "servis-formu-0115-kapali",
         "beklenen": "ayni"
       }
     ]

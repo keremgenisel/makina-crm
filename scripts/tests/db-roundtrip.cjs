@@ -118,10 +118,11 @@ dbmod.writeBlobToDb({
   services: [{ id: 2, customerId: 500, type: "Garanti İçi", odendi: false, hesapId: 97, tevkifatli: true, tevkifatPay: 7, tevkifatPayda: 10, // spec 0079 AC-29
     ihracKayitli: true, // spec 0114 Ö-11: servis tablosunda sütun yok, işaret tutunamaz
     atolyeKaliplari: [{ id: 91, ad: "100_ERKEK KALIPLAR REVİZE", olcu: "" }, { id: 92, ad: "HAMBURGER", olcu: "Ø98" }], // spec 0115 AC-67
+    kalipFabrikaTeslim: false, kalipKargoFirma: "Aras", kalipKargoTakipNo: "TK-7788", kalipKargoTarih: "2026-07-21", kalipKargoSorumlusu: "Ayşe", // spec 0117 AC-9
     durum: "Yapılıyor", tech: "Ahmet Yılmaz", panoGizli: false,
     fabrikaGirisZamani: "2026-07-20T09:15:00", bakimBaslangicZamani: "2026-07-20T11:30:00", bitisZamani: "2026-07-20T14:45:00",
     islemFirma: "Diğer", islemFirmaAd: "Harici Servis Ltd", islemFirmaYetkili: "Ahmet Yılmaz", islemFirmaTel: "05551234567", islemFirmaAdres: "Organize Sanayi 5. Cadde No:12", islemFirmaUlke: "Türkiye", islemFirmaSehir: "Bursa" },
-    { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true,
+    { id: 3, customerId: 500, type: "Periyodik Bakım", odendi: true, durum: "Tamamlandı", tech: "Mehmet Demir", panoGizli: true, kalipFabrikaTeslim: true, // spec 0117 AC-39
       // Servise ödeme yöntemi: kredi kartı + taksit komisyonu snapshot (satış tarafıyla aynı alanlar).
       yontem: "Kredi Kartı", taksitSayisi: 3, kartKomisyonu: { taksit: 3, oran: 7.47, toplamKesinti: 1435, blokajGun: 0, hesabaGecis: "2026-07-20", yansitildi: false },
       // Değişen parçalar JSON olarak saklanır (miktar/fiyat dahil); parça ücreti = miktar × fiyat = 18000.
@@ -468,6 +469,25 @@ check("spec 0115 AC-27: boş liste NULL yazılır (sütunda değer yok)", (() =>
   c.close();
   dbmod.migrateFromJsonIfNeeded();
   return r.find(x => x.id === 3)?.atolyeKaliplari === null && typeof r.find(x => x.id === 2)?.atolyeKaliplari === "string";
+})());
+// Spec 0117 AC-9, AC-11, AC-39, C3: kalıbın dönüşü beş sütunda gidip gelir. Teslim şekli yalnız true iken 1 (Kargo ve yok NULL);
+// boş değer gövdeye girmez (false da değil); alanı bilmeyen istemcinin gövdesi bölümü değişmiş göstermez.
+check("spec 0117 AC-9 / AC-11 / AC-39: sevk alanları roundtrip; false ve boş değer gövdede yok", (() => {
+  const s2 = (blob.services || []).find(x => x.id === 2), s3 = (blob.services || []).find(x => x.id === 3);
+  const alanlar = ["kalipFabrikaTeslim", "kalipKargoFirma", "kalipKargoTakipNo", "kalipKargoTarih", "kalipKargoSorumlusu"];
+  const others = (blob.services || []).filter(x => x.id !== 2 && x.id !== 3);
+  return s2?.kalipKargoFirma === "Aras" && s2?.kalipKargoTakipNo === "TK-7788" && s2?.kalipKargoTarih === "2026-07-21" && s2?.kalipKargoSorumlusu === "Ayşe"
+    && !("kalipFabrikaTeslim" in s2) && s3?.kalipFabrikaTeslim === true && alanlar.slice(1).every(a => !(a in s3))
+    && others.every(x => alanlar.every(a => !(a in x)));
+})());
+check("spec 0117 AC-39: teslim şekli sütunu Fabrika Teslim'de 1, Kargo'da NULL", (() => {
+  const dbPath = dbmod.getDbPath();
+  dbmod.close();
+  const c = new Database(dbPath);
+  const r = c.prepare(`SELECT id, kalipFabrikaTeslim, kalipKargoFirma FROM services ORDER BY id`).all();
+  c.close();
+  dbmod.migrateFromJsonIfNeeded();
+  return r.find(x => x.id === 3)?.kalipFabrikaTeslim === 1 && r.find(x => x.id === 2)?.kalipFabrikaTeslim === null && r.find(x => x.id === 3)?.kalipKargoFirma === null;
 })());
 // Spec 0114 AC-49, AC-50, C5: ihraç kayıtlı işaret üç tabloda roundtrip eder; kapalı kayıtta anahtar HİÇ yok (false da değil);
 // servis kaydında sütun olmadığı için işaret tutunamaz (plan Ö-11); alanı bilmeyen istemcinin gövdesi bölümü değişmiş göstermez.

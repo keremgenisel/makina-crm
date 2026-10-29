@@ -12,8 +12,19 @@ const GENISLIK = 1440;
 const bekle = (ms) => new Promise(r => setTimeout(r, ms));
 
 let win = null;
+// Spec 0117 Karar 51: sayfa bulunamayan adımı yalnız console.warn ile geçiyordu ve uyarı ana sürece hiç gelmiyordu; "adım
+// bulunamadı" ölçülemiyordu. Sayfanın uyarıları toplanır, satıra `adimUyarilari` olarak yazılır ve özet sayıda sayılır.
+let sayfaUyarilari = [];
 async function yukle(hash, yukseklik = 900) {
-  if (!win) win = new BrowserWindow({ show: false, width: GENISLIK, height: yukseklik, webPreferences: { contextIsolation: true, offscreen: false } });
+  if (!win) {
+    win = new BrowserWindow({ show: false, width: GENISLIK, height: yukseklik, webPreferences: { contextIsolation: true, offscreen: false } });
+    win.webContents.on("console-message", (e, level, message) => {
+      const seviye = e?.level ?? level, metin = e?.message ?? message;
+      // Electron'un geliştirme kipi güvenlik uyarısı her sayfada düşer; adımla ilgisi yok.
+      if ((seviye === "warning" || seviye === 2) && !String(metin).includes("Electron Security Warning")) sayfaUyarilari.push(String(metin));
+    });
+  }
+  sayfaUyarilari = [];
   win.setContentSize(GENISLIK, yukseklik);
   await win.loadURL("about:blank");
   await win.loadFile(html, { hash });
@@ -37,6 +48,7 @@ app.whenReady().then(async () => {
   fs.mkdirSync(cikis, { recursive: true });
   const rapor = [];
   let cizimHatasi = 0;
+  let adimUyarisi = 0;
   try {
     await yukle("ekran=giderler-rapor&tema=light");
     // EKRAN_ATLA="a,b": "önce" çekiminde henüz var olmayan (yalnız sonra) ekranları atlamak için.
@@ -63,6 +75,7 @@ app.whenReady().then(async () => {
         const satir = { ad, boyut: `${img.getSize().width}x${img.getSize().height}` };
         if (durum.hata || durum.metin < 20) { satir.cizimHatasi = durum.hata || "boş ekran"; cizimHatasi++; }
         if (durum.seritler.length) satir.seritler = durum.seritler; // hangi uyarı şeritlerinin çizildiği (kapsam kanıtı)
+        if (sayfaUyarilari.length) { satir.adimUyarilari = [...new Set(sayfaUyarilari)]; adimUyarisi++; }
         if (karsi) {
           const eskiYol = path.join(karsi, ad);
           if (!fs.existsSync(eskiYol)) satir.fark = "önce görüntüsü yok";
@@ -77,6 +90,7 @@ app.whenReady().then(async () => {
   } catch (e) { console.error("HATA:", (e && e.stack) || e); app.exit(1); return; }
   const parcaAd = /^(\d+)\/(\d+)$/.exec(process.env.EKRAN_PARCA || "");
   fs.writeFileSync(path.join(cikis, parcaAd ? `rapor-${parcaAd[1]}.json` : "rapor.json"), JSON.stringify(rapor, null, 2));
+  if (adimUyarisi) console.error(`${adimUyarisi} görüntüde sayfa uyarısı var (bkz. rapor.json adimUyarilari)`);
   if (cizimHatasi) { console.error(`${cizimHatasi} ekran çizilemedi (bkz. rapor.json cizimHatasi)`); app.exit(1); return; }
   console.log("BITTI " + rapor.length);
   app.exit(0);

@@ -232,7 +232,8 @@ describe("Spec 0115 kaynak taramaları", () => {
     expect(oku("src/lib/musteriDurumu.js")).not.toMatch(/servis_tamir|kalipTamiri/);
   });
   it("C6: yeni eylem izni ve sunucu kuralı yok", () => {
-    expect(oku("electron/serverAuth.cjs")).not.toMatch(/atolyeKaliplari|kalipIsi|servis_tamir/);
+    // Spec 0117 ile (R31, AC-52): beş sevk alanı da sunucuda anılmaz.
+    expect(oku("electron/serverAuth.cjs")).not.toMatch(/atolyeKaliplari|kalipIsi|servis_tamir|kalipFabrikaTeslim|kalipKargoFirma|kalipKargoTakipNo|kalipKargoTarih|kalipKargoSorumlusu/);
     expect(oku("src/components/settings/serverPermissionDefs.js")).not.toMatch(/tamir/i);
   });
 });

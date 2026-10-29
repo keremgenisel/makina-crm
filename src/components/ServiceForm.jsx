@@ -475,7 +475,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
       )}
 
       {/* Spec 0115: kalıbın kendisi atölyeye girecek mi (her servis türünde ve onarım yerinde, R10/2) */}
-      <KalipAtolyeAlani form={form} setForm={setForm} musteri={selectedCust} parts={parts} partTypeDefs={partTypeDefs} />
+      <KalipAtolyeAlani form={form} setForm={setForm} musteri={selectedCust} parts={parts} partTypeDefs={partTypeDefs} calisanlar={calisanlar} />
 
       {(svUcretliTipi || !parcaUcretsizMi) && (
         <div style={{ display: "grid", gridTemplateColumns: svUcretliTipi ? "1fr 1fr" : "1fr", gap: 12 }}>

@@ -11,9 +11,8 @@ import { buildPrintHtml, groupByMusteri, fmtDate, uretimFormDonemMetni } from ".
 import { emptyRow } from "./uretimFormModel";
 import { UretimSatirEkleModal } from "./UretimSatirEkleModal";
 import { musteriKalibiBekliyorMu, extraKalipBekliyorMu, uretimFormHaritasi, formSilinceDonenSayisi, formSilmeDonusMetni } from "../../lib/musteriDurumu";
-import { tamirSatirHaritasi, bekleyenTamirler, tamirSatiriKur, tamirAnahtari, tamirSatiriMi, tamirKaynagi, tamirKaynakMetni, turAdi,
+import { tamirSatirHaritasi, bekleyenTamirler, tamirSatiriKur, tamirAnahtari, tamirSatiriMi, tamirKaynakMetni, turAdi,
   bekleyenTamirDugmesi, TAMIR_YOK, TAMIR_EKLENDI, TAMIR_KAYNAK_TIPI } from "../../lib/kalipTamiri";
-import { tamirEtiketYazdir } from "../../lib/printTemplates";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -316,12 +315,6 @@ export function UretimFormu({
     setForm(f => ({ ...f, satirlar: [...f.satirlar, ...satirlar] })); // R24/2: listenin sonuna
     showToast(TAMIR_EKLENDI(satirlar.length));
   };
-  // R38/2, Karar 41: kaynağı kopmuş ya da müşterisi çözülemeyen satırda etiket yok.
-  const tamirEtiketi = (r) => {
-    const sv = tamirKaynagi(r, services);
-    if (!sv || !customers.some(c => c.id === Number(sv.customerId))) return null;
-    return () => tamirEtiketYazdir(sv, { customers, factory });
-  };
 
   // Satır ekleme modalı artık kendi state'iyle bağımsız bir alt-bileşen (UretimSatirEkleModal).
   // Spec 0115 triyajı: başka canlı formda satırı olan kaynaklar (manuel pencere onları seçtirmez).
@@ -487,12 +480,6 @@ export function UretimFormu({
                         </button>
                       </td>
                       <td style={{ ...tdSt, textAlign: "center", whiteSpace: "nowrap" }}>
-                        {tamirEtiketi(r) && (
-                          <button type="button" onClick={tamirEtiketi(r)} title="Kargo Etiketi" aria-label="Kargo Etiketi"
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n500, #64748b)", padding: 2, lineHeight: 1 }}>
-                            <Icon name="print" size={15} />
-                          </button>
-                        )}
                         <button onClick={() => deleteRow(r.id)}
                           style={{ background: "none", border: "none", cursor: "pointer", color: "var(--red500, #ef4444)", padding: 2, lineHeight: 1 }}>
                           <Icon name="trash" size={15} />

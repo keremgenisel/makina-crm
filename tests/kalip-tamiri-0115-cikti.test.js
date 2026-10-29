@@ -14,19 +14,23 @@ const BASLIKLAR = ["SEVK / KARGO ETİKETİ", "GÖNDEREN", "ALICI", "İÇERİK", 
 const vArgs = (v) => [v.gonderen, v.alici, v.icerik, v.opts];
 
 describe("Spec 0115 Servis Formu çıktısı (R35, R35/2)", () => {
+  // Spec 0117 ile: başlık "SERVİS GÖREN KALIPLAR" / "SERVICED MOLDS" (R21, R22; çeviri anahtarı aynı, C11).
   it("AC-59: kalıp varken etiket satırı basılır, girişler ad · Ölçü biçiminde", () => {
     const h = buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB });
-    expect(h).toContain("<tr><th>ATÖLYEYE ALINAN KALIPLAR</th><td>100_ERKEK KALIPLAR REVİZE · HAMBURGER · Ölçü: Ø98</td></tr>");
+    expect(h).toContain("<tr><th>SERVİS GÖREN KALIPLAR</th><td>100_ERKEK KALIPLAR REVİZE · HAMBURGER · Ölçü: Ø98</td></tr>");
     const en = buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB, translations: { _lang: "EN" } });
-    expect(en).toContain("MOLDS TAKEN INTO WORKSHOP");
+    expect(en).toContain("SERVICED MOLDS");
   });
+  // Spec 0117 ile (AC-47): olumsuz iddia yeni başlıkla; eski başlık her veride yok olduğu için bekçi olmaktan çıkmıştı.
   it("AC-60: kalıp yokken satır hiç basılmaz", () => {
     const h = buildServiceFormHtml(SERVICES[0], CUSTOMERS, KDV, { factory: FAB });
-    expect(h).not.toContain("ATÖLYEYE ALINAN KALIPLAR");
+    expect(h).not.toContain("SERVİS GÖREN KALIPLAR");
+    expect(buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB })).toContain("SERVİS GÖREN KALIPLAR"); // iddia boşa düşmesin
   });
   it("AC-99: çeviri anahtarı dört yerde (TR, EN, Çeviriler ekranı, kapsam testi ceviri-kapsam.test.js)", () => {
-    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("ATÖLYEYE ALINAN KALIPLAR");
-    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("MOLDS TAKEN INTO WORKSHOP");
+    // Spec 0117 ile: değerler yeni ad, anahtarın adı aynı (R23/2, C11).
+    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("SERVİS GÖREN KALIPLAR");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("SERVICED MOLDS");
     expect(GROUPS.filter(g => g.ns === "servis").flatMap(g => g.keys.map(k => k.key))).toContain("atolyeKaliplariLabel");
   });
 });
@@ -47,6 +51,8 @@ describe("Spec 0115 Kargo Etiketi altıncı durum (R37, R37/2, C10)", () => {
     expect(v.alici).toMatchObject({ firma: "Anadolu Köfte", adres: "Mevlana Cad. 10", city: "Konya", tel: "0332 111 11 11", yetkili: "Ali Bey" });
     expect(v.gonderen.ad || v.gonderen.name || "").toMatch(/Altuntaş/);
   });
+  // Spec 0117 ile: teslim şekli ve tarih kayıttan okunur (R17, R18); sevk alanı taşımayan bu serviste varsayılanlar aynı
+  // (Kargo, servis tarihi) ve `opts` yalnız iki anahtar taşır (R19/2). Kayıtlı sevk değerleri tests/kalip-sevki-0117.test.js'te.
   it("AC-96: teslim şekli Kargo, tarih servis tarihi, içerik servisin bütün listesi; ek ibare ve kargo takip alanı yok", () => {
     expect(v.opts).toEqual({ teslimSekli: "Kargo", tarih: "12/10/2026" }); // fmtTR (diğer etiketlerle aynı)
     expect(html).not.toMatch(/[Tt]amir|TAMİR|KARGO-TAKİP|Takip/);

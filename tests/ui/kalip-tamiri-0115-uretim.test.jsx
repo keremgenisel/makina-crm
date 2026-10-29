@@ -100,10 +100,11 @@ describe("Spec 0115 üretim formu: Tamir satırları", () => {
     fireEvent.click(tamirDugmesi());
     expect(tamirSatirlari()).toHaveLength(2);
   });
-  it("AC-40, AC-97: servis çöpe atılınca tamir satırları formda kalır, kaynak ibaresi çıkar ve etiket düğmesi çizilmez", () => {
+  // Spec 0117 ile (R11): üretim formunun tamir satırında etiket düğmesi hiç yok; iddia çöp öncesi ve sonrası yokluğa döndü.
+  it("AC-40, AC-97: servis çöpe atılınca tamir satırları formda kalır, kaynak ibaresi çıkar; etiket düğmesi satırda yok", () => {
     kur();
     formAc(); fireEvent.click(tamirDugmesi());
-    expect(within(tamirSatirlari()[0]).getByLabelText("Kargo Etiketi")).toBeTruthy();
+    expect(within(tamirSatirlari()[0]).queryByLabelText("Kargo Etiketi")).toBeNull();
     kaydet();
     act(() => dis.setServicesYerel(p => p.map(s => (s.id === 41 ? { ...s, deletedAt: "2026-10-28" } : s))));
     formAc();

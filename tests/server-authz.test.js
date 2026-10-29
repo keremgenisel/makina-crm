@@ -1732,3 +1732,23 @@ describe("Spec 0115: kalıp tamiri sunucuda yeni kural istemez (C6)", () => {
     expect(JSON.stringify({ ALAN_IZINLERI, EYLEM_IDLERI })).not.toMatch(/atolye|tamir|kalipIsi/i);
   });
 });
+
+describe("Spec 0117: kalıbın sevk alanları sunucuda yeni kural istemez (C4, R31)", () => {
+  const yaz = (izin, eski, yeni) => {
+    const b = yazmaYetkisiVar(izin, "user", degisenBolumler(eski, yeni), eski, yeni);
+    return b.ok ? eylemDenetimi(eski, yeni, izin, "user") : b;
+  };
+  const SEVK = { kalipFabrikaTeslim: true, kalipKargoTarih: "2026-10-20", kalipKargoSorumlusu: "Ayşe" };
+  it("AC-36: yalnız sevk alanı değiştiren servis düzenlemesi cust_service_edit ile geçer (müşteri sekmesi ve kiosk)", () => {
+    const eski = { services: [{ id: 41, customerId: 1, type: "Garanti Dışı", durum: "Yapılıyor", atolyeKaliplari: [{ id: 1, ad: "K", olcu: "" }] }] };
+    const yeni = { services: [{ ...eski.services[0], ...SEVK, kalipKargoFirma: "Aras" }] };
+    expect(degisenBolumler(eski, yeni)).toEqual(["services"]);
+    expect(yaz(JSON.stringify({ tabs: ["customers"], customerActions: ["cust_service_edit"] }), eski, yeni).ok).toBe(true);
+    expect(yaz(JSON.stringify({ tabs: ["servis"], customerActions: ["cust_service_add", "cust_service_edit"] }), eski, yeni).ok).toBe(true);
+  });
+  it("AC-36: servis düzenleme izni olmayan kullanıcı sevk alanını yazamaz (bugünkü bölüm kuralı aynen)", () => {
+    const eski = { services: [{ id: 41, customerId: 1, durum: "Yapılıyor" }] };
+    const yeni = { services: [{ ...eski.services[0], ...SEVK }] };
+    expect(yaz(JSON.stringify({ tabs: ["customers"], customerActions: [] }), eski, yeni).ok).toBe(false);
+  });
+});

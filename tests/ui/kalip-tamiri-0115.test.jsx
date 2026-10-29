@@ -73,7 +73,8 @@ describe("Spec 0115 Makina Geçmişi (R34, R38)", () => {
     ac();
     const r = satir(/Garanti Dışı/);
     expect(within(r).getByTestId("tamir-rozeti").textContent).toBe("KALIP ATÖLYEDE 1/2");
-    expect(within(r).getByTestId("gecmis-atolye-kaliplari").textContent).toBe("Atölyeye alınan kalıplar: 100_ERKEK KALIPLAR REVİZE, HAMBURGER · Ölçü: Ø98");
+    // Spec 0117 ile (R24): başlık "Servis gören kalıplar".
+    expect(within(r).getByTestId("gecmis-atolye-kaliplari").textContent).toBe("Servis gören kalıplar: 100_ERKEK KALIPLAR REVİZE, HAMBURGER · Ölçü: Ø98");
   });
   it("AC-58: kalıp taşımayan servis satırı rozet göstermez", () => {
     ac();
@@ -84,7 +85,8 @@ describe("Spec 0115 Makina Geçmişi (R34, R38)", () => {
     expect(within(kalipsiz).queryByTitle("Kargo Etiketi Yazdır")).toBeNull();
     expect(within(satir(/Garanti Dışı/)).getByTitle("Kargo Etiketi Yazdır")).toBeTruthy();
   });
-  it("AC-65: etiket düğmesi Makina Geçmişi servis satırında ve üretim formu satırında; panoda yok", () => {
+  // Spec 0117 ile (R11, R12): etiket üretim formundan panonun servis kartına taşındı; Makina Geçmişi'ndeki düğme aynen.
+  it("AC-65: etiket düğmesi Makina Geçmişi servis satırında ve panonun servis kartında; üretim formunda yok", () => {
     const printHtml = vi.fn();
     window.appPrint = { printHtml };
     ac();
@@ -92,7 +94,7 @@ describe("Spec 0115 Makina Geçmişi (R34, R38)", () => {
     fireEvent.click(within(r).getByTitle("Kargo Etiketi Yazdır"));
     expect(printHtml).toHaveBeenCalled();
     expect(printHtml.mock.calls[0][0]).toContain("HAMBURGER · Ölçü: Ø98");
-    expect(fs.readFileSync("src/components/stock/UretimFormu.jsx", "utf8")).toMatch(/tamirEtiketYazdir\(sv, \{ customers, factory \}\)/);
-    expect(fs.readFileSync("src/components/ServisPanosu.jsx", "utf8")).not.toMatch(/tamirEtiket/);
+    expect(fs.readFileSync("src/components/stock/UretimFormu.jsx", "utf8")).not.toMatch(/tamirEtiket/);
+    expect(fs.readFileSync("src/components/ServisPanosu.jsx", "utf8")).toMatch(/tamirEtiketYazdir\(sv, \{ customers, factory \}\)/);
   });
 });

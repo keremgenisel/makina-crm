@@ -157,7 +157,8 @@ CREATE TABLE IF NOT EXISTS services (
   yontem TEXT, vadeTarihi TEXT, tahsilEdildi INTEGER, taksitSayisi INTEGER, kartKomisyonu TEXT,
   tahsilatTarihi TEXT, hesapId INTEGER,
   tevkifatli INTEGER, tevkifatPay INTEGER, tevkifatPayda INTEGER,
-  atolyeKaliplari TEXT
+  atolyeKaliplari TEXT,
+  kalipFabrikaTeslim INTEGER, kalipKargoFirma TEXT, kalipKargoTakipNo TEXT, kalipKargoTarih TEXT, kalipKargoSorumlusu TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
 
@@ -440,6 +441,18 @@ const DEALERS_NEW_COLUMNS = [["bayiMi", "INTEGER"], ["anlasmaliServisMi", "INTEG
 // Spec 0115 R8/2, C11: servisin atölyeye giren kalıp listesi (JSON). Boş liste NULL yazılır, okuma ayıklar.
 const SERVICES_ATOLYE_KALIP_COLUMN = [["atolyeKaliplari", "TEXT"]];
 const atolyeKalipYaz = (liste) => (Array.isArray(liste) && liste.length > 0 ? JSON.stringify(liste) : null);
+// Spec 0117 R26/2, R27/2, C3: tamir edilen kalıbın dönüşü (kalıp önekli, onarım yerinden ayrı kavram, C1). Teslim şekli yalnız
+// `true` iken 1 yazılır; boş değer NULL yazılır ve okumada gövdeye hiç girmez.
+const SERVICES_KALIP_SEVK_COLUMNS = [["kalipFabrikaTeslim", "INTEGER"], ["kalipKargoFirma", "TEXT"], ["kalipKargoTakipNo", "TEXT"], ["kalipKargoTarih", "TEXT"], ["kalipKargoSorumlusu", "TEXT"]];
+const kalipSevkYaz = (s) => ({
+  kalipFabrikaTeslim: s.kalipFabrikaTeslim === true ? 1 : null,
+  kalipKargoFirma: s.kalipKargoFirma || null, kalipKargoTakipNo: s.kalipKargoTakipNo || null,
+  kalipKargoTarih: s.kalipKargoTarih || null, kalipKargoSorumlusu: s.kalipKargoSorumlusu || null,
+});
+const kalipSevkOku = (r) => ({
+  ...(r.kalipFabrikaTeslim === 1 ? { kalipFabrikaTeslim: true } : {}),
+  ...Object.fromEntries(["kalipKargoFirma", "kalipKargoTakipNo", "kalipKargoTarih", "kalipKargoSorumlusu"].filter(a => r[a]).map(a => [a, r[a]])),
+});
 const SERVICES_NEW_COLUMNS = [["islemFirma", "TEXT"], ["parcaAltuntastanMi", "INTEGER"], ["fabrikaNotu", "TEXT"]];
 // "İşlemi Yapan Firma" = "Diğer" (anlaşmasız dış servis) seçilince yalnız servise kaydedilen firma
 // bilgileri — müşteri/bayi kaydı oluşturulmaz. Bu sütunlar olmadan renderer'ın yazdığı değerler
@@ -707,13 +720,15 @@ function populateAll(conn, data, skip = new Set()) {
         islemFirma, parcaAltuntastanMi, deletedAt,
         islemFirmaAd, islemFirmaYetkili, islemFirmaTel, islemFirmaUlke, islemFirmaSehir, islemFirmaAdres, durum, panoGizli,
         fabrikaGirisZamani, bakimBaslangicZamani, bitisZamani, yontem, vadeTarihi, tahsilEdildi, taksitSayisi, kartKomisyonu, tahsilatTarihi, hesapId,
-        tevkifatli, tevkifatPay, tevkifatPayda, atolyeKaliplari)
+        tevkifatli, tevkifatPay, tevkifatPayda, atolyeKaliplari,
+        kalipFabrikaTeslim, kalipKargoFirma, kalipKargoTakipNo, kalipKargoTarih, kalipKargoSorumlusu)
       VALUES (@id, @customer_id, @type, @repairPlace, @date, @tech, @yapilanIsler, @musteriTalimati, @fabrikaNotu,
         @servisUcreti, @currency, @faturaTipi, @odendi, @degisenParcalar, @parcaUcretsizMi, @parcaUcreti, @parcaCurrency, @parcaGarantiDisi,
         @islemFirma, @parcaAltuntastanMi, @deletedAt,
         @islemFirmaAd, @islemFirmaYetkili, @islemFirmaTel, @islemFirmaUlke, @islemFirmaSehir, @islemFirmaAdres, @durum, @panoGizli,
         @fabrikaGirisZamani, @bakimBaslangicZamani, @bitisZamani, @yontem, @vadeTarihi, @tahsilEdildi, @taksitSayisi, @kartKomisyonu, @tahsilatTarihi, @hesapId,
-        @tevkifatli, @tevkifatPay, @tevkifatPayda, @atolyeKaliplari)
+        @tevkifatli, @tevkifatPay, @tevkifatPayda, @atolyeKaliplari,
+        @kalipFabrikaTeslim, @kalipKargoFirma, @kalipKargoTakipNo, @kalipKargoTarih, @kalipKargoSorumlusu)
     `);
     for (const s of data.services) {
       stmt.run({
@@ -730,7 +745,7 @@ function populateAll(conn, data, skip = new Set()) {
         yontem: s.yontem ?? null, vadeTarihi: s.vadeTarihi ?? null, tahsilEdildi: s.yontem === "Çek" ? toInt(s.tahsilEdildi) : null,
         taksitSayisi: s.taksitSayisi ?? null, kartKomisyonu: s.kartKomisyonu ? json(s.kartKomisyonu) : null,
         tahsilatTarihi: s.tahsilatTarihi ?? null, hesapId: s.hesapId ?? null,
-        ...tevkifatYaz(s), atolyeKaliplari: atolyeKalipYaz(s.atolyeKaliplari),
+        ...tevkifatYaz(s), atolyeKaliplari: atolyeKalipYaz(s.atolyeKaliplari), ...kalipSevkYaz(s),
       });
     }
   }
@@ -1111,6 +1126,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "payments", PAYMENTS_HESAP_COLUMN);
   ensureColumns(conn, "services", SATIS_HESAP_COLUMN);
   ensureColumns(conn, "services", SERVICES_ATOLYE_KALIP_COLUMN); // spec 0115
+  ensureColumns(conn, "services", SERVICES_KALIP_SEVK_COLUMNS); // spec 0117
   ensureColumns(conn, "part_sales", SATIS_HESAP_COLUMN);
   ensureColumns(conn, "yedek_parca_satis", SATIS_HESAP_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_CALISAN_COLUMN);
@@ -1436,11 +1452,13 @@ function readBlobFromDb() {
   }));
 
   const services = db.prepare(`SELECT * FROM services`).all().map((row) => {
-    const { customer_id, degisenParcalar, odendi, parcaUcretsizMi, parcaGarantiDisi, parcaAltuntastanMi, panoGizli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, atolyeKaliplari, ...rest } = row;
+    const { customer_id, degisenParcalar, odendi, parcaUcretsizMi, parcaGarantiDisi, parcaAltuntastanMi, panoGizli, tahsilEdildi, kartKomisyonu, tevkifatli, tevkifatPay, tevkifatPayda, atolyeKaliplari,
+      kalipFabrikaTeslim, kalipKargoFirma, kalipKargoTakipNo, kalipKargoTarih, kalipKargoSorumlusu, ...rest } = row;
     const atolye = parseJsonCol(atolyeKaliplari, null);
     return {
       ...rest,
       ...(Array.isArray(atolye) && atolye.length > 0 ? { atolyeKaliplari: atolye } : {}), // spec 0115 C11: yalnız dolu liste
+      ...kalipSevkOku({ kalipFabrikaTeslim, kalipKargoFirma, kalipKargoTakipNo, kalipKargoTarih, kalipKargoSorumlusu }), // spec 0117 C3
       ...tevkifatOku(tevkifatli, tevkifatPay, tevkifatPayda), // spec 0079 R33
       customerId: customer_id,
       degisenParcalar: parseJsonCol(degisenParcalar, []),

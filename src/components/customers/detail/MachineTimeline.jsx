@@ -13,7 +13,7 @@ import { Icon, Btn, AtesRozeti } from "../../ui";
 import { KartBolum, BosDurum } from "../../tasarim";
 import { kalipDurumuTuret, extraKalipAnahtari, KALIP_DURUMU_ETIKETI } from "../../../lib/musteriDurumu";
 import { KalipDurumuSecici } from "../DurumSecici";
-import { kalipAtolyedeMi, tamirOzeti, tamirEtiketIcerigi, ATOLYE_KALIPLARI_ETIKETI as KAYIT_ETIKETI } from "../../../lib/kalipTamiri";
+import { kalipAtolyedeMi, tamirOzeti, tamirEtiketIcerigi, SERVIS_KALIPLARI_ETIKETI as KAYIT_ETIKETI } from "../../../lib/kalipTamiri";
 import { TamirRozeti } from "../../TamirRozeti";
 
 const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;

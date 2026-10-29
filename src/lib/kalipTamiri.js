@@ -29,14 +29,15 @@ export const TAMIR_EKLENDI = (n) => `${n} tamir eklendi.`;
 export const KALIP_ISI_BAYRAGI = "Kalıp işi";
 export const KALIP_ISI_BAYRAK_IPUCU = "kalıp tamiri ya da revizyonudur; servis formunda bu tipteki kalem eklenince kalıp atölyesi önerisi çıkar.";
 export const PARCA_TIP_IPUCU = "Bu parçanın adında kalıp geçiyor. Kalıp işi işaretli bir tip seçerseniz servis formunda kalıp önerisi çalışır.";
-export const ATOLYE_KALIPLARI_ETIKETI = "Atölyeye alınan kalıplar";
+// Spec 0117 R24, R24/2: Makina Geçmişi satırının liste başlığı (çıktı ayrı yoldan, çeviri anahtarından okur; C10).
+export const SERVIS_KALIPLARI_ETIKETI = "Servis gören kalıplar";
 export const TUR_ADLARI = { uretim: "Üretim", tamir: "Tamir" };
 export const turAdi = (r) => TUR_ADLARI[r?.tur === "tamir" ? "tamir" : "uretim"];
 // Triyaj: Manuel Satır Ekle'de başka bir canlı üretim formunda satırı olan kalıp seçilemez (R40'ın "ikinci forma çekilemez"
 // kuralı manuel pencereye de uygulanır; yoksa kayıt damgayı yeni forma yazar, eski formun satırı damgasız kalırdı).
 export const BASKA_FORMDA_IBARESI = "Başka bir üretim formunda";
 export const KAYNAK_YOK = "Servis kaydı bulunamadı";
-export const KAYIT_BOLUMU = { onDoldur: "Servisin kalıp işi kalemleri", kayitli: "Firmanın kayıtlı kalıpları", elle: "Elle giriş" };
+export const KAYIT_BOLUMU = { onDoldur: "Servisin kalıp işi kalemleri", kayitli: "Firmanın kayıtlı kalıpları", elle: "Elle giriş", sevk: "Kalıbın dönüşü" };
 
 // ── Dedektör (R1–R3/2, Karar 33) ────────────────────────────────────────────────────────────────────────────────────────
 // Parçanın tipi adıyla eşlenir; boş tip "Standart" sayılır; çöpteki ya da listede olmayan tip kalıp işi değildir.
@@ -81,10 +82,45 @@ export const tamirListesiKur = (form, yeniId) => {
   return tamirListesi(form).map(g => ({ id: g.id ?? yeniId(), ad: String(g.ad ?? "").trim(), olcu: String(g.olcu ?? "").trim() }));
 };
 // Tek yazıcı (C3): alanı ve geçici form alanlarını siler, liste doluysa yazar (kapalı değer gövdeye girmez, R9, C11).
-export const tamirYaz = (kayit, liste) => {
-  const { atolyeKaliplari: _a, _kalipAtolye: _k, _tamirHatalari: _h, ...kalan } = kayit || {};
-  return Array.isArray(liste) && liste.length > 0 ? { ...kalan, atolyeKaliplari: liste.map(g => ({ id: g.id, ad: g.ad, olcu: g.olcu })) } : kalan;
+// Spec 0117 R29: üçüncü adım sevk değerleridir (`tamirSevkKur`'un dönüşü). Beş sevk anahtarı her çağrıda silinir (form kaydı
+// yayarak taşır, R9) ve yalnız liste doluyken geri yazılır.
+export const tamirYaz = (kayit, liste, sevk = {}) => {
+  const { atolyeKaliplari: _a, _kalipAtolye: _k, _tamirHatalari: _h, ...geri } = kayit || {};
+  const kalan = { ...geri };
+  for (const a of SEVK_ALANLARI) delete kalan[a];
+  return Array.isArray(liste) && liste.length > 0 ? { ...kalan, atolyeKaliplari: liste.map(g => ({ id: g.id, ad: g.ad, olcu: g.olcu })), ...sevk } : kalan;
 };
+
+// ── Kalıbın dönüşü (spec 0117 R1–R9, R26, R27, Karar 39–41) ──────────────────────────────────────────────────────────────
+// Ad tuzağı (C1): onarım yerinin "Fabrika Teslim" değeri makinanın nerede onarıldığını söyler; bu beş alan kalıp öneki taşır.
+export const SEVK_FABRIKA = "kalipFabrikaTeslim";
+export const SEVK_METIN_ALANLARI = ["kalipKargoFirma", "kalipKargoTakipNo", "kalipKargoTarih", "kalipKargoSorumlusu"];
+export const SEVK_ALANLARI = [SEVK_FABRIKA, ...SEVK_METIN_ALANLARI];
+// Formun teslim şekli (boş = Kargo, R3).
+export const sevkFabrikaTeslimMi = (kayit) => kayit?.[SEVK_FABRIKA] === true;
+// Kayda yazılacak sevk değerleri: kutu kapalıysa hiçbiri; metinler kırpılır, boş kalan yazılmaz; teslim şekli yalnız `true`
+// ise yazılır; Fabrika Teslim'de kargo firması ve takip numarası düşer. Doğrulama yok (R7/2).
+export const tamirSevkKur = (form) => {
+  if (!kutuAcikMi(form)) return {};
+  const fabrika = sevkFabrikaTeslimMi(form);
+  const sevk = fabrika ? { [SEVK_FABRIKA]: true } : {};
+  for (const a of SEVK_METIN_ALANLARI) {
+    if (fabrika && (a === "kalipKargoFirma" || a === "kalipKargoTakipNo")) continue;
+    const v = String(form?.[a] ?? "").trim();
+    if (v) sevk[a] = v;
+  }
+  return sevk;
+};
+// Etiketin tarihi (R18, R18/2, Karar 39): kargo tarihi takvimde geçerli YYYY-AA-GG ise o, değilse servis tarihi. Seçim ham
+// değerde yapılır, biçimleme çağıranda; bu bir okuma kuralıdır, kayıt doğrulanmaz (R7/2).
+const gecerliGun = (v) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v ?? ""));
+  if (!m) return false;
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
+};
+export const sevkTarihi = (servis) => (gecerliGun(servis?.kalipKargoTarih) ? servis.kalipKargoTarih : servis?.date);
+export const sevkTeslimSekli = (servis) => (sevkFabrikaTeslimMi(servis) ? "Fabrika Teslim" : "Kargo");
 
 // ── Üretim formu (R17/2, R20/2) ────────────────────────────────────────────────────────────────────────────────────────
 export const TAMIR_KAYNAK_TIPI = "servis_tamir";
