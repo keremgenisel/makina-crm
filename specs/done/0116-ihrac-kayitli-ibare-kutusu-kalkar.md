@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (plan `specs/0116-uygulama-plani.md`, plan turu Karar 29–36) |
+| **Durum** | Tamamlandı (revizyon 2: QA turu ve plan turu Karar 29–36, 2026-10-29; uygulama commit `ea35746`; plan `specs/done/0116-uygulama-plani.md`) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/customers/CustomerAddEditForm.jsx`, `src/components/PartSaleForm.jsx`, `src/components/YedekParcaSatisForm.jsx`, `src/components/IhracKayitliAlani.jsx` (R13 ile `IhracKayitliOzet.jsx`), `src/lib/ihracKayitli.js`'in yalnız bu kutuya ait yedi metin sabiti. **Kanıt ve test:** `scripts/evidence/0009-sayfa.jsx`, `docs/evidence/kanit-eslemesi.json`, `tests/ui/ihrac-kayitli-0114.test.jsx`, `tests/ihrac-kayitli-0114.test.js`, `tests/tasarim-kontrast.test.js`. **Belge:** `CLAUDE.md`, `specs/README.md`, `docs/tasarim-sozlugu.md`. Hesap, veri modeli, rapor ve dışa aktarma dokunulmaz (Ö-9). |
@@ -140,7 +140,7 @@ Analist yirmi dört boşluk çıkardı (3 bloklayıcı, 9 önemli, 12 küçük);
 
 ### Plan turunda verilen kararlar (2026-10-29)
 
-Takım Yöneticisi uygulama planındaki sekiz önerinin hepsini onayladı (`specs/0116-uygulama-plani.md`).
+Takım Yöneticisi uygulama planındaki sekiz önerinin hepsini onayladı (`specs/done/0116-uygulama-plani.md`).
 
 29. **Sözlüğün iki `PartSaleForm.jsx` atfı iki satır kaydırılır** (`:335` → `:333`, `:382` → `:380`). Gerekçe: çağrı satırı ve yorumu (`:152-153`) silinince örnekler yukarı kayar ve `tasarim-kaynak`'ın dosya:satır denetimi kırılır; ölçüm 2 bunu saymıyordu. Eski ve yeni satırın içeriği aynıdır (ölçüldü). `CustomerAddEditForm`'un atıfları (`:143`, `:178`) silinen satırdan önce, kaymaz.
 30. **CLAUDE.md'nin 0116 bölümü 0114 başlığının önüne yazılır; 0116 bekçisinin dilimi `(spec 0116, plan` ile `(spec 0114, plan` arasıdır.** Gerekçe: 0114 ve 0115 bekçileri `(spec 0113, plan`'a kadar okur; 0115'in ardına konan bölüm iki bekçinin dilimine girer ve ilgisiz bir metin değişikliği onları kırar.
@@ -272,10 +272,15 @@ Takım Yöneticisi uygulama planındaki sekiz önerinin hepsini onayladı (`spec
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `ea35746` | Dal `feat/0116-ihrac-ibare-kalkar`, taban `5e7b169`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (B-1–B-3, Ö-1–Ö-9, K-1–K-12, Karar 5–28), plan turu (Karar 29–36) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: iki bilgi bulgusu: tam koşuda yük altında süre eşikli bir test (`gider-dagitim-0072` AC-29) eşiği aştı, kapanış koşumu boş makinada (plan adım 9); AC-28 ve DoD'nin `kapanis` rapor adı Karar 31'e atıf notu aldı (test eklendi) |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | İkisi de kod kusuru değil, belge ve süreç |
+| **Regresyon sayısı** | 0 | Tam takım 438 dosya, 5942 test (Electron dahil, boş makinada); lint 0 hata |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** sözlüğün iki `PartSaleForm.jsx` atfı silinen satırlar yüzünden kayıyordu (Karar 29); `kalip-formu-0114-kart-uyari` spec'in saymadığı altıncı değişen ekrandı (Karar 33); ibare taraması "11/1-c" ile yapılamadı, `ihracKayitli.js`'in dosya yorumu kanun maddesini anıyor (tarama ibarenin kendi cümlesiyle).
+
+**Görsel kanıt:** 43 ekran × 2 tema; 6 ekran bilinçli değişti, 37 ekran 0 piksel; taban son kodla 0 fark.
+
+**Bu spec'ten çıkarılan ders:** Kod silmek de satır numarası taşıyan belgeleri kaydırır: dosya:satır atfı içeren bir sözlük varsa, silme işinin ölçümü silinen aralığın **altındaki** atıfları da saymalı. Kanıt ekranı listesi kaydın içeriğinden çıkarılmalı, adından değil: adında `kart-uyari` geçen ekran da işaretli kayıtla çizildiği için kutuyu taşıyordu.

@@ -6562,10 +6562,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "rapor": "docs/evidence/0116-taban-piksel-raporu.json",
         "ekran": "musteri-formu-0114",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [
@@ -6873,22 +6872,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "rapor": "docs/evidence/0116-taban-piksel-raporu.json",
         "ekran": "kalip-formu-0114-ihrac",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "rapor": "docs/evidence/0116-taban-piksel-raporu.json",
         "ekran": "kalip-formu-0114-ozet",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "rapor": "docs/evidence/0116-taban-piksel-raporu.json",
         "ekran": "kalip-formu-0114-kart-uyari",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/YedekParcaSatisForm.jsx": [
@@ -6972,16 +6968,14 @@
         "ekran": "yedek-parca-formu-ucretsiz"
       },
       {
-        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "rapor": "docs/evidence/0116-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-0114-ihrac",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "rapor": "docs/evidence/0116-taban-piksel-raporu.json",
         "ekran": "yedek-parca-formu-0114-ozet",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [

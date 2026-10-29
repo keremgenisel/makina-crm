@@ -1,6 +1,6 @@
 # 0116 Uygulama planı: ihraç kayıtlı ibare kutusu formlardan kalkar
 
-Spec: `specs/0116-ihrac-kayitli-ibare-kutusu-kalkar.md`. Dal `feat/0116-ihrac-ibare-kalkar` (`5e7b169` üstünde). Takım Yöneticisi planın sekiz önerisinin hepsini onayladı (spec Karar 29–36). Hesap, veri, sunucu, izin ve birleştirme kuralına dokunulmaz (C1–C3).
+Spec: `specs/done/0116-ihrac-kayitli-ibare-kutusu-kalkar.md`. Tamamlandı: uygulama commit `ea35746`. Dal `feat/0116-ihrac-ibare-kalkar` (`5e7b169` üstünde). Takım Yöneticisi planın sekiz önerisinin hepsini onayladı (spec Karar 29–36). Hesap, veri, sunucu, izin ve birleştirme kuralına dokunulmaz (C1–C3).
 
 ## 1. Dosyalar
 
