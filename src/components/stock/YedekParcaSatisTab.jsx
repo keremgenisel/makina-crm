@@ -16,7 +16,7 @@ import { logAction } from "../../lib/audit";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
 import { TahsilatHesapPenceresi, uyumluHesapId } from "../kasa/TahsilatHesap";
 import { ihracRozetGosterilirMi } from "../../lib/ihracKayitli";
-import { IhracKayitliRozeti } from "../IhracKayitliAlani";
+import { IhracKayitliRozeti } from "../IhracKayitliOzet";
 
 // Satışın makina-bağ durumu (bekliyor / kısmi / tam).
 const durumBilgi = (s) => {

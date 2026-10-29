@@ -8,7 +8,7 @@ import { servisSureleri } from "../../../lib/servisAnaliz";
 import { yansitilanKomisyon } from "../../../lib/krediKarti";
 import { satisTevkifatRozeti } from "../../../lib/satisTevkifat";
 import { ihracRozetGosterilirMi, satisTipiPilStili } from "../../../lib/ihracKayitli";
-import { IhracKayitliRozeti } from "../../IhracKayitliAlani";
+import { IhracKayitliRozeti } from "../../IhracKayitliOzet";
 import { Icon, Btn, AtesRozeti } from "../../ui";
 import { KartBolum, BosDurum } from "../../tasarim";
 import { kalipDurumuTuret, extraKalipAnahtari, KALIP_DURUMU_ETIKETI } from "../../../lib/musteriDurumu";

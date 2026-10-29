@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Spec 0114: ihraç kayıtlı teslim, ekranlar. Dört formun seçicisi, açıklama, ibare ve sınır satırı, pasif tevkifat kutusu,
+// Spec 0114: ihraç kayıtlı teslim, ekranlar. Dört formun seçicisi (açıklama kutusu spec 0116 ile kalktı), pasif tevkifat kutusu,
 // KDV kutusu özeti, zaman çizelgesi ve Stok rozeti, Kalan Borç satırı, Finans ve Giderler'in KDV kartı, Finans'ın alacak ve
 // KDV kartları, dışa aktarma sütunları. Kaydedilen gövde tests/ui/ihrac-kayitli-0114-app.test.jsx'te.
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
@@ -20,8 +20,8 @@ import { YedekParcaSatisTab } from "../../src/components/stock/YedekParcaSatisTa
 import { Finance } from "../../src/components/Finance";
 import { SettingsExport } from "../../src/components/settings/SettingsExport";
 import {
-  IHRAC_SECENEK, IHRAC_ACIKLAMA, IHRAC_IBARE, IHRAC_FATURA_NOTU, IHRAC_PARCA_SINIRI, IHRAC_TEVKIFAT_NEDENI, IHRAC_KART_ETIKETI,
-  IHRAC_KART_NOTU, IHRAC_OZET_ETIKETLERI, ihracKdvHucreMetni, satisTipiPilStili, IHRAC_KOPYALANDI, IHRAC_KOPYALANAMADI, IHRAC_EXPORT_HEAD, ihracKayitliRozeti, ihracKayitliBorcMetni,
+  IHRAC_SECENEK, IHRAC_TEVKIFAT_NEDENI, IHRAC_KART_ETIKETI,
+  IHRAC_KART_NOTU, IHRAC_OZET_ETIKETLERI, ihracKdvHucreMetni, satisTipiPilStili, IHRAC_EXPORT_HEAD, ihracKayitliRozeti, ihracKayitliBorcMetni,
 } from "../../src/lib/ihracKayitli";
 import { SATIS_TEVKIFAT_NOTU_TAHSIL, SATIS_TEVKIFAT_KART_UYARISI } from "../../src/lib/satisTevkifat";
 import { fmtCur } from "../../src/lib/utils";
@@ -92,56 +92,16 @@ describe("Spec 0114 A: seçici dört formda (AC-1–AC-4)", () => {
     expect(kayit.faturaTipi).toBe("Faturasız Yurtiçi");
     expect("ihracKayitli" in kayit).toBe(false);
   });
-  it("AC-12: yedek parça formunda ücretsiz işareti açıkken fatura tipi seçicisi ve ihraç alanı hiç çizilmez", () => {
+  // Spec 0116 ile: ihraç alanının yokluğu iddiası kalktı (kutu hiçbir yerde yok); test seçicinin ücretsizde çizilmemesini korur.
+  it("AC-12: yedek parça formunda ücretsiz işareti açıkken fatura tipi seçicisi hiç çizilmez", () => {
     render(FORMLAR.yp({ ucretsizMi: true, ...IK }));
     expect(screen.getAllByRole("combobox").find(s => s.options && [...s.options].some(o => o.value === IHRAC_SECENEK))).toBeUndefined();
-    expect(screen.queryByTestId("ihrac-kayitli-alani")).toBeNull();
   });
 });
 
-describe("Spec 0114 A: işaret açıkken form (AC-9, AC-31–AC-35, AC-56)", () => {
-  it("AC-31 / AC-32 / AC-33: üç formda aynı açıklama, ibare ve fatura notu; işaret kapalıyken hiçbiri yok", () => {
-    const aciklamalar = [];
-    for (const [ad, ciz] of [["kalip", FORMLAR.kalip], ["yp", FORMLAR.yp]]) {
-      render(ciz());
-      expect(screen.queryByTestId("ihrac-kayitli-alani"), ad).toBeNull();
-      expect(document.body.textContent, ad).not.toContain(IHRAC_IBARE);
-      fireEvent.change(secici(), { target: { value: IHRAC_SECENEK } });
-      aciklamalar.push(screen.getByTestId("ihrac-aciklama").textContent);
-      expect(screen.getByTestId("ihrac-ibare").value, ad).toBe(IHRAC_IBARE);
-      expect(screen.getByTestId("ihrac-ibare").readOnly, ad).toBe(true);
-      expect(within(screen.getByTestId("ihrac-kayitli-alani")).getByText(IHRAC_FATURA_NOTU), ad).toBeTruthy();
-      cleanup();
-    }
-    musteriFormu(); yeniMusteri();
-    expect(screen.queryByTestId("ihrac-kayitli-alani")).toBeNull();
-    fireEvent.change(secici(), { target: { value: IHRAC_SECENEK } });
-    aciklamalar.push(screen.getByTestId("ihrac-aciklama").textContent);
-    expect(screen.getByTestId("ihrac-ibare").value).toBe(IHRAC_IBARE);
-    expect(new Set(aciklamalar)).toEqual(new Set([IHRAC_ACIKLAMA]));
-  });
-  it("AC-32 (Kopyala): düğme ibareyi panoya yazar; pano başarısızsa metnin seçilerek kopyalanacağını söyler (plan Ö-9)", async () => {
-    const yaz = vi.fn(async () => {});
-    Object.defineProperty(navigator, "clipboard", { value: { writeText: yaz }, configurable: true });
-    render(FORMLAR.kalip(IK));
-    await act(async () => { fireEvent.click(screen.getByTestId("ihrac-ibare-kopyala")); });
-    expect(yaz).toHaveBeenCalledWith(IHRAC_IBARE);
-    expect(screen.getByTestId("ihrac-kopya-durumu").textContent).toBe(IHRAC_KOPYALANDI);
-    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn(async () => { throw new Error("izin yok"); }) }, configurable: true });
-    await act(async () => { fireEvent.click(screen.getByTestId("ihrac-ibare-kopyala")); });
-    expect(screen.getByTestId("ihrac-kopya-durumu").textContent).toBe(IHRAC_KOPYALANAMADI);
-  });
-  it("AC-34: üretim sınırı satırı yalnız yedek parça formunda", () => {
-    render(FORMLAR.yp(IK));
-    expect(screen.getByTestId("ihrac-parca-siniri").textContent).toBe(IHRAC_PARCA_SINIRI);
-    cleanup();
-    render(FORMLAR.kalip(IK));
-    expect(screen.queryByTestId("ihrac-parca-siniri")).toBeNull();
-    cleanup();
-    musteriFormu([{ ...CUSTOMERS[0] }], { initialDetailId: undefined }); yeniMusteri();
-    fireEvent.change(secici(), { target: { value: IHRAC_SECENEK } });
-    expect(screen.queryByTestId("ihrac-parca-siniri")).toBeNull();
-  });
+describe("Spec 0114 A: işaret açıkken form (AC-9, AC-35, AC-56)", () => {
+  // Spec 0116 ile: AC-31 (açıklama), AC-32 (ibare ve Kopyala), AC-33 (fatura notu) ve AC-34 (üretim sınırı) ters çevrildi;
+  // açıklama kutusu üç formdan kalktı (tests/ui/ihrac-ibare-kalkar-0116.test.jsx). AC-9, AC-35 ve AC-56 aynen.
   it("AC-9: işaret açıkken tevkifat kutusu çizilir, disabled ve işaretsiz, nedeni yanında; oran ve üç not yok", () => {
     for (const ad of ["kalip", "yp"]) {
       render(FORMLAR[ad](IK));

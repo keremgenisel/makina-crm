@@ -10,7 +10,7 @@ import {
 import * as IHR from "../src/lib/ihracKayitli";
 import {
   ihracKayitliSecilebilirMi, satisTipiSecimi, satisTipiUygula, ihracKayitliUygula, ihracKayitliDogrula, satisTipiSecenekleri,
-  IHRAC_SECENEK, IHRAC_IBARE, IHRAC_TEVKIFAT_NEDENI, IHRAC_TEVKIFAT_HATASI, IHRAC_EXPORT_HEAD, ihracKayitliExportHucreleri,
+  IHRAC_SECENEK, IHRAC_TEVKIFAT_NEDENI, IHRAC_TEVKIFAT_HATASI, IHRAC_EXPORT_HEAD, ihracKayitliExportHucreleri,
   ihracKayitliRozeti, ihracRozetGosterilirMi, IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, IHRAC_RAPOR_SATIRLARI,
   IHRAC_KART_ETIKETI, ihracKayitliFormu, satisTipiPilStili, IHRAC_DETAY_BASLIK, TEVKIFAT_DETAY_BASLIK,
 } from "../src/lib/ihracKayitli";
@@ -359,8 +359,8 @@ describe("Spec 0114 E: aylık rapor kutusu", () => {
 });
 
 describe("Spec 0114 D: metinler ve dışa aktarma", () => {
-  it("R23/2, Karar 26, AC-9 metni: ibare ve tevkifat nedeni spec'teki birebir metin", () => {
-    expect(IHRAC_IBARE).toBe("3065 sayılı KDV Kanunu'nun 11/1-c maddesi hükümlerine göre ihraç edilmek şartıyla teslim edildiğinden KDV tahsil edilmemiştir.");
+  // Spec 0116 ile: ibare sabiti (R23/2) kaynaktan silindi; yalnız tevkifat nedeni kalır.
+  it("AC-9 metni: tevkifat nedeni spec'teki birebir metin", () => {
     expect(IHRAC_TEVKIFAT_NEDENI).toBe("İhraç kayıtlı teslimde tevkifat uygulanmaz.");
     expect(ihracKayitliRozeti("40.000 ₺")).toBe("İHRAÇ KAYITLI · tecil edilen KDV 40.000 ₺");
     expect(IHRAC_KART_ETIKETI).not.toBe("Tevkifatlı satışta alıcının beyan edeceği KDV");
@@ -432,7 +432,7 @@ describe("Spec 0114: kaynak taramaları (C3, C10, C12, R4, R28, AC-41)", () => {
     }
   });
   it("C3 / C10: ertelenen KDV ekranlarda hesaplanmaz; yeni bir KDV çarpımı yazılmaz", () => {
-    for (const f of ["src/components/IhracKayitliAlani.jsx", "src/components/SatisTipiSecici.jsx", "src/components/customers/detail/PaymentSection.jsx", "src/components/gider/KdvKarsilastirmaKarti.jsx"]) {
+    for (const f of ["src/components/IhracKayitliOzet.jsx", "src/components/SatisTipiSecici.jsx", "src/components/customers/detail/PaymentSection.jsx", "src/components/gider/KdvKarsilastirmaKarti.jsx"]) {
       expect(kodu(f), f).not.toMatch(/calcKDV\(|getKdvRateForDate\(|\*\s*\d+\s*\/\s*100/);
     }
     expect(kodu("src/lib/ihracKayitli.js")).not.toMatch(/calcKDV\(|getKdvRateForDate\(/);

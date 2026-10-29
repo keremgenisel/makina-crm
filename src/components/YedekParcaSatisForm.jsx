@@ -1,11 +1,11 @@
 import { CUR_SYM, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani, ihracKayitliEtkinMi } from "../lib/utils";
+import { today, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { Ipucu, Segment, UyariSeridi, HataMetni } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
 import { SatisTipiSecici } from "./SatisTipiSecici";
-import { IhracKayitliAlani, IhracKayitliOzetSatirlari } from "./IhracKayitliAlani";
+import { IhracKayitliOzetSatirlari } from "./IhracKayitliOzet";
 import { satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
@@ -164,8 +164,6 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
       </div>
       {/* Spec 0079 R1, R2, R7: tevkifat kutusu (yalnız faturalı yurtiçi); toplu satışın bütün satırlarına aynı yazılır.
           Spec 0095 R7, R18b: ücretsizde çizilmez. */}
-      {/* Spec 0114 R22–R24, R8: ihraç kayıtlı açıklaması, ibare ve yedek parçaya özgü sınır; ücretsizde fatura yok, çizilmez. */}
-      {!ucretsiz && <IhracKayitliAlani acik={ihracKayitliEtkinMi(form, form.faturaTipi || "Faturalı Yurtiçi")} parcaSiniri />}
       {!ucretsiz && (
         <SatisTevkifatAlani form={form} setForm={setForm} saleType={form.faturaTipi || "Faturalı Yurtiçi"}
           kartUyarisi={kartTabaniEskiMi(form, form.faturaTipi || "Faturalı Yurtiçi")} onYeniTaban={() => setForm(p => ({ ...p, _kartYeniTaban: true }))} />

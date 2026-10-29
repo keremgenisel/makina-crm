@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { CUR_SYM, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, tahsilEdilecekKdv, tahsilKdvOrani, ihracKayitliEtkinMi } from "../lib/utils";
+import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KALIP_MUSTERI_SECILMEDI } from "../lib/kalipSatisi";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
 import { SatisTipiSecici } from "./SatisTipiSecici";
-import { IhracKayitliAlani, IhracKayitliOzetSatirlari } from "./IhracKayitliAlani";
+import { IhracKayitliOzetSatirlari } from "./IhracKayitliOzet";
 import { satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
@@ -149,8 +149,6 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
           </Field>
         </div>
       )}
-      {/* Spec 0114 R22, R23: ihraç kayıtlı açıklaması ve ibare (bütün kalıp satırlarına aynı işaret). */}
-      {(selectedCust || (form.satisFirma && form.satisFirma !== factoryName)) && <IhracKayitliAlani acik={ihracKayitliEtkinMi(form, form.faturaTipi || "Faturalı Yurtiçi")} />}
       {/* Spec 0079 R1, R2, R7: tevkifat kutusu (yalnız faturalı yurtiçi); bütün kalıp satırlarına aynı yazılır. */}
       {(selectedCust || (form.satisFirma && form.satisFirma !== factoryName)) && (
         <SatisTevkifatAlani form={form} setForm={setForm} saleType={form.faturaTipi || "Faturalı Yurtiçi"}

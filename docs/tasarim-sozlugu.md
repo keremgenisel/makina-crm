@@ -63,7 +63,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 **Örnek:** `src/components/Customers.jsx:520` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:58` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
-**Örnek:** `src/components/PartSaleForm.jsx:335` (form içi, düğme kipi, eşit genişlik)
+**Örnek:** `src/components/PartSaleForm.jsx:333` (form içi, düğme kipi, eşit genişlik)
 
 ### Ne zaman açılır liste? (spec 0042 R10)
 
@@ -251,7 +251,7 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 - Uyarı niteliğinde bilgi için: `UyariSeridi`.
 
 **Örnek:** `src/components/CalisanManager.jsx:238`
-**Örnek:** `src/components/PartSaleForm.jsx:382` (seçimin sonucunu anlatan cümle)
+**Örnek:** `src/components/PartSaleForm.jsx:380` (seçimin sonucunu anlatan cümle)
 
 ---
 
@@ -353,7 +353,7 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 
 - **Rozet (durum pili), spec 0106:** sözlükte rozet yapı taşı yok. İki yerel kopya var: `src/components/stock/MakinaStokTab.jsx` `Rozet` (Makina Stoğu durum sütunu) ve `src/components/customers/DurumPili.jsx` (müşteri listesinin Durum sütunu); ikisi aynı ölçüdedir (11,5 punto, 700 kalınlık, 6 köşe, "3px 9px" dolgu) ve renklerini tema değişkenlerinden alır. **Üçüncü kopya yazılmadan önce rozet sözlüğe taşınır** (Stok ekranının kanıt turunu da kapsar).
 - **Tamir rozeti, spec 0115 (Karar 55):** `src/components/TamirRozeti.jsx` ("KALIP ATÖLYEDE bitmemiş/toplam", amber `amb700`/`ambBg`/`ambBr`) tek bileşendir; Servis ve Kargo Panosu kartı ile Makina Geçmişi'nin servis satırı onu çağırır. Ölçüsü yukarıdaki durum pili kopyalarıyla değil panonun kart pilleriyle aynı ailedendir (servis türü pili: 7 köşe, "3px 8px" dolgu) ve bilinçli olarak sözlüğe taşınmadı (plan turu kararı). Rozet sözlüğe taşınırken bu bileşen de kapsama alınır.
-- **Kayıt işareti rozeti (tevkifat ve ihraç kayıtlı), spec 0114:** durum pilinden ayrı bir aile (10,5 punto, 700 kalınlık, 5 köşe, "2px 7px" dolgu). Tevkifat rozeti iki yerde satır içi yazılı (`src/components/customers/detail/MachineTimeline.jsx` `TevkifatRozeti`, `src/components/stock/YedekParcaSatisTab.jsx`); ihraç kayıtlı rozeti tek bileşendir (`src/components/IhracKayitliAlani.jsx` `IhracKayitliRozeti`, teal) ve iki ekranda o kullanılır (plan Ö-7). İki aile sözlüğe taşınırken birlikte ele alınır; bu işte taşınmadı.
+- **Kayıt işareti rozeti (tevkifat ve ihraç kayıtlı), spec 0114:** durum pilinden ayrı bir aile (10,5 punto, 700 kalınlık, 5 köşe, "2px 7px" dolgu). Tevkifat rozeti iki yerde satır içi yazılı (`src/components/customers/detail/MachineTimeline.jsx` `TevkifatRozeti`, `src/components/stock/YedekParcaSatisTab.jsx`); ihraç kayıtlı rozeti tek bileşendir (`src/components/IhracKayitliOzet.jsx` `IhracKayitliRozeti`, teal) ve iki ekranda o kullanılır (plan Ö-7). İki aile sözlüğe taşınırken birlikte ele alınır; bu işte taşınmadı.
 
 ### Ödenen borç (spec 0014)
 

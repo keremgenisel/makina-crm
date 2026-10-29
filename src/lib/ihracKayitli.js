@@ -60,14 +60,6 @@ export const ihracKayitliDogrula = (form, saleType) =>
   (form?.ihracKayitli === true && form?.tevkifatli && ihracKayitliSecilebilirMi(saleType) ? IHRAC_TEVKIFAT_HATASI : null);
 
 // ── Ekran metinleri (R22–R28, plan Ö-8) ─────────────────────────────────────────────────────────────────────────────
-export const IHRAC_ACIKLAMA = "Fatura KDV'li kesilir ama KDV müşteriden tahsil edilmez. Yalnız kendi ürettiğimiz malı ihracatçı bir firmaya, ihraç edilmek şartıyla sattığımızda kullanılır.";
-// R23/2: faturaya yazılacak zorunlu ibare (spec'te sabitlendi, Karar 26).
-export const IHRAC_IBARE = "3065 sayılı KDV Kanunu'nun 11/1-c maddesi hükümlerine göre ihraç edilmek şartıyla teslim edildiğinden KDV tahsil edilmemiştir.";
-export const IHRAC_FATURA_NOTU = "Uygulama yurt içi fatura basmaz; bu ibareyi e-fatura yazılımında faturanın açıklamasına ekleyin.";
-export const IHRAC_KOPYALA = "Kopyala";
-export const IHRAC_KOPYALANDI = "İbare kopyalandı.";
-export const IHRAC_KOPYALANAMADI = "Kopyalanamadı, metni seçip kopyalayın.";
-export const IHRAC_PARCA_SINIRI = "Yalnız kendi ürettiğimiz parçada kullanılır; hazır alıp sattığımız parçada kullanılmaz. Bu kararı uygulama veremez, siz verirsiniz.";
 // R7/3, AC-9: pasif tevkifat kutusunun nedeni.
 export const IHRAC_TEVKIFAT_NEDENI = "İhraç kayıtlı teslimde tevkifat uygulanmaz.";
 // R25: formun KDV kutusundaki beş satırın etiketleri.

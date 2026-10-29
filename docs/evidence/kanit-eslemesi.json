@@ -6182,6 +6182,11 @@
         "rapor": "docs/evidence/tahsis-model-taban-piksel-raporu.json",
         "ekran": "stok-yedek-parca-ucretsiz",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "ekran": "stok-yedek-0114",
+        "beklenen": "ayni"
       }
     ],
     "src/components/Finance.jsx": [
@@ -6555,6 +6560,12 @@
         "rapor": "docs/evidence/0110-taban-piksel-raporu.json",
         "ekran": "musteri-formu-0110-teslim",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "ekran": "musteri-formu-0114",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
       }
     ],
     "src/components/customers/CustomerDetailModal.jsx": [
@@ -6860,6 +6871,24 @@
         "rapor": "docs/evidence/0110-taban-piksel-raporu.json",
         "ekran": "kalip-formu-0107-duzenle",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "ekran": "kalip-formu-0114-ihrac",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+      },
+      {
+        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "ekran": "kalip-formu-0114-ozet",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+      },
+      {
+        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "ekran": "kalip-formu-0114-kart-uyari",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
       }
     ],
     "src/components/YedekParcaSatisForm.jsx": [
@@ -6941,6 +6970,18 @@
       {
         "rapor": "docs/evidence/0111-piksel-raporu.json",
         "ekran": "yedek-parca-formu-ucretsiz"
+      },
+      {
+        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-0114-ihrac",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
+      },
+      {
+        "rapor": "docs/evidence/0116-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-0114-ozet",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0116 Karar 1"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
@@ -10100,43 +10141,6 @@
       {
         "rapor": "docs/evidence/0102-piksel-raporu.json",
         "ekran": "stok-0100-pano-bos",
-        "beklenen": "ayni"
-      }
-    ],
-    "src/components/IhracKayitliAlani.jsx": [
-      {
-        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
-        "ekran": "kalip-formu-0114-ihrac",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
-        "ekran": "kalip-formu-0114-ozet",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
-        "ekran": "yedek-parca-formu-0114-ihrac",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
-        "ekran": "yedek-parca-formu-0114-ozet",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
-        "ekran": "musteri-formu-0114",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
-        "ekran": "musteri-detay-0114",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0114-taban-piksel-raporu.json",
-        "ekran": "stok-yedek-0114",
         "beklenen": "ayni"
       }
     ],

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { CUR_SYM, ODEME_YONTEMLERI, tipRenk } from "../../lib/constants";
-import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani, kalipCapiOnDoldur, trLower, ihracKayitliEtkinMi } from "../../lib/utils";
+import { fmtCur, calcKDV, parseMoney, sumPayments, calcCiro, isFaturali, isYurtIci, normalizeSaleType, getKdvRateForDate, isPaymentReceived, tahsilEdilecekKdv, tahsilKdvOrani, kalipCapiOnDoldur, trLower } from "../../lib/utils";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, Modal, CountryCityFields, KalipCapiFields, PickOrType, PaymentRowsEditor, LockConflict, SearchSelect, DateInput } from "../ui";
 import { HataMetni, Ipucu, BolumBasligi, BosDurum } from "../tasarim";
 import { serisizDusulecek, serisizSecenekMetni, seriliSecenekMetni, partiSecenekAdi, PANO_SEKME_ADI, modelStokSayaci, modelStokOku, modelStokMetni } from "../../lib/stokDurumu";
@@ -13,7 +13,7 @@ import { OdemeSatiriHesap } from "../kasa/TahsilatHesap";
 import { kartYansitmaAyrim, makinaKartOdemesi, kartTahsilEdildiMi } from "../../lib/krediKarti";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "../SatisTevkifatAlani";
 import { SatisTipiSecici } from "../SatisTipiSecici";
-import { IhracKayitliAlani, IhracKayitliOzetSatirlari } from "../IhracKayitliAlani";
+import { IhracKayitliOzetSatirlari } from "../IhracKayitliOzet";
 import { satisTevkifatOzeti, makinaKartTabaniEskiMi } from "../../lib/satisTevkifat";
 
 // Spec 0109 R1, R1/2, R5–R7, R17: makina durumunun ön doldurması ve temizliği. Ön doldurma koşulsuz ezer ve işareti ONDOLDU yapar.
@@ -558,8 +558,6 @@ export const CustomerAddEditForm = ({
           <div style={{ maxWidth: 220 }}><MoneyInput value={form.komisyon} sym={CUR_SYM[form.currency || "TRY"]} onChange={v => setForm(p => ({ ...p, komisyon: v }))} /></div>
         </Field>
       </div>
-      {/* Spec 0114 R22, R23: işaret açıkken açıklama, ibare ve fatura notu. */}
-      <IhracKayitliAlani acik={ihracKayitliEtkinMi(form, form.faturali)} />
       {/* Spec 0079 R1, R2: tevkifat kutusu (yalnız faturalı yurtiçi); R13/2: eski tabanlı kartlı tahsilat varsa uyarı. */}
       <SatisTevkifatAlani form={form} setForm={setForm} saleType={form.faturali} kartUyarisi={!!form.id && makinaKartTabaniEskiMi(form, payments)} />
 

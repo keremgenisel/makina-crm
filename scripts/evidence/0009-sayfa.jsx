@@ -1379,8 +1379,8 @@ const EKRANLAR = {
   "finans-0113-tahsilsiz": [<FINANS_0113 odendi={false} />, ["Göster", "kaydir:Gelir & Tahsilat"]],
   "finans-0113-anlasmali": [<FINANS_0113 />, ["Göster", "*Tahsil Edilen Anlaşmalı Servis Parçası"]],
   "finans-0079-kdv": [<FINANS musteriler={MUSTERI_0079} />, ["Göster", "kaydir:KDV Karşılaştırması"]],
-  // Spec 0114: üç formda işaret açık (açıklama, ibare, fatura notu, yedek parçada sınır satırı, KDV kutusunda beş satır), pasif
-  // tevkifat kutusu, eski tabanlı kart uyarısı, makina formu, müşteri detayında rozet ve borç satırı, Stok rozeti, iki KDV kartı.
+  // Spec 0114: üç formda işaret açık (KDV kutusunda beş satır; spec 0116 ile açıklama kutusu kalktı, -ihrac ekranları pasif
+  // tevkifat kutusuna kayar), pasif tevkifat kutusu, eski tabanlı kart uyarısı, makina formu, müşteri detayında rozet ve borç satırı, Stok rozeti, iki KDV kartı.
   // İşaret kapalı hâli bugünkü form ekranlarıdır (kalip-formu, yedek-parca-formu, musteri-formu-0079 ...). Hata yolu (AC-11)
   // formdan üretilemez (R12/2), ekranı yok.
   "kalip-formu-0114-ihrac": [<FormEkrani Bilesen={PartSaleForm} title="Extra Kalıp Satışı"
@@ -1391,10 +1391,10 @@ const EKRANLAR = {
     ilk={{ id: 7904, customerId: 500, tur: "Kalıp", tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturalı Yurtiçi", satisFirma: "Altuntaş Makina", ad: "Hamburger", ucret: "8000", fabrikaTeslim: false,
       kaliplar: [], odendi: true, yontem: "Kredi Kartı", taksitSayisi: 1, kartKomisyonu: { taksit: 1, oran: 3.15, toplamKesinti: 312, blokajGun: 0, yansitildi: false }, ...IK14 }} />, ["kaydir:Bu fatura tevkifatlı"]],
   "yedek-parca-formu-0114-ihrac": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı"
-    ilk={{ aliciTipi: "musteri", musteriId: 500, currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, satirlar: [{ partId: 7, miktar: 1, birimFiyat: 100000 }], ...IK14 }} />, ["kaydir:Fatura KDV'li kesilir"]],
+    ilk={{ aliciTipi: "musteri", musteriId: 500, currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, satirlar: [{ partId: 7, miktar: 1, birimFiyat: 100000 }], ...IK14 }} />, ["kaydir:Bu fatura tevkifatlı"]],
   "yedek-parca-formu-0114-ozet": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı"
     ilk={{ aliciTipi: "musteri", musteriId: 500, currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturalı Yurtiçi", fabrikaTeslim: false, satirlar: [{ partId: 7, miktar: 1, birimFiyat: 100000 }], ...IK14 }} />, ["kaydir:Tahsil edilecek fatura toplamı"]],
-  "musteri-formu-0114": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS} initialDetailId={500} />, ["~Düzenle", "kaydir:Fatura KDV'li kesilir"]],
+  "musteri-formu-0114": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} dealers={DEALERS} initialDetailId={500} />, ["~Düzenle", "kaydir:Bu fatura tevkifatlı"]],
   "musteri-detay-0114": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={KALIP_0114} services={SERVIS_0079} payments={[]} yedekParcaSatislar={YP_0114} dealers={DEALERS}
     parts={[{ id: 7, ad: "Rulman" }]} setServices={bos} setPartSales={bos} setYedekParcaSatislar={bos} calisanlar={CAL} initialDetailId={500} />, ["kaydir:Makina Geçmişi"]],
   "musteri-detay-0114-borc": [<Customers customers={MUSTERI_0114} setCustomers={bos} partSales={KALIP_0114} services={[]} payments={[]} yedekParcaSatislar={YP_0114} dealers={DEALERS}
