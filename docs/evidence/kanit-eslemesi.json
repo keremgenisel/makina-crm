@@ -7510,6 +7510,34 @@
         "rapor": "docs/evidence/0117-piksel-raporu.json",
         "ekran": "uretim-formu-0115-kopuk",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0118-piksel-raporu.json",
+        "ekran": "uretim-formu-0118-manuel-kodlu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0118 Karar 36"
+      },
+      {
+        "rapor": "docs/evidence/0118-piksel-raporu.json",
+        "ekran": "uretim-formu-0118-manuel-kodsuz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0118 Karar 36"
+      },
+      {
+        "rapor": "docs/evidence/0118-piksel-raporu.json",
+        "ekran": "uretim-formu-0118-manuel-tamirli",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0118 Karar 36"
+      },
+      {
+        "rapor": "docs/evidence/0118-piksel-raporu.json",
+        "ekran": "uretim-formu-0118-manuel-tamirsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-10-29 · spec 0118 Karar 36"
+      },
+      {
+        "rapor": "docs/evidence/0118-piksel-raporu.json",
+        "ekran": "uretim-formu-0115-tamir"
       }
     ],
     "src/components/customers/detail/MachineTimeline.jsx": [

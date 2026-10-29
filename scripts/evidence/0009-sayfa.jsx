@@ -1440,6 +1440,11 @@ const EKRANLAR = {
     ["~Garanti Dışı", "tikla:Kalıp atölyeye girecek", "Kalıp ekle", "Kaydet", "kaydir:Kalıp adını girin."]],
   "ayarlar-parcatipi-0115": [<PartTypeManager partTypeDefs={TIP_0115} setPartTypeDefs={bos} parts={PARCA_0115} />, []],
   "katalog-parca-0115-ipucu": [ayarlar("yedekparca", { parts: [{ id: 81, ad: "100_ERKEK KALIPLAR REVİZE", tip: "Standart" }], partTypeDefs: TIP_0115 }), ["baslik:Düzenle", "kaydir:Parça Tipi"]],
+  // Spec 0118: Manuel Satır Ekle penceresi; kodlu ve kodsuz kalıp, firmanın bekleyen tamiri seçili ve tamirsiz firma.
+  "uretim-formu-0118-manuel-kodlu": [<UretimFormu uretimFormlari={V115.URETIM_FORMLARI} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES} kalipDefs={V115.KALIP_DEFS} showToast={bos} services={SERVIS_0115} />, ["satir-ilk-dugme:1", "dugme:Manuel Satır Ekle", "tikla:Anadolu Köfte", "tikla:HAMBURGER"]],
+  "uretim-formu-0118-manuel-kodsuz": [<UretimFormu uretimFormlari={V115.URETIM_FORMLARI} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES} kalipDefs={V115.KALIP_DEFS} showToast={bos} services={SERVIS_0115} />, ["satir-ilk-dugme:1", "dugme:Manuel Satır Ekle", "tikla:Anadolu Köfte", "tikla:KASAP KÖFTE"]],
+  "uretim-formu-0118-manuel-tamirli": [<UretimFormu uretimFormlari={V115.URETIM_FORMLARI} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES} kalipDefs={V115.KALIP_DEFS} showToast={bos} services={SERVIS_0115} />, ["satir-ilk-dugme:1", "dugme:Manuel Satır Ekle", "tikla:Anadolu Köfte", "tikla:HAMBURGER", "tikla:100_ERKEK KALIPLAR REVİZE · 12/10/2026"]],
+  "uretim-formu-0118-manuel-tamirsiz": [<UretimFormu uretimFormlari={V115.URETIM_FORMLARI} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES} kalipDefs={V115.KALIP_DEFS} showToast={bos} services={V115.SERVICES} />, ["satir-ilk-dugme:1", "dugme:Manuel Satır Ekle", "tikla:Anadolu Köfte"]],
   "uretim-formu-0115-tamir": [<UretimFormu uretimFormlari={[FORM_0115]} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES}
     services={SERVIS_0115} kalipDefs={V115.KALIP_DEFS} showToast={bos} />, ["satir-ilk-dugme:1"]],
   "uretim-formu-0115-bekleyen": [<UretimFormu uretimFormlari={V115.URETIM_FORMLARI} setUretimFormlari={bos} customers={V115.CUSTOMERS} partSales={V115.PART_SALES}

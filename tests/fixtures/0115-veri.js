@@ -32,7 +32,7 @@ export const PART_SALES = [
     odendi: true, satisFirma: "Altuntaş Makina", uretimFormGonder: true, uretimFormId: 31 },
 ];
 const satir = (o) => ({ id: o.id, kalipDefId: null, kalipKodu: "", kalipAdi: "", kalipResim: "", musteriId: null, musteriAdi: "", sehir: "",
-  makinaKodu: "", torna: "", kalipOlcusu: "", makinaKalipCapi: "", tamamlandi: false, kaynakTip: null, kaynakId: null, kalipIdx: null, ...o });
+  makinaKodu: "", kalipOlcusu: "", makinaKalipCapi: "", tamamlandi: false, kaynakTip: null, kaynakId: null, kalipIdx: null, ...o });
 export const URETIM_FORMLARI = [
   { id: 31, baslangicTarihi: "2026-10-26", bitisTarihi: "2026-10-26", kapali: false, not: "", createdAt: "2026-10-26",
     satirlar: [

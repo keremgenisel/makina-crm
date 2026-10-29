@@ -13,7 +13,6 @@ export const emptyRow = () => ({
   musteriAdi: "",
   sehir: "",
   makinaKodu: "",
-  torna: "",
   kalipOlcusu: "",
   makinaKalipCapi: "",
   tamamlandi: false,

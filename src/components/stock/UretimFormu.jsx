@@ -15,6 +15,8 @@ import { tamirSatirHaritasi, bekleyenTamirler, tamirSatiriKur, tamirAnahtari, ta
   bekleyenTamirDugmesi, TAMIR_YOK, TAMIR_EKLENDI, TAMIR_KAYNAK_TIPI } from "../../lib/kalipTamiri";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
+// Spec 0118 Karar 37 (plan Ö3): kapalı dönemde ekleme yapan üç yolun (iki toplama düğmesi ve manuel pencere) tek metni.
+const DONEM_KAPALI_METNI = "Bu dönem sonlandırılmış, yeni kalıp eklenemez.";
 
 // Bekleyen kalıpların (spec 0108: bağı canlı olmayanlar, musteriDurumu ölçütü) EN ESKİ tarihi — müşteri kalıbı: installDate,
 // Extra Kalıp: ps.tarih. Yeni üretim formu başlangıcını buna çekip "Bekleyen Kalıpları Getir" hepsini yakalar.
@@ -224,7 +226,7 @@ export function UretimFormu({
   // ── Bekleyen kalıpları getir ───────────────────────────────────────────────
   const collectPending = () => {
     if (!form) return;
-    if (form.kapali) { showToast("Bu dönem sonlandırılmış, yeni kalıp eklenemez."); return; }
+    if (form.kapali) { showToast(DONEM_KAPALI_METNI); return; }
     const { baslangicTarihi, bitisTarihi } = form;
     if (!baslangicTarihi || !bitisTarihi) {
       showToast("Önce tarih aralığını belirleyin.");
@@ -309,7 +311,7 @@ export function UretimFormu({
   const bekleyenler = useMemo(() => bekleyenTamirler(services, tamirHarita), [services, tamirHarita]);
   const collectTamir = () => {
     if (!form) return;
-    if (form.kapali) { showToast("Bu dönem sonlandırılmış, yeni kalıp eklenemez."); return; }
+    if (form.kapali) { showToast(DONEM_KAPALI_METNI); return; }
     if (bekleyenler.length === 0) { showToast(TAMIR_YOK); return; }
     const satirlar = bekleyenler.map(({ servis, giris }) => tamirSatiriKur(emptyRow(), servis, giris, customers.find(c => c.id === Number(servis.customerId)), kalipDefs));
     setForm(f => ({ ...f, satirlar: [...f.satirlar, ...satirlar] })); // R24/2: listenin sonuna
@@ -320,7 +322,8 @@ export function UretimFormu({
   // Spec 0115 triyajı: başka canlı formda satırı olan kaynaklar (manuel pencere onları seçtirmez).
   const baskaFormdakiler = useMemo(() => new Set(uretimFormlari.filter(f => f && !f.deletedAt && f.id !== form?.id)
     .flatMap(f => (f.satirlar || []).map(kaynakAnahtari)).filter(Boolean)), [uretimFormlari, form?.id]);
-  const openAddModal = () => setAddModal(true);
+  // Spec 0118 R16/2: kapalı dönemde pencere açılmaz (ekranın şeridi "yeni kalıp ekleyemezsiniz" diyor).
+  const openAddModal = () => { if (form?.kapali) { showToast(DONEM_KAPALI_METNI); return; } setAddModal(true); };
 
   const printForm = () => {
     if (!form) return;
@@ -511,6 +514,7 @@ export function UretimFormu({
             customers={customers}
             kalipDefs={kalipDefs}
             baskaFormdakiler={baskaFormdakiler}
+            bekleyenler={bekleyenler}
             onClose={() => setAddModal(false)}
             onAdd={(rows) => setForm(f => ({ ...f, satirlar: [...f.satirlar, ...rows] }))}
           />

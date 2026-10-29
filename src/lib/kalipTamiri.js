@@ -26,6 +26,10 @@ export const TAMIR_ISARETLENDI = (n) => `${n} kalıp satırı bitti işaretlendi
 export const bekleyenTamirDugmesi = (n) => `Bekleyen Tamirleri Getir (${n})`;
 export const TAMIR_YOK = "Bekleyen tamir yok.";
 export const TAMIR_EKLENDI = (n) => `${n} tamir eklendi.`;
+// Spec 0118 R5/2, R11/2: Manuel Satır Ekle penceresinin bekleyen tamir bölümü ve kod ipucusu (boş durum TAMIR_YOK).
+export const MANUEL_TAMIR_BASLIGI = "SERVİSTE BEKLEYEN KALIPLAR";
+export const MANUEL_TAMIR_BOS_IPUCU = "Tamir, servis formunda \"Kalıp atölyeye girecek\" işaretlenince burada listelenir.";
+export const MANUEL_KOD_IPUCU = "Bu kalıbın katalogda kodu yok. Ayarlar › Katalog › Kalıp Modelleri'nde girebilirsiniz.";
 export const KALIP_ISI_BAYRAGI = "Kalıp işi";
 export const KALIP_ISI_BAYRAK_IPUCU = "kalıp tamiri ya da revizyonudur; servis formunda bu tipteki kalem eklenince kalıp atölyesi önerisi çıkar.";
 export const PARCA_TIP_IPUCU = "Bu parçanın adında kalıp geçiyor. Kalıp işi işaretli bir tip seçerseniz servis formunda kalıp önerisi çalışır.";
