@@ -35,6 +35,8 @@ export const KALIP_ISI_BAYRAK_IPUCU = "kalıp tamiri ya da revizyonudur; servis 
 export const PARCA_TIP_IPUCU = "Bu parçanın adında kalıp geçiyor. Kalıp işi işaretli bir tip seçerseniz servis formunda kalıp önerisi çalışır.";
 // Spec 0117 R24, R24/2: Makina Geçmişi satırının liste başlığı (çıktı ayrı yoldan, çeviri anahtarından okur; C10).
 export const SERVIS_KALIPLARI_ETIKETI = "Servis gören kalıplar";
+// Spec 0119 R5: panodaki kalıbı gönderen kişi seçicisinin boş seçeneği; teslim şeklinden bağımsız tek nötr soru (C1).
+export const SEVK_SORUMLU_SORUSU = "Kalıbı kim veriyor?";
 export const TUR_ADLARI = { uretim: "Üretim", tamir: "Tamir" };
 export const turAdi = (r) => TUR_ADLARI[r?.tur === "tamir" ? "tamir" : "uretim"];
 // Triyaj: Manuel Satır Ekle'de başka bir canlı üretim formunda satırı olan kalıp seçilemez (R40'ın "ikinci forma çekilemez"
@@ -114,6 +116,14 @@ export const tamirSevkKur = (form) => {
     if (v) sevk[a] = v;
   }
   return sevk;
+};
+// Spec 0119 R9–R10: panonun kalıbı gönderen kişi yazıcısı. Kayıtlı servisi yazar, kutu kapısı taşımaz (R9/3: kayıtta geçici
+// alan yoktur, kapı kalıp listesi boşalmış kayıtta değeri sessizce düşürürdü); değer kırpılır, boşsa anahtar silinir,
+// öteki sevk alanlarına ve kalıp listesine dokunulmaz. Doğrulama yok (0117 R7/2).
+export const sevkSorumluYaz = (servis, ad) => {
+  const { kalipKargoSorumlusu: _eski, ...kalan } = servis || {};
+  const v = String(ad ?? "").trim();
+  return v ? { ...kalan, kalipKargoSorumlusu: v } : kalan;
 };
 // Etiketin tarihi (R18, R18/2, Karar 39): kargo tarihi takvimde geçerli YYYY-AA-GG ise o, değilse servis tarihi. Seçim ham
 // değerde yapılır, biçimleme çağıranda; bu bir okuma kuralıdır, kayıt doğrulanmaz (R7/2).

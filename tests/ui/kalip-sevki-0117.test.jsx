@@ -208,7 +208,7 @@ describe("Spec 0117 B: panodaki etiket düğmesi", () => {
     expect(within(arsiv).queryByTitle("Kargo Etiketi Yazdır")).toBeNull();
     expect(arsiv.querySelector("select")).toBeNull();
   });
-  it("AC-55 (C12): kart kalıbın teslim şeklini basmaz; yalnız onarım yeri metni durur", () => {
+  it("AC-55 (C12): kart kalıbın teslim şeklini basmaz; yalnız onarım yeri metni durur (spec 0119 ile: Tamamlandı ve kalıplı kartta kalıbı gönderen kişi de durur, iddia aynen)", () => {
     pano();
     const yapiliyor = kartlar().find(a => a.closest("section").querySelector("h3").textContent === "İşlemde");
     expect(yapiliyor.textContent).not.toContain("Fabrika Teslim");

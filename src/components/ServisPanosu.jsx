@@ -20,7 +20,8 @@ import { useKilitListesi } from "../hooks/useKilitListesi";
 import { useLock } from "../hooks/useLock";
 import { printServiceForm as printServiceFormTemplate, tamirEtiketYazdir } from "../lib/printTemplates";
 import { tamirDogrula, tamirListesiKur, tamirYaz, tamirSevkKur, kalipAtolyedeMi, tamirListesi, tamirSatirHaritasi, tamirOzeti, tamirFormIdleri, tamirlariTamamla,
-  TAMIR_BILDIRIMI, TAMIR_ONAY_BASLIGI, tamirOnayMetni, TAMIR_ONAY_DUGMESI, TAMIR_ONAY_KAPAT, TAMIR_KILITLI, TAMIR_ISARETLENDI } from "../lib/kalipTamiri";
+  TAMIR_BILDIRIMI, TAMIR_ONAY_BASLIGI, tamirOnayMetni, TAMIR_ONAY_DUGMESI, TAMIR_ONAY_KAPAT, TAMIR_KILITLI, TAMIR_ISARETLENDI,
+  SEVK_SORUMLU_SORUSU, sevkSorumluYaz } from "../lib/kalipTamiri";
 import { TamirRozeti } from "./TamirRozeti";
 import { DilSecPenceresi } from "./DilSecPenceresi";
 
@@ -437,6 +438,13 @@ export const ServisPanosu = ({
     setServices(p => p.map(s => s.id === id ? { ...s, tech } : s));
     auditServis("teknisyen_degisti", id, { tech });
   };
+  // Spec 0119 R6–R11, R16: kalıbı gönderen kişi. Teknisyen işleyicisinin ikizi (kapı, kilit yok); kaydı yalnız kitaplığın
+  // yazıcısı kurar (R10/2), iz ayrıntısı alan adıyla kısayol (R10/3). Ad tuzağı: kalipSorumluDegistir Extra Kalıp kargosunundur.
+  const sevkSorumluDegistir = (id, kalipKargoSorumlusu) => {
+    if (!setServices || !canDo("cust_service_edit")) return;
+    setServices(p => p.map(s => s.id === id ? sevkSorumluYaz(s, kalipKargoSorumlusu) : s));
+    auditServis("kalip_sorumlu_degisti", id, { kalipKargoSorumlusu });
+  };
   // Planlanan servisi beklenen zamandan önce hemen panoya düşür (giriş anını şimdiye çeker).
   const hemenDusur = (id) => {
     if (!setServices || !canDo("cust_service_edit")) return;
@@ -629,6 +637,10 @@ export const ServisPanosu = ({
     const teknListe = sv.tech && !tekAdlari.includes(sv.tech) ? [sv.tech, ...tekAdlari] : tekAdlari;
     const surukle = canDo("cust_service_edit") && !arsiv;
     const tamamlandi = sv.durum === "Tamamlandı";
+    // Spec 0119 R2, R2/3: kalıbı gönderen kişi satırı yalnız Tamamlandı ve kalıplı kartta; müşteri kapısı yok.
+    const sevkSatiri = tamamlandi && kalipAtolyedeMi(sv);
+    const sevkBos = !sv.kalipKargoSorumlusu;
+    const sevkListe = sv.kalipKargoSorumlusu && !tekAdlari.includes(sv.kalipKargoSorumlusu) ? [sv.kalipKargoSorumlusu, ...tekAdlari] : tekAdlari;
     const yaniyor = !arsiv && yananIds[sv.id] != null; // yeni gelen servis: alarm süresince yanıp söner
     return (
       <article key={key} draggable={surukle && dragKapaliId !== sv.id}
@@ -695,28 +707,43 @@ export const ServisPanosu = ({
         ) : (
           // macOS'ta <select>, draggable=true bir ATA içindeyken açılıyor ama seçim işlenmiyor.
           // Kontrol satırına gelince kartın draggable'ını React-kontrollü kapatıyoruz (dragKapaliId).
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 10, paddingTop: 9, borderTop: "1px dashed var(--n200, #e2e8f0)" }}
+          // Spec 0119 R1/3: iki satır TEK kapta; koruma (tıklama, iki fare işleyicisi, kesikli çizgi) yalnız dış kapta.
+          <div style={{ display: "flex", flexDirection: "column", gap: 7, marginTop: 10, paddingTop: 9, borderTop: "1px dashed var(--n200, #e2e8f0)" }}
             onClick={e => e.stopPropagation()}
             onMouseEnter={() => setDragKapaliId(sv.id)}
             onMouseLeave={() => setDragKapaliId(id => id === sv.id ? null : id)}>
-            <select value={sv.tech || ""} disabled={!canDo("cust_service_edit")}
-              onChange={e => teknisyenDegistir(sv.id, e.target.value)}
-              style={{ flex: 1, minWidth: 0, font: "inherit", fontSize: 12.5, fontWeight: teksBos ? 500 : 600, color: teksBos ? "var(--n400, #94a3b8)" : "var(--n800, #1e293b)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 8px", cursor: "pointer" }}>
-              <option value="">Kim yapıyor?</option>
-              {teknListe.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            {/* Spec 0117 R12–R14: tamir edilen kalıbın etiketi; durum kapısı yok, kalıpsız ya da müşterisi çözülmeyen serviste yok. */}
-            {kalipAtolyedeMi(sv) && custMap[Number(sv.customerId)] && (
-              <button type="button" title="Kargo Etiketi Yazdır" onClick={() => tamirEtiketYazdir(sv, { customers, factory })}
-                style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Etiket</button>
-            )}
-            {tamamlandi && (
-              <button type="button" title="Servis Formu yazdır" onClick={() => setYazdirDilSv(sv)}
-                style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Yazdır</button>
-            )}
-            {tamamlandi && canDo("cust_service_pano_kaldir") && (
-              <button type="button" title="Kartı panodan kaldır (servis kaydı silinmez)" onClick={() => panoGizle(sv.id, true)}
-                style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n500, #64748b)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>🗄 Kaldır</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <select value={sv.tech || ""} disabled={!canDo("cust_service_edit")}
+                onChange={e => teknisyenDegistir(sv.id, e.target.value)}
+                style={{ flex: 1, minWidth: 0, font: "inherit", fontSize: 12.5, fontWeight: teksBos ? 500 : 600, color: teksBos ? "var(--n400, #94a3b8)" : "var(--n800, #1e293b)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 8px", cursor: "pointer" }}>
+                <option value="">Kim yapıyor?</option>
+                {teknListe.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              {/* Spec 0117 R12–R14: tamir edilen kalıbın etiketi; durum kapısı yok, kalıpsız ya da müşterisi çözülmeyen serviste yok. */}
+              {kalipAtolyedeMi(sv) && custMap[Number(sv.customerId)] && (
+                <button type="button" title="Kargo Etiketi Yazdır" onClick={() => tamirEtiketYazdir(sv, { customers, factory })}
+                  style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Etiket</button>
+              )}
+              {tamamlandi && (
+                <button type="button" title="Servis Formu yazdır" onClick={() => setYazdirDilSv(sv)}
+                  style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Yazdır</button>
+              )}
+              {tamamlandi && canDo("cust_service_pano_kaldir") && (
+                <button type="button" title="Kartı panodan kaldır (servis kaydı silinmez)" onClick={() => panoGizle(sv.id, true)}
+                  style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n500, #64748b)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap" }}>🗄 Kaldır</button>
+              )}
+            </div>
+            {/* Spec 0119 R1–R5: kalıbı gönderen kişi; biçim teknisyen seçicisinden, ikon kargo kartından. */}
+            {sevkSatiri && (
+              <div data-testid="sevk-sorumlu-satiri" style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                <span aria-hidden="true" style={{ fontSize: 12 }}>🚚</span>
+                <select aria-label="Kalıbı gönderen kişi" value={sv.kalipKargoSorumlusu || ""} disabled={!canDo("cust_service_edit")}
+                  onChange={e => sevkSorumluDegistir(sv.id, e.target.value)}
+                  style={{ flex: 1, minWidth: 0, font: "inherit", fontSize: 12.5, fontWeight: sevkBos ? 500 : 600, color: sevkBos ? "var(--n400, #94a3b8)" : "var(--n800, #1e293b)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 8px", cursor: "pointer" }}>
+                  <option value="">{SEVK_SORUMLU_SORUSU}</option>
+                  {sevkListe.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
             )}
           </div>
         )}

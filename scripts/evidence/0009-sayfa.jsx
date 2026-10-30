@@ -749,8 +749,10 @@ const FORM_0115 = { ...V115.URETIM_FORMLARI[0], satirlar: [...V115.URETIM_FORMLA
   { ...tamirSatiriKur({ ...emptyRow(), id: 9101 }, SERVIS_0115[0], LISTE_0115[0], V115.CUSTOMERS[0], V115.KALIP_DEFS), tamamlandi: true },
   tamirSatiriKur({ ...emptyRow(), id: 9102 }, SERVIS_0115[0], LISTE_0115[1], V115.CUSTOMERS[0], V115.KALIP_DEFS)] };
 const KIOSK_0115 = { role: "user", permissions: JSON.stringify({ tabs: ["servis"], customerActions: ["cust_service_add", "cust_service_edit"] }) };
-function Pano0115(props) {
-  const [services, setServices] = useState(SERVIS_0115);
+// Spec 0119 R15/3: Tamamlandı, kalıplı ve kalıbı gönderen kişisi dolu servis; veri araçta yerel (0115 fikstürü altını üretti).
+const SERVIS_0119 = SERVIS_0115.map(s => (s.id === 41 ? { ...s, durum: "Tamamlandı", kalipKargoSorumlusu: "Zeynep Arslan" } : s));
+function Pano0115({ ilk = SERVIS_0115, ...props }) {
+  const [services, setServices] = useState(ilk);
   return <ServisPanosu services={services} setServices={setServices} customers={V115.CUSTOMERS} dealers={[]} parts={PARCA_0115} calisanlar={CAL} showToast={bos}
     yedekParcaSatislar={[]} setYedekParcaSatislar={bos} dosyalar={[]} setDosyalar={bos} uretimFormlari={[FORM_0115]} setUretimFormlari={bos} uretimYetki partTypeDefs={TIP_0115} {...props} />;
 }
@@ -1454,6 +1456,7 @@ const EKRANLAR = {
   "uretim-formu-0115-yazdir": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: uretimFormuHtml(FORM_0115) }} />, []],
   "servis-pano-0115-rozet": [pano0115({}), []],
   "servis-pano-0115-onay": [pano0115({}), ["surukle-servis:41>Tamamlandı"]],
+  "servis-pano-0119-sorumlu": [pano0115({ ilk: SERVIS_0119 }), []],
   "servis-pano-0115-kiosk": [pano0115({ kiosk: true, serverPermissions: KIOSK_0115, setUretimFormlari: null, uretimYetki: false }), ["surukle-servis:41>Tamamlandı"]],
   "musteri-detay-0115": [<Customers customers={V115.CUSTOMERS} setCustomers={bos} services={SERVIS_0115} setServices={bos} partSales={V115.PART_SALES} setPartSales={bos} payments={[]}
     dealers={[]} parts={PARCA_0115} kdvRates={V115.KDV} gorusmeler={[]} dosyalar={[]} partTypeDefs={TIP_0115} uretimFormlari={[FORM_0115]} kalipDefs={V115.KALIP_DEFS}

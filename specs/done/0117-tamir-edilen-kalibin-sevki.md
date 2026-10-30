@@ -347,7 +347,7 @@ Takım Yöneticisi uygulama planındaki on iki önerinin hepsini onayladı (`spe
 - **AC-52.** `electron/serverAuth.cjs` beş yeni alan adını hiç anmaz (tarama genişletildi) ve `ALAN_IZINLERI.services` yalnız `durum`u izler.
 - **AC-53.** Kargo seçiliyken alan etiketleri "Kargo Tarihi" ve "Kargoyu Veren Kişi", Fabrika Teslim seçiliyken "Teslim Tarihi" ve "Teslim Eden Kişi" yazar.
 - **AC-54.** Servis tarihinden önceki bir kargo tarihi, çok uzun bir takip numarası ve tamamen boş sevk alanları hatasız kaydedilir; hiçbir sevk alanı için uyarı çıkmaz.
-- **AC-55.** Pano kartı kalıbın teslim şeklini basmaz; kartta yalnız bugünkü onarım yeri metni durur.
+- **AC-55.** Pano kartı kalıbın teslim şeklini basmaz; kartta yalnız bugünkü onarım yeri metni durur. *(spec 0119 ile: ikinci yarı ters çevrildi, Tamamlandı ve kalıplı kartta kalıbı gönderen kişi de durur; ilk yarı ve testin iddiası aynen.)*
 - **AC-56.** Kıyas testi beş yeni alanın da sevk bilgisi taşımayan serviste gövdeye girmediğini ölçer.
 - **AC-57.** 0117'nin kapanış bekçisi vardır: plan `specs/done`'a taşınınca `CLAUDE.md`'nin 0117 bölümü "Tamamlandı: commit" satırını taşır, `tests/spec-atiflari.test.js`'in `TASINACAK` listesinde 0117 yoktur, `specs/0117-*.md` kopyası kalmaz ve `specs/README.md`'nin 0117 satırı "(Tamamlandı)" yazar.
 

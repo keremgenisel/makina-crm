@@ -24,7 +24,7 @@ const ACTION_LABELS = {
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
   temizlendi: "Temizlendi", geri_alindi: "Geri Alındı",
   // Servis ve Kargo Panosu + yedek parça satışı işlemleri
-  durum_degisti: "Durum Değişti", teknisyen_degisti: "Teknisyen Değişti", sorumlu_degisti: "Kargo Sorumlusu Değişti",
+  durum_degisti: "Durum Değişti", teknisyen_degisti: "Teknisyen Değişti", sorumlu_degisti: "Kargo Sorumlusu Değişti", kalip_sorumlu_degisti: "Kalıp Sorumlusu Değişti", // spec 0119 R11/2
   tahsis_edildi: "Makinaya Tahsis Edildi", tahsis_kaldirildi: "Tahsis Kaldırıldı",
   panodan_kaldirildi: "Panodan Kaldırıldı", panoya_alindi: "Panoya Geri Alındı", hemen_dusuruldu: "Hemen Düşürüldü",
   odendi: "Ödendi", odeme_iptal: "Ödeme İptal",
