@@ -17,7 +17,7 @@ describe("Spec 0116 C: kaynak (AC-18, AC-19, AC-22 – AC-25, AC-30, AC-31, AC-3
   it("AC-18: kaldırılan yedi sabitin adı ve metni src'de hiç geçmez", () => {
     expect(srcIcinde(/\bIHRAC_(ACIKLAMA|IBARE|FATURA_NOTU|KOPYALA|KOPYALANDI|KOPYALANAMADI|PARCA_SINIRI)\b/)).toEqual([]);
     for (const m of ["hükümlerine göre ihraç edilmek şartıyla teslim edildiğinden", "Fatura KDV'li kesilir ama", "e-fatura yazılımında", "İbare kopyalandı", "Kopyalanamadı, metni seçip", "hazır alıp sattığımız parçada"]) {
-      expect(srcIcinde(new RegExp(m.replace(/[/.()]/g, "\\$&"))), m).toEqual([]);
+      expect(SRC.filter(f => oku(f).includes(m)), m).toEqual([]); // düz metin: regex kaçışı gerekmez (CodeQL js/incomplete-sanitization)
     }
   });
   it("AC-19: IhracKayitliAlani adı src'de hiç geçmez ve eski dosya yok", () => {
