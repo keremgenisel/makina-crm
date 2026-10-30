@@ -49,6 +49,7 @@ import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle, kalipGuncelle } from
 import { durumYaz, makinaDurumuOf, MAKINA_DURUM_ADLARI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
 import { MakinaDurumuSecici } from "./DurumSecici";
 import { tamirDogrula, tamirListesiKur, tamirYaz, tamirSevkKur, tamirListesi } from "../../lib/kalipTamiri";
+import { DilSecPenceresi } from "../DilSecPenceresi";
 
 export const CustomerDetailModal = ({
   detailView,
@@ -1362,24 +1363,14 @@ export const CustomerDetailModal = ({
       )}
 
       {printLangModal && (
-        <Modal title="Dil Seçin" onClose={() => setPrintLangModal(null)} maxWidth={300}>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", padding: "8px 0 4px" }}>
-            {["TR", "EN"].map(l => (
-              <button key={l} onClick={() => {
-                const { type, sv } = printLangModal;
-                setPrintLangModal(null);
-                if (type === "makina") printMachineReport(l);
-                else if (type === "servis") printServiceForm(sv, l);
-                else if (type === "mail_makina") openMailMachineReport(l);
-                else if (type === "mail_servis") openMailServiceForm(sv, l);
-              }} style={{
-                width: 80, padding: "12px 0", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10,
-                fontSize: 18, fontWeight: 800, cursor: "pointer",
-                background: "var(--n100, #f8fafc)", color: "var(--n900, #0f172a)",
-              }}>{l}</button>
-            ))}
-          </div>
-        </Modal>
+        <DilSecPenceresi onClose={() => setPrintLangModal(null)} onSec={(l) => {
+          const { type, sv } = printLangModal;
+          setPrintLangModal(null);
+          if (type === "makina") printMachineReport(l);
+          else if (type === "servis") printServiceForm(sv, l);
+          else if (type === "mail_makina") openMailMachineReport(l);
+          else if (type === "mail_servis") openMailServiceForm(sv, l);
+        }} />
       )}
 
       {mailDraft && (

@@ -243,3 +243,28 @@ describe("Spec 0117 D: adlar (AC-30, AC-32)", () => {
     expect(screen.getAllByTestId("tamir-rozeti")[0].textContent).toMatch(/^KALIP ATÖLYEDE/);
   });
 });
+
+// Triyaj (2026-10-30): panonun "Yazdır" düğmesi müşteri detayı gibi önce dili sorar; eskiden doğrudan Türkçe basıyordu.
+describe("Pano kartında Servis Formu yazdırma dil sorar", () => {
+  const tamamKarti = () => kartlar().find(a => a.closest("section").querySelector("h3").textContent === "Tamamlandı" && within(a).queryByTitle("Servis Formu yazdır"));
+  it("Yazdır'a basınca Dil Seçin penceresi açılır, henüz bir şey basılmaz", () => {
+    const printHtml = vi.fn();
+    window.appPrint = { printHtml };
+    pano();
+    fireEvent.click(within(tamamKarti()).getByTitle("Servis Formu yazdır"));
+    expect(screen.getByText("Dil Seçin")).toBeTruthy();
+    expect(printHtml).not.toHaveBeenCalled();
+  });
+  it("EN seçilince İngilizce çıktı basılır ve pencere kapanır; TR seçilince Türkçe", async () => {
+    const printHtml = vi.fn();
+    window.appPrint = { printHtml };
+    pano();
+    fireEvent.click(within(tamamKarti()).getByTitle("Servis Formu yazdır"));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "EN" })); });
+    expect(screen.queryByText("Dil Seçin")).toBeNull();
+    expect(printHtml.mock.calls[0][0]).toContain("Serviced Molds");
+    fireEvent.click(within(tamamKarti()).getByTitle("Servis Formu yazdır"));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "TR" })); });
+    expect(printHtml.mock.calls[1][0]).toContain("Servis Gören Kalıplar");
+  });
+});

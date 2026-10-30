@@ -42,10 +42,10 @@ describe("çeviri kapsamı", () => {
     expect(DEFAULT_SERVIS_TRANSLATIONS.EN.servisResimleriBaslik).toBe("SERVICE PHOTOS");
     expect(ekrandakiler("servis").has("servisResimleriBaslik")).toBe(true);
   });
-  // Spec 0117 ile: anahtarın değeri "SERVİS GÖREN KALIPLAR" / "SERVICED MOLDS"; anahtarın adı aynı (C11).
+  // Spec 0117 ile: anahtarın değeri "Servis Gören Kalıplar" / "Serviced Molds"; anahtarın adı aynı (C11).
   it("spec 0115 AC-99, spec 0117 R21–R23: servis gören kalıplar anahtarı iki dilde ve ekranda var", () => {
-    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("SERVİS GÖREN KALIPLAR");
-    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("SERVICED MOLDS");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("Servis Gören Kalıplar");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("Serviced Molds");
     expect(ekrandakiler("servis").has("atolyeKaliplariLabel")).toBe(true);
   });
 });

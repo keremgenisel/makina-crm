@@ -85,7 +85,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     yapilanIslemLabel: "Yapılan İşlem",
     girisLabel: "Servise Giriş Tarihi",
     teknisyenLabel: "Teknisyen",
-    atolyeKaliplariLabel: "SERVİS GÖREN KALIPLAR", // spec 0115 R35/2: yalnız kalıp varken basılır; spec 0117 R21: yeni ad, anahtar aynı
+    atolyeKaliplariLabel: "Servis Gören Kalıplar", // spec 0115 R35/2: yalnız kalıp varken basılır; spec 0117 R21: yeni ad, anahtar aynı; 2026-10-30: öteki satırlar gibi büyük harfsiz
     servisUcretiLabel: "Servis Ücreti",
     parcaUcretiLabel: "Parça Ücreti",
     toplamLabel: "Toplam",
@@ -133,7 +133,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     yapilanIslemLabel: "Work Performed",
     girisLabel: "Service Entry Date",
     teknisyenLabel: "Technician",
-    atolyeKaliplariLabel: "SERVICED MOLDS",
+    atolyeKaliplariLabel: "Serviced Molds",
     servisUcretiLabel: "Service Fee",
     parcaUcretiLabel: "Parts Fee",
     toplamLabel: "Total",

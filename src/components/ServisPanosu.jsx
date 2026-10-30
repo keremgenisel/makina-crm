@@ -22,6 +22,7 @@ import { printServiceForm as printServiceFormTemplate, tamirEtiketYazdir } from 
 import { tamirDogrula, tamirListesiKur, tamirYaz, tamirSevkKur, kalipAtolyedeMi, tamirListesi, tamirSatirHaritasi, tamirOzeti, tamirFormIdleri, tamirlariTamamla,
   TAMIR_BILDIRIMI, TAMIR_ONAY_BASLIGI, tamirOnayMetni, TAMIR_ONAY_DUGMESI, TAMIR_ONAY_KAPAT, TAMIR_KILITLI, TAMIR_ISARETLENDI } from "../lib/kalipTamiri";
 import { TamirRozeti } from "./TamirRozeti";
+import { DilSecPenceresi } from "./DilSecPenceresi";
 
 // Servis Panosu (Kanban) — servisin iş durumu: Bekliyor / Yapılıyor / Tamamlandı. Kartlar
 // sürükle-bırakla sütun değiştirir (durum), her kartta teknisyen (firma çalışanı) seçilir.
@@ -168,6 +169,7 @@ export const ServisPanosu = ({
   // Canlı işçilik sayacı için `now`u yerel ISO'ya çevir (servisSureleri'ye verilir).
   const nowIso = (() => { const p = (n) => String(n).padStart(2, "0"); return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}T${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`; })();
   const [analizSv, setAnalizSv] = useState(null); // per-servis süre analizi modalı
+  const [yazdirDilSv, setYazdirDilSv] = useState(null); // Servis Formu yazdırılacak servis: önce dil sorulur (müşteri detayıyla aynı)
 
   const custMap = useMemo(() => { const m = {}; for (const c of customers) m[c.id] = c; return m; }, [customers]);
   // İşlem Geçmişi (audit) — panodaki servis ve kargo mutasyonları için kısa yardımcılar.
@@ -709,7 +711,7 @@ export const ServisPanosu = ({
                 style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Etiket</button>
             )}
             {tamamlandi && (
-              <button type="button" title="Servis Formu yazdır" onClick={() => printServiceForm(sv)}
+              <button type="button" title="Servis Formu yazdır" onClick={() => setYazdirDilSv(sv)}
                 style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Yazdır</button>
             )}
             {tamamlandi && canDo("cust_service_pano_kaldir") && (
@@ -961,6 +963,10 @@ export const ServisPanosu = ({
       )}
 
       {/* Per-servis süre analizi — o kartın kendi zaman çizelgesi ve süreleri */}
+      {yazdirDilSv && (
+        <DilSecPenceresi onClose={() => setYazdirDilSv(null)}
+          onSec={(l) => { const sv = yazdirDilSv; setYazdirDilSv(null); printServiceForm(sv, l); }} />
+      )}
       {analizSv && (() => {
         const s = servisSureleri(analizSv, nowIso, cs);
         const c = custMap[Number(analizSv.customerId)] || {};

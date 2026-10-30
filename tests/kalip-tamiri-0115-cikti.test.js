@@ -14,23 +14,23 @@ const BASLIKLAR = ["SEVK / KARGO ETİKETİ", "GÖNDEREN", "ALICI", "İÇERİK", 
 const vArgs = (v) => [v.gonderen, v.alici, v.icerik, v.opts];
 
 describe("Spec 0115 Servis Formu çıktısı (R35, R35/2)", () => {
-  // Spec 0117 ile: başlık "SERVİS GÖREN KALIPLAR" / "SERVICED MOLDS" (R21, R22; çeviri anahtarı aynı, C11).
+  // Spec 0117 ile: başlık "Servis Gören Kalıplar" / "Serviced Molds" (R21, R22; çeviri anahtarı aynı, C11).
   it("AC-59: kalıp varken etiket satırı basılır, girişler ad · Ölçü biçiminde", () => {
     const h = buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB });
-    expect(h).toContain("<tr><th>SERVİS GÖREN KALIPLAR</th><td>100_ERKEK KALIPLAR REVİZE · HAMBURGER · Ölçü: Ø98</td></tr>");
+    expect(h).toContain("<tr><th>Servis Gören Kalıplar</th><td>100_ERKEK KALIPLAR REVİZE · HAMBURGER · Ölçü: Ø98</td></tr>");
     const en = buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB, translations: { _lang: "EN" } });
-    expect(en).toContain("SERVICED MOLDS");
+    expect(en).toContain("Serviced Molds");
   });
   // Spec 0117 ile (AC-47): olumsuz iddia yeni başlıkla; eski başlık her veride yok olduğu için bekçi olmaktan çıkmıştı.
   it("AC-60: kalıp yokken satır hiç basılmaz", () => {
     const h = buildServiceFormHtml(SERVICES[0], CUSTOMERS, KDV, { factory: FAB });
-    expect(h).not.toContain("SERVİS GÖREN KALIPLAR");
-    expect(buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB })).toContain("SERVİS GÖREN KALIPLAR"); // iddia boşa düşmesin
+    expect(h).not.toContain("Servis Gören Kalıplar");
+    expect(buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB })).toContain("Servis Gören Kalıplar"); // iddia boşa düşmesin
   });
   it("AC-99: çeviri anahtarı dört yerde (TR, EN, Çeviriler ekranı, kapsam testi ceviri-kapsam.test.js)", () => {
     // Spec 0117 ile: değerler yeni ad, anahtarın adı aynı (R23/2, C11).
-    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("SERVİS GÖREN KALIPLAR");
-    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("SERVICED MOLDS");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("Servis Gören Kalıplar");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("Serviced Molds");
     expect(GROUPS.filter(g => g.ns === "servis").flatMap(g => g.keys.map(k => k.key))).toContain("atolyeKaliplariLabel");
   });
 });

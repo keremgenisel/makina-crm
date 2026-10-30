@@ -82,8 +82,8 @@ describe("Spec 0117 C: etiketin içeriği (R17–R20)", () => {
 
 describe("Spec 0117 D: liste başlığının iki okuma yolu (C10, C11)", () => {
   it("AC-27, AC-28, AC-31: TR, EN, Çeviriler ekranı ve kod sabiti aynı turda yeni adda; anahtarın adı aynı", () => {
-    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("SERVİS GÖREN KALIPLAR");
-    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("SERVICED MOLDS");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.atolyeKaliplariLabel).toBe("Servis Gören Kalıplar");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("Serviced Molds");
     const k = GROUPS.filter(g => g.ns === "servis").flatMap(g => g.keys).find(x => x.key === "atolyeKaliplariLabel");
     expect(k?.label).toBe("Servis Gören Kalıplar");
     expect(SERVIS_KALIPLARI_ETIKETI).toBe("Servis gören kalıplar");
@@ -92,8 +92,8 @@ describe("Spec 0117 D: liste başlığının iki okuma yolu (C10, C11)", () => {
   it("AC-42, AC-43: çıktı çeviri anahtarından okur; kullanıcının spec öncesi düzenlemesi basılmaya devam eder", () => {
     const ozel = buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB, translations: { TR: { atolyeKaliplariLabel: "TAMİRE GELENLER" }, _lang: "TR" } });
     expect(ozel).toContain("<tr><th>TAMİRE GELENLER</th>");
-    expect(ozel).not.toContain("SERVİS GÖREN KALIPLAR");
-    expect(buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB })).toContain("<tr><th>SERVİS GÖREN KALIPLAR</th>");
+    expect(ozel).not.toContain("Servis Gören Kalıplar");
+    expect(buildServiceFormHtml(SV, CUSTOMERS, KDV, { factory: FAB })).toContain("<tr><th>Servis Gören Kalıplar</th>");
     expect(oku("src/lib/printTemplates.js")).toMatch(/L\.atolyeKaliplariLabel/);
     expect(oku("src/components/customers/detail/MachineTimeline.jsx")).toMatch(/SERVIS_KALIPLARI_ETIKETI as KAYIT_ETIKETI/);
   });
@@ -139,7 +139,7 @@ describe("Spec 0117 F: kaynak taramaları", () => {
   it("AC-44 (R32, plan Ö9): kanıt aracı kaldırılan başlığa kaymaz; sayfanın adım uyarıları rapora yazılır", () => {
     const a = oku("scripts/evidence/0009-sayfa.jsx");
     expect(a).not.toContain("ATÖLYEYE ALINAN KALIPLAR");
-    expect(a).toContain('"kaydirgenis:SERVİS GÖREN KALIPLAR"');
+    expect(a).toContain('"kaydirgenis:Servis Gören Kalıplar"');
     expect(a).toContain('"kaydirgenis:Bekleyen Tamirleri Getir"');
     expect(a).not.toContain('"kaydir:Atölyeye girecek"');
     expect(oku("scripts/evidence/0009-ekran.cjs")).toMatch(/adimUyarilari/);
