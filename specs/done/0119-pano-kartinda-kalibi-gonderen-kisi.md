@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (plan `specs/0119-uygulama-plani.md`, plan turu Karar 36–45) |
+| **Durum** | Tamamlandı (revizyon 2: QA turu ve plan turu Karar 36–45, 2026-10-30; uygulama commit `0b43c08`; plan `specs/done/0119-uygulama-plani.md`) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/ServisPanosu.jsx` (servis kartının kontrol bölümü, yeni yazıcı çağrısı, işlem geçmişi), `src/lib/kalipTamiri.js` (yeni saf yazıcı ve seçicinin metin sabiti), `src/components/settings/SettingsAuditLog.jsx` (yeni eylemin etiketi). **Kanıt ve test:** `scripts/evidence/0009-sayfa.jsx`, `tests/kalip-sevki-0117.test.js`, `tests/ui/kalip-sevki-0117.test.jsx`, `tests/islem-gecmisi-etiketleri.test.js`, yeni `tests/kalip-sorumlusu-0119.test.js` ve `tests/ui/kalip-sorumlusu-0119.test.jsx`. **Belge:** `CLAUDE.md`, `specs/README.md`. Veri şeması, göç, izin tanımları, sunucu kuralları, birleştirme ve etiket çıktısı dokunulmaz. |
@@ -179,7 +179,7 @@ Spec 0117 kalıbın dönüşünü kayda yazdı: teslim şekli, kargo firması, t
 
 ### Plan turunda verilen kararlar (2026-10-30)
 
-Takım Yöneticisi uygulama planındaki on önerinin hepsini onayladı (`specs/0119-uygulama-plani.md`).
+Takım Yöneticisi uygulama planındaki on önerinin hepsini onayladı (`specs/done/0119-uygulama-plani.md`).
 
 36. **Ana dizinde commit'lenmemiş iki düzeltme 0119'dan önce main'e kendi commit'iyle alınır** (plan Ö1). Servis Formu'nun kalıp başlığının büyük harften çıkması ve panonun "Yazdır"ının dil sorması (`DilSecPenceresi`) `ServisPanosu.jsx`'e ve 0117 testlerine dokunuyordu; dal onların üstünden açıldı (commit `e20e249`). *Gerekçe:* iki iş karışmaz, kanıt tabanı bugünkü ekranı gösterir.
 37. **AC-16'nın taraması izin listesiyle kurulur** (plan Ö2). `ServisPanosu.jsx`'te `kalipKargoSorumlusu` yalnız dört biçimde geçer: okuma (`sv.kalipKargoSorumlusu`), işleyicinin parametresi, `sevkSorumluYaz(s, kalipKargoSorumlusu)` ve `auditServis("kalip_sorumlu_degisti", id, { kalipKargoSorumlusu })`; öteki dört sevk alanı dosyada hiç geçmez. *Gerekçe:* AC-16 kısayolu yasaklıyor, R10/3 iz ayrıntısında kısayolu istiyor; düz tarama ikisini ayıramaz, izin listesi asıl tehlike olan `{ ...s, kalipKargoSorumlusu }` biçimini yakalar.
@@ -316,10 +316,15 @@ Takım Yöneticisi uygulama planındaki on önerinin hepsini onayladı (`specs/0
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `0b43c08` | Dal `feat/0119-kalip-sorumlusu`, taban `e20e249` (önceki iki düzeltme, Karar 36); kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (B-1–B-4, Ö-1–Ö-11, K-1–K-12, Karar 9–35), plan turu (Karar 36–45) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: AC-1'in "altında" yerleşimi testte ölçülmüyordu (dış kabın sütun yönü kaldırılınca testler geçiyordu; satır içi stil iddiası eklendi); iç satırın girintisi kaydırıldı (yalnız boşluk) |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 444 dosya, 6058 test (Electron dahil, triyaj öncesi); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** AC-16 kısayolu yasaklarken R10/3 iz ayrıntısında kısayolu istiyordu; tarama izin listesiyle kuruldu (Karar 37). Kabın bölünmesinin var olan sürükleme testini kırabileceği riski ölçüldü ve gerçekleşmedi (Karar 39). Sekiz ayrı bozma denendi, sekizi de en az bir testi kırdı.
+
+**Görsel kanıt:** 7 pano ekranı × 2 tema; değişen tam üç ekran (`servis-pano-0115-onay`, `-kiosk`, yeni `servis-pano-0119-sorumlu`), ötekiler 0 piksel; taban son kodla 0 fark; çekimde adım uyarısı yok.
+
+**Bu spec'ten çıkarılan ders:** jsdom yerleşim yapmaz, yani "altında", "yan yana" gibi görsel bir kriter DOM sırasıyla ölçülmüş sayılmaz; yerleşimi taşıyan satır içi stil değeri iddia edilmeli ya da Electron'da ölçülmeli. İki kriter aynı yazımı bir yerde yasaklayıp başka yerde istiyorsa tarama yasak biçimi değil izinli biçimleri saymalı.

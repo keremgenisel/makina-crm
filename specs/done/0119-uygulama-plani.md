@@ -1,6 +1,6 @@
 # 0119 Uygulama planı: panodaki servis kartında kalıbı gönderen kişi
 
-Spec: `specs/0119-pano-kartinda-kalibi-gonderen-kisi.md`. Dal `feat/0119-kalip-sorumlusu` (`e20e249` üstünde; o commit iki önceki düzeltmeyi main'e aldı, Karar 36). Takım Yöneticisi planın on önerisinin hepsini onayladı (spec Karar 36–45). Yeni veri alanı, sütun, göç, izin kimliği, sunucu kuralı ve birleştirme kuralı yok (C5).
+Spec: `specs/done/0119-pano-kartinda-kalibi-gonderen-kisi.md`. Tamamlandı: uygulama commit `0b43c08`. Dal `feat/0119-kalip-sorumlusu` (`e20e249` üstünde; o commit iki önceki düzeltmeyi main'e aldı, Karar 36). Takım Yöneticisi planın on önerisinin hepsini onayladı (spec Karar 36–45). Yeni veri alanı, sütun, göç, izin kimliği, sunucu kuralı ve birleştirme kuralı yok (C5).
 
 ## 1. Dosyalar
 
