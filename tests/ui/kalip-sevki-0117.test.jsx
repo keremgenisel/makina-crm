@@ -179,15 +179,22 @@ describe("Spec 0117 B: panodaki etiket düğmesi", () => {
     expect(kartlar().find(a => a.textContent.includes("(müşteri yok)")) && within(kartlar().find(a => a.textContent.includes("(müşteri yok)"))).queryByTitle("Kargo Etiketi Yazdır")).toBeNull();
     expect(within(kartlar().find(a => a.textContent.includes("Bafra Gıda"))).queryByTitle("Kargo Etiketi Yazdır")).toBeNull();
   });
-  it("AC-40: düğme teknisyen seçicisinin hemen sağında, Tamamlandı kartında Yazdır'ın solunda", () => {
+  // 2026-10-30 (kart yatayda büyüyordu): kalıplı Tamamlandı kartta düğme kalıbı gönderen kişinin yanına taşındı (spec 0119
+  // satırı); öteki sütunlarda teknisyen seçicisinin hemen sağında kalır.
+  it("AC-40: düğme Bekliyor/İşlemde kartında teknisyen seçicisinin hemen sağında; Tamamlandı kartında kalıbı gönderen kişinin yanında", () => {
     pano();
-    const tamam = kartlar().find(a => a.closest("section").querySelector("h3").textContent === "Tamamlandı" && within(a).queryByTitle("Kargo Etiketi Yazdır"));
-    const satir = within(tamam).getByTitle("Kargo Etiketi Yazdır").parentElement;
-    const cocuklar = [...satir.children];
+    const sutun = (a) => a.closest("section").querySelector("h3").textContent;
+    const islemde = kartlar().find(a => sutun(a) === "İşlemde" && within(a).queryByTitle("Kargo Etiketi Yazdır"));
+    const cocuklar = [...within(islemde).getByTitle("Kargo Etiketi Yazdır").parentElement.children];
     expect(cocuklar[0].tagName).toBe("SELECT");
     expect(cocuklar[1].getAttribute("title")).toBe("Kargo Etiketi Yazdır");
-    expect(cocuklar[2].getAttribute("title")).toBe("Servis Formu yazdır");
     expect(cocuklar[1].textContent.trim()).toBe("Etiket");
+    const tamam = kartlar().find(a => sutun(a) === "Tamamlandı" && within(a).queryByTitle("Kargo Etiketi Yazdır"));
+    const sevk = within(tamam).getByTitle("Kargo Etiketi Yazdır").parentElement;
+    expect(sevk.getAttribute("data-testid")).toBe("sevk-sorumlu-satiri");
+    expect([...sevk.children].map(c => c.tagName === "SELECT" ? c.getAttribute("aria-label") : c.getAttribute("title") || c.textContent))
+      .toEqual(["🚚", "Kalıbı gönderen kişi", "Kargo Etiketi Yazdır"]);
+    expect(within(tamam).getAllByTitle("Kargo Etiketi Yazdır")).toHaveLength(1);
   });
   it("AC-18, AC-21, AC-23: düğmeye basılınca etiket basılır; içerik kalıp listesi, teslim şekli ve tarih kayıttan", () => {
     const printHtml = vi.fn();

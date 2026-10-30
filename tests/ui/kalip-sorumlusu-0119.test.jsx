@@ -39,14 +39,16 @@ const secici = (a) => within(a).queryByRole("combobox", { name: "Kalıbı gönde
 const kayit = (id) => dis.services.find(s => s.id === id);
 
 describe("Spec 0119 A: satırın yeri ve ölçütü", () => {
-  it("AC-1, AC-2, AC-33: Tamamlandı ve kalıplı kartta teknisyenin altında; eylem satırı bugünkü dört öğe", () => {
+  // 2026-10-30 (kart yatayda büyüyordu): Etiket bu kartta eylem satırından kalıbı gönderen kişinin yanına taşındı.
+  it("AC-1, AC-2, AC-33: Tamamlandı ve kalıplı kartta teknisyenin altında; eylem satırında teknisyen, Yazdır, Kaldır; Etiket gönderen kişinin yanında", () => {
     render(<Kap />);
     const a = tamam();
     const s = secici(a);
     expect(s).toBeTruthy();
-    const eylem = within(a).getByTitle("Kargo Etiketi Yazdır").parentElement;
+    const eylem = within(a).getByRole("combobox", { name: "" }).parentElement;
     expect([...eylem.children].map(c => c.tagName === "SELECT" ? "SELECT" : c.getAttribute("title")))
-      .toEqual(["SELECT", "Kargo Etiketi Yazdır", "Servis Formu yazdır", "Kartı panodan kaldır (servis kaydı silinmez)"]);
+      .toEqual(["SELECT", "Servis Formu yazdır", "Kartı panodan kaldır (servis kaydı silinmez)"]);
+    expect(s.nextElementSibling.getAttribute("title")).toBe("Kargo Etiketi Yazdır");
     expect(eylem.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(eylem.contains(s)).toBe(false);
     expect(eylem.parentElement.contains(s)).toBe(true); // tek kap
@@ -76,6 +78,37 @@ describe("Spec 0119 A: satırın yeri ve ölçütü", () => {
     const a = kartlar().find(x => sutunu(x) === "Tamamlandı" && x.textContent.includes("(müşteri yok)"));
     expect(secici(a)).toBeTruthy();
     expect(within(a).queryByTitle("Kargo Etiketi Yazdır")).toBeNull();
+  });
+});
+
+// 2026-10-30: kalıplı Tamamlandı kartı yatayda büyüyordu; onarım yeri ve talep ile bitiş ve işçilik kendi alt satırlarında.
+describe("Kalıplı Tamamlandı kartının satır düzeni", () => {
+  const ZAMANLI = SV_PANO.map(s => (s.id === 44 || s.id === 42 ? { ...s, fabrikaGirisZamani: "2026-10-12T09:00:00", bakimBaslangicZamani: "2026-10-12T10:00:00", bitisZamani: "2026-10-12T15:00:00" } : s));
+  it("üst satırlar: tür ve kalıp rozeti bir satırda; onarım yeri ve talep alt satırda", () => {
+    render(<Kap ilk={ZAMANLI} />);
+    const ust = within(tamam()).getByTestId("kart-ust-satirlar");
+    const [r1, r2] = [...ust.children];
+    expect(ust.children).toHaveLength(2);
+    expect(r1.textContent).toContain("KALIP ATÖLYEDE");
+    expect(r1.textContent).not.toContain("Talep");
+    expect(r2.textContent).toContain(SV_PANO[2].repairPlace);
+    expect(r2.textContent).toContain("Talep 12/10/2026");
+  });
+  it("zaman satırları: giriş ve başlangıç bir satırda; bitiş ve işçilik alt satırda", () => {
+    render(<Kap ilk={ZAMANLI} />);
+    const z = within(tamam()).getByTestId("kart-zaman-satirlar");
+    const [r1, r2] = [...z.children];
+    expect(z.children).toHaveLength(2);
+    expect(r1.textContent).toMatch(/^Giriş .*Başlangıç /);
+    expect(r1.textContent).not.toMatch(/Bitiş|İşçilik/);
+    expect(r2.textContent).toMatch(/^Bitiş .*İşçilik /);
+  });
+  it("öteki kartlar eski tek satır düzeninde (kalıpsız Tamamlandı, kalıplı İşlemde)", () => {
+    render(<Kap ilk={ZAMANLI} />);
+    const kalipsiz = kartlar().find(a => sutunu(a) === "Tamamlandı" && a.textContent.includes("Bafra"));
+    expect(within(kalipsiz).queryByTestId("kart-ust-satirlar")).toBeNull();
+    expect(within(kalipsiz).queryByTestId("kart-zaman-satirlar")).toBeNull();
+    expect(within(kart("Anadolu Köfte", "İşlemde")).queryByTestId("kart-ust-satirlar")).toBeNull();
   });
 });
 
@@ -182,7 +215,7 @@ describe("Spec 0119 A: izin, bağlamlar, koruma", () => {
     const a = tamam();
     const s = secici(a);
     const kap = s.parentElement.parentElement;
-    const eylem = within(a).getByTitle("Kargo Etiketi Yazdır").parentElement;
+    const eylem = within(a).getByRole("combobox", { name: "" }).parentElement;
     expect(eylem.parentElement).toBe(kap);
     expect(a.getAttribute("draggable")).toBe("true");
     fireEvent.mouseEnter(kap);

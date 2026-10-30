@@ -641,6 +641,11 @@ export const ServisPanosu = ({
     const sevkSatiri = tamamlandi && kalipAtolyedeMi(sv);
     const sevkBos = !sv.kalipKargoSorumlusu;
     const sevkListe = sv.kalipKargoSorumlusu && !tekAdlari.includes(sv.kalipKargoSorumlusu) ? [sv.kalipKargoSorumlusu, ...tekAdlari] : tekAdlari;
+    // Spec 0117 R12–R14: tamir edilen kalıbın etiketi (tek tanım; yeri karta göre değişir).
+    const etiketDugmesi = kalipAtolyedeMi(sv) && custMap[Number(sv.customerId)] && (
+      <button type="button" title="Kargo Etiketi Yazdır" onClick={() => tamirEtiketYazdir(sv, { customers, factory })}
+        style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Etiket</button>
+    );
     const yaniyor = !arsiv && yananIds[sv.id] != null; // yeni gelen servis: alarm süresince yanıp söner
     return (
       <article key={key} draggable={surukle && dragKapaliId !== sv.id}
@@ -666,17 +671,43 @@ export const ServisPanosu = ({
             </div>
           );
         })()}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: stil.fg, background: stil.bg, border: `1px solid ${stil.br}` }}>{sv.type}</span>
-          <TamirRozeti ozet={tamirOzeti(sv, tamirHarita)} />
-          {sv.repairPlace && <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>{sv.repairPlace}</span>}
-          <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>{sv.date ? `Talep ${fmtTR(sv.date)}` : "—"}</span>
-        </div>
+        {(() => {
+          const tur = <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: stil.fg, background: stil.bg, border: `1px solid ${stil.br}` }}>{sv.type}</span>;
+          const rozet = <TamirRozeti ozet={tamirOzeti(sv, tamirHarita)} />;
+          const yer = sv.repairPlace && <span style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)" }}>{sv.repairPlace}</span>;
+          const talep = <span style={{ marginLeft: "auto", fontSize: 11.5, color: "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums" }}>{sv.date ? `Talep ${fmtTR(sv.date)}` : "—"}</span>;
+          // Kalıplı Tamamlandı kartı (kalıbı gönderen kişi satırı olan kart) yatayda büyümesin: onarım yeri ve talep alt satırda.
+          if (sevkSatiri) return (
+            <div data-testid="kart-ust-satirlar">
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 9, flexWrap: "wrap" }}>{tur}{rozet}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" }}>{yer}{talep}</div>
+            </div>
+          );
+          return <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 9, flexWrap: "wrap" }}>{tur}{rozet}{yer}{talep}</div>;
+        })()}
         {/* Aşama zaman göstergesi: giriş (Bekliyor) / canlı işçilik (Yapılıyor) / bitiş+işçilik (Tamamlandı) */}
         {!arsiv && (() => {
           const s = servisSureleri(sv, nowIso, cs);
+          const satirStil = { display: "flex", alignItems: "center", gap: 6, marginTop: 7, fontSize: 11, fontVariantNumeric: "tabular-nums", flexWrap: "wrap" };
+          // Kalıplı Tamamlandı kartı: giriş ve başlangıç bir satırda, bitiş ve işçilik bir alt satırda.
+          if (sevkSatiri) return (
+            <div data-testid="kart-zaman-satirlar">
+              {(s.giris || s.baslangic) && (
+                <div style={satirStil}>
+                  {s.giris && <span style={pilStil(DURUM_BEK)}>Giriş {fmtZamanTam(s.giris)}</span>}
+                  {s.baslangic && <span style={pilStil(DURUM_YAP)}>Başlangıç {fmtZamanTam(s.baslangic)}</span>}
+                </div>
+              )}
+              {(s.bitis || s.isclikDk != null) && (
+                <div style={satirStil}>
+                  {s.bitis && <span style={pilStil(DURUM_TAM)}>Bitiş {fmtZamanTam(s.bitis)}</span>}
+                  {s.isclikDk != null && <span style={pilStil(DURUM_TAM)}>İşçilik {sureBicimSaat(s.isclikDk)}</span>}
+                </div>
+              )}
+            </div>
+          );
           return (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7, fontSize: 11, fontVariantNumeric: "tabular-nums", flexWrap: "wrap" }}>
+            <div style={satirStil}>
               {/* "Periyodik Bakım" rozeti gibi renkli kutular: her aşama zamanı kendi renginde.
                   Giriş (amber) her sütunda kalır; Başlangıç (mavi) ve Bitiş (yeşil) varsa görünür. */}
               {s.giris && <span style={pilStil(DURUM_BEK)}>Giriş {fmtZamanTam(s.giris)}</span>}
@@ -719,11 +750,9 @@ export const ServisPanosu = ({
                 <option value="">Kim yapıyor?</option>
                 {teknListe.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              {/* Spec 0117 R12–R14: tamir edilen kalıbın etiketi; durum kapısı yok, kalıpsız ya da müşterisi çözülmeyen serviste yok. */}
-              {kalipAtolyedeMi(sv) && custMap[Number(sv.customerId)] && (
-                <button type="button" title="Kargo Etiketi Yazdır" onClick={() => tamirEtiketYazdir(sv, { customers, factory })}
-                  style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Etiket</button>
-              )}
+              {/* Spec 0117 R12–R14: tamir edilen kalıbın etiketi; durum kapısı yok, kalıpsız ya da müşterisi çözülmeyen serviste yok.
+                Kalıplı Tamamlandı kartta kalıbı gönderen kişinin yanında çizilir (aşağıda), eylem satırı genişlemesin. */}
+              {!sevkSatiri && etiketDugmesi}
               {tamamlandi && (
                 <button type="button" title="Servis Formu yazdır" onClick={() => setYazdirDilSv(sv)}
                   style={{ flexShrink: 0, fontSize: 11.5, fontWeight: 600, color: "var(--n600, #475569)", background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: "5px 9px", cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name="print" size={12} /> Yazdır</button>
@@ -743,6 +772,7 @@ export const ServisPanosu = ({
                   <option value="">{SEVK_SORUMLU_SORUSU}</option>
                   {sevkListe.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
+                {etiketDugmesi}
               </div>
             )}
           </div>
