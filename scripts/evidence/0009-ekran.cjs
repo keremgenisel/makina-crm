@@ -69,6 +69,9 @@ app.whenReady().then(async () => {
         if (yukseklik !== 900) await yukle(hash, yukseklik);
         // Boş ya da çökmüş ekran sessizce "0 fark" vermesin: hata ve boş içerik rapora ve çıkış koduna yansır.
         const durum = await win.webContents.executeJavaScript("({ hata: document.body.getAttribute('data-hata'), metin: (document.getElementById('root').innerText || '').trim().length, seritler: [...document.querySelectorAll('[role=status]')].map(e => e.textContent.trim().slice(0, 70)) })");
+        // Electron 45 (PR #54): gizli pencerede kaydırma ve yerleşim kareye geç yansıyor; beklemeden çekilen görüntü bir önceki
+        // kareyi verebiliyordu (çekimden çekime değişen sahte fark). 44'te aynı ekran her çekimde birebir aynıydı.
+        await bekle(400);
         const img = await win.webContents.capturePage();
         const ad = `${ekran}-${tema === "dark" ? "karanlik" : "aydinlik"}.png`;
         fs.writeFileSync(path.join(cikis, ad), img.toPNG());
