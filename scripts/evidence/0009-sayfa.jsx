@@ -757,8 +757,10 @@ function Pano0115({ ilk = SERVIS_0115, ...props }) {
     yedekParcaSatislar={[]} setYedekParcaSatislar={bos} dosyalar={[]} setDosyalar={bos} uretimFormlari={[FORM_0115]} setUretimFormlari={bos} uretimYetki partTypeDefs={TIP_0115} {...props} />;
 }
 const pano0115 = (props) => <Pano0115 {...props} />;
-const servis0115 = (ek) => <FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" customers={V115.CUSTOMERS} parts={PARCA_0115} partTypeDefs={TIP_0115}
+const servis0115 = (ek, tipler = TIP_0115) => <FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" customers={V115.CUSTOMERS} parts={PARCA_0115} partTypeDefs={tipler}
   ilk={{ ...V115.SERVICES[0], ...ek }} />;
+// Spec 0120 R17/2: kalıp işi işaretli tipi olmayan parça tipi listesi (süzme uygulanmaz, neden cümlesi).
+const TIP_0120_ISARETSIZ = TIP_0115.map(t => ({ ...t, kalipIsi: false }));
 
 function FormEkrani({ Bilesen, ilk, ...props }) {
   const [form, setForm] = useState(ilk);
@@ -1440,6 +1442,10 @@ const EKRANLAR = {
   "servis-formu-0115-ad-hata": [<Customers customers={V115.CUSTOMERS} setCustomers={bos} services={V115.SERVICES} setServices={bos} partSales={V115.PART_SALES} setPartSales={bos} payments={[]}
     dealers={[]} parts={PARCA_0115} kdvRates={V115.KDV} gorusmeler={[]} dosyalar={[]} partTypeDefs={TIP_0115} showToast={bos} setYedekParcaSatislar={bos} initialDetailId={1} />,
     ["~Garanti Dışı", "tikla:Kalıp atölyeye girecek", "Kalıp ekle", "Kaydet", "kaydir:Kalıp adını girin."]],
+  // Spec 0120: servis formunun parça arama süzgeci (kutu açık; süzülü, "Tüm parçalar" ve süzme uygulanmayan hâl).
+  "servis-formu-0120-suzulu": [servis0115({}), ["tikla:Kalıp atölyeye girecek", "kaydir:Değişen Parçalar (varsa)"]],
+  "servis-formu-0120-tum": [servis0115({}), ["tikla:Kalıp atölyeye girecek", "dugme:Tüm parçalar", "kaydir:Değişen Parçalar (varsa)"]],
+  "servis-formu-0120-suzgecsiz": [servis0115({}, TIP_0120_ISARETSIZ), ["tikla:Kalıp atölyeye girecek", "kaydir:Değişen Parçalar (varsa)"]],
   "ayarlar-parcatipi-0115": [<PartTypeManager partTypeDefs={TIP_0115} setPartTypeDefs={bos} parts={PARCA_0115} />, []],
   "katalog-parca-0115-ipucu": [ayarlar("yedekparca", { parts: [{ id: 81, ad: "100_ERKEK KALIPLAR REVİZE", tip: "Standart" }], partTypeDefs: TIP_0115 }), ["baslik:Düzenle", "kaydir:Parça Tipi"]],
   // Spec 0118: Manuel Satır Ekle penceresi; kodlu ve kodsuz kalıp, firmanın bekleyen tamiri seçili ve tamirsiz firma.

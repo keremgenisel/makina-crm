@@ -37,6 +37,10 @@ export const PARCA_TIP_IPUCU = "Bu parçanın adında kalıp geçiyor. Kalıp i�
 export const SERVIS_KALIPLARI_ETIKETI = "Servis gören kalıplar";
 // Spec 0119 R5: panodaki kalıbı gönderen kişi seçicisinin boş seçeneği; teslim şeklinden bağımsız tek nötr soru (C1).
 export const SEVK_SORUMLU_SORUSU = "Kalıbı kim veriyor?";
+// Spec 0120 R10/2, R10/3: servis formunun parça arama süzgeci. İlk seçenek KALIP_ISI_BAYRAGI'nı yeniden kullanır; yeni metin üçtür.
+export const TUM_PARCALAR = "Tüm parçalar";
+export const PARCA_SUZGEC_IBARESI = "Kalıp atölyeye girecek işaretli olduğu için yalnız kalıp işi tipli parçalar listeleniyor.";
+export const PARCA_SUZGEC_NEDENI = "Kalıp işi işaretli parça tipi yok; bütün parçalar listeleniyor. Ayarlar › Katalog › Parça Tipleri'nde bir tipe \"Kalıp işi\" işareti verin.";
 export const TUR_ADLARI = { uretim: "Üretim", tamir: "Tamir" };
 export const turAdi = (r) => TUR_ADLARI[r?.tur === "tamir" ? "tamir" : "uretim"];
 // Triyaj: Manuel Satır Ekle'de başka bir canlı üretim formunda satırı olan kalıp seçilemez (R40'ın "ikinci forma çekilemez"
@@ -63,6 +67,17 @@ export const kalipIsiKalemleri = (degisenParcalar, parts, partTypeDefs) => {
     const p = (parts || []).find(x => String(x.id) === String(k.partId));
     return { ad: (p?.ad || k.ad || "").trim(), olcu: "" };
   });
+};
+
+// Spec 0120 R1/2, R6, R6/2: servis formunun parça arama kümesi tek çağrıda. Kalıp işi parçası yoksa (tip listesi dizi değil,
+// boş ya da hiçbir tip işaretli değil) süzme uygulanmaz: küme boşaltılmaz. tumu doğruysa tam katalog (süzgeç "Tüm parçalar"
+// ya da kutu kapalı; kutu kararı ekranda). Çöp süzmesi yok: forma gelen parts zaten canlı (R2/5).
+export const parcaSuzgeci = (parts, partTypeDefs, tumu) => {
+  const hepsi = Array.isArray(parts) ? parts : [];
+  const kalipli = Array.isArray(partTypeDefs) ? hepsi.filter(p => parcaKalipIsiMi(p, partTypeDefs)) : [];
+  const suzulebilir = kalipli.length > 0;
+  const suzuluMu = suzulebilir && !tumu;
+  return { liste: suzuluMu ? kalipli : hepsi, kalipSayisi: kalipli.length, suzulebilir, suzuluMu };
 };
 
 // ── Servis kaydı (R7/2, R8/2, R9) ──────────────────────────────────────────────────────────────────────────────────────

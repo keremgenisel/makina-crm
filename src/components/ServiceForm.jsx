@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
-import { HataMetni, Ipucu } from "./tasarim";
+import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
 import { SatisTipiSecici } from "./SatisTipiSecici";
@@ -10,6 +10,7 @@ import { satisTevkifatDogrula, satisTevkifatFormOzeti, kartTabanKaydi, kartTaban
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { KalipAtolyeAlani } from "./KalipAtolyeAlani";
+import { kutuAcikMi, parcaSuzgeci, KALIP_ISI_BAYRAGI, TUM_PARCALAR, PARCA_SUZGEC_IBARESI, PARCA_SUZGEC_NEDENI } from "../lib/kalipTamiri";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
@@ -36,6 +37,12 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
   // yüklenmiş; künye kaydetmede oluşturulur). Düzenlemede zaten bağlı olanlar ayrıca listelenir.
   const [dosyaTaslaklari, setDosyaTaslaklari] = useState([]);
   const [dosyaBusy, setDosyaBusy] = useState(false);
+  // Spec 0120: "Kalıp atölyeye girecek" işaretliyken parça araması kalıp işi tipli parçalarla başlar. Süzgecin değeri geçici
+  // arayüz durumudur (kayda yazılmaz, R8); kutu kapanınca varsayılana döner (R8/3), yani her açılışta "Kalıp işi" gelir.
+  const kalipKutusu = kutuAcikMi(form);
+  const [tumParcalar, setTumParcalar] = useState(false);
+  useEffect(() => { if (!kalipKutusu) setTumParcalar(false); }, [kalipKutusu]);
+  const parcaKumesi = parcaSuzgeci(parts, partTypeDefs, !kalipKutusu || tumParcalar);
   const mevcutServisDosyalari = (dosyalar || []).filter(d => !d.deletedAt && d.refType === "servis" && d.refId === form.id);
   const fmtDosyaBoyut = (b) => { const n = Number(b) || 0; if (n < 1024) return `${n} B`; if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`; return `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`; };
   const dosyaEkle = async () => {
@@ -393,7 +400,16 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
           <Ipucu>Tanımlı yedek parça yok. Ayarlar → Katalog'dan ekleyebilirsiniz.</Ipucu>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <SearchPick items={parts} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
+            {/* Süzgeç ve ibare kutunun ÜSTÜNDE: sonuç paneli altını örter (R2/3). Koşullu öğeler yer tutucuyla durur,
+                SearchPick yeniden kurulmaz ve yazılmış metin korunur (R5/2). */}
+            {kalipKutusu && parcaKumesi.suzulebilir && (
+              // Blok sarmalayıcı: sütun yönlü flex kap çocuğunu genişliğe yayar; içerik genişliği (R2/4) ancak böyle korunur.
+              <div data-testid="parca-suzgec-kabi"><Segment kip="dugme" genislik="icerik" ariaLabel="Parça listesi süzgeci" value={tumParcalar ? "tum" : "kalip"} onChange={v => setTumParcalar(v === "tum")}
+                options={[{ value: "kalip", label: KALIP_ISI_BAYRAGI, sayi: parcaKumesi.kalipSayisi }, { value: "tum", label: TUM_PARCALAR, sayi: parts.length }]} /></div>
+            )}
+            {parcaKumesi.suzuluMu && <div data-testid="parca-suzgec-ibaresi"><Ipucu>{PARCA_SUZGEC_IBARESI}</Ipucu></div>}
+            {kalipKutusu && !parcaKumesi.suzulebilir && <div data-testid="parca-suzgec-neden"><Ipucu>{PARCA_SUZGEC_NEDENI}</Ipucu></div>}
+            <SearchPick items={parcaKumesi.liste} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
               onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, adEN: p.adEN || "", miktar: 1, fiyat: partFiyatForCurrency(p, prev.currency || "TRY"), disTedarik: false }] }))} />
           </div>
         )}
