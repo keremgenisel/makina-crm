@@ -141,7 +141,7 @@ describe("Spec 0120 belge ve kanıt", () => {
   it("AC-32, AC-33: üç yeni ekran ServiceForm.jsx anahtarında 0120 raporuyla; raporda adım uyarısı yok", () => {
     const e = JSON.parse(oku("docs/evidence/kanit-eslemesi.json"));
     const k = (e.dosyalar || e)["src/components/ServiceForm.jsx"];
-    const yeni = k.filter(x => /0120-piksel-raporu\.json$/.test(x.rapor)).map(x => x.ekran);
+    const yeni = k.filter(x => /0120-(taban-)?piksel-raporu\.json$/.test(x.rapor)).map(x => x.ekran);
     for (const ad of ["servis-formu-0120-suzulu", "servis-formu-0120-tum", "servis-formu-0120-suzgecsiz"]) expect(yeni, ad).toContain(ad);
     const rapor = JSON.parse(oku("docs/evidence/0120-piksel-raporu.json"));
     expect(JSON.stringify(rapor)).not.toContain("adimUyarilari");

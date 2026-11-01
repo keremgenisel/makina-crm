@@ -1,6 +1,6 @@
 # 0120 Uygulama planı: kalıp kutusu işaretliyken parça araması kalıp işiyle başlar
 
-Spec: `specs/0120-parca-aramasi-kalip-isi-suzgeci.md`. Dal `feat/0120-parca-suzgeci`, taban `098fc88` (v3.52.0). Plan turu kararları spec'te Karar 29–40, uygulamada Karar 41.
+Spec: `specs/done/0120-parca-aramasi-kalip-isi-suzgeci.md`. Dal `feat/0120-parca-suzgeci`, taban `098fc88` (v3.52.0). Plan turu kararları spec'te Karar 29–40, uygulamada Karar 41. Tamamlandı: uygulama commit `1d5b75c`.
 
 ## 1. Dosyalar
 

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (plan `specs/0120-uygulama-plani.md`; plan turu Karar 29–40, uygulamada Karar 41) |
+| **Durum** | Tamamlandı (revizyon 2: QA turu Karar 3–28 ve plan turu Karar 29–40, 2026-11-01; uygulamada Karar 41; uygulama commit `1d5b75c`; plan `specs/done/0120-uygulama-plani.md`) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/ServiceForm.jsx` (yalnız "Değişen Parçalar (varsa)" alanı), `src/lib/kalipTamiri.js` (yeni saf süzme yardımcısı ve metin sabitleri). **Test:** yeni `tests/parca-suzgeci-0120.test.js` ve `tests/ui/parca-suzgeci-0120.test.jsx`. **Kanıt:** `scripts/evidence/0009-sayfa.jsx`, `docs/evidence/kanit-eslemesi.json`. **Belge:** `CLAUDE.md`, `docs/tasarim-sozlugu.md` (R15), `specs/README.md` (kuyruk satırı ve tablo satırı **zaten yazılı**, kapanışta yalnız "(Tamamlandı)" işareti düşer). **Dokunulmayan iki dosya adıyla:** `src/components/ui.jsx` (R13/2, C6) ve `src/components/KalipAtolyeAlani.jsx` (R8/3, C6). Veri şeması, göç, izin tanımları, sunucu kuralları, birleştirme, yazdırma ve dışa aktarma dokunulmaz. |
@@ -295,10 +295,15 @@ Takım Yöneticisi planın on iki önerisinin tamamını onayladı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `1d5b75c` | Dal `feat/0120-parca-suzgeci`, taban `098fc88` (v3.52.0); kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (B-1–B-4, Ö-1–Ö-11, K-1–K-11, Karar 3–28), plan turu (Karar 29–40) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: kalıbı kayıtlı servisin açılışı ölçülmüyordu (`useState(true)` bozması geçiyordu; AC-3 testi eklendi); CLAUDE.md maddesi 0115'in sürüm notunun önündeydi (bölümün sonuna taşındı, yer testi eklendi) |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | |
+| **Regresyon sayısı** | 0 | Tam takım 447 dosya, 6103 test (Electron dahil, triyaj öncesi); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** `genislik="icerik"` sütun yönlü flex kabın doğrudan çocuğunda etkisizdi; jsdom testleri geçerken kanıt görüntüsünde süzgeç alanın tamamına yayılıyordu (Karar 41, blok sarmalayıcı). Taramalarda yorum satırları iki kez sahte eşleşme verdi; metin taramaları yorumsuz kaynakta yapıldı. Üç bozma denendi (sıfırlama efekti, boşaltma koruması, başlangıç değeri), üçü de test kırdı.
+
+**Görsel kanıt:** 13 ekran × 2 tema; kutusu kapalı dört servis formu ekranı 0 piksel, kutusu açık altı mevcut ekranın hepsi kaydı (parça alanı uzadı), üç yeni ekran; taban son kodla 26 görüntüde 0 fark; çekimde adım uyarısı yok. `ui.jsx`, `KalipAtolyeAlani.jsx`, `ServisPencere.jsx` için `098fc88` farkı boş (Karar 33).
+
+**Bu spec'ten çıkarılan ders:** bir durumun "her açılışta" değerini iddia eden kriter yalnız kapalı başlayan düzenekle ölçülürse, açılışta değeri düzelten efekt yanlış başlangıç değerini gizler; durum bir kayıttan türeyen koşulla açılıyorsa düzenek o koşulun açık hâlinden de başlamalı. Görsel bir kriter (içerik genişliği) jsdom'da ölçülemez; kanıt görüntüsüne gözle bakmak bu işte tek yakalayıcıydı.
