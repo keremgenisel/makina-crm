@@ -5948,6 +5948,32 @@
         "rapor": "docs/evidence/0108-taban-piksel-raporu.json",
         "ekran": "ayarlar-cop-0108-uretim",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "ayarlar-trash",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "ayarlar-0068-trash",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "cop-kutusu-0078",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "kilit-cop-kutusu",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "ayarlar-trash-0123",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0123 R4/3"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -7806,6 +7832,27 @@
         "rapor": "docs/evidence/0122-taban-piksel-raporu.json",
         "ekran": "katalog-parca-yeni",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "katalog-parca-0121-set",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "ekran": "katalog-parca-0123-sil",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0123 R3/4"
       }
     ],
     "src/components/PartTypeManager.jsx": [

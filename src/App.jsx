@@ -8,6 +8,7 @@ import {
 import { URETIM_ALANI } from "./lib/uretimdekiModeller";
 import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, yerelYedekAyariOku, yerelYedekAyariYaz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
 import { odemeleriUygula, turHaritasi, canliModelSeti, kirilimdaGecenTedarikciler } from "./lib/gider";
+import { setteGecenParcalar, setteGecenParcaMi } from "./lib/urunAgaci";
 import { hatirlatmaEsigi } from "./lib/odemeHatirlatma";
 import { stopajBeyanAyari } from "./lib/stopajDonemi";
 import { cekleriUygula, odemeleriAyikla, ciroluTahsilatIdleri, bagliCekler, bagliHareketiOlanCekler } from "./lib/cek";
@@ -1089,7 +1090,8 @@ export default function App() {
       if (Array.isArray(data.customModels)) data.customModels = purgeOldTrash(data.customModels);
       if (Array.isArray(data.services)) data.services = purgeOldTrash(data.services);
       if (Array.isArray(data.notes)) data.notes = purgeOldTrash(data.notes);
-      if (Array.isArray(data.parts)) data.parts = purgeOldTrash(data.parts);
+      // Spec 0123 R4, R4/4 (Karar 9): koruma SÜPÜRMEDEN ÖNCEKİ diziden; süresi dolmuş çöpteki setin bileşeni bir tur gecikmeyle gider.
+      if (Array.isArray(data.parts)) { const setteKorunan = setteGecenParcalar(data.parts); data.parts = purgeOldTrash(data.parts, undefined, p => setteGecenParcaMi(p.id, setteKorunan)); }
       if (Array.isArray(data.partSales)) data.partSales = purgeOldTrash(data.partSales);
       if (Array.isArray(data.yedekParcaSatislar)) data.yedekParcaSatislar = purgeOldTrash(data.yedekParcaSatislar);
       if (Array.isArray(data.teklifler)) data.teklifler = purgeOldTrash(data.teklifler);

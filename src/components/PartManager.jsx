@@ -10,7 +10,7 @@ import { MALIYET_ETIKETI, MALIYET_IPUCU, KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, m
   parcaMaliyetKurus, parcaMaliyetMetni, elleMaliyetMetni, maliyetKaynagi, KAYNAK_ELLE, kaynakListeMetni, KAYNAK_KIRILIM, kirilimdanGeliyorMetni, maliyetMetniKurus,
   HAMMADDE_BOS_METNI, HAMMADDE_BOLUM_BASLIGI, HAMMADDE_IPUCU, HAMMADDE_TUTARSIZ_UYARI, HAMMADDE_TOPLAM_ETIKETI, hammaddeToplamSayisi, HAMMADDE_TOPLAM_HATALI, hammaddeTedarikciAdi, hammaddeSecilebilirMi,
   hammaddeFormu, hammaddeDogrula, maliyetGecmisiYaz, gecmisliKayit, maliyetGecmisiSatirlari, GECERLILIK_ETIKETI, GECERLILIK_IPUCU, GECMIS_BASLIGI,
-  setKatalogu, setMi, setOzeti, setIcerigiDogrula, setIcerigiFormu, setBilesenAdi, setBilesenAdaylari, setEksikMetni, setFiyatsizMetni,
+  setKatalogu, setMi, setOzeti, parcaKullanimi, parcaKullanimMetni, setKullanimAdlari, setIcerigiDogrula, setIcerigiFormu, setBilesenAdi, setBilesenAdaylari, setEksikMetni, setFiyatsizMetni,
   SET_BOLUM_BASLIGI, SET_BOS_METNI, SET_IPUCU, SET_BILESEN_ARA, SET_TOPLAM_ETIKETI, SET_FIYAT_ETIKETI, SET_FIYAT_DUGMESI,
   KAYNAK_ICERIK, SET_PASIF_NEDENI } from "../lib/urunAgaci";
 import { useBugun } from "../hooks/useBugun";
@@ -335,6 +335,13 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           : s
       )),
     });
+  // Spec 0123 R1, R3/4, R3/6 (Karar 22, 37, 39): onay açıldığında bir kez; harita HAM diziden (çöpteki setler de sayılsın),
+  // kit sayısı canlı model dizilerinden. Ekran sayım yazmaz, cümle `parcaKullanimMetni`'nden.
+  const silmeKullanimi = useMemo(() => {
+    if (!confirmDel) return "";
+    const k = parcaKullanimi(confirmDel.id, { parts: hamParts, modelDizileri: [standardModels, customModels] });
+    return parcaKullanimMetni({ setAdlari: setKullanimAdlari(confirmDel.id, hamParts), kit: k.kit });
+  }, [confirmDel, hamParts, standardModels, customModels]);
   const [addOpen, setAddOpen] = useState(false);
   // Spec 0096 R10, R10/2, R22, C14: tedarikçi süzgeci (gider yetkisiyle). Seçenek kümesi canlı parçaların kırılımında geçen
   // tedarikçiler (sayılı) ve "girilmemiş"; sayfa sıfırlaması süzgeci yazan fonksiyonda (kancanın imzası değişmez).
@@ -540,7 +547,11 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
 
       {confirmDel && (
         <ConfirmDialog
-          message={`"${confirmDel.ad}" yedek parça tanımı Çöp Kutusu'na taşınacak (30 gün içinde geri alınabilir). Daha önce verilmiş kayıtlar geçmişte kalır.`}
+          message={<>
+            {`"${confirmDel.ad}" yedek parça tanımı Çöp Kutusu'na taşınacak (30 gün içinde geri alınabilir). Daha önce verilmiş kayıtlar geçmişte kalır.`}
+            {/* Spec 0123 R3, R3/4, R3/6: kullanım satırı (ham diziden; çöpe atma engellenmez). */}
+            {silmeKullanimi && <div data-testid="parca-kullanim" style={{ marginTop: 8, fontWeight: 600 }}>{silmeKullanimi}</div>}
+          </>}
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
         />

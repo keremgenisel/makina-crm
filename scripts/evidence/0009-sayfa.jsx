@@ -930,6 +930,9 @@ const EKRANLAR = {
   // Spec 0121 R34: setin kartı (içerik, toplam, pasif maliyet) ve içeriği boş parçanın kartı (boş durum).
   "katalog-parca-0121-set": [ayarlar("yedekparca", { parts: PARCA_0121_SET, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği"]],
   "katalog-parca-0121-bos": [ayarlar("yedekparca", { parts: PARCA_0121_BOS, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği"]],
+  // Spec 0123: setin bileşeninin silme onayı kullanım satırıyla; Çöp Kutusu'nda korunan parçanın satırı nedeniyle.
+  "katalog-parca-0123-sil": [ayarlar("yedekparca", { parts: PARCA_0121_SET, rawParts: PARCA_0121_SET, standardModels: MODELLER_0087 }), ["satir-son-dugme:2"]],
+  "ayarlar-trash-0123": [ayarlar("trash", { rawParts: [{ ...BILESEN_0121[0], deletedAt: "2026-10-20T09:00:00.000Z" }, { id: 24, ad: "Eski kapak", deletedAt: "2026-10-21T09:00:00.000Z" }, SET_0121] }), []],
   // Spec 0122 R15(c), Karar 31: açık bileşen paneli (yazılmış metinle süzülmüş).
   "katalog-parca-0122-panel": [ayarlar("yedekparca", { parts: PARCA_0121_BOS, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği", "odak:Bileşen ara...=r"]],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],

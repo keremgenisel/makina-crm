@@ -372,7 +372,8 @@ export const SET_PARCA_SECILMEDI = "Parça seçilmedi.";
 export const SET_AYNI_PARCA = "Bu parça içerikte zaten var; ikinci satır yerine adedini artırın.";
 export const SET_KENDISI = "Parça kendi içeriğine eklenemez.";
 export const SET_IC_ICE = "İçeriği olan parça başka bir setin içeriğine eklenemez.";
-const adListesi = (adlar) => (adlar.length > 3 ? `${adlar.slice(0, 3).join(", ")} +${adlar.length - 3}` : adlar.join(", "));
+// Spec 0123 R3/4 (Karar 6): "+n" biçiminin tek tanımı; kullanım cümlesi de bunu çağırır.
+export const adListesi = (adlar) => (adlar.length > 3 ? `${adlar.slice(0, 3).join(", ")} +${adlar.length - 3}` : adlar.join(", "));
 export const setBileseniHatasi = (adlar) => `Bu parça şu setlerin içeriğinde geçtiği için set yapılamaz: ${adListesi(adlar)}.`;
 // R6, R6/2: ad çözümü HAM diziden (çöpteki parçanın adı çözülsün). Emsali hammaddeTedarikciAdi.
 export const SILINMIS_PARCA = "silinmiş parça";
@@ -396,6 +397,54 @@ export const setBilesenAdaylari = (parts = [], kendiId = null, satirlar = []) =>
 export const parcayiIcerenSetler = (partId, parts = []) => (parts || [])
   .filter(p => p && !p.deletedAt && String(p.id) !== String(partId) && setIcerigiOf(p).some(r => String(r.partId) === String(partId)))
   .map(p => p.ad);
+// ── Spec 0123: sette ve kitte geçen parça silinirken koruma ──────────────────────────────────────────────────────────────────
+// R1, R1/2, R1/5–R1/7 (Karar 1, 4, 7, 30): set kullanımının haritası, BİR KEZ kurulur (0096 `kirilimdaGecenTedarikciler` deseni).
+// Değer `{ set, cop }`: bu parçayı içeriğinde taşıyan canlı set sayısı ve KENDİSİ çöpte olan set sayısı (ayrık; parçanın kendi
+// durumu girmez). Setin kendisinin bileşen olduğu satır atlanır (içe aktarılmış veride kendine atıf parçayı korumasın).
+export const setteGecenParcalar = (parts = []) => {
+  const m = new Map();
+  for (const p of parts || []) {
+    if (!p) continue;
+    const gorulen = new Set();
+    for (const r of setIcerigiOf(p)) {
+      const id = String(r.partId);
+      if (id === String(p.id) || gorulen.has(id)) continue;
+      gorulen.add(id);
+      const x = m.get(id) || { set: 0, cop: 0 };
+      if (p.deletedAt) x.cop += 1; else x.set += 1;
+      m.set(id, x);
+    }
+  }
+  return m;
+};
+/** R1, R1/3, R1/4 (AC-14, AC-16): kimlik başına kullanım `{ set, setCop, kit }`; hazır harita verilince yeniden kurulmaz. */
+export const parcaKullanimi = (partId, { parts = [], modelDizileri = [], harita = null } = {}) => {
+  const x = (harita || setteGecenParcalar(parts)).get(String(partId)) || { set: 0, cop: 0 };
+  const kit = (modelDizileri || []).length ? Object.keys(parcaKitAdetleri(partId, modelDizileri)).length : 0;
+  return { set: x.set, setCop: x.cop, kit };
+};
+/** R1/5 (Karar 4, AC-19): kalıcı silme kapılarının tek yüklemi; `.has()` değil, iki sayının toplamı. */
+export const setteGecenParcaMi = (partId, harita) => {
+  const x = harita?.get(String(partId));
+  return !!x && (x.set + x.cop) > 0;
+};
+/** R1/8 (Karar 26, 36, 37): onay cümlesinin set adları. Canlılar `parcayiIcerenSetler`'den, çöptekiler ekli adla; kendisi hariç. */
+export const setKullanimAdlari = (partId, parts = []) => [
+  ...parcayiIcerenSetler(partId, parts),
+  ...(parts || []).filter(p => p && p.deletedAt && String(p.id) !== String(partId) && setIcerigiOf(p).some(r => String(r.partId) === String(partId)))
+    .map(p => `${p.ad} (${SILINMIS_PARCA})`),
+];
+/** R3/4 (Karar 6, 25): kullanım cümlesinin üç hâli; kullanım yoksa boş dize (satır çizilmez). */
+export const parcaKullanimMetni = ({ setAdlari = [], kit = 0 } = {}) => {
+  const setCumlesi = setAdlari.length ? `Bu parça şu setlerin içeriğinde geçiyor: ${adListesi(setAdlari)}.` : "";
+  if (!kit) return setCumlesi;
+  return setCumlesi ? `${setCumlesi} ${kit} model kitinde de geçiyor.` : `Bu parça ${kit} model kitinde geçiyor.`;
+};
+// R4/2 (Karar 11, 12): 0096'nın `KIRILIMDA_TEDARIKCI_NEDENI` kardeşi; adres aynı. R4/5 (Karar 38): ret bildirimi.
+export const SETTE_PARCA_NEDENI = "Bir setin içeriğinde bileşen olarak geçiyor; önce Ayarlar › Katalog › Parça/Yedek Parça'da o setin içeriğinden çıkarın.";
+export const SETTE_PARCA_RED_METNI = `Yedek parça tanımı kalıcı silinemez: ${SETTE_PARCA_NEDENI}`;
+// Triyaj bulgu 1 (Karar 46): "çöpü boşalt" bildiriminin eki; sözü verilen sayı ile sonuç tutsun.
+export const setteBirakilanEki = (n) => (n > 0 ? ` Sette bileşen olan ${n} yedek parça tanımı çöpte bırakıldı.` : "");
 // Formda içerik hep form biçimindedir (kimlik ve adet metin).
 export const setIcerigiFormu = (kayit = []) => (kayit || []).map(r => ({ partId: r?.partId == null ? "" : String(r.partId), miktar: r?.miktar == null ? "" : String(r.miktar) }));
 // R3, R4, R5, R5/2, R7: TEK doğrulayıcı. Parçası ve adedi boş satır atılır; boş içerik kayda yazılmaz (`kayit` boş).

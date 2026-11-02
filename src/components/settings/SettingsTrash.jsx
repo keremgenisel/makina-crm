@@ -15,6 +15,7 @@ import { copHareketGeriAlmaNedeni } from "../../lib/kasa";
 import { makeCanDo } from "../../lib/permissions";
 import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
 import { uretimFormDonemMetni } from "../stock/uretimFormPrint";
+import { setteGecenParcalar, setteGecenParcaMi, setteBirakilanEki, SETTE_PARCA_NEDENI, SETTE_PARCA_RED_METNI } from "../../lib/urunAgaci";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -174,7 +175,11 @@ export const SettingsTrash = ({
   const restoreKalipDef = (k) => { setKalipDefs(p => p.map(x => x.id === k.id ? { ...x, deletedAt: undefined } : x)); showToast("Kalıp tanımı geri alındı."); };
   const purgeKalipDef = (k) => { setKalipDefs(p => p.filter(x => x.id !== k.id)); showToast("Kalıp tanımı kalıcı olarak silindi."); };
   const restorePart = (pt) => { setParts?.(p => p.map(x => x.id === pt.id ? { ...x, deletedAt: undefined } : x)); showToast("Yedek parça tanımı geri alındı."); };
-  const purgePart = (pt) => { setParts?.(p => p.filter(x => x.id !== pt.id)); showToast("Yedek parça tanımı kalıcı olarak silindi."); };
+  const purgePart = (pt) => {
+    // Spec 0123 R4, R4/3, R4/5: sette bileşen olan parça kalıcı silinemez; ret hata bildirimiyle, iz ve kilit yok.
+    if (setteGecenParcaMi(pt.id, setteKorunanParcalar)) { showToast(SETTE_PARCA_RED_METNI, "err"); return; }
+    setParts?.(p => p.filter(x => x.id !== pt.id)); showToast("Yedek parça tanımı kalıcı olarak silindi.");
+  };
   const restoreCustomModel = (m) => { setCustomModels(p => p.map(x => x.model === m.model ? { ...x, deletedAt: undefined } : x)); showToast("Model geri alındı."); };
   const purgeCustomModel = (m) => { setCustomModels(p => p.filter(x => x.model !== m.model)); showToast("Model kalıcı olarak silindi."); };
   const restoreTeklif = (t) => { setTeklifler?.(p => p.map(x => x.id === t.id ? { ...x, deletedAt: undefined } : x)); showToast("Belge geri alındı."); };
@@ -213,6 +218,9 @@ export const SettingsTrash = ({
   // parça geri alınırsa bağ kopmasın). "Çöpü boşalt" çöpteki parçaları da kalıcı sildiği için orada kalacak parçalar sayılır.
   const korunanTedarikciler = kirilimdaGecenTedarikciler(rawParts || []);
   const bosaltmadaKorunanTedarikciler = kirilimdaGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt));
+  // Spec 0123 R1/2, R3/6, C2 (Karar 5, 27): iki harita, çizim başına. Kalıcı Sil bütün parçalardan, "çöpü boşalt" kalacaklardan.
+  const setteKorunanParcalar = setteGecenParcalar(rawParts || []);
+  const bosaltmadaSetteKorunanParcalar = setteGecenParcalar((rawParts || []).filter(x => !x.deletedAt));
   const purgeTedarikci = (t) => {
     if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${KIRILIMDA_TEDARIKCI_NEDENI}`, "err"); return; }
     setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi.");
@@ -285,7 +293,7 @@ export const SettingsTrash = ({
     setStock?.(p => p.filter(x => !x.deletedAt));
     setNotes?.(p => p.filter(x => !x.deletedAt));
     setKalipDefs(p => p.filter(x => !x.deletedAt));
-    setParts?.(p => p.filter(x => !x.deletedAt));
+    setParts?.(p => p.filter(x => !x.deletedAt || setteGecenParcaMi(x.id, bosaltmadaSetteKorunanParcalar))); // spec 0123 R4, AC-7
     setCustomModels(p => p.filter(x => !x.deletedAt));
     setTeklifler?.(p => p.filter(x => !x.deletedAt));
     setFaturalar?.(p => p.filter(x => !x.deletedAt));
@@ -307,9 +315,11 @@ export const SettingsTrash = ({
     if (tanimYetki && rawGiderTanimlari.some(x => x.deletedAt)) setGiderTanimlari?.(p => p.filter(x => !x.deletedAt));
     if (tanimYetki && giderTurleri.some(x => x.deletedAt)) setGiderTurleri?.(p => p.filter(x => !x.deletedAt));
     if (kasaHesapYetki && rawKasaHesaplari.some(x => x.deletedAt)) setKasaHesaplari(p => p.filter(x => !x.deletedAt));
-    showToast(korunanMusteriIdler.size || rawPayments.some(korunanOdeme)
+    // Spec 0123 triyaj bulgu 1 (Karar 46): sette bileşen olduğu için bırakılan parçalar bildirimde sayılır.
+    const birakilanParca = (rawParts || []).filter(x => x.deletedAt && setteGecenParcaMi(x.id, bosaltmadaSetteKorunanParcalar)).length;
+    showToast((korunanMusteriIdler.size || rawPayments.some(korunanOdeme)
       ? `Çöp kutusu boşaltıldı; ciro edilmiş çeke bağlı ${rawPayments.filter(korunanOdeme).length} tahsilat (ve müşterisi) çöpte bırakıldı. Önce ciroyu iptal edin.`
-      : "Çöp kutusu boşaltıldı.");
+      : "Çöp kutusu boşaltıldı.") + setteBirakilanEki(birakilanParca));
   };
 
   const trashItems = useMemo(() => {
@@ -326,7 +336,8 @@ export const SettingsTrash = ({
     rawStock.filter(s => s.deletedAt).forEach(s => items.push({ key: `stock-${s.id}`, type: "Stok", label: `${s.model || "—"}${s.serialNo ? " · " + s.serialNo : ""}`, deletedAt: s.deletedAt, restore: () => restoreStockItem(s), purge: () => purgeStockItem(s) }));
     rawNotes.filter(n => n.deletedAt).forEach(n => items.push({ key: `note-${n.id}`, type: "Not", label: (n.content || "").slice(0, 50) || "(boş not)", deletedAt: n.deletedAt, restore: () => restoreNote(n), purge: () => purgeNote(n) }));
     rawKalipDefs.filter(k => k.deletedAt).forEach(k => items.push({ key: `kalip-${k.id}`, type: "Kalıp Tanımı", label: k.ad || "—", deletedAt: k.deletedAt, restore: () => restoreKalipDef(k), purge: () => purgeKalipDef(k) }));
-    rawParts.filter(p => p.deletedAt).forEach(p => items.push({ key: `part-${p.id}`, type: "Yedek Parça Tanımı", label: p.ad || "—", deletedAt: p.deletedAt, restore: () => restorePart(p), purge: () => purgePart(p) }));
+    rawParts.filter(p => p.deletedAt).forEach(p => items.push({ key: `part-${p.id}`, type: "Yedek Parça Tanımı", label: p.ad || "—", deletedAt: p.deletedAt, restore: () => restorePart(p), purge: () => purgePart(p),
+      neden: setteGecenParcaMi(p.id, setteKorunanParcalar) ? SETTE_PARCA_NEDENI : null })); // spec 0123 R4/3: düğme kalır, neden satırda
     rawCustomModels.filter(m => m.deletedAt).forEach(m => items.push({ key: `model-${m.model}`, type: "Model", label: m.model || "—", deletedAt: m.deletedAt, restore: () => restoreCustomModel(m), purge: () => purgeCustomModel(m) }));
     rawTeklifler.filter(t => t.deletedAt).forEach(t => items.push({ key: `teklif-${t.id}`, type: t.type === "proforma" ? "Proforma" : "Teklif", label: `${t.no || "—"} · ${t.firma || "—"}`, deletedAt: t.deletedAt, restore: () => restoreTeklif(t), purge: () => purgeTeklif(t) }));
     rawFaturalar.filter(f => f.deletedAt).forEach(f => items.push({ key: `fatura-${f.id}`, type: "Fatura", label: `${f.no || "—"} · ${f.firma || "—"}`, deletedAt: f.deletedAt, restore: () => restoreFatura(f), purge: () => purgeFatura(f) }));
