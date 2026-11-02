@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (plan `specs/0121-uygulama-plani.md`, plan turu 2026-11-02 Karar 38–51). Kökeni: Takım Yöneticisi'nin 2026-11-01 isteği ve aynı gün verdiği **beş** kararı; iç içe set yasağı, çöpteki bileşenin maliyeti eksik yapması ve yeni izin açılmaması analistin kararıdır. QA boşluk analizi 2026-11-02, 32 bulgu işlendi) |
+| **Durum** | Tamamlandı (revizyon 3: QA turu Karar 6–37, 2026-11-02; plan turu Karar 38–51; uygulamada Karar 52–56; triyaj Karar 57; uygulama commit `686edb7`; plan `specs/done/0121-uygulama-plani.md`). Kökeni: Takım Yöneticisi'nin 2026-11-01 isteği ve aynı gün verdiği **beş** kararı; iç içe set yasağı, çöpteki bileşenin maliyeti eksik yapması ve yeni izin açılmaması analistin kararıdır. |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/PartManager.jsx` (parça kartına setin içeriği bölümü), `src/lib/urunAgaci.js` (içerik kuralları, doğrulama, maliyetin üçüncü kaynağı, metinler), yeni `src/lib/setUretimi.js` (set hazırlama ve geri alma, saf), `src/lib/stokHareketi.js` (dört yeni hareket tipi ve adları), `src/components/stock/PartStokTab.jsx` (satırda rozet ve "Set Hazırla" düğmesi, pencere), yeni `src/components/stock/SetHazirlaPenceresi.jsx`, `src/components/stock/StokHareketleriPenceresi.jsx` (geri alma düğmesi), `src/components/settings/SettingsAuditLog.jsx` (iki yeni eylemin etiketi), `src/lib/merge.js` (içerikteki parça kimliğinin yeniden eşlenmesi), `electron/db.cjs` (yeni JSON sütunu), `src/components/Settings.jsx` ve `src/components/Stock.jsx` (ham parça dizisinin iletilmesi, R6/2), `src/lib/parcaAktarma.js` ile `src/components/settings/SettingsExport.jsx` (setin maliyet hücresi, R12/2), `src/components/ServiceForm.jsx` ve `src/components/YedekParcaSatisForm.jsx` (seçimden sonraki içerik satırı, R26/2), `src/lib/kilitAlanlari.js` (pencerenin kilit alanı listesine girmesi, R29/2), `src/lib/makinaStandartMaliyet.js` (katalogla okuma ve kit kesişimi uyarısı, R9/2 ve R32/2); plan turuyla eklenen `src/App.jsx` (Stock'a ham parça dizisi, Karar 38) ve `src/components/maliyet/ModelMaliyetleri.jsx` (kesişim uyarısının ekranı, Karar 39). **Dokunulmayan iki dosya:** `src/components/ui.jsx` ve içindeki `SearchPick` (C10). **Test:** yeni `tests/set-icerigi-0121.test.js`, `tests/ui/set-icerigi-0121.test.jsx`, `tests/ui/set-uretimi-0121.test.jsx`, `tests/set-icerigi-0121-kiyas.test.js`; ek bloklar `merge`, `islem-gecmisi-etiketleri`, `db-roundtrip.cjs`, `db-clean-install.cjs`, `stok-hareketi` (iki kriterin genişletilmesi, R33), `kirilim-toplami-0099`, `maliyet-gecmisi-0097-cagri` (casusun bütün argümanları iletmesi, R33), `kilit-alanlari`, `ui/form-pencere-boyutu`. **Kanıt:** `scripts/evidence/0009-sayfa.jsx`, `docs/evidence/kanit-eslemesi.json`. **Belge:** `CLAUDE.md`; `specs/README.md`'nin kuyruk satırı (`:31`), paragrafı (`:34`) ve tablo satırı (`:182`) **zaten yazılı**, kapanışta yalnız "(Tamamlandı)" düşer (ölçüm 31). Sunucu kuralları, izin tanımları, veri bölümleri ve yazdırma çıktıları dokunulmaz. |
@@ -239,7 +239,7 @@ Takım Yöneticisi'nin 2026-11-01'de verdiği beş karar burada **Karar 1-5**'ti
 
 ### Plan turunda verilen kararlar (2026-11-02)
 
-Uygulama planının belirsizlik maddeleri (`specs/0121-uygulama-plani.md` §3) Takım Yöneticisi tarafından olduğu gibi kabul edildi.
+Uygulama planının belirsizlik maddeleri (`specs/done/0121-uygulama-plani.md` §3) Takım Yöneticisi tarafından olduğu gibi kabul edildi.
 
 - **Karar 38 (P1).** App, Stock'a yalnız canlı parça dizisini veriyordu; `rawParts={parts}` prop'u eklenir ve `src/App.jsx` etkilenen alanlara yazıldı (R6/2).
 - **Karar 39 (P2).** Kesişim uyarısı `src/components/maliyet/ModelMaliyetleri.jsx`'te çizilir; motor kesişimi döndürür, ekran yalnız yazar (R32/2).
@@ -263,6 +263,7 @@ Uygulama planının belirsizlik maddeleri (`specs/0121-uygulama-plani.md` §3) T
 - **Karar 54.** Dördüncü bir test "spec 0121 ile" güncellendi: `tests/hammadde-0096.test.js` AC-32 Model Maliyetleri'nin `parcaMaliyetKurus(p, tarih)` imzasını birebir arıyordu; desen `parcaMaliyetKurus(p, tarih, partMap)` oldu, iddia aynı.
 - **Karar 55.** `Settings`'in `rawParts` varsayılanı boş dizidir; ham dizi verilmemiş ya da boşsa canlı diziye düşülür (R6/2'nin "verilmezse" kuralı). Hareket penceresinin anlık kilit denetimi kendi kilidini saymasın diye App, Stock'a `aktifKullanici` da verir (Karar 41'in gereği).
 - **Karar 56.** `docs/tasarim-sozlugu.md`'nin iki `dosya:satır` atıfı kaydı (`PartStokTab.jsx:148`, `ModelMaliyetleri.jsx:84`; ikincisi spec öncesinde de bir satır kaymıştı).
+- **Karar 57 (triyaj 2026-11-02).** Hammadde kırılımı da saklı olan set Excel'den geri yüklenince içe aktarma yanlış nedenle ("hammadde kırılımından geliyor") uyarıyordu; kırılım dalı artık seti dışlar (`!setMi(mevcut)`, set kontrolü önce). Triyajın bozmalarıyla ölçülen dört test boşluğu kapatıldı: Set Hazırla penceresinde ham diziden ad (gerçek App, `ui/set-uretimi-0121-app`), yedek parça formunun tek seçili parça kutusu, ekleme penceresinin fiyat düğmesi, geri almanın yerel günü, hammadde bölümünün pasifliği; AC-57'nin adlı taraması eklendi.
 
 ### Karar kaydı
 
@@ -405,10 +406,17 @@ Uygulama planının belirsizlik maddeleri (`specs/0121-uygulama-plani.md` §3) T
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `686edb7` | Dal `feat/0121-set-icerigi`, taban `226b959`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (B-1–B-8, Ö-1–Ö-12, K-1–K-12, Karar 6–37), plan turu (Karar 38–51), uygulama (Karar 52–56) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: kırılımlı setin Excel uyarısı (Karar 57) ve beş test boşluğu (ad çözümü, tek kutu, ekleme fiyatı, geri alma günü, hammadde pasifliği) + AC-57 taraması |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 | Beşinci bulgu (taban raporu) kapanış adımıydı, kod kusuru değil |
+| **Regresyon sayısı** | 0 | Tam takım 452 dosya, 6189 test (Electron dahil, kapanışta); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** spec'in üç ters çevrilen testine dördüncüsü eklendi (`hammadde-0096` AC-32 imza deseni). 0087 AC-6 satış ve stok ekranlarının `urunAgaci`'yı içe almasını yasaklıyordu; rozet ve içerik satırı ortak `stock/SetRozeti.jsx`'e alındı. Ölçüm 27 değişen kanıt ekranlarını eksik saydı (parça kartı penceresi açık on bir ekranın hepsi ve hareket penceresi değişti). `Settings`'in `rawParts` varsayılanı boş dizi olduğu için yedek kuralı "verilmemiş ya da boş" oldu. Mutasyon ölçümü: uygulamada beş, triyajda yedi bozma; hepsi test kırdı.
+
+**Görsel kanıt:** 34 ekran × 2 tema; 22 kayıt bilinçli değişti (altısı yeni ekran), liste ekranları, servis ve yedek parça formları ve Model Maliyetleri 0 piksel; `bayi-yedek-parca-formu`'nun karanlık teması çekimden çekime 0 ile 1 piksel arasında oynuyor (kodla ilgisiz, spec öncesi görüntüye karşı da); bu ekran iki raporda da 0 çıkan çekimle yazıldı. Taban son kodla 68 görüntüde 0 fark; 22 `degisti` kaydı kapanışta `ayni` ve taban raporuna çevrildi.
+
+**Canlı veri ölçümü (R35, Karar 49):** güncel yedek olmadığı için ölçülemedi; kit kesişimi uyarısı test fikstürüyle kanıtlandı.
+
+**Bu spec'ten çıkarılan ders:** bir ekranın "ham dizi ile ad çözer" kuralı yalnız o ekranın kendi düzeneğinde ölçülürse, değeri ekrana taşıyan ara katmandaki (App → Stock) prop kaybı görünmez; prop zinciriyle gelen bir kural gerçek App düzeneğinde de ölçülmeli. İkinci ders: bir kapı (set mi?) eklenirken aynı fonksiyondaki komşu dallar (kırılım) yeni durumu dışlamıyorsa yanlış nedenle konuşur; yeni durumu eklerken her dalın önüne konmalı.

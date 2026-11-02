@@ -1,6 +1,6 @@
 # 0121 Uygulama planı: parçalardan set oluşturma ve set hazırlama
 
-Spec: `specs/0121-parcadan-set-olusturma.md`. Taban: main `226b959`. Dal: `feat/0121-set-icerigi` (`../wt0121`).
+Spec: `specs/done/0121-parcadan-set-olusturma.md`. Taban: main `226b959`. Dal: `feat/0121-set-icerigi` (`../wt0121`).
 Plan turu 2026-11-02; belirsizlik maddeleri (§3) Takım Yöneticisi tarafından olduğu gibi kabul edildi ve spec'e Karar 38–51 olarak işlendi.
 
 ## 1. Değişecek ve eklenecek dosyalar
