@@ -105,7 +105,8 @@ describe("Spec 0082: genel arama (R9, R14)", () => {
   it("AC-27: standart gider adıyla arama o kategoriyi çıkarmaz (eski veri prop olarak gelse de); kalan kategoriler ve sıra aynı", () => {
     arama("Elektrik", { standartGiderler: [{ id: 301, grupId: 301, ad: "Elektrik", tutar: 2000, baslangicAy: "2026-05" }] });
     expect(document.body.textContent).not.toMatch(/Standart Genel Gider/);
-    expect(KAT_SIRA.slice(11)).toEqual(["giderler", "tedarikciler", "giderTanimlari", "uretimPartileri", "kasaHesaplari", "cekler"]);
+    // Spec 0125 ile (Karar 24): iki katalog kategorisi sona eklendi; standart gider kategorisinin yokluğu iddiası aynı.
+    expect(KAT_SIRA.slice(11)).toEqual(["giderler", "tedarikciler", "giderTanimlari", "uretimPartileri", "kasaHesaplari", "cekler", "parcaTanimlari", "kalipTanimlari"]);
     expect(KAT_SIRA).not.toContain("standartGiderler");
   });
   it("AC-28: kategori kümesi ile sonuç nesnesinin anahtar kümesi eşit (0026 eşitlik kuralı yeni kümede)", () => {

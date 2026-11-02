@@ -238,7 +238,8 @@ describe("Spec 0096: kaynak taramaları", () => {
   it("AC-22 (kaynak): useFilteredList imzası değişmedi; sayfa sıfırlaması süzgeci yazan fonksiyonda", () => {
     // Spec 0100 ile (plan P2): kanca isteğe bağlı `ikinciFiltre` aldı (parametresiz çağrı birebir eski); 0096'nın iddiası olan "parça
     // listesi kancayı değiştirmeden sıfırlar" korunur: PartManager ikinci süzgeci kullanmaz.
-    expect(kod("src/hooks/useFilteredList.js")).toMatch(/export const useFilteredList = \(data, \{ searchFields, searchFn, filterFn, ikinciFiltre, sortFn, perPage = 10 \} = \{\}\) =>/);
+    // Spec 0125 ile (Karar 29): isteğe bağlı `baslangicArama` eklendi (verilmezse "", davranış birebir eski); öteki parametreler aynı.
+    expect(kod("src/hooks/useFilteredList.js")).toMatch(/export const useFilteredList = \(data, \{ searchFields, searchFn, filterFn, ikinciFiltre, sortFn, perPage = 10, baslangicArama = "" \} = \{\}\) =>/);
     expect(kod("src/components/PartManager.jsx")).not.toMatch(/ikinciFiltre/);
     expect(kod("src/components/PartManager.jsx")).toMatch(/const setSuzgec = \(v\) => \{ setSuzgecRaw\(v\); setPage\(1\); \};/);
   });

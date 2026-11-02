@@ -97,6 +97,9 @@ describe("Spec 0030: sözlük dışı ekran renkleri karanlıkta okunur", () => 
     // Spec 0115 Karar 55: tamir rozeti (pano kartı ve Makina Geçmişi) ve üretim formunun Tamir hücresi amber.
     ["Tamir rozeti 'KALIP ATÖLYEDE'", "amb700", "ambBg", "src/components/TamirRozeti.jsx"],
     ["Üretim formu Tamir hücresi", "amb700", "ambBg", "src/components/stock/UretimFormu.jsx"],
+    // Spec 0125 AC-16 (Karar 23): genel aramanın iki katalog kategorisinin ikon rozeti; çiftler öteki kategorilerden farklı.
+    ["Genel arama 'Parça Kataloğu' rozeti", "teal2", "tealBg", "src/components/GlobalSearch.jsx"],
+    ["Genel arama 'Kalıp Kataloğu' rozeti", "pur700", "purBg2", "src/components/GlobalSearch.jsx"],
   ];
   const KENAR_0030 = [
     ["Pano KALIP / personel rozeti", "purBr", "purBg", "src/components/gider/GiderAlanlari.jsx"],

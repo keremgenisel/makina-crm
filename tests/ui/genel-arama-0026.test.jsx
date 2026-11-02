@@ -258,7 +258,8 @@ describe("Spec 0026: yetki ve kapsam", () => {
   });
   it("AC-33: yeni kategoriler KAT_SIRA'nın sonunda ve R15 sırasında; ilk on bir aynı", () => {
     expect(KAT_SIRA.slice(0, 11)).toEqual(["musteriler", "servisler", "belgeler", "bayiler", "makinalar", "yedekParcalar", "kaliplar", "uretimler", "dosyalar", "notlar", "calisanlar"]);
-    expect(KAT_SIRA.slice(11)).toEqual(["giderler", "tedarikciler", "giderTanimlari", "uretimPartileri", "kasaHesaplari", "cekler"]); // spec 0082: standart kalktı
+    // Spec 0125 ile (Karar 24): iki katalog kategorisi sona eklendi; dizi sekiz anahtar, ilk on bir aynı.
+    expect(KAT_SIRA.slice(11)).toEqual(["giderler", "tedarikciler", "giderTanimlari", "uretimPartileri", "kasaHesaplari", "cekler", "parcaTanimlari", "kalipTanimlari"]); // spec 0082: standart kalktı
   });
   it("AC-35: kategori tablosunun anahtar kümesi sonuç nesnesinin anahtar kümesine eşit", () => {
     const sonuc = genelAramaSonuclari("ab", {}, { izinli: () => true });

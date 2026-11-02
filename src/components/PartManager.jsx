@@ -295,7 +295,7 @@ export const SUZGEC_TUMU = "";
 export const SUZGEC_GIRILMEMIS = "__girilmemis__";
 export const SUZGEC_BOS_METNI = "Bu süzgece uyan parça yok.";
 export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, standardModels = [], customModels = [],
-  setStandardModels = null, setCustomModels = null, partTypeDefs = [], baskasiKilitli = null, rawCustomModels = null, tedarikciler = [], giderYetki = false, rawParts = null }) => {
+  setStandardModels = null, setCustomModels = null, partTypeDefs = [], baskasiKilitli = null, rawCustomModels = null, tedarikciler = [], giderYetki = false, rawParts = null, baslangicArama = "" }) => {
   const allModels = [...standardModels, ...customModels];
   // Spec 0121 R6/2 (AC-40): ad çözümü ham diziden; verilmezse canlı diziye düşülür. R9/2: katalog canlı parçalardan, bir kez.
   const hamParts = Array.isArray(rawParts) && rawParts.length ? rawParts : parts; // verilmemiş ya da boş ham dizi canlıya düşer
@@ -352,7 +352,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     if (suzgec === SUZGEC_GIRILMEMIS) return h.length === 0;
     return h.some(x => String(x.tedarikciId) === suzgec);
   };
-  const { search, setSearch, page, setPage, filtered, paged } = useFilteredList(parts, { searchFields: ["ad"], filterFn: suzgecFn, perPage: PER_PAGE });
+  const { search, setSearch, page, setPage, filtered, paged } = useFilteredList(parts, { searchFields: ["ad"], filterFn: suzgecFn, perPage: PER_PAGE, baslangicArama }); // spec 0125 R5/2
   const setSuzgec = (v) => { setSuzgecRaw(v); setPage(1); };
   const suzgecSecenekleri = (() => {
     const say = new Map();

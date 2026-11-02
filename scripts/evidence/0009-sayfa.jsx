@@ -861,6 +861,9 @@ const G_0072 = [...GIDERLER,
 const K_0092 = k(43, { tedarikciId: 12, aciklama: "Bakım sözleşmesi (peşin)", tutar: 8000, tarih: "2026-06-05", dagitimAy: 4, odendi: true });
 const TANIM_0092 = { id: 92, ad: "Yazılım aboneliği (yıllık)", turId: 4, tutar: 6000, kdvOrani: 20, kdvYonu: "haric", tedarikciId: 12, baslangicAy: "2026-06", uretilenAylar: [], dagitimAy: 12 };
 const M88_KAPSAM = { id: 92, tarih: "2026-01-10", turId: 1, tutar: 12000, kdvOrani: 20, aciklama: "Yıllık sigorta", dagitimAy: 12 };
+// Spec 0125: kalıp kataloğu fikstürü (kod, ürün adı TR/EN).
+const KALIP_0125 = [{ id: 951, ad: "Burger 120", kod: "BG-120", urunAdi: "Köfte kalıbı", urunAdiEN: "Patty mould" }, { id: 952, ad: "Kroket", kod: "KR-1", urunAdi: "Kroket kalıbı" },
+  { id: 953, ad: "Hamburger 100", kod: "HB-100", urunAdi: "Hamburger kalıbı" }];
 const ARAMA_KUTU = "doldur:Müşteri, seri no, teklif no, servis, bayi, not ara...";
 
 const EKRANLAR = {
@@ -1353,6 +1356,15 @@ const EKRANLAR = {
   "arama-gider-vade": [aramaEkrani(), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=10.06.2026`]],
   "arama-kasasiz": [aramaEkrani({ kasaYetki: false }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=Yıldız`]],
   "arama-gidersiz": [aramaEkrani({ giderYetki: false, kasaYetki: false }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=zzzz`]],
+  // Spec 0125: parça ve kalıp katalogları aramada (set ibaresiyle), servisin kalıp alanlarından gelen eşleşmenin nedeni ve
+  // yönlendirme sonrası kaydın adıyla dolu panel süzgeci.
+  "arama-0125-parca": [aramaEkrani({ parts: PARCA_0121_SET, onGoKatalog: bos }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=ayna`]],
+  "arama-0125-kalip-servis": [aramaEkrani({ kalipDefs: KALIP_0125, onGoKatalog: bos, customers: [{ id: 9501, name: "Lezzet Gıda", serialNo: "S-77" }],
+    services: [{ id: 9502, customerId: 9501, type: "Garanti Dışı", tech: "Ahmet", date: "2026-09-10", durum: "Tamamlandı",
+      atolyeKaliplari: [{ id: 1, ad: "Burger Kalıbı 110", olcu: "110" }], kalipKargoFirma: "Yurtiçi Kargo", kalipKargoTakipNo: "YK778899" }] }),
+    ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=burger`]],
+  "katalog-parca-0125-suzgec": [ayarlar("yedekparca", { parts: PARCA_0121_SET, standardModels: MODELLER_0087, katalogAcilis: { panel: "yedekparca", ara: "Ayna dişlisi", no: 1 } }), []],
+  "ayarlar-kaliplar-0125-suzgec": [ayarlar("kaliplar", { kalipDefs: KALIP_0125, katalogAcilis: { panel: "kaliplar", ara: "Burger 120", no: 1 } }), []],
   // Spec 0071: KDV dâhil giriş (normal, yuvarlama farkı, brüt kira, net kira ipucu), tanım formu, "Tutar girilmedi" rozeti ve süzgeci.
   "gider-formu-0071-kdv-dahil": [<GiderForm kalem={{ id: 901, tarih: "2026-09-15", turId: 4, tutar: 983.33, kdvOrani: 20, kdvYonu: "dahil", tedarikciId: 12, aciklama: "Eylül elektrik faturası" }}
     giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],

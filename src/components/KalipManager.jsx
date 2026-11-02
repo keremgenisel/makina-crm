@@ -7,7 +7,7 @@ import { useFilteredList } from "../hooks/useFilteredList";
 
 const PER_PAGE = 10;
 
-export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, setCustomers = null, setPartSales = null }) => {
+export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, setCustomers = null, setPartSales = null, baslangicArama = "" }) => {
   const emptyForm = { ad: "", kod: "", urunAdi: "", urunAdiEN: "", tanim: "", tanimEN: "" };
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
@@ -35,7 +35,7 @@ export const KalipManager = ({ kalipDefs, setKalipDefs, showToast = () => {}, se
       },
     });
   const [addOpen, setAddOpen] = useState(false);
-  const { search, setSearch, page, setPage, filtered, paged } = useFilteredList(kalipDefs, { searchFields: ["ad"], perPage: PER_PAGE });
+  const { search, setSearch, page, setPage, filtered, paged } = useFilteredList(kalipDefs, { searchFields: ["ad"], perPage: PER_PAGE, baslangicArama }); // spec 0125 R5/2
 
   const openAdd = () => { setForm(emptyForm); setAddOpen(true); };
   const submitAdd = () => { if (add()) setAddOpen(false); };

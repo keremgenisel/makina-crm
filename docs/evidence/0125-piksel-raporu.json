@@ -1,0 +1,144 @@
+[
+  {
+    "ad": "ayarlar-kaliplar-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-kaliplar-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-yedekparca-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-yedekparca-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "arama-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-sonuc-yok-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-sonuc-yok-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-gider-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-gider-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-gider-vade-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-gider-vade-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-kasasiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-kasasiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-gidersiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-gidersiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "arama-0125-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "arama-0125-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "arama-0125-kalip-servis-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "arama-0125-kalip-servis-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0125-suzgec-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0125-suzgec-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "ayarlar-kaliplar-0125-suzgec-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "ayarlar-kaliplar-0125-suzgec-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  }
+]

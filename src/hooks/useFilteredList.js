@@ -8,8 +8,9 @@ import { aramaNormalize } from "../lib/utils";
 // sortFn(a, b): sıralama.
 // ikinciFiltre(item): isteğe bağlı ikinci süzgeç (spec 0100 plan P2). Verilirse `oncesi` ondan önceki (arama + filterFn) kümedir;
 // ekran süzgeç rozetlerinin sayılarını bu kümeden alır. Verilmezse `oncesi` = `filtered` (sıralamadan önce), davranış birebir eski.
-export const useFilteredList = (data, { searchFields, searchFn, filterFn, ikinciFiltre, sortFn, perPage = 10 } = {}) => {
-  const [search, setSearchRaw] = useState("");
+// baslangicArama: isteğe bağlı ilk arama metni (spec 0125 R5/2); yalnız mount anında okunur, verilmezse "" (davranış birebir eski).
+export const useFilteredList = (data, { searchFields, searchFn, filterFn, ikinciFiltre, sortFn, perPage = 10, baslangicArama = "" } = {}) => {
+  const [search, setSearchRaw] = useState(baslangicArama);
   const [page, setPage] = useState(1);
   // Arama değişince sayfa 1'e dönsün (önceki sayfada kalıp boş liste görmeyi önler).
   const setSearch = (v) => { setSearchRaw(v); setPage(1); };

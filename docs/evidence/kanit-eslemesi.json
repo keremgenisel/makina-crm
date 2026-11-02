@@ -3213,6 +3213,23 @@
         "rapor": "docs/evidence/0091-taban-piksel-raporu.json",
         "ekran": "katalog-model-uretimde",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0125-piksel-raporu.json",
+        "ekran": "ayarlar-kaliplar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0125-piksel-raporu.json",
+        "ekran": "katalog-parca-0125-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0125 R5/2"
+      },
+      {
+        "rapor": "docs/evidence/0125-piksel-raporu.json",
+        "ekran": "ayarlar-kaliplar-0125-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0125 R5/2"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -7406,6 +7423,17 @@
         "rapor": "docs/evidence/0015-piksel-raporu.json",
         "ekran": "ayarlar-kaliplar",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0125-piksel-raporu.json",
+        "ekran": "ayarlar-kaliplar",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0125-piksel-raporu.json",
+        "ekran": "ayarlar-kaliplar-0125-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0125 R5"
       }
     ],
     "src/components/PartManager.jsx": [
@@ -7856,6 +7884,22 @@
         "rapor": "docs/evidence/0123-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0123-sil",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0125-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0125-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0125-piksel-raporu.json",
+        "ekran": "katalog-parca-0125-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0125 R5"
       }
     ],
     "src/components/PartTypeManager.jsx": [

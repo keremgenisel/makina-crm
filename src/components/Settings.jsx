@@ -59,7 +59,7 @@ const SETTINGS_GROUPS = [
   { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "sahipsiz", label: "Sahipsiz Kayıtlar", icon: "search" }] },
 ];
 
-export const Settings = ({ aktifKullanici = "", customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
+export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
   partStock = [], setPartStock = null, partStockLog = [], setPartStockLog = null,
   partTypeDefs = [], setPartTypeDefs = null, rawPartTypeDefs = [],
   calisanlar = [], setCalisanlar = null, rawCalisanlar = [],
@@ -261,7 +261,9 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
           <div className="section-desc">
             Buraya eklediğiniz kalıplar, Yeni Müşteri ekranındaki <b>Kalıp</b> seçiminde listelenir. Ölçü, müşteri eklerken elle girilir.
           </div>
-          <KalipManager kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} showToast={showToast} setCustomers={setCustomers} setPartSales={setPartSales} />
+          {/* Spec 0125 R5/2 (Karar 1, 19, 20): genel aramadan gelince panel sayaçtan kurulan `key` ile yeniden kurulur ve süzgeç kaydın adıyla dolar. */}
+          <KalipManager key={`kaliplar-${katalogAcilis?.no || 0}`} baslangicArama={katalogAcilis?.panel === "kaliplar" ? katalogAcilis.ara : ""}
+            kalipDefs={kalipDefs} setKalipDefs={setKalipDefs} showToast={showToast} setCustomers={setCustomers} setPartSales={setPartSales} />
         </KartBolum>
       )}
 
@@ -270,7 +272,8 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
           <div className="section-desc">
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
-          <PartManager parts={parts} rawParts={rawParts} setParts={setParts} showToast={showToast} setServices={setServices}
+          <PartManager key={`yedekparca-${katalogAcilis?.no || 0}`} baslangicArama={katalogAcilis?.panel === "yedekparca" ? katalogAcilis.ara : ""}
+            parts={parts} rawParts={rawParts} setParts={setParts} showToast={showToast} setServices={setServices}
             standardModels={standardModels} customModels={customModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels}
             partTypeDefs={partTypeDefs} baskasiKilitli={baskasiKilitli}
             rawCustomModels={rawCustomModels.length >= customModels.length ? rawCustomModels : customModels}

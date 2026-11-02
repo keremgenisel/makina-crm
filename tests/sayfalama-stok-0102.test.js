@@ -32,7 +32,8 @@ describe("Spec 0102: Makina Stoğu'nun kaynağı (R1, R1/2, R3, C1–C4/2)", () 
   });
   it("AC-15: useFilteredList bu işte değişmedi (imza ve dilim satırı)", () => {
     const k = oku("src/hooks/useFilteredList.js");
-    expect(k).toMatch(/export const useFilteredList = \(data, \{ searchFields, searchFn, filterFn, ikinciFiltre, sortFn, perPage = 10 \} = \{\}\) =>/);
+    // Spec 0125 ile (Karar 29): isteğe bağlı `baslangicArama` eklendi (verilmezse "", davranış birebir eski); öteki parametreler aynı.
+    expect(k).toMatch(/export const useFilteredList = \(data, \{ searchFields, searchFn, filterFn, ikinciFiltre, sortFn, perPage = 10, baslangicArama = "" \} = \{\}\) =>/);
     expect(k).toMatch(/const paged = filtered\.slice\(\(page - 1\) \* perPage, page \* perPage\);/);
     expect(k).toMatch(/return \{ search, setSearch, page, setPage, filtered, paged, perPage, oncesi \};/);
   });
