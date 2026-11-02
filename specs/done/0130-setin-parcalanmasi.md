@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-02; plan `specs/0130-uygulama-plani.md`, plan turu Karar 1–11, uygulama Karar 12–14, triyaj Karar 15–16). |
+| **Durum** | Tamamlandı (2026-11-02; plan turu Karar 1–11, uygulamada Karar 12–14, triyaj Karar 15–16; uygulama commit `ea02a3b`; plan `specs/done/0130-uygulama-plani.md`). |
 | **Sahip** | Analist (spec), geliştirme atanmadı |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Stok › Parça Stoğu; saf motorlar `setUretimi.js`, `stokHareketi.js`; İşlem Geçmişi etiketleri |
@@ -173,10 +173,17 @@ Takım Yöneticisi planın bütün önerilerini 2026-11-02'de onayladı (plan `s
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `ea02a3b` | Dal `feat/0130-set-parcalama`, taban `8d080b0`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | Plan turu (Karar 1–11), uygulama (Karar 12–14), triyaj (Karar 15–16) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: geri alma tarihi, kilit yüklenirken pasif düğme, birleştirme testi, taban raporu |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Beş bulgudan biri kesik geldi ve işlenmedi; beşincisi kapanış adımıydı |
+| **Regresyon sayısı** | 0 | Tam takım 455 dosya, 6267 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** spec bir ters çevirme sayıyordu, dört çıktı (`IADE_TIPI` listesi, `IPTAL_TIPI` birebir, 0121 AC-25 ret metni, 0121 AC-45 liste metni). Yeni pencere `tasarim.jsx`'i içe aldığı için kanıt eşlemesine kendi anahtarıyla girdi; `PartStokTab.jsx`'te satır kaydığı için sözlüğün `:148` örneği `:149` oldu. Mutasyon ölçümü: uygulamada beş, triyajda üç bozma; hepsi test kırdı.
+
+**Görsel kanıt:** 14 ekran × 2 tema; var olan on ekranın üçü bilinçli değişti (setin satırına "Seti Parçala"), yedisi 0 piksel; dört yeni ekran. Taban son kodla 28 görüntüde 0 fark; 7 ekranın 11 `degisti` kaydı (beş dosyada) kapanışta `ayni` ve taban raporuna çevrildi.
+
+**Canlı veri:** elde tek yedek 01.11.2026; içeriği girilmiş set yok, bugün parçalanabilecek set yok (Karar 9).
+
+**Bu spec'ten çıkarılan ders:** bir harita ya da listeye yeni bir üye eklerken, o listeyi birebir sabitleyen testler ve onların metnini arayan meta-testler de ters çevrilecek kriterlerdir; spec yazılırken `toEqual` ve dize aramasıyla haritayı anan testler taranmalı. İkinci ders: "hangi tarihi taşır" gibi yazılmamış ama kodda verilmiş bir karar, testi yoksa sessizce değişebilir; spec karşı hareketin tarihini de açıkça kurallamalı.

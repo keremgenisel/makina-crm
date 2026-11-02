@@ -1,6 +1,6 @@
 # 0130 uygulama planı — Hazırlanmış setin parçalanması
 
-Spec: `specs/0130-setin-parcalanmasi.md` (plan turu Karar 1–11). Dal `feat/0130-set-parcalama`, taban `8d080b0`.
+Spec: `specs/done/0130-setin-parcalanmasi.md` (plan turu Karar 1–11). Dal `feat/0130-set-parcalama`, taban `8d080b0`.
 Yeni kalıcı alan, veri bölümü, izin, sunucu ya da birleştirme kuralı yok: parçalama yalnız stok hareketidir.
 
 ## 1. Dosyalar

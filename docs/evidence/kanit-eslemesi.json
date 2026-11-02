@@ -7277,16 +7277,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-set",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-hazirla",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R14"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0130-piksel-raporu.json",
@@ -7294,22 +7292,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-hareket",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0130-parcala",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R15"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0130-hareket",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R12"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MailCompose.jsx": [
@@ -9955,16 +9950,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-hareket",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R14"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0130-hareket",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R12"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/StokTutarliligi.jsx": [
@@ -10648,10 +10641,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-hazirla",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R14"
+        "beklenen": "ayni"
       },
       {
         "rapor": "docs/evidence/0130-piksel-raporu.json",
@@ -10661,22 +10653,19 @@
     ],
     "src/components/stock/SetParcalaPenceresi.jsx": [
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0130-parcala",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R15"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0130-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0130-piksel-raporu.json",
+        "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "kilit-set-parcala",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0130 R17"
+        "beklenen": "ayni"
       }
     ]
   }
