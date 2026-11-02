@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-02; plan `specs/0122-uygulama-plani.md`, plan turu Karar 25–32, uygulama Karar 33–35). Kökeni: 2026-11-02. İki karar aynı gün verildi (tıklama satırı hemen ekler, yinelenen parçada bugünkü uyarı korunur). **QA boşluk analizi 2026-11-02, 22 bulgu işlendi**; ikinci karar bu turda ters çevrildi (uyarı yerine önleme, Karar 5). |
+| **Durum** | Tamamlandı (QA turu Karar 3–24, 2026-11-02; plan turu Karar 25–32; uygulamada Karar 33–35; triyaj Karar 36; uygulama commit `929a40e`; plan `specs/done/0122-uygulama-plani.md`). Kökeni: 2026-11-02. İki karar aynı gün verildi (tıklama satırı hemen ekler, yinelenen parçada bugünkü uyarı korunur). **QA boşluk analizi 2026-11-02, 22 bulgu işlendi**; ikinci karar bu turda ters çevrildi (uyarı yerine önleme, Karar 5). |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/PartManager.jsx` (yalnız `SetIcerigiAlani`'nın seçici satırı), `src/lib/urunAgaci.js` (yer tutucu sabiti ve `setBilesenAdaylari` eklenir, iki ölü sabit kalkar). **Test:** `tests/ui/set-icerigi-0121.test.jsx` (yardımcılar, bir kriterin iddiası ve dört kriterin okuma yolu), yeni `tests/ui/set-aramasi-0122.test.jsx`; `tests/set-icerigi-0121.test.js` dokunulmadan geçer (ölçüm 29). **Kanıt:** `docs/evidence/kanit-eslemesi.json` (yeni kayıtlar eklenir, R15), `scripts/evidence/0009-sayfa.jsx` (yeni `odak:` adımı ve `katalog-parca-0122-panel` ekranı). **Belge:** `CLAUDE.md`, `docs/tasarim-sozlugu.md` (arama seçicisi kuralı ve erişilebilirlik borcu), `specs/README.md` (kuyruk satırı `:31`, paragraf `:52` ve tablo satırı `:203` zaten yazılı, ölçüm 28). **Dokunulmayan dosya adıyla:** `src/components/ui.jsx` (R9, R10, C4). Veri şeması, göç, izin tanımları, sunucu kuralları, birleştirme, yazdırma ve dışa aktarma dokunulmaz. |
@@ -172,6 +172,10 @@ Takım Yöneticisi planın bütün önerilerini 2026-11-02'de onayladı.
 - **Karar 34.** R5/2'nin gerekçesi mutasyonla inceltildi: seçicinin **önüne** `{kosul && <Öğe />}` biçiminde konan koşullu öğe seçiciyi yeniden kurmaz (React `false` deliğinde konumu korur, ölçüldü); yazılmış metni silen, seçicinin **üst kabının ya da konumunun dala göre değişmesidir** (ör. dolu ve boş dallarda ayrı kaplar). AC-32 bu mutasyonu yakalar. Kural metni değişmez (koşullu öğe konmaz), gerekçe daralır. → **R5/2, AC-32**
 - **Karar 35.** Panel ekranı (`katalog-parca-0122-panel`) iki adaylı fikstürde "r" yazılmış açık paneli çizer; panel modalda kırpılmıyor, Parça Tipi ve Resim satırlarını örtüyor (R5'in beklediği). Çekimde `adimUyarilari` yok. → **R15(c), AC-30**
 
+### Triyajda verilen karar (2026-11-02)
+
+- **Karar 36.** Triyajın beş bulgusu (beşi gerçek) düzeltildi: AC-18 seçicinin kabını tarar (düz `<div>`, genişlik sınırı yok; `maxWidth: 240` bozması kırılır); fikstürde kodlu aday, panel metni birebir ad ve kodla arama boş (R3, X3; etikete kod ekleme bozması kırılır); dala eklenen ikinci README satırı geri alındı, analistin satırı kapanışta güncellendi (C7); 0121 testinin `bilesenSec` yardımcısı panelde olmayan parçada hata fırlatır (AC-4'ün etkisiz ikinci çağrısı `toThrow` iddiası oldu); taban raporu son kodla alındı (38 görüntü, 0 fark) ve AC-8, AC-9, AC-29, AC-31 için var olan testleri anan kapsam testi eklendi. → **AC-4, AC-18, AC-29, R3, C7**
+
 ### Karar kaydı
 
 | Bulgu | Derece | Karar | Nereye işlendi |
@@ -271,10 +275,15 @@ Takım Yöneticisi planın bütün önerilerini 2026-11-02'de onayladı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `929a40e` | Dal `feat/0122-set-aramasi`, taban `43d04b9`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (22 bulgu, Karar 3–24), plan turu (Karar 25–32), uygulama (Karar 33–35) |
+| **Düzeltme turu sayısı** | 1 | Triyaj (Karar 36): iki tarama boşluğu (genişlik, etiket), README satırı, sessiz test yardımcısı, taban raporu + kapsam testi |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 | Beşinci bulgu (taban raporu, adlı test) kapanış adımıydı, kod kusuru değil |
+| **Regresyon sayısı** | 0 | Tam takım 453 dosya, 6224 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** canlı veri ölçümü (R16) spec'in aradığı yolda değildi; veri `Altunmak CRM/data.db`'de ve şifreli, tek yedek ZIP içinde (`veri.json`), rakamlar doğrulandı (Karar 25). AC-14/AC-25 "yedi" çağrı diyordu, sekizdir (Karar 26). Kanıt tahmini tutmadı: on dört `katalog-parca*` ekranının hepsi değişti, yalnız ikisi değil (Karar 33). Önüne konan `{x && <Öğe/>}` seçiciyi yeniden kurmaz, kabın dala göre değişmesi kurar (Karar 34). İlk tam koşuda iki var olan tarama kendi metnimi yakaladı: CLAUDE.md'de "dokuz çağrı" (0102) ve Durum satırında "Taslak" (spec-durumlari). Mutasyon ölçümü: uygulamada dört, triyajda iki bozma; biri dışında hepsi test kırdı (kırmayanı Karar 34'ün konusu).
+
+**Görsel kanıt:** 19 ekran × 2 tema; 15 kayıt bilinçli değişti (biri yeni panel ekranı), dört `ayarlar-yedekparca*` liste ekranı 0 piksel. Taban son kodla 38 görüntüde 0 fark; 15 `degisti` kaydı kapanışta `ayni` ve taban raporuna çevrildi.
+
+**Bu spec'ten çıkarılan ders:** kanıt ekranının hangi çapaya kaydırdığı, değişen bölümün o ekranda görünüp görünmediğini söylemez; pencere içindeki her çapanın görüş alanı ölçülmeden "yalnız şu ekranlar değişir" yazılmamalı, taban ve sonra çekimi tahminden önce gelir. İkinci ders: bir tarama "metin kalmadı" diye ölçüyorsa (ızgara dizesi), kuralın amacı (genişlik) başka bir yazımla bozulabilir; tarama kuralın kendisini (kabın genişlik özellikleri) ölçmeli.

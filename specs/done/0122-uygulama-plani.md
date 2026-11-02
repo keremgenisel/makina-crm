@@ -1,6 +1,6 @@
 # 0122 uygulama planı — Set içeriğinde bileşen parçası aramayla seçilir
 
-Spec: `specs/0122-set-icerigi-parca-aramasi.md` (plan turu Karar 25–32). Dal `feat/0122-set-aramasi`, taban `43d04b9`.
+Spec: `specs/done/0122-set-icerigi-parca-aramasi.md` (plan turu Karar 25–32). Dal `feat/0122-set-aramasi`, taban `43d04b9`.
 Salt arayüz işi: hesap, veri şeması, izin, sunucu, birleştirme, yazdırma ve dışa aktarma dokunulmaz.
 
 ## 1. Dosyalar
