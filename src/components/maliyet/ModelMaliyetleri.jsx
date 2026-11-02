@@ -6,6 +6,7 @@ import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { kurusMetni, katsayiDogrula, kalipFiyatDogrula, modelFiyatAlanlariYaz, tlOf, modelSayilari, MODEL_ISARET } from "../../lib/makinaStandartMaliyet";
 import { PayOzeti } from "./PayOzeti";
 import { URETIM_DEGIL_IBARESI } from "../../lib/uretimdekiModeller";
+import { setKesisimMetni } from "../../lib/urunAgaci";
 
 // Spec 0088 R11–R16: her canlı modelin direkt maliyeti (ürün ağacı), genel gider payı ve toplamı AYRI sütunlarda (R7, AC-18);
 // kâr katsayısı ile önerilen satış bedeli (KDV hariç, R14/3) ve Extra Kalıp liste fiyatı (maliyete girmez, R15).
@@ -105,6 +106,8 @@ export const ModelMaliyetleri = ({ pay, gercek, modeller, canDo, baskasiKilitli,
                       </button>
                       {m.kitBos && <div data-testid="urun-agaci-yok" style={{ fontSize: 11, color: "var(--warnTx, #854d0e)" }}>ürün ağacı girilmemiş</div>}
                       {m.eksikSayisi > 0 && <div data-testid="eksik-isareti" style={{ fontSize: 11, color: "var(--warnTx, #854d0e)" }}>{`eksik · ${m.eksikSayisi} parçanın maliyeti yok`}</div>}
+                      {/* Spec 0121 R32/2 (AC-46, Karar 39): kitte hem set hem bileşeni varsa aynı parça iki kez sayılır; bilgi uyarısı. */}
+                      {m.setKesisimleri?.length > 0 && <div data-testid="set-kesisim-uyarisi" style={{ fontSize: 11, color: "var(--warnTx, #854d0e)" }}>{setKesisimMetni(m.setKesisimleri)}</div>}
                       {/* Spec 0091 R9, R14, R15: işaretler model adının altındaki bugünkü yerde; karar verisi motordan (m.isaret). */}
                       {m.uretimde === false && <div data-testid="uretimde-degil-isareti" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{URETIM_METIN.uretimdeDegil}</div>}
                       {m.isaret === MODEL_ISARET.ESKIMIS && <div data-testid="isaret-eskimis" style={{ fontSize: 11, color: "var(--blu700, #1d4ed8)" }}>{URETIM_METIN.eskimis}</div>}

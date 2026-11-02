@@ -154,7 +154,9 @@ describe("Spec 0065 B: log yalnız büyür", () => {
     ];
     expect(netDusum(log, 5, "servis", "7")).toBe(2);
     expect(karsiHareketler(log, 5, "servis", { tarih: "2026-10-01" })).toEqual([expect.objectContaining({ partId: "7", miktar: 2, tip: IADE_TIPI.servis, referansId: 5 })]);
-    expect(Object.keys(IADE_TIPI).sort()).toEqual(["bayi_satis", "makina_uretimi", "satis", "servis"]);
+    // Spec 0121 ile (R33, Karar 40): set hazırlamanın bileşen düşümü de bir düşüm tipidir; birebir eşitlik korunur. Setin girişi
+    // düşüm değildir ve ayrı `IPTAL_TIPI` haritasındadır.
+    expect(Object.keys(IADE_TIPI).sort()).toEqual(["bayi_satis", "makina_uretimi", "satis", "servis", "set_uretimi"]);
     expect(hareketTipAdi("servis_iade")).toMatch(/geri alındı/);
   });
   it("AC-10: geri alma çakışmada kaybolmaz (karşı hareket ekleme olarak birleşir, adet geri döner)", () => {
@@ -281,6 +283,7 @@ describe("Spec 0065 kaynak taramaları", () => {
   it("AC-20: stok yeterlilik denetimi ve ekranlar adedi doğrudan okur; log toplayan yalnız rapor ve birleştirme", () => {
     const kullanan = SRC.filter(f => /stokEtkisi\(|stokTutarliligi\(/.test(kod(f))).sort();
     // servisStok.js yalnız kendi yazdığı yeni hareketlerin etkisini uygular (çöpten geri alma, triyaj bulgu 2); log'u toplamaz.
-    expect(kullanan).toEqual(["src/App.jsx", "src/components/stock/StokTutarliligi.jsx", "src/lib/merge.js", "src/lib/servisStok.js", "src/lib/stokHareketi.js"]);
+    // Spec 0121 ile (R33): setUretimi.js yalnız kendi yazdığı hazırlama/geri alma hareketlerinin etkisini uygular; log'u toplamaz.
+    expect(kullanan).toEqual(["src/App.jsx", "src/components/stock/StokTutarliligi.jsx", "src/lib/merge.js", "src/lib/servisStok.js", "src/lib/setUretimi.js", "src/lib/stokHareketi.js"]);
   });
 });

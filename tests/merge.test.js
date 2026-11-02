@@ -564,3 +564,30 @@ describe("Spec 0088: çakışma birleştirmesi", () => {
     expect(plan.adds.standardModels).toBeUndefined();
   });
 });
+
+describe("buildMergePlan: setin içeriği (spec 0121)", () => {
+  it("AC-33: bu birleştirmede eklenen setin içeriğindeki parça, yeniden kimlik alan bileşenin yeni kimliğini taşır", () => {
+    const bilesen = uid(), set = uid();
+    const yerel = { parts: [{ id: bilesen, ad: "Yerel rulman" }, { id: set, ad: "Yeni set", setIcerigi: [{ partId: bilesen, miktar: 2 }, { partId: 31, miktar: 1 }] }] };
+    const sunucu = { parts: [{ id: bilesen, ad: "Başka parça" }, { id: 31, ad: "Pul" }] };
+    const plan = buildMergePlan(yerel, sunucu);
+    const yeniB = plan.adds.parts.find(p => p.ad === "Yerel rulman");
+    expect(yeniB.id).not.toBe(bilesen);
+    expect(plan.adds.parts.find(p => p.ad === "Yeni set").setIcerigi).toEqual([{ partId: yeniB.id, miktar: 2 }, { partId: 31, miktar: 1 }]);
+  });
+  it("AC-33 (bilinen sınır): sunucuda zaten duran setin içeriği eşlenmez (birleştirme yalnız eklemeleri taşır)", () => {
+    const set = { id: 50, ad: "Var olan set", setIcerigi: [{ partId: 31, miktar: 1 }] };
+    const plan = buildMergePlan({ parts: [{ ...set, setIcerigi: [{ partId: 32, miktar: 4 }] }] }, { parts: [set] });
+    expect(plan.adds.parts.find(p => p.id === 50)).toBeUndefined();
+  });
+  it("AC-59: hazırlamanın işlem kimliği (referansId) çevrilmez, hareketin partId'si yeniden eşlenir", () => {
+    const parca = uid(), islem = uid(), log = uid();
+    const yerel = { parts: [{ id: parca, ad: "Set Y" }], partStockLog: [{ id: log, partId: parca, miktar: 2, tip: "set_girisi", referansId: islem, tarih: "2026-10-10" }] };
+    const sunucu = { parts: [{ id: parca, ad: "Başka" }], partStockLog: [] };
+    const plan = buildMergePlan(yerel, sunucu);
+    const yeniP = plan.adds.parts.find(p => p.ad === "Set Y");
+    const h = plan.adds.partStockLog.find(l => l.tip === "set_girisi");
+    expect(h.referansId).toBe(islem);
+    expect(String(h.partId)).toBe(String(yeniP.id));
+  });
+});

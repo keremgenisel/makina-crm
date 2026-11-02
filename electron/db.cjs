@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS stock (
 );
 
 CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, olusturan TEXT, deletedAt TEXT);
-CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT, adEN TEXT, kod TEXT, tanim TEXT, tanimEN TEXT, fiyatTRY REAL, fiyatUSD REAL, fiyatEUR REAL, models TEXT, deletedAt TEXT, tip TEXT, resim TEXT, maliyet REAL, hammaddeler TEXT, maliyetGecmisi TEXT);
+CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT, adEN TEXT, kod TEXT, tanim TEXT, tanimEN TEXT, fiyatTRY REAL, fiyatUSD REAL, fiyatEUR REAL, models TEXT, deletedAt TEXT, tip TEXT, resim TEXT, maliyet REAL, hammaddeler TEXT, maliyetGecmisi TEXT, setIcerigi TEXT);
 
 CREATE TABLE IF NOT EXISTS part_stock (
   id INTEGER PRIMARY KEY,
@@ -557,6 +557,8 @@ const hammaddeYaz = (v) => (Array.isArray(v) && v.length ? JSON.stringify(v) : n
 // Spec 0097 R1/3, C3: parça maliyetinin tarihli geçmişi (JSON `[{ gecerli, kurus }]`, kuruş); `hammaddeler`'in deseni: boş liste
 // NULL ve okumada gövdeye yazılmaz (her parçaya `null` konsaydı sunucu karşılaştırması her kaydı değişmiş görürdü).
 const PARTS_MALIYET_GECMISI_COLUMN = [["maliyetGecmisi", "TEXT"]];
+// Spec 0121 R1/3, C5: setin içeriği (JSON `[{ partId, miktar }]`); `hammaddeler` deseni: boş liste NULL, okumada gövdeye yazılmaz.
+const PARTS_SET_ICERIGI_COLUMN = [["setIcerigi", "TEXT"]];
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
 const APP_SETTINGS_EVRAK_COLUMN = [["evrakFormConfig", "TEXT"]];
@@ -896,8 +898,8 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.parts) && !skip.has("parts")) {
     conn.prepare(`DELETE FROM parts`).run();
-    const stmt = conn.prepare(`INSERT INTO parts (id, ad, adEN, kod, tanim, tanimEN, fiyatTRY, fiyatUSD, fiyatEUR, models, deletedAt, tip, resim, maliyet, hammaddeler, maliyetGecmisi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const p of data.parts) stmt.run(p.id, p.ad ?? null, p.adEN ?? null, p.kod ?? null, p.tanim ?? null, p.tanimEN ?? null, p.fiyatTRY ?? null, p.fiyatUSD ?? null, p.fiyatEUR ?? null, json(p.models ?? []), p.deletedAt ?? null, p.tip ?? "Standart", p.resim ?? null, p.maliyet ?? null, hammaddeYaz(p.hammaddeler), hammaddeYaz(p.maliyetGecmisi));
+    const stmt = conn.prepare(`INSERT INTO parts (id, ad, adEN, kod, tanim, tanimEN, fiyatTRY, fiyatUSD, fiyatEUR, models, deletedAt, tip, resim, maliyet, hammaddeler, maliyetGecmisi, setIcerigi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const p of data.parts) stmt.run(p.id, p.ad ?? null, p.adEN ?? null, p.kod ?? null, p.tanim ?? null, p.tanimEN ?? null, p.fiyatTRY ?? null, p.fiyatUSD ?? null, p.fiyatEUR ?? null, json(p.models ?? []), p.deletedAt ?? null, p.tip ?? "Standart", p.resim ?? null, p.maliyet ?? null, hammaddeYaz(p.hammaddeler), hammaddeYaz(p.maliyetGecmisi), hammaddeYaz(p.setIcerigi));
   }
 
   if (Array.isArray(data.partStock) && !skip.has("partStock")) {
@@ -1150,6 +1152,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "parts", PARTS_MALIYET_COLUMN);
   ensureColumns(conn, "parts", PARTS_HAMMADDE_COLUMN); // spec 0096
   ensureColumns(conn, "parts", PARTS_MALIYET_GECMISI_COLUMN); // spec 0097
+  ensureColumns(conn, "parts", PARTS_SET_ICERIGI_COLUMN); // spec 0121
   ensureColumns(conn, "tedarikciler", TEDARIKCI_HAMMADDE_COLUMN); // spec 0096
   ensureColumns(conn, "standard_models", MODELS_EK_MALIYET_COLUMN);
   ensureColumns(conn, "custom_models", MODELS_EK_MALIYET_COLUMN);
@@ -1490,7 +1493,7 @@ function readBlobFromDb() {
   // Spec 0087 C4: boş maliyet gövdeye yazılmaz (`...p` yayılsaydı her parça `maliyet: null` taşırdı ve maliyeti tanımayan
   // istemcinin gövdesi sunucu karşılaştırmasında değişmiş görünürdü).
   // Spec 0096 C3/2: hammadde kırılımı da ayrıştırılır, yalnız doluyken gövdeye yazılır (`...p` her parçaya `hammaddeler: null` koyardı).
-  const parts = db.prepare(`SELECT * FROM parts`).all().map(({ maliyet, hammaddeler, maliyetGecmisi, ...p }) => ({
+  const parts = db.prepare(`SELECT * FROM parts`).all().map(({ maliyet, hammaddeler, maliyetGecmisi, setIcerigi, ...p }) => ({
     ...p,
     adEN: p.adEN ?? "",
     kod: p.kod ?? "",
@@ -1502,6 +1505,7 @@ function readBlobFromDb() {
     ...(maliyet == null ? {} : { maliyet }),
     ...(() => { const h = parseJsonCol(hammaddeler, []); return Array.isArray(h) && h.length ? { hammaddeler: h } : {}; })(),
     ...(() => { const g = parseJsonCol(maliyetGecmisi, []); return Array.isArray(g) && g.length ? { maliyetGecmisi: g } : {}; })(),
+    ...(() => { const c = parseJsonCol(setIcerigi, []); return Array.isArray(c) && c.length ? { setIcerigi: c } : {}; })(), // spec 0121 C5
   }));
 
   const partStock = db.prepare(`SELECT * FROM part_stock`).all().map((s) => ({

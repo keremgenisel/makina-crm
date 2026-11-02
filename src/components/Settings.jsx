@@ -270,7 +270,7 @@ export const Settings = ({ aktifKullanici = "", customers, services, dealers, st
           <div className="section-desc">
             Verdiğiniz/sattığınız yedek parçaları buraya tanımlayın. Bunlar, Müşteriler'de bir müşterinin detayını açtığınızda "Değişen Parçalar" seçilirken listelenir. Fiyat ve para birimi seçim sırasında girilir. Kalıplar buraya eklenmez; onlar <b>Kalıp Modelleri</b>'nden gelir ve müşteri detayındaki "Extra Kalıp Satışı" ile satılır.
           </div>
-          <PartManager parts={parts} setParts={setParts} showToast={showToast} setServices={setServices}
+          <PartManager parts={parts} rawParts={rawParts} setParts={setParts} showToast={showToast} setServices={setServices}
             standardModels={standardModels} customModels={customModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels}
             partTypeDefs={partTypeDefs} baskasiKilitli={baskasiKilitli}
             rawCustomModels={rawCustomModels.length >= customModels.length ? rawCustomModels : customModels}

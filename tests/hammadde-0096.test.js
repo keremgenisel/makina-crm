@@ -211,7 +211,8 @@ describe("Spec 0096: kaynak taramaları", () => {
     });
     expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/p\.maliyet|maliyet == null/);
     // Spec 0097 ile (C1/2, AC-56): tarihli okuma aynı fonksiyonun ikinci parametresidir; desen yeni imzayı arar (gevşetilmedi).
-    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih\)/);
+    // Spec 0121 ile (R9/2, AC-38): üçüncü parametre katalogdur (setin maliyeti); desen yeni imzayı arar, iddia aynı.
+    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap\)/);
   });
   it("AC-41: satır tutarlarını TL olarak toplayan ikinci yer yok (kırılım toplamı yalnız urunAgaci'nde, kuruşla)", () => {
     // Kapsam: parça kırılımını (`hammaddeler`) okuyan dosyalar; gider tarafının kendi `.tutar` toplamları bu kavramdan değil.

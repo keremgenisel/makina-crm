@@ -8,7 +8,11 @@
 import { uid, mergeAndUpdate, totalMiktar } from "./utils";
 
 // R14: her düşüm tipinin karşı hareketi. referansId ve partId aslıyla aynı, miktar pozitif.
-export const IADE_TIPI = { servis: "servis_iade", bayi_satis: "bayi_satis_iade", satis: "satis_iade", makina_uretimi: "makina_uretimi_iade" };
+// Spec 0121 R1/3, Karar 40: set hazırlamanın bileşen düşümü (`set_uretimi`) de bir düşüm tipidir ve karşısı burada.
+export const IADE_TIPI = { servis: "servis_iade", bayi_satis: "bayi_satis_iade", satis: "satis_iade", makina_uretimi: "makina_uretimi_iade", set_uretimi: "set_uretimi_iade" };
+// Spec 0121 R21/2, Karar 40: GİRİŞ tiplerinin karşı hareketi (miktarı negatif). Setin kendi stoğuna girişi düşüm değildir;
+// `IADE_TIPI`'ne konsaydı `netDusumleri`'nin `Math.abs`'ı girişi düşüm sayar, `karsiHareketler` pozitif iptal yazardı.
+export const IPTAL_TIPI = { set_girisi: "set_girisi_iptal" };
 export const MUTLAK_TIPLER = new Set(["manuel_duzelt"]);
 
 // R8: ekranda ve dışa aktarmada okunur ad.
@@ -18,6 +22,9 @@ export const HAREKET_TIP_AD = {
   bayi_satis: "Yedek parça satışı", bayi_satis_iade: "Yedek parça satışı stoğa geri alındı",
   satis: "Satış", satis_iade: "Satış stoğa geri alındı",
   makina_uretimi: "Makina üretimi", makina_uretimi_iade: "Makina üretimi stoğa geri alındı",
+  // Spec 0121 R1/3: set hazırlama.
+  set_uretimi: "Set hazırlandı (bileşen düşümü)", set_uretimi_iade: "Set hazırlama geri alındı (bileşen)",
+  set_girisi: "Set hazırlandı", set_girisi_iptal: "Set hazırlama geri alındı",
 };
 export const hareketTipAdi = (tip) => HAREKET_TIP_AD[tip] || tip || "";
 export const iadeMi = (tip) => Object.values(IADE_TIPI).includes(tip);
@@ -63,6 +70,42 @@ export const karsiHareketler = (log, referansId, tip, { tarih, notlar = "" } = {
   [...netDusumleri(log, referansId, tip)].map(([partId, adet]) => ({
     id: uid(), partId, miktar: adet, tip: IADE_TIPI[tip], referansId, tarih, notlar,
   }));
+/**
+ * Spec 0121 R21/2 (Karar 7): `netDusumleri`'nin aynadaki ikizi. Bir kaydın parça başına NET girişi (giriş eksi iptal),
+ * Map(partId → adet > 0). Giriş satırının miktarı pozitif, iptalinki negatiftir; işaretten bağımsız mutlak değerle sayılır.
+ */
+export const netGirisler = (log, referansId, tip) => {
+  const iptal = IPTAL_TIPI[tip];
+  const m = new Map();
+  for (const l of log || []) {
+    if (!l || l.partId == null || String(l.referansId) !== String(referansId)) continue;
+    const pid = String(l.partId);
+    if (l.tip === tip) m.set(pid, (m.get(pid) || 0) + Math.abs(Number(l.miktar) || 0));
+    else if (iptal && l.tip === iptal) m.set(pid, (m.get(pid) || 0) - Math.abs(Number(l.miktar) || 0));
+  }
+  for (const [pid, n] of m) if (!(n > 0)) m.delete(pid);
+  return m;
+};
+/** Spec 0121 R21/2: kalan net giriş için karşı hareketler (miktar NEGATİF). Girişi kalmamış kayıtta boş (ikinci geri alma etkisiz). */
+export const karsiGirisler = (log, referansId, tip, { tarih, notlar = "" } = {}) =>
+  [...netGirisler(log, referansId, tip)].map(([partId, adet]) => ({
+    id: uid(), partId, miktar: -adet, tip: IPTAL_TIPI[tip], referansId, tarih, notlar,
+  }));
+/**
+ * Spec 0121 R22 (Karar 19, 40): girişin geri alınabilir mi. Ya hep ya hiç: her parçanın kalan net girişi eldeki stoktan fazla
+ * değilse geri alınır. Dönüş `{ ok, girisler: Map, eksik: [{ partId, giris, eldeki }], fazla }`; girişi kalmamış kayıtta `ok: false`
+ * ve `girisler` boştur (etkisiz).
+ */
+export const girisGeriAlinabilir = (partStock, log, referansId, tip) => {
+  const girisler = netGirisler(log, referansId, tip);
+  const eksik = [];
+  for (const [pid, giris] of girisler) {
+    const eldeki = Math.max(0, totalMiktar(partStock || [], pid));
+    if (giris > eldeki) eksik.push({ partId: pid, giris, eldeki });
+  }
+  const fazla = eksik.reduce((a, e) => Math.max(a, e.giris - e.eldeki), 0); // geri alınamayan (satılmış ya da kullanılmış) adet
+  return { ok: girisler.size > 0 && eksik.length === 0, girisler, eksik, fazla };
+};
 /**
  * Düzenlemede "geri al + yeniden düş" gereksiz mi: kaydın net düşümü istenen kalemlerle (parça başına toplam) birebir
  * aynıysa iki adım stok sonucunu değiştirmez, yalnız log'a iki satır yazardı. Eksik düşülmüş (kırpılmış) kayıtta false

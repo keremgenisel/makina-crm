@@ -7,13 +7,20 @@ import { HataMetni, KartBolum, BosDurum, UyariSeridi } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { StokHareketleriPenceresi } from "./StokHareketleriPenceresi";
 import { StokTutarliligi } from "./StokTutarliligi";
+import { SetHazirlaPenceresi } from "./SetHazirlaPenceresi";
+import { SetRozeti, setBilesenSayisi } from "./SetRozeti";
+import { SET_HAZIRLA_DUGMESI } from "../../lib/setUretimi";
 
 const PER_PAGE = 15;
 
-export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null }) => {
+export const PartStokTab = ({ parts = [], rawParts = null, partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null, aktifKullanici = null }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
-  // Spec 0065 R18: salt okunur pencereler (hareket listesi, tutarlılık raporu); kilit almaz, veri yazmaz.
+  // Spec 0065 R18: tutarlılık raporu salt okunurdur. Spec 0121 R25/2: hareket listesi artık setin hazırlamasını geri alabilir
+  // ("Geri Al", yalnız stock_parca_edit ile ve anlık kilit denetimiyle); başka bir şey yazmaz, kendisi kilit almaz.
+  // Spec 0121 R6/2, R14, R29/2: Set Hazırla penceresi ad çözümünü ham diziden yapar ve kendi `partstock` kilidini alır.
+  const hamParts = Array.isArray(rawParts) && rawParts.length ? rawParts : parts; // verilmemiş ya da boş ham dizi canlıya düşer
+  const [setHazirla, setSetHazirla] = useState(null);
   const [hareketParca, setHareketParca] = useState(null);
   const [tutarlilikAcik, setTutarlilikAcik] = useState(false);
 
@@ -179,7 +186,11 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                 <tr key={part.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", background: rowBg(miktar) }}
                   onMouseEnter={e => e.currentTarget.style.background = "var(--n100, #f8fafc)"}
                   onMouseLeave={e => e.currentTarget.style.background = rowBg(miktar) ?? ""}>
-                  <td style={{ padding: "10px 14px", fontWeight: 700, fontSize: 13, color: rowColor(miktar) }}>{part.ad}</td>
+                  <td style={{ padding: "10px 14px", fontWeight: 700, fontSize: 13, color: rowColor(miktar) }}>
+                    {part.ad}
+                    {/* Spec 0121 R24, R24/2: set Yedek Parça hücresinde adın altında rozetle tanınır (sütun sayısı değişmez). */}
+                    {setBilesenSayisi(part) > 0 && <SetRozeti n={setBilesenSayisi(part)} />}
+                  </td>
                   <td style={{ padding: "10px 14px" }}>
                     {(part.models || []).length === 0
                       ? <span style={{ color: "var(--n300, #cbd5e1)", fontSize: 12 }}>—</span>
@@ -215,6 +226,8 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
                       {canDoStock("stock_parca_add") && <Btn small onClick={() => { setForm({ partId: String(part.id), miktar: "1", notlar: "" }); setModal("ekle"); }}
                         style={{ fontSize: 11 }}>+ Ekle</Btn>}
                       {canDoStock("stock_parca_edit") && <Btn small variant="ghost" onClick={() => openDuzelt({ part, stok, miktar })} style={{ fontSize: 11 }}>Düzelt</Btn>}
+                      {/* Spec 0121 R14, R17, R24, R28/2: yalnız içeriği olan satırda ve "Stok miktarı düzelt" yetkisiyle. */}
+                      {setBilesenSayisi(part) > 0 && canDoStock("stock_parca_edit") && <Btn small variant="ghost" onClick={() => setSetHazirla(part)} testId="set-hazirla-dugmesi">{SET_HAZIRLA_DUGMESI}</Btn>}
                       <Btn small variant="ghost" onClick={() => setHareketParca(part)} style={{ fontSize: 11 }}>Hareketler</Btn>
                       {canDoStock("stock_parca_pin") && (
                         <Btn small variant={isPinned ? "primary" : "ghost"} onClick={() => togglePin(part.id)}
@@ -233,7 +246,11 @@ export const PartStokTab = ({ parts = [], partStock = [], setPartStock, partStoc
       )}
       <Pagination total={filteredRows.length} page={page} setPage={setPage} perPage={PER_PAGE} />
 
-      {hareketParca && <StokHareketleriPenceresi part={hareketParca} partStockLog={partStockLog} onClose={() => setHareketParca(null)} />}
+      {hareketParca && <StokHareketleriPenceresi part={hareketParca} partStockLog={partStockLog} onClose={() => setHareketParca(null)}
+        partStock={partStock} setPartStock={setPartStock} setPartStockLog={setPartStockLog} canDoStock={canDoStock}
+        aktifKullanici={aktifKullanici} showToast={showToast} serverPermissions={serverPermissions} />}
+      {setHazirla && <SetHazirlaPenceresi set={setHazirla} hamParts={hamParts} partStock={partStock} setPartStock={setPartStock}
+        setPartStockLog={setPartStockLog} onClose={() => setSetHazirla(null)} showToast={showToast} serverPermissions={serverPermissions} />}
       {tutarlilikAcik && <StokTutarliligi parts={parts} partStock={partStock} partStockLog={partStockLog} onClose={() => setTutarlilikAcik(false)} />}
 
       {(modal === "ekle") && (

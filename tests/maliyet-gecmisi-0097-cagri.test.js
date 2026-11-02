@@ -7,7 +7,9 @@ import { describe, it, expect, vi } from "vitest";
 const sayac = vi.hoisted(() => ({ tarihli: 0 }));
 vi.mock("../src/lib/urunAgaci", async (orijinal) => {
   const m = await orijinal();
-  return { ...m, parcaMaliyetKurus: (p, tarih) => { if (tarih !== undefined) sayac.tarihli++; return m.parcaMaliyetKurus(p, tarih); } };
+  // Spec 0121 ile (R33, AC-45): casus bütün argümanları iletir; eskisi üçüncü argümanı (katalog) yutardı ve zincir testte sessizce
+  // katalogsuz çalışırdı. Beklenen çağrı sayısı değişmez.
+  return { ...m, parcaMaliyetKurus: (...a) => { if (a[1] !== undefined) sayac.tarihli++; return m.parcaMaliyetKurus(...a); } };
 });
 const { partiHesabi, partiGenelPaylari, modelMaliyetleri } = await import("../src/lib/makinaStandartMaliyet");
 

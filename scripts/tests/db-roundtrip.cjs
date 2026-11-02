@@ -740,6 +740,33 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0097 AC-37: kardeş maliyet alanı TL olarak aynen (geçmiş onu değiştirmez)", c.parts.find(p => p.id === 7)?.maliyet === 120.5);
 }
 
+// ── Spec 0121 AC-32 (C5): setin içeriği. İçeriği olmayan parçanın okunan gövdesi spec öncesi koddan üretilmiş fikstürle (0097
+// gövdesi, spec 0121'den önce) birebir aynı; boş içerik veritabanına NULL yazılır ve gövdede anahtar hiç yok; dolu içerik sırası
+// ve `{ partId, miktar }` şekliyle korunur.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  check("spec 0121 AC-32: içeriği olmayan parçaların gövdesi spec öncesiyle birebir, setIcerigi anahtarı yok", esit(b.parts, once.parts) && b.parts.every(p => !("setIcerigi" in p)));
+  const icerik = [{ partId: 8, miktar: 2 }, { partId: 9, miktar: 1 }];
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.parts[0].setIcerigi = icerik;
+  girdi.parts[1].setIcerigi = [];
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const satirlar = ham.prepare(`SELECT id, setIcerigi FROM parts`).all();
+  ham.close();
+  check("spec 0121 AC-32: boş içerik NULL, dolu içerik JSON olarak yazıldı", satirlar.find(r => r.id === 8)?.setIcerigi === null && JSON.parse(satirlar.find(r => r.id === 7)?.setIcerigi || "[]").length === 2);
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0121 AC-32: içerik sırası ve { partId, miktar } şekli korunur", esit(c.parts.find(p => p.id === 7)?.setIcerigi, icerik));
+  check("spec 0121 AC-32: boş liste olarak yazılan içerik gövdede yok", !("setIcerigi" in c.parts.find(p => p.id === 8)));
+}
+
 // ── Spec 0100 AC-38, AC-45 (C2, Karar 13): stok satırının üretim durumu. Durumu olmayan satırların okunan gövdesi spec öncesi
 // koddan üretilmiş fikstürle birebir aynı (boş durum gövdede hiç yok, `null` olarak da değil); iki değer gidiş dönüşte korunur;
 // tanınmayan dolu değer de korunur (plan P6: ekran onu satışa hazır sayar, eski istemci yeni değeri silmesin).

@@ -11,6 +11,7 @@ import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { KalipAtolyeAlani } from "./KalipAtolyeAlani";
 import { kutuAcikMi, parcaSuzgeci, KALIP_ISI_BAYRAGI, TUM_PARCALAR, PARCA_SUZGEC_IBARESI, PARCA_SUZGEC_NEDENI } from "../lib/kalipTamiri";
+import { SetIcerikSatiri } from "./stock/SetRozeti";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
@@ -443,6 +444,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                 <div key={i} style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: isDisTedarik ? "var(--brand, #e85d1a)" : itemColor, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ad}</span>
+                    {hasPartId && <SetIcerikSatiri part={parts.find(x => String(x.id) === String(p.partId))} parts={parts} />}
                     {!parcaUcretsizMi && (parseInt(p.miktar) || 1) > 1 && parseMoney(p.fiyat) > 0 && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: "var(--n400, #94a3b8)" }}>
                         {(parseInt(p.miktar) || 1)} × {fmtCur(parseMoney(p.fiyat), form.currency || "TRY")} = {fmtCur(servisParcaSatirTutari(p), form.currency || "TRY")}

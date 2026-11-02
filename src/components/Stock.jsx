@@ -14,7 +14,7 @@ export const Stock = ({
   stock, setStock,
   models = ALTUNMAK_MODELS,
   showToast = () => {},
-  parts = [],
+  parts = [], rawParts = null,
   partStock = [], setPartStock = () => {},
   partStockLog = [], setPartStockLog = () => {},
   appSettings = {}, setAppSettings = () => {},
@@ -26,7 +26,7 @@ export const Stock = ({
   partSales = [], setPartSales = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = () => {},
   dealers = [], kdvRates, calisanlar = [],
-  serverPermissions = null,
+  serverPermissions = null, aktifKullanici = null,
   defaultSubTab = "makina",
   yedekOdakId = null, onYedekOdakConsumed = null,
   geoData = null, loadingGeo = false,
@@ -69,10 +69,10 @@ export const Stock = ({
         <PartiUretimPanosu stock={stock} customers={customers} uretimPartileri={uretimPartileri} />
       )}
       {subTab === "parca" && (
-        <PartStokTab parts={parts} partStock={partStock} setPartStock={setPartStock}
+        <PartStokTab parts={parts} rawParts={rawParts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast}
           appSettings={appSettings} setAppSettings={setAppSettings}
-          canDoStock={canDoStock} serverPermissions={serverPermissions} />
+          canDoStock={canDoStock} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} />
       )}
       {subTab === "yedeksatis" && (
         <YedekParcaSatisTab

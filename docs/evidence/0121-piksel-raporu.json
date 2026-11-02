@@ -1,0 +1,494 @@
+[
+  {
+    "ad": "ayarlar-yedekparca-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-yedekparca-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 835186
+  },
+  {
+    "ad": "katalog-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 835139
+  },
+  {
+    "ad": "katalog-parca-0096-kirilim-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 168824
+  },
+  {
+    "ad": "katalog-parca-0096-kirilim-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 168822
+  },
+  {
+    "ad": "katalog-parca-0096-tutarsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar",
+      "Tutarı girilmemiş tedarikçi var; maliyet yalnız tutarı girilmiş satırl"
+    ],
+    "piksel": 121000
+  },
+  {
+    "ad": "katalog-parca-0096-tutarsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar",
+      "Tutarı girilmemiş tedarikçi var; maliyet yalnız tutarı girilmiş satırl"
+    ],
+    "piksel": 120998
+  },
+  {
+    "ad": "katalog-parca-0096-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 806700
+  },
+  {
+    "ad": "katalog-parca-0096-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 806662
+  },
+  {
+    "ad": "katalog-parca-0097-gecmis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 202837
+  },
+  {
+    "ad": "katalog-parca-0097-gecmis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 202838
+  },
+  {
+    "ad": "katalog-parca-0097-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 100407
+  },
+  {
+    "ad": "katalog-parca-0097-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 100402
+  },
+  {
+    "ad": "katalog-parca-0096-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 110732
+  },
+  {
+    "ad": "katalog-parca-0096-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 110730
+  },
+  {
+    "ad": "ayarlar-yedekparca-0096-suzgec-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-yedekparca-0096-suzgec-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-yedekparca-0096-yetkisiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-yedekparca-0096-yetkisiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 1745207
+  },
+  {
+    "ad": "katalog-parca-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 1671453
+  },
+  {
+    "ad": "katalog-parca-0121-set-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0121-set-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0121-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0121-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "ayarlar-yedekparca-maliyetsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-yedekparca-maliyetsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-0099-yetkisiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 1797490
+  },
+  {
+    "ad": "katalog-parca-0099-yetkisiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 1691028
+  },
+  {
+    "ad": "katalog-parca-0099-ekle-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 364153
+  },
+  {
+    "ad": "katalog-parca-0099-ekle-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 364142
+  },
+  {
+    "ad": "katalog-parca-0099-elle-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 243959
+  },
+  {
+    "ad": "katalog-parca-0099-elle-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 243955
+  },
+  {
+    "ad": "stok-bos-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-hareketleri-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 25015
+  },
+  {
+    "ad": "parca-stok-hareketleri-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 25016
+  },
+  {
+    "ad": "stok-parca-uyari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 333551
+  },
+  {
+    "ad": "stok-parca-uyari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 333546
+  },
+  {
+    "ad": "parca-stok-0121-set-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0121-set-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-eksik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)",
+      "Stokta yetmeyen bileşenler: Mahruti dişli, Rulman 6204. Set yine hazır"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-eksik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)",
+      "Stokta yetmeyen bileşenler: Mahruti dişli, Rulman 6204. Set yine hazır"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0121-hareket-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0121-hareket-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "maliyet-modeller-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-dokum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-dokum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-acik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-acik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "yedek-parca-formu-kargo-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-yedek-parca-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "bayi-yedek-parca-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-0120-suzulu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "servis-formu-0120-suzulu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

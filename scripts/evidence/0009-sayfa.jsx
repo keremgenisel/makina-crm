@@ -184,6 +184,26 @@ const PARCA_0087 = [
   { id: 9, ad: "Perçin", kod: "P-4", tip: "Standart", models: [], maliyet: 0 },
   { id: 10, ad: "Pleksi kapak", kod: "PK-2", tip: "Standart", fiyatTRY: 300, models: [] },
 ];
+// Spec 0121 R34: içeriği olan (set) fikstür parçası; yoksa rozet ve "Set Hazırla" hiç çizilmez.
+const SET_0121 = { id: 20, ad: "100_AYNA MAHRUTİ DİŞLİSİ TAKIM", kod: "AY-T", tip: "Standart", fiyatTRY: 3000, models: [],
+  setIcerigi: [{ partId: 21, miktar: 2 }, { partId: 22, miktar: 1 }, { partId: 23, miktar: 4 }] };
+const BILESEN_0121 = [
+  { id: 21, ad: "Ayna dişlisi", kod: "AD-1", tip: "Standart", fiyatTRY: 500, models: [], maliyet: 210 },
+  { id: 22, ad: "Mahruti dişli", kod: "MD-1", tip: "Standart", fiyatTRY: 750, models: [], maliyet: 340.5 },
+  { id: 23, ad: "Rulman 6204", kod: "R-6204", tip: "Standart", models: [], maliyet: 120.5 },
+];
+const PARCA_0121_SET = [SET_0121, ...BILESEN_0121];
+const PARCA_0121_BOS = [...BILESEN_0121, SET_0121];
+const STOK_0121 = [{ id: 1, partId: "21", miktar: 10 }, { id: 2, partId: "22", miktar: 6 }, { id: 3, partId: "23", miktar: 20 }, { id: 4, partId: "20", miktar: 2 }];
+const STOK_0121_EKSIK = [{ id: 1, partId: "21", miktar: 10 }, { id: 3, partId: "23", miktar: 1 }];
+const LOG_0121 = [
+  { id: 31, partId: "21", miktar: -4, tip: "set_uretimi", referansId: 900, tarih: "2026-10-20", notlar: "Set hazırlandı · 2 adet" },
+  { id: 32, partId: "22", miktar: -2, tip: "set_uretimi", referansId: 900, tarih: "2026-10-20", notlar: "Set hazırlandı · 2 adet" },
+  { id: 33, partId: "23", miktar: -8, tip: "set_uretimi", referansId: 900, tarih: "2026-10-20", notlar: "Set hazırlandı · 2 adet" },
+  { id: 34, partId: "20", miktar: 2, tip: "set_girisi", referansId: 900, tarih: "2026-10-20", notlar: "Set hazırlandı · 2 adet · İş emri 42" },
+  { id: 35, partId: "20", miktar: 1, tip: "set_girisi", referansId: 901, tarih: "2026-10-18", notlar: "Set hazırlandı · 1 adet · 3 bileşen stokta yoktu" },
+  { id: 36, partId: "20", miktar: -1, tip: "set_girisi_iptal", referansId: 901, tarih: "2026-10-19", notlar: "Set hazırlama geri alındı" },
+];
 // Spec 0096: hammadde tedarikçileri (üçü işaretli) ve kırılımlı parçalar (tutarlı, tutarsız).
 const TED_0096 = [{ id: 31, ad: "Demir Çelik A.Ş.", hammadde: true }, { id: 32, ad: "Sac Ltd", hammadde: true }, { id: 33, ad: "Döküm Sanayi", hammadde: true }, ...TED];
 const AYNA_0096 = { id: 11, ad: "Ayna mahruti dişlisi takımı", kod: "AM-1", tip: "Standart", models: [], hammaddeler: [{ tedarikciId: 31, tutar: 7000 }, { tedarikciId: 32, tutar: 9000 }, { tedarikciId: 33, tutar: 1000 }] };
@@ -892,6 +912,9 @@ const EKRANLAR = {
   "ayarlar-yedekparca-0096-suzgec": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["sec:Hammadde tedarikçisi süzgeci=32"]],
   "ayarlar-yedekparca-0096-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), []],
   "katalog-parca-yeni": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["~Parça/Yedek Parça Ekle"]],
+  // Spec 0121 R34: setin kartı (içerik, toplam, pasif maliyet) ve içeriği boş parçanın kartı (boş durum).
+  "katalog-parca-0121-set": [ayarlar("yedekparca", { parts: PARCA_0121_SET, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği"]],
+  "katalog-parca-0121-bos": [ayarlar("yedekparca", { parts: PARCA_0121_BOS, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği"]],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],
   // Spec 0099: kırılım toplamının yeri. Yetkisiz kullanıcının penceresi (C3, değişmez), iki tedarikçili ekleme penceresi (AC-19)
   // ve kırılımsız elle maliyetli parçanın penceresi (R10, değişmez).
@@ -927,7 +950,12 @@ const EKRANLAR = {
       { id: 9105, partId: "8", miktar: -1, tip: "servis", referansId: 41, tarih: "2026-09-05", notlar: "" },
       { id: 9106, partId: "9", miktar: 40, tip: "stok_girisi", tarih: "2026-09-01", notlar: "" }] }), ["dugme:Stok Tutarlılığı"]],
   "parca-stok-tutarli": [stokBos("parca", { parts: [{ id: 7, ad: "Rulman" }], partStock: [{ id: 1, partId: "7", miktar: 9 }], partStockLog: STOK_LOG_0065 }), ["dugme:Stok Tutarlılığı"]],
-  "stok-parca-uyari": [stokBos("parca", { parts: [{ id: 7, ad: "Rulman" }, { id: 8, ad: "V Kayış" }, { id: 9, ad: "Conta" }], partStock: [{ partId: 8, miktar: 3 }, { partId: 9, miktar: 40 }] }), []],
+  // Spec 0121 R34: listede içeriği olan bir parça (rozet ve "Set Hazırla"); bilinçli değişiklik.
+  "stok-parca-uyari": [stokBos("parca", { parts: [{ id: 7, ad: "Rulman" }, { id: 8, ad: "V Kayış" }, { id: 9, ad: "Conta" }, { id: 10, ad: "Rulman Seti", setIcerigi: [{ partId: 7, miktar: 2 }, { partId: 9, miktar: 1 }] }], partStock: [{ partId: 8, miktar: 3 }, { partId: 9, miktar: 40 }] }), []],
+  "parca-stok-0121-set": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121 }), []],
+  "parca-stok-0121-hazirla": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121 }), ["dugme:Set Hazırla"]],
+  "parca-stok-0121-hazirla-eksik": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121_EKSIK }), ["dugme:Set Hazırla"]],
+  "parca-stok-0121-hareket": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121, partStockLog: LOG_0121 }), ["dugme:Hareketler"]],
   "finans-bos": [<Finance customers={[]} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }} rates={{}}
     payments={[]} teklifler={[]} serverPermissions={null} />, []],
   "evrak-bos": [<EvrakEkrani />, []],

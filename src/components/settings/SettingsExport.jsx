@@ -9,6 +9,7 @@ import { buildCSV, downloadCSV, utf8ToBase64, downloadXlsx, xlsxToBase64, IMPORT
 import { aliciAd, aliciRozet } from "../stock/TahsisModal";
 import { hareketTipAdi } from "../../lib/stokHareketi";
 import { PARCA_AKTARMA_BASLIKLARI, parcaDisaAktarmaSatiri } from "../../lib/parcaAktarma";
+import { setKatalogu } from "../../lib/urunAgaci";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 import { cekBilgisi, tahsilatHaritasi, yonOf, CEK_DURUM_AD, CEK_TUR_AD } from "../../lib/cek";
 import { SATIS_TEVKIFAT_EXPORT_HEAD, satisTevkifatExportHucreleri } from "../../lib/satisTevkifat";
@@ -342,7 +343,9 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
   };
   const exportParts = async (mode = "download") => {
     // Spec 0087 R11: başlık ve satır içe aktarmayla tek kaynaktan; maliyet son sütun.
-    const rows = [PARCA_AKTARMA_BASLIKLARI, ...parts.map(parcaDisaAktarmaSatiri)];
+    // Spec 0121 R12/2 (AC-50): setin maliyet hücresi çözülmüş maliyeti taşır; katalog bir kez kurulur.
+    const katalog = setKatalogu(parts);
+    const rows = [PARCA_AKTARMA_BASLIKLARI, ...parts.map(p => parcaDisaAktarmaSatiri(p, katalog))];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Yedek Parça"); openExportMailXLSXBase64(b64, "yedek-parca-tanimlari.xlsx", "Yedek Parça Tanımları"); return; }
       await downloadXlsx(rows, "yedek-parca-tanimlari.xlsx", "Yedek Parça"); flash("ok", "Yedek parça tanımları Excel olarak indirildi.");

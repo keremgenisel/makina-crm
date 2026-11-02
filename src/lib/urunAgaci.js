@@ -7,6 +7,7 @@
 // güncelleyicisinde çağırır (tam dizi; App ekranlara çöpü süzülmüş dizi verir, geri yazmak çöptekileri silerdi).
 import { tutarCoz, kurus } from "./gider";
 import { tutarMetni } from "./tutarGirdisi";
+import { parseMoney, partFiyatForCurrency } from "./utils";
 
 // R1: maliyet TL'dir ve KDV hariçtir (matrah, 0076 R14). Alan KDV ayırmaz.
 export const MALIYET_ETIKETI = "Alış maliyeti (TL, KDV hariç)";
@@ -40,8 +41,15 @@ const bugunkuKurus = (p) => {
 // EN SON kaydı uygular; boş tarih ("başlangıçtan beri") her tarihten küçüktür (tuzak 6). Emsalden iki bilinçli sapma: boş ya da
 // biçimsiz sorgu tarihi bugünkü maliyeti verir, en eski kaydı değil (R2/4, tuzak 8); sorgu son kaydın aralığına düşerse saklı
 // kuruş okunmaz, bugünkü çözülmüş değer döner (R3/2, plan P5: karışık sürümde iki okuma yolu ayrışmasın).
-export const parcaMaliyetKurus = (p, tarih) => {
+// Spec 0121 R8, R9, R9/2, C2: üçüncü parametre `katalog` (`setKatalogu`'nun Map'i). İçeriği olan parçada (set) maliyet
+// bileşenlerin toplamıdır ve elle girilen maliyet ile hammadde kırılımı okunmaz; katalog verilmezse set `null` döner (asla sıfır
+// ya da eski elle değer değil). İçeriği olmayan parçada katalog okunmaz, çıktı spec öncesiyle birebir aynıdır (AC-14).
+export const parcaMaliyetKurus = (p, tarih, katalog) => {
   if (!p) return null;
+  if (setMi(p)) return setOzeti(p.setIcerigi, katalog, tarih).maliyetK;
+  return tekilMaliyetKurus(p, tarih);
+};
+const tekilMaliyetKurus = (p, tarih) => {
   const bugunku = bugunkuKurus(p);
   if (tarih === undefined) return bugunku;
   const g = maliyetGecmisiOf(p);
@@ -51,7 +59,31 @@ export const parcaMaliyetKurus = (p, tarih) => {
   if (i < 0 || i === g.length - 1) return bugunku;
   return g[i].kurus;
 };
-export const parcaMaliyetiVar = (p, tarih) => parcaMaliyetKurus(p, tarih) != null;
+export const parcaMaliyetiVar = (p, tarih, katalog) => parcaMaliyetKurus(p, tarih, katalog) != null;
+
+// ── Spec 0121: setin içeriği (`parts[].setIcerigi = [{ partId, miktar }]`) ──────────────────────────────────────────────────
+// R1, R1/2, R1/3: içeriği olan parça settir; ayrı kayıt türü değildir. Adı kopyalanmaz (R6), okuma anında katalogdan çözülür.
+export const setIcerigiOf = (p) => (Array.isArray(p?.setIcerigi) ? p.setIcerigi.filter(r => r && r.partId != null && r.partId !== "") : []);
+export const setMi = (p) => setIcerigiOf(p).length > 0;
+// R9/2: katalog = Map(String(partId) → parça), yalnız CANLI parçalar (R6/2: çöpteki bileşen maliyeti eksik yapar). Çağıranlar
+// bir kez kurar; emsali makinaStandartMaliyet.parcaHaritasi.
+export const setKatalogu = (parts = []) => new Map((parts || []).filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
+// R2/3, R8, R8/2, R10, R5/2, R11/2, R12, Karar 46: setin özeti, TEK hesap. Bileşenin maliyeti kendi (elle ya da kırılım,
+// tarihli) değeridir; içeriği olan bileşene hiç bakılmaz, eksik sayılır (özyineleme yok, AC-42). Bir bileşen eksikse setin
+// maliyeti `null`. Fiyat toplamı TL fiyatının tek okuma yolundan, tam lira; fiyatı olmayan satır sayılmaz ve sayısı döner.
+export const setOzeti = (icerik, katalog, tarih) => {
+  const satirlar = (Array.isArray(icerik) ? icerik : []).filter(r => r && r.partId != null && r.partId !== "");
+  let toplamK = 0, eksik = 0, fiyatToplam = 0, fiyatsiz = 0;
+  for (const r of satirlar) {
+    const adet = Number(r.miktar) || 0;
+    const b = katalog instanceof Map ? katalog.get(String(r.partId)) : null;
+    const birimK = b && !setMi(b) ? tekilMaliyetKurus(b, tarih) : null;
+    if (birimK == null) eksik++; else toplamK += birimK * adet;
+    const f = b ? parseMoney(partFiyatForCurrency(b, "TRY")) : 0;
+    if (f > 0) fiyatToplam += f * adet; else fiyatsiz++;
+  }
+  return { maliyetK: satirlar.length && !eksik ? toplamK : null, eksik, fiyatToplam: Math.round(fiyatToplam), fiyatsiz, bilesen: satirlar.length };
+};
 
 // ── Spec 0097: maliyetin tarihli geçmişi ─────────────────────────────────────────────────────────────────────────────────
 // R1/3: `parts[].maliyetGecmisi = [{ gecerli, kurus }]`, satır kimliği yok, eskiden yeniye sıralı; ilk kaydın `gecerli`'si
@@ -96,9 +128,12 @@ export const gecerlilikTarihiDogrula = (tarih, bugun, altSinir = "", { esitRed =
 // (yeni parçada null: kayıt yazılmaz, R5/2), `cozulmusK` yeni kaydın tek okuma yolundan çözülmüş maliyeti, `tarih` girilen
 // geçerlilik tarihi, `tarihElle` kullanıcının tarih alanını değiştirip değiştirmediği. Dönüş `{ gecmis, hata }`; hata varsa
 // geçmiş eski hâlidir ve kayıt yapılmamalıdır.
-export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false } = {}) => {
+// Spec 0121 R7/2, C11 (Karar 43): `set` yeni kaydın içeriği doluysa true; o zaman motor HİÇ çalışmaz, kayıtta duran geçmiş aynen
+// döner (silinmez). Kapı tek yerdedir; üç çağıran (kayıt fonksiyonu, kayıttan önceki tarih yoklaması, içe aktarma) geçirir.
+export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false, set = false } = {}) => {
   const g = maliyetGecmisiOf(eski);
   if (!eski) return { gecmis: [], hata: null };
+  if (set) return { gecmis: g, hata: null };
   if (!gecerliGunMu(bugun)) throw new Error("maliyetGecmisiYaz: bugun (YYYY-AA-GG) gerekli");
   const eskiK = bugunkuKurus(eski); // P5: karar kayıtta saklı son kuruştan değil, eski kaydın çözülmüş değerinden
   const yeniK = cozulmusK == null ? null : cozulmusK;
@@ -128,7 +163,7 @@ export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = f
 // değiştiren dar bir yarış) null döner ve çağıran kaydı HİÇ değiştirmez: yeni maliyet tarihsiz geçmişle yazılmasın.
 export const gecmisliKayit = (temel, eski = null, ek = null) => {
   if (!eski || !ek) { const g = eski?.maliyetGecmisi || []; return { ...temel, ...(g.length ? { maliyetGecmisi: g } : {}) }; }
-  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), ek);
+  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel) });
   if (r.hata) return null;
   return { ...temel, ...(r.gecmis.length ? { maliyetGecmisi: r.gecmis } : {}) };
 };
@@ -146,12 +181,14 @@ export const maliyetGecmisiSatirlari = (p) => {
 export const maliyetGirildiMi = parcaMaliyetiVar;
 // Plan P7: kuruştan biçimleyici (parça paneli makina maliyeti motorunu içe almaz). Girilmemiş "—", sıfır "0,00 ₺".
 export const maliyetMetniKurus = (k) => (k == null ? "—" : `${ikiHane.format(k / 100)} ₺`);
-export const parcaMaliyetMetni = (p) => maliyetMetniKurus(parcaMaliyetKurus(p));
+export const parcaMaliyetMetni = (p, tarih, katalog) => maliyetMetniKurus(parcaMaliyetKurus(p, tarih, katalog));
 // Elle girilmiş maliyetin form metni (düzenleme açılışı; kayıttaki elle alanın tek okuyucusu, AC-32).
 export const elleMaliyetMetni = (p) => tutarMetni(p?.maliyet);
 
 // R9, R9/2, R21: maliyetin kaynağı. Kartta iki ibare, listede yalnız kırılımdan gelende ikinci satır.
-export const maliyetKaynagi = (p) => (kirilimTutarliMi(p) ? { tur: "kirilim", n: tutarliSatirlar(p).length } : parcaMaliyetiVar(p) ? { tur: "elle" } : null);
+// Spec 0121 R9/2: içeriği olan parçada üçüncü tür (maliyet eksik olsa da kaynak içeriktir).
+export const maliyetKaynagi = (p, tarih, katalog) => (setMi(p) ? { tur: "icerik", n: setIcerigiOf(p).length }
+  : kirilimTutarliMi(p) ? { tur: "kirilim", n: tutarliSatirlar(p).length } : parcaMaliyetiVar(p, tarih, katalog) ? { tur: "elle" } : null);
 export const KAYNAK_ELLE = "Elle girildi";
 export const kaynakListeMetni = (n) => `${n} tedarikçiden`;
 // Spec 0099 C5/2, Karar 6: kartın kaynak ibaresi iki kullanıcı türü için tek, sayısız metindir; tedarikçi sayısı yetkili
@@ -309,3 +346,80 @@ export const modelAdiParcalardaTasi = (parts, eskiAd, yeniAd) => {
   return degisti ? yeni : parts;
 };
 export const modelAdiParcalaraDokunurMu = (parts, eskiAd, yeniAd) => modelAdiParcalardaTasi(parts, eskiAd, yeniAd) !== parts;
+
+// ── Spec 0121: setin içeriği, doğrulama, ad çözümü ve metinler ───────────────────────────────────────────────────────────────
+// R2, R2/2: bölümün başlığı ve metinleri (ekranda yerel kopya yazılmaz, AC-54).
+export const SET_BOLUM_BASLIGI = "Setin içeriği";
+export const SET_BOS_METNI = "Bu parça bir set değil. İçine parça eklerseniz set olur: maliyeti bileşenlerin maliyetlerinden gelir ve "
+  + "Stok › Parça Stoğu'nda \"Set Hazırla\" ile bileşenler stoktan düşülüp setin stoğu artırılır.";
+export const SET_IPUCU = "Bileşenler ve set başına adetleri. Satış, servis ve teklifte set tek kalemdir; satılınca yalnız setin kendi stoğu düşer.";
+export const SET_BILESEN_EKLE = "Bileşen Ekle";
+export const SET_PARCA_SEC = "Parça seçin";
+export const KAYNAK_ICERIK = "Setin içeriğinden geliyor";
+export const SET_PASIF_NEDENI = "Maliyet setin içeriğinden geliyor; elle girilen maliyet ve hammadde kırılımı okunmaz (içerik boşalınca yeniden kullanılır).";
+export const SET_TOPLAM_ETIKETI = "Setin maliyeti (bileşenlerin toplamı)";
+export const setEksikMetni = (n) => `${n} bileşenin maliyeti yok; setin maliyeti "girilmedi" sayılır.`;
+export const SET_FIYAT_ETIKETI = "Bileşenlerin TL fiyatı toplamı";
+export const setFiyatsizMetni = (n) => `${n} bileşenin TL fiyatı yok, toplama girmedi.`;
+export const SET_FIYAT_DUGMESI = "TL fiyatı toplamına eşitle";
+// R24/2, R26/2: rozet ve seçimden sonraki satır.
+export const setRozetMetni = (n) => `SET · ${n} bileşen`;
+export const setSatirBasligi = (n) => `Set · ${n} bileşen`;
+// R12/2: içe aktarmada setin maliyet hücresi alınmaz.
+export const SET_EXCEL_HATASI = "bu parça bir set, maliyeti içeriğinden geliyor; Excel'deki değer alınmadı.";
+// R3, R4, R5, R5/2: doğrulama metinleri.
+export const SET_PARCA_SECILMEDI = "Parça seçilmedi.";
+export const SET_AYNI_PARCA = "Bu parça içerikte zaten var; ikinci satır yerine adedini artırın.";
+export const SET_KENDISI = "Parça kendi içeriğine eklenemez.";
+export const SET_IC_ICE = "İçeriği olan parça başka bir setin içeriğine eklenemez.";
+const adListesi = (adlar) => (adlar.length > 3 ? `${adlar.slice(0, 3).join(", ")} +${adlar.length - 3}` : adlar.join(", "));
+export const setBileseniHatasi = (adlar) => `Bu parça şu setlerin içeriğinde geçtiği için set yapılamaz: ${adListesi(adlar)}.`;
+// R6, R6/2: ad çözümü HAM diziden (çöpteki parçanın adı çözülsün). Emsali hammaddeTedarikciAdi.
+export const SILINMIS_PARCA = "silinmiş parça";
+export const BULUNAMAYAN_PARCA = "kaydı bulunamayan parça";
+// Karar 47: ham dizi almayan iki formun salt okunur satırı canlı diziden çözer; bulunamayanı nötr adlandırır.
+export const LISTEDE_OLMAYAN_PARCA = "listede olmayan parça";
+export const setBilesenAdi = (partId, hamParts = []) => {
+  const p = (hamParts || []).find(x => String(x.id) === String(partId));
+  if (!p) return BULUNAMAYAN_PARCA;
+  return p.deletedAt ? `${p.ad} (${SILINMIS_PARCA})` : p.ad;
+};
+// R5, R6/2: seçicinin ölçütü "çöpte değil, içeriği boş ve kendisi değil".
+export const setBileseniSecilebilirMi = (p, kendiId) => !!p && !p.deletedAt && !setMi(p) && (kendiId == null || String(p.id) !== String(kendiId));
+// R5/2, Karar 48: bu parçayı içeriğinde taşıyan CANLI setlerin adları (kendisi hariç).
+export const parcayiIcerenSetler = (partId, parts = []) => (parts || [])
+  .filter(p => p && !p.deletedAt && String(p.id) !== String(partId) && setIcerigiOf(p).some(r => String(r.partId) === String(partId)))
+  .map(p => p.ad);
+// Formda içerik hep form biçimindedir (kimlik ve adet metin).
+export const setIcerigiFormu = (kayit = []) => (kayit || []).map(r => ({ partId: r?.partId == null ? "" : String(r.partId), miktar: r?.miktar == null ? "" : String(r.miktar) }));
+// R3, R4, R5, R5/2, R7: TEK doğrulayıcı. Parçası ve adedi boş satır atılır; boş içerik kayda yazılmaz (`kayit` boş).
+// `parts` CANLI katalog (iç içe denetimi ve iki yönlü yasak için). Dönüş `{ kayit, hatalar: {i: metin}, genel, gecerli }`.
+export const setIcerigiDogrula = (satirlar = [], { kendiId = null, parts = [] } = {}) => {
+  const kayit = []; const hatalar = {}; const gorulen = new Set();
+  const harita = new Map((parts || []).filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
+  (satirlar || []).forEach((s, i) => {
+    const pid = s?.partId == null ? "" : String(s.partId).trim();
+    const m = kitAdediDogrula(s?.miktar);
+    if (!pid && m.bos) return;
+    if (!pid) { hatalar[i] = SET_PARCA_SECILMEDI; return; }
+    if (kendiId != null && pid === String(kendiId)) { hatalar[i] = SET_KENDISI; return; }
+    if (gorulen.has(pid)) { hatalar[i] = SET_AYNI_PARCA; return; }
+    const b = harita.get(pid);
+    if (b && setMi(b)) { hatalar[i] = SET_IC_ICE; return; }
+    if (m.bos || m.hata) { hatalar[i] = KIT_ADET_HATASI; return; }
+    gorulen.add(pid);
+    kayit.push({ partId: /^\d+$/.test(pid) ? Number(pid) : pid, miktar: m.deger });
+  });
+  const icerenler = kayit.length && kendiId != null ? parcayiIcerenSetler(kendiId, parts) : [];
+  const genel = icerenler.length ? setBileseniHatasi(icerenler) : null;
+  return { kayit, hatalar, genel, gecerli: !Object.keys(hatalar).length && !genel };
+};
+// R26/2, Karar 47: seçimden sonraki salt okunur satır (servis formu sepeti, yedek parça formu). `null` = set değil.
+export const setIcerikSatiri = (p, canliParts = []) => {
+  const ic = setIcerigiOf(p);
+  if (!ic.length) return null;
+  const harita = new Map((canliParts || []).filter(x => x && !x.deletedAt).map(x => [String(x.id), x]));
+  return { baslik: setSatirBasligi(ic.length), bilesenler: ic.map(r => `${Number(r.miktar) || 0} × ${harita.get(String(r.partId))?.ad || LISTEDE_OLMAYAN_PARCA}`) };
+};
+// R32/2 (Karar 39): Model Maliyetleri'nin kesişim uyarısı. Kayıt engellenmez, düzeltme veri işidir (X11).
+export const setKesisimMetni = (kesisimler = []) => `kitte hem set hem bileşeni var: ${kesisimler.map(k => `${k.setAd} › ${k.bilesenAd}`).join(", ")}`;

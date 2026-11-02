@@ -10,6 +10,7 @@ import { satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib
 import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
 import { garantiDurumu, GARANTI_UYARISI, KARISIK_PARTI_UYARISI } from "../lib/yedekParcaSatis";
+import { SetIcerikSatiri } from "./stock/SetRozeti";
 
 // Bayiye yedek parça (kargo) satışı ekleme/düzenleme formu. Bir kayıt = bir parça kalemi (partId +
 // miktar). Alıcı her zaman bir bayi. Makina tahsisi burada YAPILMAZ — satış listesinden (YedekParcaSatisTab)
@@ -178,6 +179,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                 <div style={{ fontSize: 11.5, color: stok != null && stok < miktar ? "var(--red600, #dc2626)" : "var(--n500, #64748b)", marginTop: 2 }}>
                   Stok: {stok ?? "—"}{stok != null && miktar > 0 && stok < miktar ? " · yetersiz!" : ""}
                 </div>
+                <SetIcerikSatiri part={selectedPart} parts={parts} />
               </div>
             </div>
           ) : (
@@ -213,6 +215,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontWeight: 700, fontSize: 12.5, color: "var(--n900, #0f172a)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{parcaAdi(part)}{part.kod ? ` · ${part.kod}` : ""}</div>
                             <div style={{ fontSize: 11, color: rStok != null && rStok < rMiktar ? "var(--red600, #dc2626)" : "var(--n500, #64748b)", marginTop: 1 }}>Stok: {rStok ?? "—"}{rStok != null && rMiktar > 0 && rStok < rMiktar ? " · yetersiz!" : ""}</div>
+                            <SetIcerikSatiri part={part} parts={parts} />
                           </div>
                           <button type="button" onClick={() => setSatir(i, "partId", "")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)", flexShrink: 0 }}><Icon name="close" size={13} /></button>
                         </div>

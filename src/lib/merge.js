@@ -197,7 +197,12 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null, ta
   // Taşınmasa satır eski kimliğe bakardı ve o kimlik sunucuda başka bir tedarikçiye aitse yanlış tedarikçiyi gösterirdi.
   adds.parts = adds.parts.map(p => (Array.isArray(p.hammaddeler) && p.hammaddeler.length
     ? { ...p, hammaddeler: p.hammaddeler.map(h => (h?.tedarikciId != null ? { ...h, tedarikciId: remapGevsek(maps.tedarikciler, h.tedarikciId) } : h)) }
-    : p));
+    : p))
+    // Spec 0121 C6 (AC-33): setin içeriğindeki parça kimliği yeniden atanan parçayı izler. Yalnız bu birleştirmede EKLENEN
+    // parçalara uygulanır; sunucuda zaten duran setin içeriği eşlenmez (bilinen sınır, 0096 hammadde emsali, Karar 22).
+    .map(p => (Array.isArray(p.setIcerigi) && p.setIcerigi.length
+      ? { ...p, setIcerigi: p.setIcerigi.map(r => (r?.partId != null ? { ...r, partId: remapGevsek(maps.parts, r.partId) } : r)) }
+      : p));
   // Spec 0058 R14 (Q3): kapsam dışı girişi kaynağına göre kaydını izler (servis, Extra Kalıp, yedek parça ya da hareket).
   // Bilinen sınır: birleştirme yalnız eklemeleri yeniden uygular; başka PC yazarken yapılan "kapsama al" geri gelebilir.
   const KAPSAM_HARITA = { servis: "services", kalip: "partSales", yedekParca: "yedekParcaSatislar" };

@@ -1,0 +1,810 @@
+{
+ "zincir": [
+  {
+   "k": 12050,
+   "t": 12050,
+   "v": true,
+   "m": "120,50 ₺",
+   "kay": {
+    "tur": "elle"
+   }
+  },
+  {
+   "k": 0,
+   "t": 0,
+   "v": true,
+   "m": "0,00 ₺",
+   "kay": {
+    "tur": "elle"
+   }
+  },
+  {
+   "k": 750,
+   "t": 500,
+   "v": true,
+   "m": "7,50 ₺",
+   "kay": {
+    "tur": "elle"
+   }
+  },
+  {
+   "k": null,
+   "t": null,
+   "v": false,
+   "m": "—",
+   "kay": null
+  },
+  {
+   "k": 31225,
+   "t": 31225,
+   "v": true,
+   "m": "312,25 ₺",
+   "kay": {
+    "tur": "kirilim",
+    "n": 2
+   }
+  },
+  {
+   "k": 9900,
+   "t": 9900,
+   "v": true,
+   "m": "99,00 ₺",
+   "kay": {
+    "tur": "elle"
+   }
+  }
+ ],
+ "disaAktarma": [
+  [
+   "Rulman",
+   "",
+   "R1",
+   "Standart",
+   "",
+   "",
+   "450",
+   "",
+   "",
+   120.5
+  ],
+  [
+   "Hediye vida",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   0
+  ],
+  [
+   "Pul",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   7.5
+  ],
+  [
+   "Maliyetsiz",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Dişli",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   312.25
+  ],
+  [
+   "Çöpte",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   99
+  ]
+ ],
+ "modeller": [
+  {
+   "model": "AK100",
+   "kit": [
+    {
+     "partId": "1",
+     "ad": "Rulman",
+     "adet": 2,
+     "birimK": 12050,
+     "satirK": 24100,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "2",
+     "ad": "Hediye vida",
+     "adet": 4,
+     "birimK": 0,
+     "satirK": 0,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "3",
+     "ad": "Pul",
+     "adet": 3,
+     "birimK": 750,
+     "satirK": 2250,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "4",
+     "ad": "Maliyetsiz",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "6",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    }
+   ],
+   "ek": [
+    {
+     "ad": "Büküm",
+     "tutarK": 9000
+    }
+   ],
+   "kitBos": false,
+   "eksikSayisi": 2,
+   "direktK": 35350,
+   "payK": 12345,
+   "toplamK": 47695,
+   "katsayi": 1.4,
+   "oneriK": 66773,
+   "kalipListeK": null
+  },
+  {
+   "model": "OZEL",
+   "kit": [
+    {
+     "partId": "5",
+     "ad": "Dişli",
+     "adet": 1,
+     "birimK": 31225,
+     "satirK": 31225,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "99",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    }
+   ],
+   "ek": [],
+   "kitBos": false,
+   "eksikSayisi": 1,
+   "direktK": 31225,
+   "payK": 12345,
+   "toplamK": 43570,
+   "katsayi": null,
+   "oneriK": null,
+   "kalipListeK": null
+  }
+ ],
+ "rapor": {
+  "ay": "2026-06",
+  "ayEtiketi": "Haziran 2026",
+  "donem": "01.06.2026 - 30.06.2026",
+  "olusturmaTarihi": "02.11.2026",
+  "satisAdet": 1,
+  "satisTutar": {
+   "TRY": 800000
+  },
+  "faturaTutar": {
+   "TRY": 0
+  },
+  "satisKdv": {
+   "TRY": 0
+  },
+  "komisyonTutar": {
+   "TRY": 0
+  },
+  "ikinciElAdet": 0,
+  "modelKirilimi": [
+   {
+    "model": "AK100",
+    "adet": 1,
+    "gelir": {
+     "TRY": 800000
+    }
+   }
+  ],
+  "satisYapanKirilimi": [
+   {
+    "ad": "Altuntaş Makina",
+    "adet": 1
+   }
+  ],
+  "satisDetay": [
+   {
+    "firma": "A",
+    "tarih": "2026-06-10",
+    "model": "AK100",
+    "tutar": {
+     "TRY": 800000
+    },
+    "faturaTipi": "Faturalı Yurtiçi"
+   }
+  ],
+  "makinaFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 800000
+    },
+    "kdv": {},
+    "adet": 1
+   }
+  ],
+  "extraKalipAdet": 0,
+  "extraKalipTutar": {},
+  "extraKalipKdv": {},
+  "extraKalipDetay": [],
+  "extraKalipTeslim": {},
+  "extraKalipFaturaKirilimi": [],
+  "anlasmaliParcaTutar": {},
+  "anlasmaliParcaDetay": [],
+  "yedekKargoAdet": 1,
+  "yedekKargoMiktar": 3,
+  "yedekKargoTutar": {
+   "TRY": 9000
+  },
+  "yedekKargoKdv": {
+   "TRY": 1800
+  },
+  "yedekKargoMusteriTutar": {},
+  "yedekKargoBayiTutar": {
+   "TRY": 9000
+  },
+  "yedekKargoTeslim": {
+   "kargo": 0,
+   "fabrikaTeslim": 0,
+   "gonderilmedi": 1
+  },
+  "yedekKargoTeslimTutar": {
+   "gonderilmedi": {
+    "net": {
+     "TRY": 9000
+    },
+    "kdv": {
+     "TRY": 1800
+    },
+    "adet": 1
+   }
+  },
+  "yedekKargoDetay": [
+   {
+    "firma": "Bayi",
+    "tarih": "2026-06-15",
+    "aliciTuru": "Bayi",
+    "teslimSekli": "Panoya gönderilmedi",
+    "miktar": 3,
+    "tutar": {
+     "TRY": 9000
+    },
+    "kdv": {
+     "TRY": 1800
+    },
+    "odendi": false
+   }
+  ],
+  "yedekKargoFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 9000
+    },
+    "kdv": {
+     "TRY": 1800
+    },
+    "adet": 1
+   }
+  ],
+  "servisAdet": 1,
+  "servisUcretliAdet": 1,
+  "servisUcretsizAdet": 0,
+  "iscilikTutar": {
+   "TRY": 5000
+  },
+  "servisParcaTutar": {
+   "TRY": 3900
+  },
+  "servisKdv": {
+   "TRY": 1780
+  },
+  "servisKirilimi": [
+   {
+    "tip": "Garanti Dışı",
+    "adet": 1
+   }
+  ],
+  "servisDetay": [
+   {
+    "firma": "A",
+    "tarih": "2026-06-12",
+    "tip": "Garanti Dışı",
+    "islemFirma": "Altuntaş Makina",
+    "iscilik": {
+     "TRY": 5000
+    },
+    "parca": {
+     "TRY": 3900
+    },
+    "kdv": {
+     "TRY": 1780
+    },
+    "odendi": false,
+    "ucretsiz": false,
+    "yontem": "",
+    "kkBlokajda": false,
+    "kkHesabaGecis": ""
+   }
+  ],
+  "servisNet": {
+   "TRY": 8900
+  },
+  "servisBolumKdv": {
+   "TRY": 1780
+  },
+  "onarimYeriKirilimi": [
+   {
+    "yer": "Yerinde Onarım",
+    "adet": 1,
+    "net": {
+     "TRY": 8900
+    }
+   }
+  ],
+  "servisFaturaKirilimi": [
+   {
+    "faturaTipi": "Faturalı Yurtiçi",
+    "net": {
+     "TRY": 8900
+    },
+    "kdv": {
+     "TRY": 1780
+    },
+    "adet": 1
+   }
+  ],
+  "tahsilatAdet": 1,
+  "tahsilatTutar": {
+   "TRY": 200000
+  },
+  "tahsilatNet": {
+   "TRY": 166666.6666666667
+  },
+  "tahsilatKdv": {
+   "TRY": 33333.333333333314
+  },
+  "tahsilatDetay": [
+   {
+    "firma": "A",
+    "tutar": {
+     "TRY": 200000
+    },
+    "yontem": "Nakit",
+    "tarih": "2026-06-08",
+    "not": ""
+   }
+  ],
+  "tahsilatYontemKirilimi": [
+   {
+    "yontem": "Nakit",
+    "tutar": {
+     "TRY": 200000
+    },
+    "adet": 1
+   }
+  ],
+  "tahsilatKaynakKirilimi": [
+   {
+    "kaynak": "Makina ödemesi",
+    "tutar": {
+     "TRY": 200000
+    },
+    "net": {
+     "TRY": 166666.6666666667
+    },
+    "kdv": {
+     "TRY": 33333.333333333314
+    },
+    "adet": 1
+   }
+  ],
+  "bekleyenCekAdet": 0,
+  "bekleyenCekTutar": {},
+  "bekleyenCekDetay": [],
+  "cekTahsilAdet": 0,
+  "borcluFirma": 2,
+  "acikBorc": {
+   "TRY": 121480
+  },
+  "alacakDetay": [
+   {
+    "firma": "A",
+    "tutar": {
+     "TRY": 110680
+    },
+    "kaynaklar": [
+     "Makina bakiyesi",
+     "Servis"
+    ]
+   },
+   {
+    "firma": "Bayi",
+    "tutar": {
+     "TRY": 10800
+    },
+    "kaynaklar": [
+     "Yedek parça (kargo ve fabrika teslim)"
+    ]
+   }
+  ],
+  "alacakYaslandirma": [
+   {
+    "aralik": "90+ gün",
+    "firma": 2,
+    "tutar": {
+     "TRY": 121480
+    }
+   }
+  ],
+  "alacakKaynakKirilimi": [
+   {
+    "kaynak": "Makina bakiyesi",
+    "tutar": {
+     "TRY": 100000
+    }
+   },
+   {
+    "kaynak": "Servis",
+    "tutar": {
+     "TRY": 10680
+    }
+   },
+   {
+    "kaynak": "Yedek parça (kargo ve fabrika teslim)",
+    "tutar": {
+     "TRY": 10800
+    }
+   }
+  ],
+  "kkBlokajda": [],
+  "kkBlokajdaTutar": {},
+  "gecikenCek": 0,
+  "gecikenTaksit": 0,
+  "teklifAdet": 0,
+  "onaylananTeklif": 0,
+  "teklifDetay": [],
+  "bekleyenTeklif": 0,
+  "krediKartiSatisTutar": {},
+  "bankaKomisyonuTutar": {},
+  "ozet": {
+   "ciroNet": {
+    "TRY": 817900
+   },
+   "tahsilat": {
+    "TRY": 200000
+   },
+   "alacak": {
+    "TRY": 121480
+   },
+   "ciroNetTL": null,
+   "tahsilatTL": null,
+   "alacakTL": null,
+   "toplamKdv": {
+    "TRY": 3580
+   },
+   "toplamKdvTL": null,
+   "krediKartiSatis": {},
+   "krediKartiSatisTL": null,
+   "bankaKomisyonu": {},
+   "bankaKomisyonuTL": null
+  },
+  "toplamKdv": {
+   "TRY": 3580
+  },
+  "anlasmaliParcaKdv": {},
+  "sahipsizAdet": 0,
+  "kdvKalemleri": {
+   "satis": {
+    "TRY": 0
+   },
+   "servis": {
+    "TRY": 1780
+   },
+   "extraKalip": {},
+   "anlasmaliParca": {},
+   "yedekKargo": {
+    "TRY": 1800
+   }
+  }
+ },
+ "analiz": {
+  "ozet": {
+   "parcaToplam": 6,
+   "parcaServisToplam": 3,
+   "parcaKargoToplam": 3,
+   "toplamServis": 1,
+   "makinaSayisi": 1,
+   "enCokParca": {
+    "key": "p:9",
+    "ad": "Rulman Seti",
+    "servis": 1,
+    "kargo": 3,
+    "toplam": 4,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 1,
+      "bilinmeyen": false
+     },
+     {
+      "model": "Modeli bilinmeyen",
+      "adet": 3,
+      "bilinmeyen": true
+     }
+    ]
+   },
+   "enCokServisliMakina": {
+    "customerId": 1,
+    "adet": 1,
+    "name": "A",
+    "model": "AK100",
+    "serialNo": "S1"
+   },
+   "kalipToplam": 0,
+   "standartToplam": 0,
+   "kalipGenelToplam": 0
+  },
+  "parcalar": [
+   {
+    "key": "p:9",
+    "ad": "Rulman Seti",
+    "servis": 1,
+    "kargo": 3,
+    "toplam": 4,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 1,
+      "bilinmeyen": false
+     },
+     {
+      "model": "Modeli bilinmeyen",
+      "adet": 3,
+      "bilinmeyen": true
+     }
+    ]
+   },
+   {
+    "key": "p:1",
+    "ad": "Rulman",
+    "servis": 2,
+    "kargo": 0,
+    "toplam": 2,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 2,
+      "bilinmeyen": false
+     }
+    ]
+   }
+  ],
+  "enCokServisliMakinalar": [
+   {
+    "customerId": 1,
+    "adet": 1,
+    "name": "A",
+    "model": "AK100",
+    "serialNo": "S1"
+   }
+  ],
+  "modelYogunlugu": [
+   {
+    "model": "AK100",
+    "servis": 1,
+    "makina": 1,
+    "oran": 1
+   }
+  ],
+  "servisTipleri": [
+   {
+    "ad": "Garanti Dışı",
+    "adet": 1
+   }
+  ],
+  "onarimYerleri": [
+   {
+    "ad": "Yerinde Onarım",
+    "adet": 1
+   }
+  ],
+  "teknisyenler": [
+   {
+    "ad": "Atanmamış",
+    "adet": 1,
+    "ortIsclikDk": null
+   }
+  ],
+  "trend": [
+   {
+    "donem": "2025-07",
+    "adet": 0
+   },
+   {
+    "donem": "2025-08",
+    "adet": 0
+   },
+   {
+    "donem": "2025-09",
+    "adet": 0
+   },
+   {
+    "donem": "2025-10",
+    "adet": 0
+   },
+   {
+    "donem": "2025-11",
+    "adet": 0
+   },
+   {
+    "donem": "2025-12",
+    "adet": 0
+   },
+   {
+    "donem": "2026-01",
+    "adet": 0
+   },
+   {
+    "donem": "2026-02",
+    "adet": 0
+   },
+   {
+    "donem": "2026-03",
+    "adet": 0
+   },
+   {
+    "donem": "2026-04",
+    "adet": 0
+   },
+   {
+    "donem": "2026-05",
+    "adet": 0
+   },
+   {
+    "donem": "2026-06",
+    "adet": 1
+   }
+  ],
+  "trendBirim": "ay",
+  "kalipAd": [],
+  "kalipOlcu": [],
+  "kalipModel": []
+ },
+ "finans": {
+  "real": [
+   {
+    "id": 1,
+    "name": "A",
+    "model": "AK100",
+    "serialNo": "S1",
+    "installDate": "2026-06-10",
+    "currency": "TRY",
+    "fabrikaSatisBedeli": 800000,
+    "faturali": "Faturalı Yurtiçi",
+    "kalanBorc": 100000,
+    "satisYapan": "Altuntaş Makina"
+   }
+  ],
+  "gercekCiro": {
+   "TRY": 800000,
+   "USD": 0,
+   "EUR": 0
+  },
+  "toplamCiro": {
+   "TRY": 800000,
+   "USD": 0,
+   "EUR": 0
+  },
+  "faturaliTutar": {
+   "TRY": 0,
+   "USD": 0,
+   "EUR": 0
+  },
+  "kdv": {
+   "TRY": 1780,
+   "USD": 0,
+   "EUR": 0
+  },
+  "komisyon": {
+   "TRY": 0,
+   "USD": 0,
+   "EUR": 0
+  },
+  "extra": {
+   "TRY": 0,
+   "USD": 0,
+   "EUR": 0
+  },
+  "alacak": {
+   "TRY": 100000,
+   "USD": 0,
+   "EUR": 0
+  },
+  "servisUc": {
+   "TRY": 5000,
+   "USD": 0,
+   "EUR": 0
+  },
+  "servisParca": {
+   "TRY": 3900,
+   "USD": 0,
+   "EUR": 0
+  },
+  "anlasmaliParca": {
+   "TRY": 0,
+   "USD": 0,
+   "EUR": 0
+  },
+  "net": {
+   "TRY": 808900,
+   "USD": 0,
+   "EUR": 0
+  },
+  "kalipAdet": 0,
+  "tipAdet": {
+   "Faturalı Yurtiçi": 1,
+   "Faturalı Yurtdışı": 0,
+   "Faturasız Yurtiçi": 0,
+   "Faturasız Yurtdışı": 0
+  }
+ }
+}

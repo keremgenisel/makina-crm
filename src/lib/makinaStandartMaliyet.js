@@ -12,7 +12,7 @@ import { kurus, tl, ayEkle, ayOf, ayinSonGunu, hesaplaGiderRaporu, turHaritasi, 
 import { partiAylari, canliPartiler } from "./uretimPartisi";
 import { makinaListesi, satisKurBilgisi, katDegeriDogrula, URETIM_KAYNAK } from "./makinaMaliyeti";
 import { gercekSatisBedeli, trLower } from "./utils";
-import { parcaMaliyetKurus, gecerliGunMu } from "./urunAgaci";
+import { parcaMaliyetKurus, gecerliGunMu, setMi, setIcerigiOf } from "./urunAgaci";
 
 // ── Rol ──────────────────────────────────────────────────────────────────────
 export const MALIYET_ROLU = { URUN_AGACI: "urunAgaci", GENEL: "genel", YOK: "yok" };
@@ -207,7 +207,8 @@ export const modelMaliyeti = (model, partMap, payK = 0, tarih) => {
     const adet = Number(r.miktar) || 0;
     if (!p) return { partId: r.partId, ad: r.ad || "", adet, birimK: null, satirK: 0, eksik: true, neden: "parcaYok" };
     // Spec 0096 C1 (AC-19): birim maliyet parçanın tek okuma yolundan (hammadde kırılımı varsa onun toplamı, kuruş).
-    const birimK = parcaMaliyetKurus(p, tarih);
+    // Spec 0121 R9/2: harita (canlı parçalar) aynı zamanda setin kataloğudur; setin birim maliyeti bileşenlerinden.
+    const birimK = parcaMaliyetKurus(p, tarih, partMap);
     if (birimK == null) return { partId: r.partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
     return { partId: r.partId, ad: p.ad, adet, birimK, satirK: birimK * adet, eksik: false, neden: null };
   });
@@ -215,8 +216,17 @@ export const modelMaliyeti = (model, partMap, payK = 0, tarih) => {
   const direktK = kit.reduce((a, r) => a + r.satirK, 0) + ek.reduce((a, k) => a + k.tutarK, 0);
   const toplamK = direktK + payK;
   const katsayi = Number(model.karKatsayisi) > 0 ? Number(model.karKatsayisi) : null;
+  // Spec 0121 R32/2 (AC-46): kitte hem set hem o setin bileşeni varsa aynı parça iki kez sayılır; bilgi olarak döner, hesap
+  // bugünkü kuralla kalır (X11). Kesişim yoksa anahtar hiç yazılmaz (spec öncesi çıktı birebir, AC-14).
+  const kitIdleri = new Set((model.defaultParcalar || []).map(r => String(r.partId)));
+  const setKesisimleri = (model.defaultParcalar || []).flatMap(r => {
+    const p = partMap.get(String(r.partId));
+    if (!p || !setMi(p)) return [];
+    return setIcerigiOf(p).filter(b => kitIdleri.has(String(b.partId)))
+      .map(b => ({ setAd: p.ad, bilesenAd: partMap.get(String(b.partId))?.ad || String(b.partId) }));
+  });
   return {
-    model: model.model, kit, ek, kitBos: kit.length === 0 && ek.length === 0, eksikSayisi: kit.filter(r => r.eksik).length,
+    model: model.model, kit, ek, ...(setKesisimleri.length ? { setKesisimleri } : {}), kitBos: kit.length === 0 && ek.length === 0, eksikSayisi: kit.filter(r => r.eksik).length,
     direktK, payK, toplamK, katsayi, oneriK: oneriKurus(toplamK, katsayi),
     kalipListeK: model.kalipListeFiyati == null || model.kalipListeFiyati === "" ? null : kurus(model.kalipListeFiyati),
   };

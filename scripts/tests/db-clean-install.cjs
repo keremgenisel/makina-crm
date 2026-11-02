@@ -209,6 +209,16 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && JSON.stringify(b.parts.find(p => p.id === 53)?.maliyetGecmisi) === JSON.stringify(gecmis));
 }
 
+// Spec 0121 AC-32 (C5): temiz kurulumda setin içeriği ilk oturumda yazılır.
+{
+  let h = null;
+  const icerik = [{ partId: 53, miktar: 2 }];
+  try { dbmod.writeBlobToDb({ parts: [{ id: 54, ad: "Rulman seti", models: [], setIcerigi: icerik }] }); } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0121: temiz kurulumda setIcerigi sütunu var ve yazıldı", h === null
+    && JSON.stringify(b.parts.find(p => p.id === 54)?.setIcerigi) === JSON.stringify(icerik));
+}
+
 // Spec 0100 AC-38 (C2): temiz kurulumda stok satırının üretim durumu ilk oturumda yazılır; durumsuz satırda alan yok.
 {
   let h = null;
