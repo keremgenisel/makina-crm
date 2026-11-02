@@ -7666,6 +7666,116 @@
         "rapor": "docs/evidence/0121-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-0096-yetkisiz",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-yetkisiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-maliyetsiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-kirilim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-tutarsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-gecmis",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-ekle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-elle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-yetkisiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0115-ipucu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0121-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0121-set",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-0122-panel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R15(c)"
+      },
+      {
+        "rapor": "docs/evidence/0122-piksel-raporu.json",
+        "ekran": "katalog-parca-yeni",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0122 R1"
       }
     ],
     "src/components/PartTypeManager.jsx": [

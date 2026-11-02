@@ -915,6 +915,8 @@ const EKRANLAR = {
   // Spec 0121 R34: setin kartı (içerik, toplam, pasif maliyet) ve içeriği boş parçanın kartı (boş durum).
   "katalog-parca-0121-set": [ayarlar("yedekparca", { parts: PARCA_0121_SET, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği"]],
   "katalog-parca-0121-bos": [ayarlar("yedekparca", { parts: PARCA_0121_BOS, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği"]],
+  // Spec 0122 R15(c), Karar 31: açık bileşen paneli (yazılmış metinle süzülmüş).
+  "katalog-parca-0122-panel": [ayarlar("yedekparca", { parts: PARCA_0121_BOS, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği", "odak:Bileşen ara...=r"]],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],
   // Spec 0099: kırılım toplamının yeri. Yetkisiz kullanıcının penceresi (C3, değişmez), iki tedarikçili ekleme penceresi (AC-19)
   // ve kırılımsız elle maliyetli parçanın penceresi (R10, değişmez).
@@ -1601,6 +1603,18 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
         await bekle(300);
         const s = [...document.querySelectorAll("div, span, li, button")].filter(e => e.textContent.trim() === secenek && e.children.length <= 1).pop();
         if (s) { s.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })); s.click(); } else console.warn("seçenek yok: " + metin);
+      } else console.warn("arama kutusu yok: " + metin);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("odak:")) {
+      // Spec 0122 R15(c), X11: arama kutusuna odaklanır ve yazar ama SEÇMEZ; panel açık kalır ("odak:<placeholder>=<yazı>").
+      // `ara:` adımı değiştirilmedi (seçimle paneli kapatır).
+      const [yer, yazi = ""] = metin.slice(5).split("=");
+      const el = document.querySelector(`input[placeholder="${yer}"]`);
+      if (el) {
+        el.focus(); el.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, yazi); el.dispatchEvent(new Event("input", { bubbles: true }));
       } else console.warn("arama kutusu yok: " + metin);
       await bekle(300);
       continue;

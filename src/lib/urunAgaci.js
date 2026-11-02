@@ -353,8 +353,8 @@ export const SET_BOLUM_BASLIGI = "Setin içeriği";
 export const SET_BOS_METNI = "Bu parça bir set değil. İçine parça eklerseniz set olur: maliyeti bileşenlerin maliyetlerinden gelir ve "
   + "Stok › Parça Stoğu'nda \"Set Hazırla\" ile bileşenler stoktan düşülüp setin stoğu artırılır.";
 export const SET_IPUCU = "Bileşenler ve set başına adetleri. Satış, servis ve teklifte set tek kalemdir; satılınca yalnız setin kendi stoğu düşer.";
-export const SET_BILESEN_EKLE = "Bileşen Ekle";
-export const SET_PARCA_SEC = "Parça seçin";
+// Spec 0122 R4/2: bileşen arama kutusunun yer tutucusu; kutunun testteki tutamağıdır (R1/2), öteki çağıranların "Parça ara..."sından ayrı.
+export const SET_BILESEN_ARA = "Bileşen ara...";
 export const KAYNAK_ICERIK = "Setin içeriğinden geliyor";
 export const SET_PASIF_NEDENI = "Maliyet setin içeriğinden geliyor; elle girilen maliyet ve hammadde kırılımı okunmaz (içerik boşalınca yeniden kullanılır).";
 export const SET_TOPLAM_ETIKETI = "Setin maliyeti (bileşenlerin toplamı)";
@@ -386,6 +386,12 @@ export const setBilesenAdi = (partId, hamParts = []) => {
 };
 // R5, R6/2: seçicinin ölçütü "çöpte değil, içeriği boş ve kendisi değil".
 export const setBileseniSecilebilirMi = (p, kendiId) => !!p && !p.deletedAt && !setMi(p) && (kendiId == null || String(p.id) !== String(kendiId));
+// Spec 0122 R2/2, Karar 5: arama seçicisinin aday kümesi. Bugünkü küme (`setBileseniSecilebilirMi`) eksi içerikte satırı olan
+// parçalar; sıra katalog sırasıdır (R6/2). Yinelenen satır böylece seçilemez, uyarı yazılmaz.
+export const setBilesenAdaylari = (parts = [], kendiId = null, satirlar = []) => {
+  const secili = new Set((satirlar || []).map(s => String(s?.partId)));
+  return (parts || []).filter(p => setBileseniSecilebilirMi(p, kendiId) && !secili.has(String(p.id)));
+};
 // R5/2, Karar 48: bu parçayı içeriğinde taşıyan CANLI setlerin adları (kendisi hariç).
 export const parcayiIcerenSetler = (partId, parts = []) => (parts || [])
   .filter(p => p && !p.deletedAt && String(p.id) !== String(partId) && setIcerigiOf(p).some(r => String(r.partId) === String(partId)))

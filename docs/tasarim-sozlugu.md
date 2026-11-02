@@ -83,6 +83,14 @@ açılır listedir (`src/components/gider/OdemeGirisi.jsx`; gider formu ve ödem
 tanım düzeyindeki "Varsayılan ödeme yöntemi" spec 0053 ile kalktı. Bu kural var olan segmentlerin toplu dönüşümü
 değildir (0042 X5); yeni bir seçici eklenirken uygulanır.
 
+**Katalog büyüklüğündeki listeler arama seçicisidir (spec 0122 R12):** seçenekler bir katalog kadar çoksa (onlarca ve
+üstü: parça, kalıp, müşteri, bayi) seçici ne segment ne açılır listedir, `ui.jsx` `SearchPick`'tir (yazarak aranır,
+Türkçe harf katlamalı, tıklama seçer ve paneli kapatır). Yukarıdaki segment ile açılır liste ölçüsü kısa listeler için
+geçerli kalır. Parça seçicilerinin hepsi bu kuralı izler: servis formunun değişen parçaları, yedek parça satışı, Extra
+Kalıp, model kiti ve spec 0122'den beri parça kartındaki setin içeriği (`PartManager.jsx` `SetIcerigiAlani`). Etiket
+`getLabel`, anahtar `getKey={x => x.id}` ile geçilir (varsayılan anahtar etikete eşittir, aynı adlı iki öğe çakışır);
+kutunun tutamağı yer tutucusudur, bu yüzden yer tutucu metni aynı ekrandaki öteki arama kutularından ayrı yazılır.
+
 ## KartBolum
 
 Başlıklı kart bölüm; iki görünüm varyantı var:
@@ -439,3 +447,8 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 - `KartBolum` `kart` varyantının **etiket başlığının** kontrastı düşük: aydınlıkta 2.56, karanlıkta 2.98. WCAG AA 4.5 ister.
 - Segment'in pasif seçenek metni sınırda: aydınlıkta 4.34, karanlıkta 4.32.
 - Bugünkü görünüm bunlar; değiştirmek tema ve erişilebilirlik işidir (spec 0009 X4, X6). Ayrı iş önerilir.
+- `SearchPick` (`ui.jsx`) arama kutusunun erişilebilir adı yok: kutu yalnız `placeholder` taşır, `aria-label` ya da bağlı
+  etiket yok; yer tutucu etiket değildir. Bu, altı çağıran dosyanın (servis formu, yedek parça satışı, Extra Kalıp, model
+  kiti, tahsis penceresi ve spec 0122'den beri parça kartındaki set içeriği) ortak borcudur. Spec 0122 set içeriğinin
+  etiketli açılır listesini bu kutuya çevirdiği için borç orada büyüdü; `ui.jsx`'e etiket eklemek bütün çağıranları
+  etkilediği için ayrı iş önerilir (spec 0122 R14, X9).

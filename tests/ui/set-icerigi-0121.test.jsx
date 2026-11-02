@@ -11,7 +11,7 @@ import { Settings } from "../../src/components/Settings";
 import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
 import {
   SET_BOS_METNI, SET_BOLUM_BASLIGI, SET_AYNI_PARCA, KIT_ADET_HATASI, SILINMIS_PARCA, BULUNAMAYAN_PARCA, KAYNAK_ICERIK, SET_PASIF_NEDENI,
-  setEksikMetni, setFiyatsizMetni, setBileseniHatasi, SET_FIYAT_DUGMESI, GECERLILIK_ETIKETI, GECMIS_BASLIGI,
+  setEksikMetni, setFiyatsizMetni, setBileseniHatasi, SET_FIYAT_DUGMESI, GECERLILIK_ETIKETI, GECMIS_BASLIGI, SET_BILESEN_ARA,
 } from "../../src/lib/urunAgaci";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); delete window.crmLocks; });
@@ -44,26 +44,37 @@ const satir = (ad) => screen.getAllByText(ad).map(e => e.closest("tr")).find(Boo
 const duzenle = (ad) => fireEvent.click(within(satir(ad)).getByTitle("Düzenle"));
 const kaydet = () => fireEvent.click(screen.getByRole("button", { name: /Kaydet/ }));
 const kayit = (id) => durum.parts.find(p => p.id === id);
-const bilesenSec = (id) => fireEvent.change(screen.getByLabelText("Bileşen parçası"), { target: { value: String(id) } });
-const bilesenEkle = () => fireEvent.click(screen.getByRole("button", { name: /Bileşen Ekle/ }));
+// Spec 0122 ile (R1/2, R6, Karar 3): seçici arama kutusudur; tutamak yer tutucu, seçim focus + mouseDown ve TEK adımdır
+// (eski "seç, sonra Bileşen Ekle" iki adımı birleşti). Kimlikle seçmek için adı fikstürden çözülür.
+const aramaKutusu = () => within(screen.getByTestId("set-icerigi")).getByPlaceholderText(SET_BILESEN_ARA);
+const panel = () => { fireEvent.focus(aramaKutusu()); return [...document.querySelectorAll(".sp-option")].map(e => e.textContent); };
+const bilesenSec = (id) => {
+  const ad = PARCALAR.find(p => p.id === id).ad;
+  fireEvent.focus(aramaKutusu());
+  const s = [...document.querySelectorAll(".sp-option")].find(e => e.textContent === ad);
+  // Triyaj (spec 0122 bulgu 4): panelde olmayan parça sessizce geçilmez.
+  if (!s) throw new Error(`panelde yok: ${ad}`);
+  fireEvent.mouseDown(s);
+};
 const adet = (i, v) => fireEvent.change(screen.getByLabelText(`Bileşen adedi ${i}`), { target: { value: v } });
 
 describe("Spec 0121 A: setin içeriği bölümü (R2, R2/2)", () => {
-  it("AC-1 / AC-54: içeriği boş parçada bölüm, açıklama ve 'Bileşen Ekle' çizilir; kayıtta içerik alanı oluşmaz", () => {
+  // Spec 0122 ile: okuma yolu değişti ("Bileşen Ekle" düğmesi yerine arama kutusu), iddia aynı.
+  it("AC-1 / AC-54: içeriği boş parçada bölüm, açıklama ve bileşen arama kutusu çizilir; kayıtta içerik alanı oluşmaz", () => {
     render(<Katalog />);
     duzenle("Kayış");
     const b = screen.getByTestId("set-icerigi");
     expect(within(b).getByText(SET_BOLUM_BASLIGI)).toBeTruthy();
     expect(screen.getByTestId("set-icerigi-bos").textContent).toBe(SET_BOS_METNI);
-    expect(within(b).getByRole("button", { name: /Bileşen Ekle/ })).toBeTruthy();
+    expect(within(b).getByPlaceholderText(SET_BILESEN_ARA)).toBeTruthy();
     kaydet();
     expect("setIcerigi" in kayit(9)).toBe(false);
   });
   it("AC-2: iki bileşen eklenip kaydedilen parça set olur; satır yalnız { partId, miktar } taşır", () => {
     render(<Katalog />);
     duzenle("Kayış");
-    bilesenSec(7); bilesenEkle(); adet(1, "3");
-    bilesenSec(8); bilesenEkle();
+    bilesenSec(7); adet(1, "3");
+    bilesenSec(8);
     expect(screen.getAllByTestId("set-bilesen-satiri")).toHaveLength(2);
     kaydet();
     expect(kayit(9).setIcerigi).toEqual([{ partId: 7, miktar: 3 }, { partId: 8, miktar: 1 }]);
@@ -72,26 +83,29 @@ describe("Spec 0121 A: setin içeriği bölümü (R2, R2/2)", () => {
     for (const v of ["0", "", "1,5"]) {
       render(<Katalog />);
       duzenle("Kayış");
-      bilesenSec(7); bilesenEkle(); adet(1, v);
+      bilesenSec(7); adet(1, v);
       kaydet();
       expect("setIcerigi" in kayit(9)).toBe(false);
       expect(within(screen.getAllByTestId("set-bilesen-satiri")[0]).getByText(KIT_ADET_HATASI)).toBeTruthy();
       cleanup();
     }
   });
-  it("AC-4: içerikte olan parça ikinci kez seçilirse satır eklenmez ve adedin artırılması söylenir", () => {
+  // Spec 0122 ile (Karar 5): iddia değişti, uyarı yerine ÖNLEME. İçerikte olan parça panelde listelenmez, ikinci tıklama
+  // imkânsızdır; ekranda "adedini artırın" uyarısı yazılmaz (SearchPick'in koşulsuz "eklendi" onayıyla çelişirdi).
+  it("AC-4: içerikte olan parça ikinci kez seçilemez (panelde yok); satır eklenmez, uyarı yazılmaz", () => {
     render(<Katalog />);
     duzenle("Kayış");
-    bilesenSec(7); bilesenEkle();
-    bilesenSec(7); bilesenEkle();
+    bilesenSec(7);
+    expect(panel()).not.toContain("Rulman");
+    expect(() => bilesenSec(7)).toThrow(/panelde yok: Rulman/);
     expect(screen.getAllByTestId("set-bilesen-satiri")).toHaveLength(1);
-    expect(screen.getByText(SET_AYNI_PARCA)).toBeTruthy();
+    expect(screen.queryByText(SET_AYNI_PARCA)).toBeNull();
   });
+  // Spec 0122 ile: okuma yolu `<option>` listesi yerine panel (`.sp-option`); boş "Parça seçin" seçeneği yok, iddia aynı.
   it("AC-5 / AC-6: seçicide içeriği olan parçalar, çöpteki parça ve parçanın kendisi listelenmez", () => {
     render(<Katalog />);
     duzenle("Kayış");
-    const sec = [...screen.getByLabelText("Bileşen parçası").options].map(o => o.textContent);
-    expect(sec).toEqual(["Parça seçin", "Rulman", "Pul"]);
+    expect(panel()).toEqual(["Rulman", "Pul"]);
   });
   it("AC-7 / AC-8 / AC-40: çöpteki bileşen ham diziden adıyla 'silinmiş parça', bulunmayan 'kaydı bulunamayan parça'; maliyet girilmedi", () => {
     render(<Katalog />);
@@ -112,7 +126,7 @@ describe("Spec 0121 A: setin içeriği bölümü (R2, R2/2)", () => {
   it("AC-41: başka bir setin içeriğinde geçen parçaya içerik eklenmesi reddedilir, neden setin adını yazar", () => {
     render(<Katalog />);
     duzenle("Pul");
-    bilesenSec(9); bilesenEkle();
+    bilesenSec(9);
     kaydet();
     expect("setIcerigi" in kayit(8)).toBe(false);
     expect(screen.getByTestId("set-icerigi-genel").textContent).toBe(setBileseniHatasi(["Rulman Seti"]));
@@ -132,10 +146,10 @@ describe("Spec 0121 B: maliyet ve fiyat (R2/3, R8, R10, R11)", () => {
   it("AC-51: kaydedilmemiş formda maliyet, eksik bileşen ve fiyat toplamı canlı görünür", () => {
     render(<Katalog />);
     duzenle("Kayış");
-    bilesenSec(7); bilesenEkle(); adet(1, "2");
+    bilesenSec(7); adet(1, "2");
     expect(screen.getByTestId("set-toplam-maliyet").textContent).toBe("200,00 ₺");
     expect(screen.getByTestId("set-fiyat-toplami").textContent).toContain("1.000");
-    bilesenSec(8); bilesenEkle();
+    bilesenSec(8);
     expect(screen.getByTestId("set-toplam-maliyet").textContent).toBe("202,50 ₺");
     expect(screen.getByTestId("set-fiyatsiz").textContent).toBe(setFiyatsizMetni(1));
     expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(KAYNAK_ICERIK);
@@ -153,14 +167,14 @@ describe("Spec 0121 B: maliyet ve fiyat (R2/3, R8, R10, R11)", () => {
     cleanup();
     render(<Katalog />);
     duzenle("Kayış");
-    bilesenSec(8); bilesenEkle();
+    bilesenSec(8);
     expect(screen.getByRole("button", { name: SET_FIYAT_DUGMESI }).disabled).toBe(true);
   });
   it("AC-52 (triyaj bulgu 3, ekleme penceresi): düğme yalnız fiyatTRY'yi doldurur; USD ve EUR boş kalır", () => {
     render(<Katalog />);
     fireEvent.click(screen.getByRole("button", { name: /Parça\/Yedek Parça Ekle/ }));
     fireEvent.change(screen.getByPlaceholderText("Örn: Kesme Bıçağı Seti"), { target: { value: "Yeni Set" } });
-    bilesenSec(7); bilesenEkle(); adet(1, "3");
+    bilesenSec(7); adet(1, "3");
     fireEvent.click(screen.getByRole("button", { name: SET_FIYAT_DUGMESI }));
     kaydet();
     const yeni = durum.parts.find(p => p.ad === "Yeni Set");
@@ -233,7 +247,8 @@ describe("Spec 0121: kaynak taramaları (C1, R2/2, R2/3)", () => {
   it("AC-54: bölüm kimlikleri ekranda, metinler urunAgaci.js'ten (ekranda yerel kopya yok)", () => {
     const pm = kod("src/components/PartManager.jsx");
     for (const id of ["set-icerigi", "set-bilesen-satiri", "set-icerigi-bos", "set-toplam"]) expect(pm).toContain(`data-testid="${id}"`);
-    for (const metin of ["Setin içeriği", "Bileşen Ekle", "Setin içeriğinden geliyor", "TL fiyatı toplamına eşitle", "kaydı bulunamayan parça", "silinmiş parça"]) {
+    // Spec 0122 ile (R11): "Bileşen Ekle" listeden çıktı, yeni yer tutucu girdi.
+    for (const metin of ["Setin içeriği", "Bileşen ara...", "Setin içeriğinden geliyor", "TL fiyatı toplamına eşitle", "kaydı bulunamayan parça", "silinmiş parça"]) {
       expect(pm).not.toContain(metin);
       expect(kod("src/lib/urunAgaci.js")).toContain(metin);
     }

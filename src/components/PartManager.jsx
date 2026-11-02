@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
 import { CUR_SYM, tipRenk } from "../lib/constants";
-import { Icon, Field, Input, MoneyInput, TutarInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload, Select } from "./ui";
+import { Icon, Field, Input, MoneyInput, TutarInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload, Select, SearchPick } from "./ui";
 import { HataMetni, Ipucu, UyariSeridi, BolumBasligi } from "./tasarim";
 import { kalipAdDeseni, parcaKalipIsiMi, PARCA_TIP_IPUCU } from "../lib/kalipTamiri";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
@@ -10,8 +10,8 @@ import { MALIYET_ETIKETI, MALIYET_IPUCU, KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, m
   parcaMaliyetKurus, parcaMaliyetMetni, elleMaliyetMetni, maliyetKaynagi, KAYNAK_ELLE, kaynakListeMetni, KAYNAK_KIRILIM, kirilimdanGeliyorMetni, maliyetMetniKurus,
   HAMMADDE_BOS_METNI, HAMMADDE_BOLUM_BASLIGI, HAMMADDE_IPUCU, HAMMADDE_TUTARSIZ_UYARI, HAMMADDE_TOPLAM_ETIKETI, hammaddeToplamSayisi, HAMMADDE_TOPLAM_HATALI, hammaddeTedarikciAdi, hammaddeSecilebilirMi,
   hammaddeFormu, hammaddeDogrula, maliyetGecmisiYaz, gecmisliKayit, maliyetGecmisiSatirlari, GECERLILIK_ETIKETI, GECERLILIK_IPUCU, GECMIS_BASLIGI,
-  setKatalogu, setMi, setOzeti, setIcerigiDogrula, setIcerigiFormu, setBilesenAdi, setBileseniSecilebilirMi, setEksikMetni, setFiyatsizMetni,
-  SET_BOLUM_BASLIGI, SET_BOS_METNI, SET_IPUCU, SET_BILESEN_EKLE, SET_PARCA_SEC, SET_AYNI_PARCA, SET_TOPLAM_ETIKETI, SET_FIYAT_ETIKETI, SET_FIYAT_DUGMESI,
+  setKatalogu, setMi, setOzeti, setIcerigiDogrula, setIcerigiFormu, setBilesenAdi, setBilesenAdaylari, setEksikMetni, setFiyatsizMetni,
+  SET_BOLUM_BASLIGI, SET_BOS_METNI, SET_IPUCU, SET_BILESEN_ARA, SET_TOPLAM_ETIKETI, SET_FIYAT_ETIKETI, SET_FIYAT_DUGMESI,
   KAYNAK_ICERIK, SET_PASIF_NEDENI } from "../lib/urunAgaci";
 import { useBugun } from "../hooks/useBugun";
 import { SetRozeti } from "./stock/SetRozeti";
@@ -183,17 +183,9 @@ const HammaddeAlani = ({ satirlar = [], setSatirlar, tedarikciler = [], hatalar 
 // adlar HAM diziden çözülür (çöpteki / bulunamayan), seçici canlı ve içeriği boş parçaları listeler (kendisi hariç). Toplamlar
 // ebeveynin tek `formMaliyeti` sonucundan (`ozet`) gelir; bölüm toplama yazmaz (0099 AC-26).
 const SetIcerigiAlani = ({ satirlar = [], setSatirlar, kendiId = null, parts = [], hamParts = [], hatalar = {}, genel = null, ozet = null, onFiyat }) => {
-  const [secim, setSecim] = useState("");
-  const [uyari, setUyari] = useState(null);
-  const secilebilir = parts.filter(p => setBileseniSecilebilirMi(p, kendiId));
+  // Spec 0122 R2/2, R6: adaylar tek kuraldan (içerikte olan parça listelenmez); tıklama satırı adet "1" ile hemen ekler.
+  const adaylar = setBilesenAdaylari(parts, kendiId, satirlar);
   const guncelle = (i, deger) => setSatirlar(satirlar.map((s, j) => (j === i ? { ...s, miktar: deger } : s)));
-  const ekle = () => {
-    if (!secim) return;
-    if (satirlar.some(s => String(s.partId) === String(secim))) { setUyari(SET_AYNI_PARCA); return; } // R4
-    setUyari(null);
-    setSatirlar([...satirlar, { partId: String(secim), miktar: "1" }]);
-    setSecim("");
-  };
   return (
     <div data-testid="set-icerigi" style={{ marginTop: 4, marginBottom: 12 }}>
       <BolumBasligi>{SET_BOLUM_BASLIGI}</BolumBasligi>
@@ -213,14 +205,11 @@ const SetIcerigiAlani = ({ satirlar = [], setSatirlar, kendiId = null, parts = [
           ))}
         </div>
       )}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(160px, 2fr) auto", gap: 8, alignItems: "center" }}>
-        <Select aria-label="Bileşen parçası" value={secim} onChange={e => { setSecim(e.target.value); setUyari(null); }}>
-          <option value="">{SET_PARCA_SEC}</option>
-          {secilebilir.map(p => <option key={p.id} value={String(p.id)}>{p.ad}</option>)}
-        </Select>
-        <Btn small variant="ghost" onClick={ekle} disabled={!secim}><Icon name="plus" size={12} /> {SET_BILESEN_EKLE}</Btn>
+      {/* Spec 0122 R1/3, R5/2: tam genişlik, sabit konum (önünde koşullu öğe yok; SearchPick yazılmış metni iç durumunda tutar). */}
+      <div>
+        <SearchPick items={adaylar} getLabel={p => p.ad} getKey={p => p.id} placeholder={SET_BILESEN_ARA}
+          onPick={p => setSatirlar([...satirlar, { partId: String(p.id), miktar: "1" }])} />
       </div>
-      {uyari && <HataMetni>{uyari}</HataMetni>}
       {genel && <div style={{ marginTop: 6 }}><UyariSeridi aile="hata" testId="set-icerigi-genel">{genel}</UyariSeridi></div>}
       {ozet && (
         <div data-testid="set-toplam" style={{ marginTop: 8, padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, background: "var(--n100, #f8fafc)", display: "grid", gap: 4, fontSize: 13 }}>
