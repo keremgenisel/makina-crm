@@ -11,17 +11,20 @@ const BUGUN = "2026-10-20";
 const ONCE = JSON.parse(readFileSync("tests/fixtures/0087-aktarma-once.json", "utf8"));
 
 describe("Spec 0087: parça aktarması", () => {
-  it("AC-29: dışa aktarmada maliyet onuncu ve son sütun; ilk dokuz sütun spec öncesiyle aynı, maliyetsiz hücre boş", () => {
-    expect(PARCA_AKTARMA_BASLIKLARI).toHaveLength(10);
+  // Spec 0124 ile (R1, Karar 1): maliyet artık son değil onuncu sütun, on birincisi "Set İçeriği"; konuma göre eşleme iddiası aynen.
+  it("AC-29: dışa aktarmada maliyet onuncu sütun (spec 0124 ile son değil); ilk dokuz sütun spec öncesiyle aynı, maliyetsiz hücre boş", () => {
+    expect(PARCA_AKTARMA_BASLIKLARI).toHaveLength(11);
     expect(PARCA_AKTARMA_BASLIKLARI[9]).toBe("Maliyet (TL, KDV hariç)");
-    expect(PARCA_SABLON_ORNEGI).toHaveLength(10);
+    expect(PARCA_SABLON_ORNEGI).toHaveLength(11);
     const satirlar = MEVCUT_PARCALAR.map(parcaDisaAktarmaSatiri);
     expect(satirlar.map(s => s.slice(0, 9))).toEqual(ONCE.disa);
     expect(satirlar.map(s => s[9])).toEqual([120.5, "", ""]);
   });
 
   it("AC-30: maliyet sütunu olmayan eski şablon spec öncesiyle birebir aynı sonucu verir (sütunlar kaymaz, alan yazılmaz)", () => {
-    const coz = parcaSatirlariniCoz(ESKI_SATIRLAR, MEVCUT_PARCALAR, 1000, BUGUN);
+    // Spec 0124 ile (R10): dönüşe `icerikYazilanlar` girdi; eski on sütunlu dosyada 0 ve öteki alanlar altınla birebir.
+    const { icerikYazilanlar, ...coz } = parcaSatirlariniCoz(ESKI_SATIRLAR, MEVCUT_PARCALAR, 1000, BUGUN);
+    expect(icerikYazilanlar).toBe(0);
     expect(coz).toEqual(ONCE.coz);
     expect(coz.parts.every(p => !("maliyet" in p))).toBe(true);
     const uygulanan = parcaIceAktarmaUygula(MEVCUT_PARCALAR, coz.parts);
@@ -55,7 +58,9 @@ describe("Spec 0087: parça aktarması", () => {
   });
 
   it("Triyaj bulgu 2: tek noktalı ve 3+ haneli ondalıklı METİN maliyet belirsizdir, sessizce büyümez, alınmaz; diğer biçimler aynı", () => {
-    const sat = (m) => ["Kayış", "", "", "", "", "", "", "", "", m];
+    // Spec 0124 ile (R5/3, Karar 4): dosyada yinelenen ad artık atlanır; satırlar ayrı adlarla (iddia maliyet çözümü, aynı).
+    let no = 0;
+    const sat = (m) => [`Kayış ${++no}`, "", "", "", "", "", "", "", "", m];
     const coz = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, sat("48.5333"), sat("7.505"), sat("7.50"), sat("1.234,56"), sat("1.234.567"), sat(48.5333)], MEVCUT_PARCALAR, 4000, BUGUN);
     const b = "Maliyet belirsiz (nokta binlik mi ondalık mı anlaşılmıyor; ör. 1234,56 yazın), alınmadı.";
     expect(coz.errors).toEqual([`Satır 2: ${b}`, `Satır 3: ${b}`]);

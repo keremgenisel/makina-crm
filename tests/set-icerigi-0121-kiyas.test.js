@@ -49,7 +49,8 @@ const PARCALAR_HEPSI = [...ICERIKSIZ, SET];
 
 const simdi = () => JSON.parse(JSON.stringify({
   zincir: ICERIKSIZ.map(p => ({ k: parcaMaliyetKurus(p), t: parcaMaliyetKurus(p, "2026-02-01"), v: maliyetGirildiMi(p), m: parcaMaliyetMetni(p), kay: maliyetKaynagi(p) })),
-  disaAktarma: ICERIKSIZ.map(parcaDisaAktarmaSatiri),
+  // Spec 0124 ile (C4, Karar 1): on birinci hücre (set içeriği) eklendi; altın yenilenmez, ilk on hücre karşılaştırılır.
+  disaAktarma: ICERIKSIZ.map(p => parcaDisaAktarmaSatiri(p).slice(0, 10)),
   modeller: modelMaliyetleri(MODELLER, 12345),
   rapor: hesaplaAylikRapor(VERI, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } }),
   analiz: hesaplaAnaliz({ ...VERI, parts: PARCALAR_HEPSI }, {}),

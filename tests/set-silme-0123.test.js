@@ -150,7 +150,8 @@ describe("Spec 0123: kaynak taramaları", () => {
   it("AC-13 / AC-28 / AC-29 / AC-33: şema, izin, sunucu, birleştirme, stok, yedek, içe aktarma ve 0130 dosyaları yeni adları içermez", () => {
     for (const f of ["electron/db.cjs", "electron/serverAuth.cjs", "electron/server.cjs", "src/lib/merge.js", "src/components/settings/serverPermissionDefs.js",
       "src/lib/setUretimi.js", "src/components/stock/SetParcalaPenceresi.jsx", "src/lib/stokHareketi.js", "src/components/settings/SettingsImport.jsx",
-      "src/components/settings/SettingsBackup.jsx", "src/lib/parcaAktarma.js", "src/hooks/useSimpleDefList.js"])
+      // Spec 0124 ile (C6, Karar 2): parcaAktarma.js ters yön denetimi için setteGecenParcalar haritasını kullanır, listeden çıktı.
+      "src/components/settings/SettingsBackup.jsx", "src/hooks/useSimpleDefList.js"])
       expect(ham(f), f).not.toMatch(/setteGecenParca|parcaKullanim|SETTE_PARCA|setKullanimAdlari/);
   });
   it("AC-27 / R4/5: ret iz yazmaz ve kilit almaz", () => {

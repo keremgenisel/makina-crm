@@ -5,6 +5,7 @@ import { Icon, Btn, Modal } from "../ui";
 import { KartBolum } from "../tasarim";
 import { downloadCSV, IMPORT_HEADERS } from "./csvUtils";
 import { PARCA_AKTARMA_BASLIKLARI, PARCA_SABLON_ORNEGI, parcaSatirlariniCoz, parcaIceAktarmaUygula } from "../../lib/parcaAktarma";
+import { SET_ICERIGI_BASLIGI, SET_ICERIGI_BICIMI, icerikYazilacakMetni, icerikYazildiMetni } from "../../lib/urunAgaci";
 
 
 export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts, partTypeDefs = [], setPartTypeDefs = null }) => {
@@ -278,7 +279,8 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
       }
     }
     setParts(p => parcaIceAktarmaUygula(p, impParts));
-    flash("ok", `${partsImportPreview.yeniler} yeni parça eklendi, ${partsImportPreview.guncellenenler} parça güncellendi.`);
+    // Spec 0124 R10 (Karar 10): önizlemeyle aynı rakam.
+    flash("ok", `${partsImportPreview.yeniler} yeni parça eklendi, ${partsImportPreview.guncellenenler} parça güncellendi.${icerikYazildiMetni(partsImportPreview.icerikYazilanlar)}`);
     setPartsImportPreview(null);
   };
 
@@ -398,7 +400,9 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
           <FileUploadBtn onFile={handlePartsFile} />
         </div>
         <div style={{ background: "var(--ambBg, #fffbeb)", border: "1px solid var(--ambBr, #fde68a)", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "var(--amb800, #92400e)", lineHeight: 1.6 }}>
-          <b>Sütunlar:</b> Yedek Parça Adı (TR) · Adı (EN) · Kod · Tip ({(partTypeDefs.length ? partTypeDefs.map(t => t.ad) : ["Standart"]).join("/")}) · Tanım (TR) · Tanım (EN) · Fiyat (TL) · Fiyat (USD) · Fiyat (EUR)
+          {/* Spec 0124 R10/2 (Karar 11): sütunlar başlık dizisinden türer (elle sayım yok); Tip tanımlı tipleri, Set İçeriği biçimi yazar. */}
+          <b>Sütunlar:</b> <span data-testid="parca-sutunlari">{PARCA_AKTARMA_BASLIKLARI.map(h => (h === "Tip" ? `Tip (${(partTypeDefs.length ? partTypeDefs.map(t => t.ad) : ["Standart"]).join("/")})` : h)).join(" · ")}</span>
+          <div data-testid="set-icerigi-bicimi" style={{ marginTop: 4 }}>{SET_ICERIGI_BASLIGI}: <code>{SET_ICERIGI_BICIMI}</code></div>
           <div style={{ marginTop: 4, opacity: .85 }}>Tanımlı olmayan bir tip yazarsanız otomatik olarak yeni parça tipi oluşturulur.</div>
         </div>
       </KartBolum>
@@ -409,6 +413,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
             Toplam <b>{partsImportPreview.parts.length}</b> kayıt bulundu:
             <b style={{ color: "var(--grn600, #16a34a)" }}> {partsImportPreview.yeniler} yeni</b> eklenecek,
             <b style={{ color: "var(--cyan, #0891b2)" }}> {partsImportPreview.guncellenenler} mevcut</b> güncellenecek.
+            {partsImportPreview.icerikYazilanlar > 0 && <span data-testid="icerik-yazilacak"> {icerikYazilacakMetni(partsImportPreview.icerikYazilanlar)}</span>}
             {/* Triyaj (spec 0096 bulgu 1): bildirimlerin çoğunda satırın öbür alanları alınır; "atlandı" değil "uyarı". */}
             {partsImportPreview.errors.length > 0 && <span style={{ color: "var(--red600, #dc2626)" }}> · {partsImportPreview.errors.length} uyarı.</span>}
           </div>

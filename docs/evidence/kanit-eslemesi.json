@@ -5775,6 +5775,12 @@
         "rapor": "docs/evidence/0068-taban-piksel-raporu.json",
         "ekran": "ayarlar-import",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0124-piksel-raporu.json",
+        "ekran": "ayarlar-import",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0124 R10/2"
       }
     ],
     "src/components/settings/SettingsKdv.jsx": [

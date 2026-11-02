@@ -449,9 +449,12 @@ export const setteBirakilanEki = (n) => (n > 0 ? ` Sette bileşen olan ${n} yede
 export const setIcerigiFormu = (kayit = []) => (kayit || []).map(r => ({ partId: r?.partId == null ? "" : String(r.partId), miktar: r?.miktar == null ? "" : String(r.miktar) }));
 // R3, R4, R5, R5/2, R7: TEK doğrulayıcı. Parçası ve adedi boş satır atılır; boş içerik kayda yazılmaz (`kayit` boş).
 // `parts` CANLI katalog (iç içe denetimi ve iki yönlü yasak için). Dönüş `{ kayit, hatalar: {i: metin}, genel, gecerli }`.
-export const setIcerigiDogrula = (satirlar = [], { kendiId = null, parts = [] } = {}) => {
+// Spec 0124 C6 (Karar 2, 22): içe aktarma çağırırken iki hazır harita geçirir (0096/0123 deseni): `harita` canlı kimlik haritası
+// (`setKatalogu`), `setteGecen` `setteGecenParcalar` sonucu. Verilmezse bugünkü yol aynen; verilince satır başına katalog
+// gezilmez, ters yönün set adları yalnız ret çıkan satırda okunur.
+export const setIcerigiDogrula = (satirlar = [], { kendiId = null, parts = [], harita: hazirHarita = null, setteGecen = null, icerenAdlari = null } = {}) => {
   const kayit = []; const hatalar = {}; const gorulen = new Set();
-  const harita = new Map((parts || []).filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
+  const harita = hazirHarita || new Map((parts || []).filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
   (satirlar || []).forEach((s, i) => {
     const pid = s?.partId == null ? "" : String(s.partId).trim();
     const m = kitAdediDogrula(s?.miktar);
@@ -465,10 +468,59 @@ export const setIcerigiDogrula = (satirlar = [], { kendiId = null, parts = [] } 
     gorulen.add(pid);
     kayit.push({ partId: /^\d+$/.test(pid) ? Number(pid) : pid, miktar: m.deger });
   });
-  const icerenler = kayit.length && kendiId != null ? parcayiIcerenSetler(kendiId, parts) : [];
+  const tersYon = kayit.length && kendiId != null && (!setteGecen || (setteGecen.get(String(kendiId))?.set || 0) > 0);
+  const icerenler = tersYon ? (icerenAdlari ? icerenAdlari(kendiId) : parcayiIcerenSetler(kendiId, parts)) : [];
   const genel = icerenler.length ? setBileseniHatasi(icerenler) : null;
   return { kayit, hatalar, genel, gecerli: !Object.keys(hatalar).length && !genel };
 };
+// ── Spec 0124: parça şablonunda set içeriği sütunu ──────────────────────────────────────────────────────────────────────────
+// R2, R3, C2 (Karar 16, 18, 21): yazıcı ve çözücü aynı yerde. Biçim `AD x ADET; AD x ADET`; yazıcı her zaman `x` yazar, adı
+// canlı katalogdan çözer (ad kopyalanmaz), çözülemeyen bileşen parantezli tek yer tutucuyla. Katalog verilmezse hücre boş (R3/3).
+export const SET_ICERIGI_BASLIGI = "Set İçeriği";
+export const SET_ICERIGI_BICIMI = "Bileşen Adı x Adet; Bileşen Adı x Adet";
+export const SET_ICERIGI_ORNEGI = "Örnek Bileşen x 2; Başka Bileşen x 1";
+export const SET_ICERIGI_YER_TUTUCU = `(${LISTEDE_OLMAYAN_PARCA})`;
+export const SET_BILESEN_BULUNAMADI = "Bileşen katalogda ve dosyada bulunamadı.";
+export const setIcerigiHucresi = (p, katalog) => {
+  if (typeof katalog?.get !== "function") return ""; // katalog yok ya da `.map(parcaDisaAktarmaSatiri)` dizi indeksi geçirdi
+  return setIcerigiOf(p).map(r => `${katalog.get(String(r.partId))?.ad ?? SET_ICERIGI_YER_TUTUCU} x ${r.miktar}`).join("; ");
+};
+// R2/2 (Karar 18): hücreyi parçalara böler (boş parçalar atlanır); ad çözümü ad bulucuyla yapılır: parçanın TAMAMI ad olarak
+// aranır (adet 1), bulunmazsa SON ayraçta (`x`, `X`, `*`, `×`) bölünür. Ölçüyle biten adlar ("…30x55x13") böylece doğru okunur.
+export const setIcerigiHucresiParcala = (metin) => String(metin ?? "").split(";").map(x => x.trim()).filter(Boolean);
+const SON_AYRAC = /^(.*\S)\s*[xX*×]\s*(\S+)$/;
+export const setIcerigiParcasiCoz = (parca, adBul) => {
+  const tam = adBul(parca);
+  if (tam != null) return { ad: parca, metin: parca, id: tam, adetHam: "1" };
+  const m = SON_AYRAC.exec(parca);
+  if (!m) return { ad: parca, metin: parca, id: null, adetHam: "1" };
+  const ad = m[1].trim();
+  // Triyaj (bulgu 2): `metin` kullanıcının yazdığı parçadır; "bulunamadı" bildirimi onu gösterir (bölünmüş sol taraf değil).
+  return { ad, metin: parca, id: adBul(ad) ?? null, adetHam: m[2] };
+};
+// R10 (Karar 10, 20): içeriği yazılan parça sayısı; önizleme ve kaydetme bildirimi aynı rakamı yazar, sıfırda hiç yazılmaz.
+export const icerikYazilacakMetni = (n) => (n > 0 ? `${n} parçanın set içeriği yazılacak.` : "");
+export const icerikYazildiMetni = (n) => (n > 0 ? ` ${n} parçanın set içeriği yazıldı.` : "");
+// Spec 0124 triyaj (bulgu 1): `parcayiIcerenSetler`'in haritalı kardeşi; bütün kataloğun "bu parçayı içeren canlı setlerin adları"
+// tek geçişte (kendisi hariç, aynı setin yinelenen satırı bir kez). Doğrulamanın `icerenAdlari` seçeneğine verilir.
+export const icerenSetAdlariHaritasi = (parts = []) => {
+  const m = new Map();
+  for (const p of parts || []) {
+    if (!p || p.deletedAt) continue;
+    const gorulen = new Set();
+    for (const r of setIcerigiOf(p)) {
+      const id = String(r.partId);
+      if (id === String(p.id) || gorulen.has(id)) continue;
+      gorulen.add(id);
+      if (!m.has(id)) m.set(id, []);
+      m.get(id).push(p.ad);
+    }
+  }
+  return m;
+};
+// R6/3 (Karar 7): dosya satırı başına tek bildirim.
+export const setIcerigiExcelHatasi = (satirNo, neden, ad = null, kalan = 0) =>
+  `Satır ${satirNo}: Set içeriği alınmadı: ${String(neden).replace(/\.$/, "")}${ad ? ` (${ad})` : ""}${kalan > 0 ? ` ve ${kalan} bileşen daha` : ""}.`;
 // R26/2, Karar 47: seçimden sonraki salt okunur satır (servis formu sepeti, yedek parça formu). `null` = set değil.
 export const setIcerikSatiri = (p, canliParts = []) => {
   const ic = setIcerigiOf(p);

@@ -24,7 +24,8 @@ const MODELLER = {
   parts: PARCALAR,
 };
 const simdi = () => JSON.parse(JSON.stringify({
-  disaAktarma: PARCALAR.map(parcaDisaAktarmaSatiri),
+  // Spec 0124 ile (C4, Karar 1): on birinci hücre (set içeriği) eklendi; altın yenilenmez, ilk on hücre karşılaştırılır.
+  disaAktarma: PARCALAR.map(p => parcaDisaAktarmaSatiri(p).slice(0, 10)),
   girildiMi: PARCALAR.map(p => maliyetGirildiMi(p)),
   modeller: modelMaliyetleri(MODELLER, 12345),
 }));

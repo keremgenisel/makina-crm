@@ -30,14 +30,16 @@ const canli = PARCALAR.filter(p => !p.deletedAt);
 // İçe aktarma: bugünkü değerleri aynen yazan dosya (dışa aktarmanın kendisi) + yeni bir parça.
 const satirlar = [PARCA_AKTARMA_BASLIKLARI, ...canli.map(parcaDisaAktarmaSatiri), ["Yeni parça", "", "", "", "", "", "", "", "", "15"]];
 const simdi = () => JSON.parse(JSON.stringify({
-  disaAktarma: PARCALAR.map(parcaDisaAktarmaSatiri),
+  // Spec 0124 ile (C4, Karar 1): on birinci hücre (set içeriği) eklendi; altın yenilenmez, ilk on hücre karşılaştırılır.
+  disaAktarma: PARCALAR.map(p => parcaDisaAktarmaSatiri(p).slice(0, 10)),
   listeHucresi: PARCALAR.map(parcaMaliyetMetni),
   kurus: PARCALAR.map(p => parcaMaliyetKurus(p)),
   girildiMi: PARCALAR.map(p => maliyetGirildiMi(p)),
   sayac: canli.filter(p => !maliyetGirildiMi(p)).length,
   modeller: modelMaliyetleri(MODELLER, 12345),
   modellerSecenekli: modelMaliyetleri(MODELLER, 12345, { uretimdeDisi: ["OZEL"], uretim: { modelAdetleri: { ak100: 3 } } }),
-  iceAktarma: parcaSatirlariniCoz(satirlar, PARCALAR, 1000, "2026-10-20"),
+  // Spec 0124 ile (R10): dönüşe `icerikYazilanlar` girdi (içeriksiz veride 0); altınla eski alanlar karşılaştırılır.
+  iceAktarma: (({ icerikYazilanlar, ...eski }) => (icerikYazilanlar === 0 ? eski : { icerikYazilanlar, ...eski }))(parcaSatirlariniCoz(satirlar, PARCALAR, 1000, "2026-10-20")),
 }));
 
 describe("Spec 0097: geçmişi olmayan veride tarihsiz çağıranlar spec öncesiyle aynı", () => {
