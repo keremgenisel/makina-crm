@@ -82,7 +82,8 @@ describe("Spec 0120 kaynak taramaları", () => {
     for (const m of [KALIP_ISI_BAYRAGI, TUM_PARCALAR, PARCA_SUZGEC_IBARESI, PARCA_SUZGEC_NEDENI]) expect(SFK.includes(m), m).toBe(false);
     const kok = ["src", "electron", "scripts"];
     const dosyalar = kok.flatMap(d => readdirSync(d, { recursive: true }).map(f => path.join(d, f))).filter(f => /\.(m?js|jsx|cjs)$/.test(f) && !f.includes(`${path.sep}map${path.sep}`));
-    const cumleKaynak = (c) => c.replace(/"/g, "\\\"");
+    // Kaynakta çift tırnaklı dize içinde yazılmış hâli: önce ters eğik çizgi, sonra tırnak kaçışlanır (kod tarama #52).
+    const cumleKaynak = (c) => c.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
     for (const c of [PARCA_SUZGEC_IBARESI, PARCA_SUZGEC_NEDENI]) {
       const bulunan = dosyalar.filter(f => { const t = oku(f); return t.includes(c) || t.includes(cumleKaynak(c)); });
       expect(bulunan, c).toEqual([path.join("src", "lib", "kalipTamiri.js")]);
