@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-02; plan `specs/0123-uygulama-plani.md`, plan turu Karar 34–42, uygulama Karar 43–45, triyaj Karar 46–47). Kökeni: 2026-11-02, QA boşluk analizi iki tur 2026-11-02, 21 + 12 bulgu işlendi (ikinci tur spec 0130 yayınlandıktan sonra, yeni kod zemininde) |
+| **Durum** | Tamamlandı (2026-11-02; QA turları Karar 1–33, plan turu Karar 34–42, uygulamada Karar 43–45, triyaj Karar 46–47; uygulama commit `4c5ea0c`; plan `specs/done/0123-uygulama-plani.md`). Kökeni: 2026-11-02, QA boşluk analizi iki tur 2026-11-02, 21 + 12 bulgu işlendi (ikinci tur spec 0130 yayınlandıktan sonra, yeni kod zemininde) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/lib/urunAgaci.js` (iki yeni saf yardımcı, kapı yüklemi, kullanım cümlesi ve neden metni; `adListesi` dışa verilir), `src/components/PartManager.jsx` (silme onayının metni ve kullanım satırı), `src/components/settings/SettingsTrash.jsx` (parçanın Kalıcı Sil'i ve "çöpü boşalt"; `urunAgaci`'yı ilk kez içe alır), `src/App.jsx` (otuz günlük temizliğin `koru` parametresi; `urunAgaci`'yı ilk kez içe alır). **Test:** yeni `tests/set-silme-0123.test.js` ve `tests/ui/set-silme-0123.test.jsx`. **Belge:** `CLAUDE.md`, `specs/README.md`. Veri şeması, göç, izin tanımları, sunucu kuralları, birleştirme, yazdırma, dışa aktarma, içe aktarma, stok hareketleri ve yedekten geri yükleme dokunulmaz; stok tarafında **`src/lib/setUretimi.js` ile `src/components/stock/SetParcalaPenceresi.jsx` de dokunulmayanlar arasındadır** (0130'un parçalama süzgeci değişmez, X10). `parcayiIcerenSetler` ile `parcaKitAdetleri` gövdeleri aynen kalır (ölçüm 17, ölçüm 18). |
@@ -345,10 +345,15 @@ Takım Yöneticisi planın bütün önerilerini 2026-11-02'de onayladı (plan `s
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `4c5ea0c` | Dal `feat/0123-set-silme`, taban `9ecb2ed`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | İki QA turu (21 + 12 bulgu, Karar 1–33), plan turu (Karar 34–42), uygulama (Karar 43–45) |
+| **Düzeltme turu sayısı** | 1 | Triyaj (Karar 46–47): "çöpü boşalt" bildirimi bırakılanı sayar, yinelenen içerik satırı testi, taban raporu |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Üçüncü bulgu kapanış adımıydı, kod kusuru değil |
+| **Regresyon sayısı** | 0 | Tam takım 457 dosya, 6299 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** R9'un beş rakamı 01.11 yedeğiyle doğrulandı; ölçüm yolu düzeltildi (Karar 34). R1/7 ile Karar 26 çelişiyordu (Karar 35). Çöpteki setin eki var olan `SILINMIS_PARCA` sabitinden (Karar 36). Spec 0096'yı "birebir" emsal sayıyordu, ama 0096'da korunan tedarikçinin Kalıcı Sil düğmesi gizleniyor; spec'in açık kararı uygulandı, parçada düğme kalır (Karar 43). Ters çevrilen kriter yok; 0108'in eşleme testi bir ekranın kayıtlarını kendi taban raporuna bağladığı için o ekran yalnız ölçüldü (Karar 44). Mutasyon ölçümü: uygulamada altı, triyajda iki bozma; hepsi test kırdı.
+
+**Görsel kanıt:** 10 ekran × 2 tema; var olan sekiz ekran 0 piksel, iki yeni ekran (kullanım satırlı onay, nedeni yazılı Çöp Kutusu satırı). Taban son kodla 20 görüntüde 0 fark; iki `degisti` kaydı kapanışta `ayni` ve taban raporuna çevrildi.
+
+**Bu spec'ten çıkarılan ders:** bir spec bir emsali "birebir" diye anıyorsa emsalin gerçek davranışı kodla ölçülmeli; yazılı emsal ile kodun emsali ayrışabiliyor ve fark ancak uygulamada görünüyor. İkinci ders: "sayı ile sonuç tutsun" kuralı onay penceresinin verdiği sözden bildirime kadar izlenmeli; korunan kayıtları sessizce bırakan bir süpürme, onayın söylediği sayıyı yalanlar.

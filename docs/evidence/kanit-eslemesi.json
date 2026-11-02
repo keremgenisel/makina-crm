@@ -5970,10 +5970,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "rapor": "docs/evidence/0123-taban-piksel-raporu.json",
         "ekran": "ayarlar-trash-0123",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0123 R4/3"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -7849,10 +7848,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0123-piksel-raporu.json",
+        "rapor": "docs/evidence/0123-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0123-sil",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-02 · spec 0123 R3/4"
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartTypeManager.jsx": [

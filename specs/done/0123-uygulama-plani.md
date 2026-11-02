@@ -1,6 +1,6 @@
 # 0123 uygulama planı — Sette ve kitte geçen parça silinirken koruma
 
-Spec: `specs/0123-set-bileseni-silme-korumasi.md` (plan turu Karar 34–42, uygulama Karar 43–45). Dal `feat/0123-set-silme`, taban
+Spec: `specs/done/0123-set-bileseni-silme-korumasi.md` (plan turu Karar 34–42, uygulama Karar 43–45). Dal `feat/0123-set-silme`, taban
 `9ecb2ed`. Salt koruma işi: yeni kalıcı alan, veri bölümü, izin, sunucu ya da birleştirme kuralı yok.
 
 ## 1. Dosyalar
