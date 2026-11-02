@@ -1,0 +1,226 @@
+[
+  {
+    "ad": "parca-stok-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parça tükendi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-parca-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-bos-parca-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-hareketleri-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-hareketleri-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-tutarlilik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)",
+      "KarşılaştırılmadıBu parçalarda aynı gün hem sayım düzeltmesi hem başka",
+      "Rapor neyi söyleyemezSapmanın sebebi kesin bilinemez: hiç kaydedilmemi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-tutarlilik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)",
+      "KarşılaştırılmadıBu parçalarda aynı gün hem sayım düzeltmesi hem başka",
+      "Rapor neyi söyleyemezSapmanın sebebi kesin bilinemez: hiç kaydedilmemi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-tutarli-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Sapma yokKarşılaştırılan 1 parçanın saklı adedi stok hareketleriyle tu",
+      "Rapor neyi söyleyemezSapmanın sebebi kesin bilinemez: hiç kaydedilmemi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-tutarli-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Sapma yokKarşılaştırılan 1 parçanın saklı adedi stok hareketleriyle tu",
+      "Rapor neyi söyleyemezSapmanın sebebi kesin bilinemez: hiç kaydedilmemi"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-parca-uyari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-parca-uyari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-set-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 35733
+  },
+  {
+    "ad": "parca-stok-0121-set-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 35711
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 8346
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 8409
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-eksik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)",
+      "Stokta yetmeyen bileşenler: Mahruti dişli, Rulman 6204. Set yine hazır"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-eksik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)",
+      "Stokta yetmeyen bileşenler: Mahruti dişli, Rulman 6204. Set yine hazır"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-hareket-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 11286
+  },
+  {
+    "ad": "parca-stok-0121-hareket-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 11348
+  },
+  {
+    "ad": "parca-stok-0130-parcala-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0130-parcala-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0130-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0130-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kilit-set-parcala-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kilit-set-parcala-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0130-hareket-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "parca-stok-0130-hareket-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "fark": "önce görüntüsü yok"
+  }
+]

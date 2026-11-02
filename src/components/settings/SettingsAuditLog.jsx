@@ -23,6 +23,7 @@ const ACTION_LABELS = {
   kalip_cek_tahsil_edildi: "Kalıp Çeki Tahsil Edildi", kalip_cek_tahsil_iptal: "Kalıp Çeki Tahsil İptal",
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
   set_hazirlandi: "Set Hazırlandı", set_geri_alindi: "Set Hazırlama Geri Alındı", // spec 0121 R30/2
+  set_parcalandi: "Set Parçalandı", set_parcalama_geri_alindi: "Set Parçalama Geri Alındı", // spec 0130 R19
   temizlendi: "Temizlendi", geri_alindi: "Geri Alındı",
   // Servis ve Kargo Panosu + yedek parça satışı işlemleri
   durum_degisti: "Durum Değişti", teknisyen_degisti: "Teknisyen Değişti", sorumlu_degisti: "Kargo Sorumlusu Değişti", kalip_sorumlu_degisti: "Kalıp Sorumlusu Değişti", // spec 0119 R11/2

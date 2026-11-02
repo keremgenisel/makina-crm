@@ -15,7 +15,7 @@ export const KILIT_ALANLARI = {
   yedek_parca: { etiket: "Yedek parça satışı", pencereler: ["src/components/stock/YedekParcaSatisTab.jsx", "src/components/customers/CustomerDetailModal.jsx", "src/components/ServisPanosu.jsx", "src/components/KargoPanosu.jsx"] },
   part_sale: { etiket: "Extra Kalıp satışı", pencereler: ["src/components/ServisPanosu.jsx"] },
   // Spec 0121 R29/2, C12, Karar 41: Set Hazırla penceresi aynı kilidi setin kimliğiyle alır; hareket penceresinin "Geri Al"ı ona anlık bakar.
-  partstock: { etiket: "Parça stoğu", pencereler: ["src/components/stock/PartStokTab.jsx", "src/components/stock/SetHazirlaPenceresi.jsx", "src/components/stock/StokHareketleriPenceresi.jsx"] },
+  partstock: { etiket: "Parça stoğu", pencereler: ["src/components/stock/PartStokTab.jsx", "src/components/stock/SetHazirlaPenceresi.jsx", "src/components/stock/SetParcalaPenceresi.jsx", "src/components/stock/StokHareketleriPenceresi.jsx"] },
   stock: { etiket: "Makina stoğu", pencereler: ["src/components/stock/MakinaStokTab.jsx"] },
   "stok-seri": { etiket: "Stok seri numarası", pencereler: ["src/components/customers/CustomerAddEditForm.jsx"] },
   uretim_formu: { etiket: "Üretim formu", pencereler: ["src/components/stock/UretimFormu.jsx", "src/components/ServisPanosu.jsx"] }, // spec 0115 R27/4

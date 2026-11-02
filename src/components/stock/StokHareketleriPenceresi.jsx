@@ -5,7 +5,8 @@ import { logAction } from "../../lib/audit";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { useBugun } from "../../hooks/useBugun";
-import { setGeriAlPlani, hazirlamaGeriAlindiMi, setHareketleriniUygula, SET_GIRIS_TIPI, GERI_AL_DUGMESI, GERI_ALINDI_IBARESI } from "../../lib/setUretimi";
+import { setGeriAlPlani, hazirlamaGeriAlindiMi, setHareketleriniUygula, SET_GIRIS_TIPI, GERI_AL_DUGMESI, GERI_ALINDI_IBARESI,
+  setParcalaGeriAlPlani, parcalamaGeriAlindiMi, SET_CIKIS_TIPI } from "../../lib/setUretimi";
 import { Btn, Modal } from "../ui";
 import { KartBolum, BosDurum, Ipucu, UyariSeridi } from "../tasarim";
 
@@ -36,6 +37,18 @@ export const StokHareketleriPenceresi = ({ part, partStockLog = [], onClose, par
     setHareketleriniUygula(setPartStock, setPartStockLog, plan.hareketler);
     logAction({ serverPermissions, action: "set_geri_alindi", entity: "stok_parca", entityId: Number(part.id), entityName: part.ad, detail: { adet: Math.abs(Number(l.miktar) || 0) } });
     showToast("Set hazırlama geri alındı.");
+  };
+  // Spec 0130 R10–R13, R17, R19 (Karar 5): parçalamanın geri alınması; düğme yalnız setin kendi `set_parcalama` satırında.
+  const parcalamaGeriAl = (l) => {
+    const kilit = baskasiKilitli("partstock", String(part.id));
+    if (kilit) { showToast(kilitRedMesaji(kilit), "err"); return; }
+    const plan = setParcalaGeriAlPlani({ islemId: l.referansId, partStock, partStockLog, tarih: bugun });
+    if (plan.etkisiz) return;
+    if (!plan.ok) { setHata(plan.hata); return; }
+    setHata(null);
+    setHareketleriniUygula(setPartStock, setPartStockLog, plan.hareketler);
+    logAction({ serverPermissions, action: "set_parcalama_geri_alindi", entity: "stok_parca", entityId: Number(part.id), entityName: part.ad, detail: { adet: Math.abs(Number(l.miktar) || 0) } });
+    showToast("Set parçalama geri alındı.");
   };
   const satirlar = (partStockLog || [])
     .map((l, i) => ({ l, i }))
@@ -71,6 +84,9 @@ export const StokHareketleriPenceresi = ({ part, partStockLog = [], onClose, par
                       {l.tip === SET_GIRIS_TIPI && (hazirlamaGeriAlindiMi(partStockLog, l.referansId)
                         ? <span data-testid="set-geri-alindi" style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{GERI_ALINDI_IBARESI}</span>
                         : geriAlabilir && <Btn small variant="ghost" onClick={() => geriAl(l)} testId="set-geri-al">{GERI_AL_DUGMESI}</Btn>)}
+                      {l.tip === SET_CIKIS_TIPI && (parcalamaGeriAlindiMi(partStockLog, l.referansId)
+                        ? <span data-testid="parcalama-geri-alindi" style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>{GERI_ALINDI_IBARESI}</span>
+                        : geriAlabilir && <Btn small variant="ghost" onClick={() => parcalamaGeriAl(l)} testId="parcalama-geri-al">{GERI_AL_DUGMESI}</Btn>)}
                     </td>
                   </tr>
                 ))}

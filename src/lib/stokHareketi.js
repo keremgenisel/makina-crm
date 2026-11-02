@@ -9,10 +9,13 @@ import { uid, mergeAndUpdate, totalMiktar } from "./utils";
 
 // R14: her düşüm tipinin karşı hareketi. referansId ve partId aslıyla aynı, miktar pozitif.
 // Spec 0121 R1/3, Karar 40: set hazırlamanın bileşen düşümü (`set_uretimi`) de bir düşüm tipidir ve karşısı burada.
-export const IADE_TIPI = { servis: "servis_iade", bayi_satis: "bayi_satis_iade", satis: "satis_iade", makina_uretimi: "makina_uretimi_iade", set_uretimi: "set_uretimi_iade" };
+// Spec 0130 C3, Karar 1: setin parçalanmasında SETİN ÇIKIŞI (`set_parcalama`, eksi) bir düşümdür ve karşısı da burada.
+export const IADE_TIPI = { servis: "servis_iade", bayi_satis: "bayi_satis_iade", satis: "satis_iade", makina_uretimi: "makina_uretimi_iade", set_uretimi: "set_uretimi_iade",
+  set_parcalama: "set_parcalama_iade" };
 // Spec 0121 R21/2, Karar 40: GİRİŞ tiplerinin karşı hareketi (miktarı negatif). Setin kendi stoğuna girişi düşüm değildir;
 // `IADE_TIPI`'ne konsaydı `netDusumleri`'nin `Math.abs`'ı girişi düşüm sayar, `karsiHareketler` pozitif iptal yazardı.
-export const IPTAL_TIPI = { set_girisi: "set_girisi_iptal" };
+// Spec 0130 C3, Karar 1: parçalamada BİLEŞENİN stoğa girişi (`parcalama_girisi`, artı) bir giriştir, iptali burada.
+export const IPTAL_TIPI = { set_girisi: "set_girisi_iptal", parcalama_girisi: "parcalama_girisi_iptal" };
 export const MUTLAK_TIPLER = new Set(["manuel_duzelt"]);
 
 // R8: ekranda ve dışa aktarmada okunur ad.
@@ -25,6 +28,9 @@ export const HAREKET_TIP_AD = {
   // Spec 0121 R1/3: set hazırlama.
   set_uretimi: "Set hazırlandı (bileşen düşümü)", set_uretimi_iade: "Set hazırlama geri alındı (bileşen)",
   set_girisi: "Set hazırlandı", set_girisi_iptal: "Set hazırlama geri alındı",
+  // Spec 0130 R7, Karar 1: setin parçalanması (set satırı ve bileşen satırları ayırt edilir).
+  set_parcalama: "Set parçalandı", set_parcalama_iade: "Set parçalama geri alındı",
+  parcalama_girisi: "Set parçalandı (bileşen girişi)", parcalama_girisi_iptal: "Set parçalama geri alındı (bileşen)",
 };
 export const hareketTipAdi = (tip) => HAREKET_TIP_AD[tip] || tip || "";
 export const iadeMi = (tip) => Object.values(IADE_TIPI).includes(tip);

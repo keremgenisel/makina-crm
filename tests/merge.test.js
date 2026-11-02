@@ -590,4 +590,19 @@ describe("buildMergePlan: setin içeriği (spec 0121)", () => {
     expect(h.referansId).toBe(islem);
     expect(String(h.partId)).toBe(String(yeniP.id));
   });
+  // Spec 0130 C5 (triyaj bulgu 4): parçalamanın iki tipi de işlem kimliğini çevirmez, parça kimliği yeniden eşlenir.
+  it("Spec 0130 C5: parçalamanın setin çıkışı ve bileşen girişi satırlarında referansId çevrilmez, partId eşlenir", () => {
+    const set = uid(), bilesen = uid(), islem = uid();
+    const yerel = { parts: [{ id: set, ad: "Set P" }, { id: bilesen, ad: "Bileşen P" }], partStockLog: [
+      { id: uid(), partId: set, miktar: -1, tip: "set_parcalama", referansId: islem, tarih: "2026-11-01" },
+      { id: uid(), partId: bilesen, miktar: 2, tip: "parcalama_girisi", referansId: islem, tarih: "2026-11-01" },
+    ] };
+    const sunucu = { parts: [{ id: set, ad: "Başka 1" }, { id: bilesen, ad: "Başka 2" }], partStockLog: [] };
+    const plan = buildMergePlan(yerel, sunucu);
+    const yeniSet = plan.adds.parts.find(p => p.ad === "Set P"), yeniB = plan.adds.parts.find(p => p.ad === "Bileşen P");
+    const cikis = plan.adds.partStockLog.find(l => l.tip === "set_parcalama"), giris = plan.adds.partStockLog.find(l => l.tip === "parcalama_girisi");
+    expect([cikis.referansId, giris.referansId]).toEqual([islem, islem]);
+    expect(String(cikis.partId)).toBe(String(yeniSet.id));
+    expect(String(giris.partId)).toBe(String(yeniB.id));
+  });
 });

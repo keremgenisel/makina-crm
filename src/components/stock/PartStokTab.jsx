@@ -8,8 +8,9 @@ import { useLock } from "../../hooks/useLock";
 import { StokHareketleriPenceresi } from "./StokHareketleriPenceresi";
 import { StokTutarliligi } from "./StokTutarliligi";
 import { SetHazirlaPenceresi } from "./SetHazirlaPenceresi";
+import { SetParcalaPenceresi } from "./SetParcalaPenceresi";
 import { SetRozeti, setBilesenSayisi } from "./SetRozeti";
-import { SET_HAZIRLA_DUGMESI } from "../../lib/setUretimi";
+import { SET_HAZIRLA_DUGMESI, SET_PARCALA_DUGMESI } from "../../lib/setUretimi";
 
 const PER_PAGE = 15;
 
@@ -21,6 +22,7 @@ export const PartStokTab = ({ parts = [], rawParts = null, partStock = [], setPa
   // Spec 0121 R6/2, R14, R29/2: Set Hazırla penceresi ad çözümünü ham diziden yapar ve kendi `partstock` kilidini alır.
   const hamParts = Array.isArray(rawParts) && rawParts.length ? rawParts : parts; // verilmemiş ya da boş ham dizi canlıya düşer
   const [setHazirla, setSetHazirla] = useState(null);
+  const [setParcala, setSetParcala] = useState(null);
   const [hareketParca, setHareketParca] = useState(null);
   const [tutarlilikAcik, setTutarlilikAcik] = useState(false);
 
@@ -228,6 +230,8 @@ export const PartStokTab = ({ parts = [], rawParts = null, partStock = [], setPa
                       {canDoStock("stock_parca_edit") && <Btn small variant="ghost" onClick={() => openDuzelt({ part, stok, miktar })} style={{ fontSize: 11 }}>Düzelt</Btn>}
                       {/* Spec 0121 R14, R17, R24, R28/2: yalnız içeriği olan satırda ve "Stok miktarı düzelt" yetkisiyle. */}
                       {setBilesenSayisi(part) > 0 && canDoStock("stock_parca_edit") && <Btn small variant="ghost" onClick={() => setSetHazirla(part)} testId="set-hazirla-dugmesi">{SET_HAZIRLA_DUGMESI}</Btn>}
+                      {/* Spec 0130 R5, R14, R18: yalnız içeriği olan, stoğu sıfırdan büyük satırda ve "Stok miktarı düzelt" yetkisiyle. */}
+                      {setBilesenSayisi(part) > 0 && miktar > 0 && canDoStock("stock_parca_edit") && <Btn small variant="ghost" onClick={() => setSetParcala(part)} testId="set-parcala-dugmesi">{SET_PARCALA_DUGMESI}</Btn>}
                       <Btn small variant="ghost" onClick={() => setHareketParca(part)} style={{ fontSize: 11 }}>Hareketler</Btn>
                       {canDoStock("stock_parca_pin") && (
                         <Btn small variant={isPinned ? "primary" : "ghost"} onClick={() => togglePin(part.id)}
@@ -249,6 +253,8 @@ export const PartStokTab = ({ parts = [], rawParts = null, partStock = [], setPa
       {hareketParca && <StokHareketleriPenceresi part={hareketParca} partStockLog={partStockLog} onClose={() => setHareketParca(null)}
         partStock={partStock} setPartStock={setPartStock} setPartStockLog={setPartStockLog} canDoStock={canDoStock}
         aktifKullanici={aktifKullanici} showToast={showToast} serverPermissions={serverPermissions} />}
+      {setParcala && <SetParcalaPenceresi set={setParcala} hamParts={hamParts} partStock={partStock} setPartStock={setPartStock}
+        setPartStockLog={setPartStockLog} onClose={() => setSetParcala(null)} showToast={showToast} serverPermissions={serverPermissions} />}
       {setHazirla && <SetHazirlaPenceresi set={setHazirla} hamParts={hamParts} partStock={partStock} setPartStock={setPartStock}
         setPartStockLog={setPartStockLog} onClose={() => setSetHazirla(null)} showToast={showToast} serverPermissions={serverPermissions} />}
       {tutarlilikAcik && <StokTutarliligi parts={parts} partStock={partStock} partStockLog={partStockLog} onClose={() => setTutarlilikAcik(false)} />}

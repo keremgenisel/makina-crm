@@ -213,7 +213,7 @@ notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avansların
 
 **Örnek:** `src/components/Giderler.jsx:329`
 **Örnek:** `src/components/Kasa.jsx:573` (sayfa sonundaki şerit, spec 0083)
-**Örnek:** `src/components/stock/PartStokTab.jsx:148` (hata ailesi)
+**Örnek:** `src/components/stock/PartStokTab.jsx:149` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
 

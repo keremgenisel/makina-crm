@@ -125,7 +125,7 @@ if (ekran === "ayarlar-server-istemci") {
 // Spec 0064 R34: kilitli ekranlar. Görüntü aracı ikinci kullanıcıyı simüle edemez; kilit köprüsü sahte kurulur ve listelenen
 // alanlar (ayar panelinde panel kimliğiyle) başka kullanıcının ("ayse") elindedir. Yalnız "kilit-*" ekranlarında.
 if (ekran.startsWith("kilit-")) {
-  const KILITLI = { "kilit-toplu-yedek-parca": ["yedek_parca:9601"], "kilit-gider-formu": ["gider"], "kilit-odeme-penceresi": ["gider"], "kilit-katalog-paneli": ["ayar:models"], "kilit-cop-kutusu": ["ayar:trash"], "kilit-geri-yukleme": [] }[ekran] || [];
+  const KILITLI = { "kilit-toplu-yedek-parca": ["yedek_parca:9601"], "kilit-gider-formu": ["gider"], "kilit-odeme-penceresi": ["gider"], "kilit-katalog-paneli": ["ayar:models"], "kilit-cop-kutusu": ["ayar:trash"], "kilit-geri-yukleme": [], "kilit-set-parcala": ["partstock"] }[ekran] || [];
   const kilitli = (t, id) => KILITLI.includes(t) || KILITLI.includes(`${t}:${id}`);
   window.crmLocks = {
     acquire: async (t, id, force) => (kilitli(t, id) && !force ? { ok: false, lockedBy: "ayse", lockedAt: "2026-09-23T09:55:00" } : { ok: true }),
@@ -203,6 +203,21 @@ const LOG_0121 = [
   { id: 34, partId: "20", miktar: 2, tip: "set_girisi", referansId: 900, tarih: "2026-10-20", notlar: "Set hazırlandı · 2 adet · İş emri 42" },
   { id: 35, partId: "20", miktar: 1, tip: "set_girisi", referansId: 901, tarih: "2026-10-18", notlar: "Set hazırlandı · 1 adet · 3 bileşen stokta yoktu" },
   { id: 36, partId: "20", miktar: -1, tip: "set_girisi_iptal", referansId: 901, tarih: "2026-10-19", notlar: "Set hazırlama geri alındı" },
+];
+// Spec 0130: açık bir parçalama (1 adet) ve geri alınmış bir parçalama (1 adet) setin hareket listesinde.
+const LOG_0130 = [
+  { id: 41, partId: "20", miktar: -1, tip: "set_parcalama", referansId: 950, tarih: "2026-10-25", notlar: "Set parçalandı · 1 adet · yanlış hazırlandı" },
+  { id: 42, partId: "21", miktar: 2, tip: "parcalama_girisi", referansId: 950, tarih: "2026-10-25", notlar: "Set parçalandı · 1 adet" },
+  { id: 43, partId: "22", miktar: 1, tip: "parcalama_girisi", referansId: 950, tarih: "2026-10-25", notlar: "Set parçalandı · 1 adet" },
+  { id: 44, partId: "23", miktar: 4, tip: "parcalama_girisi", referansId: 950, tarih: "2026-10-25", notlar: "Set parçalandı · 1 adet" },
+  { id: 45, partId: "20", miktar: 1, tip: "set_parcalama_iade", referansId: 950, tarih: "2026-10-26", notlar: "Set parçalama geri alındı" },
+  { id: 46, partId: "21", miktar: -2, tip: "parcalama_girisi_iptal", referansId: 950, tarih: "2026-10-26", notlar: "Set parçalama geri alındı" },
+  { id: 47, partId: "22", miktar: -1, tip: "parcalama_girisi_iptal", referansId: 950, tarih: "2026-10-26", notlar: "Set parçalama geri alındı" },
+  { id: 48, partId: "23", miktar: -4, tip: "parcalama_girisi_iptal", referansId: 950, tarih: "2026-10-26", notlar: "Set parçalama geri alındı" },
+  { id: 49, partId: "20", miktar: -1, tip: "set_parcalama", referansId: 951, tarih: "2026-11-01", notlar: "Set parçalandı · 1 adet" },
+  { id: 50, partId: "21", miktar: 2, tip: "parcalama_girisi", referansId: 951, tarih: "2026-11-01", notlar: "Set parçalandı · 1 adet" },
+  { id: 51, partId: "22", miktar: 1, tip: "parcalama_girisi", referansId: 951, tarih: "2026-11-01", notlar: "Set parçalandı · 1 adet" },
+  { id: 52, partId: "23", miktar: 4, tip: "parcalama_girisi", referansId: 951, tarih: "2026-11-01", notlar: "Set parçalandı · 1 adet" },
 ];
 // Spec 0096: hammadde tedarikçileri (üçü işaretli) ve kırılımlı parçalar (tutarlı, tutarsız).
 const TED_0096 = [{ id: 31, ad: "Demir Çelik A.Ş.", hammadde: true }, { id: 32, ad: "Sac Ltd", hammadde: true }, { id: 33, ad: "Döküm Sanayi", hammadde: true }, ...TED];
@@ -958,6 +973,11 @@ const EKRANLAR = {
   "parca-stok-0121-hazirla": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121 }), ["dugme:Set Hazırla"]],
   "parca-stok-0121-hazirla-eksik": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121_EKSIK }), ["dugme:Set Hazırla"]],
   "parca-stok-0121-hareket": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121, partStockLog: LOG_0121 }), ["dugme:Hareketler"]],
+  // Spec 0130: parçalama penceresi, fazla adet hatası, kilit ekranı ve setin hareket listesi (açık ve geri alınmış parçalama).
+  "parca-stok-0130-parcala": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121 }), ["dugme:Seti Parçala", "doldur:Parçalanan adet=2"]],
+  "parca-stok-0130-hata": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121 }), ["dugme:Seti Parçala", "doldur:Parçalanan adet=9", "dugme:Seti Parçala"]],
+  "kilit-set-parcala": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121 }), ["dugme:Seti Parçala"]],
+  "parca-stok-0130-hareket": [stokBos("parca", { parts: PARCA_0121_BOS, partStock: STOK_0121, partStockLog: LOG_0130 }), ["dugme:Hareketler"]],
   "finans-bos": [<Finance customers={[]} services={[]} dealers={[]} partSales={[]} yedekParcaSatislar={[]} factory={{ name: "Altuntaş Makina" }} rates={{}}
     payments={[]} teklifler={[]} serverPermissions={null} />, []],
   "evrak-bos": [<EvrakEkrani />, []],

@@ -283,13 +283,14 @@ describe("Spec 0121 D: geri alma", () => {
     const g2 = setGeriAlPlani({ islemId: 555, partStock: stokuUygula(ps, stokEtkisi(g.hareketler)), partStockLog: log2, tarih: "2026-10-15" });
     expect(g2).toMatchObject({ ok: false, etkisiz: true, hareketler: [] });
   });
-  it("AC-25: hazırlanan set satılmışsa geri alma hiçbir hareket yazmaz ve nedeni söyler", () => {
+  it("AC-25: hazırlanan set satılmışsa (ya da parçalanmışsa) geri alma hiçbir hareket yazmaz ve nedeni söyler", () => {
     const { log, ps } = kur();
     const satildi = ps.map(s => (String(s.partId) === "10" ? { ...s, miktar: 1 } : s));
     const g = setGeriAlPlani({ islemId: 555, partStock: satildi, partStockLog: log, tarih: "2026-10-15" });
     expect(g).toMatchObject({ ok: false, etkisiz: false, hareketler: [] });
     expect(g.hata).toBe(geriAlRedMetni(1));
-    expect(g.hata).toMatch(/1 adedi satılmış ya da kullanılmış/);
+    // Spec 0130 ile (R20, Karar 3): sebep parçalama da olabilir; metin bunu ve çaresini söyler.
+    expect(g.hata).toMatch(/1 adedi satılmış, kullanılmış ya da parçalanmış; parçalandıysa önce parçalamayı geri alın/);
   });
   it("AC-61 / R18/3: içerik sonradan değişse de geri alma log'daki adetleri döndürür", () => {
     const { log, ps } = kur();
@@ -298,7 +299,8 @@ describe("Spec 0121 D: geri alma", () => {
   });
   it("AC-36 / AC-35: iki yeni motor fonksiyonu; tip adları ve haritalar", () => {
     expect(IADE_TIPI.set_uretimi).toBe("set_uretimi_iade");
-    expect(IPTAL_TIPI).toEqual({ set_girisi: "set_girisi_iptal" });
+    // Spec 0130 ile (Karar 2): parçalamanın bileşen girişi (`parcalama_girisi`) de bir giriştir, iptali bu haritada.
+    expect(IPTAL_TIPI).toEqual({ set_girisi: "set_girisi_iptal", parcalama_girisi: "parcalama_girisi_iptal" });
     expect(HAREKET_TIP_AD.set_uretimi).toBe("Set hazırlandı (bileşen düşümü)");
     expect(HAREKET_TIP_AD.set_uretimi_iade).toBe("Set hazırlama geri alındı (bileşen)");
     expect(HAREKET_TIP_AD.set_girisi).toBe("Set hazırlandı");
@@ -325,7 +327,8 @@ describe("Spec 0121 D: geri alma", () => {
     expect(casus).toMatch(/Spec 0121 ile/);
     const sh = oku("tests/stok-hareketi.test.js");
     expect(sh.match(/Spec 0121 ile/g)).toHaveLength(2);
-    expect(sh).toContain('"servis", "set_uretimi"]');
+    // Spec 0130 ile (Karar 12): `IADE_TIPI` listesine `set_parcalama` girdi; 0121'in ters çevirmesi (set_uretimi) yerinde.
+    expect(sh).toContain('"servis", "set_parcalama", "set_uretimi"]');
     expect(sh).toContain('"src/lib/setUretimi.js", "src/lib/stokHareketi.js"]');
   });
   it("AC-59: işlem kimliği birleştirmede çevrilmez (logBagHaritasi'nda yeni tipler yok)", () => {

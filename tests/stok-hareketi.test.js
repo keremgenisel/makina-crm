@@ -156,7 +156,8 @@ describe("Spec 0065 B: log yalnız büyür", () => {
     expect(karsiHareketler(log, 5, "servis", { tarih: "2026-10-01" })).toEqual([expect.objectContaining({ partId: "7", miktar: 2, tip: IADE_TIPI.servis, referansId: 5 })]);
     // Spec 0121 ile (R33, Karar 40): set hazırlamanın bileşen düşümü de bir düşüm tipidir; birebir eşitlik korunur. Setin girişi
     // düşüm değildir ve ayrı `IPTAL_TIPI` haritasındadır.
-    expect(Object.keys(IADE_TIPI).sort()).toEqual(["bayi_satis", "makina_uretimi", "satis", "servis", "set_uretimi"]);
+    // Spec 0130 ile (Karar 2): setin parçalanmasında setin çıkışı (`set_parcalama`) bir düşümdür, listeye girdi.
+    expect(Object.keys(IADE_TIPI).sort()).toEqual(["bayi_satis", "makina_uretimi", "satis", "servis", "set_parcalama", "set_uretimi"]);
     expect(hareketTipAdi("servis_iade")).toMatch(/geri alındı/);
   });
   it("AC-10: geri alma çakışmada kaybolmaz (karşı hareket ekleme olarak birleşir, adet geri döner)", () => {
