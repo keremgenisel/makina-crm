@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-02; plan `specs/0124-uygulama-plani.md`, plan turu Karar 18–25, uygulama Karar 26–31, triyaj Karar 32–36). Kökeni: 2026-11-02, QA boşluk analizi 2026-11-02, 17 bulgu işlendi |
+| **Durum** | Tamamlandı (2026-11-02; QA turu Karar 1–17, plan turu Karar 18–25, uygulamada Karar 26–31, triyaj Karar 32–36; uygulama commit `00e48fe`; plan `specs/done/0124-uygulama-plani.md`). Kökeni: 2026-11-02, QA boşluk analizi 2026-11-02, 17 bulgu işlendi |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/lib/parcaAktarma.js` (on birinci sütun, çözümleme ve doğrulama), `src/lib/urunAgaci.js` (biçim çözücü ve hata metinleri), `src/components/settings/SettingsImport.jsx` (hata satırlarının gösterimi, içeriği yazılan parça sayısı ve **sütun kutusunun başlık dizisinden türetilmesi**, R10/2), `src/components/settings/SettingsExport.jsx` (on birinci hücrenin yazıldığı yer; yeni prop zinciri açılmaz, R3). **Test:** yeni `tests/excel-set-0124.test.js`, ek blok `tests/parca-aktarma-0087.test.js`, ters çevrilen `tests/set-icerigi-0121-kiyas.test.js`, `tests/hammadde-0096-kiyas.test.js`, `tests/maliyet-gecmisi-0097-kiyas.test.js`. **Belge:** `CLAUDE.md`, `specs/README.md`. Veri şeması (alan 0121'de kurulu), göç, izin tanımları, sunucu kuralları, birleştirme ve yazdırma dokunulmaz. |
@@ -242,10 +242,15 @@ Takım Yöneticisi planın bütün önerilerini 2026-11-02'de onayladı (plan `s
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `00e48fe` | Dal `feat/0124-excel-set`, taban `8b29174`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (17 bulgu, Karar 1–17), plan turu (Karar 18–25), uygulama (Karar 26–31) |
+| **Düzeltme turu sayısı** | 1 | Triyaj (Karar 32–36): kurtarmanın karesel süresi, bildirimdeki ad, maliyet uyarısının bileşen maliyetleri, `;` sınırı, taban raporu |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Beşinci bulgu kapanış adımıydı; birinci bulgunun önerisi ve ikinci bulgunun başlığı yapıştırmada kesik geldi |
+| **Regresyon sayısı** | 0 | Tam takım 459 dosya, 6332 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** ölçüyle biten 18 parça adı "AD x ADET" biçimini belirsiz yapıyordu, önce tamamı ad olarak aranır (Karar 18). Onaylanan "yeni ret çıkmayana kadar" turu yanlış kabulü önlüyor ama birbirine bağlı satırlarda fazla reddediyordu; reddedilenler yeniden denenir (Karar 26), triyajda bu adım artımlı oldu (Karar 32). Spec beş ters çevirme sayıyordu, dokuz çıktı (Karar 27, 31). `rows.map(parcaDisaAktarmaSatiri)` dizi indeksini katalog diye geçirir; yazıcı yalnız gerçek haritada çalışır (Karar 28). Mutasyon ölçümü: uygulamada altı, triyajda üç bozma; değişmeyen içeriğin aday dışı tutulması dışında hepsi test kırdı (o adım yalnız hızlandırmadır).
+
+**Görsel kanıt:** 3 ekran × 2 tema; İçe Aktar değişti, Dışa Aktar'ın iki ekranı 0 piksel. Taban son kodla 6 görüntüde 0 fark; `degisti` kaydı kapanışta `ayni` ve taban raporuna çevrildi.
+
+**Bu spec'ten çıkarılan ders:** bir biçim elle yazılacaksa ayracın gerçek verideki adlarla çakışıp çakışmadığı veriyle ölçülmeli; "x" ayracı katalogdaki ölçü yazımıyla çakışıyordu ve bu ancak yedekte adlar tarandığında görüldü. İkinci ders: karşılıklı bağımlı doğrulamada doğruluğu kuran adım (iyimser tur, kurtarma) ile hızı koruyan yapı (artımlı haritalar) ayrı ayrı ölçülmeli; doğru ama karesel bir kurtarma hatasız dosyada görünmüyor, yalnız hatalı dosyada ortaya çıkıyor.

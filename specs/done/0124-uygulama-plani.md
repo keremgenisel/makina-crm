@@ -1,6 +1,6 @@
 # 0124 uygulama planı — Parça şablonuna set içeriği sütunu
 
-Spec: `specs/0124-excel-set-icerigi-sutunu.md` (plan turu Karar 18–25, uygulama Karar 26–30). Dal `feat/0124-excel-set`, taban
+Spec: `specs/done/0124-excel-set-icerigi-sutunu.md` (plan turu Karar 18–25, uygulama Karar 26–30). Dal `feat/0124-excel-set`, taban
 `8b29174`. Yeni kalıcı alan yok (`setIcerigi` 0121'de kurulu); izin, sunucu ve birleştirme değişmez.
 
 ## 1. Dosyalar
