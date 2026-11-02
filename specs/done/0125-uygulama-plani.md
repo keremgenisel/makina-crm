@@ -1,6 +1,6 @@
 # 0125 uygulama planı — Genel aramada parça ve kalıp katalogları, serviste kalıp alanları
 
-Spec: `specs/0125-aramada-katalog-ve-kalip-alanlari.md` (plan turu Karar 18–25, uygulama Karar 26–28). Dal
+Spec: `specs/done/0125-aramada-katalog-ve-kalip-alanlari.md` (plan turu Karar 18–25, uygulama Karar 26–28). Dal
 `feat/0125-arama-katalog`, taban `60f80e3`. Salt okunur iş: yeni kalıcı alan, veri bölümü, izin, sunucu ya da birleştirme kuralı yok.
 
 ## 1. Dosyalar

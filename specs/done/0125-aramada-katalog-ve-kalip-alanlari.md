@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-02; plan `specs/0125-uygulama-plani.md`, plan turu Karar 18–25, uygulama Karar 26–29, triyaj Karar 30). Kökeni: 2026-11-02, QA boşluk analizi 2026-11-02, 17 bulgu işlendi |
+| **Durum** | Tamamlandı (2026-11-02; QA turu Karar 1–17, plan turu Karar 18–25, uygulamada Karar 26–29, triyaj Karar 30; uygulama commit `b69d701`; plan `specs/done/0125-uygulama-plani.md`). Kökeni: 2026-11-02, QA boşluk analizi 2026-11-02, 17 bulgu işlendi |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/GlobalSearch.jsx` (iki yeni kategori, servis süzgecinin üç yeni alanı, iki yeni yönlendirme prop'u), `src/App.jsx` (iki `onGo` geri çağırımı ve iki dizi), `src/components/PartManager.jsx` ile `src/components/KalipManager.jsx` (başlangıç süzgeci prop'u), `src/components/Settings.jsx` (prop'un iletilmesi ve panelin `key`'i, `:259` ile `:268`), `src/hooks/useFilteredList.js` (isteğe bağlı `baslangicArama` parametresi; on bir ekran paylaştığı için verilmezse davranış birebir eski, `ikinciFiltre` emsali). **Test:** yeni `tests/ui/arama-katalog-0125.test.jsx`, ek blok `tests/ui/genel-arama-0026.test.jsx`. **Belge:** `CLAUDE.md`, `specs/README.md`. Veri şeması, göç, izin tanımları, sunucu kuralları, birleştirme, yazdırma ve dışa aktarma dokunulmaz. |
@@ -224,10 +224,15 @@ Takım Yöneticisi planın bütün önerilerini 2026-11-02'de onayladı (plan `s
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `b69d701` | Dal `feat/0125-arama-katalog`, taban `60f80e3`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (17 bulgu, Karar 1–17), plan turu (Karar 18–25), uygulama (Karar 26–29) |
+| **Düzeltme turu sayısı** | 1 | Triyaj (Karar 30): süzgecin yalnız hedef panele gittiği ve palete canlı kalıp dizisi verildiği testle sabitlendi; kod değişmedi |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Üçüncü bulgu kapanış notuydu |
+| **Regresyon sayısı** | 0 | Tam takım 460 dosya, 6358 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** spec bir ters çevirme sayıyordu, dört çıktı (iki `KAT_SIRA` dizisi, `useFilteredList` imzasını sabitleyen iki tarama). Panel çizim satırları kaymıştı (Karar 25). `tasarim-kontrast` sözlük dışı çiftin `var(--ad, #açık)` biçiminde geçmesini istediği için iki girdi yedek renk taşır (Karar 26). Bileşenin verilmeyen dizileri her çizimde yeni `[]` aldığı için eksik `useMemo` bağımlılığı davranış testinde görünmüyordu; test bütün dizileri sabit referansla verir (Karar 27). Mutasyon ölçümü: uygulamada beş, triyajda üç bozma; hepsi test kırdı.
+
+**Görsel kanıt:** 13 ekran × 2 tema; var olan on sekiz görüntü 0 piksel, dört yeni ekran. Taban son kodla 26 görüntüde 0 fark (bir ekran bir kez oynadı, yeniden çekildi); `degisti` kayıtları kapanışta `ayni` ve taban raporuna çevrildi.
+
+**Bu spec'ten çıkarılan ders:** paylaşılan bir kancaya isteğe bağlı parametre eklemek davranışı değiştirmese de, imza satırını birebir sabitleyen eski taramaları kırar; ters çevrilecek kriterler sayılırken paylaşılan modüllerin imza taramaları da aranmalı. İkinci ders: önbellek (`useMemo`) bağımlılığını ölçen bir test, bileşenin varsayılan değerleri her çizimde yeni nesne üretiyorsa hiçbir şey ölçmez; girdiler sabit referansla verilmeli.
