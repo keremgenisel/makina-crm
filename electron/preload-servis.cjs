@@ -23,6 +23,14 @@ contextBridge.exposeInMainWorld("servisBridge", {
     ipcRenderer.on("servis:veri", h);
     return () => ipcRenderer.removeListener("servis:veri", h);
   },
+  // Spec 0129: kayıt durumu (perde + son kayıt mesajı); açılışta son durum, sonra canlı. Pencere yalnız okur.
+  ilkKayitAl: () => ipcRenderer.invoke("servis:ilkKayitAl"),
+  onKayit: (cb) => {
+    const h = (_e, yuk) => cb(yuk);
+    ipcRenderer.removeAllListeners("servis:kayit");
+    ipcRenderer.on("servis:kayit", h);
+    return () => ipcRenderer.removeListener("servis:kayit", h);
+  },
   // Penceredeki bir yazma: ana pencere ilgili state dizisini (key) güncellensin diye yeni değeri gönder.
   mutate: (key, value) => ipcRenderer.send("servis:mutate", { key, value }),
 });

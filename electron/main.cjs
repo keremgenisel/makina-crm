@@ -145,6 +145,7 @@ function servisPenceresiAcVeyaOdakla() {
   // close preventDefault EDİLMEZ → gerçekten kapanır (ana pencerenin aksine).
   servisWin.on("closed", () => {
     servisWin = null;
+    servisIpc?.kayitTemizle?.(); // spec 0129 R2/2
     if (mainWin && !mainWin.isDestroyed()) mainWin.webContents.send("servis:kapandi");
   });
 
@@ -187,7 +188,8 @@ registerHaritaHandlers(ipcMain, {
     mainWin.webContents.send("harita:firmaSec", id);
   },
 });
-registerServisPencereHandlers(ipcMain, {
+// Spec 0129 R2/2: kayıt durumu önbelleği pencere kapanınca (closed) boşaltılır; gizleme (uygulama kilidi) dokunmaz.
+const servisIpc = registerServisPencereHandlers(ipcMain, {
   acVeyaOdakla: servisPenceresiAcVeyaOdakla,
   getServisWin: () => servisWin,
   // Ayrı pano penceresinden gelen yazma (mutate) → ana pencereye ilet (state'i orada uygulanır).

@@ -210,6 +210,7 @@ contextBridge.exposeInMainWorld("appHarita", {
 contextBridge.exposeInMainWorld("appServisPano", {
   ac: () => ipcRenderer.invoke("servis:ac"),                    // ayrı pencerede aç / öne getir
   veriPush: (veri) => ipcRenderer.send("servis:veriPush", veri), // ana pencere → pano verisi
+  kayitPush: (yuk) => ipcRenderer.send("servis:kayitPush", yuk), // spec 0129: kayıt durumu (perde + son mesaj), hafif kanal
   onAcildi: (cb) => {
     const h = () => cb();
     ipcRenderer.removeAllListeners("servis:acildi");

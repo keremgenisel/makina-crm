@@ -22,6 +22,8 @@ import { CalisanManager } from "../../src/components/CalisanManager";
 import { GiderForm } from "../../src/components/GiderForm";
 import { Dashboard } from "../../src/components/Dashboard";
 import { ServisPanosu } from "../../src/components/ServisPanosu";
+import { ServisPencere } from "../../src/components/ServisPencere";
+import { KAYDEDILDI_MESAJI, kayitMesaji } from "../../src/lib/kayitDurumu";
 import { ServiceForm } from "../../src/components/ServiceForm";
 import { PartSaleForm } from "../../src/components/PartSaleForm";
 import { YedekParcaSatisForm } from "../../src/components/YedekParcaSatisForm";
@@ -121,6 +123,26 @@ if (ekran === "ayarlar-server-istemci") {
   };
   // Diğer çağrılar etkisiz: on* abonelikleri boş iptal fonksiyonu, geri kalanı null döndürür.
   window.appServer = new Proxy(t, { get: (o, k) => o[k] ?? (String(k).startsWith("on") ? () => () => {} : async () => null) });
+}
+// Spec 0129 AC-22 (Karar 22): ayrı pano penceresi sahte köprüyle çizilir (araç Electron'un ikinci penceresini çekemez). Kayıt
+// kanalı ekran adına göre: perde açık, kaçış sonrası başarı bildirimi, nedenli hata bildirimi. Mesaj metinleri 0077 tablosundan.
+if (ekran.startsWith("servis-pencere-0129-")) {
+  const SNAP = { services: [{ id: 10, customerId: 1, type: "Periyodik Bakım", repairPlace: "Yerinde Onarım", durum: "Bekliyor", date: "2026-07-20", tech: "" },
+    { id: 11, customerId: 1, type: "Garanti Dışı", repairPlace: "Fabrikada Onarım", durum: "Yapılıyor", date: "2026-07-18", tech: "Ali" }],
+    customers: [{ id: 1, name: "ABC Makina", model: "AK100", serialNo: "SN-1" }], calisanlar: [{ id: 1, ad: "Ali" }], parts: [], dealers: [], factory: { name: "Altuntaş" },
+    appSettings: null, geoData: null, loadingGeo: false, partStock: [], partStockLog: [], dosyalar: [], yedekParcaSatislar: [], partSales: [],
+    serverPermissions: null, aktifKullanici: "kiosk", kargoYetki: false, kalipYetki: false, dosyaCevrimdisi: false, tema: q.get("tema") === "dark" ? "dark" : "light" };
+  const hata = kayitMesaji("yetki"); // "err" türü (kırmızı şerit); "warn" türü iki pencerede de yeşil (R8/3)
+  const KANAL = {
+    "servis-pencere-0129-perde": [{ perdeAcik: true, durum: "yolda", mesaj: null }, null],
+    "servis-pencere-0129-kacis-basari": [{ perdeAcik: false, durum: "bos", mesaj: null }, { perdeAcik: false, durum: "bos", mesaj: { metin: KAYDEDILDI_MESAJI.metin, tur: undefined, no: 1 } }],
+    "servis-pencere-0129-hata": [{ perdeAcik: false, durum: "bos", mesaj: null }, { perdeAcik: false, durum: "bos", mesaj: { metin: hata.metin, tur: hata.tur, no: 1 } }],
+  }[ekran] || [null, null];
+  window.servisBridge = {
+    ilkVeriAl: async () => SNAP, onVeri: () => () => {}, mutate: () => {},
+    ilkKayitAl: async () => KANAL[0],
+    onKayit: (cb) => { if (KANAL[1]) setTimeout(() => cb(KANAL[1]), 150); return () => {}; },
+  };
 }
 // Spec 0064 R34: kilitli ekranlar. Görüntü aracı ikinci kullanıcıyı simüle edemez; kilit köprüsü sahte kurulur ve listelenen
 // alanlar (ayar panelinde panel kimliğiyle) başka kullanıcının ("ayse") elindedir. Yalnız "kilit-*" ekranlarında.
@@ -1332,6 +1354,10 @@ const EKRANLAR = {
     ["dugme:Bayi Aracılığıyla Kalıp Satışı", "doldur:Firma adı, model veya seri no ile ara...=Kutu", "~Kutu Gıda", "ara:Kalıp ara...=Ham>Hamburger", "doldur:Kalıp fiyatı 1=2000",
       "*Ücret henüz tahsil edilmedi", "kaydir:Tahsilatın girdiği hesap"]],
   // Spec 0064 R34: kilitli gider formu, ödeme penceresi, katalog paneli, Çöp Kutusu ve geri yükleme ön denetimi.
+  // Spec 0129 AC-22: ayrı pano penceresinde perde ve kayıt sonucu (sahte köprü, yukarıda).
+  "servis-pencere-0129-perde": [<ServisPencere />, []],
+  "servis-pencere-0129-kacis-basari": [<ServisPencere />, []],
+  "servis-pencere-0129-hata": [<ServisPencere />, []],
   "kilit-gider-formu": [<GiderEkrani />, ["baslik:Düzenle"]],
   // Spec 0077 D: kayıt perdesi açık bir form penceresinin (Modal 1000) üstünde.
   "kayit-perdesi": [<><GiderEkrani /><KayitPerdesi acik logo={LOGO} durum="yolda" /></>, ["baslik:Düzenle"]],

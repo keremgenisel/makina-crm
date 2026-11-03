@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { ServisPanosu } from "./ServisPanosu.jsx";
 import { applyTheme } from "../lib/theme.js";
 import { withoutDeleted } from "../lib/utils.js";
+import { KayitPerdesi } from "./KayitPerdesi.jsx";
+import LOGO from "../assets/logo.avif?inline";
 
 // Panonun ana pencereye geri yazdığı (mutate) diziler. Bu key'ler App'teki setter'larla birebir
 // eşleşir; ana pencere gelen değeri doğrudan ilgili state'e uygular. Her biri snapshot'ta gelir ki
@@ -31,6 +33,11 @@ export function ServisPencere() {
   const [hazir, setHazir] = useState(false);
   const [toast, setToast] = useState(null);
   const toastRef = useRef(null);
+  // Spec 0129 R1–R5, C1: kaydı ana pencere yapar ve perdenin kararını orada verir; bu pencere kanalı birebir çizer, kendi
+  // zamanlayıcısı ve süre kuralı yoktur. Mesaj olaydır: yalnız sayacı (no) değişince gösterilir; açılışta çekilen mesaj
+  // gösterilmez, sayacı taban olur (R1/3).
+  const [perde, setPerde] = useState({ perdeAcik: false, durum: "bos" });
+  const mesajNoRef = useRef(null);
 
   useEffect(() => {
     let iptal = false;
@@ -43,6 +50,23 @@ export function ServisPencere() {
     // (1) Mount'ta önbellekten çek (yarışsız). (2) Sonraki canlı güncellemeleri dinle.
     window.servisBridge?.ilkVeriAl?.().then(uygula).catch(() => {});
     const cikar = window.servisBridge?.onVeri?.(uygula);
+    return () => { iptal = true; cikar?.(); };
+  }, []);
+
+  useEffect(() => {
+    let iptal = false;
+    const uygulaKayit = (k, ilk) => {
+      if (!k || iptal) return;
+      if (k.perdeAcik !== undefined || k.durum !== undefined) setPerde({ perdeAcik: !!k.perdeAcik, durum: k.durum || "bos" });
+      const no = k.mesaj?.no;
+      if (no == null) return;
+      if (ilk) { if (mesajNoRef.current == null) mesajNoRef.current = no; return; }
+      if (mesajNoRef.current === no) return;
+      mesajNoRef.current = no;
+      showToast(k.mesaj.metin, k.mesaj.tur); // R8/2: metin ve tür ana pencerenin kararıdır, yorumlanmaz
+    };
+    window.servisBridge?.ilkKayitAl?.().then(k => uygulaKayit(k, true)).catch(() => {});
+    const cikar = window.servisBridge?.onKayit?.(k => uygulaKayit(k, false));
     return () => { iptal = true; cikar?.(); };
   }, []);
 
@@ -72,6 +96,8 @@ export function ServisPencere() {
           {toast.text}
         </div>
       )}
+      {/* Spec 0129 R4, R4/2, C4: ana pencerenin perde bileşeni; görüntü gelmeden ("Yükleniyor…") çizilmez. */}
+      {hazir && <KayitPerdesi acik={perde.perdeAcik} durum={perde.durum} logo={LOGO} />}
       {!hazir ? (
         <div style={{ height: "100%", display: "grid", placeItems: "center", color: "var(--n400, #94a3b8)", fontSize: 14 }}>
           Yükleniyor…

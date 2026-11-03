@@ -1254,13 +1254,27 @@ export default function App() {
   const yenilemeSerbestMi = () => veriYenilenebilirMi({ bekleyen: pendingSave.current != null, yoldaSayisi: yoldaSayacRef.current,
     sonBitis: sonBitisRef.current, bastirma: suppressSaveRef.current, simdi: Date.now() });
   // Spec 0077 R7, R42: nedenli mesaj, neden başına bastırmayla. Mesajsız neden (çakışmanın kayıt yolu, oturum) sessizdir.
+  // Spec 0129 R1, R3, C1: ayrı pano penceresine kayıt durumu (hafif kanal). Karar burada verilir, pencere yalnız çizer; pencere
+  // kapalıyken hiçbir şey gönderilmez. Ana süreç değişimi son durumla birleştirip tam durumu pencereye iletir.
+  const servisPanoAcikRef = useRef(false);
+  servisPanoAcikRef.current = servisPanoAcik;
+  const pencereMesajNoRef = useRef(0);
+  const pencereyeKayit = (degisim) => { if (servisPanoAcikRef.current) window.appServisPano?.kayitPush?.(degisim); };
   const bildir = (mesaj, anahtar) => {
     if (!mesaj) return;
     const simdi = Date.now();
     if (!uyariGosterilsinMi(sonUyarilarRef.current, anahtar, simdi)) return;
     sonUyarilarRef.current = { ...sonUyarilarRef.current, [anahtar]: simdi };
-    showToast(mesaj.metin, mesaj.tur === "ok" ? undefined : mesaj.tur);
+    const tur = mesaj.tur === "ok" ? undefined : mesaj.tur;
+    showToast(mesaj.metin, tur);
+    // R1/3, R1/4, R8, Karar 17–18: gösterilmesine karar verilen her kayıt mesajı OLAY olarak, artan sayaçla ve çevrilmiş türüyle.
+    pencereMesajNoRef.current += 1;
+    pencereyeKayit({ mesaj: { metin: mesaj.metin, tur, no: pencereMesajNoRef.current } });
   };
+  // R2/2, R5: perde DURUMU efektle; pencere açılınca güncel durum hemen gider (önbellek kapanışta boşaltıldı).
+  useEffect(() => {
+    if (servisPanoAcik) pencereyeKayit({ perdeAcik, durum: kayitDurumu });
+  }, [servisPanoAcik, perdeAcik, kayitDurumu]);
   // Spec 0077 R19, R22, R23, R25, AC-25–AC-32, AC-57: perde "yolda" başlangıcından 600 ms sonra (tek kapı perdeGorunurMu),
   // 10 sn'de kaçar; kaçtıktan sonra aynı zincir için ikinci kez açılmaz ve kayıt bitince sonuç söylenir.
   const yoldaBasla = () => {
