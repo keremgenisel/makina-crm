@@ -33,7 +33,8 @@ describe("Spec 0124 A: sütun ve biçim (R1–R4)", () => {
     expect(H[9]).toBe("Maliyet (TL, KDV hariç)");
     expect(PARCA_SABLON_ORNEGI).toHaveLength(11);
     expect(PARCA_SABLON_ORNEGI[10]).toBe(SET_ICERIGI_ORNEGI);
-    expect(SET_ICERIGI_ORNEGI).toMatch(/^.+ x \d+(; .+ x \d+)*$/);
+    // Kod tarama #53 (js/redos): parça adı `[^;]+` ile sınırlanır; `.+` ayraçla birlikte üstel geri izlemeye açıktı.
+    expect(SET_ICERIGI_ORNEGI).toMatch(/^[^;]+ x \d+(?:; [^;]+ x \d+)*$/);
   });
   it("AC-2: içeriği olan parçanın hücresi içerik sırasıyla `AD x ADET; AD x ADET`, her zaman `x`", () => {
     const kat = setKatalogu(PARTS);
