@@ -2,7 +2,8 @@
 // Regresyon: İngilizce proformada model yılı hiç görünmüyordu — EN proforma ayrı bir
 // düzen (infoSectionEN) kullanıyor ve model yılı satırı yalnızca TR/teklif düzeninde vardı.
 import { describe, it, expect } from "vitest";
-import { buildPrintHtml, buildFaturaHtml, buildAylikRaporHtml } from "../src/lib/printTemplates";
+import { buildPrintHtml, buildFaturaHtml, buildAylikRaporHtml, buildServiceFormHtml } from "../src/lib/printTemplates";
+import { CUSTOMERS as CUSTOMERS_0127, KDV as KDV_0127, FAB as FAB_0127, SEVKLI as SEVKLI_0127 } from "./fixtures/0127-veri";
 import { hesaplaAylikRapor } from "../src/lib/aylikRapor";
 
 const factory = { name: "Altuntaş Makina", evrakFirmaAdi: "ALTUNTAŞ MAKİNA", adres: "Eyüp / İstanbul", city: "İstanbul", country: "Türkiye", phone: "+90 212 000", email: "info@altunmak.com", web: "www.altunmak.com" };
@@ -316,5 +317,14 @@ describe("buildAylikRaporHtml — firma firma detay tabloları", () => {
     expect(htmlTL).toContain('<span style="white-space:nowrap">500.000 TL</span>');
     expect(htmlTL).not.toMatch(/\d TL(?!<\/span>)/); // span dışında çıplak "rakam TL" kalmadı
     expect(htmlTL).toContain("10.000 EUR");
+  });
+});
+
+describe("Spec 0127 AC-7: kalıbın dönüşü satırında kullanıcı çevirisi", () => {
+  it("AC-7: kullanıcının düzenlediği etiket (TR ve EN) çıktıda kullanılır", () => {
+    const h = (dil, ek) => buildServiceFormHtml(SEVKLI_0127.fabrikaKisi, CUSTOMERS_0127, KDV_0127, { factory: FAB_0127, translations: { _lang: dil, ...ek } });
+    expect(h("TR", { TR: { kalipDonusuLabel: "Kalıp Gönderimi" } })).toContain("<tr><th>Kalıp Gönderimi</th><td>Fabrika Teslim · BURAK YÜCE</td></tr>");
+    expect(h("TR", { TR: { kalipDonusuLabel: "Kalıp Nasıl Dönecek" } })).toContain("<tr><th>Kalıp Nasıl Dönecek</th><td>Fabrika Teslim · BURAK YÜCE</td></tr>");
+    expect(h("EN", { EN: { kalipDonusuLabel: "Mould Return" } })).toContain("<tr><th>Mould Return</th><td>Factory Delivery · BURAK YÜCE</td></tr>");
   });
 });

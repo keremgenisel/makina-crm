@@ -238,3 +238,26 @@ export const kayitliDegistir = (liste, kalip, anahtar) => {
 
 // ── Kargo Etiketi (R37/2) ─────────────────────────────────────────────────────────────────────────────────────────────
 export const tamirEtiketIcerigi = (servis) => tamirListesi(servis).map(g => ({ ad: `${g.ad || "(kalıp)"}${g.olcu ? " · Ölçü: " + g.olcu : ""}`, miktar: 1 }));
+
+// ── Kalıbın dönüşü çıktıda ve Excel'de (spec 0127 R1–R6, Karar 1, 18, 19, 21–23) ──────────────────────────────────────────
+// Kalıp listesinin okunur metni: Servis Formu'nun kalıp satırı ve Servis Kayıtları Excel'inin kalıp hücresi bunu okur
+// (R6/2). Ölçülü kalıpta ayraç iki anlamdadır ("A · B · Ölçü: Ø98"), bilinen sınır (Karar 9).
+export const kalipListesiMetni = (servis) => tamirEtiketIcerigi(servis).map(x => x.ad).join(" · ");
+// Dönüşün parçaları; kapı SAKLI alanlara bakar (R1/3): kalıp listesi dolu ve beş sevk alanından biri kayda yazılı değilse null.
+// `sevkTeslimSekli` ve `sevkTarihi` her zaman değer döndürdüğü için kapı onlara bakmaz. Kapı geçince teslim şekli her zaman
+// verilir (boş = Kargo, Karar 18); tarih yalnız takvimde geçerliyse, servis tarihine düşülmez (R5). Değerler ham: teslim Türkçe,
+// tarih YYYY-AA-GG; çeviri ve biçim gösterim katmanının işidir (C1, Karar 8).
+const sevkYaziliMi = (servis, a) => (a === SEVK_FABRIKA ? servis?.[a] === true : String(servis?.[a] ?? "").trim() !== "");
+export const kalipDonusuParcalari = (servis) => {
+  if (!tamirListesi(servis).length || !SEVK_ALANLARI.some(a => sevkYaziliMi(servis, a))) return null;
+  const m = (a) => String(servis?.[a] ?? "").trim();
+  return { teslim: sevkTeslimSekli(servis), firma: m("kalipKargoFirma"), takip: m("kalipKargoTakipNo"),
+    tarih: gecerliGun(servis?.kalipKargoTarih) ? servis.kalipKargoTarih : "", kisi: m("kalipKargoSorumlusu") };
+};
+// Servis Formu satırının değeri. Teslim şeklinin ÇÖZÜLMÜŞ metnini alır (R4/2: çeviri sözlüğü ve eşlemesi printTemplates'ın
+// içidir); boş parça ayraç bırakmaz (AC-3). Kapı geçmezse "".
+export const kalipDonusuMetni = (servis, teslimMetni) => {
+  const p = kalipDonusuParcalari(servis);
+  if (!p) return "";
+  return [teslimMetni, p.firma, p.takip, p.tarih ? fmtTR(p.tarih) : "", p.kisi].filter(Boolean).join(" · ");
+};

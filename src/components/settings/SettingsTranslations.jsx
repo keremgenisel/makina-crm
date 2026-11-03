@@ -106,6 +106,7 @@ export const GROUPS = [
     { key: "girisLabel",        label: "Giriş Tarihi" },
     { key: "teknisyenLabel",    label: "Teknisyen" },
     { key: "atolyeKaliplariLabel", label: "Servis Gören Kalıplar" }, // spec 0115 R35/2; spec 0117 R23: anahtar aynı (C11)
+    { key: "kalipDonusuLabel",  label: "Kalıbın Dönüşü" }, // spec 0127 R1/4, R3/2
     { key: "servisUcretiLabel", label: "Servis Ücreti" },
     { key: "parcaUcretiLabel",  label: "Parça Ücreti" },
     { key: "toplamLabel",       label: "Toplam" },

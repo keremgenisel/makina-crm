@@ -74,6 +74,16 @@ export const kiyasCiktilari = async (v = VERI_0114_KIYAS) => {
   return sonuc;
 };
 
+// Spec 0127 ile (Karar 17): servis raporuna kalıp tamirinin altı sütunu tevkifat bloğunun ÖNÜNE eklendi (25.–30. konum); bu
+// veride kalıplı servis yok, altı hücre boş. Başlığı ve boşluğu sınanır, sonra ayıklanıp eski sütunlar karşılaştırılır.
+const SERVIS_KALIP_BAS = 25, SERVIS_KALIP_ADET = 6;
+const servisSayfasiMi = (rows) => rows?.[0]?.[3] === "Servis Türü";
+const servisKalipAyikla = (rows) => {
+  expect(rows[0].slice(SERVIS_KALIP_BAS, SERVIS_KALIP_BAS + SERVIS_KALIP_ADET)).toEqual(["Servis Gören Kalıplar", "Kalıp Teslim Şekli", "Kalıp Kargo Firması", "Kalıp Takip No", "Kalıp Kargo Tarihi", "Kalıbı Veren Kişi"]);
+  rows.slice(1).forEach((r, i) => expect(r.slice(SERVIS_KALIP_BAS, SERVIS_KALIP_BAS + SERVIS_KALIP_ADET), `servis satır ${i + 1} kalıp hücreleri`).toEqual(["", "", "", "", "", ""]));
+  return rows.map(r => r.filter((_, j) => j < SERVIS_KALIP_BAS || j >= SERVIS_KALIP_BAS + SERVIS_KALIP_ADET));
+};
+
 describe("Spec 0114 AC-30: işaretsiz veride ekran, motor ve dışa aktarma birebir aynı", () => {
   it("AC-30: Finans metni, aylık rapor motoru ve HTML'i, KDV karşılaştırması, kalan borç ve dışa aktarma satırları spec öncesiyle aynı", async () => {
     const simdi = await kiyasCiktilari();
@@ -95,7 +105,7 @@ describe("Spec 0114 AC-30: işaretsiz veride ekran, motor ve dışa aktarma bire
     // R34: iki yeni sütun satırın SONUNA eklenir; işaretsiz satırda boştur, eski sütunlar birebir aynı.
     expect(Object.keys(simdi.disaAktarma).sort()).toEqual(Object.keys(once.disaAktarma).sort());
     for (const [ad, satirlar] of Object.entries(once.disaAktarma)) {
-      const yeni = simdi.disaAktarma[ad];
+      const yeni = servisSayfasiMi(simdi.disaAktarma[ad]) ? servisKalipAyikla(simdi.disaAktarma[ad]) : simdi.disaAktarma[ad];
       expect(yeni.length, ad).toBe(satirlar.length);
       satirlar.forEach((s, i) => {
         expect(yeni[i].slice(0, s.length), `${ad} satır ${i}`).toEqual(s);

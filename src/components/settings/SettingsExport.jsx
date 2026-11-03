@@ -14,6 +14,7 @@ import { useMailSender, MailComposeModal } from "../MailCompose";
 import { cekBilgisi, tahsilatHaritasi, yonOf, CEK_DURUM_AD, CEK_TUR_AD } from "../../lib/cek";
 import { SATIS_TEVKIFAT_EXPORT_HEAD, satisTevkifatExportHucreleri } from "../../lib/satisTevkifat";
 import { IHRAC_EXPORT_HEAD, ihracKayitliExportHucreleri } from "../../lib/ihracKayitli";
+import { kalipListesiMetni, kalipDonusuParcalari } from "../../lib/kalipTamiri";
 
 // Kredi kartı taksit/komisyon export yardımcıları (payments/servis/Extra Kalıp/Yedek Parça'da ortak).
 // taksit 1 = "Tek Çekim"; komisyon = kartKomisyonu.toplamKesinti (banka kesintisi). Kredi kartı değilse boş.
@@ -140,6 +141,29 @@ export const finansOzetiSatirlari = (oz, services = [], tarih = new Date().toLoc
   ];
 };
 
+// Servis Kayıtları raporu (spec 0127 Karar 20: saf satır, yedekParcaExportRow emsali). Kalıp tamirinin altı sütunu tevkifat
+// bloğunun ÖNÜNDE (R7, 0079 R32); ihraç kayıtlı servise uygulanmaz, sütunu yok. Kalıp hücresi çıktının kalıp satırıyla, sevk
+// hücreleri çıktının kapısıyla aynı yoldan okunur (C1, R6/5); tarih fmtTR, teslim şekli ham Türkçe (R6/3, R6/4); boş hücre "" (R8).
+export const SERVIS_KALIP_EXPORT_HEAD = ["Servis Gören Kalıplar", "Kalıp Teslim Şekli", "Kalıp Kargo Firması", "Kalıp Takip No", "Kalıp Kargo Tarihi", "Kalıbı Veren Kişi"];
+export const SERVIS_EXPORT_HEAD = ["Müşteri", "Model", "Seri No", "Servis Türü", "Durum", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Servis Ücreti (Komisyon Hariç)", "Ödendi mi?", "Ödeme Yöntemi", "Çek Vade Tarihi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Yapılan İşler", "Müşteri Talimatı", ...SERVIS_KALIP_EXPORT_HEAD, ...SATIS_TEVKIFAT_EXPORT_HEAD];
+export const servisKalipExportHucreleri = (s) => {
+  const p = kalipDonusuParcalari(s);
+  return [kalipListesiMetni(s), p ? p.teslim : "", p ? p.firma : "", p ? p.takip : "", p && p.tarih ? fmtTR(p.tarih) : "", p ? p.kisi : ""];
+};
+const SERVIS_PARA_ADI = { TRY: "TL", USD: "USD", EUR: "EUR" };
+export const servisExportRow = (s, { customers = [], kdvRates = DEFAULT_KDV_RATES } = {}) => {
+  const c = customers.find(x => x.id === s.customerId) || {};
+  const cekDurum = s.yontem === "Çek" ? (s.tahsilEdildi ? "Tahsil edildi" : "Beklemede") : "";
+  return [c.name, c.model, c.serialNo, s.type, s.durum || "", s.repairPlace, s.date, s.tech,
+    s.islemFirma === "Diğer" ? (s.islemFirmaAd || "Diğer") : s.islemFirma, s.islemFirmaYetkili, s.islemFirmaTel, s.islemFirmaUlke, s.islemFirmaSehir,
+    SERVIS_PARA_ADI[CURRENCIES.includes(s.currency) ? s.currency : "TRY"], parseMoney(s.servisUcreti),
+    urunBedeliKomisyonHaric(s.servisUcreti, s, parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti))),
+    s.odendi ? "Evet" : "Hayır", s.odendi ? (s.yontem || "Nakit") : "",
+    (s.yontem === "Çek" && s.vadeTarihi) ? fmtTR(s.vadeTarihi) : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s), komisyonYansitildiEtiket(s),
+    s.yapilanIsler, s.musteriTalimati,
+    ...servisKalipExportHucreleri(s),
+    ...satisTevkifatExportHucreleri(s.faturaTipi, parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti)), s.date, kdvRates, s)]; // spec 0079 R32
+};
 // Spec 0068 R3–R5 (AC-5, AC-6): çek portföyü satırı. Çek bilgisi tek okuma yoluyla (cekBilgisi: bağlı çekte tutar, vade ve
 // alınma tarihi tahsilattan, bağsızda çekin kendi alanlarından). İki taraf sütunu ayrıdır; verilen çekin alacaklısı çekin
 // kendi alacakliAd alanından okunur (gider/kasa bölümleri bu dosyaya girmez, gizlilik taraması). Alacaklısı çalışan olan çek
@@ -234,21 +258,8 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     }
   };
   const exportServices = async (mode = "download") => {
-    const head = ["Müşteri", "Model", "Seri No", "Servis Türü", "Durum", "Yapılan İşlem", "Tarih", "Teknisyen", "İşlemi Yapan Firma", "Dış Firma Yetkili", "Dış Firma Telefon", "Dış Firma Ülke", "Dış Firma Şehir", "Para Birimi", "Servis Ücreti", "Servis Ücreti (Komisyon Hariç)", "Ödendi mi?", "Ödeme Yöntemi", "Çek Vade Tarihi", "Çek Durumu", "Taksit Sayısı", "Kredi Kartı Komisyonu", "Komisyon Müşteriye Yansıtıldı", "Yapılan İşler", "Müşteri Talimatı", ...SATIS_TEVKIFAT_EXPORT_HEAD];
     const kdvRates = appSettings?.kdvRates ?? DEFAULT_KDV_RATES;
-    const curName = { TRY: "TL", USD: "USD", EUR: "EUR" };
-    const rows = [head, ...services.map(s => {
-      const c = customers.find(x => x.id === s.customerId) || {};
-      const cekDurum = s.yontem === "Çek" ? (s.tahsilEdildi ? "Tahsil edildi" : "Beklemede") : "";
-      return [c.name, c.model, c.serialNo, s.type, s.durum || "", s.repairPlace, s.date, s.tech,
-        s.islemFirma === "Diğer" ? (s.islemFirmaAd || "Diğer") : s.islemFirma, s.islemFirmaYetkili, s.islemFirmaTel, s.islemFirmaUlke, s.islemFirmaSehir,
-        curName[CURRENCIES.includes(s.currency) ? s.currency : "TRY"], parseMoney(s.servisUcreti),
-        urunBedeliKomisyonHaric(s.servisUcreti, s, parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti))),
-        s.odendi ? "Evet" : "Hayır", s.odendi ? (s.yontem || "Nakit") : "",
-        (s.yontem === "Çek" && s.vadeTarihi) ? fmtTR(s.vadeTarihi) : "", cekDurum, kartTaksitEtiket(s), kartKomisyonTutar(s), komisyonYansitildiEtiket(s),
-        s.yapilanIsler, s.musteriTalimati,
-        ...satisTevkifatExportHucreleri(s.faturaTipi, parseMoney(s.servisUcreti) + (s.parcaUcretsizMi ? 0 : parseMoney(s.parcaUcreti)), s.date, kdvRates, s)]; // spec 0079 R32
-    })];
+    const rows = [SERVIS_EXPORT_HEAD, ...services.map(s => servisExportRow(s, { customers, kdvRates }))];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Servis"); openExportMailXLSXBase64(b64, "servis-kayitlari.xlsx", "Servis Kayıtları"); return; }
       await downloadXlsx(rows, "servis-kayitlari.xlsx", "Servis"); flash("ok", "Servis kayıtları Excel olarak indirildi.");

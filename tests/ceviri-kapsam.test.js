@@ -48,4 +48,9 @@ describe("çeviri kapsamı", () => {
     expect(DEFAULT_SERVIS_TRANSLATIONS.EN.atolyeKaliplariLabel).toBe("Serviced Molds");
     expect(ekrandakiler("servis").has("atolyeKaliplariLabel")).toBe(true);
   });
+  it("spec 0127 AC-6: kalıbın dönüşü anahtarı iki dilde ve ekranda var", () => {
+    expect(DEFAULT_SERVIS_TRANSLATIONS.TR.kalipDonusuLabel).toBe("Kalıbın Dönüşü");
+    expect(DEFAULT_SERVIS_TRANSLATIONS.EN.kalipDonusuLabel).toBe("Mold Return");
+    expect(ekrandakiler("servis").has("kalipDonusuLabel")).toBe(true);
+  });
 });

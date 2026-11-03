@@ -2,7 +2,7 @@ import LOGO from "../assets/logo.avif?inline";
 import { sayi, st, gecenAyEki, altBaslik, gun, detayTablo, rozet, rozetSatiri, bolum, belgeAcilis } from "./raporSunumu";
 import { today, todayTR, fmtTR, fmtCur, parseMoney, fmtKalipCapi, kalipText, stripAutoPrint, parcaAdi, parcaGruplari, numberToWordsEN, disServisMi, islemFirmaGoster, satisFirmaGoster, satisKdvBolumu, UCRETSIZ_IBARESI } from "./utils";
 import { COUNTRY_EN } from "./constants";
-import { tamirListesi, tamirEtiketIcerigi, sevkTarihi, sevkTeslimSekli } from "./kalipTamiri";
+import { tamirListesi, tamirEtiketIcerigi, sevkTarihi, sevkTeslimSekli, kalipListesiMetni, kalipDonusuParcalari, kalipDonusuMetni } from "./kalipTamiri";
 import { IHRAC_RAPOR_BASLIK, IHRAC_RAPOR_SATIRLARI, IHRAC_RAPOR_DIPNOTU, IHRAC_KDV_OZETI_DIPNOTU, ihracRaporAdet,
   IHRAC_DETAY_BASLIK, IHRAC_DETAY_SUTUNLARI, TEVKIFAT_DETAY_BASLIK, TEVKIFAT_DETAY_SUTUNLARI } from "./ihracKayitli";
 
@@ -86,6 +86,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     girisLabel: "Servise Giriş Tarihi",
     teknisyenLabel: "Teknisyen",
     atolyeKaliplariLabel: "Servis Gören Kalıplar", // spec 0115 R35/2: yalnız kalıp varken basılır; spec 0117 R21: yeni ad, anahtar aynı; 2026-10-30: öteki satırlar gibi büyük harfsiz
+    kalipDonusuLabel: "Kalıbın Dönüşü", // spec 0127 R1/4: yalnız kalıp listesi dolu ve bir sevk alanı yazılıyken basılır
     servisUcretiLabel: "Servis Ücreti",
     parcaUcretiLabel: "Parça Ücreti",
     toplamLabel: "Toplam",
@@ -134,6 +135,7 @@ export const DEFAULT_SERVIS_TRANSLATIONS = {
     girisLabel: "Service Entry Date",
     teknisyenLabel: "Technician",
     atolyeKaliplariLabel: "Serviced Molds",
+    kalipDonusuLabel: "Mold Return",
     servisUcretiLabel: "Service Fee",
     parcaUcretiLabel: "Parts Fee",
     toplamLabel: "Total",
@@ -321,7 +323,10 @@ export function buildServiceFormHtml(sv, customers, kdvRates, { forEmail = false
     [L.girisLabel, fmtTR(sv.date)],
     [L.teknisyenLabel, sv.tech],
     // Spec 0115 R35, R35/2: atölyeye alınan kalıplar (yalnız liste doluyken)
-    ...(tamirListesi(sv).length ? [[L.atolyeKaliplariLabel, tamirEtiketIcerigi(sv).map(x => x.ad).join(" · ")]] : []),
+    ...(tamirListesi(sv).length ? [[L.atolyeKaliplariLabel, kalipListesiMetni(sv)]] : []),
+    // Spec 0127 R1–R2, R4/2: kalıbın dönüşü kalıp satırının hemen altında; kapı saklı alanlarda (yardımcı null döner).
+    // Teslim şekli onarım yeri sözlüğüyle burada çevrilir, yardımcıya çözülmüş metin geçer.
+    ...(kalipDonusuParcalari(sv) ? [[L.kalipDonusuLabel, kalipDonusuMetni(sv, transPlace(L, sevkTeslimSekli(sv)))]] : []),
     // Anlaşmasız dış servis: işlemi yapan firmanın bilgileri (yalnız bu servise kayıtlı)
     ...(disServisMi(sv) ? [
       [L.disServisLabel, islemFirmaGoster(sv)],

@@ -90,6 +90,16 @@ export const ekranCiktilari = async (v = ortak) => {
 const UCRETSIZ_SUTUN = 8;
 const yedekSayfasiMi = (satirlar) => satirlar[0]?.[0] === "Alıcı Tipi";
 
+// Spec 0127 ile (Karar 17): servis raporuna kalıp tamirinin altı sütunu tevkifat bloğunun ÖNÜNE eklendi (25.–30. konum); bu
+// veride kalıplı servis yok, altı hücre boş. Başlığı ve boşluğu sınanır, sonra ayıklanıp eski sütunlar karşılaştırılır.
+const SERVIS_KALIP_BAS = 25, SERVIS_KALIP_ADET = 6;
+const servisSayfasiMi = (rows) => rows?.[0]?.[3] === "Servis Türü";
+const servisKalipAyikla = (rows) => {
+  expect(rows[0].slice(SERVIS_KALIP_BAS, SERVIS_KALIP_BAS + SERVIS_KALIP_ADET)).toEqual(["Servis Gören Kalıplar", "Kalıp Teslim Şekli", "Kalıp Kargo Firması", "Kalıp Takip No", "Kalıp Kargo Tarihi", "Kalıbı Veren Kişi"]);
+  rows.slice(1).forEach((r, i) => expect(r.slice(SERVIS_KALIP_BAS, SERVIS_KALIP_BAS + SERVIS_KALIP_ADET), `servis satır ${i + 1} kalıp hücreleri`).toEqual(["", "", "", "", "", ""]));
+  return rows.map(r => r.filter((_, j) => j < SERVIS_KALIP_BAS || j >= SERVIS_KALIP_BAS + SERVIS_KALIP_ADET));
+};
+
 describe("Spec 0095 AC-27: işaretsiz veride ekranlar birebir aynı", () => {
   it("AC-27: Finans, Anasayfa, bayi ve müşteri detayları, Müşteriler listesi, Stok › Yedek Parça ve dışa aktarma önceki kodla aynı", async () => {
     const simdi = await ekranCiktilari();
@@ -110,7 +120,7 @@ describe("Spec 0095 AC-27: işaretsiz veride ekranlar birebir aynı", () => {
     expect(Object.keys(once).filter(k => k.startsWith("anasayfa")).every(k => stokKutusuAyikla(k, once[k]) !== once[k] && stokKutusuAyikla(k, simdi[k]) !== simdi[k])).toBe(true);
     expect(Object.keys(simdi.disaAktarma).sort()).toEqual(Object.keys(once.disaAktarma).sort());
     for (const [ad, satirlar] of Object.entries(once.disaAktarma)) {
-      const yeni = simdi.disaAktarma[ad];
+      const yeni = servisSayfasiMi(simdi.disaAktarma[ad]) ? servisKalipAyikla(simdi.disaAktarma[ad]) : simdi.disaAktarma[ad];
       const ayikla = yedekSayfasiMi(yeni) ? (s) => s.filter((_, i) => i !== UCRETSIZ_SUTUN) : (s) => s;
       // Spec 0114 R34 ile: üç raporun satırlarının sonuna iki ihraç sütunu eklendi; işaretsiz satırda boştur (başlıkta adları),
       // eski sütunlar birebir aynı.
