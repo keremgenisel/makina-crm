@@ -1,6 +1,6 @@
 # 0129 uygulama planı — Ayrı pano penceresinde kayıt perdesi ve kayıt sonucu
 
-Spec: `specs/0129-ayri-pencerede-kayit-perdesi.md` (QA turu Karar 1–16, plan turu Karar 17–23, uygulama Karar 24–27). Dal `feat/0129-pencere-perde`,
+Spec: `specs/done/0129-ayri-pencerede-kayit-perdesi.md` (QA turu Karar 1–16, plan turu Karar 17–23, uygulama Karar 24–27). Dal `feat/0129-pencere-perde`,
 taban `61a7619a`. Yeni kalıcı alan, veri bölümü, izin, sunucu ya da birleştirme kuralı yok; kayıt yolu dokunulmaz.
 
 ## 1. Dosyalar

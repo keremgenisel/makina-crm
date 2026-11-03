@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-03, plan turu Karar 17–23, uygulama Karar 24–27, triyaj Karar 28). Kökeni: analist 2026-11-02, QA boşluk analizi 2026-11-03, 16 bulgu işlendi |
+| **Durum** | Tamamlandı (2026-11-03, uygulama commit `7c7add09`; plan turu Karar 17–23, uygulama Karar 24–27, triyaj Karar 28). Kökeni: analist 2026-11-02, QA boşluk analizi 2026-11-03, 16 bulgu işlendi |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/ServisPencere.jsx` (perde ve sonuç bildirimi), `src/App.jsx` (kayıt durumunu köprüye veren hafif kanal), `electron/ipc/servis-pencere.cjs` (saf `servisKayitDeposu` ve iki kanal: `servis:kayitPush`, `servis:ilkKayitAl`; Karar 20), `electron/preload.cjs` (`appServisPano.kayitPush`) ve `electron/preload-servis.cjs` (`servisBridge.ilkKayitAl`, `onKayit`) (tek yönlü yeni kanal), `electron/main.cjs` (pencere kapanınca kayıt durumu önbelleğinin boşaltılması, R2/2). **Test:** yeni `tests/ui/servis-pencere-perde-0129.test.jsx` (pencere sahte köprüyle, gerçek App sahte zamanlayıcıyla, taramalar), ek blok `tests/servis-veri-deposu.test.js`. **Kanıt:** `scripts/evidence/0009-sayfa.jsx` üç ekran (sahte köprüyle çizilen pencere), `docs/evidence/0129-piksel-raporu.json` ve JPEG'leri; `kanit-eslemesi.json`'a kayıt **girmez** (Karar 24). **Belge:** `CLAUDE.md`, `specs/README.md`. Veri şeması, göç, izin tanımları, sunucu kuralları, birleştirme, kilitler ve kayıt yolunun kendisi dokunulmaz. |
@@ -206,17 +206,17 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kararın ana pencerede kaldığı ve pencerenin kendi zamanlayıcısı olmadığı testle sabitlendi (C1).
-- [ ] Yeni kanalın hiçbir kayıt dizisi taşımadığı ölçüldü (C2).
-- [ ] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni eylem izni yok.
-- [ ] Kullanıcıya görünen bütün metinler Türkçe ve 0077'nin tablosundan.
-- [ ] Görsel kanıt kararı AC-22'nin ölçümüne göre uygulandı (araç ayrı pencereyi çekiyorsa üç ekran; çekmiyorsa gerekçe yazıldı).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi (0077 X4'ün kapandığı ve yeni kanal).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kararın ana pencerede kaldığı ve pencerenin kendi zamanlayıcısı olmadığı testle sabitlendi (C1).
+- [x] Yeni kanalın hiçbir kayıt dizisi taşımadığı ölçüldü (C2).
+- [x] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni eylem izni yok.
+- [x] Kullanıcıya görünen bütün metinler Türkçe ve 0077'nin tablosundan.
+- [x] Görsel kanıt kararı AC-22'nin ölçümüne göre uygulandı (araç ayrı pencereyi çekiyorsa üç ekran; çekmiyorsa gerekçe yazıldı).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi (0077 X4'ün kapandığı ve yeni kanal).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -224,10 +224,13 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `7c7add09` | Dal `feat/0129-pencere-perde`, taban `61a7619a`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | QA turu (16 bulgu, Karar 1–16), plan turu (Karar 17–23), uygulama (Karar 24–27), triyaj (Karar 28) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: "warn" türünün pencerede yeşil çizildiği ve kayıt mesajlarının bildir'i atlamadığı testle sabitlendi; kod değişmedi |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | İkincisi isteğe bağlı tarama önerisiydi, uygulandı |
+| **Regresyon sayısı** | 0 | Tam takım 468 dosya, 6451 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** kanıt eşlemesine kayıt girmedi, çünkü eşleme anahtarları `tasarim.jsx`'i içe alan dosyalarla birebir ve pencere sözlüğü kullanmıyor (Karar 24). Kanıt aracının sahte görüntüsü temayı sayfa kurulurken okuduğu için karanlık çekim aydınlık çıkıyordu; iki temanın piksel sayısının birebir aynı olması ipucuydu (Karar 27). Mutasyon ölçümü: uygulamada on bozmanın biri kaçtı (pencere kapalıyken gönderme; test hiç mesaj üretmiyordu) ve AC‑10 güçlendirildi; triyajda iki bozma, ikisi de test kırdı.
+
+**Bu spec'ten çıkarılan ders:** bir olayı (mesaj) duruma yazıp efektle göndermek, aynı tıktaki iki olayı birleştirir; olaylar karar anında doğrudan gönderilmeli, durumlar efektle. İkinci ders: "kapalıyken gönderme" gibi bir kapıyı sınayan test, o kapının arkasındaki her gönderim yolunu tetiklemeli; tek yol tetiklenince öteki yolun kapısı ölçülmez. Üçüncüsü: kanıt görüntülerinde iki temanın piksel sayısı birebir aynıysa tema uygulanmamıştır.
