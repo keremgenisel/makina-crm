@@ -7,13 +7,15 @@
 // o ebeveynin kilidini paylaşır. Anlık denetimle (baskasiKilitli) bir alana bakan dosya da o alanın listesindedir.
 // Ad paylaşımı kasıtlıdır: `kasa_hesap` gibi adlar denetim kaydı varlığı, izin kimliği ve kilit alanı olarak aynıdır.
 export const KILIT_ALANLARI = {
-  customer: { etiket: "Müşteri", pencereler: ["src/components/customers/CustomerAddEditForm.jsx", "src/components/customers/CustomerDetailModal.jsx", "src/components/ServisPanosu.jsx"] },
+  // Spec 0128 R1, R10, Karar 18: liste silmeleri onay anında kaydın (ve kaskadın kendi alanlı çocuklarının) kilidine anlık bakar.
+  customer: { etiket: "Müşteri", pencereler: ["src/components/customers/CustomerAddEditForm.jsx", "src/components/customers/CustomerDetailModal.jsx", "src/components/ServisPanosu.jsx", "src/components/Customers.jsx"] },
   dealer: { etiket: "Bayi", pencereler: ["src/components/SimpleDealers.jsx"] },
   note: { etiket: "Not", pencereler: ["src/components/Notes.jsx"] },
   teklif: { etiket: "Teklif", pencereler: ["src/components/Documents.jsx"] },
   fatura: { etiket: "Fatura", pencereler: ["src/components/Documents.jsx"] },
-  yedek_parca: { etiket: "Yedek parça satışı", pencereler: ["src/components/stock/YedekParcaSatisTab.jsx", "src/components/customers/CustomerDetailModal.jsx", "src/components/ServisPanosu.jsx", "src/components/KargoPanosu.jsx"] },
-  part_sale: { etiket: "Extra Kalıp satışı", pencereler: ["src/components/ServisPanosu.jsx"] },
+  yedek_parca: { etiket: "Yedek parça satışı", pencereler: ["src/components/stock/YedekParcaSatisTab.jsx", "src/components/customers/CustomerDetailModal.jsx", "src/components/ServisPanosu.jsx", "src/components/KargoPanosu.jsx", "src/components/Customers.jsx", "src/components/SimpleDealers.jsx"] },
+  // Spec 0128 R9: müşteri detayı Extra Kalıp formunda kilidi tutar, anlık işlemlerinde grubun kilidine bakar (tek kilit alanı).
+  part_sale: { etiket: "Extra Kalıp satışı", pencereler: ["src/components/ServisPanosu.jsx", "src/components/customers/CustomerDetailModal.jsx", "src/components/Customers.jsx"] },
   // Spec 0121 R29/2, C12, Karar 41: Set Hazırla penceresi aynı kilidi setin kimliğiyle alır; hareket penceresinin "Geri Al"ı ona anlık bakar.
   partstock: { etiket: "Parça stoğu", pencereler: ["src/components/stock/PartStokTab.jsx", "src/components/stock/SetHazirlaPenceresi.jsx", "src/components/stock/SetParcalaPenceresi.jsx", "src/components/stock/StokHareketleriPenceresi.jsx"] },
   stock: { etiket: "Makina stoğu", pencereler: ["src/components/stock/MakinaStokTab.jsx"] },
@@ -38,7 +40,9 @@ export const KILIT_ALANLARI = {
   // R7, R9, R11–R13, R27: veri yazan Ayarlar panelleri (kimlik = Ayarlar kalem kimliği).
   // Spec 0088 R32: Makina Maliyeti ekranı kâr katsayısını (Makina Modelleri) ve tür rolünü (Gider Türleri) yazarken o panellerin
   // kilidine kayıt anında bakar.
-  ayar: { etiket: "Ayarlar paneli", pencereler: ["src/components/Settings.jsx", "src/components/maliyet/ModelMaliyetleri.jsx", "src/components/maliyet/HesapAyarlari.jsx"] },
+  // Spec 0128 R12: dört katalog yöneticisi Settings'in `ayar` kilidi altında çizilir ve katalog bölümlerini yazar.
+  ayar: { etiket: "Ayarlar paneli", pencereler: ["src/components/Settings.jsx", "src/components/maliyet/ModelMaliyetleri.jsx", "src/components/maliyet/HesapAyarlari.jsx",
+    "src/components/ModelsManager.jsx", "src/components/PartManager.jsx", "src/components/KalipManager.jsx", "src/components/PartTypeManager.jsx"] },
   // Spec 0088 R32 (plan sapması S2): Hesap Ayarları formu; Ayarlar paneli olmadığı için `ayar` alanına giremez (AYAR_KILITLI kuralı).
   maliyet_ayar: { etiket: "Makina Maliyeti hesap ayarları", pencereler: ["src/components/maliyet/HesapAyarlari.jsx"] },
 };
@@ -57,8 +61,9 @@ export const AYAR_KILITLI = {
 // R31: kilitli panelde "Geri Dön" ilk görünen salt okunur panele geçer.
 export const AYAR_SALT_OKUNUR = ["securitystatus", "export", "sentmail", "auditlog", "securitylog"];
 
-// R33 (AC-35): gider/, kasa/, cek/ ve settings/ altında kilit almayan dosyalar ve gerekçeleri. Listede de pencere
-// listesinde de olmayan dosya testi düşürür (yeni bir pencere kilitsiz doğmasın).
+// R33 (AC-35): kilit almayan dosyalar ve gerekçeleri. Spec 0128 R11: tarama src/components altında veri bölümüne yazan ya da
+// kilit çağıran HER dosyayı kapsar (ölçüt BLOB_SECTIONS'tan türer); listede de pencere listesinde de olmayan yazan dosya
+// testi düşürür (yeni bir pencere kilitsiz doğmasın).
 export const KILITSIZ_DOSYALAR = {
   "src/components/maliyet/PayOzeti.jsx": "salt okunur özet (spec 0088)",
   "src/components/gider/DonemRaporu.jsx": "salt okunur rapor görünümü",
@@ -84,6 +89,12 @@ export const KILITSIZ_DOSYALAR = {
   "src/components/settings/SettingsServer.jsx": "bilgisayara özgü sunucu ayarı (blob değil)",
   "src/components/settings/SettingsDanger.jsx": "bilgisayara özgü işlemler (kaldırma, uygulama kilidi)",
   "src/components/settings/UserManager.jsx": "kullanıcı başına sunucu uç noktası (X2)",
+  // Spec 0128 R11/3: ölçütün yakaladığı, kendisi yazmayan ya da ana kaydın kilidi altında yazan dosyalar.
+  "src/components/Stock.jsx": "kap: setter'ları alt sekmelere iletir, kendisi kayıt yazmaz; alt sekmeler kendi kilidini alır",
+  "src/components/MakinaMaliyeti.jsx": "kap: setter'ları alt görünümlere iletir; yazımlar ayar / uretim_partisi / maliyet_ayar denetimiyle",
+  "src/components/ServisPencere.jsx": "ayrı pencerenin köprüsü: setter'lar panoya geçer, denetim panonun kendisinde (C4)",
+  "src/components/customers/detail/CustomerFilesSection.jsx": "müşteri detayının dosya bölümü; müşterinin (customer) kilidi altında yazar",
+  "src/components/DealerFilesSection.jsx": "bayi detayının dosya bölümü; bayinin (dealer) kilidi altında yazar",
 };
 // Settings.jsx'in `ayar` kilidi altında çizilen panel dosyaları (her biri bir AYAR_KILITLI kimliğinin panelidir).
 export const AYAR_PANEL_DOSYALARI = [

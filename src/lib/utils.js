@@ -1002,3 +1002,11 @@ export const stokSecimDiff = ({ onceki = {}, yeni = {}, kitTipler = [], partType
   const toDeduct  = newIds.filter(id => !oldIds.includes(id) && !kitIds.includes(id));
   return { toRestore, toDeduct };
 };
+
+// Spec 0128 Karar 20: toplu satış (aynı batchId) kayıtlarının kimlikleri; batchId'siz kayıt kendi başına bir grup. Pano kartı
+// ve kilit denetimleri (pano, müşteri detayı, Stok) bu tek tanımı kullanır. Kayıt bulunamazsa yalnız verilen kimlik.
+export const grupKimlikleri = (dizi, id) => {
+  const hedef = (dizi || []).find(s => s.id === id);
+  if (!hedef) return [id];
+  return hedef.batchId != null ? dizi.filter(s => s.batchId === hedef.batchId).map(s => s.id) : [id];
+};

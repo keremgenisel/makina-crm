@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { kilitRedMesaji } from "../lib/kilitAlanlari";
 
 /**
  * Spec 0064 R14, R28: pencere açmayan anlık işlemler kilit TUTMAZ; işlem anında canlı kilit listesine bakılır ve kayıt
@@ -7,6 +8,8 @@ import { useState, useEffect, useCallback } from "react";
  * Kendi kullanıcısının kilidi engel değildir (R15). Alan adları src/lib/kilitAlanlari.js'tedir.
  *
  * baskasiKilitli(alan, idler) → başkasının tuttuğu kilit kaydı ({ entity_type, entity_id, locked_by, ... }) ya da null.
+ * kilitliIse(alan, idler, ad, bildir) → spec 0128 R1, R4: kilit başkasındaysa nedeni tek red metniyle (kilitRedMesaji, `ad`
+ * insan okunur kayıt adı) bildirir ve true döner; çağıran hiçbir şey yazmadan çıkar. Silme ve tek alan işlemleri kilit TUTMAZ.
  */
 // Triyaj (bulgu 1): köprünün onLocksChanged'i her abonelikte öncekini siler (tek aboneye göre yazılmış). Kanca aynı anda
 // birden çok yerde açık olabildiği için (Kasa + Çalışan avansları, Servis Panosu) abonelik modül düzeyinde TEK bir
@@ -43,5 +46,11 @@ export function useKilitListesi(aktifKullanici) {
     const set = new Set((Array.isArray(ids) ? ids : [ids]).filter(x => x != null).map(String));
     return kilitler.find(k => k.entity_type === entityType && set.has(String(k.entity_id)) && k.locked_by !== aktifKullanici) || null;
   }, [kilitler, aktifKullanici]);
-  return { kilitler, baskasiKilitli };
+  const kilitliIse = useCallback((entityType, ids, ad, bildir) => {
+    const k = baskasiKilitli(entityType, ids);
+    if (!k) return false;
+    bildir?.(kilitRedMesaji(k, ad || undefined), "err");
+    return true;
+  }, [baskasiKilitli]);
+  return { kilitler, baskasiKilitli, kilitliIse };
 }

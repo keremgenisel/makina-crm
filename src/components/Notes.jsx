@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "r
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { Icon, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui";
 import { useLock } from "../hooks/useLock";
+import { useKilitListesi } from "../hooks/useKilitListesi";
 import { withDeleted, tsToDate } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { Segment, KartBolum, BosDurum } from "./tasarim";
@@ -27,6 +28,8 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
   const [draft, setDraft] = useState(""); // düzenlenen içerik (kaydet'e kadar geçici)
   const [page, setPage] = useState(1);
   const [confirmDelete, setConfirmDelete] = useState(null); // silme onayı bekleyen not
+  // Spec 0128 R1, R2: silme onay anında notun kilidine anlık bakar (kilit tutmaz).
+  const { kilitliIse } = useKilitListesi(aktifKullanici);
   const [pendingAction, setPendingAction] = useState(null); // dirty iken not değiştirme/yeni not isteği bekletilir
   const { lockLoading: noteLockLoading, lockConflict: noteLock, forceAcquire: forceNoteLock } = useLock("note", selectedId);
   const PER_PAGE = 5;
@@ -102,6 +105,7 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
   };
   const sil = (id) => {
     const n = notes.find(x => x.id === id);
+    if (kilitliIse("note", id, baslik(n?.content || ""), showToast)) { setConfirmDelete(null); return; }
     setNotes(p => withDeleted(p, x => x.id === id));
     if (selectedId === id) { setSelectedId(null); setDraft(""); }
     setConfirmDelete(null);

@@ -59,10 +59,10 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
 **Örnek:** `src/components/Giderler.jsx:294`
-**Örnek:** `src/components/Documents.jsx:1127`
-**Örnek:** `src/components/Customers.jsx:520` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Documents.jsx:1133`
+**Örnek:** `src/components/Customers.jsx:529` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:58` (sekme kipi)
-**Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
+**Örnek:** `src/components/Notes.jsx:130` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:333` (form içi, düğme kipi, eşit genişlik)
 
 ### Ne zaman açılır liste? (spec 0042 R10)
@@ -140,10 +140,10 @@ Spec 0016 ile:
 
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
-**Örnek:** `src/components/Documents.jsx:1122` (kart, etiket başlık)
+**Örnek:** `src/components/Documents.jsx:1128` (kart, etiket başlık)
 **Örnek:** `src/components/gider/DonemRaporu.jsx:44` (kart, başlık + alt satır)
-**Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
-**Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
+**Örnek:** `src/components/SimpleDealers.jsx:373` (başlıksız liste kabı)
+**Örnek:** `src/components/SimpleDealers.jsx:559` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
 **Örnek:** `src/components/customers/detail/MachineTimeline.jsx:97` (eylem yuvası, alt başlık)
 
@@ -165,7 +165,7 @@ Satış / Finans); bir form bölümünün başında, yanında düğmeler olan ba
 - Kenarlıksız bir `KartBolum` ile taklit edilmez.
 
 **Örnek:** `src/components/customers/CustomerAddEditForm.jsx:178`
-**Örnek:** `src/components/stock/MakinaStokTab.jsx:292` (düğmeli başlık satırında, alt boşluk 0)
+**Örnek:** `src/components/stock/MakinaStokTab.jsx:296` (düğmeli başlık satırında, alt boşluk 0)
 
 ## BosDurum
 
@@ -190,8 +190,8 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
 **Örnek:** `src/components/Giderler.jsx:361`
-**Örnek:** `src/components/Customers.jsx:555` (iki durum, sabit açıklama, spec 0016 R6)
-**Örnek:** `src/components/Documents.jsx:875` (ayrımlı ekran, yalnız başlık)
+**Örnek:** `src/components/Customers.jsx:564` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Documents.jsx:881` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
 

@@ -5,6 +5,8 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import { KILIT_ALANLARI, AYAR_KILITLI, AYAR_SALT_OKUNUR, KILITSIZ_DOSYALAR, AYAR_PANEL_DOSYALARI, kilitEtiketi } from "../src/lib/kilitAlanlari";
 import { MERGE_KEYS } from "../src/lib/merge";
+import { createRequire } from "node:module";
+const { BLOB_SECTIONS } = createRequire(import.meta.url)("../electron/serverAuth.cjs");
 import { regexKacis } from "./yardimci/regexKacis.js";
 
 const oku = (f) => readFileSync(f, "utf-8");
@@ -63,6 +65,52 @@ describe("Spec 0064: kapsam taraması (R33, AC-35)", () => {
     expect(eksik).toEqual([]);
     for (const [f, neden] of Object.entries(KILITSIZ_DOSYALAR)) { expect(existsSync(f), f).toBe(true); expect(neden.length, f).toBeGreaterThan(5); }
     for (const f of AYAR_PANEL_DOSYALARI) expect(existsSync(f), f).toBe(true);
+  });
+});
+
+// Spec 0128 R11, R11/2 (Karar 1, 24): "yazan dosya" ölçütü BLOB_SECTIONS'tan TÜRER (elle sayılmış setter listesi yok): bölüm
+// adlarından üretilen setter adları (setCustomers, setYedekParcaSatislar, …) yorum satırları ayıklanmış kodda çıplak ad olarak
+// aranır; kilit çağıran dosya da yazan sayılır. Yeni bir veri bölümü eklenince ölçüt kendiliğinden büyür.
+const yazanDosyalar = () => {
+  const setterler = BLOB_SECTIONS.map(b => "set" + b[0].toUpperCase() + b.slice(1));
+  const desen = new RegExp(`\\b(${setterler.join("|")})\\b|\\b(useLock|baskasiKilitli|kilitliIse)\\(`);
+  return dosyalar("src/components").map(f => f.split(path.sep).join("/")).filter(f => desen.test(kod(f)));
+};
+const kapsamKumesi = () => new Set([...Object.values(KILIT_ALANLARI).flatMap(a => a.pencereler), ...AYAR_PANEL_DOSYALARI, ...Object.keys(KILITSIZ_DOSYALAR)]);
+
+describe("Spec 0128: tarama yazan her dosyayı kapsar (R11, AC-15, AC-23, AC-24)", () => {
+  it("AC-15 / AC-24: src/components altında yazan her dosya bir kilit alanının penceresi, Ayarlar paneli ya da gerekçeli kilitsiz", () => {
+    const kapsam = kapsamKumesi();
+    const yazan = yazanDosyalar();
+    expect(yazan.length).toBeGreaterThan(40); // ölçüt gerçekten iş yapıyor (plan turunda 57 dosya)
+    expect(yazan.filter(f => !kapsam.has(f))).toEqual([]);
+    // R11/3: plan turunda kapsam dışı kalan on dosyanın hepsi bir sınıfta.
+    for (const f of ["src/components/Customers.jsx", "src/components/DealerFilesSection.jsx", "src/components/customers/detail/CustomerFilesSection.jsx",
+      "src/components/ModelsManager.jsx", "src/components/PartManager.jsx", "src/components/KalipManager.jsx", "src/components/PartTypeManager.jsx",
+      "src/components/Stock.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/ServisPencere.jsx"]) expect(kapsam.has(f), f).toBe(true);
+  });
+  it("AC-24: ölçüt BLOB_SECTIONS'tan türer; listeye olmayan bir bölüm eklenseydi ölçüt onu arardı", () => {
+    expect(BLOB_SECTIONS.length).toBeGreaterThanOrEqual(32);
+    const kaynak = oku("tests/kilit-alanlari.test.js");
+    expect(kaynak).toMatch(/BLOB_SECTIONS\.map\(b => "set" \+ b\[0\]\.toUpperCase\(\) \+ b\.slice\(1\)\)/);
+  });
+  it("AC-23 / R10/2: anlık denetim ya da kilit yapan her dosya o alanın pencere listesinde ya da gerekçeli kilitsiz", () => {
+    const ihlal = [];
+    for (const f of dosyalar("src").map(f => f.split(path.sep).join("/"))) {
+      for (const m of kod(f).matchAll(/\b(useLock|baskasiKilitli|kilitliIse)\(\s*["']([^"']+)["']/g)) {
+        const alan = m[2];
+        if (alan === "ayar") continue; // Settings ve kayıt anında panel kilidine bakan ekranlar `ayar` listesinde, ayrıca ölçülür
+        if (!KILIT_ALANLARI[alan]?.pencereler.includes(f) && !KILITSIZ_DOSYALAR[f]) ihlal.push(`${f}: ${alan}`);
+      }
+    }
+    expect(ihlal).toEqual([]);
+    expect(KILIT_ALANLARI.customer.pencereler).toContain("src/components/Customers.jsx");
+    expect(KILIT_ALANLARI.part_sale.pencereler).toEqual(expect.arrayContaining(["src/components/customers/CustomerDetailModal.jsx", "src/components/Customers.jsx"]));
+    expect(KILIT_ALANLARI.yedek_parca.pencereler).toEqual(expect.arrayContaining(["src/components/Customers.jsx", "src/components/SimpleDealers.jsx"]));
+  });
+  it("AC-14: part_sale listesi müşteri detayını içerir; ayar listesi dört katalog yöneticisini (R12)", () => {
+    expect(KILIT_ALANLARI.part_sale.pencereler).toContain("src/components/customers/CustomerDetailModal.jsx");
+    expect(KILIT_ALANLARI.ayar.pencereler).toEqual(expect.arrayContaining(["src/components/ModelsManager.jsx", "src/components/PartManager.jsx", "src/components/KalipManager.jsx", "src/components/PartTypeManager.jsx"]));
   });
 });
 

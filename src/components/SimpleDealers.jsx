@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, parcaAdi, aramaNormalize, tahsilEdilecekKdv } from "../lib/utils";
+import { grupKimlikleri, uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, parcaAdi, aramaNormalize, tahsilEdilecekKdv } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { kartTahsilEdildiMi } from "../lib/krediKarti";
 import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
@@ -16,9 +16,10 @@ import { usePagination } from "../hooks/usePagination";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Btn, Modal, ConfirmDialog, Pagination, CountryCityFields, LockConflict, AtesRozeti } from "./ui";
 import { Segment, HataMetni, KartBolum, BosDurum } from "./tasarim";
 import { useLock } from "../hooks/useLock";
+import { useKilitListesi } from "../hooks/useKilitListesi";
 import { DealerFilesSection } from "./DealerFilesSection";
 
-export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null,
+export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null, aktifKullanici = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], setPartSales = null, krediKartiKomisyonlari = null, kalipDefs = [],
   // Spec 0063 R7, R8, R16: iki satış formunun tahsilat hesabı; App yalnız Kasa yetkisiyle doldurur, yoksa null (boş dizi değil).
   kasaHesaplari = null, tahsilatHesapVarsayilan = null }) => {
@@ -55,6 +56,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
   const [dupWarn, setDupWarn] = useState(null); // benzer bayi uyarısı: [{ kayit, sebep }]
+  // Spec 0128 R1–R3: silme onay anında bayinin ve alıcısı bu bayi olan yedek parça satışlarının (partileriyle) kilidine bakar.
+  const { kilitliIse } = useKilitListesi(aktifKullanici);
   const [detailView, setDetailView] = useState(null); // tıklanan bayinin tüm bilgileri
   const { lockLoading: dealerLockLoading, lockConflict: dealerLock, forceAcquire: forceDealerLock } = useLock("dealer", modal?.edit?.id ?? null);
   // Bayi DETAY görünümü de kilitlenir (dosya ekleme burada) — müşteri detayıyla aynı davranış:
@@ -271,6 +274,8 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   };
   const confirmDel = () => {
     const d = dealers.find(x => x.id === confirmId);
+    const ypIdleri = [...new Set((yedekParcaSatislar || []).filter(s => !s.deletedAt && yedekParcaBayininMi(s, confirmId)).flatMap(s => grupKimlikleri(yedekParcaSatislar, s.id)))];
+    if (kilitliIse("dealer", confirmId, d?.name, showToast) || kilitliIse("yedek_parca", ypIdleri, d?.name, showToast)) { setConfirmId(null); return; }
     // Bayi silme kaskadı (lib/bayiKaskad.js): alıcısı bu bayi olan yedek parça satışları (parçalar
     // stoğa iade, tahsisleri satışla birlikte) ve bayi dosyaları AYNI damgayla çöpe — Çöp Kutusu
     // "geri al / kalıcı sil" aynı damgayla birlikte işler. Adla bağlı tarihçe (servis işlem firması) kalır.

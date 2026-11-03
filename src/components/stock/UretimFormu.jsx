@@ -6,6 +6,7 @@ import { useMailSender, MailComposeModal } from "../MailCompose";
 import { fmtKalipCapi } from "../../lib/utils";
 import { Btn, Icon, Modal, LockConflict, DateInput } from "../ui";
 import { useLock } from "../../hooks/useLock";
+import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { KartBolum, BosDurum, UyariSeridi } from "../tasarim";
 import { buildPrintHtml, groupByMusteri, fmtDate, uretimFormDonemMetni } from "./uretimFormPrint";
 import { emptyRow } from "./uretimFormModel";
@@ -93,6 +94,7 @@ export function UretimFormu({
   services = [],
   showToast = () => {}, canDoStock = () => true, serverPermissions = null,
   appSettings = null, factory = null,
+  aktifKullanici = null, // spec 0128 R1
 }) {
   const [editId, setEditId] = useState(null);
   const [form, setForm]     = useState(null);
@@ -100,6 +102,8 @@ export function UretimFormu({
   const { lockLoading, lockConflict, forceAcquire } = useLock("uretim_formu", lockEntityId);
   const [addModal, setAddModal] = useState(false);
   const [delConfirm, setDelConfirm]     = useState(null);
+  // Spec 0128 R1, R2: form silmesi onay anında formun kilidine anlık bakar (kilit tutmaz).
+  const { kilitliIse } = useKilitListesi(aktifKullanici);
   // Spec 0108 R13: silme onayında dönecek kalıp sayısı, ölçütün kendisiyle (onay açıkken bir kez).
   const silDonen = useMemo(() => (delConfirm == null ? 0
     : formSilinceDonenSayisi(uretimFormlari.find(f => f.id === delConfirm), { customers, partSales, uretimFormlari })), [delConfirm, uretimFormlari, customers, partSales]);
@@ -161,6 +165,7 @@ export function UretimFormu({
   const deleteForm = (id) => {
     const now = new Date().toISOString().slice(0, 10);
     const f = uretimFormlari.find(x => x.id === id);
+    if (kilitliIse("uretim_formu", id, f?.baslangicTarihi, showToast)) { setDelConfirm(null); return; }
     setUretimFormlari(prev => prev.map(x => x.id === id ? { ...x, deletedAt: now } : x));
     setDelConfirm(null);
     logAction({ serverPermissions, action: "silindi", entity: "uretim_formu", entityId: id, entityName: f?.baslangicTarihi });

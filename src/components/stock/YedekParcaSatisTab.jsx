@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
+import { grupKimlikleri, today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
 import { Segment, BosDurum } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
+import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { YedekParcaSatisForm } from "../YedekParcaSatisForm";
 import { TahsisModal, tahsisToplam, aliciAd, aliciRozet } from "./TahsisModal";
 import { yedekParcaDus, yedekParcaGeriAl } from "../../lib/yedekParcaStok";
@@ -70,6 +71,7 @@ export const YedekParcaSatisTab = ({
   odakId = null, onOdakConsumed = null,
   geoData = null, loadingGeo = false, krediKartiKomisyonlari = null,
   kasaHesaplari = null, tahsilatHesapVarsayilan = null,
+  aktifKullanici = null, // spec 0128 R1
 }) => {
   const audit = (action, id, rec, detail) => logAction({ serverPermissions, action, entity: "yedek_parca_satis", entityId: id, entityName: aliciAd(rec, dealers, customers), detail });
   const [modal, setModal] = useState(null);   // "add" | {edit: rec}
@@ -81,6 +83,8 @@ export const YedekParcaSatisTab = ({
   // ortak, böylece aynı satış iki yerden aynı anda tahsis/düzenleme yapılamaz (kalan miktar yarışı).
   const { lockConflict: tahsisLock, forceAcquire: forceTahsisLock } = useLock("yedek_parca", tahsisSv?.id ?? null);
   const [silOnay, setSilOnay] = useState(null);
+  // Spec 0128 R1, R3/2: silme onay anında partinin BÜTÜN kayıtlarının kilidine bakar (parti düzenlemesi kilidi birincilde tutar).
+  const { kilitliIse } = useKilitListesi(aktifKullanici);
   const [filtre, setFiltre] = useState("hepsi"); // "hepsi" | "eksik" — ikisi de alıcıya göre gruplu (varsayılan katlı)
   const [arama, setArama] = useState("");
   const [sayfa, setSayfa] = useState(1);
@@ -192,6 +196,7 @@ export const YedekParcaSatisTab = ({
 
   const sil = (rec) => {
     if (!canDoStock("yedek_parca_delete")) return;
+    if (kilitliIse("yedek_parca", grupKimlikleri(yedekParcaSatislar, rec.id), aliciAd(rec, dealers, customers), showToast)) { setSilOnay(null); return; }
     yedekParcaGeriAl(rec.id, setPartStock, setPartStockLog);
     setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? { ...s, deletedAt: new Date().toISOString() } : s));
     audit("silindi", rec.id, rec);

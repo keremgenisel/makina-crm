@@ -4,8 +4,8 @@ import { logAction, snapshotOnceki } from "../lib/audit";
 import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { servisParcaGeriAl } from "../lib/servisStok";
 import { netDusumleri, IADE_TIPI } from "../lib/stokHareketi";
-import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
-import { today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
+import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, yedekParcaTahsisliMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
+import { grupKimlikleri, today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
 import { ihracKayitliUygula, ihracKayitliDogrula, satisTipiSecimi, satisTipiPilStili } from "../lib/ihracKayitli";
@@ -23,6 +23,7 @@ import { CustomerDetailModal } from "./customers/CustomerDetailModal";
 import { CustomerAddEditForm } from "./customers/CustomerAddEditForm";
 import { DurumPilleri } from "./customers/DurumPili";
 import { tamirSatirHaritasi } from "../lib/kalipTamiri";
+import { useKilitListesi } from "../hooks/useKilitListesi";
 
 export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
@@ -66,6 +67,9 @@ export const Customers = ({
   useEffect(() => { if (initialDetailId != null) setDetailViewId(initialDetailId); }, [initialDetailId]);
   const [confirmId, setConfirmId] = useState(null);
   const [dupWarn, setDupWarn] = useState(null); // benzer kayıt uyarısı: [{ kayit, sebep }]
+  // Spec 0128 R1–R3: liste silmesi onay anında müşterinin ve kaskadın kendi kilit alanı olan çocuklarının (yedek parça,
+  // Extra Kalıp; partileriyle) kilidine anlık bakar. Servis, tahsilat, görüşme, dosya müşterinin kilidi altında yazılır.
+  const { kilitliIse } = useKilitListesi(aktifKullanici);
 
   const detailView = detailViewId != null ? customers.find(c => c.id === detailViewId) || null : null;
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -413,6 +417,11 @@ export const Customers = ({
   const confirmDel = () => {
     if (ciroEngeli(confirmId)) { setConfirmId(null); return; }
     const c = customers.find(x => x.id === confirmId);
+    // Triyaj: kaskad tahsisini serbest metne çevirdiği (başkasının alıcı olduğu) satışları da yazar, onlar da sorulur.
+    const ypIdleri = [...new Set((yedekParcaSatislar || []).filter(s => !s.deletedAt && (yedekParcaAlicisiMi(s, confirmId) || yedekParcaTahsisliMi(s, confirmId))).flatMap(s => grupKimlikleri(yedekParcaSatislar, s.id)))];
+    const psIdleri = [...new Set((partSales || []).filter(x => !x.deletedAt && x.customerId === confirmId).flatMap(x => grupKimlikleri(partSales, x.id)))];
+    if (kilitliIse("customer", confirmId, c?.name, showToast) || kilitliIse("yedek_parca", ypIdleri, c?.name, showToast)
+      || kilitliIse("part_sale", psIdleri, c?.name, showToast)) { setConfirmId(null); return; }
     const ts = new Date().toISOString();
     setCustomers(p => withDeleted(p, x => x.id === confirmId, ts));
     if (setServices) setServices(p => withDeleted(p, s => s.customerId === confirmId, ts));

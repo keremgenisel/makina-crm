@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { today, fmtTR, uid, bumpId, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
+import { grupKimlikleri, today, fmtTR, uid, bumpId, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim, yansitilanKomisyon } from "../lib/krediKarti";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "../lib/satisTevkifat";
 import { servisSureleri } from "../lib/servisAnaliz";
@@ -49,12 +49,7 @@ const grupla = (arr) => {
   for (const s of arr) { const k = s.batchId != null ? "b:" + s.batchId : "s:" + s.id; if (!m.has(k)) m.set(k, []); m.get(k).push(s); }
   return [...m.values()].map(g => ({ ...g[0], _grup: g }));
 };
-// Bir kaydın (id) ait olduğu gruptaki TÜM kayıt id'leri (toplu işlemler için: durum/sorumlu/arşiv).
-const grupIdleri = (arr, id) => {
-  const hedef = arr.find(s => s.id === id);
-  if (!hedef) return [id];
-  return hedef.batchId != null ? arr.filter(s => s.batchId === hedef.batchId).map(s => s.id) : [id];
-};
+// Bir kaydın (id) ait olduğu gruptaki TÜM kayıt id'leri: utils.grupKimlikleri (spec 0128 Karar 20, tek tanım).
 // Aşama zaman kutusu — "Periyodik Bakım" rozetiyle aynı biçim, ilgili aşamanın renginde.
 const pilStil = (d) => ({ fontSize: 11, fontWeight: 700, borderRadius: 7, padding: "3px 8px", color: d.renk, background: d.bg, border: `1px solid ${d.br}` });
 
@@ -131,8 +126,17 @@ export const ServisPanosu = ({
   // Aktif kayıt kilitleri (başka kullanıcı bir kaydı düzenliyorsa). Kutu sürükleme anlık bir işlem
   // olduğu için modal gibi hard-lock TUTMAYIZ; bunun yerine sürükleme anında "başkası düzenliyor mu"
   // diye canlı listeye bakıp reddederiz (yumuşak koruma). Spec 0064 R28: liste ve denetim ortak kancada.
-  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
-  const kilitReddet = (k) => showToast(`Bu kayıt "${k.locked_by}" tarafından düzenleniyor, taşınamadı.`, "err");
+  const { baskasiKilitli, kilitliIse } = useKilitListesi(aktifKullanici);
+  const kilitVarsaDur = (alan, idler, ad) => kilitliIse(alan, idler, ad, showToast);
+  // Spec 0128 R4, R5, R8: tek alan işlemleri ve sürükleme kaydın kilidine anlık bakar; red metni tek yardımcıdan (kendi
+  // kilidi engel değildir, kanca süzer). Reddedilirse true döner ve hiçbir şey yazılmaz.
+  const kargoAdi = (id) => { const s = yedekParcaSatislar.find(x => x.id === id); return s ? aliciAd(s, dealers, customers) : undefined; };
+  const kalipAdi = (id) => { const s = partSales.find(x => x.id === id); return s ? custMap[Number(s.customerId)]?.name : undefined; };
+  // R5/3: müşterisi çözülmeyen servis kartında denetim atlanır (sütun değişiminin bugünkü davranışı).
+  const servisKilitliIse = (id) => {
+    const sv = services.find(s => s.id === id);
+    return sv?.customerId != null && kilitVarsaDur("customer", sv.customerId, custMap[Number(sv.customerId)]?.name);
+  };
   // Spec 0115 R20/2, C3: rozetin ve üretim formu satırının tek kaynağı aynı harita.
   const tamirHarita = useMemo(() => tamirSatirHaritasi(uretimFormlari), [uretimFormlari]);
   // R27/2: kapı iki şartlı (Stok sekmesi + eylem izni); kioskta stockActions tanımsız olduğu için tek şart yanlış pozitif verir.
@@ -296,8 +300,8 @@ export const ServisPanosu = ({
     if (!setYedekParcaSatislar || !canKargoDuzenle) return;
     const kargoDurum = SUTUN_KARGO[sutunKey]; if (!kargoDurum) return;
     // Toplu satış tek kart → grubun TÜM kayıtları birlikte hareket eder.
-    const idler = new Set(grupIdleri(yedekParcaSatislar, id));
-    const k = baskasiKilitli("yedek_parca", [...idler]); if (k) return kilitReddet(k);
+    const idler = new Set(grupKimlikleri(yedekParcaSatislar, id));
+    if (kilitVarsaDur("yedek_parca", [...idler], kargoAdi(id))) return;
     // Tamamlandı (Teslim Edildi) dışına sürüklenirse arşiv bayrağını temizle (kart panoda kalsın).
     setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, kargoDurum, panoGizli: sutunKey === "Tamamlandı" ? s.panoGizli : false } : s));
     auditKargo("durum_degisti", id, { durum: kargoDurum });
@@ -305,14 +309,16 @@ export const ServisPanosu = ({
   // Kargo kartını panodan kaldır / geri al (servislerdeki panoGizle deseni; ayrı pano izinleri).
   const kargoPanoGizle = (id, gizli) => {
     if (!setYedekParcaSatislar || !(gizli ? canKargoKaldir : canKargoArsiv)) return;
-    const idler = new Set(grupIdleri(yedekParcaSatislar, id));
+    const idler = new Set(grupKimlikleri(yedekParcaSatislar, id));
+    if (kilitVarsaDur("yedek_parca", [...idler], kargoAdi(id))) return;
     setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, panoGizli: gizli } : s));
     auditKargo(gizli ? "panodan_kaldirildi" : "panoya_alindi", id);
     showToast(gizli ? "Kargo kartı panodan kaldırıldı (satış kaydı duruyor)." : "Kargo kartı panoya geri alındı.");
   };
   const kargoSorumluDegistir = (id, kargoSorumlusu) => {
     if (!setYedekParcaSatislar || !canKargoDuzenle) return;
-    const idler = new Set(grupIdleri(yedekParcaSatislar, id));
+    const idler = new Set(grupKimlikleri(yedekParcaSatislar, id));
+    if (kilitVarsaDur("yedek_parca", [...idler], kargoAdi(id))) return;
     setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, kargoSorumlusu } : s));
     auditKargo("sorumlu_degisti", id, { kargoSorumlusu });
   };
@@ -339,27 +345,30 @@ export const ServisPanosu = ({
   const kalipDurumDegistir = (id, sutunKey) => {
     if (!setPartSales || !canKalipDuzenle) return;
     const kargoDurum = SUTUN_KARGO[sutunKey]; if (!kargoDurum) return;
-    const idler = new Set(grupIdleri(partSales, id));
-    const k = baskasiKilitli("part_sale", [...idler]); if (k) return kilitReddet(k);
+    const idler = new Set(grupKimlikleri(partSales, id));
+    if (kilitVarsaDur("part_sale", [...idler], kalipAdi(id))) return;
     setPartSales(p => p.map(s => idler.has(s.id) ? { ...s, kargoDurum, panoGizli: sutunKey === "Tamamlandı" ? s.panoGizli : false } : s));
     auditKalip("durum_degisti", id, { durum: kargoDurum });
   };
   const kalipPanoGizle = (id, gizli) => {
     if (!setPartSales || !(gizli ? canKalipKaldir : canKalipArsiv)) return;
-    const idler = new Set(grupIdleri(partSales, id));
+    const idler = new Set(grupKimlikleri(partSales, id));
+    if (kilitVarsaDur("part_sale", [...idler], kalipAdi(id))) return;
     setPartSales(p => p.map(s => idler.has(s.id) ? { ...s, panoGizli: gizli } : s));
     auditKalip(gizli ? "panodan_kaldirildi" : "panoya_alindi", id);
     showToast(gizli ? "Kalıp kargosu panodan kaldırıldı (satış kaydı duruyor)." : "Kalıp kargosu panoya geri alındı.");
   };
   const kalipSorumluDegistir = (id, kargoSorumlusu) => {
     if (!setPartSales || !canKalipDuzenle) return;
-    const idler = new Set(grupIdleri(partSales, id));
+    const idler = new Set(grupKimlikleri(partSales, id));
+    if (kilitVarsaDur("part_sale", [...idler], kalipAdi(id))) return;
     setPartSales(p => p.map(s => idler.has(s.id) ? { ...s, kargoSorumlusu } : s));
     auditKalip("sorumlu_degisti", id, { kargoSorumlusu });
   };
   const kalipHemenDusur = (id) => {
     if (!setPartSales || !canKalipKaldir) return;
-    const idler = new Set(grupIdleri(partSales, id));
+    const idler = new Set(grupKimlikleri(partSales, id));
+    if (kilitVarsaDur("part_sale", [...idler], kalipAdi(id))) return;
     setPartSales(p => p.map(s => idler.has(s.id) ? { ...s, panoDusmeZamani: "" } : s));
     auditKalip("hemen_dusuruldu", id);
   };
@@ -409,7 +418,7 @@ export const ServisPanosu = ({
     // Servis kaydı, müşteri detayı/servis düzenleme ile aynı "customer" alanını kilitler. O müşteriyi
     // başkası düzenliyorsa (müşteri detayı/kiosk servis formu açık) kartı taşımayı reddet.
     const sv = services.find(s => s.id === id);
-    if (sv?.customerId != null) { const k = baskasiKilitli("customer", sv.customerId); if (k) return kilitReddet(k); }
+    if (servisKilitliIse(id)) return;
     const ts = simdiYerel();
     // Tamamlandı dışına geri sürüklenirse arşiv bayrağını da temizle (kart yeniden panoda görünsün).
     setServices(p => p.map(s => {
@@ -435,19 +444,22 @@ export const ServisPanosu = ({
   };
   const teknisyenDegistir = (id, tech) => {
     if (!setServices || !canDo("cust_service_edit")) return;
+    if (servisKilitliIse(id)) return;
     setServices(p => p.map(s => s.id === id ? { ...s, tech } : s));
     auditServis("teknisyen_degisti", id, { tech });
   };
-  // Spec 0119 R6–R11, R16: kalıbı gönderen kişi. Teknisyen işleyicisinin ikizi (kapı, kilit yok); kaydı yalnız kitaplığın
+  // Spec 0119 R6–R11, R16: kalıbı gönderen kişi. Teknisyen işleyicisinin ikizi (kapı; spec 0128 ile kilit denetimi de); kaydı yalnız kitaplığın
   // yazıcısı kurar (R10/2), iz ayrıntısı alan adıyla kısayol (R10/3). Ad tuzağı: kalipSorumluDegistir Extra Kalıp kargosunundur.
   const sevkSorumluDegistir = (id, kalipKargoSorumlusu) => {
     if (!setServices || !canDo("cust_service_edit")) return;
+    if (servisKilitliIse(id)) return;
     setServices(p => p.map(s => s.id === id ? sevkSorumluYaz(s, kalipKargoSorumlusu) : s));
     auditServis("kalip_sorumlu_degisti", id, { kalipKargoSorumlusu });
   };
   // Planlanan servisi beklenen zamandan önce hemen panoya düşür (giriş anını şimdiye çeker).
   const hemenDusur = (id) => {
     if (!setServices || !canDo("cust_service_edit")) return;
+    if (servisKilitliIse(id)) return;
     const ts = simdiYerel();
     setServices(p => p.map(s => s.id === id ? { ...s, durum: "Bekliyor", fabrikaGirisZamani: ts } : s));
     auditServis("hemen_dusuruldu", id);
@@ -455,13 +467,15 @@ export const ServisPanosu = ({
   // Planlanan kargoyu hemen panoya düşür (panoya düşme zamanını temizler → Bekliyor sütununa girer).
   const kargoHemenDusur = (id) => {
     if (!setYedekParcaSatislar || !canKargoKaldir) return;
-    const idler = new Set(grupIdleri(yedekParcaSatislar, id));
+    const idler = new Set(grupKimlikleri(yedekParcaSatislar, id));
+    if (kilitVarsaDur("yedek_parca", [...idler], kargoAdi(id))) return;
     setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, panoDusmeZamani: "" } : s));
     auditKargo("hemen_dusuruldu", id);
   };
   const panoGizle = (id, gizli) => {
     // Kaldır (arşivle) ve geri-al ayrı izinler: Servis Panosu işlemleri altında (Kullanıcı Yönetimi).
     if (!setServices || !canDo(gizli ? "cust_service_pano_kaldir" : "cust_service_pano_arsiv")) return;
+    if (servisKilitliIse(id)) return;
     setServices(p => p.map(s => s.id === id ? { ...s, panoGizli: gizli } : s));
     auditServis(gizli ? "panodan_kaldirildi" : "panoya_alindi", id);
     showToast(gizli ? "Kart panodan kaldırıldı (servis kaydı duruyor)." : "Kart panoya geri alındı.");

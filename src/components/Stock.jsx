@@ -63,7 +63,7 @@ export const Stock = ({
         <MakinaStokTab stock={stock} setStock={setStock} models={models} showToast={showToast}
           parts={parts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog}
-          canDoStock={canDoStock} serverPermissions={serverPermissions} copMusteriler={copMusteriler} uretimPartileri={uretimPartileri} giderYetki={giderYetki} />
+          canDoStock={canDoStock} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} copMusteriler={copMusteriler} uretimPartileri={uretimPartileri} giderYetki={giderYetki} />
       )}
       {subTab === "pano" && giderYetki && (
         <PartiUretimPanosu stock={stock} customers={customers} uretimPartileri={uretimPartileri} />
@@ -83,7 +83,7 @@ export const Stock = ({
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}
           odakId={yedekOdakId} onOdakConsumed={onYedekOdakConsumed}
-          kasaHesaplari={kasaHesaplari} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} />
+          kasaHesaplari={kasaHesaplari} tahsilatHesapVarsayilan={tahsilatHesapVarsayilan} aktifKullanici={aktifKullanici} />
       )}
       {subTab === "uretim" && (
         <UretimFormu
@@ -92,7 +92,7 @@ export const Stock = ({
           kalipDefs={kalipDefs}
           partSales={partSales} setPartSales={setPartSales}
           showToast={showToast} appSettings={appSettings} factory={factory}
-          canDoStock={canDoStock} serverPermissions={serverPermissions} />
+          canDoStock={canDoStock} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} />
       )}
     </div>
   );

@@ -3,7 +3,7 @@ import { logAction, getAuditUsername, snapshotOnceki } from "../../lib/audit";
 import { useMailSender, MailComposeModal } from "../MailCompose";
 import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import { servisParcaDus, servisParcaGeriAl, servisParcaYenile } from "../../lib/servisStok";
-import {
+import { grupKimlikleri,
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, satisKdvBolumu,
   calcKalanBorc, stripAutoPrint, simdiYerel,
   withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi, servisParcaSatirTutari, faturaBedeliOf, getKdvRateForDate,
@@ -120,7 +120,14 @@ export const CustomerDetailModal = ({
   // Panosu ile aynı alanı paylaşır, aynı satış aynı anda iki yerden düzenlenemez.
   // Spec 0111 R21: toplu düzenleme partinin birincil kaydının kilidini alır (`_kilitId`).
   const { lockConflict: ypLock, forceAcquire: forceYpLock } = useLock("yedek_parca", ypForm?.id ?? ypForm?._kilitId ?? null);
-  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
+  const { baskasiKilitli, kilitliIse } = useKilitListesi(aktifKullanici);
+  // Spec 0128 R9, R9/2: Extra Kalıp satışını DÜZENLERKEN pano ile aynı "part_sale" alanı (kaydın kendi kimliği); müşteri kilidi
+  // aynen durur. R9/3, R9/4: anlık işlemler ve kayıt anı grubun (batchId) BÜTÜN kimliklerine bakar; pano kilidi birincil kayıtta.
+  const { lockConflict: pkLock, forceAcquire: forcePkLock } = useLock("part_sale", pkForm?.id ?? null);
+  const kalipGrupKilitli = (id) => kilitliIse("part_sale", grupKimlikleri(partSales, id), detailView?.name, showToast);
+  // Triyaj: tahsilat hesabı penceresi geri çağırımı açılış anındaki kapanışı saklar; yazım anındaki denetim GÜNCEL listeyi okusun.
+  const kalipGrupKilitliRef = useRef(kalipGrupKilitli);
+  kalipGrupKilitliRef.current = kalipGrupKilitli;
 
   const todayStr = today();
   const factoryName = factory?.name || "Altuntaş Makina";
@@ -472,6 +479,7 @@ export const CustomerDetailModal = ({
       setPkForm(null);
       return;
     }
+    if (kalipGrupKilitli(pkForm.id)) return; // spec 0128 R9/4: kayıt anında grubun kilidi
     const selectedCust = customers.find(c => c.id === Number(pkForm.customerId));
     const satirlar = (pkForm.kaliplar || []).filter(k => k.ad);
     if (!selectedCust || satirlar.length === 0) return;
@@ -496,9 +504,12 @@ export const CustomerDetailModal = ({
   };
   const togglePartSaleOdendi = (ps) => {
     if (!setPartSales) return;
+    if (kalipGrupKilitli(ps.id)) return;
     const yeniDurum = !ps.odendi;
     const cekKK = ps.yontem === "Çek" || ps.yontem === "Kredi Kartı";
     const uygula = (h) => {
+      // Triyaj: tahsilat hesabı penceresi açıkken kilit başkasına geçmiş olabilir; yazım anında da bakılır.
+      if (kalipGrupKilitliRef.current(ps.id)) return;
       setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null, ...hesapAlani(h) } : x));
       logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
     };
@@ -507,12 +518,14 @@ export const CustomerDetailModal = ({
   // Extra Kalıp çeki tahsil edildi/beklemede — çek tahsil edilene kadar borçlu sayılır.
   const togglePartSaleCekTahsil = (ps) => {
     if (!setPartSales) return;
+    if (kalipGrupKilitli(ps.id)) return;
     const yeni = !ps.tahsilEdildi;
     setPartSales(p => p.map(x => x.id === ps.id ? { ...x, tahsilEdildi: yeni, tahsilatTarihi: yeni ? today() : null } : x));
     logAction({ serverPermissions, action: yeni ? "kalip_cek_tahsil_edildi" : "kalip_cek_tahsil_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
   };
   const deletePartSale = (id) => {
     if (!setPartSales) return;
+    if (kalipGrupKilitli(id)) return;
     const ps = partSales.find(x => x.id === id);
     setPartSales(p => withDeleted(p, x => x.id === id));
     if (ps?.tur === "Kalıp") {
@@ -1210,7 +1223,7 @@ export const CustomerDetailModal = ({
               onToggleServisOdendi={toggleServisOdendi}
               onTogglePartSaleOdendi={togglePartSaleOdendi}
               durumBaglami={durumBaglami} tamirHarita={tamirHarita}
-              onPartSaleKalipDurumu={(ps, v) => setPartSales(p => p.map(x => (x.id === ps.id ? durumYaz(x, "kalipDurumu", v) : x)))}
+              onPartSaleKalipDurumu={(ps, v) => { if (kalipGrupKilitli(ps.id)) return; setPartSales(p => p.map(x => (x.id === ps.id ? durumYaz(x, "kalipDurumu", v) : x))); }}
               onTahsilTaksit={tahsilTaksit}
               dosyaAdet={setDosyalar ? dosyaAdet : null}
               onDosyaBadge={setDosyalar ? openDosyalarFiltreli : null}
@@ -1519,7 +1532,11 @@ export const CustomerDetailModal = ({
         />
       )}
 
-      {pkForm && (
+      {pkForm && ((pkLock && pkForm.id) ? (
+        <Modal title="Kaydı Düzenle" onClose={() => setPkForm(null)}>
+          <LockConflict lockedBy={pkLock.lockedBy} lockedAt={pkLock.lockedAt} onForce={forcePkLock} onCancel={() => setPkForm(null)} />
+        </Modal>
+      ) : (
         <PartSaleForm
           title={pkForm.id ? "Kaydı Düzenle" : "Extra Kalıp Satışı / Çıkışı"}
           form={pkForm} setForm={setPkForm} customers={customers} kalipDefs={kalipDefs} kdvRates={kdvRates}
@@ -1529,7 +1546,7 @@ export const CustomerDetailModal = ({
           onSave={savePartSale} onCancel={() => { pkDraft.clearDraft(); setPkForm(null); }}
           draftBar={<DraftRestoreBar draft={pkDraft.draft} onRestore={pkDraft.restoreDraft} onDiscard={pkDraft.discardDraft} />}
         />
-      )}
+      ))}
 
       {ypForm && ((ypLock && (ypForm.id || ypForm._kilitId)) ? (
         <Modal title="Yedek Parça Satışını Düzenle" onClose={() => setYpForm(null)}>

@@ -9,6 +9,7 @@ import { Icon, Field, Btn, Modal, ConfirmDialog, Pagination, LockConflict, Draft
 import { Segment, KartBolum, BosDurum } from "./tasarim";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { useLock } from "../hooks/useLock";
+import { useKilitListesi } from "../hooks/useKilitListesi";
 import { useFormDraft } from "../hooks/useFormDraft";
 import LOGO_B64 from "../assets/logo.avif?inline";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CURRENCIES } from "../lib/constants";
@@ -177,6 +178,7 @@ export const Documents = ({
   serverPermissions = null,
   openDocId = null,
   onDocOpenConsumed = null,
+  aktifKullanici = null, // spec 0128 R1: silme onayının kendi kilidini engel saymaması için
 }) => {
   const effectiveTur = effectiveTeklifTur;
   const kaydedildiMi = (t) => teklifKaydedildiMi(t, { customers, partSales, yedekParcaSatislar, parts });
@@ -222,6 +224,8 @@ export const Documents = ({
   const [odakDocId, setOdakDocId] = useState(null); // genel aramadan gelen: listede vurgulanacak belge
   const [form, _setForm] = useState(null); // null = form kapalı
   const [confirmDel, setConfirmDel] = useState(null);
+  // Spec 0128 R1, R2: teklif/proforma ve fatura silmesi onay anında kaydın kilidine anlık bakar (kilit tutmaz).
+  const { kilitliIse } = useKilitListesi(aktifKullanici);
   const [donusturBanner, setDonusturBanner] = useState(null); // onaylı teklif → "CRM'e Kaydet" bildirimi
   // Listede "üretilen kayıtlar" satırı açık olan belge (spec 0006 AC-43).
   const [uretilenAcik, setUretilenAcik] = useState(null);
@@ -354,6 +358,7 @@ export const Documents = ({
 
   const delFatura = (id) => {
     const fat = liveFaturalar.find(f => f.id === id);
+    if (kilitliIse("fatura", id, fat?.firma, showToast)) { setFaturaConfirmDel(null); return; }
     setFaturalar(p => p.map(f => f.id === id ? { ...f, deletedAt: today() } : f));
     setFaturaConfirmDel(null);
     logAction({ serverPermissions, action: "silindi", entity: "fatura", entityId: id, entityName: fat?.firma });
@@ -651,6 +656,7 @@ export const Documents = ({
   // ── Sil ──
   const del = (id) => {
     const doc = liveTeklifler.find(t => t.id === id);
+    if (kilitliIse("teklif", id, doc?.firma, showToast)) { setConfirmDel(null); return; }
     setTeklifler(p => p.map(t => t.id === id ? { ...t, deletedAt: today() } : t));
     logAction({ serverPermissions, action: "silindi", entity: doc?.type === "proforma" ? "proforma" : "teklif", entityId: id, entityName: doc?.firma });
     showToast("Belge silindi.");

@@ -7,6 +7,7 @@ import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, LockConflict, KalipCapiFields } from "../ui";
 import { HataMetni, BolumBasligi, KartBolum, BosDurum, Ipucu, Segment } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
+import { useKilitListesi } from "../../hooks/useKilitListesi";
 import { geriDonenStokMu, geriDonenStokTarihi } from "../../lib/makinaMaliyeti";
 import { URETIM_DURUMU, DURUM_ADLARI, DURUM_ETIKETI, ONCEKI_PARTI_ADI, DURUM_SUZGECLERI, uretimDurumuOf, uretimDurumuYaz, stokDurumOzeti,
   durumSuzgeciUyar, suzgecSayisi, partiSecenekAdi } from "../../lib/stokDurumu";
@@ -22,13 +23,15 @@ const Rozet = ({ tur, children, testId }) => (
   <span data-testid={testId} style={{ ...ROZET[tur], display: "inline-block", fontSize: 11.5, fontWeight: 700, borderRadius: 6, padding: "3px 9px", whiteSpace: "nowrap" }}>{children}</span>
 );
 
-export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null,
+export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showToast, parts = [], partStock = [], setPartStock, partStockLog = [], setPartStockLog, canDoStock = () => true, serverPermissions = null, aktifKullanici = null,
   // Spec 0002 M3: çöpteki müşteriler, eski geri dönen satırın özgün üretim tarihini düzenlemede sabitlemek için.
   copMusteriler = [], uretimPartileri = [], giderYetki = false }) => {
   const [modelFilter, setModelFilter] = useState(null);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [confirmId, setConfirmId] = useState(null);
+  // Spec 0128 R1, R2: satır silmesi onay anında stok satırının kilidine anlık bakar (kilit tutmaz).
+  const { kilitliIse } = useKilitListesi(aktifKullanici);
   const [showAllParts, setShowAllParts] = useState(false);
   const [durumSuzgec, setDurumSuzgec] = useState("tumu");
   const { lockLoading: stockLockLoading, lockConflict: stockLock, forceAcquire: forceStockLock } = useLock("stock", modal?.edit?.id ?? null);
@@ -118,6 +121,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   const confirmDel = () => {
     const cid = String(confirmId);
     const machine = stock.find(s => s.id === confirmId);
+    if (kilitliIse("stock", confirmId, machine ? [machine.model, machine.serialNo].filter(Boolean).join(" · ") : undefined, showToast)) { setConfirmId(null); return; }
     // Spec 0065 R14, R16: kitin NET tüketimi (karşı hareketi yazılmış tüketim sayılmaz).
     let iadeRef = netDusumleri(partStockLog, cid, "makina_uretimi").size > 0 ? confirmId : null;
 
