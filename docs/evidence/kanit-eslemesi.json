@@ -82,28 +82,24 @@
         "ekran": "evrak-bayi"
       },
       {
-        "rapor": "docs/evidence/0126-piksel-raporu.json",
+        "rapor": "docs/evidence/0126-taban-piksel-raporu.json",
         "ekran": "evrak-0126-satirlar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-03 · spec 0126 C4"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0126-piksel-raporu.json",
+        "rapor": "docs/evidence/0126-taban-piksel-raporu.json",
         "ekran": "evrak-0126-parca-pencere",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-03 · spec 0126 C4"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0126-piksel-raporu.json",
+        "rapor": "docs/evidence/0126-taban-piksel-raporu.json",
         "ekran": "evrak-0126-parca-arama",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-03 · spec 0126 C4"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0126-piksel-raporu.json",
+        "rapor": "docs/evidence/0126-taban-piksel-raporu.json",
         "ekran": "evrak-0126-kalip-pencere",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-03 · spec 0126 C4"
+        "beklenen": "ayni"
       }
     ],
     "src/components/GiderForm.jsx": [

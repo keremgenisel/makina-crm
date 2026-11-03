@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-03, plan turu Karar 17–28, uygulama Karar 29–31). Kökeni: analist 2026-11-02, QA boşluk analizi 2026-11-03, 16 bulgu işlendi |
+| **Durum** | Tamamlandı (2026-11-03, uygulama commit `5e133186`; plan turu Karar 17–28, uygulama Karar 29–31, triyaj Karar 32). Kökeni: analist 2026-11-02, QA boşluk analizi 2026-11-03, 16 bulgu işlendi |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/Documents.jsx` (satır tablosundaki parça ve kalıp seçicileri), yeni `src/components/documents/KalemSecPenceresi.jsx` (seçim penceresi, Karar 18), `src/components/stock/SetRozeti.jsx` (var olan salt okunur içerik satırı yeniden kullanılır; set etiket ekinin tek kaynağı, Karar 18). **Test:** yeni `tests/ui/evrak-secici-0126.test.jsx`, `tests/evrak-secici-0126.test.js` (taramalar), altın `tests/fixtures/0126-govde-once.json`; ters çevrilen `tests/ui/documents-kalip-secici.test.jsx` (Karar 17); AC‑6 dosya listesi genişleyen `tests/urun-agaci-0087.test.js`. **Kanıt:** `scripts/evidence/0009-sayfa.jsx` (yeni ekranlar ve büyüyen `EvrakEkrani` fikstürü; bugünkü fikstür bu iki hücreyi hiç çizmiyor, ölçüm 11) ve `docs/evidence/kanit-eslemesi.json` (yeni ekranların kayıtları; **var olan altı Evrak kaydı `ayni` kalır**, C4). **Belge:** `CLAUDE.md`, `docs/tasarim-sozlugu.md` (0122'nin yazdığı arama seçicisi kuralına pencere istisnası). **Dokunulmayan dosya adıyla:** `src/components/ui.jsx`. Veri şeması, belge alan listeleri, çeviri anahtarları, yazdırma çıktısı, izin tanımları, sunucu kuralları ve birleştirme dokunulmaz. |
@@ -147,6 +147,10 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 - **Karar 30.** 0122 AC‑14/AC‑25'in sayımı 10 çağrı, 7 dosyaya çıktı; seçim penceresinin çağrısı ayrıca tek sayılır, öteki sekiz çağrı birebir aynı kalır.
 - **Karar 31.** Tam takımda bu işten bağımsız bir kırık bulundu: `set-icerigi-0121-kiyas` aylık raporun `olusturmaTarihi`'ni (bugün) altınla karşılaştırıyordu ve ertesi gün kırıldı (main'de de kırık). Saat altının üretildiği güne (02.11.2026) sabitlendi, 0079 ve 0095 kıyaslarının emsali; altın yenilenmedi.
 
+### Triyajda verilen karar (2026-11-03)
+
+- **Karar 32.** Düğme yanındaki parça adının son yedeği (katalogda ve alt kalemde ad yoksa) Documents'ta düz yazılmaz: `SetRozeti.jsx` `urunAgaci`'nın `SET_ICERIGI_YER_TUTUCU`'sunu `PARCA_YER_TUTUCU` adıyla dışa verir (0087 AC‑6). Formun kapanışında seçimi düşüren efektin gerekçesi koda yazıldı ve davranış testiyle sabitlendi (seçim açıkken form Vazgeç'le kapanırsa belge yeniden açılınca pencere açılmaz).
+
 ### Karar kaydı
 
 | # | Bulgu | Derece | Spec'e işlenen yer |
@@ -204,22 +208,22 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kaydedilen belge gövdesinin birebir aynı kaldığı ölçüldü (C1).
-- [ ] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni eylem izni yok; **salt arayüz işi olduğu açıkça yazıldı.**
-- [ ] Kullanıcıya görünen bütün metinler Türkçe.
-- [ ] Görsel kanıt **yeni ekranlarla** alındı (pencere, set rozet metni, içerik satırı, boş durum); var olan altı Evrak kaydı `ayni` kaldı ve 0 piksel ölçüldü (C4).
-- [ ] Pencere footer'sız ve `overflowVisible`; arama paneli pencerede kırpılmıyor.
-- [ ] Rozet etikete metin olarak girdi; `ui.jsx` dokunulmadı (tarama).
-- [ ] Ad satırın kendi verisinden okunuyor; temizleme ayrı düğmeyle.
-- [ ] İçerik satırı parça slotunun hücresinde; `rowSpan` aritmetiği değişmedi.
-- [ ] Kalıp rolü seçicisi yerinde; kalıp anahtarı `id ?? ad`.
-- [ ] Context 4'ün üç rakamı yeniden ölçüldü ve spec'e yazıldı (R11).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` ve `docs/tasarim-sozlugu.md` güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kaydedilen belge gövdesinin birebir aynı kaldığı ölçüldü (C1).
+- [x] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni eylem izni yok; **salt arayüz işi olduğu açıkça yazıldı.**
+- [x] Kullanıcıya görünen bütün metinler Türkçe.
+- [x] Görsel kanıt **yeni ekranlarla** alındı (pencere, set rozet metni, içerik satırı, boş durum); var olan altı Evrak kaydı `ayni` kaldı ve 0 piksel ölçüldü (C4).
+- [x] Pencere footer'sız ve `overflowVisible`; arama paneli pencerede kırpılmıyor.
+- [x] Rozet etikete metin olarak girdi; `ui.jsx` dokunulmadı (tarama).
+- [x] Ad satırın kendi verisinden okunuyor; temizleme ayrı düğmeyle.
+- [x] İçerik satırı parça slotunun hücresinde; `rowSpan` aritmetiği değişmedi.
+- [x] Kalıp rolü seçicisi yerinde; kalıp anahtarı `id ?? ad`.
+- [x] Context 4'ün üç rakamı yeniden ölçüldü ve spec'e yazıldı (R11).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` ve `docs/tasarim-sozlugu.md` güncellendi.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -227,10 +231,13 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `5e133186` | Dal `feat/0126-evrak-secici`, taban `45df963`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | QA turu (16 bulgu, Karar 1–16), plan turu (Karar 17–28), uygulama (Karar 29–31), triyaj (Karar 32) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: yer tutucu metni tek kaynağa bağlandı, seçimin sıfırlanması davranış testiyle sabitlendi |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Öteki üç madde bilgi ve kapanış notuydu |
+| **Regresyon sayısı** | 0 | Tam takım 462 dosya, 6382 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** spec "ters çevrilen kriter yok" diyordu; üç çıktı (`ui/documents-kalip-secici` plan turunda, 0121 AC‑43 ve 0122 AC‑14/AC‑25 taramaları uygulamada). Spec'in hiç anmadığı bir risk vardı: `Modal` Escape'i `window`'da dinlediği için iç içe pencerede Escape kaydedilmemiş belgeyi de kapatırdı (R3/6). QA'nın "canlı veri yok" ölçümü yanlış dizine bakmıştı, yedek İndirilenler'deydi. 0087 AC‑6 Documents'ta `urunAgaci` adını yasakladığı için set metinleri `SetRozeti.jsx` üzerinden geldi. Tam takım bu işten bağımsız bir tarih kırığı buldu (0121 kıyası, Karar 31). Mutasyon ölçümü: uygulamada on, triyajda iki bozma; hepsi test kırdı (anahtar mutasyonu ilk denemede kaçtı, iddia "unique key" uyarısını da kapsayacak şekilde düzeltildi).
+
+**Bu spec'ten çıkarılan ders:** iç içe `Modal`'da Escape iki dinleyiciyi birden çalıştırır; yeni bir pencere başka bir pencerenin üstünde açılıyorsa dış pencerenin kapatma işleyicisi korunmalıdır. İkinci ders: "ters çevrilen kriter yok" iddiası ancak kriter metinleriyle değil, bileşeni seçen testlerin ve paylaşılan bileşen sayımlarının taranmasıyla doğrulanabilir. Üçüncüsü: altın dosyaya giren her zaman damgası (`olusturmaTarihi`) testi ertesi gün kırar; kıyas testleri saati altının günüyle sabitlemeli.

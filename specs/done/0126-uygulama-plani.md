@@ -1,6 +1,6 @@
 # 0126 uygulama planı — Evrak kalem seçicileri aramayla, set satırı tanınır
 
-Spec: `specs/0126-evrak-kalem-secicileri-arama.md` (QA turu Karar 1–16, plan turu Karar 17–28, uygulama Karar 29–31). Dal `feat/0126-evrak-secici`,
+Spec: `specs/done/0126-evrak-kalem-secicileri-arama.md` (QA turu Karar 1–16, plan turu Karar 17–28, uygulama Karar 29–31, triyaj Karar 32). Dal `feat/0126-evrak-secici`,
 taban `45df963`. Salt arayüz işi: yeni kalıcı alan, veri bölümü, izin, sunucu ya da birleştirme kuralı yok.
 
 ## 1. Dosyalar
