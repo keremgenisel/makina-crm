@@ -1,6 +1,6 @@
 # 0128 uygulama planı — Kilit tamamlama: liste silmeleri, panonun tek alan işlemleri, Extra Kalıp'ın tek kilit alanı
 
-Spec: `specs/0128-kilit-tamamlama.md` (QA turu Karar 1–16, plan turu Karar 17–27, uygulama Karar 28–30, triyaj Karar 31). Dal `feat/0128-kilit`, taban `3b2c24c5`.
+Spec: `specs/done/0128-kilit-tamamlama.md` (QA turu Karar 1–16, plan turu Karar 17–27, uygulama Karar 28–30, triyaj Karar 31). Dal `feat/0128-kilit`, taban `3b2c24c5`.
 Kilit yumuşak korumadır ve sertleşmez: yeni kalıcı alan, veri bölümü, izin, sunucu ya da birleştirme kuralı yok.
 
 ## 1. Dosyalar

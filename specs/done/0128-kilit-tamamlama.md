@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-03, plan turu Karar 17–27, uygulama Karar 28–30, triyaj Karar 31). Kökeni: analist 2026-11-02, QA boşluk analizi 2026-11-03, 16 bulgu işlendi |
+| **Durum** | Tamamlandı (2026-11-03, uygulama commit `ffa9d0e1`; plan turu Karar 17–27, uygulama Karar 28–30, triyaj Karar 31). Kökeni: analist 2026-11-02, QA boşluk analizi 2026-11-03, 16 bulgu işlendi |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/components/Customers.jsx`, `src/components/SimpleDealers.jsx`, `src/components/Notes.jsx`, `src/components/Documents.jsx`, `src/components/stock/MakinaStokTab.jsx`, `src/components/stock/UretimFormu.jsx`, `src/components/stock/YedekParcaSatisTab.jsx` (silme yolları), `src/components/ServisPanosu.jsx` (sekiz tek alan işleyicisi), `src/components/customers/CustomerDetailModal.jsx` (Extra Kalıp kilidi), `src/lib/kilitAlanlari.js` (pencere listeleri ve tarama kapsamı), `src/lib/utils.js` (`grupKimlikleri`, panodan taşınan grup kimliği yardımcısı; Karar 20), `src/App.jsx` (Bayiler ve Evrak'a `aktifKullanici` prop'u), `src/components/Stock.jsx` (prop'un üç alt bileşene iletilmesi). **Test:** yeni `tests/ui/kilit-tamamlama-0128.test.jsx`, yeni `tests/kilit-tamamlama-0128.test.js` (taramalar), ek blok `tests/kilit-alanlari.test.js`. **Belge:** `CLAUDE.md`, `specs/README.md`. Veri şeması, göç, izin tanımları, sunucu kuralları, birleştirme, yazdırma ve dışa aktarma dokunulmaz. |
@@ -214,17 +214,17 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Anlık denetim tek kancadan ve tek yardımcıdan geliyor (tarama).
-- [ ] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni eylem izni yok; **kilidin yumuşak koruma olduğu ve sertleşmediği açıkça yazıldı.**
-- [ ] Fail-open davranışı testle sabitlendi (AC-16).
-- [ ] Kullanıcıya görünen bütün metinler Türkçe ve tek yerde.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] Görsel kanıt gerekmedi (yalnız bildirim metni değişiyor); `docs/evidence/kanit-eslemesi.json` ve görüntü aracı dokunulmadı (AC-26).
-- [ ] `CLAUDE.md` güncellendi (kilit kapsamının yeni sınırı ve tarama kuralı).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Anlık denetim tek kancadan ve tek yardımcıdan geliyor (tarama).
+- [x] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni eylem izni yok; **kilidin yumuşak koruma olduğu ve sertleşmediği açıkça yazıldı.**
+- [x] Fail-open davranışı testle sabitlendi (AC-16).
+- [x] Kullanıcıya görünen bütün metinler Türkçe ve tek yerde.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] Görsel kanıt gerekmedi (yalnız bildirim metni değişiyor); `docs/evidence/kanit-eslemesi.json` ve görüntü aracı dokunulmadı (AC-26).
+- [x] `CLAUDE.md` güncellendi (kilit kapsamının yeni sınırı ve tarama kuralı).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -232,10 +232,13 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `ffa9d0e1` | Dal `feat/0128-kilit`, taban `3b2c24c5`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | QA turu (16 bulgu, Karar 1–16), plan turu (Karar 17–27), uygulama (Karar 28–30), triyaj (Karar 31) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: tahsisli bayi satışı, yazım anı denetimi (bayat kapanış), gerçek App prop zinciri testi |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçüncüsü isteğe bağlı test önerisiydi, uygulandı |
+| **Regresyon sayısı** | 0 | Tam takım 467 dosya, 6431 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** panoda spec'in saymadığı onuncu korumasız işleyici vardı (`kargoSorumluDegistir`, Karar 17). Pencere listesinin iki yönlü kuralı üç eksik daha gösterdi (Karar 18). Extra Kalıp'ta pano grubun birincil kaydını, müşteri detayı kaydın kendisini kilitlediği için iki kilit çakışmıyordu; kayıt anı grup denetimi eklendi (Karar 19). Yedi ekranda tekrar edecek "bak, bildir, dur" adımı kancaya taşındı (Karar 28). Kilidi sahteleyen yirmiyi aşkın eski testte yeni ret çıkmadı (Karar 29). Triyajda: tahsilat hesabı penceresinin sakladığı geri çağırım açılış anının kilit listesini görüyordu, test yakaladı ve denetim ref'e bağlandı. Mutasyon ölçümü: uygulamada on beş, triyajda üç bozma; hepsi test kırdı.
+
+**Bu spec'ten çıkarılan ders:** bir pencere ya da onay penceresi kullanıcı kararını beklerken sakladığı geri çağırım, açıldığı andaki durumu kapanışında taşır; yazım anında tekrarlanan bir denetim güncel durumu ref'ten okumalıdır, yoksa denetim var gibi görünür ama bayat listeye bakar. İkinci ders: "korunmayan işleyiciler" listesi sayılırken bir türün ikizi (kalıp kargo sorumlusu) varsa öteki türün (yedek parça kargo sorumlusu) aynı işleyicisi de aranmalı. Üçüncüsü: elle tutulan kapsam listeleri yerine ölçütü veriden (BLOB_SECTIONS) türetmek, yeni veri bölümünün taramayı kendiliğinden büyütmesini sağlar.
