@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-03, plan turu Karar 16–25, uygulama Karar 26–27). Kökeni: analist 2026-11-02, QA boşluk analizi 2026-11-03, 15 bulgu işlendi |
+| **Durum** | Tamamlandı (2026-11-03, uygulama commit `0a2c33d5`; plan turu Karar 16–25, uygulama Karar 26–27, triyaj Karar 28). Kökeni: analist 2026-11-02, QA boşluk analizi 2026-11-03, 15 bulgu işlendi |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **Kaynak:** `src/lib/printTemplates.js` (servis formu çıktısına bir satır, bir yeni çeviri anahtarı TR ve EN), `src/components/settings/SettingsTranslations.jsx` (anahtarın Çeviriler ekranına girmesi), `src/components/settings/SettingsExport.jsx` (servis raporuna altı sütun; satır saf `SERVIS_EXPORT_HEAD` / `servisExportRow` olarak dışa çıkarılır, Karar 20), `src/lib/kalipTamiri.js` (çıktı için tek metin yardımcısı). **Test:** yeni `tests/kalip-donusu-0127.test.js` ve **yeni altın fikstür `tests/fixtures/0127-cikti-once.json`** (sevk alanı boş serviste çıktının birebir eski kaldığının kanıtı, `YAZ_0127=1` ile üretilir; C2), ek bloklar `tests/ceviri-kapsam.test.js` ve `tests/print-templates.test.js`; "spec 0127 ile" `tests/ui/ucretsiz-yedek-parca-0095-kiyas.test.jsx` ve `tests/ui/ihrac-kayitli-0114-kiyas.test.jsx` (Karar 17). Altın fikstür spec öncesi servis Excel satırlarını ve Kargo Etiketi verisini de taşır. **Belge:** `CLAUDE.md`, `specs/README.md`. Veri şeması, göç, izin tanımları, sunucu kuralları ve birleştirme dokunulmaz. |
@@ -140,7 +140,11 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 - **Karar 26.** Çeviriler ekranının görüntüsü taban ve sonra çekimiyle ölçüldü: yeni anahtar satırı eklenmesine rağmen `ayarlar-ceviri` iki temada **0 piksel** (servis "Bilgi Tablosu" grubu ekranın görüş alanında değil); var olan kanıt kaydı geçerli kalır, yeni kayıt gerekmedi.
 - **Karar 27.** Kıyas testi spec öncesinde de var olan API'lerle ayrı dosyadadır (`tests/ui/kalip-donusu-0127-kiyas.test.jsx`, jsdom): Excel satırları `SettingsExport`'un gerçek indirme yolundan yakalanır (0079 emsali), çünkü spec öncesi kodda saf satır fonksiyonu yoktu. Altın üç bölümdür: servis formu çıktıları (sekiz senaryo), Kargo Etiketi verisi, Servis Kayıtları satırları. Ayrı test verisi `tests/fixtures/0127-veri.js` (0115 verisinin üstünde).
 
+### Triyajda verilen karar (2026-11-03)
 
+- **Karar 28.** `SettingsExport.jsx`'te servis bloğu 0068 çek yorumunun üstüne taşındı; 0101 stok yorumu yine kendi kodunun hemen üstünde (yerleşim testiyle sabit). AC‑7'nin testi adıyla (`AC-7:`) ve `kalipDonusuLabel` düzenlemesiyle sabitlendi. Kapanışta: uygulama turunda kararlar eklenirken düşen "Karar kaydı" başlığı geri kondu.
+
+### Karar kaydı
 
 | # | Bulgu | Derece | Spec'e işlenen yer |
 |---|---|---|---|
@@ -191,21 +195,21 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Metin kurma saf yardımcıda; şablon ve dışa aktarma yalnız gösteriyor.
-- [ ] Sevk alanı olmayan veride çıktının birebir aynı kaldığı **yeni** altın fikstürle iki dilde ölçüldü (C2).
-- [ ] Kapı saklı alanlara bakıyor; `sevkTarihi` ve `sevkTeslimSekli` kapı ile tarih için kullanılmadı (tarama).
-- [ ] Yardımcı çözülmüş metni alıyor; `transPlace` ve `PLACE_KEY_MAP` dışa verilmedi.
-- [ ] Altı Excel başlığı R6'nın sırasıyla ve tevkifat bloğunun önünde; sabit sütun sayısı 31.
-- [ ] Yeni tarih sütunu `fmtTR`, boş hücreler boş dize.
-- [ ] Context 6'nın rakamları yeniden ölçüldü ve spec'e yazıldı (R13).
-- [ ] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni eylem izni yok.
-- [ ] Yazdırma çıktısı için TR ve EN çeviri anahtarı eklendi ve Çeviriler ekranında görünüyor.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Metin kurma saf yardımcıda; şablon ve dışa aktarma yalnız gösteriyor.
+- [x] Sevk alanı olmayan veride çıktının birebir aynı kaldığı **yeni** altın fikstürle iki dilde ölçüldü (C2).
+- [x] Kapı saklı alanlara bakıyor; `sevkTarihi` ve `sevkTeslimSekli` kapı ile tarih için kullanılmadı (tarama).
+- [x] Yardımcı çözülmüş metni alıyor; `transPlace` ve `PLACE_KEY_MAP` dışa verilmedi.
+- [x] Altı Excel başlığı R6'nın sırasıyla ve tevkifat bloğunun önünde; sabit sütun sayısı 31.
+- [x] Yeni tarih sütunu `fmtTR`, boş hücreler boş dize.
+- [x] Context 6'nın rakamları yeniden ölçüldü ve spec'e yazıldı (R13).
+- [x] Yeni kalıcı alan yok, yeni veri bölümü yok, yeni eylem izni yok.
+- [x] Yazdırma çıktısı için TR ve EN çeviri anahtarı eklendi ve Çeviriler ekranında görünüyor.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -213,10 +217,13 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `0a2c33d5` | Dal `feat/0127-kalip-donusu`, taban `037dbe80`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | QA turu (15 bulgu, Karar 1–15), plan turu (Karar 16–25), uygulama (Karar 26–27), triyaj (Karar 28) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: yorum yerleşimi ve AC‑7'nin adlı testi |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Üçüncü madde kapanış notuydu |
+| **Regresyon sayısı** | 0 | Tam takım 464 dosya, 6398 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** spec makina geçmişi raporunun servis formuyla aynı çeviri ad alanını okuduğunu varsayıyordu; ikisi ayrı bölümleri okuyor (Karar 16). "Ters çevrilen kriter yok" iddiası tutmadı: iki kıyas testi servis Excel'ini sütun sırasıyla karşılaştırıyordu (Karar 17). AC‑3 ile R1/3 çelişiyordu, teslim şekli kapı geçince her zaman basılır (Karar 18). Servis Excel satırı bileşenin içindeydi; saf fonksiyona çıkarıldı ve çıkarma spec öncesi indirme yolundan yakalanan satırlarla ölçüldü. Çeviriler ekranı yeni anahtara rağmen 0 piksel (Karar 26). Mutasyon ölçümü: uygulamada on, triyajda iki bozma; hepsi test kırdı (ilk turda zsh test listesini tek argüman geçirdiği için sonuçlar boş geldi, yeniden koşuldu).
+
+**Bu spec'ten çıkarılan ders:** her zaman değer döndüren bir okuma yardımcısı (varsayılanlı teslim şekli, yedekli tarih) "alan yazılı mı" kapısı olarak kullanılamaz; kapı saklı alana bakmalı. İkinci ders: satırın başını eski altınla karşılaştıran kıyas testleri, sütunu sona değil ortaya ekleyen her işte kırılır; ters çevrilen kriter sayılırken bu kıyaslar da taranmalı. Üçüncüsü: zsh'de tırnaksız değişken kelimelere bölünmez, mutasyon düzeneğinde `${=T}` ya da dizi kullanılmalı; boş sonuç "geçti" değildir.

@@ -1,6 +1,6 @@
 # 0127 uygulama planı — Servis formu çıktısında ve Excel'inde kalıbın dönüşü
 
-Spec: `specs/0127-servis-ciktisinda-kalip-donusu.md` (QA turu Karar 1–15, plan turu Karar 16–25, uygulama Karar 26–27). Dal `feat/0127-kalip-donusu`,
+Spec: `specs/done/0127-servis-ciktisinda-kalip-donusu.md` (QA turu Karar 1–15, plan turu Karar 16–25, uygulama Karar 26–27, triyaj Karar 28). Dal `feat/0127-kalip-donusu`,
 taban `037dbe80`. Yeni kalıcı alan, veri bölümü, izin, sunucu ya da birleştirme kuralı yok.
 
 ## 1. Dosyalar
