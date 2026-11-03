@@ -3,7 +3,7 @@
 // 0121'den ÖNCEKİ kodla YAZ_0121=1 ile üretildi (tests/fixtures/0121-once.json; spec öncesi kod `setIcerigi` alanını hiç
 // okumaz, bu yüzden içerikli parça girdide durabilir). Veri değişirse altın geçersizdir.
 process.env.TZ = "Europe/Istanbul";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import fs from "node:fs";
 import { parcaDisaAktarmaSatiri } from "../src/lib/parcaAktarma";
 import { parcaMaliyetKurus, maliyetGirildiMi, parcaMaliyetMetni, maliyetKaynagi } from "../src/lib/urunAgaci";
@@ -56,6 +56,11 @@ const simdi = () => JSON.parse(JSON.stringify({
   analiz: hesaplaAnaliz({ ...VERI, parts: PARCALAR_HEPSI }, {}),
   finans: finansOzetiHesapla({ ...VERI, kdvRates }),
 }));
+
+// Spec 0126 sırasında bulundu: aylık rapor oluşturma gününü (`olusturmaTarihi`) taşır ve altın 02.11.2026'da üretildi; saat
+// sabitlenmezse test ertesi gün kırılıyordu (0079 / 0095 kıyaslarının emsali).
+beforeAll(() => vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-02T10:00:00") }));
+afterAll(() => vi.useRealTimers());
 
 describe("Spec 0121: içeriksiz parçada ve set içeren veride çıktılar spec öncesiyle aynı", () => {
   it("AC-14 / AC-34: maliyet zinciri, dışa aktarma, model maliyeti, aylık rapor, Analiz ve Finans Özeti birebir", () => {

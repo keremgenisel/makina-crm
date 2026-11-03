@@ -59,7 +59,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
 **Örnek:** `src/components/Giderler.jsx:294`
-**Örnek:** `src/components/Documents.jsx:1112`
+**Örnek:** `src/components/Documents.jsx:1127`
 **Örnek:** `src/components/Customers.jsx:520` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:58` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:126` (düğme kipi, eşit genişlik)
@@ -90,6 +90,11 @@ geçerli kalır. Parça seçicilerinin hepsi bu kuralı izler: servis formunun d
 Kalıp, model kiti ve spec 0122'den beri parça kartındaki setin içeriği (`PartManager.jsx` `SetIcerigiAlani`). Etiket
 `getLabel`, anahtar `getKey={x => x.id}` ile geçilir (varsayılan anahtar etikete eşittir, aynı adlı iki öğe çakışır);
 kutunun tutamağı yer tutucusudur, bu yüzden yer tutucu metni aynı ekrandaki öteki arama kutularından ayrı yazılır.
+**Tablo hücresinde seçim penceresiyle (spec 0126):** seçici yatay kaydırmalı bir tablo kabının dar hücresindeyse arama
+kutusunun paneli kapta kırpılır; o zaman hücrede seçili ad ve "Seç" düğmesi durur, `SearchPick` bir seçim penceresinin
+içinde açılır (`documents/KalemSecPenceresi.jsx`, Evrak satır tablosu). Seçim penceresi 0050'nin Sınıf 1'i değildir (veri
+girmez, tablo taşımaz): `wide` değil, footer'sız ve `overflowVisible` açılır ki panel pencerenin dışına taşabilsin; arama
+kutusu gövdenin tek öğesidir ve açılışta odak alır. Kaldırma pencerenin dışında, adın yanındaki ayrı düğmedir.
 
 ## KartBolum
 
@@ -135,7 +140,7 @@ Spec 0016 ile:
 
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
-**Örnek:** `src/components/Documents.jsx:1107` (kart, etiket başlık)
+**Örnek:** `src/components/Documents.jsx:1122` (kart, etiket başlık)
 **Örnek:** `src/components/gider/DonemRaporu.jsx:44` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:368` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:554` (detay bölümü, başlık)
@@ -186,7 +191,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
 
 **Örnek:** `src/components/Giderler.jsx:361`
 **Örnek:** `src/components/Customers.jsx:555` (iki durum, sabit açıklama, spec 0016 R6)
-**Örnek:** `src/components/Documents.jsx:861` (ayrımlı ekran, yalnız başlık)
+**Örnek:** `src/components/Documents.jsx:875` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
 
@@ -302,6 +307,9 @@ ekranda kendiliğinden küçülür (`width: 100%`), içerik pencerenin içinde k
 - **Sınıf 2, kendi küçük boyutunda:** onay (`ConfirmDialog`), "silinemez" ve tek düğmeli bilgi pencereleri; Çek Durumu
   ve Çek Geçmişi (alınan ve verilen); bir iki alanlık kısa pencereler (Tahsilat Hesap penceresi,
   varsayılan 520). Bunları genişletmek boş alan üretir.
+- **Seçim penceresi (spec 0126):** yalnız bir arama kutusu taşıyan pencere (Evrak'ın "Parça/Kalıp Kataloğundan Seç"i)
+  Sınıf 1 değildir: `maxWidth={600}`, footer'sız ve `overflowVisible` (arama paneli pencereden taşar, kırpılmaz); emsali
+  "Stoğa Parça Ekle".
 - **Kapsam dışı:** müşteri ve bayi **detay** modalları kendi genişliğini korur (bayi 760, 0007 R16; müşteri 1080).
 - Genişleyen pencerede formun sarmalayan alan satırları kendiliğinden yan yana dizilir; alan sırası ve etiketleri
   değişmez. Yerleşim `tests/form-pencere-yerlesim.test.js` ile Electron'da (1280 ve 1024 px) ölçülür, değerler

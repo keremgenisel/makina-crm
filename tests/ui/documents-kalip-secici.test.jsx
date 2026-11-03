@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Regresyon: teklifte kalıp seçici aramalı açılır listeydi; liste satır tablosunun kabında (overflow) kırpılıyor ve satırın
-// dışına taşamıyordu. Artık yedek parça ve model seçicisi gibi yerel <select>: tarayıcının açılır listesi kaba bağlı değildir.
+// dışına taşamıyordu. cd876e3c bunu yerel <select>'e çevirmişti; spec 0126 ile (Karar 17) seçim bir pencerede yapılır:
+// arama kutusu pencerenin içindedir ve paneli tablonun kabına bağlı değildir. İki iddia yeni yolda korunur.
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { useState } from "react";
 import { render, cleanup, screen, fireEvent } from "@testing-library/react";
@@ -24,23 +25,25 @@ function H({ t0, onState }) {
 const ac = () => fireEvent.click(screen.getByText("2026-00001").closest("tr"));
 
 describe("Evrak: kalıp seçici (satır dışına taşan liste)", () => {
-  it("kalıp seçici yedek parça gibi yerel liste; seçenekler kalıp tanımları, seçim satıra yazılır", () => {
+  it("spec 0126 ile: kalıp seçimi pencerede; seçenekler kalıp tanımları, seçim satıra yazılır, tablo hücresinde arama kutusu yok", () => {
     let st;
     render(<H t0={T0()} onState={s => { st = s; }} />);
     ac();
-    const sec = screen.getByLabelText("Kalıp");
-    expect(sec.tagName).toBe("SELECT");
-    expect([...sec.querySelectorAll("option")].map(o => o.textContent)).toEqual(["— Kalıp Seç —", "Hamburger", "Köfte"]);
     expect(screen.queryByPlaceholderText("Kalıp ara...")).toBeNull();
-    fireEvent.change(sec, { target: { value: "Köfte" } });
+    fireEvent.click(screen.getByLabelText("Kalıp seç"));
+    const kutu = screen.getByPlaceholderText("Kalıp ara...");
+    expect(kutu.closest("table")).toBeNull();
+    expect([...document.querySelectorAll(".sp-option")].map(o => o.textContent)).toEqual(["Hamburger", "Köfte"]);
+    fireEvent.mouseDown([...document.querySelectorAll(".sp-option")].find(o => o.textContent === "Köfte"));
     fireEvent.click(screen.getByText("Kaydet"));
     expect(st[0].satirlar[0].selectedKalip).toBe("Köfte");
   });
   it("tanımlarda artık olmayan eski kalıp adı kaybolmaz, seçili kalır", () => {
-    render(<H t0={T0("Eski Kalıp")} />);
+    let st;
+    render(<H t0={T0("Eski Kalıp")} onState={s => { st = s; }} />);
     ac();
-    const sec = screen.getByLabelText("Kalıp");
-    expect(sec.value).toBe("Eski Kalıp");
-    expect([...sec.querySelectorAll("option")].map(o => o.textContent)).toContain("Eski Kalıp");
+    expect(screen.getByTestId("secili-kalip").textContent).toBe("Eski Kalıp");
+    fireEvent.click(screen.getByText("Kaydet"));
+    expect(st[0].satirlar[0].selectedKalip).toBe("Eski Kalıp");
   });
 });

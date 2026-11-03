@@ -14,6 +14,8 @@ import LOGO_B64 from "../assets/logo.avif?inline";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CURRENCIES } from "../lib/constants";
 import { buildPrintHtml, buildFaturaHtml } from "../lib/printTemplates";
 import { FaturaFormModal } from "./documents/FaturaFormModal";
+import { KalemSecPenceresi } from "./documents/KalemSecPenceresi";
+import { SetIcerikSatiri, setEtiketEki, PARCA_YER_TUTUCU } from "./stock/SetRozeti";
 
 const PER_PAGE = 15;
 const CUR_LABEL = { TRY: "TL", EUR: "EURO", USD: "USD" };
@@ -690,6 +692,18 @@ export const Documents = ({
     }) }));
   };
 
+  // Spec 0126 R1, R2/2: satırın parça/kalıp seçim penceresi ({ rowId, tur }); pencere kaydı döndürür, dönüşüm burada.
+  const [secim, setSecim] = useState(null);
+  const formAcik = !!form;
+  // Triyaj: seçim penceresi açıkken form başka bir yoldan kapanırsa (Escape engelli, Kaydet/Vazgeç pencerenin altında; savunma)
+  // seçim düşer; yoksa bir sonraki belge açılışında pencere kendiliğinden açılırdı (`form && secim`).
+  useEffect(() => { if (!formAcik) setSecim(null); }, [formAcik]);
+  const pencereSecimi = (kayit) => {
+    if (!secim) return;
+    if (secim.tur === "kalip") pickKalip(secim.rowId, kayit.ad);
+    else pickPart(secim.rowId, String(kayit.id));
+  };
+
   const pickPart = (rowId, partId) => {
     setForm(p => ({ ...p, satirlar: p.satirlar.map(r => {
       if (r.rowId !== rowId) return r;
@@ -1066,7 +1080,8 @@ export const Documents = ({
       {form && (
       <Modal wide maxWidth={1180} maxHeight="88vh"
         title={form.id ? "Belgeyi Düzenle" : (form.type === "teklif" ? "Yeni Teklif" : "Yeni Proforma")}
-        onClose={() => setForm(null)}>
+        onClose={() => { if (secim) return; setForm(null); }}>
+        {/* Spec 0126 R3/6: Modal Escape'i window'da dinler; seçim penceresi açıkken Escape yalnız onu kapatır. */}
         {(teklifLock && form.id) ? (
           <LockConflict lockedBy={teklifLock.lockedBy} lockedAt={teklifLock.lockedAt}
             onForce={forceTeklifLock} onCancel={() => setForm(null)} />
@@ -1346,6 +1361,20 @@ export const Documents = ({
                   ] : tip === "parca" ? [{ type: "parca", item: parcaItem }] : [];
                   const visibleSlots = slots;
                   const totalSpan = Math.max(visibleSlots.length, 1);
+                  // Spec 0126 R3, R3/3 (Karar 26): seçili ad, "Seç" düğmesi ve yalnız seçiliyken kaldır düğmesi.
+                  const secimHucresi = (tur, ad, secili) => (
+                    <div data-testid={`secim-${tur}`}>
+                      {ad && <div data-testid={`secili-${tur}`} style={{ fontSize: 12, fontWeight: 600, color: "var(--n800, #1e293b)", overflowWrap: "anywhere", marginBottom: 4 }}>{ad}</div>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Btn small variant="ghost" aria-label={tur === "kalip" ? "Kalıp seç" : "Parça seç"} onClick={() => setSecim({ rowId: row.rowId, tur })}>Seç</Btn>
+                        {secili && (
+                          <Btn small variant="ghost" aria-label={tur === "kalip" ? "Kalıp seçimini kaldır" : "Parça seçimini kaldır"}
+                            title={tur === "kalip" ? "Kalıp seçimini kaldır" : "Parça seçimini kaldır"}
+                            onClick={() => (tur === "kalip" ? pickKalip(row.rowId, "") : pickPart(row.rowId, ""))}><Icon name="close" size={11} /></Btn>
+                        )}
+                      </div>
+                    </div>
+                  );
                   const turSelect = (
                     <select value={tip} onChange={e => pickTur(row.rowId, e.target.value)} style={{ ...inputStyle, fontSize: 12 }}>
                       <option value="">— Tür Seç —</option>
@@ -1421,16 +1450,9 @@ export const Documents = ({
                             {allModels.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
                           </select>
                         )}
-                        {type === "kalip" && (
-                          // Yedek parça seçicisiyle aynı yerel liste: aramalı açılır liste satır tablosunun kabında kırpılıyordu
-                          // (liste satırın dışına taşamıyordu). Tanımlarda olmayan eski kalıp adı seçenek olarak korunur.
-                          <select aria-label="Kalıp" value={row.selectedKalip || ""} onChange={e => pickKalip(row.rowId, e.target.value)}
-                            style={{ ...inputStyle, fontSize: 12 }}>
-                            <option value="">— Kalıp Seç —</option>
-                            {row.selectedKalip && !kalipDefs.some(k => k.ad === row.selectedKalip) && <option value={row.selectedKalip}>{row.selectedKalip}</option>}
-                            {kalipDefs.map(k => <option key={k.id ?? k.ad} value={k.ad}>{k.ad}</option>)}
-                          </select>
-                        )}
+                        {/* Spec 0126 R1, R3/2: seçim pencereyle (satır içi arama kutusunun paneli bu kapta kırpılıyordu, R1/2);
+                            ad satırın kendi verisinden, tanımlarda olmayan eski kalıp adı da görünür. */}
+                        {type === "kalip" && secimHucresi("kalip", row.selectedKalip || "", !!row.selectedKalip)}
                         {type === "kalip" && form.type === "teklif" && (() => {
                           // Spec 0006 R3/R4 (plan E1): makinayla verilen standart kalıp mı, ayrı satılan Extra Kalıp mı.
                           const belgedeMakinaVar = (form.satirlar || []).some(r => r.selectedModel && (r.subItems || []).some(i => i.type === "makina"));
@@ -1444,13 +1466,18 @@ export const Documents = ({
                             </select>
                           );
                         })()}
-                        {type === "parca" && (
-                          <select value={row.selectedPart || ""} onChange={e => pickPart(row.rowId, e.target.value)}
-                            style={{ ...inputStyle, fontSize: 12 }}>
-                            <option value="">— Yedek Parça Seç —</option>
-                            {parts.map(p => <option key={p.id} value={String(p.id)}>{p.ad}</option>)}
-                          </select>
-                        )}
+                        {type === "parca" && (() => {
+                          // Spec 0126 R3/2 (Karar 25): katalogda varsa Türkçe ad, yoksa alt kalemin kayıtlı adı; R6, R6/2, R6/3:
+                          // set ise içerik satırı aynı hücrede (yeni <tr> yok), set katalogda yoksa çizilmez.
+                          const secili = row.selectedPart ? parts.find(p => String(p.id) === String(row.selectedPart)) : null;
+                          const ad = row.selectedPart ? (secili?.ad || item?.makinaAdi || PARCA_YER_TUTUCU) : "";
+                          return (
+                            <>
+                              {secimHucresi("parca", ad, !!row.selectedPart)}
+                              {secili && <SetIcerikSatiri part={secili} parts={parts} />}
+                            </>
+                          );
+                        })()}
                       </td>
                       {renderDataCells(item)}
                       {idx === 0 && (
@@ -1533,6 +1560,15 @@ export const Documents = ({
       </>}
       </Modal>
       )}
+      {/* Spec 0126 R1–R2/2: form penceresinin üstünde çizilir (DOM'da sonra gelir); tek bileşen, tür parametreyle. */}
+      {form && secim && (secim.tur === "kalip" ? (
+        <KalemSecPenceresi baslik="Kalıp Kataloğundan Seç" items={kalipDefs} getLabel={k => k.ad} getKey={k => k.id ?? k.ad}
+          placeholder="Kalıp ara..." onPick={pencereSecimi} onClose={() => setSecim(null)} />
+      ) : (
+        <KalemSecPenceresi baslik="Parça Kataloğundan Seç" items={parts}
+          getLabel={p => `${p.ad || ""}${p.kod ? " · " + p.kod : ""}${setEtiketEki(p)}`} getKey={p => p.id}
+          placeholder="Parça ara..." onPick={pencereSecimi} onClose={() => setSecim(null)} />
+      ))}
     </div>
   );
 };

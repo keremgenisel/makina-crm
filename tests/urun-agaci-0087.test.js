@@ -77,7 +77,9 @@ describe("Spec 0087: parça maliyeti (saf)", () => {
     const p = { fiyatTRY: 450, fiyatUSD: 12, fiyatEUR: "" };
     for (const c of ["TRY", "USD", "EUR"]) expect(partFiyatForCurrency({ ...p, maliyet: 99.9 }, c)).toBe(partFiyatForCurrency(p, c));
     for (const f of ["src/components/Documents.jsx", "src/components/ServiceForm.jsx", "src/components/YedekParcaSatisForm.jsx",
-      "src/components/stock/PartStokTab.jsx", "src/components/PartSaleForm.jsx", "src/lib/yedekParcaSatis.js"]) {
+      "src/components/stock/PartStokTab.jsx", "src/components/PartSaleForm.jsx", "src/lib/yedekParcaSatis.js",
+      // Spec 0126 Karar 18: Evrak'ın seçim penceresi de bir satış ekranıdır.
+      "src/components/documents/KalemSecPenceresi.jsx"]) {
       expect(kod(f), f).not.toMatch(/\.maliyet\b|urunAgaci/);
     }
   });

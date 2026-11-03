@@ -254,7 +254,11 @@ describe("Spec 0121 R26, R31: satış ve serviste set tek kalemdir", () => {
   it("AC-43 / AC-29 / C10: ui.jsx dokunulmadı; Evrak seçicisinde rozet yok; yazdırma çıktıları içeriği okumaz", () => {
     const ui = readFileSync("src/components/ui.jsx", "utf8");
     expect(ui).not.toMatch(/setIcerigi|SetRozeti|set-rozeti/);
-    expect(readFileSync("src/components/Documents.jsx", "utf8")).not.toMatch(/setIcerigi|SetRozeti/);
+    // Spec 0126 ile (R5, R6): Evrak SetRozeti modülünden içerik satırını ve etiket ekini alır; görsel rozet yine yok,
+    // içerik çözümü yine yok.
+    const doc = readFileSync("src/components/Documents.jsx", "utf8");
+    expect(doc).not.toMatch(/setIcerigi|<SetRozeti\b|set-rozeti/);
+    expect(doc).toMatch(/import \{ SetIcerikSatiri, setEtiketEki, PARCA_YER_TUTUCU \} from "\.\/stock\/SetRozeti"/);
     for (const f of ["src/lib/printTemplates.js", "src/components/stock/uretimFormPrint.js", "src/lib/aylikRapor.js", "src/lib/analiz.js"]) {
       expect(readFileSync(f, "utf8")).not.toMatch(/setIcerigi/);
     }

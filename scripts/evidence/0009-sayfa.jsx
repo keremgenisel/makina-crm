@@ -362,10 +362,11 @@ const alt = (id, type, fiyat) => ({ id, type, kod: "", makinaAdi: "", tanim: "",
 const T0 = (o = {}) => ({ id: 900, type: "teklif", no: "2026-00001", tarih: "2026-09-20", createdAt: "2026-09-20", dil: "TR", currency: "TRY", durum: "taslak", firma: "Kutu Gıda", satirlar: [
   { rowId: "r1", pickTip: "makina", selectedModel: "AK100", selectedKalip: "", selectedPart: "", subItems: [alt("m1", "makina", 60000)] },
 ], ...o });
-function EvrakEkrani({ teklif }) {
+// Spec 0126 Karar 28: katalog verilmezse bugünkü boş parça listesi ve id'siz kalıp; var olan altı Evrak ekranı aynı girdiyle çizilir.
+function EvrakEkrani({ teklif, katalog }) {
   const [teklifler, setTeklifler] = useState(teklif ? [teklif] : []);
   return <Documents teklifler={teklifler} setTeklifler={setTeklifler} faturalar={[]} setFaturalar={bos} customers={MUSTERILER} partSales={[]}
-    allModels={[{ model: "AK100" }]} factory={{ name: "Altuntaş" }} appSettings={{}} showToast={bos} kalipDefs={[{ ad: "Hamburger" }]} parts={[]}
+    allModels={[{ model: "AK100" }]} factory={{ name: "Altuntaş" }} appSettings={{}} showToast={bos} kalipDefs={katalog?.kalipDefs ?? [{ ad: "Hamburger" }]} parts={katalog?.parts ?? []}
     geoData={{}} loadingGeo={false} serverPermissions={null} dealers={DEALERS} yedekParcaSatislar={[]} onEvrakKaydet={bos} />;
 }
 
@@ -864,6 +865,14 @@ const M88_KAPSAM = { id: 92, tarih: "2026-01-10", turId: 1, tutar: 12000, kdvOra
 // Spec 0125: kalıp kataloğu fikstürü (kod, ürün adı TR/EN).
 const KALIP_0125 = [{ id: 951, ad: "Burger 120", kod: "BG-120", urunAdi: "Köfte kalıbı", urunAdiEN: "Patty mould" }, { id: 952, ad: "Kroket", kod: "KR-1", urunAdi: "Kroket kalıbı" },
   { id: 953, ad: "Hamburger 100", kod: "HB-100", urunAdi: "Hamburger kalıbı" }];
+// Spec 0126: parça (set dahil) ve kalıp satırlı teklif.
+const KATALOG_0126 = { parts: PARCA_0121_SET, kalipDefs: KALIP_0125 };
+const alt0126 = (id, type, o) => ({ id, type, kod: "", makinaAdi: "", tanim: "", miktar: "1", birimFiyat: "", tlKarsiligi: "", ...o });
+const T_0126 = { id: 900, type: "teklif", no: "2026-00001", tarih: "2026-09-20", createdAt: "2026-09-20", dil: "TR", currency: "TRY", durum: "taslak", firma: "Kutu Gıda", satirlar: [
+  { rowId: "r1", pickTip: "parca", selectedModel: "", selectedKalip: "", selectedPart: "20", subItems: [alt0126("p1", "parca", { kod: "AY-T", makinaAdi: "100_AYNA MAHRUTİ DİŞLİSİ TAKIM", birimFiyat: "3.000" })] },
+  { rowId: "r2", pickTip: "parca", selectedModel: "", selectedKalip: "", selectedPart: "21", subItems: [alt0126("p2", "parca", { kod: "AD-1", makinaAdi: "Ayna dişlisi", birimFiyat: "500" })] },
+  { rowId: "r3", pickTip: "kalip", selectedModel: "", selectedKalip: "Burger 120", selectedPart: "", subItems: [alt0126("k1", "kalip", { kod: "BG-120", makinaAdi: "Köfte kalıbı", birimFiyat: "8.000" })] },
+] };
 const ARAMA_KUTU = "doldur:Müşteri, seri no, teklif no, servis, bayi, not ara...";
 
 const EKRANLAR = {
@@ -1364,6 +1373,11 @@ const EKRANLAR = {
       atolyeKaliplari: [{ id: 1, ad: "Burger Kalıbı 110", olcu: "110" }], kalipKargoFirma: "Yurtiçi Kargo", kalipKargoTakipNo: "YK778899" }] }),
     ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=burger`]],
   "katalog-parca-0125-suzgec": [ayarlar("yedekparca", { parts: PARCA_0121_SET, standardModels: MODELLER_0087, katalogAcilis: { panel: "yedekparca", ara: "Ayna dişlisi", no: 1 } }), []],
+  // Spec 0126: Evrak satırında parça ve kalıp seçimi pencereyle; set etiketi ve içerik satırı (C4: yeni ekranlar).
+  "evrak-0126-satirlar": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "kaydir:Ürün / Hizmet Satırları"]],
+  "evrak-0126-parca-pencere": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "etiket:Parça seç"]],
+  "evrak-0126-parca-arama": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "etiket:Parça seç", "odak:Parça ara...=dişli"]],
+  "evrak-0126-kalip-pencere": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "etiket:Kalıp seç"]],
   "ayarlar-kaliplar-0125-suzgec": [ayarlar("kaliplar", { kalipDefs: KALIP_0125, katalogAcilis: { panel: "kaliplar", ara: "Burger 120", no: 1 } }), []],
   // Spec 0071: KDV dâhil giriş (normal, yuvarlama farkı, brüt kira, net kira ipucu), tanım formu, "Tutar girilmedi" rozeti ve süzgeci.
   "gider-formu-0071-kdv-dahil": [<GiderForm kalem={{ id: 901, tarih: "2026-09-15", turId: 4, tutar: 983.33, kdvOrani: 20, kdvYonu: "dahil", tedarikciId: 12, aciklama: "Eylül elektrik faturası" }}

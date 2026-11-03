@@ -1,0 +1,148 @@
+{
+  "parca-sec": [
+    {
+      "rowId": "r1",
+      "pickTip": "parca",
+      "selectedModel": "",
+      "selectedKalip": "",
+      "selectedPart": "7",
+      "subItems": [
+        {
+          "id": "p1",
+          "type": "parca",
+          "kod": "R-7",
+          "makinaAdi": "Rulman",
+          "tanim": "6204",
+          "miktar": "1",
+          "birimFiyat": "450",
+          "tlKarsiligi": ""
+        }
+      ]
+    }
+  ],
+  "parca-set-sec": [
+    {
+      "rowId": "r1",
+      "pickTip": "parca",
+      "selectedModel": "",
+      "selectedKalip": "",
+      "selectedPart": "8",
+      "subItems": [
+        {
+          "id": "p1",
+          "type": "parca",
+          "kod": "BS-1",
+          "makinaAdi": "Bıçak Seti",
+          "tanim": "",
+          "miktar": "1",
+          "birimFiyat": "1.250",
+          "tlKarsiligi": ""
+        }
+      ]
+    }
+  ],
+  "parca-en-usd": [
+    {
+      "rowId": "r1",
+      "pickTip": "parca",
+      "selectedModel": "",
+      "selectedKalip": "",
+      "selectedPart": "7",
+      "subItems": [
+        {
+          "id": "p1",
+          "type": "parca",
+          "kod": "R-7",
+          "makinaAdi": "Bearing",
+          "tanim": "6204",
+          "miktar": "1",
+          "birimFiyat": "12",
+          "tlKarsiligi": "480"
+        }
+      ]
+    }
+  ],
+  "parca-temizle": [
+    {
+      "rowId": "r1",
+      "pickTip": "parca",
+      "selectedModel": "",
+      "selectedKalip": "",
+      "selectedPart": "",
+      "subItems": []
+    }
+  ],
+  "kalip-sec": [
+    {
+      "rowId": "r1",
+      "pickTip": "kalip",
+      "selectedModel": "",
+      "selectedKalip": "Köfte",
+      "selectedPart": "",
+      "subItems": [
+        {
+          "id": "k1",
+          "type": "kalip",
+          "kod": "K-K",
+          "makinaAdi": "Köfte Kalıbı",
+          "tanim": "Ø60",
+          "miktar": "1",
+          "birimFiyat": "",
+          "tlKarsiligi": ""
+        }
+      ]
+    }
+  ],
+  "kalip-en": [
+    {
+      "rowId": "r1",
+      "pickTip": "kalip",
+      "selectedModel": "",
+      "selectedKalip": "Hamburger",
+      "selectedPart": "",
+      "subItems": [
+        {
+          "id": "k1",
+          "type": "kalip",
+          "kod": "K-H",
+          "makinaAdi": "Burger Mold",
+          "tanim": "D100",
+          "miktar": "1",
+          "birimFiyat": "",
+          "tlKarsiligi": ""
+        }
+      ]
+    }
+  ],
+  "kalip-eski-ad": [
+    {
+      "rowId": "r1",
+      "pickTip": "kalip",
+      "selectedModel": "",
+      "selectedKalip": "Eski Kalıp",
+      "selectedPart": "",
+      "subItems": [
+        {
+          "id": "k1",
+          "type": "kalip",
+          "kod": "",
+          "makinaAdi": "",
+          "tanim": "",
+          "miktar": "1",
+          "birimFiyat": "",
+          "tlKarsiligi": ""
+        }
+      ]
+    }
+  ],
+  "kalip-temizle": [
+    {
+      "rowId": "r1",
+      "pickTip": "kalip",
+      "selectedModel": "",
+      "selectedKalip": "",
+      "selectedPart": "",
+      "subItems": []
+    }
+  ]
+}

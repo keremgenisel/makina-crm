@@ -1,7 +1,18 @@
-import { setRozetMetni, setIcerikSatiri, setIcerigiOf } from "../../lib/urunAgaci";
+import { setRozetMetni, setIcerikSatiri, setIcerigiOf, SET_ICERIGI_YER_TUTUCU } from "../../lib/urunAgaci";
+
+// Spec 0126 triyaj: katalogda ve satırda adı bulunamayan parçanın parantezli yer tutucusu; satış ekranları (Evrak) urunAgaci'yı
+// anmadığı için (0087 AC-6) buradan yeniden dışa verilir, metin tek yerde kalır.
+export { SET_ICERIGI_YER_TUTUCU as PARCA_YER_TUTUCU };
 
 // Spec 0121: satış/stok ekranları maliyet modülünü doğrudan içe almaz (0087 AC-6); içerik sorusu buradan sorulur.
 export const setBilesenSayisi = (part) => setIcerigiOf(part).length;
+
+// Spec 0126 R5, Karar 18: arama listesinin satırı düz metindir (SearchPick zengin satır almaz), rozet etikete metin olarak
+// girer. Satış ekranları (Evrak dahil) urunAgaci adını anmadığı için (0087 AC-6) ek buradan verilir; set değilse boş.
+export const setEtiketEki = (part) => {
+  const n = setBilesenSayisi(part);
+  return n > 0 ? ` · ${setRozetMetni(n)}` : "";
+};
 
 // Spec 0121 R24, R24/2: setin rozeti. Biçimi MakinaStokTab'ın model rozetiyle aynı; Parça Stoğu satırında ve parça kartı
 // listesinde adın altında çizilir (sütun sayısı değişmez). İki ekran ayrışmasın diye tek bileşen.

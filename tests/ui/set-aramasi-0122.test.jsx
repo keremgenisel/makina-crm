@@ -235,9 +235,11 @@ describe("Spec 0122: kaynak taramaları", () => {
   it("AC-14 / AC-25: öteki sekiz çağrı birebir aynı, toplam dokuz çağrı altı dosya, PartManager'da tek; SearchPick imzası değişmedi ve etiket taşımaz", () => {
     const cagrilar = dosyalar("src").filter(f => !f.endsWith("ui.jsx"))
       .flatMap(f => ham(f).split("\n").filter(l => l.includes("<SearchPick")).map(l => [f, l.trim()]));
-    expect(cagrilar).toHaveLength(9);
-    expect(new Set(cagrilar.map(c => c[0])).size).toBe(6);
-    const otekiler = cagrilar.filter(c => !c[0].endsWith("PartManager.jsx"));
+    // Spec 0126 ile: Evrak'ın seçim penceresi onuncu çağrı ve yedinci dosyadır (KalemSecPenceresi.jsx'te tek çağrı).
+    expect(cagrilar).toHaveLength(10);
+    expect(new Set(cagrilar.map(c => c[0])).size).toBe(7);
+    expect(cagrilar.filter(c => c[0].endsWith("KalemSecPenceresi.jsx"))).toHaveLength(1);
+    const otekiler = cagrilar.filter(c => !c[0].endsWith("PartManager.jsx") && !c[0].endsWith("KalemSecPenceresi.jsx"));
     expect(otekiler.map(c => c.join(" ")).sort()).toEqual(SEKIZ.map(c => c.join(" ")).sort());
     expect(cagrilar.filter(c => c[0].endsWith("PartManager.jsx"))).toHaveLength(1);
     const ui = ham("src/components/ui.jsx");
