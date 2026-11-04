@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CUR_SYM, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { today, yerelBugun, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KALIP_MUSTERI_SECILMEDI } from "../lib/kalipSatisi";
@@ -9,8 +9,8 @@ import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatA
 import { SatisTipiSecici } from "./SatisTipiSecici";
 import { IhracKayitliOzetSatirlari } from "./IhracKayitliOzet";
 import { satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib/satisTevkifat";
-import { TahsilatHesapAlani, tahsilatOnSecim } from "./kasa/TahsilatHesap";
-import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../lib/satisTahsilat";
+import { TahsilatHesapAlani, tahsilatOnSecim, FormTahsilatGunu } from "./kasa/TahsilatHesap";
+import { tahsilatHesapDurumu, SATIS_KAYNAK, tahsilatGunuFormHatasi, tahsilatGunuIsareti } from "../lib/satisTahsilat";
 
 const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 
@@ -64,7 +64,8 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
     <Modal title={title} onClose={onCancel} wide
       footer={<div style={{ display: "flex", gap: 8 }}>
         <Btn variant="ghost" onClick={onCancel}>Vazgeç</Btn>
-        <Btn onClick={onSave}><Icon name="check" size={14} /> Kaydet</Btn>
+        {/* Spec 0131 R3, Karar 19: geçersiz tahsilat günü kaydedilmez; neden alanın altında yazılıdır. */}
+        <Btn onClick={() => { if (selectedCust && kaliplarToplam > 0 && tahsilatGunuFormHatasi(form, yerelBugun())) return; onSave(); }}><Icon name="check" size={14} /> Kaydet</Btn>
       </div>}>
       {draftBar}
       <Field label="Müşteri / Makina">
@@ -246,7 +247,7 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
       {selectedCust && kaliplarToplam > 0 && (
         <div style={{ marginTop: 8 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: form.odendi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", border: `1px solid ${form.odendi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)"}`, borderRadius: 8, padding: "10px 12px" }}>
-            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked, ...tahsilatOnSecim(p, e.target.checked, hesapDurumu, hesapVarsayilan, kasaHesaplari || []) }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
+            <input type="checkbox" checked={!!form.odendi} onChange={e => setForm(p => ({ ...p, odendi: e.target.checked, ...tahsilatOnSecim(p, e.target.checked, hesapDurumu, hesapVarsayilan, kasaHesaplari || []), ...tahsilatGunuIsareti(e.target.checked, yerelBugun()) }))} style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--grn600, #16a34a)" }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: form.odendi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
               {form.odendi ? "Ücret tahsil edildi (ödendi)" : "Ücret henüz tahsil edilmedi (ödenmedi)"}
             </span>
@@ -256,6 +257,8 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
               <TahsilatHesapAlani durum={hesapDurumu} hesaplar={kasaHesaplari} value={form.hesapId} onChange={v => setForm(p => ({ ...p, hesapId: v }))} />
             </div>
           )}
+          {/* Spec 0131 R8, R8/3: gün alanı hesap alanının yanında ama tahsilat hesabı izninden bağımsız. */}
+          <FormTahsilatGunu form={form} setForm={setForm} />
           {form.odendi && (
             <div style={{ marginTop: 8, display: "grid", gap: 10, padding: 12, borderRadius: 10, background: "var(--n100, #f8fafc)", border: "1px solid var(--n200, #e2e8f0)" }}>
               <div style={{ display: "grid", gridTemplateColumns: form.yontem === "Çek" ? "1fr 1fr" : "1fr", gap: 10 }}>

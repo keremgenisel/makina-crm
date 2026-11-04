@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { grupKimlikleri, today, fmtTR, uid, bumpId, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
+import { grupKimlikleri, today, yerelBugun, fmtTR, uid, bumpId, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
+import { tahsilatGunuYaz, tahsilatGunuFormHatasi } from "../lib/satisTahsilat";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim, yansitilanKomisyon } from "../lib/krediKarti";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "../lib/satisTevkifat";
 import { servisSureleri } from "../lib/servisAnaliz";
@@ -570,7 +571,7 @@ export const ServisPanosu = ({
   const kaydet = (parcaUcretsizMi, dosyaTaslaklari = []) => {
     if (!setServices) return;
     // Spec 0079 R6/3: CustomerDetailModal.saveService'in birebir kopyası; doğrulama, kart tabanı ve alan yazımı ikisinde birden.
-    const tevkifatHata = satisTevkifatDogrula(form, form.faturaTipi);
+    const tevkifatHata = satisTevkifatDogrula(form, form.faturaTipi) || tahsilatGunuFormHatasi(form, yerelBugun()); // spec 0131 Karar 19
     if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
     // Spec 0115 R14, Karar 52: CustomerDetailModal.saveService ile aynı doğrulama (C3; tarama ikisini birlikte arar).
     const tamirD = tamirDogrula(form);
@@ -607,7 +608,9 @@ export const ServisPanosu = ({
       kartKomisyonu: form.yontem === "Kredi Kartı" ? kartTabanIsaretle(yansitSnap || kartKomisyonuSnapshot(svKdvDahil, form.taksitSayisi, kkAyar, kkTarih, false), kartTaban) : null }, form, form.faturaTipi);
     // Spec 0115 R7/3, C3: kimlikler kurucuda, tek yazıcı tamirYaz (kutu kapalıysa alan kayıtta yok).
     if (svModal === "add" || tamirListesi(form).some(g => g.id == null)) bumpId(customers, services);
-    const rec = tamirYaz(recTevkifat, tamirListesiKur(form, uid), tamirSevkKur(form));
+    // Spec 0131 R1, R7, R8/2: tahsilat günü tek yazıcıdan, eski kayda göre (saveService ile aynı).
+    const svEski = svModal === "add" ? null : (services.find(x => x.id === form.id) || null);
+    const rec = tahsilatGunuYaz(tamirYaz(recTevkifat, tamirListesiKur(form, uid), tamirSevkKur(form)), { eski: svEski, bugun: yerelBugun(), gun: form.tahsilatTarihi });
     if (svModal === "add") {
       const newId = uid();
       // Yeni servis "Bekliyor" ile açılır → fabrikaya giriş anı damgalanır (elle girilmişse korunur).

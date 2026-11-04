@@ -1256,6 +1256,15 @@ const EKRANLAR = {
     ilk={{ id: 751, customerId: 500, tur: "Kalıp", tarih: "2026-09-20", currency: "TRY", faturaTipi: "Faturasız Yurtiçi", satisFirma: "Altuntaş Makina", ad: "Hamburger", ucret: "500", odendi: true, yontem: "Nakit", hesapId: 401, fabrikaTeslim: false, kaliplar: [{ ad: "Hamburger", olcu: "", fiyat: 500 }] }} />, ["kaydir:Tahsilatın girdiği hesap"]],
   "yedek-parca-formu-tahsilat-hesap": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yedek Parça Satışını Düzenle" kasaHesaplari={KASA_HESAPLAR}
     ilk={{ id: 761, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: "350", currency: "TRY", tarih: "2026-09-20", faturaTipi: "Faturasız Yurtiçi", odendi: true, yontem: "Nakit", hesapId: 401, fabrikaTeslim: false, tahsisler: [] }} />, ["kaydir:Tahsilatın girdiği hesap"]],
+  // Spec 0131: tahsilat günü. Pencerenin çek nedeni, tahsilat hesabı yetkisi olmadan formda yalnız gün alanı (boş: ipucu),
+  // ileri günde alanın altında hata, Kasa'da günü girilmemiş hareket satırının işareti ve satır içi girdisi.
+  "musteri-0131-pencere-cek": [detay(601, { services: [...DETAY_SERVIS, { ...TH_DETAY_SERVIS, yontem: "Çek" }], kasaHesaplari: KASA_HESAPLAR, kasaYetki: true, tahsilatHesapYetki: true, tahsilatHesapVarsayilan: () => 402 }),
+    ["dugme:Ödenmedi · işaretle: Ödendi"]],
+  "servis-formu-0131-gun-bos": [<FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle"
+    ilk={{ customerId: 500, date: "2026-09-20", type: "Garanti Dışı", repairPlace: "Yerinde Onarım", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", currency: "TRY", servisUcreti: "1500", odendi: true, yontem: "Nakit", degisenParcalar: [] }} />, ["kaydir:Tahsilat tarihi"]],
+  "servis-formu-0131-gun-hata": [<FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" kasaHesaplari={KASA_HESAPLAR}
+    ilk={{ customerId: 500, date: "2026-09-20", type: "Garanti Dışı", repairPlace: "Yerinde Onarım", islemFirma: "Altuntaş Makina", faturaTipi: "Faturalı Yurtiçi", currency: "TRY", servisUcreti: "1500", odendi: true, yontem: "Nakit", hesapId: 402, tahsilatTarihi: "2026-09-30", degisenParcalar: [] }} />, ["kaydir:Tahsilat tarihi"]],
+  "kasa-0131-gun-eksik": [kasaTahsilat({ services: [...TH_SERVIS, thSv(4203, 500, "2026-09-18", 1200, { hesapId: 401, tahsilatTarihi: null })] }), ["~Ziraat Bankası"]],
   // Spec 0045: tutar alanında binlik ayracı ve pencere alt satırında düğme boşluğu (sarmalayıcısız beş form).
   "gider-formu-tutar": [<GiderForm kalem={{ turId: 5, tarih: "2026-09-20", tutar: "1234567,5", kdvOrani: 20, tedarikciId: 12, aciklama: "Sac" }} giderTurleri={TURLER} tedarikciler={TED}
     calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} />, []],

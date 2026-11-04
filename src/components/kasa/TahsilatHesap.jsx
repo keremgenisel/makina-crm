@@ -2,9 +2,10 @@
 // altındaki seçici (TahsilatHesapAlani) ve tek tıklık "Ödendi" anahtarının açtığı küçük pencere
 // (TahsilatHesapPenceresi). Hangi kaydın hesap sorduğu ve tutarı saf motordan gelir (satisTahsilat.js).
 import { useState, useEffect } from "react";
-import { Field, Select, Btn, Modal, Icon } from "../ui";
-import { Ipucu } from "../tasarim";
-import { fmtCur, parseMoney } from "../../lib/utils";
+import { Field, Select, Btn, Modal, Icon, Input } from "../ui";
+import { Ipucu, HataMetni } from "../tasarim";
+import { fmtCur, parseMoney, yerelBugun } from "../../lib/utils";
+import { TAHSILAT_GUNU_ETIKETI, TAHSILAT_GUNU_BELIRTILMEDI, tahsilatGunuDogrula, tahsilatGunuNedeni, tahsilatGunuAta, tahsilatGunuFormHatasi } from "../../lib/satisTahsilat";
 import { secilebilirHesaplar, HESAP_TUR_AD } from "../../lib/kasa";
 
 // Triyaj: kaydın para birimine uyan mevcut hesap (yoksa null). Uyumsuz hesap seçili gösterilmez, formda temizlenir.
@@ -78,16 +79,72 @@ export const OdemeSatiriHesap = ({ satir, i, currency, hesaplar, varsayilan, onC
   );
 };
 
-// "Ödendi" anahtarının penceresi (R2, Q6). onKaydet(hesapId | null); "Hesapsız kaydet" null gönderir.
-export const TahsilatHesapPenceresi = ({ baslik = "Tahsilat Hesabı", currency = "TRY", tutar = 0, hesaplar = [], varsayilan = null, onKaydet, onVazgec }) => {
+// Spec 0131 R8, R8/3, C2/2: tahsilat günü alanı (pencere, üç form ve Kasa aynı bileşeni çizer). Hesap alanından ve
+// tahsilat hesabı izninden bağımsızdır. Boşken "gün belirtilmedi" ipucu (R3/2), ileri gün seçilemez (C4, AC-32), hata alanın
+// altında (R2/2). Değer YYYY-AA-GG ya da "".
+export const TahsilatGunuAlani = ({ value, onChange, hata = null, testId = "tahsilat-gunu", etiket = true, onBlur, onKeyDown }) => {
+  const kutu = (
+    <>
+      <Input type="date" aria-label={TAHSILAT_GUNU_ETIKETI} max={yerelBugun()} value={value || ""} data-testid={testId} onChange={e => onChange(e.target.value)} onBlur={onBlur} onKeyDown={onKeyDown} />
+      {!value && <Ipucu>{TAHSILAT_GUNU_BELIRTILMEDI}</Ipucu>}
+      <HataMetni>{hata}</HataMetni>
+    </>
+  );
+  return etiket ? <Field label={TAHSILAT_GUNU_ETIKETI}>{kutu}</Field> : <div>{kutu}</div>;
+};
+
+// Spec 0131 R8, R8/2, R8/3, R12/3: üç paylaşılan formun gün alanı. Ödendi işaretliyken çizilir; çek ve kartta alan yerine
+// neden. Tahsilat hesabı iznine bağlı değildir (formlar bunu kasaHesaplari kapısının dışında çağırır). Hata canlıdır;
+// kayıt düğmesi aynı denetimi (tahsilatGunuFormHatasi) çağırır.
+export const FormTahsilatGunu = ({ form, setForm, testId = "form-tahsilat-gunu" }) => {
+  if (!form?.odendi || form?.ucretsizMi) return null;
+  const neden = tahsilatGunuNedeni(form);
+  if (neden) return <div data-testid="tahsilat-gunu-neden" style={{ marginTop: 8 }}><Ipucu>{neden}</Ipucu></div>;
+  return (
+    <div style={{ marginTop: 8 }}>
+      <TahsilatGunuAlani value={form.tahsilatTarihi} onChange={v => setForm(p => tahsilatGunuAta(p, v))}
+        hata={tahsilatGunuFormHatasi(form, yerelBugun())} testId={testId} />
+    </div>
+  );
+};
+
+// Spec 0131 R10, R10/2, R10/3, R11/3, Karar 20: Kasa'nın satır içi gün girdisi. Kaydın bugün geçerli günüyle dolu gelir;
+// yalnız geçerli ve farklı bir gün seçilince onYaz çağrılır (dokunulmayan alan yazılmaz). Boş ya da geçersiz değer yazılmaz.
+// Triyaj: yazım odak kaybında ya da Enter'da yapılır, değişimde değil (tarih kutusuna klavyeyle yıl yazılırken "0202-05-03"
+// gibi ara değerler de değişim olayı üretir ve geçerli bir gündür; değişimde yazmak onu kaydederdi).
+export const KasaTahsilatGunu = ({ deger, onYaz, testId = "kasa-tahsilat-gunu" }) => {
+  const [v, setV] = useState(deger || "");
+  const [hata, setHata] = useState(null);
+  const degis = (yeni) => { setV(yeni); setHata(yeni ? tahsilatGunuDogrula(yeni, yerelBugun()) : null); };
+  const yaz = () => {
+    const e = v ? tahsilatGunuDogrula(v, yerelBugun()) : null;
+    setHata(e);
+    if (!e && v && v !== (deger || "")) onYaz(v);
+  };
+  return <TahsilatGunuAlani value={v} onChange={degis} hata={hata} testId={testId} etiket={false}
+    onBlur={yaz} onKeyDown={e => { if (e.key === "Enter") yaz(); }} />;
+};
+
+// "Ödendi" anahtarının penceresi (R2, Q6). Spec 0131 R2, R2/2, R4, Karar 21: tahsilat gününü de sorar (bugünle dolu gelir);
+// onKaydet(hesapId | null, gun). "Hesapsız kaydet" null gönderir; iki düğme de aynı doğrulamadan geçer ve hatada pencere açık
+// kalır. Çek ve kartta gün sorulmaz, nedeni yazılır (gunNedeni; onKaydet'e gün gitmez).
+export const TahsilatHesapPenceresi = ({ baslik = "Tahsilat Bilgisi", currency = "TRY", tutar = 0, hesaplar = [], varsayilan = null, gunNedeni = null, onKaydet, onVazgec }) => {
   const [hesapId, setHesapId] = useState(varsayilan);
+  const [gun, setGun] = useState(() => yerelBugun());
+  const [hata, setHata] = useState(null);
+  const kaydet = (h) => {
+    if (gunNedeni) { onKaydet(h, undefined); return; }
+    const e = tahsilatGunuDogrula(gun, yerelBugun());
+    if (e) { setHata(e); return; }
+    onKaydet(h, gun || "");
+  };
   return (
     <Modal title={baslik} onClose={onVazgec}
       footer={(
         <div style={{ display: "flex", gap: 8 }}>
           <Btn variant="ghost" onClick={onVazgec}>Vazgeç</Btn>
-          <Btn variant="ghost" onClick={() => onKaydet(null)}>Hesapsız kaydet</Btn>
-          <Btn onClick={() => onKaydet(hesapId)}><Icon name="check" size={14} /> Ödendi olarak kaydet</Btn>
+          <Btn variant="ghost" onClick={() => kaydet(null)}>Hesapsız kaydet</Btn>
+          <Btn onClick={() => kaydet(hesapId)}><Icon name="check" size={14} /> Ödendi olarak kaydet</Btn>
         </div>
       )}>
       <div data-testid="tahsilat-hesap-penceresi" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -96,6 +153,8 @@ export const TahsilatHesapPenceresi = ({ baslik = "Tahsilat Hesabı", currency =
           <HesapSelect hesaplar={hesaplar} pb={currency} value={hesapId} onChange={setHesapId} />
           <Ipucu>Hesap bilinmiyorsa boş bırakın; kayıt Kasa'da hesabı belirtilmemiş tahsilatlar arasında bekler.</Ipucu>
         </Field>
+        {gunNedeni ? <div data-testid="tahsilat-gunu-neden"><Ipucu>{gunNedeni}</Ipucu></div>
+          : <TahsilatGunuAlani value={gun} onChange={v => { setGun(v); setHata(null); }} hata={hata} testId="pencere-tahsilat-gunu" />}
       </div>
     </Modal>
   );

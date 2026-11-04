@@ -19,6 +19,7 @@ import { Customers } from "../../src/components/Customers";
 import { YedekParcaSatisTab } from "../../src/components/stock/YedekParcaSatisTab";
 import { SettingsExport } from "../../src/components/settings/SettingsExport";
 import { CUSTOMERS, PAYMENTS, SERVICES, PART_SALES, YEDEK, DEALERS, PARTS, KDV, FAB } from "../fixtures/0079-veri";import { ayikla0106 } from "../fixtures/0106-ayikla";
+import { metin0131, ayiklanan0131 } from "../fixtures/0131-ayikla";
 import { ayikla0113 } from "../fixtures/0113-ayikla";
 
 
@@ -27,7 +28,8 @@ beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); vi.useFakeTimers({
 afterAll(() => vi.useRealTimers());
 afterEach(cleanup);
 
-const metin = (el) => el.textContent.replace(/\s+/g, " ").trim();
+// Spec 0131 ile (R13/2): zaman çizelgesindeki tahsilat günü metni iki taraftan da ayıklanır (tests/fixtures/0131-ayikla.js).
+const metin = (el) => metin0131(el);
 const ortak = { customers: CUSTOMERS, dealers: DEALERS, services: SERVICES, partSales: PART_SALES, payments: PAYMENTS, yedekParcaSatislar: YEDEK, parts: PARTS, factory: FAB, kdvRates: KDV };
 
 // Bugünkü veriyle ekran metinleri ve dışa aktarma satırları (veri değişmeden önce ve sonra aynı çağrı).
@@ -102,6 +104,7 @@ describe("Spec 0079 AC-31: tevkifatsız veride ekranlar birebir aynı", () => {
     const finansAyikla = (k, t) => (k === "finans" ? ayikla0113(t) : t);
     for (const k of Object.keys(once)) if (k !== "disaAktarma") expect(ayikla0106(stokKutusuAyikla(k, finansAyikla(k, simdi[k]))), k).toBe(ayikla0106(stokKutusuAyikla(k, finansAyikla(k, once[k]))));
     expect(ayikla0113(once.finans)).not.toBe(once.finans); // ayıklama eski altında gerçekten iş yapıyor
+    expect(ayiklanan0131()).toBeGreaterThan(0); // spec 0131: gün metni ayıklaması bugünkü çıktıda iş yapıyor
     expect(ayikla0113(simdi.finans)).not.toBe(simdi.finans); // ve yeni çıktıda da
     expect(Object.keys(once).filter(k => k.startsWith("anasayfa")).every(k => stokKutusuAyikla(k, once[k]) !== once[k] && stokKutusuAyikla(k, simdi[k]) !== simdi[k])).toBe(true);
     expect(Object.keys(simdi.disaAktarma).sort()).toEqual(Object.keys(once.disaAktarma).sort());

@@ -589,6 +589,18 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("spec 0052 AC-23: 0044 istisnası Kasa sekmesi olmadan da çalışır (Giderler + Finans, müşteri grubu kısıtlı) → 200",
     (await postData({ ...tKs, dataVersion: undefined, services: tKs.services.map(x => x.id === 9700 ? { ...x, hesapId: 9043 } : x) }, tKs.dataVersion, kasasizTok)).status === 200
     && (await gUst(adminTok)).services.find(x => x.id === 9700)?.hesapId === 9043);
+  // ── Spec 0131 C6, C6/2 (AC-30, AC-52): Kasa'dan tahsilat günü düzeltmesi; izinli alan bölüme göre ──
+  const gK1 = await gUst(ciroTok);
+  check("spec 0131 AC-30: Kasa kullanıcısı servisin yalnız tahsilat gününü düzeltir → 200; kayıttan okunur",
+    (await postData({ ...gK1, dataVersion: undefined, services: gK1.services.map(x => x.id === 9700 ? { ...x, tahsilatTarihi: "2026-10-01" } : x) }, gK1.dataVersion, ciroTok)).status === 200
+    && (await gUst(adminTok)).services.find(x => x.id === 9700)?.tahsilatTarihi === "2026-10-01");
+  const gK2 = await gUst(ciroTok);
+  check("spec 0131 AC-30: gün ile birlikte üçüncü bir alan değişirse → 403",
+    (await postData({ ...gK2, dataVersion: undefined, services: gK2.services.map(x => x.id === 9700 ? { ...x, tahsilatTarihi: "2026-10-02", servisUcreti: 1 } : x) }, gK2.dataVersion, ciroTok)).status === 403);
+  const gK3 = await gUst(ciroTok);
+  check("spec 0131 AC-52: makina tahsilatında (payments) tahsilatTarihi farkı → 403",
+    (gK3.payments || []).length > 0
+    && (await postData({ ...gK3, dataVersion: undefined, payments: gK3.payments.map((x, i) => i === 0 ? { ...x, tahsilatTarihi: "2026-10-02" } : x) }, gK3.dataVersion, ciroTok)).status === 403);
   // Spec 0052 triyaj bulgu 1: verilen (kendi) çek Kasa sekmesi ister; eylem izni (gider_odeme) yetmez.
   const vK = await gUst(kasasizTok);
   check("spec 0052 triyaj: Kasa'sız kullanıcı verilen çeki ödendi işaretleyemez → 403",

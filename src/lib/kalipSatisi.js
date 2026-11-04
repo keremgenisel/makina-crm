@@ -1,4 +1,5 @@
-import { parseMoney, tahsilEdilecekKdv, tahsilKdvOrani } from "./utils";
+import { parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, yerelBugun } from "./utils";
+import { tahsilatGunuYaz, tahsilatGunuFormHatasi } from "./satisTahsilat";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "./satisTevkifat";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
 import { ihracKayitliUygula, ihracKayitliDogrula } from "./ihracKayitli";
@@ -8,7 +9,11 @@ import { ihracKayitliUygula, ihracKayitliDogrula } from "./ihracKayitli";
 // Form → batch'teki bütün kalıplara uygulanan ortak alanlar (kalem fiyatı ve kredi kartı hariç).
 // Spec 0079 R5, R6/1, R7: tevkifat bütün kalemlere aynı yazılır (bir fatura, bir tevkifat); kapı kapalıysa alanlar silinir.
 // Spec 0114 R6/2: ihraç kayıtlı işaret tek yazıcıdan (ihracKayitliUygula), tevkifatın arkasından.
-export const kalipSatisOrtak = (f, customerId, bugun) => ihracKayitliUygula(satisTevkifatUygula(kalipSatisOrtakAlanlar(f, customerId, bugun), f, f.faturaTipi), f, f.faturaTipi);
+// Spec 0131 R1, R8: tahsilat günü tek yazıcıdan (yeni kayıt; düzenlemede kalipGuncelle eski kayda göre yeniden yazar).
+export const kalipSatisOrtak = (f, customerId, bugun) => tahsilatGunuYaz(ihracKayitliUygula(satisTevkifatUygula(kalipSatisOrtakAlanlar(f, customerId, bugun), f, f.faturaTipi), f, f.faturaTipi),
+  { bugun: yerelBugun(), gun: f.tahsilatTarihi });
+// Spec 0131 R3, Karar 19: formdaki gün geçersizse kayıt yapılmaz (güvenlik ağı; form da engeller).
+export const kalipTahsilatGunuHatasi = (f) => tahsilatGunuFormHatasi(f, yerelBugun());
 const kalipSatisOrtakAlanlar = (f, customerId, bugun) => ({
   customerId, tur: "Kalıp", tarih: f.tarih || bugun,
   currency: f.currency || "TRY", ucretsizMi: false,
@@ -81,7 +86,8 @@ export const kalipKartHesabi = (f, tarih, kkAyar, kdvRates) => {
   };
 };
 // Düzenleme kolu (R5/1): birleştirilen kayıttan tevkifat alanları formun durumuna göre yazılır ya da silinir.
-export const kalipGuncelle = (eski, alanlar, f) => ihracKayitliUygula(satisTevkifatUygula({ ...eski, ...alanlar }, f, f.faturaTipi), f, f.faturaTipi);
+export const kalipGuncelle = (eski, alanlar, f) => tahsilatGunuYaz(ihracKayitliUygula(satisTevkifatUygula({ ...eski, ...alanlar }, f, f.faturaTipi), f, f.faturaTipi),
+  { eski, bugun: yerelBugun(), gun: f.tahsilatTarihi });
 
 export const KALIP_MUSTERI_SECILMEDI = "Kalıbın gideceği müşteriyi ve makinayı seçin.";
 
@@ -95,6 +101,8 @@ export const kalipSatisiEkle = (f, { customers = [], setPartSales, setCustomers,
   if (!satirlar.length) return { hata: "En az bir kalıp ekleyin." };
   const tevkifatHata = satisTevkifatDogrula(f, f.faturaTipi) || ihracKayitliDogrula(f, f.faturaTipi); // spec 0079 R6, spec 0114 R12
   if (tevkifatHata) return { hata: tevkifatHata };
+  const gunHata = kalipTahsilatGunuHatasi(f);
+  if (gunHata) return { hata: gunHata };
   const ortak = kalipSatisOrtak(f, musteri.id, bugun);
   const kalipKart = kalipKartHesabi(f, ortak.tarih, kkAyar, kdvRates);
   const kayitlar = yeniKalipSatislari(ortak, satirlar.map(k => { const kk = kalipKart(k.fiyat); return { ad: k.ad, olcu: k.olcu, ucret: kk.ucret, uretimFormGonder: k.uretimFormGonder, kartKomisyonu: kk.kartKomisyonu }; }),

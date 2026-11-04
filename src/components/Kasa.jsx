@@ -7,7 +7,8 @@ import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { hareketGruplari, hareketHedefPaylari } from "../lib/odemeYontemi";
 import { hesabiSilinmisMi, HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani, hareketDuzenlemeDurumu, tahsilatSatiriIbaresi, VERILEN_CEK_IBARESI, KAPALI_HESAP_NEDENI, avansSilinebilirMi } from "../lib/kasa";
 import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
-import { SATIS_KAYNAK } from "../lib/satisTahsilat";
+import { SATIS_KAYNAK, tahsilatGunuAta, tahsilatGunuSorulurMu, tahsilatGunuEksikMi, TAHSILAT_GUNU_EKSIK, TAHSILAT_GUNU_DUZELTILDI } from "../lib/satisTahsilat";
+import { KasaTahsilatGunu } from "./kasa/TahsilatHesap";
 import { useBugun } from "../hooks/useBugun";
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict, Pagination, TutarInput } from "./ui";
 import { usePagination } from "../hooks/usePagination";
@@ -336,6 +337,16 @@ export const Kasa = ({
     logAction({ serverPermissions, action: "duzenlendi", entity, entityId: k.kayit.id, entityName: k.firma, detail: { hesap: hesapById.get(String(hesapId))?.ad } });
     showToast("Tahsilat hesaba bağlandı.");
   };
+  // Spec 0131 R10, R11, R11/4: tahsilat gününün Kasa'dan düzeltilmesi. Satır düzeyinde yazar (parti yazmaz), kayıt anında
+  // kilide bakar, iz bugünkü "duzenlendi" kaydının detail'ine tarihi ekler; hesap ve ödeme işareti değişmez.
+  const gunAta = (k, gun) => {
+    const [yaz, entity] = TAHSILAT_YAZICI[k.kaynak] || [];
+    if (!yaz || !gun) return;
+    if (kilitliMi(...kapsamKilidi(k))) return;
+    yaz(p => p.map(r => (r.id === k.kayit.id ? tahsilatGunuAta(r, gun) : r)));
+    logAction({ serverPermissions, action: "duzenlendi", entity, entityId: k.kayit.id, entityName: k.firma, detail: { tahsilatGunu: gun } });
+    showToast(TAHSILAT_GUNU_DUZELTILDI);
+  };
   // ── Spec 0058: kapsam dışı bırakma ve geri alma (R1–R5, R9, R10, R17, R21) ──
   const kapsamYetkisi = !!setKasaKapsamDisi && canDo("kasa_hesap");
   // R21 (Q6): işlem geçmişinde tahsilatta "tür · firma", ödemede tedarikçi ya da tür; avansta çalışan adı yazılmaz.
@@ -434,6 +445,17 @@ export const Kasa = ({
   };
   // R11, X8: tahsilat ve verilen çek satırı hareket değildir; kendi ekranını adıyla söyleyen, tıklanamayan ibare.
   const satirEylemleri = (s) => {
+    // Spec 0131 R11, R11/2, R11/3: günü girilmemiş satış tahsilatında ibarenin yerine işaret ve gün girdisi (yalnız gün gevşer).
+    if (s.tahsilat && tahsilatGunuEksikMi(s)) {
+      const yazabilir = !!TAHSILAT_YAZICI[s.kaynak]?.[0];
+      return (
+        <span data-testid="tahsilat-gunu-eksik" style={{ display: "grid", gap: 4, justifyItems: "end" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--amb800, #92400e)" }}>{TAHSILAT_GUNU_EKSIK}</span>
+          {yazabilir ? <KasaTahsilatGunu key={s.tarih} deger={s.tarih} testId="hareket-tahsilat-gunu" onYaz={g => gunAta({ kaynak: s.kaynak, kayit: s.tahsilat, firma: s.firma }, g)} />
+            : <span data-testid="hareket-ibaresi" style={{ fontSize: 11, color: "var(--n500, #64748b)", textAlign: "right" }}>{tahsilatSatiriIbaresi(s)}</span>}
+        </span>
+      );
+    }
     if (s.tahsilat) return <span data-testid="hareket-ibaresi" style={{ fontSize: 11, color: "var(--n500, #64748b)", textAlign: "right" }}>{tahsilatSatiriIbaresi(s)}</span>;
     if (s.cek) return <span data-testid="hareket-ibaresi" style={{ fontSize: 11, color: "var(--n500, #64748b)", textAlign: "right" }}>{VERILEN_CEK_IBARESI}</span>;
     return hareketEylemleri(s.hareket);
@@ -668,13 +690,15 @@ export const Kasa = ({
                   <span>{k.turAdi}</span>
                   <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={k.firma}>{[k.firma, k.yontem].filter(Boolean).join(" · ")}{k.neden === "paraBirimi" ? " · hesabın para birimi uyuşmuyor" : k.neden === "hesapYok" ? " · hesabı bulunamadı" : ""}</span>
                   <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{para(k.tutar, k.currency)}</span>
-                  <span>
+                  <span style={{ display: "grid", gap: 4 }}>
                     {!yazabilir ? null : uygun.length ? (
                       <Select aria-label={`Hesap ata: ${k.firma}`} value="" onChange={e => hesapAta(k, uygun.find(h => String(h.id) === e.target.value)?.id)}>
                         <option value="">Hesap seçin</option>
                         {uygun.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur})</option>)}
                       </Select>
                     ) : <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{k.currency || "TRY"} hesabı yok</span>}
+                    {/* Spec 0131 R10, R10/3: hesabın yanında tahsilat günü (hesap seçmeden de); çek ve kartta sorulmaz (R12). */}
+                    {yazabilir && tahsilatGunuSorulurMu(k.kayit) && <KasaTahsilatGunu key={k.tarih} deger={k.tarih} testId="hesapsiz-tahsilat-gunu" onYaz={g => gunAta(k, g)} />}
                   </span>
                   <span>{kapsamYetkisi && <Btn small variant="ghost" onClick={() => kapsamDisiBirak([k])} aria-label={`Kapsam dışı bırak: ${k.firma}`}>Kapsam dışı bırak</Btn>}</span>
                 </div>

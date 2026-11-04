@@ -6,6 +6,7 @@ import { ihracKayitliUygula, ihracKayitliDogrula } from "./ihracKayitli";
 import { yedekParcaDus } from "./yedekParcaStok";
 import { netDusumleri, netDusumAyni } from "./stokHareketi";
 import { yerelServisEkle } from "./yerelServis";
+import { tahsilatGunuYaz, tahsilatGunuTemizle, tahsilatGunuFormHatasi } from "./satisTahsilat";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim } from "./krediKarti";
 
 // ── Garanti içi ücretsiz verme (spec 0095) ──────────────────────────────────────────────────────────────────────────
@@ -17,8 +18,9 @@ export const ucretsizUygula = (rec, form) => {
   delete k.ucretsizMi;
   if (!form?.ucretsizMi) return k;
   delete k.tevkifatli; delete k.tevkifatPay; delete k.tevkifatPayda;
-  return { ...k, ucretsizMi: true, faturaTipi: "", yontem: "", vadeTarihi: "", tahsilEdildi: false, taksitSayisi: null,
-    kartKomisyonu: null, hesapId: null, odendi: false, tahsilatTarihi: null };
+  // Spec 0131 Karar 18: tahsilat günü de tek yazıcının temizleyicisiyle.
+  return tahsilatGunuTemizle({ ...k, ucretsizMi: true, faturaTipi: "", yontem: "", vadeTarihi: "", tahsilEdildi: false, taksitSayisi: null,
+    kartKomisyonu: null, hesapId: null, odendi: false });
 };
 // Alıcı müşterinin (makina kaydı) garanti durumu (R4, R4/2): ölçüt `warrantyEnd >= bugün`, bugün YEREL gündür
 // (`ServiceForm`'un `today()` satırı UTC'dir ve bilinçli olarak değişmedi, X9). Alıcı yoksa null.
@@ -62,6 +64,9 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
   const ucretsiz = !!form.ucretsizMi; // spec 0095 R7/4: ücretsizde tevkifat doğrulanmaz, kart dalı çalışmaz
   const tevkifatHata = ucretsiz ? null : (satisTevkifatDogrula(form, kkFatura) || ihracKayitliDogrula(form, kkFatura)); // spec 0079 R6, spec 0114 R12
   if (tevkifatHata) return { ok: false, hata: tevkifatHata };
+  // Spec 0131 R3, Karar 19: geçersiz tahsilat günü kaydedilmez (form da engeller; bu güvenlik ağıdır).
+  const gunHata = tahsilatGunuFormHatasi(form, yerelBugun());
+  if (gunHata) return { ok: false, hata: gunHata };
   // Spec 0079 R13 (revizyon 2): kart tutarı tahsil edilen KDV ile; düzenlemede kayıtlı anlık görüntünün tabanı korunur.
   const taban = kartTabanKaydi(form);
   let birimFiyatSave = netBirim, kartKomisyonu = null;
@@ -77,7 +82,8 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     }
     kartKomisyonu = kartTabanIsaretle(kartKomisyonu, taban);
   }
-  return { ok: true, rec: ucretsizUygula(ihracKayitliUygula(satisTevkifatUygula({
+  // Spec 0131 R1, R8: yeni kayıtta tahsilat günü tek yazıcıdan (yerel gün, C3); ücretsiz işaret ardından temizler.
+  return { ok: true, rec: ucretsizUygula(tahsilatGunuYaz(ihracKayitliUygula(satisTevkifatUygula({
     aliciTipi, dealerId, musteriId, partId, miktar,
     // Anlaşmasız dış firma alıcı bilgileri (yalnız bu kayda; bayi/müşteri kaydı oluşturulmaz).
     disFirma,
@@ -109,12 +115,13 @@ export function yedekParcaRec(form, ayar = null, kdvRates = undefined) {
     teklifId: form.teklifId ?? null, teklifKalemId: form.teklifKalemId ?? null,
     // Spec 0044 R1: tahsilatın girdiği hesap; formda alan hiç yoksa kayda dokunulmaz (düzenleme ...rec ile birleşir).
     ...(form.hesapId !== undefined ? { hesapId: form.hesapId ?? null } : {}),
-  }, form, kkFatura), form, kkFatura), form) }; // spec 0079 R5, R7: toplu satışta her satıra aynı tevkifat; spec 0095 R13: aynı işaret; spec 0114 R6/2: ihraç işareti ucretsizUygula'dan önce
+  }, form, kkFatura), form, kkFatura), { bugun: yerelBugun(), gun: form.tahsilatTarihi }), form) }; // spec 0079 R5, R7: toplu satışta her satıra aynı tevkifat; spec 0095 R13: aynı işaret; spec 0114 R6/2: ihraç işareti ucretsizUygula'dan önce
 }
 // Düzenleme kolu (spec 0079 R5/1): `{ ...eski, ...rec }` birleştirmesi eski tevkifat alanlarını silmez; buradan geçer.
 // Spec 0095 R14/2: aynı tuzak işaret için de geçerli; `ucretsizUygula` alanı siler ya da yazar (son adım).
 // Spec 0114 R6/2: ihraç işareti de buradan (ucretsizUygula'dan önce); 0111'in toplu düzenlemesi de bu yoldan geçer.
-export const yedekParcaGuncelle = (eski, rec, form) => ucretsizUygula(ihracKayitliUygula(satisTevkifatUygula({ ...eski, ...rec }, form, rec.faturaTipi), form, rec.faturaTipi), form);
+// Spec 0131 R7, R8/4: tahsilat günü eski kayda göre tek yazıcıdan (işaret duruyorsa ve gün değişmediyse dokunulmaz).
+export const yedekParcaGuncelle = (eski, rec, form, bugun = yerelBugun()) => ucretsizUygula(tahsilatGunuYaz(ihracKayitliUygula(satisTevkifatUygula({ ...eski, ...rec }, form, rec.faturaTipi), form, rec.faturaTipi), { eski, bugun, gun: form?.tahsilatTarihi }), form);
 
 // Yedek parça satışı "planlanmış" mı? = panoya düşme zamanı ileride → o zamana kadar panoda gizli.
 // Servisteki servisPlanlandiMi'nin kargo karşılığı. Damgalar yerel duvar-saati string'i (new Date yerel).
@@ -231,7 +238,7 @@ export const tahsisYenile = (eski, rec) => {
 
 // Formun satıra ait olmayan alanları (ortak alanlar); satır ve form içi işaretler kayda girmez.
 const ortakAlanlar = (form) => {
-  const { satirlar, _satirHatalari, _kilitId, batchEdit, _karisikUcretsiz, _odendiAcilis, _acilisIdleri, ...ortak } = form || {};
+  const { satirlar, _satirHatalari, _kilitId, batchEdit, _karisikUcretsiz, _odendiAcilis, _acilisIdleri, _tahsilatGunuAcilis, ...ortak } = form || {};
   return ortak;
 };
 
@@ -255,6 +262,10 @@ export function topluDuzenlemePlani(eskiler, form, { partStock = [], partStockLo
   // Triyaj (R6/4): formdaki "Ödendi" kutusuna dokunulduysa (açılış değerinden farklı) değer ücretli bütün satırlara yazılır;
   // dokunulmadıysa her satır kendi ödeme durumunu korur (0109 Karar 21 emsali).
   const odemeDokunuldu = form?._odendiAcilis !== undefined && !!form.odendi !== !!form._odendiAcilis;
+  // Spec 0131 R7, R9: formun gün alanına dokunulduysa (açılış değerinden farklı) gün ücretli bütün satırlara yazılır;
+  // dokunulmadıysa her satır kendi gününü korur (yeni işaretlenen satıra bugün).
+  const gunNorm = (g) => (String(g ?? "").trim() || null);
+  const gunDokunuldu = form?._tahsilatGunuAcilis !== undefined && gunNorm(form.tahsilatTarihi) !== gunNorm(form._tahsilatGunuAcilis);
   // R1/2, R1/3: listede duran satırın değeri geçersizse kayıt bütünüyle reddedilir; silme yalnız satırın çıkarılmasıyla olur.
   const satirHatalari = {};
   satirlar.forEach((s, i) => {
@@ -273,6 +284,8 @@ export function topluDuzenlemePlani(eskiler, form, { partStock = [], partStockLo
       ...ortak, partId: s.partId, miktar: s.miktar, birimFiyat: s.birimFiyat, batchId: form.batchId ?? null,
       teklifId: eski ? (eski.teklifId ?? null) : null, teklifKalemId: eski ? (eski.teklifKalemId ?? null) : null,
       ...(eski?.kartKomisyonu ? { kartKomisyonu: eski.kartKomisyonu } : {}),
+      // Spec 0131 R7, R9: dokunulmayan gün alanı satırlara taşınmaz; partiye eklenen yeni satır bugünü alır.
+      ...(gunDokunuldu ? {} : { tahsilatTarihi: undefined }),
     };
     const r = yedekParcaRec(satirFormu, ayar, kdvRates);
     if (!r.ok) return { ok: false, hata: r.hata };
@@ -293,16 +306,12 @@ export function topluDuzenlemePlani(eskiler, form, { partStock = [], partStockLo
   let yeniSira = 0;
   for (const { eski, satirFormu, rec } of kurulan) {
     if (eski) {
-      let k = yedekParcaGuncelle(eski, rec, satirFormu);
+      let k = yedekParcaGuncelle(eski, rec, satirFormu, bugun ?? undefined);
       // R6/3: ödeme durumu satır başınadır; form işaretiyle ücretsizse ödeme durumu yoktur (0095 R7/2). panoGizli birleştirmeyle kalır.
+      // Spec 0131 Karar 17: gün tek yazıcıdan; zaten ödenmiş satır gününü korur, yeni işaretlenen satıra bugün.
       if (!k.ucretsizMi) {
-        if (!odemeDokunuldu) k = { ...k, odendi: !!eski.odendi, tahsilatTarihi: eski.tahsilatTarihi ?? null };
-        else if (!form.odendi) k = { ...k, odendi: false, tahsilatTarihi: null };
-        else {
-          // Zaten ödenmiş satır tarihini korur; yeni işaretlenen satıra tek tık anahtarının kuralıyla o gün (çek ve kartta boş).
-          const cekKK = k.yontem === "Çek" || k.yontem === "Kredi Kartı";
-          k = { ...k, odendi: true, tahsilatTarihi: eski.odendi ? (eski.tahsilatTarihi ?? null) : (cekKK ? null : bugun) };
-        }
+        const odendi = odemeDokunuldu ? !!form.odendi : !!eski.odendi;
+        k = tahsilatGunuYaz({ ...k, odendi }, { eski, bugun: bugun ?? yerelBugun(), gun: gunDokunuldu ? form.tahsilatTarihi : undefined });
       }
       k = { ...k, tahsisler: tahsisYenile(eski, k) };
       guncellenen.push(k);

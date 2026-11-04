@@ -1139,6 +1139,39 @@ describe("spec 0044: yalnız hesapId değiştiren tahsilat yazımı", () => {
   });
 });
 
+// ── Spec 0131 C6, C6/2: Kasa'dan tahsilat günü düzeltmesi ─────────────────────────────────────────────
+describe("spec 0131: hesapId ve tahsilatTarihi değiştiren tahsilat yazımı", () => {
+  const kasaci = JSON.stringify({ tabs: ["gider", "finance"], customerActions: [], stockActions: [], giderActions: ["gider_odeme"] });
+  const kayitlar = [["services", { id: 1, customerId: 5, odendi: true, servisUcreti: 100 }], ["partSales", { id: 1, customerId: 5, tur: "Kalıp", odendi: true }],
+    ["yedekParcaSatislar", { id: 1, aliciTipi: "bayi", dealerId: 2, odendi: true, tahsisler: [] }]];
+  it("AC-30: üç satış bölümünde yalnız gün, ya da gün + hesap değişen yazım kabul edilir", () => {
+    for (const [bolum, kayit] of kayitlar) {
+      for (const degisim of [{ tahsilatTarihi: "2026-11-03" }, { tahsilatTarihi: "2026-11-03", hesapId: 97 }]) {
+        const eski = { [bolum]: [kayit] }, yeni = { [bolum]: [{ ...kayit, ...degisim }] };
+        expect(tahsilatHesabiYalnizMi(bolum, eski, yeni), bolum).toBe(true);
+        expect(yazmaYetkisiVar(kasaci, "user", degisenBolumler(eski, yeni), eski, yeni).ok, bolum).toBe(true);
+        expect(eylemDenetimi(eski, yeni, kasaci, "user").ok, bolum).toBe(true);
+      }
+    }
+  });
+  it("AC-30: aynı yazımda üçüncü bir alan değişirse reddedilir", () => {
+    for (const [bolum, kayit] of kayitlar) {
+      const eski = { [bolum]: [kayit] }, yeni = { [bolum]: [{ ...kayit, tahsilatTarihi: "2026-11-03", odendi: false }] };
+      expect(tahsilatHesabiYalnizMi(bolum, eski, yeni), bolum).toBe(false);
+      expect(yazmaYetkisiVar(kasaci, "user", degisenBolumler(eski, yeni), eski, yeni).ok, bolum).toBe(false);
+    }
+  });
+  it("AC-52: payments ve cekler'de yalnız hesapId; tahsilatTarihi farkı reddedilir", () => {
+    const p = { id: 1, customerId: 5, tutar: 10, tarih: "2026-10-01" };
+    expect(tahsilatHesabiYalnizMi("payments", { payments: [p] }, { payments: [{ ...p, hesapId: 2 }] })).toBe(true);
+    expect(tahsilatHesabiYalnizMi("payments", { payments: [p] }, { payments: [{ ...p, tahsilatTarihi: "2026-11-03" }] })).toBe(false);
+    const eski = { payments: [p] }, yeni = { payments: [{ ...p, tahsilatTarihi: "2026-11-03" }] };
+    expect(yazmaYetkisiVar(kasaci, "user", degisenBolumler(eski, yeni), eski, yeni).ok).toBe(false);
+    const c = { id: 3, paymentId: null, no: "1", banka: "Z", durum: "portfoy", gecmis: [] };
+    expect(tahsilatHesabiYalnizMi("cekler", { cekler: [c] }, { cekler: [{ ...c, tahsilatTarihi: "2026-11-03" }] })).toBe(false);
+  });
+});
+
 // ── Spec 0063 AC-20: yeni giriş noktalarının hesap alanı yeni bir 403 doğurmaz ─────────────────────
 describe("spec 0063: ilk ödeme ve bayi satışlarında hesapId", () => {
   const dene = (perm, eski, yeni) => {

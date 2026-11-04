@@ -429,6 +429,11 @@ check("tahsilatTarihi roundtrip (servis/kalıp/yedek parça)", (() => {
   const yp = (blob.yedekParcaSatislar || []).find(x => x.id === 651);
   return sv?.tahsilatTarihi === "2026-10-05" && p?.tahsilatTarihi === "2026-11-02" && yp?.tahsilatTarihi === "2026-10-03";
 })());
+// Spec 0131 C5, C10: kapalı değer (null) dize olarak dönmez; yeni sütun yok, alan 0044'ten beri üç tabloda.
+check("spec 0131: günü olmayan tahsilatta tahsilatTarihi boş döner (\"null\" dizesi değil)", (() => {
+  const hepsi = [...(blob.services || []), ...(blob.partSales || []), ...(blob.yedekParcaSatislar || [])];
+  return hepsi.some(x => !x.tahsilatTarihi) && hepsi.every(x => x.tahsilatTarihi !== "null" && x.tahsilatTarihi !== "");
+})());
 check("partSale olusturmaZamani roundtrip (pano sıralaması: en son eklenen üstte)", (() => { const p = blob.partSales.find(x => x.id === 600); return p?.olusturmaZamani === "2026-07-20T14:35:10"; })());
 check("yedek parça satışı roundtrip (parent alanları + kargo)", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); return s?.dealerId === 3 && String(s?.partId) === "7" && s?.miktar === 5 && s?.birimFiyat === 120 && s?.odendi === false && s?.kargoTakipNo === "TK123" && s?.kargoDurum === "Kargoya Verildi" && (blob.yedekParcaSatislar || []).length === 3; })());
 check("yedek parça tahsisleri (child tablo) roundtrip", (() => { const s = (blob.yedekParcaSatislar || []).find(x => x.id === 650); const t = s?.tahsisler || []; return t.length === 2 && t[0].miktar === 2 && t[0].customerId === 500 && t[0].serialNo === "S-1" && t[1].customerId == null && t[1].makinaSerbest === "Bayi X kendi müşterisi"; })());

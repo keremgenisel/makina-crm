@@ -364,6 +364,13 @@ function cekYalnizBagsizMi(oldBlob, newBlob) {
 // açıktır. Yeni izin tanımlanmaz.
 // Spec 0056 R20: makina tahsilatı ve verilen çek de (hesap taşımada hesapId'leri değişir).
 const TAHSILAT_HESAP_BOLUMLERI = new Set(["services", "partSales", "yedekParcaSatislar", "payments", "cekler"]);
+// Spec 0131 C6, C6/2: izinli alanlar bölüme göre. Kasa'dan tahsilat günü düzeltmesi yalnız üç satış bölümünde serbest;
+// makina tahsilatında (payments, X2) ve çekte yalnız hesapId.
+const TAHSILAT_IZINLI_ALANLAR = {
+  services: ["hesapId", "tahsilatTarihi"], partSales: ["hesapId", "tahsilatTarihi"], yedekParcaSatislar: ["hesapId", "tahsilatTarihi"],
+  payments: ["hesapId"], cekler: ["hesapId"],
+};
+const izinliAlanlarSiz = (kayit, alanlar) => { const k = { ...kayit }; for (const a of alanlar) delete k[a]; return k; };
 function tahsilatHesabiYalnizMi(section, oldBlob, newBlob) {
   if (!TAHSILAT_HESAP_BOLUMLERI.has(section)) return false;
   const eski = Array.isArray(oldBlob?.[section]) ? oldBlob[section] : null, yeni = Array.isArray(newBlob?.[section]) ? newBlob[section] : null;
@@ -374,8 +381,8 @@ function tahsilatHesabiYalnizMi(section, oldBlob, newBlob) {
     const e = eskiById.get(r.id);
     if (!e) return false;
     if (stableStringify(e) === stableStringify(r)) continue;
-    const { hesapId: _h1, ...a } = e, { hesapId: _h2, ...b } = r;
-    if (stableStringify(a) !== stableStringify(b)) return false;
+    const alanlar = TAHSILAT_IZINLI_ALANLAR[section];
+    if (stableStringify(izinliAlanlarSiz(e, alanlar)) !== stableStringify(izinliAlanlarSiz(r, alanlar))) return false;
     degisen++;
   }
   return degisen > 0;

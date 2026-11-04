@@ -6871,6 +6871,18 @@
       {
         "rapor": "docs/evidence/0111-piksel-raporu.json",
         "ekran": "musteri-detay-ucretsiz"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap-penceresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "musteri-0131-pencere-cek",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
       }
     ],
     "src/components/ServiceForm.jsx": [
@@ -6953,6 +6965,54 @@
         "rapor": "docs/evidence/0121-piksel-raporu.json",
         "ekran": "servis-formu-0120-suzulu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-formu-odendi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-formu-tahsilat-hesap",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-formu-tahsilat-neden",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-formu-0115-kapali",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-formu-0131-gun-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-formu-0131-gun-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-pano-0098-hesap",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-pano-0098-hesapsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
       }
     ],
     "src/components/PartSaleForm.jsx": [
@@ -7010,6 +7070,24 @@
         "rapor": "docs/evidence/0116-taban-piksel-raporu.json",
         "ekran": "kalip-formu-0114-kart-uyari",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kalip-formu-tahsilat-hesap",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kalip-formu-0107-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "bayi-kalip-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
       }
     ],
     "src/components/YedekParcaSatisForm.jsx": [
@@ -7116,6 +7194,24 @@
         "rapor": "docs/evidence/0121-piksel-raporu.json",
         "ekran": "bayi-yedek-parca-formu",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-odendi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "yedek-parca-formu-tahsilat-hesap",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "bayi-yedek-parca-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
@@ -8918,6 +9014,48 @@
         "rapor": "docs/evidence/0083-taban-piksel-raporu.json",
         "ekran": "kasa-virman",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kasa-hesapsiz-tahsilatlar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kasa-0058-listeler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kasa-hesapsiz-esik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kasa-hesapsiz-hepsi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kasa-0062-hesapsiz-tahsilatlar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kasa-0062-hesapsiz-tahsilatlar-sayfa2",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kasa-0131-gun-eksik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
@@ -9670,6 +9808,36 @@
         "rapor": "docs/evidence/0063-taban-piksel-raporu.json",
         "ekran": "musteri-tahsilat-hesap",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "musteri-tahsilat-hesap-penceresi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "musteri-0131-pencere-cek",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-formu-0131-gun-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "servis-formu-0131-gun-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
+      },
+      {
+        "rapor": "docs/evidence/0131-piksel-raporu.json",
+        "ekran": "kasa-0131-gun-eksik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-04 · spec 0131 Karar 23"
       }
     ],
     "src/components/gider/OdemeGirisi.jsx": [

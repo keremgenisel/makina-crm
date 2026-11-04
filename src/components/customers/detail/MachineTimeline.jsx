@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { topluTahsilatGunu, TAHSILAT_GUNU_ETIKETI } from "../../../lib/satisTahsilat";
 import { CEK_DURUM_AD } from "../../../lib/cek";
 import {
   fmtTR, fmtCur, parseMoney, normalizeSaleType, parcaAdi, parcaGruplari, isAltuntasServisi,
@@ -36,6 +37,14 @@ const SIL_BTN = { display: "inline-flex", alignItems: "center", gap: 4, fontSize
 // Spec 0079 R26: tevkifatlı satışın rozeti (oran ve alıcının beyan edeceği KDV); borç neden fatura toplamından küçük sorusunun
 // cevabı kaydın yanında durur. Tevkifatsız kayıtta hiçbir şey çizilmez.
 // Spec 0114 R26, R26/2: aynı yerde ihraç kayıtlı rozeti (teal, ayrı renk); servis satırı `servis` ile hiç çizmez (AC-63).
+// Spec 0131 R13, R13/2, Karar 25: ödeme anahtarının yanında kayıtlı tahsilat günü (soluk düz metin, başlığı "Tahsilat
+// tarihi"). Gün topluTahsilatGunu'ndan: ödenmiş, ücretli, çek/kart olmayan satırlar ve partide hepsi aynı gündeyse.
+const TahsilatGunuMetni = ({ kayitlar }) => {
+  const gun = topluTahsilatGunu(kayitlar);
+  if (!gun) return null;
+  return <span title={TAHSILAT_GUNU_ETIKETI} data-testid="tahsilat-gunu-metni" style={{ fontSize: 11, color: "var(--n400, #94a3b8)", fontWeight: 600 }}>{fmtTR(gun)}</span>;
+};
+
 const TevkifatRozeti = ({ kayit, tip, bedel, tarih, kdvRates, currency, blok = false, servis = false }) => {
   const b = satisKdvBolumu(tip, bedel, tarih, kdvRates, kayit);
   if (b.ihracKayitli) return servis || !ihracRozetGosterilirMi(kayit, tip) ? null : <IhracKayitliRozeti blok={blok} ertelenenMetni={fmtCur(b.ertelenenKdv, currency)} />;
@@ -311,6 +320,7 @@ export const MachineTimeline = ({
                         {odemeYp.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                       </button>
                     )}
+                    <TahsilatGunuMetni kayitlar={grup} />
                     {odemeYp.odendi && odemeYp.yontem === "Çek" && canDo("cust_yedek_parca_payment") && onToggleYedekParcaCekTahsil && (
                       <button onClick={() => onToggleYedekParcaCekTahsil(odemeYp)}
                         style={{ fontSize: 10, fontWeight: 700, borderRadius: 5, padding: "2px 8px", cursor: "pointer", border: "1px solid", borderColor: odemeYp.tahsilEdildi ? "var(--grnBr, #bbf7d0)" : "var(--ambBr, #fde68a)", background: odemeYp.tahsilEdildi ? "var(--grnBg, #f0fdf4)" : "var(--ambBg, #fffbeb)", color: odemeYp.tahsilEdildi ? "var(--grn700, #15803d)" : "var(--amb800, #92400e)" }}>
@@ -361,6 +371,7 @@ export const MachineTimeline = ({
                             {p.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                           </button>
                         )}
+                        <TahsilatGunuMetni kayitlar={[p]} />
                         {/* Spec 0106 R12/2, AC-39: Extra Kalıp satışının kalıp durumu, ödeme anahtarının komşusu, cust_kalip_edit ile. */}
                         {canDo("cust_kalip_edit") && onPartSaleKalipDurumu && (
                           <span data-testid={`extra-kalip-durumu-${p.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--n600, #475569)", fontWeight: 600, whiteSpace: "nowrap" }}>
@@ -466,6 +477,7 @@ export const MachineTimeline = ({
                       {sv.odendi === false ? "Ödenmedi · işaretle: Ödendi" : "Ödendi"}
                     </button>
                   )}
+                  <TahsilatGunuMetni kayitlar={[sv]} />
                 </div>
               )}
             </div>

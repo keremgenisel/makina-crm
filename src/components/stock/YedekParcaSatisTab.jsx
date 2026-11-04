@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { grupKimlikleri, today, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
+import { grupKimlikleri, today, yerelBugun, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
 import { Segment, BosDurum } from "../tasarim";
@@ -14,7 +14,7 @@ import { satisTevkifatRozeti } from "../../lib/satisTevkifat";
 import { yansitilanKomisyon } from "../../lib/krediKarti";
 import { yedekParcaEtiketYazdir } from "../../lib/printTemplates";
 import { logAction } from "../../lib/audit";
-import { tahsilatHesapDurumu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
+import { tahsilatHesapDurumu, SATIS_KAYNAK, tahsilatGunuYaz, tahsilatGunuNedeni } from "../../lib/satisTahsilat";
 import { TahsilatHesapPenceresi, uyumluHesapId } from "../kasa/TahsilatHesap";
 import { ihracRozetGosterilirMi } from "../../lib/ihracKayitli";
 import { IhracKayitliRozeti } from "../IhracKayitliOzet";
@@ -208,15 +208,15 @@ export const YedekParcaSatisTab = ({
     if (satisUcretsizMi(rec)) return; // spec 0095 R7/2: ücretsiz kayıtta ödeme durumu yoktur (düğme de çizilmez)
     if (!canDoStock("yedek_parca_edit")) return;
     const yeni = !rec.odendi;
-    const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
     // Spec 0044 R2: işaretlerken (kasa yetkisi ve tutar varsa) hesap penceresi; h undefined = hesaba dokunma.
-    const uygula = (h) => {
-      setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null, ...(h !== undefined ? { hesapId: h } : {}) } : s));
+    // Spec 0131 R8, R9/2: gün tek yazıcıdan, satırın kendi kaydına (pencere açılmadıysa yerel bugün, R5).
+    const uygula = (h, gun) => {
+      setYedekParcaSatislar(p => p.map(s => s.id === rec.id ? tahsilatGunuYaz({ ...s, odendi: yeni, ...(h !== undefined ? { hesapId: h } : {}) }, { eski: s, bugun: yerelBugun(), gun }) : s));
       audit(rec.odendi ? "odeme_iptal" : "odendi", rec.id, rec);
     };
     const d = yeni && kasaHesaplari ? tahsilatHesapDurumu(SATIS_KAYNAK.YEDEK, rec, { kdvRates }) : null;
     if (!d?.sor) { uygula(undefined); return; }
-    setTahsilatPencere({ currency: d.currency, tutar: d.tutar, varsayilan: uyumluHesapId(kasaHesaplari || [], rec.hesapId, d.currency) ?? tahsilatHesapVarsayilan?.(d.currency) ?? null, uygula });
+    setTahsilatPencere({ currency: d.currency, tutar: d.tutar, varsayilan: uyumluHesapId(kasaHesaplari || [], rec.hesapId, d.currency) ?? tahsilatHesapVarsayilan?.(d.currency) ?? null, gunNedeni: tahsilatGunuNedeni(rec), uygula });
   };
   const [tahsilatPencere, setTahsilatPencere] = useState(null);
 
@@ -376,8 +376,9 @@ export const YedekParcaSatisTab = ({
 
       {tahsilatPencere && (
         <TahsilatHesapPenceresi currency={tahsilatPencere.currency} tutar={tahsilatPencere.tutar} hesaplar={kasaHesaplari || []} varsayilan={tahsilatPencere.varsayilan}
+          gunNedeni={tahsilatPencere.gunNedeni}
           onVazgec={() => setTahsilatPencere(null)}
-          onKaydet={(h) => { const u = tahsilatPencere.uygula; setTahsilatPencere(null); u(h); }} />
+          onKaydet={(h, gun) => { const u = tahsilatPencere.uygula; setTahsilatPencere(null); u(h, gun); }} />
       )}
 
       {tahsisSv && (tahsisLock ? (

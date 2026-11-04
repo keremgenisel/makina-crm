@@ -131,7 +131,12 @@ describe("Spec 0107: kanıt kayıtları (triyaj bulgu 2)", () => {
   // (uygulamada `degisti`, kapanışta 0110 tabanıyla `ayni`). 0107 tabanının kendisi 0 fark kalır.
   it("üç kayıt eşlemede; 0107 tabanında 0 fark, kayıt 0107 tabanında 'ayni' ya da 0110 raporlarında (spec 0110 ile)", () => {
     const { dosyalar } = JSON.parse(oku("docs/evidence/kanit-eslemesi.json"));
-    const kayitlar = Object.values(dosyalar).flat().filter(k => YENI.includes(k.ekran));
+    // Spec 0131 ile (Karar 32): Extra Kalıp düzenleme formuna tahsilat günü alanı geldi; kalip-formu-0107-duzenle 0131 raporunda
+    // ek bir kayıt taşır (uygulamada `degisti`, kapanışta 0131 tabanıyla `ayni`). 0107'nin kendi üç kaydı aynen ölçülür.
+    const hepsi = Object.values(dosyalar).flat().filter(k => YENI.includes(k.ekran));
+    const ek0131 = hepsi.filter(k => /^docs\/evidence\/0131-(taban-)?piksel-raporu\.json$/.test(k.rapor));
+    expect(ek0131.map(k => k.ekran)).toEqual(["kalip-formu-0107-duzenle"]);
+    const kayitlar = hepsi.filter(k => !ek0131.includes(k));
     expect(kayitlar.map(k => k.ekran).sort()).toEqual([...YENI].sort());
     for (const k of kayitlar) {
       expect(k.rapor === "docs/evidence/0107-taban-piksel-raporu.json" ? k.beklenen : "0110", k.ekran).toMatch(/^(ayni|0110)$/);

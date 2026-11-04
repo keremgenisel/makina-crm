@@ -306,7 +306,8 @@ describe("Spec 0098: yetki kapalı (işlem izinleri özelleştirilmiş, kutu iş
     }
   });
   it("AC-16 (triyaj bulgu 1): servis formunu açıp kaydeden yetkisiz kullanıcı atanmış hesabı korur; formda alan yok", async () => {
-    const { kayitlar } = await baslat({ sunucu: KAPALI, yuklenen: veri({ services: [{ ...SERVIS, odendi: true, tahsilatTarihi: `${buAy}-06`, hesapId: 51 }] }) });
+    // Spec 0131 ile (R3, Karar 22): formun gün alanı ileri günü reddeder; ayın 6'sı ayın ilk günlerinde ileri gündü, gün 01 yapıldı.
+    const { kayitlar } = await baslat({ sunucu: KAPALI, yuklenen: veri({ services: [{ ...SERVIS, odendi: true, tahsilatTarihi: `${buAy}-01`, hesapId: 51 }] }) });
     await detayAc().catch(() => {});
     duzenleAc(/^Garanti Dışı$/);
     await waitFor(() => expect(screen.getByText("Servis Talebini Düzenle")).toBeTruthy());

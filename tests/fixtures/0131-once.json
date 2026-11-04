@@ -1,0 +1,1577 @@
+{
+ "bakiye": {
+  "1": {
+   "hesap": {
+    "id": 1,
+    "ad": "Merkez Kasa",
+    "tur": "kasa",
+    "paraBirimi": "TRY",
+    "acilisBakiyesi": 1000,
+    "acilisTarihi": "2024-01-01"
+   },
+   "acilisK": 100000,
+   "girenK": 480000,
+   "cikanK": 0,
+   "satirlar": [
+    {
+     "tarih": "2024-03-09",
+     "tur": "servisTahsilati",
+     "turAdi": "Servis tahsilatı",
+     "kaynak": "servis",
+     "tahsilat": {
+      "customerId": 10,
+      "type": "Garanti Dışı",
+      "currency": "TRY",
+      "faturaTipi": "Faturalı Yurtiçi",
+      "islemFirma": "Altuntaş Makina",
+      "yontem": "Nakit",
+      "id": 100,
+      "date": "2024-03-09",
+      "servisUcreti": 1500,
+      "odendi": true,
+      "hesapId": 1
+     },
+     "firma": "Ayhan Gıda",
+     "yontem": "Nakit",
+     "girenK": 180000,
+     "cikanK": 0,
+     "bakiyeK": 280000
+    },
+    {
+     "tarih": "2024-09-14",
+     "tur": "yedekParcaTahsilati",
+     "turAdi": "Yedek parça tahsilatı",
+     "kaynak": "yedekParca",
+     "tahsilat": {
+      "aliciTipi": "bayi",
+      "dealerId": 20,
+      "partId": 5,
+      "miktar": 2,
+      "currency": "TRY",
+      "faturaTipi": "Faturalı Yurtiçi",
+      "yontem": "Nakit",
+      "tahsisler": [],
+      "id": 300,
+      "tarih": "2024-09-14",
+      "birimFiyat": 250,
+      "odendi": true,
+      "hesapId": 1
+     },
+     "firma": "Bayi A",
+     "yontem": "Nakit",
+     "girenK": 60000,
+     "cikanK": 0,
+     "bakiyeK": 340000
+    },
+    {
+     "tarih": "2025-06-01",
+     "tur": "kalipTahsilati",
+     "turAdi": "Extra Kalıp tahsilatı",
+     "kaynak": "kalip",
+     "tahsilat": {
+      "customerId": 10,
+      "tur": "Kalıp",
+      "ad": "Kalıp",
+      "currency": "TRY",
+      "faturaTipi": "Faturalı Yurtiçi",
+      "yontem": "Nakit",
+      "id": 200,
+      "tarih": "2025-06-01",
+      "ucret": 2000,
+      "odendi": true,
+      "hesapId": 1
+     },
+     "firma": "Ayhan Gıda",
+     "yontem": "Nakit",
+     "girenK": 240000,
+     "cikanK": 0,
+     "bakiyeK": 580000
+    }
+   ],
+   "bakiyeK": 580000,
+   "acilis": 1000,
+   "giren": 4800,
+   "cikan": 0,
+   "bakiye": 5800,
+   "borc": null,
+   "aralik": {
+    "sonra": false,
+    "devredenK": 580000,
+    "acilisSatiriK": 0,
+    "girenK": 0,
+    "cikanK": 0,
+    "kapanisK": 580000,
+    "satirlar": []
+   }
+  },
+  "2": {
+   "hesap": {
+    "id": 2,
+    "ad": "Ziraat",
+    "tur": "banka",
+    "paraBirimi": "TRY",
+    "acilisBakiyesi": 0,
+    "acilisTarihi": "2024-01-01"
+   },
+   "acilisK": 0,
+   "girenK": 584000,
+   "cikanK": 0,
+   "satirlar": [
+    {
+     "tarih": "2026-10-03",
+     "tur": "tahsilat",
+     "turAdi": "Tahsilat",
+     "tahsilat": {
+      "id": 900,
+      "customerId": 10,
+      "tarih": "2026-10-03",
+      "tutar": 5000,
+      "currency": "TRY",
+      "yontem": "Havale",
+      "hesapId": 2
+     },
+     "firma": "Ayhan Gıda",
+     "girenK": 500000,
+     "cikanK": 0,
+     "bakiyeK": 500000
+    },
+    {
+     "tarih": "2026-10-22",
+     "tur": "servisTahsilati",
+     "turAdi": "Servis tahsilatı",
+     "kaynak": "servis",
+     "tahsilat": {
+      "customerId": 10,
+      "type": "Garanti Dışı",
+      "currency": "TRY",
+      "faturaTipi": "Faturalı Yurtiçi",
+      "islemFirma": "Altuntaş Makina",
+      "yontem": "Kredi Kartı",
+      "id": 103,
+      "date": "2026-10-21",
+      "servisUcreti": 700,
+      "odendi": true,
+      "taksitSayisi": 1,
+      "hesapId": 2,
+      "kartKomisyonu": {
+       "toplamKesinti": 10,
+       "yansitildi": false,
+       "hesabaGecis": "2026-10-22",
+       "bazTarih": "2026-10-21"
+      }
+     },
+     "firma": "Ayhan Gıda",
+     "yontem": "Kredi Kartı",
+     "girenK": 84000,
+     "cikanK": 0,
+     "bakiyeK": 584000
+    }
+   ],
+   "bakiyeK": 584000,
+   "acilis": 0,
+   "giren": 5840,
+   "cikan": 0,
+   "bakiye": 5840,
+   "borc": null,
+   "aralik": {
+    "sonra": false,
+    "devredenK": 0,
+    "acilisSatiriK": 0,
+    "girenK": 584000,
+    "cikanK": 0,
+    "kapanisK": 584000,
+    "satirlar": [
+     {
+      "tarih": "2026-10-03",
+      "tur": "tahsilat",
+      "turAdi": "Tahsilat",
+      "tahsilat": {
+       "id": 900,
+       "customerId": 10,
+       "tarih": "2026-10-03",
+       "tutar": 5000,
+       "currency": "TRY",
+       "yontem": "Havale",
+       "hesapId": 2
+      },
+      "firma": "Ayhan Gıda",
+      "girenK": 500000,
+      "cikanK": 0,
+      "bakiyeK": 500000
+     },
+     {
+      "tarih": "2026-10-22",
+      "tur": "servisTahsilati",
+      "turAdi": "Servis tahsilatı",
+      "kaynak": "servis",
+      "tahsilat": {
+       "customerId": 10,
+       "type": "Garanti Dışı",
+       "currency": "TRY",
+       "faturaTipi": "Faturalı Yurtiçi",
+       "islemFirma": "Altuntaş Makina",
+       "yontem": "Kredi Kartı",
+       "id": 103,
+       "date": "2026-10-21",
+       "servisUcreti": 700,
+       "odendi": true,
+       "taksitSayisi": 1,
+       "hesapId": 2,
+       "kartKomisyonu": {
+        "toplamKesinti": 10,
+        "yansitildi": false,
+        "hesabaGecis": "2026-10-22",
+        "bazTarih": "2026-10-21"
+       }
+      },
+      "firma": "Ayhan Gıda",
+      "yontem": "Kredi Kartı",
+      "girenK": 84000,
+      "cikanK": 0,
+      "bakiyeK": 584000
+     }
+    ]
+   }
+  },
+  "3": {
+   "hesap": {
+    "id": 3,
+    "ad": "Dolar Hesabı",
+    "tur": "banka",
+    "paraBirimi": "USD",
+    "acilisBakiyesi": 0,
+    "acilisTarihi": "2024-01-01"
+   },
+   "acilisK": 0,
+   "girenK": 20000,
+   "cikanK": 0,
+   "satirlar": [
+    {
+     "tarih": "2026-10-15",
+     "tur": "yedekParcaTahsilati",
+     "turAdi": "Yedek parça tahsilatı",
+     "kaynak": "yedekParca",
+     "tahsilat": {
+      "aliciTipi": "bayi",
+      "dealerId": 20,
+      "partId": 5,
+      "miktar": 2,
+      "currency": "USD",
+      "faturaTipi": "Faturalı Yurtdışı",
+      "yontem": "Nakit",
+      "tahsisler": [],
+      "id": 301,
+      "tarih": "2026-10-15",
+      "birimFiyat": 100,
+      "odendi": true,
+      "hesapId": 3
+     },
+     "firma": "Bayi A",
+     "yontem": "Nakit",
+     "girenK": 20000,
+     "cikanK": 0,
+     "bakiyeK": 20000
+    }
+   ],
+   "bakiyeK": 20000,
+   "acilis": 0,
+   "giren": 200,
+   "cikan": 0,
+   "bakiye": 200,
+   "borc": null,
+   "aralik": {
+    "sonra": false,
+    "devredenK": 0,
+    "acilisSatiriK": 0,
+    "girenK": 20000,
+    "cikanK": 0,
+    "kapanisK": 20000,
+    "satirlar": [
+     {
+      "tarih": "2026-10-15",
+      "tur": "yedekParcaTahsilati",
+      "turAdi": "Yedek parça tahsilatı",
+      "kaynak": "yedekParca",
+      "tahsilat": {
+       "aliciTipi": "bayi",
+       "dealerId": 20,
+       "partId": 5,
+       "miktar": 2,
+       "currency": "USD",
+       "faturaTipi": "Faturalı Yurtdışı",
+       "yontem": "Nakit",
+       "tahsisler": [],
+       "id": 301,
+       "tarih": "2026-10-15",
+       "birimFiyat": 100,
+       "odendi": true,
+       "hesapId": 3
+      },
+      "firma": "Bayi A",
+      "yontem": "Nakit",
+      "girenK": 20000,
+      "cikanK": 0,
+      "bakiyeK": 20000
+     }
+    ]
+   }
+  }
+ },
+ "hesapsiz": {
+  "esik": "2026-10-01",
+  "odeme": {
+   "adet": 0,
+   "gocAdet": 0,
+   "avansAdet": 0,
+   "liste": []
+  },
+  "tahsilat": {
+   "adet": 3,
+   "liste": [
+    {
+     "kaynak": "yedekParca",
+     "kayit": {
+      "aliciTipi": "bayi",
+      "dealerId": 20,
+      "partId": 5,
+      "miktar": 2,
+      "currency": "TRY",
+      "faturaTipi": "Faturalı Yurtiçi",
+      "yontem": "Nakit",
+      "tahsisler": [],
+      "id": 302,
+      "tarih": "2026-10-16",
+      "birimFiyat": 50,
+      "odendi": true
+     },
+     "bedel": 100,
+     "kdv": 20,
+     "tutar": 120,
+     "currency": "TRY",
+     "tarih": "2026-10-16",
+     "yontem": "Nakit",
+     "neden": "hesapsiz",
+     "turAdi": "Yedek parça tahsilatı",
+     "firma": "Bayi A"
+    },
+    {
+     "kaynak": "servis",
+     "kayit": {
+      "customerId": 10,
+      "type": "Garanti Dışı",
+      "currency": "TRY",
+      "faturaTipi": "Faturalı Yurtiçi",
+      "islemFirma": "Altuntaş Makina",
+      "yontem": "Nakit",
+      "id": 101,
+      "date": "2026-10-12",
+      "servisUcreti": 800,
+      "odendi": true
+     },
+     "bedel": 800,
+     "kdv": 160,
+     "tutar": 960,
+     "currency": "TRY",
+     "tarih": "2026-10-12",
+     "yontem": "Nakit",
+     "neden": "hesapsiz",
+     "turAdi": "Servis tahsilatı",
+     "firma": "Ayhan Gıda"
+    },
+    {
+     "kaynak": "kalip",
+     "kayit": {
+      "customerId": 10,
+      "tur": "Kalıp",
+      "ad": "Kalıp",
+      "currency": "TRY",
+      "faturaTipi": "Faturalı Yurtiçi",
+      "yontem": "Nakit",
+      "id": 201,
+      "tarih": "2026-10-05",
+      "ucret": 1200,
+      "odendi": true
+     },
+     "bedel": 1200,
+     "kdv": 240,
+     "tutar": 1440,
+     "currency": "TRY",
+     "tarih": "2026-10-05",
+     "yontem": "Nakit",
+     "neden": "hesapsiz",
+     "turAdi": "Extra Kalıp tahsilatı",
+     "firma": "Ayhan Gıda"
+    }
+   ]
+  },
+  "gizli": {
+   "odeme": 0,
+   "avans": 0,
+   "tahsilat": {
+    "hesapsiz": 0,
+    "hesapYok": 0,
+    "paraBirimi": 0
+   },
+   "toplam": 0
+  },
+  "tarihsiz": 0
+ },
+ "rapor": {
+  "2024-03": {
+   "ay": "2024-03",
+   "ayEtiketi": "Mart 2024",
+   "donem": "01.03.2024 - 31.03.2024",
+   "olusturmaTarihi": "04.11.2026",
+   "satisAdet": 0,
+   "satisTutar": {},
+   "faturaTutar": {},
+   "satisKdv": {},
+   "komisyonTutar": {},
+   "ikinciElAdet": 0,
+   "modelKirilimi": [],
+   "satisYapanKirilimi": [],
+   "satisDetay": [],
+   "makinaFaturaKirilimi": [],
+   "extraKalipAdet": 0,
+   "extraKalipTutar": {},
+   "extraKalipKdv": {},
+   "extraKalipDetay": [],
+   "extraKalipTeslim": {},
+   "extraKalipFaturaKirilimi": [],
+   "anlasmaliParcaTutar": {},
+   "anlasmaliParcaDetay": [],
+   "yedekKargoAdet": 0,
+   "yedekKargoMiktar": 0,
+   "yedekKargoTutar": {},
+   "yedekKargoKdv": {},
+   "yedekKargoMusteriTutar": {},
+   "yedekKargoBayiTutar": {},
+   "yedekKargoTeslim": {
+    "kargo": 0,
+    "fabrikaTeslim": 0,
+    "gonderilmedi": 0
+   },
+   "yedekKargoTeslimTutar": {},
+   "yedekKargoDetay": [],
+   "yedekKargoFaturaKirilimi": [],
+   "servisAdet": 1,
+   "servisUcretliAdet": 1,
+   "servisUcretsizAdet": 0,
+   "iscilikTutar": {
+    "TRY": 1500
+   },
+   "servisParcaTutar": {},
+   "servisKdv": {
+    "TRY": 300
+   },
+   "servisKirilimi": [
+    {
+     "tip": "Garanti Dışı",
+     "adet": 1
+    }
+   ],
+   "servisDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tarih": "2024-03-09",
+     "tip": "Garanti Dışı",
+     "islemFirma": "Altuntaş Makina",
+     "iscilik": {
+      "TRY": 1500
+     },
+     "parca": {
+      "TRY": 0
+     },
+     "kdv": {
+      "TRY": 300
+     },
+     "odendi": true,
+     "ucretsiz": false,
+     "yontem": "Nakit",
+     "kkBlokajda": false,
+     "kkHesabaGecis": ""
+    }
+   ],
+   "servisNet": {
+    "TRY": 1500
+   },
+   "servisBolumKdv": {
+    "TRY": 300
+   },
+   "onarimYeriKirilimi": [
+    {
+     "yer": "Belirtilmemiş",
+     "adet": 1,
+     "net": {
+      "TRY": 1500
+     }
+    }
+   ],
+   "servisFaturaKirilimi": [
+    {
+     "faturaTipi": "Faturalı Yurtiçi",
+     "net": {
+      "TRY": 1500
+     },
+     "kdv": {
+      "TRY": 300
+     },
+     "adet": 1
+    }
+   ],
+   "tahsilatAdet": 1,
+   "tahsilatTutar": {
+    "TRY": 1800
+   },
+   "tahsilatNet": {
+    "TRY": 1500
+   },
+   "tahsilatKdv": {
+    "TRY": 300
+   },
+   "tahsilatDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 1800
+     },
+     "yontem": "Nakit",
+     "tarih": "2024-03-09",
+     "not": "Bakım onarım"
+    }
+   ],
+   "tahsilatYontemKirilimi": [
+    {
+     "yontem": "Nakit",
+     "tutar": {
+      "TRY": 1800
+     },
+     "adet": 1
+    }
+   ],
+   "tahsilatKaynakKirilimi": [
+    {
+     "kaynak": "Bakım onarım",
+     "tutar": {
+      "TRY": 1800
+     },
+     "net": {
+      "TRY": 1500
+     },
+     "kdv": {
+      "TRY": 300
+     },
+     "adet": 1
+    }
+   ],
+   "bekleyenCekAdet": 0,
+   "bekleyenCekTutar": {},
+   "bekleyenCekDetay": [],
+   "cekTahsilAdet": 0,
+   "borcluFirma": 1,
+   "acikBorc": {
+    "TRY": 1080
+   },
+   "alacakDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 1080
+     },
+     "kaynaklar": [
+      "Servis"
+     ]
+    }
+   ],
+   "alacakYaslandirma": [
+    {
+     "aralik": "0-30 gün",
+     "firma": 1,
+     "tutar": {
+      "TRY": 1080
+     }
+    }
+   ],
+   "alacakKaynakKirilimi": [
+    {
+     "kaynak": "Servis",
+     "tutar": {
+      "TRY": 1080
+     }
+    }
+   ],
+   "kkBlokajda": [],
+   "kkBlokajdaTutar": {},
+   "gecikenCek": 0,
+   "gecikenTaksit": 0,
+   "teklifAdet": 0,
+   "onaylananTeklif": 0,
+   "teklifDetay": [],
+   "bekleyenTeklif": 0,
+   "krediKartiSatisTutar": {},
+   "bankaKomisyonuTutar": {},
+   "ozet": {
+    "ciroNet": {
+     "TRY": 1500
+    },
+    "tahsilat": {
+     "TRY": 1800
+    },
+    "alacak": {
+     "TRY": 1080
+    },
+    "ciroNetTL": null,
+    "tahsilatTL": null,
+    "alacakTL": null,
+    "toplamKdv": {
+     "TRY": 300
+    },
+    "toplamKdvTL": null,
+    "krediKartiSatis": {},
+    "krediKartiSatisTL": null,
+    "bankaKomisyonu": {},
+    "bankaKomisyonuTL": null
+   },
+   "toplamKdv": {
+    "TRY": 300
+   },
+   "anlasmaliParcaKdv": {},
+   "sahipsizAdet": 0,
+   "kdvKalemleri": {
+    "satis": {},
+    "servis": {
+     "TRY": 300
+    },
+    "extraKalip": {},
+    "anlasmaliParca": {},
+    "yedekKargo": {}
+   }
+  },
+  "2024-09": {
+   "ay": "2024-09",
+   "ayEtiketi": "Eylül 2024",
+   "donem": "01.09.2024 - 30.09.2024",
+   "olusturmaTarihi": "04.11.2026",
+   "satisAdet": 0,
+   "satisTutar": {},
+   "faturaTutar": {},
+   "satisKdv": {},
+   "komisyonTutar": {},
+   "ikinciElAdet": 0,
+   "modelKirilimi": [],
+   "satisYapanKirilimi": [],
+   "satisDetay": [],
+   "makinaFaturaKirilimi": [],
+   "extraKalipAdet": 0,
+   "extraKalipTutar": {},
+   "extraKalipKdv": {},
+   "extraKalipDetay": [],
+   "extraKalipTeslim": {},
+   "extraKalipFaturaKirilimi": [],
+   "anlasmaliParcaTutar": {},
+   "anlasmaliParcaDetay": [],
+   "yedekKargoAdet": 1,
+   "yedekKargoMiktar": 2,
+   "yedekKargoTutar": {
+    "TRY": 500
+   },
+   "yedekKargoKdv": {
+    "TRY": 100
+   },
+   "yedekKargoMusteriTutar": {},
+   "yedekKargoBayiTutar": {
+    "TRY": 500
+   },
+   "yedekKargoTeslim": {
+    "kargo": 0,
+    "fabrikaTeslim": 0,
+    "gonderilmedi": 1
+   },
+   "yedekKargoTeslimTutar": {
+    "gonderilmedi": {
+     "net": {
+      "TRY": 500
+     },
+     "kdv": {
+      "TRY": 100
+     },
+     "adet": 1
+    }
+   },
+   "yedekKargoDetay": [
+    {
+     "firma": "Bayi A",
+     "tarih": "2024-09-14",
+     "aliciTuru": "Bayi",
+     "teslimSekli": "Panoya gönderilmedi",
+     "miktar": 2,
+     "tutar": {
+      "TRY": 500
+     },
+     "kdv": {
+      "TRY": 100
+     },
+     "odendi": true
+    }
+   ],
+   "yedekKargoFaturaKirilimi": [
+    {
+     "faturaTipi": "Faturalı Yurtiçi",
+     "net": {
+      "TRY": 500
+     },
+     "kdv": {
+      "TRY": 100
+     },
+     "adet": 1
+    }
+   ],
+   "servisAdet": 0,
+   "servisUcretliAdet": 0,
+   "servisUcretsizAdet": 0,
+   "iscilikTutar": {},
+   "servisParcaTutar": {},
+   "servisKdv": {},
+   "servisKirilimi": [],
+   "servisDetay": [],
+   "servisNet": {},
+   "servisBolumKdv": {},
+   "onarimYeriKirilimi": [],
+   "servisFaturaKirilimi": [],
+   "tahsilatAdet": 1,
+   "tahsilatTutar": {
+    "TRY": 600
+   },
+   "tahsilatNet": {
+    "TRY": 500
+   },
+   "tahsilatKdv": {
+    "TRY": 100
+   },
+   "tahsilatDetay": [
+    {
+     "firma": "Bayi A",
+     "tutar": {
+      "TRY": 600
+     },
+     "yontem": "Nakit",
+     "tarih": "2024-09-14",
+     "not": "Yedek parça (kargo ve fabrika teslim)"
+    }
+   ],
+   "tahsilatYontemKirilimi": [
+    {
+     "yontem": "Nakit",
+     "tutar": {
+      "TRY": 600
+     },
+     "adet": 1
+    }
+   ],
+   "tahsilatKaynakKirilimi": [
+    {
+     "kaynak": "Yedek parça (kargo ve fabrika teslim)",
+     "tutar": {
+      "TRY": 600
+     },
+     "net": {
+      "TRY": 500
+     },
+     "kdv": {
+      "TRY": 100
+     },
+     "adet": 1
+    }
+   ],
+   "bekleyenCekAdet": 0,
+   "bekleyenCekTutar": {},
+   "bekleyenCekDetay": [],
+   "cekTahsilAdet": 0,
+   "borcluFirma": 1,
+   "acikBorc": {
+    "TRY": 1080
+   },
+   "alacakDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 1080
+     },
+     "kaynaklar": [
+      "Servis"
+     ]
+    }
+   ],
+   "alacakYaslandirma": [
+    {
+     "aralik": "0-30 gün",
+     "firma": 1,
+     "tutar": {
+      "TRY": 1080
+     }
+    }
+   ],
+   "alacakKaynakKirilimi": [
+    {
+     "kaynak": "Servis",
+     "tutar": {
+      "TRY": 1080
+     }
+    }
+   ],
+   "kkBlokajda": [],
+   "kkBlokajdaTutar": {},
+   "gecikenCek": 0,
+   "gecikenTaksit": 0,
+   "teklifAdet": 0,
+   "onaylananTeklif": 0,
+   "teklifDetay": [],
+   "bekleyenTeklif": 0,
+   "krediKartiSatisTutar": {},
+   "bankaKomisyonuTutar": {},
+   "ozet": {
+    "ciroNet": {
+     "TRY": 500
+    },
+    "tahsilat": {
+     "TRY": 600
+    },
+    "alacak": {
+     "TRY": 1080
+    },
+    "ciroNetTL": null,
+    "tahsilatTL": null,
+    "alacakTL": null,
+    "toplamKdv": {
+     "TRY": 100
+    },
+    "toplamKdvTL": null,
+    "krediKartiSatis": {},
+    "krediKartiSatisTL": null,
+    "bankaKomisyonu": {},
+    "bankaKomisyonuTL": null
+   },
+   "toplamKdv": {
+    "TRY": 100
+   },
+   "anlasmaliParcaKdv": {},
+   "sahipsizAdet": 0,
+   "kdvKalemleri": {
+    "satis": {},
+    "servis": {},
+    "extraKalip": {},
+    "anlasmaliParca": {},
+    "yedekKargo": {
+     "TRY": 100
+    }
+   }
+  },
+  "2025-06": {
+   "ay": "2025-06",
+   "ayEtiketi": "Haziran 2025",
+   "donem": "01.06.2025 - 30.06.2025",
+   "olusturmaTarihi": "04.11.2026",
+   "satisAdet": 0,
+   "satisTutar": {},
+   "faturaTutar": {},
+   "satisKdv": {},
+   "komisyonTutar": {},
+   "ikinciElAdet": 0,
+   "modelKirilimi": [],
+   "satisYapanKirilimi": [],
+   "satisDetay": [],
+   "makinaFaturaKirilimi": [],
+   "extraKalipAdet": 1,
+   "extraKalipTutar": {
+    "TRY": 2000
+   },
+   "extraKalipKdv": {
+    "TRY": 400
+   },
+   "extraKalipDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tarih": "2025-06-01",
+     "adet": 1,
+     "teslimSekli": "Kargo",
+     "tutar": {
+      "TRY": 2000
+     }
+    }
+   ],
+   "extraKalipTeslim": {
+    "kargo": {
+     "net": {
+      "TRY": 2000
+     },
+     "kdv": {
+      "TRY": 400
+     },
+     "adet": 1
+    }
+   },
+   "extraKalipFaturaKirilimi": [
+    {
+     "faturaTipi": "Faturalı Yurtiçi",
+     "net": {
+      "TRY": 2000
+     },
+     "kdv": {
+      "TRY": 400
+     },
+     "adet": 1
+    }
+   ],
+   "anlasmaliParcaTutar": {},
+   "anlasmaliParcaDetay": [],
+   "yedekKargoAdet": 0,
+   "yedekKargoMiktar": 0,
+   "yedekKargoTutar": {},
+   "yedekKargoKdv": {},
+   "yedekKargoMusteriTutar": {},
+   "yedekKargoBayiTutar": {},
+   "yedekKargoTeslim": {
+    "kargo": 0,
+    "fabrikaTeslim": 0,
+    "gonderilmedi": 0
+   },
+   "yedekKargoTeslimTutar": {},
+   "yedekKargoDetay": [],
+   "yedekKargoFaturaKirilimi": [],
+   "servisAdet": 0,
+   "servisUcretliAdet": 0,
+   "servisUcretsizAdet": 0,
+   "iscilikTutar": {},
+   "servisParcaTutar": {},
+   "servisKdv": {},
+   "servisKirilimi": [],
+   "servisDetay": [],
+   "servisNet": {},
+   "servisBolumKdv": {},
+   "onarimYeriKirilimi": [],
+   "servisFaturaKirilimi": [],
+   "tahsilatAdet": 1,
+   "tahsilatTutar": {
+    "TRY": 2400
+   },
+   "tahsilatNet": {
+    "TRY": 2000
+   },
+   "tahsilatKdv": {
+    "TRY": 400
+   },
+   "tahsilatDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 2400
+     },
+     "yontem": "Nakit",
+     "tarih": "2025-06-01",
+     "not": "Extra kalıp"
+    }
+   ],
+   "tahsilatYontemKirilimi": [
+    {
+     "yontem": "Nakit",
+     "tutar": {
+      "TRY": 2400
+     },
+     "adet": 1
+    }
+   ],
+   "tahsilatKaynakKirilimi": [
+    {
+     "kaynak": "Extra kalıp",
+     "tutar": {
+      "TRY": 2400
+     },
+     "net": {
+      "TRY": 2000
+     },
+     "kdv": {
+      "TRY": 400
+     },
+     "adet": 1
+    }
+   ],
+   "bekleyenCekAdet": 0,
+   "bekleyenCekTutar": {},
+   "bekleyenCekDetay": [],
+   "cekTahsilAdet": 0,
+   "borcluFirma": 1,
+   "acikBorc": {
+    "TRY": 1080
+   },
+   "alacakDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 1080
+     },
+     "kaynaklar": [
+      "Servis"
+     ]
+    }
+   ],
+   "alacakYaslandirma": [
+    {
+     "aralik": "0-30 gün",
+     "firma": 1,
+     "tutar": {
+      "TRY": 1080
+     }
+    }
+   ],
+   "alacakKaynakKirilimi": [
+    {
+     "kaynak": "Servis",
+     "tutar": {
+      "TRY": 1080
+     }
+    }
+   ],
+   "kkBlokajda": [],
+   "kkBlokajdaTutar": {},
+   "gecikenCek": 0,
+   "gecikenTaksit": 0,
+   "teklifAdet": 0,
+   "onaylananTeklif": 0,
+   "teklifDetay": [],
+   "bekleyenTeklif": 0,
+   "krediKartiSatisTutar": {},
+   "bankaKomisyonuTutar": {},
+   "ozet": {
+    "ciroNet": {
+     "TRY": 2000
+    },
+    "tahsilat": {
+     "TRY": 2400
+    },
+    "alacak": {
+     "TRY": 1080
+    },
+    "ciroNetTL": null,
+    "tahsilatTL": null,
+    "alacakTL": null,
+    "toplamKdv": {
+     "TRY": 400
+    },
+    "toplamKdvTL": null,
+    "krediKartiSatis": {},
+    "krediKartiSatisTL": null,
+    "bankaKomisyonu": {},
+    "bankaKomisyonuTL": null
+   },
+   "toplamKdv": {
+    "TRY": 400
+   },
+   "anlasmaliParcaKdv": {},
+   "sahipsizAdet": 0,
+   "kdvKalemleri": {
+    "satis": {},
+    "servis": {},
+    "extraKalip": {
+     "TRY": 400
+    },
+    "anlasmaliParca": {},
+    "yedekKargo": {}
+   }
+  },
+  "2026-10": {
+   "ay": "2026-10",
+   "ayEtiketi": "Ekim 2026",
+   "donem": "01.10.2026 - 31.10.2026",
+   "olusturmaTarihi": "04.11.2026",
+   "satisAdet": 0,
+   "satisTutar": {},
+   "faturaTutar": {},
+   "satisKdv": {},
+   "komisyonTutar": {},
+   "ikinciElAdet": 0,
+   "modelKirilimi": [],
+   "satisYapanKirilimi": [],
+   "satisDetay": [],
+   "makinaFaturaKirilimi": [],
+   "extraKalipAdet": 1,
+   "extraKalipTutar": {
+    "TRY": 1200
+   },
+   "extraKalipKdv": {
+    "TRY": 240
+   },
+   "extraKalipDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tarih": "2026-10-05",
+     "adet": 1,
+     "teslimSekli": "Kargo",
+     "tutar": {
+      "TRY": 1200
+     }
+    }
+   ],
+   "extraKalipTeslim": {
+    "kargo": {
+     "net": {
+      "TRY": 1200
+     },
+     "kdv": {
+      "TRY": 240
+     },
+     "adet": 1
+    }
+   },
+   "extraKalipFaturaKirilimi": [
+    {
+     "faturaTipi": "Faturalı Yurtiçi",
+     "net": {
+      "TRY": 1200
+     },
+     "kdv": {
+      "TRY": 240
+     },
+     "adet": 1
+    }
+   ],
+   "anlasmaliParcaTutar": {},
+   "anlasmaliParcaDetay": [],
+   "yedekKargoAdet": 2,
+   "yedekKargoMiktar": 4,
+   "yedekKargoTutar": {
+    "USD": 200,
+    "TRY": 100
+   },
+   "yedekKargoKdv": {
+    "USD": 0,
+    "TRY": 20
+   },
+   "yedekKargoMusteriTutar": {},
+   "yedekKargoBayiTutar": {
+    "USD": 200,
+    "TRY": 100
+   },
+   "yedekKargoTeslim": {
+    "kargo": 0,
+    "fabrikaTeslim": 0,
+    "gonderilmedi": 2
+   },
+   "yedekKargoTeslimTutar": {
+    "gonderilmedi": {
+     "net": {
+      "USD": 200,
+      "TRY": 100
+     },
+     "kdv": {
+      "TRY": 20
+     },
+     "adet": 2
+    }
+   },
+   "yedekKargoDetay": [
+    {
+     "firma": "Bayi A",
+     "tarih": "2026-10-15",
+     "aliciTuru": "Bayi",
+     "teslimSekli": "Panoya gönderilmedi",
+     "miktar": 2,
+     "tutar": {
+      "USD": 200
+     },
+     "kdv": {
+      "USD": 0
+     },
+     "odendi": true
+    },
+    {
+     "firma": "Bayi A",
+     "tarih": "2026-10-16",
+     "aliciTuru": "Bayi",
+     "teslimSekli": "Panoya gönderilmedi",
+     "miktar": 2,
+     "tutar": {
+      "TRY": 100
+     },
+     "kdv": {
+      "TRY": 20
+     },
+     "odendi": true
+    }
+   ],
+   "yedekKargoFaturaKirilimi": [
+    {
+     "faturaTipi": "Faturalı Yurtiçi",
+     "net": {
+      "TRY": 100
+     },
+     "kdv": {
+      "TRY": 20
+     },
+     "adet": 1
+    },
+    {
+     "faturaTipi": "Faturalı Yurtdışı",
+     "net": {
+      "USD": 200
+     },
+     "kdv": {},
+     "adet": 1
+    }
+   ],
+   "servisAdet": 3,
+   "servisUcretliAdet": 3,
+   "servisUcretsizAdet": 0,
+   "iscilikTutar": {
+    "TRY": 2400
+   },
+   "servisParcaTutar": {},
+   "servisKdv": {
+    "TRY": 480
+   },
+   "servisKirilimi": [
+    {
+     "tip": "Garanti Dışı",
+     "adet": 3
+    }
+   ],
+   "servisDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tarih": "2026-10-12",
+     "tip": "Garanti Dışı",
+     "islemFirma": "Altuntaş Makina",
+     "iscilik": {
+      "TRY": 800
+     },
+     "parca": {
+      "TRY": 0
+     },
+     "kdv": {
+      "TRY": 160
+     },
+     "odendi": true,
+     "ucretsiz": false,
+     "yontem": "Nakit",
+     "kkBlokajda": false,
+     "kkHesabaGecis": ""
+    },
+    {
+     "firma": "Ayhan Gıda",
+     "tarih": "2026-10-20",
+     "tip": "Garanti Dışı",
+     "islemFirma": "Altuntaş Makina",
+     "iscilik": {
+      "TRY": 900
+     },
+     "parca": {
+      "TRY": 0
+     },
+     "kdv": {
+      "TRY": 180
+     },
+     "odendi": false,
+     "ucretsiz": false,
+     "yontem": "Nakit",
+     "kkBlokajda": false,
+     "kkHesabaGecis": ""
+    },
+    {
+     "firma": "Ayhan Gıda",
+     "tarih": "2026-10-21",
+     "tip": "Garanti Dışı",
+     "islemFirma": "Altuntaş Makina",
+     "iscilik": {
+      "TRY": 700
+     },
+     "parca": {
+      "TRY": 0
+     },
+     "kdv": {
+      "TRY": 140
+     },
+     "odendi": true,
+     "ucretsiz": false,
+     "yontem": "Kredi Kartı",
+     "kkBlokajda": false,
+     "kkHesabaGecis": "2026-10-22"
+    }
+   ],
+   "servisNet": {
+    "TRY": 2400
+   },
+   "servisBolumKdv": {
+    "TRY": 480
+   },
+   "onarimYeriKirilimi": [
+    {
+     "yer": "Belirtilmemiş",
+     "adet": 3,
+     "net": {
+      "TRY": 2400
+     }
+    }
+   ],
+   "servisFaturaKirilimi": [
+    {
+     "faturaTipi": "Faturalı Yurtiçi",
+     "net": {
+      "TRY": 2400
+     },
+     "kdv": {
+      "TRY": 480
+     },
+     "adet": 3
+    }
+   ],
+   "tahsilatAdet": 6,
+   "tahsilatTutar": {
+    "TRY": 8360,
+    "USD": 200
+   },
+   "tahsilatNet": {
+    "TRY": 6966.666666666667,
+    "USD": 200
+   },
+   "tahsilatKdv": {
+    "TRY": 1393.333333333333,
+    "USD": 0
+   },
+   "tahsilatDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 5000
+     },
+     "yontem": "Havale",
+     "tarih": "2026-10-03",
+     "not": ""
+    },
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 1440
+     },
+     "yontem": "Nakit",
+     "tarih": "2026-10-05",
+     "not": "Extra kalıp"
+    },
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 960
+     },
+     "yontem": "Nakit",
+     "tarih": "2026-10-12",
+     "not": "Bakım onarım"
+    },
+    {
+     "firma": "Bayi A",
+     "tutar": {
+      "USD": 200
+     },
+     "yontem": "Nakit",
+     "tarih": "2026-10-15",
+     "not": "Yedek parça (kargo ve fabrika teslim)"
+    },
+    {
+     "firma": "Bayi A",
+     "tutar": {
+      "TRY": 120
+     },
+     "yontem": "Nakit",
+     "tarih": "2026-10-16",
+     "not": "Yedek parça (kargo ve fabrika teslim)"
+    },
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 840
+     },
+     "yontem": "Kredi Kartı",
+     "tarih": "2026-10-22",
+     "not": "Bakım onarım"
+    }
+   ],
+   "tahsilatYontemKirilimi": [
+    {
+     "yontem": "Nakit",
+     "tutar": {
+      "TRY": 2520,
+      "USD": 200
+     },
+     "adet": 4
+    },
+    {
+     "yontem": "Havale",
+     "tutar": {
+      "TRY": 5000
+     },
+     "adet": 1
+    },
+    {
+     "yontem": "Kredi Kartı",
+     "tutar": {
+      "TRY": 840
+     },
+     "adet": 1
+    }
+   ],
+   "tahsilatKaynakKirilimi": [
+    {
+     "kaynak": "Makina ödemesi",
+     "tutar": {
+      "TRY": 5000
+     },
+     "net": {
+      "TRY": 4166.666666666667
+     },
+     "kdv": {
+      "TRY": 833.333333333333
+     },
+     "adet": 1
+    },
+    {
+     "kaynak": "Bakım onarım",
+     "tutar": {
+      "TRY": 1800
+     },
+     "net": {
+      "TRY": 1500
+     },
+     "kdv": {
+      "TRY": 300
+     },
+     "adet": 2
+    },
+    {
+     "kaynak": "Extra kalıp",
+     "tutar": {
+      "TRY": 1440
+     },
+     "net": {
+      "TRY": 1200
+     },
+     "kdv": {
+      "TRY": 240
+     },
+     "adet": 1
+    },
+    {
+     "kaynak": "Yedek parça (kargo ve fabrika teslim)",
+     "tutar": {
+      "USD": 200,
+      "TRY": 120
+     },
+     "net": {
+      "USD": 200,
+      "TRY": 100
+     },
+     "kdv": {
+      "USD": 0,
+      "TRY": 20
+     },
+     "adet": 2
+    }
+   ],
+   "bekleyenCekAdet": 0,
+   "bekleyenCekTutar": {},
+   "bekleyenCekDetay": [],
+   "cekTahsilAdet": 0,
+   "borcluFirma": 1,
+   "acikBorc": {
+    "TRY": 1080
+   },
+   "alacakDetay": [
+    {
+     "firma": "Ayhan Gıda",
+     "tutar": {
+      "TRY": 1080
+     },
+     "kaynaklar": [
+      "Servis"
+     ]
+    }
+   ],
+   "alacakYaslandirma": [
+    {
+     "aralik": "0-30 gün",
+     "firma": 1,
+     "tutar": {
+      "TRY": 1080
+     }
+    }
+   ],
+   "alacakKaynakKirilimi": [
+    {
+     "kaynak": "Servis",
+     "tutar": {
+      "TRY": 1080
+     }
+    }
+   ],
+   "kkBlokajda": [],
+   "kkBlokajdaTutar": {},
+   "gecikenCek": 0,
+   "gecikenTaksit": 0,
+   "teklifAdet": 0,
+   "onaylananTeklif": 0,
+   "teklifDetay": [],
+   "bekleyenTeklif": 0,
+   "krediKartiSatisTutar": {
+    "TRY": 840
+   },
+   "bankaKomisyonuTutar": {
+    "TRY": 10
+   },
+   "ozet": {
+    "ciroNet": {
+     "TRY": 3700,
+     "USD": 200
+    },
+    "tahsilat": {
+     "TRY": 8360,
+     "USD": 200
+    },
+    "alacak": {
+     "TRY": 1080
+    },
+    "ciroNetTL": null,
+    "tahsilatTL": null,
+    "alacakTL": null,
+    "toplamKdv": {
+     "TRY": 740,
+     "USD": 0
+    },
+    "toplamKdvTL": null,
+    "krediKartiSatis": {
+     "TRY": 840
+    },
+    "krediKartiSatisTL": null,
+    "bankaKomisyonu": {
+     "TRY": 10
+    },
+    "bankaKomisyonuTL": null
+   },
+   "toplamKdv": {
+    "TRY": 740,
+    "USD": 0
+   },
+   "anlasmaliParcaKdv": {},
+   "sahipsizAdet": 0,
+   "kdvKalemleri": {
+    "satis": {},
+    "servis": {
+     "TRY": 480
+    },
+    "extraKalip": {
+     "TRY": 240
+    },
+    "anlasmaliParca": {},
+    "yedekKargo": {
+     "USD": 0,
+     "TRY": 20
+    }
+   }
+  }
+ }
+}

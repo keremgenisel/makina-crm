@@ -1,0 +1,306 @@
+[
+  {
+    "ad": "servis-pano-0098-hesap-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 1172589
+  },
+  {
+    "ad": "servis-pano-0098-hesap-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 1173646
+  },
+  {
+    "ad": "servis-pano-0098-hesapsiz-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 1303797
+  },
+  {
+    "ad": "servis-pano-0098-hesapsiz-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 1304812
+  },
+  {
+    "ad": "servis-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1302658
+  },
+  {
+    "ad": "servis-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1304067
+  },
+  {
+    "ad": "yedek-parca-formu-odendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 763662
+  },
+  {
+    "ad": "yedek-parca-formu-odendi-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 764891
+  },
+  {
+    "ad": "kasa-hesapsiz-tahsilatlar-aydinlik.png",
+    "boyut": "2880x2418 ≠ 2880x2580",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-tahsilatlar-karanlik.png",
+    "boyut": "2880x2418 ≠ 2880x2580",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-listeler-aydinlik.png",
+    "boyut": "2880x2896 ≠ 2880x3058",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0058-listeler-karanlik.png",
+    "boyut": "2880x2896 ≠ 2880x3058",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-esik-aydinlik.png",
+    "boyut": "2880x2368 ≠ 2880x2450",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-esik-karanlik.png",
+    "boyut": "2880x2368 ≠ 2880x2450",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-hepsi-aydinlik.png",
+    "boyut": "2880x2498 ≠ 2880x2660",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-hesapsiz-hepsi-karanlik.png",
+    "boyut": "2880x2498 ≠ 2880x2660",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "musteri-tahsilat-hesap-penceresi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 799968
+  },
+  {
+    "ad": "musteri-tahsilat-hesap-penceresi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "piksel": 728932
+  },
+  {
+    "ad": "servis-formu-tahsilat-hesap-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1339653
+  },
+  {
+    "ad": "servis-formu-tahsilat-hesap-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1340664
+  },
+  {
+    "ad": "servis-formu-tahsilat-neden-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1262502
+  },
+  {
+    "ad": "servis-formu-tahsilat-neden-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1263628
+  },
+  {
+    "ad": "kalip-formu-tahsilat-hesap-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 781242
+  },
+  {
+    "ad": "kalip-formu-tahsilat-hesap-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 781245
+  },
+  {
+    "ad": "yedek-parca-formu-tahsilat-hesap-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 780858
+  },
+  {
+    "ad": "yedek-parca-formu-tahsilat-hesap-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 780861
+  },
+  {
+    "ad": "musteri-0131-pencere-cek-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "musteri-0131-pencere-cek-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ayrıca farklı para biriminden ödenmemiş servis/parça/Extra Kalıp borcu"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0131-gun-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0131-gun-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0131-gun-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "servis-formu-0131-gun-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-0131-gun-eksik-aydinlik.png",
+    "boyut": "2880x2702",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-0131-gun-eksik-karanlik.png",
+    "boyut": "2880x2702",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-tahsilatlar-aydinlik.png",
+    "boyut": "2880x3398 ≠ 2880x4208",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-tahsilatlar-karanlik.png",
+    "boyut": "2880x3398 ≠ 2880x4208",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-tahsilatlar-sayfa2-aydinlik.png",
+    "boyut": "2880x2542 ≠ 2880x2704",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "kasa-0062-hesapsiz-tahsilatlar-sayfa2-karanlik.png",
+    "boyut": "2880x2542 ≠ 2880x2704",
+    "seritler": [
+      "Deneme dönemi 01.01.2027'de biter. O tarihten sonra hareketi olan hesa",
+      "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belir"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "bayi-yedek-parca-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 655329
+  },
+  {
+    "ad": "bayi-yedek-parca-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 655329
+  },
+  {
+    "ad": "bayi-kalip-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 655329
+  },
+  {
+    "ad": "bayi-kalip-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 655329
+  },
+  {
+    "ad": "servis-formu-0115-kapali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu serviste kalıp işi kalemi var; kalıp atölyeye girecekse kutuyu işar"
+    ],
+    "piksel": 427404
+  },
+  {
+    "ad": "servis-formu-0115-kapali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bu serviste kalıp işi kalemi var; kalıp atölyeye girecekse kutuyu işar"
+    ],
+    "piksel": 427404
+  },
+  {
+    "ad": "kalip-formu-0107-duzenle-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 713861
+  },
+  {
+    "ad": "kalip-formu-0107-duzenle-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 713861
+  }
+]

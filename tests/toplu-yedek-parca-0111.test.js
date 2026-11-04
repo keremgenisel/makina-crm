@@ -286,7 +286,9 @@ describe("Spec 0111 triyaj: formdaki Ödendi kutusu (R6/4)", () => {
     const p = plan(e, form(e, null, { _odendiAcilis: false, odendi: true }), { bugun: "2026-10-26" });
     expect(p.guncellenen.map(k => k.tahsilatTarihi)).toEqual(["2026-10-05", "2026-10-26"]);
     const cek = plan(e, form(e, null, { _odendiAcilis: false, odendi: true, yontem: "Çek" }), { bugun: "2026-10-26" });
-    expect(cek.guncellenen.map(k => [k.odendi, k.tahsilatTarihi])).toEqual([[true, "2026-10-05"], [true, null]]);
+    // Spec 0131 ile (R12/2, Karar 17): çek yönteminde tahsilat günü yalnız "çek tahsil edildi" işaretinden doğar; form partiyi
+    // tahsil edilmemiş çeke çevirince zaten ödenmiş satırın nakit günü de düşer (tahsil edilmemiş çekin tahsilat günü yoktur).
+    expect(cek.guncellenen.map(k => [k.odendi, k.tahsilatTarihi])).toEqual([[true, null], [true, null]]);
   });
   it("ödenmiş partide işaret kaldırılırsa bütün satırlar ödenmemiş olur ve tahsilat tarihi silinir", () => {
     const e = [Y({ odendi: true, tahsilatTarihi: "2026-10-05" }), Z({ odendi: true, tahsilatTarihi: "2026-10-06" })];

@@ -63,7 +63,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 **Örnek:** `src/components/Customers.jsx:529` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:58` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:130` (düğme kipi, eşit genişlik)
-**Örnek:** `src/components/PartSaleForm.jsx:333` (form içi, düğme kipi, eşit genişlik)
+**Örnek:** `src/components/PartSaleForm.jsx:336` (form içi, düğme kipi, eşit genişlik)
 
 ### Ne zaman açılır liste? (spec 0042 R10)
 
@@ -145,7 +145,7 @@ Spec 0016 ile:
 **Örnek:** `src/components/SimpleDealers.jsx:373` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:559` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
-**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:97` (eylem yuvası, alt başlık)
+**Örnek:** `src/components/customers/detail/MachineTimeline.jsx:106` (eylem yuvası, alt başlık)
 
 ## BolumBasligi
 
@@ -217,7 +217,7 @@ sırası korunur ve şeridin metni yerine göre yeniden yazılmaz. Örnek: Kasa 
 notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avanslarının altında durur; kullanıcı Kasa'ya bakiyeler için gelir.
 
 **Örnek:** `src/components/Giderler.jsx:329`
-**Örnek:** `src/components/Kasa.jsx:573` (sayfa sonundaki şerit, spec 0083)
+**Örnek:** `src/components/Kasa.jsx:595` (sayfa sonundaki şerit, spec 0083)
 **Örnek:** `src/components/stock/PartStokTab.jsx:149` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
@@ -264,7 +264,7 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 - Uyarı niteliğinde bilgi için: `UyariSeridi`.
 
 **Örnek:** `src/components/CalisanManager.jsx:238`
-**Örnek:** `src/components/PartSaleForm.jsx:380` (seçimin sonucunu anlatan cümle)
+**Örnek:** `src/components/PartSaleForm.jsx:383` (seçimin sonucunu anlatan cümle)
 
 ---
 

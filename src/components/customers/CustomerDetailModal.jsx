@@ -5,7 +5,7 @@ import { CUR_SYM, ODEME_YONTEMLERI } from "../../lib/constants";
 import { servisParcaDus, servisParcaGeriAl, servisParcaYenile } from "../../lib/servisStok";
 import { grupKimlikleri,
   today, fmtTR, trLower, uid, bumpId, normalizeSaleType, calcKDV, fmtCur, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, satisKdvBolumu,
-  calcKalanBorc, stripAutoPrint, simdiYerel,
+  calcKalanBorc, stripAutoPrint, simdiYerel, yerelBugun,
   withDeleted, mergeAndUpdate, totalMiktar, resolveSatisYapan, fmtKalipCapi, dosyaBuKayitYerinde, parcaAdi, servisParcaSatirTutari, faturaBedeliOf, getKdvRateForDate,
   satisUcretsizMi,
 } from "../../lib/utils";
@@ -22,7 +22,7 @@ import {
 } from "../../lib/printTemplates";
 import { Icon, Field, Input, EMAIL_RE, PHONE_RE, Select, MoneyInput, Btn, SoftBtn, DangerBtn, Modal, ConfirmDialog, CountryCityFields, PickOrType, PaymentRowsEditor, LockConflict, DraftRestoreBar, DateInput } from "../ui";
 import { HataMetni, KartBolum, BosDurum, BolumBasligi, UyariSeridi } from "../tasarim";
-import { tahsilatHesapDurumu, paraBirimiUyumluMu, SATIS_KAYNAK } from "../../lib/satisTahsilat";
+import { tahsilatHesapDurumu, paraBirimiUyumluMu, SATIS_KAYNAK, tahsilatGunuYaz, tahsilatGunuNedeni, tahsilatGunuFormHatasi, tahsilatGunuFormu, topluTahsilatGunuFormu } from "../../lib/satisTahsilat";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle, satisTevkifatBorcMetni } from "../../lib/satisTevkifat";
 import { ihracKayitliFormu, ihracKayitliBorcMetni, ihracKdvHucreMetni } from "../../lib/ihracKayitli";
 import { TahsilatHesapPenceresi, TahsilatHesapAlani, OdemeSatiriHesap, makinaTahsilatDurumu, uyumluHesapId } from "../kasa/TahsilatHesap";
@@ -197,6 +197,9 @@ export const CustomerDetailModal = ({
     const tevkifatHata = satisTevkifatDogrula(svForm, svForm.faturaTipi);
     if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
     // Spec 0115 R14, Karar 52: kalıp listesi doğrulaması; hatalar geçici form alanına (satırın altında görünür).
+    // Spec 0131 R3, Karar 19: geçersiz tahsilat günü kaydedilmez (form da engeller; güvenlik ağı).
+    const svGunHata = tahsilatGunuFormHatasi(svForm, yerelBugun());
+    if (svGunHata) { showToast(svGunHata, "err"); return; }
     const tamirD = tamirDogrula(svForm);
     if (!tamirD.gecerli) { setSvForm(f => ({ ...f, _tamirHatalari: tamirD })); showToast(tamirD.hata, "err"); return; }
     const kartTaban = kartTabanKaydi(svForm);
@@ -233,7 +236,9 @@ export const CustomerDetailModal = ({
       kartKomisyonu: svForm.yontem === "Kredi Kartı" ? kartTabanIsaretle(yansitSnap || kartKomisyonuSnapshot(svKdvDahil, svForm.taksitSayisi, kkAyar, kkTarih, false), kartTaban) : null }, svForm, svForm.faturaTipi);
     // Spec 0115 R7/3, C3: kimlikler burada (kurucu) verilir, tek yazıcı tamirYaz; kutu kapalıysa alan kayıtta yok (R9).
     if (svModal === "add" || tamirListesi(svForm).some(g => g.id == null)) bumpId(customers, services);
-    const rec = tamirYaz(recTevkifat, tamirListesiKur(svForm, uid), tamirSevkKur(svForm));
+    // Spec 0131 R1, R7, R8: tahsilat günü tek yazıcıdan, eski kayda göre (yerel gün, C3).
+    const svEski = svModal === "add" ? null : (services.find(x => x.id === svForm.id) || null);
+    const rec = tahsilatGunuYaz(tamirYaz(recTevkifat, tamirListesiKur(svForm, uid), tamirSevkKur(svForm)), { eski: svEski, bugun: yerelBugun(), gun: svForm.tahsilatTarihi });
     if (svModal === "add") {
       const newId = uid();
       // Yeni servis "Bekliyor" ile açılır → Servis Panosu zaman takibi için fabrikaya giriş anını damgala.
@@ -260,7 +265,8 @@ export const CustomerDetailModal = ({
   const svUcretliMi = (sv) => (sv.type === "Garanti Dışı" || sv.type === "Periyodik Bakım") && parseMoney(sv.servisUcreti) > 0;
   const svParcaUcretliMi = (sv) => !sv.parcaUcretsizMi && parseMoney(sv.parcaUcreti) > 0;
   // Spec 0044 R2 (Q6, Q8): "Ödendi" işaretlenirken, kasa yetkisi varsa ve bize ait tutar varsa hesap penceresi açılır.
-  // uygula(hesapId): undefined = hesap alanına dokunma (pencere açılmadı), null = hesapsız, sayı = hesap.
+  // uygula(hesapId, gun): undefined = hesap alanına dokunma (pencere açılmadı), null = hesapsız, sayı = hesap. Spec 0131: gun
+  // pencerenin günüdür; pencere açılmadıysa undefined ve yazıcı yerel bugünü yazar (R5).
   // Geri alma pencere açmaz ve hesabı temizlemez (R9).
   const [tahsilatPencere, setTahsilatPencere] = useState(null);
   const tahsilatSor = (kaynak, kayitlar, uygula) => {
@@ -275,15 +281,16 @@ export const CustomerDetailModal = ({
     }
     const pb = sorulanlar[0].currency;
     const kendi = uyumluHesapId(kasaHesaplari, kayitlar.find(r => r.hesapId != null)?.hesapId, pb); // uyumsuz hesap ön seçilmez
-    setTahsilatPencere({ currency: pb, tutar: sorulanlar.reduce((a, d) => a + d.tutar, 0), varsayilan: kendi ?? tahsilatHesapVarsayilan?.(pb) ?? null, uygula });
+    // Spec 0131 R2, R12/3: pencere günü de sorar; çek ve kartta sormaz, nedenini yazar.
+    setTahsilatPencere({ currency: pb, tutar: sorulanlar.reduce((a, d) => a + d.tutar, 0), varsayilan: kendi ?? tahsilatHesapVarsayilan?.(pb) ?? null, gunNedeni: tahsilatGunuNedeni(kayitlar[0]), uygula });
   };
   const hesapAlani = (h) => (h !== undefined ? { hesapId: h } : {});
   const toggleServisOdendi = (sv) => {
     if (!setServices) return;
     const yeniDurum = !sv.odendi;
-    const cekKK = sv.yontem === "Çek" || sv.yontem === "Kredi Kartı"; // çek/KK'da tahsilat tarihi çek-tahsil/hesabaGecis'ten gelir
-    const uygula = (h) => {
-      setServices(p => p.map(s => s.id === sv.id ? { ...s, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null, ...hesapAlani(h) } : s));
+    // Spec 0131 R1, R5, R6, R12: gün tek yazıcıdan (çek/kartta yazıcı yönteme kendisi bakar).
+    const uygula = (h, gun) => {
+      setServices(p => p.map(s => s.id === sv.id ? tahsilatGunuYaz({ ...s, odendi: yeniDurum, ...hesapAlani(h) }, { eski: s, bugun: yerelBugun(), gun }) : s));
       logAction({ serverPermissions, action: yeniDurum ? "servis_odendi" : "servis_odeme_iptal", entity: "servis", entityId: sv.id, entityName: detailView?.name });
     };
     if (yeniDurum) tahsilatSor(SATIS_KAYNAK.SERVIS, [sv], uygula); else uygula(undefined);
@@ -321,7 +328,11 @@ export const CustomerDetailModal = ({
         aliciTipi: rec.aliciTipi, musteriId: rec.musteriId, dealerId: rec.dealerId,
         currency: rec.currency, tarih: rec.tarih, faturaTipi: rec.faturaTipi, odendi: rec.odendi, hesapId: rec.hesapId ?? null,
         // Spec 0111 R6: formun gösterdiği ortak alanlar birincil kayıttan (teslim şekli, farklı adres, tevkifat); R21 kilit anahtarı.
-        _kilitId: rec.id, _acilisIdleri: grup.map(s => s.id), _odendiAcilis: !!rec.odendi, fabrikaTeslim: !!rec.fabrikaTeslim, teslimatFarkli: !!rec.teslimatFarkli,
+        _kilitId: rec.id, _acilisIdleri: grup.map(s => s.id), _odendiAcilis: !!rec.odendi,
+        // Spec 0131 R9, R13/2: form düzeyindeki gün ücretli ödenmiş satırların ortak günüdür (farklıysa boş); dokunulmazsa
+        // her satır kendi gününü korur (_tahsilatGunuAcilis ile karşılaştırılır).
+        ...topluTahsilatGunuFormu(grup),
+        fabrikaTeslim: !!rec.fabrikaTeslim, teslimatFarkli: !!rec.teslimatFarkli,
         teslimatAd: rec.teslimatAd || "", teslimatTel: rec.teslimatTel || "", teslimatAdres: rec.teslimatAdres || "",
         teslimatUlke: rec.teslimatUlke || "", teslimatSehir: rec.teslimatSehir || "", teslimatIlce: rec.teslimatIlce || "",
         ...(rec.tevkifatli ? { tevkifatli: true, tevkifatPay: rec.tevkifatPay, tevkifatPayda: rec.tevkifatPayda } : {}),
@@ -350,7 +361,7 @@ export const CustomerDetailModal = ({
       if (kilit) { showToast(kilitRedMesaji(kilit), "err"); return; }
       const plan = topluDuzenlemePlani(eskiler, ypForm, {
         partStock, partStockLog, ayar: appSettings?.krediKartiKomisyonlari, kdvRates,
-        yeniId: () => uid(), olusturmaZamani: simdiYerel(), silmeDamgasi: new Date().toISOString(), bugun: today(),
+        yeniId: () => uid(), olusturmaZamani: simdiYerel(), silmeDamgasi: new Date().toISOString(), bugun: yerelBugun(), // spec 0131 C3/2
       });
       if (!plan.ok) {
         if (plan.satirHatalari) setYpForm(p => ({ ...p, _satirHatalari: plan.satirHatalari }));
@@ -417,11 +428,10 @@ export const CustomerDetailModal = ({
   const toggleYedekParcaOdendi = (rec) => {
     if (!canDo("cust_yedek_parca_payment") || !setYedekParcaSatislar) return;
     const yeni = !rec.odendi;
-    const cekKK = rec.yontem === "Çek" || rec.yontem === "Kredi Kartı";
     const idler = new Set(ypOdemeIdleri(rec));
     if (!idler.size) return;
-    const uygula = (h) => {
-      setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, odendi: yeni, tahsilatTarihi: yeni && !cekKK ? today() : null, ...hesapAlani(h) } : s));
+    const uygula = (h, gun) => {
+      setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? tahsilatGunuYaz({ ...s, odendi: yeni, ...hesapAlani(h) }, { eski: s, bugun: yerelBugun(), gun }) : s));
       [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "odendi" : "odeme_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
     };
     if (yeni) tahsilatSor(SATIS_KAYNAK.YEDEK, (yedekParcaSatislar || []).filter(s => idler.has(s.id)), uygula); else uygula(undefined);
@@ -432,7 +442,7 @@ export const CustomerDetailModal = ({
     const yeni = !rec.tahsilEdildi;
     const idler = new Set(ypOdemeIdleri(rec));
     if (!idler.size) return;
-    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? { ...s, tahsilEdildi: yeni, tahsilatTarihi: yeni ? today() : null } : s));
+    setYedekParcaSatislar(p => p.map(s => idler.has(s.id) ? tahsilatGunuYaz({ ...s, tahsilEdildi: yeni }, { eski: s, bugun: yerelBugun() }) : s)); // spec 0131 R12/2
     [...idler].forEach(id => logAction({ serverPermissions, action: yeni ? "cek_tahsil_edildi" : "cek_tahsil_iptal", entity: "yedek_parca_satis", entityId: id, entityName: detailView?.name }));
   };
   // ── Extra Kalıp satışları ──
@@ -449,6 +459,7 @@ export const CustomerDetailModal = ({
       // Spec 0107 R1, R2: kayıt yolunun kalıp satırından okuduğu her alan burada taşınır (yoksa kayıt işareti silerdi).
       kaliplar: [{ ad: ps.ad || "", olcu: ps.olcu || "", fiyat: kalemFiyat, uretimFormGonder: !!ps.uretimFormGonder }],
       tarih: ps.tarih || today(), currency: ps.currency || "TRY", odendi: !!ps.odendi, hesapId: ps.hesapId ?? null,
+      ...tahsilatGunuFormu(ps), // spec 0131 R1/2: alan kayıtlı günle (yoksa boş) açılır
       yontem: ps.yontem || "Nakit", vadeTarihi: ps.vadeTarihi || "", tahsilEdildi: !!ps.tahsilEdildi,
       taksitSayisi: ps.taksitSayisi || "", kkYansit: !!(ps.kartKomisyonu && ps.kartKomisyonu.yansitildi),
       kartTarihi: ps.kartKomisyonu?.bazTarih || "",
@@ -483,7 +494,7 @@ export const CustomerDetailModal = ({
     const selectedCust = customers.find(c => c.id === Number(pkForm.customerId));
     const satirlar = (pkForm.kaliplar || []).filter(k => k.ad);
     if (!selectedCust || satirlar.length === 0) return;
-    const tevkifatHata = satisTevkifatDogrula(pkForm, pkForm.faturaTipi); // spec 0079 R6
+    const tevkifatHata = satisTevkifatDogrula(pkForm, pkForm.faturaTipi) || tahsilatGunuFormHatasi(pkForm, yerelBugun()); // spec 0079 R6, spec 0131 Karar 19
     if (tevkifatHata) { showToast(tevkifatHata, "err"); return; }
     // Ortak alanlar tek kaynaktan (spec 0006 C3): Evrak'tan üretilen Extra Kalıp ile aynı kayıt.
     const ortak = kalipSatisOrtak(pkForm, selectedCust.id, today());
@@ -506,11 +517,10 @@ export const CustomerDetailModal = ({
     if (!setPartSales) return;
     if (kalipGrupKilitli(ps.id)) return;
     const yeniDurum = !ps.odendi;
-    const cekKK = ps.yontem === "Çek" || ps.yontem === "Kredi Kartı";
-    const uygula = (h) => {
+    const uygula = (h, gun) => {
       // Triyaj: tahsilat hesabı penceresi açıkken kilit başkasına geçmiş olabilir; yazım anında da bakılır.
       if (kalipGrupKilitliRef.current(ps.id)) return;
-      setPartSales(p => p.map(x => x.id === ps.id ? { ...x, odendi: yeniDurum, tahsilatTarihi: yeniDurum && !cekKK ? today() : null, ...hesapAlani(h) } : x));
+      setPartSales(p => p.map(x => x.id === ps.id ? tahsilatGunuYaz({ ...x, odendi: yeniDurum, ...hesapAlani(h) }, { eski: x, bugun: yerelBugun(), gun }) : x)); // spec 0131
       logAction({ serverPermissions, action: yeniDurum ? "kalip_odendi" : "kalip_odeme_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
     };
     if (yeniDurum) tahsilatSor(SATIS_KAYNAK.KALIP, [ps], uygula); else uygula(undefined);
@@ -520,7 +530,7 @@ export const CustomerDetailModal = ({
     if (!setPartSales) return;
     if (kalipGrupKilitli(ps.id)) return;
     const yeni = !ps.tahsilEdildi;
-    setPartSales(p => p.map(x => x.id === ps.id ? { ...x, tahsilEdildi: yeni, tahsilatTarihi: yeni ? today() : null } : x));
+    setPartSales(p => p.map(x => x.id === ps.id ? tahsilatGunuYaz({ ...x, tahsilEdildi: yeni }, { eski: x, bugun: yerelBugun() }) : x)); // spec 0131 R12/2
     logAction({ serverPermissions, action: yeni ? "kalip_cek_tahsil_edildi" : "kalip_cek_tahsil_iptal", entity: "kalip_satisi", entityId: ps.id, entityName: detailView?.name });
   };
   const deletePartSale = (id) => {
@@ -1563,8 +1573,9 @@ export const CustomerDetailModal = ({
 
       {tahsilatPencere && (
         <TahsilatHesapPenceresi currency={tahsilatPencere.currency} tutar={tahsilatPencere.tutar} hesaplar={kasaHesaplari} varsayilan={tahsilatPencere.varsayilan}
+          gunNedeni={tahsilatPencere.gunNedeni}
           onVazgec={() => setTahsilatPencere(null)}
-          onKaydet={(h) => { const u = tahsilatPencere.uygula; setTahsilatPencere(null); u(h); }} />
+          onKaydet={(h, gun) => { const u = tahsilatPencere.uygula; setTahsilatPencere(null); u(h, gun); }} />
       )}
 
       {sandikModal && (
