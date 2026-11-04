@@ -1,7 +1,7 @@
 # 0131 uygulama planı — Tahsilat tarihi, işaretlendiği gündür
 
-Spec: `specs/0131-tahsilat-tarihi-isaretlendigi-gun.md` (QA turu karar 1–16, plan turu Karar 17–26). Dal `feat/0131-tahsilat-gunu`,
-taban `d63bd83f`. Yeni kalıcı alan, veri bölümü, izin, kilit alanı ve göç yok; alan üç tabloda 0044'ten beri var.
+Spec: `specs/done/0131-tahsilat-tarihi-isaretlendigi-gun.md` (QA turu karar 1–16, plan turu Karar 17–26). Dal `feat/0131-tahsilat-gunu`,
+taban `d63bd83f`. **Tamamlandı:** commit `12f158e0`. Yeni kalıcı alan, veri bölümü, izin, kilit alanı ve göç yok; alan üç tabloda 0044'ten beri var.
 
 ## 1. Dosyalar
 

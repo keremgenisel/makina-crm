@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-04, plan turu Karar 17–26, uygulama turu Karar 27–32). Kökeni: analist 2026-11-04, QA boşluk analizi 2026-11-04, 16 bulgu işlendi |
+| **Durum** | Tamamlandı (2026-11-04, commit `12f158e0`; plan turu Karar 17–26, uygulama turu Karar 27–32, triyaj Karar 33). Kökeni: analist 2026-11-04, QA boşluk analizi 2026-11-04, 16 bulgu işlendi |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteriler (müşteri detayının Makina Geçmişi zaman çizelgesi), Stok › Yedek Parça Satışı, Kasa (hesap hareketleri ve hesabı belirtilmemiş tahsilatlar), Servis Panosu (sekme, kiosk ve ayrı pencere), Bayiler detayının iki satış formu, servis formu, Extra Kalıp formu, yedek parça satış formu; saf motorlar `utils.tahsilatTarihiOf`, `satisTahsilat.js`, `kasa.js`, `aylikRapor.js`, `yedekParcaSatis.js`, `kalipSatisi.js`, `cek.js`; sunucu `serverAuth.cjs` |
@@ -187,6 +187,10 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 - **Karar 31.** 0111 toplu düzenlemesinde dokunulmayan gün satır formuna taşınmaz; bunun tek görünür etkisi partiye bu düzenlemede eklenen ödenmiş satırın bugünü almasıdır (güncellenen satırlar zaten son yazıcı adımında kendi günlerini korur). → R9, R7/2
 - **Karar 32.** Görsel kanıt yeni dört ekranla: `musteri-0131-pencere-cek`, `servis-formu-0131-gun-bos` (tahsilat hesabı yetkisi yok), `servis-formu-0131-gun-hata`, `kasa-0131-gun-eksik`. Seçim kutusu oku çalıştırmadan çalıştırmaya iki hâlde çiziliyor (spec öncesi kodun iki çekimi birbirinden 79–96 piksel ayrıldı, eski taban ile yeni kodun çekimi 0 piksel tuttu); bu yüzden değişen küme iki taban × iki sonra çekiminin çapraz karşılaştırmasıyla belirlendi: 23 ekran (46 görüntü) her eşleşmede farklı, öteki 118 ekran en az bir eşleşmede 0 piksel. Rapor `0131-piksel-raporu.json` yalnız bu 23 ekranı taşır, eşlemeye 28 `degisti` kaydı yazıldı. → DoD
 
+### Triyaj turunda verilen kararlar (2026-11-04)
+
+- **Karar 33.** Kasa'nın satır içi gün kutusu değişimde değil, odak kaybında ya da Enter'da yazar. Gerçek Electron'da tarih kutusuna klavyeyle yıl yazılırken her hane bir değişim olayı üretiyor ("0002", "0020", "0202", "2026"); "0202-05-03" geçerli bir gün olduğu için değişimde yazmak onu kaydediyor, hareket satırını listeden düşürüp kutuyu kaldırıyor, iz ve bildirim üretiyordu. Formlar ve pencere etkilenmez (düğmeyle kaydeder). → R10, R11, Karar 20
+
 ### Karar kaydı
 
 | # | Bulgu | Derece | Karar |
@@ -272,25 +276,25 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Tahsilat gününü yazan tek yol React'sız saf bir yardımcıdır, günü parametre alır ve kendi testi vardır; arayüz yalnız alanı çizer.
-- [ ] Kasa, aylık faaliyet raporu ve 0047 raporu aynı günü aynı kaynaktan okuyor (çapraz test yazıldı).
-- [ ] Çek tahsil işaretinin yazdığı gün de aynı tek yazıcıdan geçiyor; `_cek` basamağının bu üç bölümde dolmadığı ölçümü spec'te yazılı (R12/2, C1/2).
-- [ ] Servis Panosu (sekme, kiosk, ayrı pencere) ve bayi detayının formları kriterle ölçüldü (R8/2).
-- [ ] Gün alanı `tahsilat_hesap` izni olmadan da çiziliyor ve yazılıyor (R8/3).
-- [ ] 0073 R1'in gevşeyen yarısı test yorumlarında "spec 0131 ile" notuyla işaretlendi ve başlık tablosunda yazılı.
-- [ ] Yeni kalıcı alan yok; `tahsilatTarihi` üç tabloda zaten var ve `db-roundtrip` yeşil.
-- [ ] Yeni veri bölümü yok; birleştirme kuralı değişmedi (açıkça yazıldı).
-- [ ] Yeni eylem izni yok; hesap penceresi `tahsilat_hesap` kapısında kaldı ve bu açıkça yazıldı. Sunucunun izinli alan listesi genişletildi ve `server-authz` ile `server-security` bloğu eklendi.
-- [ ] Soft-delete ve çöp kutusu simetrisi etkilenmedi (açıkça yazıldı).
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı değişmedi.
-- [ ] Para gösterilen yerlerde çoklu para kuralı korundu; bilinmeyen para birimi tanımlı biçimde ele alındı.
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi (pencerenin gün alanı, formdaki alan, Kasa'nın işaretli satırı, boş durum), taban raporu 0 piksel farkla alındı.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin 0044 bölümüne tahsilat gününün tek yazım yolu ve yerel gün kuralı yazıldı.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Tahsilat gününü yazan tek yol React'sız saf bir yardımcıdır, günü parametre alır ve kendi testi vardır; arayüz yalnız alanı çizer.
+- [x] Kasa, aylık faaliyet raporu ve 0047 raporu aynı günü aynı kaynaktan okuyor (çapraz test yazıldı).
+- [x] Çek tahsil işaretinin yazdığı gün de aynı tek yazıcıdan geçiyor; `_cek` basamağının bu üç bölümde dolmadığı ölçümü spec'te yazılı (R12/2, C1/2).
+- [x] Servis Panosu (sekme, kiosk, ayrı pencere) ve bayi detayının formları kriterle ölçüldü (R8/2).
+- [x] Gün alanı `tahsilat_hesap` izni olmadan da çiziliyor ve yazılıyor (R8/3).
+- [x] 0073 R1'in gevşeyen yarısı test yorumlarında "spec 0131 ile" notuyla işaretlendi ve başlık tablosunda yazılı.
+- [x] Yeni kalıcı alan yok; `tahsilatTarihi` üç tabloda zaten var ve `db-roundtrip` yeşil.
+- [x] Yeni veri bölümü yok; birleştirme kuralı değişmedi (açıkça yazıldı).
+- [x] Yeni eylem izni yok; hesap penceresi `tahsilat_hesap` kapısında kaldı ve bu açıkça yazıldı. Sunucunun izinli alan listesi genişletildi ve `server-authz` ile `server-security` bloğu eklendi.
+- [x] Soft-delete ve çöp kutusu simetrisi etkilenmedi (açıkça yazıldı).
+- [x] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı değişmedi.
+- [x] Para gösterilen yerlerde çoklu para kuralı korundu; bilinmeyen para birimi tanımlı biçimde ele alındı.
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi (pencerenin gün alanı, formdaki alan, Kasa'nın işaretli satırı, boş durum), taban raporu 0 piksel farkla alındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin 0044 bölümüne tahsilat gününün tek yazım yolu ve yerel gün kuralı yazıldı.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -298,10 +302,15 @@ Takım Yöneticisi planın bütün önerilerini onayladı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `12f158e0` | Dal `feat/0131-tahsilat-gunu`, taban `d63bd83f`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | Plan turu (Karar 17–26), uygulama (Karar 27–32), triyaj (Karar 33) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: Kasa kutusu ara değerleri yazıyordu, 0107 eşleme testi, AC-40 iz iddiası, Extra Kalıp açılış günü |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | İkisi önemli (biri gerçek Electron ölçümüyle bulundu), ikisi küçük test boşluğu |
+| **Regresyon sayısı** | 0 | Tam takım 472 dosya, 6521 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** üç ters çevirme ölçümle çıktı (0111 çek beklentisi, 0098 AC-16'nın ayın ilk günlerinde ileri günlü fikstürü, 0079/0095 ekran kıyaslarında yeni gün metni). Çek nedeninin ilk metni formdaki "Çek tahsil edildi" kutusunun metnini tekrarlıyordu, iki eşleşme doğurdu. Mutasyon ölçümü: uygulamada on beş bozma, triyajda üç; kaçan üçü (toplu planın gün düğümü, pano formu, müşteri detayının servis formu) ek testlerle yakalandı, toplu plan düğümünün yalnız partiye eklenen yeni satırda görünür olduğu bu sırada ölçüldü.
+
+**Görsel kanıt:** seçim kutusu oku süreç içindeki çizim sırasına bağlı iki hâlde çiziliyor; değişen küme iki taban × iki sonra çekiminin çapraz karşılaştırmasıyla bulundu: 23 ekran (dördü yeni) bilinçli değişti, 118'i değişmedi. Taban son kodla 46 görüntüde 0 fark (ok yüzünden `kalip-formu-0107-duzenle` tek başına çekilince 355 piksel ayrılıyordu, onaylı görüntünün çekildiği toplu listeyle 0); altı dosyadaki 28 `degisti` kaydı kapanışta `ayni` ve `0131-taban-piksel-raporu.json`'a çevrildi.
+
+**Bu spec'ten çıkarılan ders:** değişim olayında kayıt yazan satır içi tarih kutusu, klavyeyle yazılan ara değerleri de kaydeder; jsdom testi tam değeri tek olayla verdiği için bunu göremez. Satır içi girdiler odak kaybında ya da Enter'da yazmalı ve test ara değerlerle sürmelidir.
