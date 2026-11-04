@@ -2,7 +2,7 @@
 // Spec 0127 C2, AC-2, AC-11, AC-12 (Karar 10, 20, 25): sevk alanı yazılmamış serviste Servis Formu çıktısı (TR ve EN), Kargo
 // Etiketi verisi ve Servis Kayıtları Excel'inin eski sütunları spec ÖNCESİ kodla birebir aynı. Altın YAZ_0127=1 ile spec
 // öncesi koddan üretildi (tests/fixtures/0127-cikti-once.json); bu dosya yalnız spec öncesinde de var olan API'leri kullanır.
-import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeAll, afterAll, vi } from "vitest";
 import { render, cleanup, fireEvent, within, act } from "@testing-library/react";
 import fs from "node:fs";
 
@@ -17,7 +17,10 @@ import { SettingsExport } from "../../src/components/settings/SettingsExport";
 import { CUSTOMERS, KDV, FAB, SEVKSIZ, SEVKLI, EXCEL_SERVISLERI, veriUriAyikla } from "../fixtures/0127-veri";
 
 const DOSYA = "tests/fixtures/0127-cikti-once.json";
-beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
+// Servis formu çıktısı "Rapor Tarihi" olarak bugünü basar ve altın 03.11.2026'da üretildi; saat sabitlenmezse test ertesi gün
+// kırılıyordu (04.11.2026, sürüm öncesi tam takımda bulundu; 0079 / 0095 / 0121 kıyaslarının emsali). Yalnız Date sahtelenir.
+beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-03T10:00:00") }); });
+afterAll(() => vi.useRealTimers());
 afterEach(cleanup);
 
 const servisExcel = async () => {
