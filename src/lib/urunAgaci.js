@@ -239,13 +239,52 @@ export const parcaMaliyetDogrula = (ham) => {
   return { bos: false, deger: Math.round(r.deger * 100) / 100, hata: null };
 };
 
-// AC-15: kit adedi en az 1 tam sayıdır; 0, negatif ve ondalık reddedilir. İki kapıda (parça kartı, model kartı) aynı.
-export const KIT_ADET_HATASI = "Adet en az 1 tam sayı olmalı.";
+// Spec 0087 AC-15, spec 0134 ile ters çevrildi (R6/2, R6a, C1/2, Karar 35): makina kitinin adedi sıfırdan büyük ve en çok üç
+// ondalıklıdır (bir parça makina başına birden az girebilir). İki kit kapısı (model kartı, parça kartının model ile adet satırı)
+// AYNI doğrulayıcıyı çağırır; setin içeriği kendi tam sayı doğrulayıcısındadır (`setAdediDogrula`). Ayrıştırıcı kendisinindir:
+// virgül de nokta da ondalıktır (adette binlik ayracı yok); `tutarCoz` "0.114"ü 114 okurdu.
+export const KIT_ADET_HATASI = "Adet sıfırdan büyük, en çok üç ondalıklı bir sayı olmalı.";
+export const KIT_ADET_ONDALIK = 3;
+export const kitAdediCoz = (ham) => {
+  // Triyaj (bilgi 2): sayı olarak gelen değer de üç ondalık sınırına tabidir.
+  if (typeof ham === "number") return Number.isFinite(ham) && Number(ham.toFixed(KIT_ADET_ONDALIK)) === ham ? ham : null;
+  const t = String(ham ?? "").trim();
+  const m = /^(\d+)(?:[.,](\d+))?$/.exec(t);
+  if (!m || (m[2] && m[2].length > KIT_ADET_ONDALIK)) return null;
+  return Number(`${m[1]}.${m[2] || "0"}`);
+};
 export const kitAdediDogrula = (ham) => {
   if (ham == null || String(ham).trim() === "") return { bos: true, deger: null, hata: null };
+  const n = kitAdediCoz(ham);
+  if (n == null || !(n > 0)) return { bos: false, deger: null, hata: KIT_ADET_HATASI };
+  return { bos: false, deger: n, hata: null };
+};
+// R6/2, AC-11c, AC-75: setin içeriğinin adedi tam sayı kalır ve hata metni set içeriğine aittir (0121 metni aynen).
+export const SET_ADET_HATASI = "Adet en az 1 tam sayı olmalı.";
+export const setAdediDogrula = (ham) => {
+  if (ham == null || String(ham).trim() === "") return { bos: true, deger: null, hata: null };
   const t = String(ham).trim();
-  if (!/^\d+$/.test(t) || Number(t) < 1) return { bos: false, deger: null, hata: KIT_ADET_HATASI };
+  if (!/^\d+$/.test(t) || Number(t) < 1) return { bos: false, deger: null, hata: SET_ADET_HATASI };
   return { bos: false, deger: Number(t), hata: null };
+};
+// Spec 0134 R6/3 (AC-72): kitin stoktan düşülecek tam adedi, yukarı yuvarlanmış (0,114 → 1, 1,5 → 2). Kayan nokta artığı
+// (0,1 × 30 = 3,0000000004) üç ondalığa indirilip yuvarlanır.
+export const kitStokAdedi = (ham) => { const n = kitAdediCoz(ham); return n == null || !(n > 0) ? 0 : Math.ceil(Number(n.toFixed(KIT_ADET_ONDALIK))); };
+// Kit adedinin Türkçe gösterimi (0,114; tam sayı ondalıksız). Forma açılırken de bu metin yazılır.
+const kitHane = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: KIT_ADET_ONDALIK, useGrouping: false });
+export const kitAdetMetni = (n) => (n == null || n === "" ? "" : kitHane.format(Number(n)));
+// R6c, R6c/2, AC-11f, AC-11g, AC-93, Karar 37: parti başına girilen adedin makina başına çevrilmesi. Üç ondalığa en yakına
+// (yarım yukarı); girdiler saklanmaz. Parti büyüklüğü en az 1 tam sayı, parti adedi kit adedi gibi sıfırdan büyük.
+export const PARTI_BUYUKLUGU_HATASI = "Parti büyüklüğü en az 1 tam sayı olmalı.";
+export const PARTI_ADEDI_HATASI = "Parti adedi sıfırdan büyük bir sayı olmalı.";
+export const partiAdediCevir = (adetHam, buyuklukHam) => {
+  const b = String(buyuklukHam ?? "").trim();
+  if (!/^\d+$/.test(b) || Number(b) < 1) return { deger: null, hata: PARTI_BUYUKLUGU_HATASI };
+  const a = kitAdediCoz(adetHam);
+  if (a == null || !(a > 0)) return { deger: null, hata: PARTI_ADEDI_HATASI };
+  const d = Math.round((a / Number(b)) * 1000 + 1e-9) / 1000;
+  if (!(d > 0)) return { deger: null, hata: KIT_ADET_HATASI };
+  return { deger: d, hata: null };
 };
 
 // R9, AC-26: ek maliyet kalemleri `{ ad, tutar }` (her makina için TL, KDV hariç). Ad ve tutar ikisi de boş satır atılır;
@@ -446,14 +485,14 @@ export const setIcerigiDogrula = (satirlar = [], { kendiId = null, parts = [], h
   const harita = hazirHarita || new Map((parts || []).filter(p => p && !p.deletedAt).map(p => [String(p.id), p]));
   (satirlar || []).forEach((s, i) => {
     const pid = s?.partId == null ? "" : String(s.partId).trim();
-    const m = kitAdediDogrula(s?.miktar);
+    const m = setAdediDogrula(s?.miktar); // spec 0134 R6/2: set içeriği tam sayı, kendi doğrulayıcısı
     if (!pid && m.bos) return;
     if (!pid) { hatalar[i] = SET_PARCA_SECILMEDI; return; }
     if (kendiId != null && pid === String(kendiId)) { hatalar[i] = SET_KENDISI; return; }
     if (gorulen.has(pid)) { hatalar[i] = SET_AYNI_PARCA; return; }
     const b = harita.get(pid);
     if (b && setMi(b)) { hatalar[i] = SET_IC_ICE; return; }
-    if (m.bos || m.hata) { hatalar[i] = KIT_ADET_HATASI; return; }
+    if (m.bos || m.hata) { hatalar[i] = SET_ADET_HATASI; return; }
     gorulen.add(pid);
     kayit.push({ partId: /^\d+$/.test(pid) ? Number(pid) : pid, miktar: m.deger });
   });

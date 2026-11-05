@@ -122,8 +122,10 @@ describe("Spec 0087: ürün ağacı adetleri (saf)", () => {
     expect(kitleriGuncelle(OZEL(), plan.kit)[0].defaultParcalar).toEqual([]);
   });
 
-  it("AC-15: adet en az 1 tam sayı; 0, negatif ve ondalık reddedilir", () => {
-    for (const x of ["0", "-1", "1,5", "1.5", "abc"]) expect(kitAdediDogrula(x).hata, x).toBe(KIT_ADET_HATASI);
+  // Spec 0134 ile (R6a, Karar 35): kit adedi en çok üç ondalıklı olabilir; ondalık yarısı ters çevrildi, 0/negatif/metin yarısı aynen.
+  it("AC-15 (spec 0134 ile): adet sıfırdan büyük; 0, negatif ve sayı olmayan reddedilir, ondalık kabul", () => {
+    for (const x of ["0", "-1", "abc", "1,1234"]) expect(kitAdediDogrula(x).hata, x).toBe(KIT_ADET_HATASI);
+    expect(kitAdediDogrula("1,5").deger).toBe(1.5);
     expect(kitAdediDogrula("3")).toEqual({ bos: false, deger: 3, hata: null });
     expect(kitAdediDogrula(" ").bos).toBe(true);
   });
@@ -167,7 +169,8 @@ describe("Spec 0087: ürün ağacı adetleri (saf)", () => {
   it("AC-19: işaret ile kiti birlikte yazan tek yol urunAgaci'dir (kaynak taraması)", () => {
     const yazan = kaynaklar().filter(f => /defaultParcalar/.test(kod(f)));
     // Spec 0088 ile: Makina Maliyeti motoru kiti OKUR (direkt maliyet, R11); yazmaz (taraması aşağıda).
-    expect(yazan.sort()).toEqual(["src/components/ModelsManager.jsx", "src/components/stock/MakinaStokTab.jsx", "src/lib/makinaStandartMaliyet.js", "src/lib/urunAgaci.js"]);
+    // Spec 0134 ile: sipariş motoru kiti yalnız OKUR (patlatma, C1).
+    expect(yazan.sort()).toEqual(["src/components/ModelsManager.jsx", "src/components/stock/MakinaStokTab.jsx", "src/lib/makinaStandartMaliyet.js", "src/lib/siparisIhtiyaci.js", "src/lib/urunAgaci.js"]);
     expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/defaultParcalar\s*:/);
     // Parça paneli kite yalnız urunAgaci üzerinden yazar; model paneli parçanın işaretini yalnız urunAgaci üzerinden taşır.
     expect(kod("src/components/PartManager.jsx")).toMatch(/setStandardModels\?\.\(p => kitleriGuncelle\(p, kit\)\)/);

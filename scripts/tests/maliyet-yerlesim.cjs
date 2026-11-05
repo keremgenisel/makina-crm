@@ -22,6 +22,16 @@ const AYAR = `(r) => {
   return { alanlar: alanlar.map(r), etiketler };
 }`;
 
+// Spec 0134 AC-1, AC-100: görünüm çubuğunun beş sekmesi tek satırda ve pencerenin içinde; Sipariş İhtiyacı tabloları belgeyi
+// yatay taşırmaz (kap kendi içinde kayar, Karar 38).
+const CUBUK = `(r) => {
+  const g = document.querySelector('[role="radiogroup"][aria-label="Görünüm"]');
+  const t = document.querySelector('[data-testid="siparis-parca-tablosu"]');
+  if (!g || !t) return null;
+  const radyolar = [...g.querySelectorAll('[role="radio"]')].map(e => { const b = e.getBoundingClientRect(); return { top: Math.round(b.top), right: Math.round(b.right), metin: e.textContent }; });
+  return { radyolar, genislik: document.documentElement.clientWidth, belgeTasar: document.documentElement.scrollWidth > document.documentElement.clientWidth };
+}`;
+
 let win = null;
 async function senaryo(html, genislik, gorunum, secici) {
   if (!win) win = new BrowserWindow({ show: false, width: genislik, height: 900, webPreferences: { contextIsolation: true } });
@@ -51,6 +61,14 @@ app.whenReady().then(async () => {
       // Ay alanı ile sayı alanının kendi yüksekliği 2 px farklı (tarayıcının ay girdisi); hiza üst kenardan ölçülür.
       check(`${genislik}px Hesap Ayarları: üç alanın kutuları aynı hizada (üst kenar)`, a.alanlar.every(x => Math.abs(x.top - a.alanlar[0].top) <= 1), JSON.stringify(a.alanlar));
       check(`${genislik}px Hesap Ayarları: üç etiket aynı satırda ve tek satır`, a.etiketler.every(x => x && ayniSatir(x, a.etiketler[0])), JSON.stringify(a.etiketler));
+    }
+    for (const genislik of [1920, 1440, 1280]) {
+      const c = await senaryo(html, genislik, "siparis", CUBUK);
+      if (!c) { check(`${genislik}px Sipariş İhtiyacı: çubuk ve tablo çizildi`, false); continue; }
+      console.log(`OLCUM siparis ${genislik}: ` + JSON.stringify(c));
+      check(`${genislik}px görünüm çubuğu beş sekmeyle tek satırda`, c.radyolar.length === 5 && c.radyolar.every(x => Math.abs(x.top - c.radyolar[0].top) <= 1), JSON.stringify(c.radyolar));
+      check(`${genislik}px görünüm çubuğu pencerenin içinde`, c.radyolar.every(x => x.right <= c.genislik), JSON.stringify(c.radyolar));
+      check(`${genislik}px Sipariş İhtiyacı belgeyi yatay taşırmaz`, !c.belgeTasar);
     }
   } catch (e) { console.error("FAIL (uncaught):", (e && e.stack) || e); fail++; }
   if (fail) { console.error(`${fail} kontrol BASARISIZ`); app.exit(1); return; }

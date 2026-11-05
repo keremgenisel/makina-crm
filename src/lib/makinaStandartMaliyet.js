@@ -212,7 +212,8 @@ export const modelMaliyeti = (model, partMap, payK = 0, tarih, malzemeKat) => {
     // Spec 0121 R9/2: harita (canlı parçalar) aynı zamanda setin kataloğudur; setin birim maliyeti bileşenlerinden.
     const birimK = parcaMaliyetKurus(p, tarih, partMap, malzemeKat);
     if (birimK == null) return { partId: r.partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
-    return { partId: r.partId, ad: p.ad, adet, birimK, satirK: birimK * adet, eksik: false, neden: null };
+    // Spec 0134 Karar 34: ondalık kitte satır kuruşa yuvarlanır (tam sayı kitte çarpım zaten tam sayı, çıktı birebir aynı).
+    return { partId: r.partId, ad: p.ad, adet, birimK, satirK: Math.round(birimK * adet), eksik: false, neden: null };
   });
   const ek = (model.ekMaliyetler || []).map(k => ({ ad: k.ad, tutarK: kurus(k.tutar) }));
   const direktK = kit.reduce((a, r) => a + r.satirK, 0) + ek.reduce((a, k) => a + k.tutarK, 0);

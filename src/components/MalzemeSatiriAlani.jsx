@@ -1,9 +1,16 @@
 import { Field, Input, Select } from "./ui";
 import { HataMetni, Ipucu, BolumBasligi, Segment } from "./tasarim";
 import { maliyetMetniKurus } from "../lib/urunAgaci";
-import { malzemeSatiriFormu, malzemeCopEtiketi, BICIMLER, BICIM_SIRASI, OLCU_ADLARI, PAY_ALANI, YONTEMLER, kgMetni, MALZEME_SET_IPUCU } from "../lib/malzeme";
+import { malzemeSatiriFormu, malzemeCopEtiketi, BICIMLER, BICIM_SIRASI, OLCU_ADLARI, PAY_ALANI, YONTEMLER, kgMetni, MALZEME_SET_IPUCU, EMNIYET_PAYI_ETIKETI, EMNIYET_PAYI_IPUCU } from "../lib/malzeme";
 
 const FIELDSET_STILI = { border: 0, padding: 0, margin: 0, minWidth: 0 };
+const PayAlani = ({ deger, setDeger, hata }) => (
+  <Field label={EMNIYET_PAYI_ETIKETI}>
+    <Input value={deger ?? ""} onChange={e => setDeger(e.target.value)} placeholder="Malzemedeki pay" aria-label="Parça emniyet payı" />
+    <HataMetni>{hata}</HataMetni>
+    <Ipucu>{EMNIYET_PAYI_IPUCU}</Ipucu>
+  </Field>
+);
 
 // Spec 0132 R9–R14/2, AC-28–AC-46: parçanın tek malzeme satırı (Karar 28). Ölçü alanları biçimden gelir (R11); işleme payı
 // biçimin pay listesiyle eşlenir (R10/2: boruda et kalınlığına pay yok). Canlı ağırlık ve tutar formun tek canlı maliyetinden
@@ -11,7 +18,11 @@ const FIELDSET_STILI = { border: 0, padding: 0, margin: 0, minWidth: 0 };
 export const MALZEME_BOLUM_BASLIGI = "Malzemeden maliyet";
 export const MALZEME_YOK_SECENEGI = "Malzemeden hesaplanmasın";
 export const MALZEME_LISTE_BOS = "Henüz malzeme tanımlanmadı. Malzemeler Ayarlar › Katalog › Malzemeler panelinden eklenir.";
-export const MalzemeSatiriAlani = ({ satir, setSatir, malzemeler = [], hatalar = {}, ozet = null, pasif = false, hamMalzemeler = [] }) => {
+// Spec 0134 Karar 28, R21/2 (AC-59): parçanın emniyet payı parçanın kendi alanıdır (`parts.emniyetPayi`), malzeme satırına
+// yazılmaz; alan bu bölümde firenin komşusunda durur ama malzeme seçilmemiş hazır parçada da çizilir. `emniyetPayi` verilmezse
+// (eski çağıran) alan çizilmez.
+export const MalzemeSatiriAlani = ({ satir, setSatir, malzemeler = [], hatalar = {}, ozet = null, pasif = false, hamMalzemeler = [],
+  emniyetPayi, setEmniyetPayi, payHata = null }) => {
   const s = satir || malzemeSatiriFormu(null);
   const set = (alan, v) => setSatir({ ...s, [alan]: v });
   const b = BICIMLER[s.bicim];
@@ -23,9 +34,10 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, malzemeler = [], hatalar =
     <fieldset disabled={pasif} style={FIELDSET_STILI} data-testid="malzeme-satiri-bolumu">
       <BolumBasligi>{MALZEME_BOLUM_BASLIGI}</BolumBasligi>
       {pasif && <Ipucu><span data-testid="malzeme-set-pasif">{MALZEME_SET_IPUCU}</span></Ipucu>}
-      {malzemeler.length === 0 && !secili ? <Ipucu><span data-testid="malzeme-liste-bos">{MALZEME_LISTE_BOS}</span></Ipucu> : (
+      {malzemeler.length === 0 && !secili ? <><Ipucu><span data-testid="malzeme-liste-bos">{MALZEME_LISTE_BOS}</span></Ipucu>
+        {setEmniyetPayi && <div style={{ maxWidth: 260 }}><PayAlani deger={emniyetPayi} setDeger={setEmniyetPayi} hata={payHata} /></div>}</> : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: secili ? (setEmniyetPayi ? "2fr 1fr 1fr 1fr" : "2fr 1fr 1fr") : "2fr 1fr", gap: 12 }}>
             <Field label="Malzeme">
               <Select value={s.malzemeId} onChange={e => set("malzemeId", e.target.value)} aria-label="Malzeme">
                 <option value="">{MALZEME_YOK_SECENEGI}</option>
@@ -47,6 +59,7 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, malzemeler = [], hatalar =
                 <HataMetni>{hatalar.fire}</HataMetni>
               </Field>
             )}
+            {setEmniyetPayi && <PayAlani deger={emniyetPayi} setDeger={setEmniyetPayi} hata={payHata} />}
           </div>
           {secili && (
             <>

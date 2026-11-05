@@ -3,12 +3,12 @@ import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
 import { CUR_SYM, tipRenk } from "../lib/constants";
 import { Icon, Field, Input, MoneyInput, TutarInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload, Select, SearchPick } from "./ui";
 import { HataMetni, Ipucu, UyariSeridi, BolumBasligi } from "./tasarim";
-import { malzemeKatalogu, malzemeOzeti, malzemeSatiriDogrula, malzemeSatiriFormu, malzemeSatiriVar, KAYNAK_MALZEME, MALZEME_ELLE_IPUCU } from "../lib/malzeme";
+import { malzemeKatalogu, malzemeOzeti, malzemeSatiriDogrula, malzemeSatiriFormu, malzemeSatiriVar, KAYNAK_MALZEME, MALZEME_ELLE_IPUCU, emniyetPayiDogrula, sayiMetni } from "../lib/malzeme";
 import { MalzemeSatiriAlani } from "./MalzemeSatiriAlani";
 import { kalipAdDeseni, parcaKalipIsiMi, PARCA_TIP_IPUCU } from "../lib/kalipTamiri";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { MALIYET_ETIKETI, MALIYET_IPUCU, KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, maliyetGirildiMi, parcaMaliyetDogrula,
-  kitAdediDogrula, parcaKitAdetleri, parcaKitPlani, kitleriGuncelle, isaretsizKitteMetni,
+  kitAdediDogrula, kitAdetMetni, parcaKitAdetleri, parcaKitPlani, kitleriGuncelle, isaretsizKitteMetni,
   parcaMaliyetKurus, parcaMaliyetMetni, elleMaliyetMetni, maliyetKaynagi, KAYNAK_ELLE, kaynakListeMetni, KAYNAK_KIRILIM, kirilimdanGeliyorMetni, maliyetMetniKurus,
   HAMMADDE_BOS_METNI, HAMMADDE_BOLUM_BASLIGI, HAMMADDE_IPUCU, HAMMADDE_TUTARSIZ_UYARI, HAMMADDE_TOPLAM_ETIKETI, hammaddeToplamSayisi, HAMMADDE_TOPLAM_HATALI, hammaddeTedarikciAdi, hammaddeSecilebilirMi,
   hammaddeFormu, hammaddeDogrula, maliyetGecmisiYaz, gecmisliKayit, maliyetGecmisiSatirlari, GECERLILIK_ETIKETI, GECERLILIK_IPUCU, GECMIS_BASLIGI,
@@ -251,7 +251,7 @@ const ModelAdetleri = ({ selected = [], allModels = [], adetler, setAdetler, hat
         return (
           <div key={ad} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 1fr) 96px minmax(120px, 2fr)", gap: 8, alignItems: "center" }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>{ad}</span>
-            <Input value={deger} inputMode="numeric" aria-label={`${ad} adedi`} placeholder="Adet"
+            <Input value={deger} inputMode="decimal" aria-label={`${ad} adedi`} placeholder="Adet"
               onChange={e => setAdetler(p => ({ ...p, [ad]: e.target.value }))} />
             <div style={{ fontSize: 12, color: "var(--n400, #94a3b8)" }}>
               {hatalar[ad] ? <HataMetni>{hatalar[ad]}</HataMetni> : (String(deger).trim() === "" ? "kitte yok" : "makina kitinde")}
@@ -307,13 +307,15 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   const hamParts = Array.isArray(rawParts) && rawParts.length ? rawParts : parts; // verilmemiş ya da boş ham dizi canlıya düşer
   const katalog = useMemo(() => setKatalogu(parts), [parts]);
   const malzemeKat = useMemo(() => malzemeKatalogu(malzemeler), [malzemeler]);
-  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "", maliyet: "", hammaddeler: [], setIcerigi: [], malzemeSatiri: malzemeSatiriFormu(null) };
+  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "", maliyet: "", hammaddeler: [], setIcerigi: [], malzemeSatiri: malzemeSatiriFormu(null), emniyetPayi: "" };
   // Spec 0087 R4, C4 (plan P4): maliyetin ham metni kayıtta sayıya çevrilir; boşsa alan gövdeye hiç yazılmaz.
   // Spec 0096 R7, R7/2, C12: kırılım da HER çağrıda ayrıştırılır (düzenleme `{ ...x, ...editForm }` birleştirmesidir; boşaltılan
   // kırılım eski kayıttan geri gelmesin) ve yalnız doluyken yazılır; kırılımda tutar varsa `maliyet` anahtarı her çağrıda silinir.
   // Spec 0121 R7: içerik de HER çağrıda yeniden kurulur ve yalnız doluyken yazılır (boşaltılan içerik eski kayıttan geri gelmesin).
   const hazirlaTemel = (kayit) => {
-    const { maliyet, hammaddeler, maliyetGecmisi: _formKopyasi, setIcerigi, malzemeSatiri, ...geri } = kayit;
+    const { maliyet, hammaddeler, maliyetGecmisi: _formKopyasi, setIcerigi, malzemeSatiri, emniyetPayi, ...geri } = kayit;
+    // Spec 0134 Karar 28, C4: emniyet payı her çağrıda yeniden kurulur ve yalnız doluyken yazılır (boş değer gövdeye girmez, AC-58).
+    const pay = emniyetPayiDogrula(emniyetPayi).deger;
     // Spec 0132 Karar 28: malzeme satırı her çağrıda yeniden kurulur (boşaltılan satır eski kayıttan geri gelmesin); yalnız doluyken.
     // Doğrulayıcı form (metin) ve kayıt (sayı) biçimini aynı okur.
     const ms = malzemeSatiriDogrula(malzemeSatiri).kayit;
@@ -321,7 +323,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     const kirilimli = kirilim.some(h => h.tutar != null);
     const d = parcaMaliyetDogrula(maliyet);
     const icerik = setIcerigiDogrula(setIcerigi).kayit;
-    return { ...geri, ...(kirilimli || d.bos || d.hata ? {} : { maliyet: d.deger }), ...(kirilim.length ? { hammaddeler: kirilim } : {}), ...(icerik.length ? { setIcerigi: icerik } : {}), ...(ms ? { malzemeSatiri: ms } : {}) };
+    return { ...geri, ...(kirilimli || d.bos || d.hata ? {} : { maliyet: d.deger }), ...(kirilim.length ? { hammaddeler: kirilim } : {}), ...(icerik.length ? { setIcerigi: icerik } : {}), ...(ms ? { malzemeSatiri: ms } : {}), ...(pay != null ? { emniyetPayi: pay } : {}) };
   };
   // Spec 0097 R4, C13, C13/2 (tuzak 2, 3, 9): formdan gelen geçmiş kopyası atılır; geçmiş güncelleyicinin içindeki ESKİ kayıttan
   // (`eski`) ve yeni kaydın ÇÖZÜLMÜŞ maliyetinden (kırılım toplamı dahil) tek karar motoruyla yazılır. Tarih ve bugün `ek` ile
@@ -391,18 +393,18 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   // Spec 0132 R18/2 (AC-85): sayaç malzeme listesini alır; malzemesi tam olan malzeme kaynaklı parça sayılmaz.
   const maliyetsizSayi = parts.filter(p => !maliyetGirildiMi(p, undefined, katalog, malzemeKat)).length;
 
-  const bosHatalar = { maliyet: null, adet: {}, hammadde: {}, tarih: null, set: {}, setGenel: null, malzeme: {} };
+  const bosHatalar = { maliyet: null, adet: {}, hammadde: {}, tarih: null, set: {}, setGenel: null, malzeme: {}, pay: null };
   const openAdd = () => { setForm(emptyForm); setAdetler({}); setKittekiler({}); setHatalar(bosHatalar); setAddOpen(true); };
   const openEdit = (k) => {
     const kit = parcaKitAdetleri(k.id, [standardModels, customModels]);
     setKittekiler(kit);
-    setAdetler(Object.fromEntries(Object.entries(kit).map(([m, n]) => [m, String(n)])));
+    setAdetler(Object.fromEntries(Object.entries(kit).map(([m, n]) => [m, kitAdetMetni(n)]))); // spec 0134: 0,114
     setHatalar(bosHatalar);
     setTarih({ deger: bugun, elle: false }); // Spec 0097 AC-10: alan bugünün tarihiyle gelir
     // Spec 0096 R17/3: kırılım formda hep form biçiminde (tutar metin), yetkisiz kullanıcıda da (bölüm çizilmese de taşınır).
     // Spec 0097 C13: geçmiş forma kopyalanmaz (kayıt fonksiyonu onu kayıttan okur).
     const { maliyetGecmisi: _g, ...kayit } = k;
-    startEdit({ ...kayit, maliyet: elleMaliyetMetni(k), hammaddeler: hammaddeFormu(k.hammaddeler), setIcerigi: setIcerigiFormu(k.setIcerigi), malzemeSatiri: malzemeSatiriFormu(k.malzemeSatiri) });
+    startEdit({ ...kayit, maliyet: elleMaliyetMetni(k), hammaddeler: hammaddeFormu(k.hammaddeler), setIcerigi: setIcerigiFormu(k.setIcerigi), malzemeSatiri: malzemeSatiriFormu(k.malzemeSatiri), emniyetPayi: sayiMetni(k.emniyetPayi) });
   };
 
   // R7, R14–R16, plan P5: doğrula → karşı bölüme yazılacaksa kilide anlık bak (reddedilirse kayıt bütünüyle yazılmaz) →
@@ -432,8 +434,9 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     // Spec 0121 R7/2, C11 (Karar 43): içeriği olan kayıtta geçmiş motoru çalışmaz; kapı motorun `set` seçeneğidir.
     // Spec 0132 R16/2 (AC-63): malzeme kaynaklı kayıtta da geçmiş motoru çalışmaz (`malzeme` kapısı).
     const tarihHata = temel ? maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel), malzeme: malzemeSatiriVar(temel) }).hata : null;
-    setHatalar({ maliyet: m.hata, adet: adetHata, hammadde: h.hatalar, tarih: tarihHata, set: si.hatalar, setGenel: si.genel, malzeme: ms.hatalar });
-    if (m.hata || Object.keys(adetHata).length || !h.gecerli || !si.gecerli || !ms.gecerli || tarihHata) return;
+    const pay = emniyetPayiDogrula(f.emniyetPayi); // spec 0134 AC-21
+    setHatalar({ maliyet: m.hata, adet: adetHata, hammadde: h.hatalar, tarih: tarihHata, set: si.hatalar, setGenel: si.genel, malzeme: ms.hatalar, pay: pay.hata });
+    if (m.hata || Object.keys(adetHata).length || !h.gecerli || !si.gecerli || !ms.gecerli || tarihHata || pay.hata) return;
     const kitGirdisi = { partId: kip === "ekle" ? "__yeni__" : editId, ad: (f.ad || "").trim(), models: f.models || [], eskiModeller: eski?.models || [], adetler: adetMap };
     // Triyaj (bulgu 3): yazma kararı TAM özel model dizisiyle verilir; kit satırı yalnız çöpteki bir modelde duruyorsa ad
     // taşıması da yazılsın (geri alınan model eski adı basmasın). Canlı dizi yalnız ekranda çizilenleri taşır.
@@ -614,6 +617,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
           <MaliyetAlani value={form.maliyet} onChange={v => setForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...canliEkle} giderYetki={giderYetki} />
           <MalzemeSatiriAlani satir={form.malzemeSatiri} setSatir={v => setForm(p => ({ ...p, malzemeSatiri: v }))} malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler}
+            emniyetPayi={form.emniyetPayi} setEmniyetPayi={v => setForm(p => ({ ...p, emniyetPayi: v }))} payHata={hatalar.pay}
             hatalar={hatalar.malzeme} ozet={canliEkle?.malzeme} pasif={!!canliEkle?.set} />
           {giderYetki && <fieldset disabled={!!canliEkle?.set || !!canliEkle?.malzeme} style={FIELDSET_STILI}><HammaddeAlani satirlar={form.hammaddeler || []} setSatirlar={v => setForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} toplam={canliEkle} /></fieldset>}
           <SetIcerigiAlani satirlar={form.setIcerigi || []} setSatirlar={v => setForm(p => ({ ...p, setIcerigi: v }))} parts={parts} hamParts={hamParts}
@@ -676,6 +680,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </div>
           {!canliDuzenle?.set && !canliDuzenle?.malzeme && <MaliyetGecmisi parca={parts.find(x => x.id === editId)} />}
           <MalzemeSatiriAlani satir={editForm.malzemeSatiri} setSatir={v => setEditForm(p => ({ ...p, malzemeSatiri: v }))} malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler}
+            emniyetPayi={editForm.emniyetPayi} setEmniyetPayi={v => setEditForm(p => ({ ...p, emniyetPayi: v }))} payHata={hatalar.pay}
             hatalar={hatalar.malzeme} ozet={canliDuzenle?.malzeme} pasif={!!canliDuzenle?.set} />
           {giderYetki && <fieldset disabled={!!canliDuzenle?.set || !!canliDuzenle?.malzeme} style={FIELDSET_STILI}><HammaddeAlani satirlar={editForm.hammaddeler || []} setSatirlar={v => setEditForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} toplam={canliDuzenle} /></fieldset>}
           <SetIcerigiAlani satirlar={editForm.setIcerigi || []} setSatirlar={v => setEditForm(p => ({ ...p, setIcerigi: v }))} kendiId={editId} parts={parts} hamParts={hamParts}

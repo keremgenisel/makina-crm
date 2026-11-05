@@ -211,6 +211,19 @@ export const agirlikKg = (bicim, olculer, ozgulAgirlik) => {
   return h == null || ro == null || ro <= 0 ? null : (h * ro) / 1e6;
 };
 
+// Spec 0134 C2/2, Karar 43: bir tam boyun ağırlığı AYNI ağırlık fonksiyonuyla; ölçü nesnesinin boyu malzemenin geldiği boyuyla
+// (metre → mm) değiştirilir. Sipariş motoru özgül ağırlığa dokunmaz, bu yardımcıyı çağırır. Eksik veride null.
+export const tamBoyKg = (satir, malzeme) => {
+  const o = hamOlculer(satir);
+  const boyM = sayiOf(malzeme?.geldigiBoy);
+  if (!o || boyM == null || boyM <= 0) return null;
+  return agirlikKg(satir.bicim, { ...o, boy: boyM * 1000 }, malzeme?.ozgulAgirlik);
+};
+// Spec 0134 R12/2: satırın kesit anahtarı için ham ölçüler (boy hariç) biçimin sırasıyla.
+export const hamKesit = (satir) => {
+  const b = BICIMLER[satir?.bicim]; const o = hamOlculer(satir);
+  return b && o ? b.olculer.filter(ad => ad !== "boy").map(ad => o[ad]) : null;
+};
 // R12/2, R14/2, AC-38, AC-44: TEK hesap. Dönüş: { maliyetK, eksik (neden dizisi), hamKg, fireliKg, fire, fiyat, bant, kur,
 // paraBirimi, yontem, oran }. maliyetK null = "girilmedi" (asla sıfır, R7). Ara değerler yuvarlanmaz; yalnız kuruşa (Karar 30).
 export const malzemeOzeti = (satir, malzemeKat, tarih) => {
@@ -264,18 +277,24 @@ export const PARA_HATASI = "Para birimi TL, USD ya da EUR olmalı.";
 export const BANT_SIRA_HATASI = "Bantların alt sınırları artan sırada olmalı; iki bant aynı sınırla başlayamaz.";
 export const BANT_FIYAT_HATASI = "Her bandın kilo fiyatı girilmeli.";
 // Ortak sayı alanı denetimi: boş serbest. `pozitif` sıfırı da reddeder.
-const alanDogrula = (ham, { pozitif = false, ust = null } = {}) => {
+const alanDogrula = (ham, { pozitif = false, ust = null, ustHata = FIRE_HATASI } = {}) => {
   if (ham == null || String(ham).trim() === "") return { deger: null, hata: null };
   if (belirsizMi(ham)) return { deger: null, hata: BELIRSIZ_HATASI };
   const r = tutarCoz(ham);
   if (r.gecersiz) return { deger: null, hata: SAYI_HATASI };
-  if (r.deger < 0) return { deger: null, hata: ust != null ? FIRE_HATASI : NEGATIF_HATASI };
+  if (r.deger < 0) return { deger: null, hata: ust != null ? ustHata : NEGATIF_HATASI };
   if (pozitif && r.deger === 0) return { deger: null, hata: POZITIF_HATASI };
-  if (ust != null && r.deger > ust) return { deger: null, hata: FIRE_HATASI };
+  if (ust != null && r.deger > ust) return { deger: null, hata: ustHata };
   return { deger: r.deger, hata: null };
 };
 // R13/2, AC-16, AC-84: fire doğrulayıcısı TEK; malzeme kartı ve parça satırı aynı fonksiyonu çağırır.
 export const fireDogrula = (ham) => alanDogrula(ham, { ust: 100 });
+// Spec 0134 R9, R9/2, C4, AC-21 (Karar 28): emniyet payı yüzdesi, malzeme kartında ve parça kartında AYNI doğrulayıcıdan. Boş
+// serbest (gövdeye yazılmaz), 0 ile 100 arası. Yalnız siparişi etkiler, maliyete girmez.
+export const EMNIYET_PAYI_HATASI = "Emniyet payı 0 ile 100 arasında olmalı.";
+export const emniyetPayiDogrula = (ham) => alanDogrula(ham, { ust: 100, ustHata: EMNIYET_PAYI_HATASI });
+export const EMNIYET_PAYI_ETIKETI = "Emniyet payı (%)";
+export const EMNIYET_PAYI_IPUCU = "Yalnız sipariş ihtiyacını büyütür (Makina Maliyeti › Sipariş İhtiyacı); maliyete girmez. Parçanın payı varsa malzemeninki okunmaz.";
 // AC-12, Karar 26: ilk bandın alt sınırı 0'dır; alt sınırlar kesin artan; her bandın fiyatı girilir.
 export const bantlarDogrula = (satirlar = []) => {
   const dolu = (satirlar || []).filter(b => b && !(String(b.alt ?? "").trim() === "" && String(b.fiyat ?? "").trim() === ""));
@@ -307,7 +326,7 @@ export const malzemeDogrula = (form = {}, malzemeler = [], haricId = null) => {
   if (!PARA_BIRIMLERI.includes(pb)) h.paraBirimi = PARA_HATASI; else if (pb !== "TRY") k.paraBirimi = pb;
   const alanlar = [
     ["ozgulAgirlik", { pozitif: true }], ["kiloFiyati", {}], ["boyFiyati", {}], ["geldigiBoy", { pozitif: true }],
-    ["asgariSiparis", {}], ["fire", { ust: 100 }],
+    ["asgariSiparis", {}], ["fire", { ust: 100 }], ["emniyetPayi", { ust: 100, ustHata: EMNIYET_PAYI_HATASI }],
   ];
   for (const [ad2, o] of alanlar) {
     const r = alanDogrula(form[ad2], o);
@@ -322,9 +341,10 @@ export const malzemeDogrula = (form = {}, malzemeler = [], haricId = null) => {
 };
 // Karttan forma (düzenleme açılışı): sayılar metne.
 const metin = (v) => (v == null ? "" : String(v).replace(".", ","));
+export const sayiMetni = metin;
 export const malzemeFormu = (m = {}) => ({
   ad: m.ad || "", alasim: m.alasim || "", ozgulAgirlik: metin(m.ozgulAgirlik), kiloFiyati: metin(m.kiloFiyati), paraBirimi: m.paraBirimi || "TRY",
-  kur: metin(m.kur), boyFiyati: metin(m.boyFiyati), geldigiBoy: metin(m.geldigiBoy), asgariSiparis: metin(m.asgariSiparis), fire: metin(m.fire),
+  kur: metin(m.kur), boyFiyati: metin(m.boyFiyati), geldigiBoy: metin(m.geldigiBoy), asgariSiparis: metin(m.asgariSiparis), fire: metin(m.fire), emniyetPayi: metin(m.emniyetPayi),
   tedarikciId: m.tedarikciId == null ? "" : String(m.tedarikciId),
   bantlar: bantlarOf(m).map(b => ({ alt: metin(b.alt), fiyat: metin(b.fiyat) })),
 });

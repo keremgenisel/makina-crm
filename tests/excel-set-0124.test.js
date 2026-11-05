@@ -6,7 +6,7 @@ import * as UA from "../src/lib/urunAgaci";
 import {
   setKatalogu, setIcerigiHucresi, setIcerigiHucresiParcala, setIcerigiParcasiCoz, setIcerigiExcelHatasi, setteGecenParcalar,
   SET_ICERIGI_BASLIGI, SET_ICERIGI_ORNEGI, SET_ICERIGI_YER_TUTUCU, SET_BILESEN_BULUNAMADI, LISTEDE_OLMAYAN_PARCA,
-  KIT_ADET_HATASI, SET_KENDISI, SET_IC_ICE, SET_AYNI_PARCA, SET_EXCEL_HATASI, HAMMADDE_EXCEL_HATASI, setBileseniHatasi, icerikYazilacakMetni, icerikYazildiMetni,
+  SET_ADET_HATASI, /* spec 0134 ile: set içeriğinin kendi sabiti (R6/2) */ SET_KENDISI, SET_IC_ICE, SET_AYNI_PARCA, SET_EXCEL_HATASI, HAMMADDE_EXCEL_HATASI, setBileseniHatasi, icerikYazilacakMetni, icerikYazildiMetni,
 } from "../src/lib/urunAgaci";
 import { PARCA_AKTARMA_BASLIKLARI, PARCA_SABLON_ORNEGI, parcaDisaAktarmaSatiri, parcaSatirlariniCoz, parcaIceAktarmaUygula, YINELENEN_AD_HATASI } from "../src/lib/parcaAktarma";
 import { buildCSV } from "../src/components/settings/csvUtils";
@@ -110,10 +110,10 @@ describe("Spec 0124 B: içe aktarma (R5–R10)", () => {
       setIcerigiExcelHatasi(3, SET_KENDISI, "Pul"),
       setIcerigiExcelHatasi(4, SET_IC_ICE, "Rulman Seti"),
       setIcerigiExcelHatasi(5, SET_AYNI_PARCA, "Rulman"),
-      setIcerigiExcelHatasi(6, KIT_ADET_HATASI, "Kayış", 2),
+      setIcerigiExcelHatasi(6, SET_ADET_HATASI, "Kayış", 2),
       setIcerigiExcelHatasi(7, SET_IC_ICE, "Rulman Seti"),
     ]);
-    expect(setIcerigiExcelHatasi(6, KIT_ADET_HATASI, "Kayış", 2)).toBe("Satır 6: Set içeriği alınmadı: Adet en az 1 tam sayı olmalı (Kayış) ve 2 bileşen daha.");
+    expect(setIcerigiExcelHatasi(6, SET_ADET_HATASI, "Kayış", 2)).toBe("Satır 6: Set içeriği alınmadı: Adet en az 1 tam sayı olmalı (Kayış) ve 2 bileşen daha.");
     expect(r.parts.every(p => !("setIcerigi" in p))).toBe(true);
     expect(kayit(r, "Rulman").adEN).toBe("EN ad");
     expect(r.icerikYazilanlar).toBe(0);

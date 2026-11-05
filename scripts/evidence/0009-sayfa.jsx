@@ -36,6 +36,7 @@ import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
 import { GiderTurManager } from "../../src/components/settings/GiderTurManager";
 import * as M88 from "../../tests/fixtures/0088-veri.js";
 import * as V97 from "../../tests/fixtures/0097-veri.js";
+import * as F34 from "../../tests/fixtures/0134-veri.js";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
 import { odemeleriUygula, turHaritasi, giderKalemDogrula } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
@@ -773,6 +774,15 @@ function MaliyetEkrani({ ayar = M88.AYAR, turler = M88.TURLER, p0 = M88.PARTILER
     makinaMaliyet={makinaMaliyet} tumMusteriler={musteriler} serverPermissions={null} showToast={bos} />;
 }
 const maliyetEkrani = (o, adimlar = []) => [<MaliyetEkrani {...o} />, adimlar];
+// Spec 0134: Sipariş İhtiyacı; veri tests/fixtures/0134-veri.js (Ø140 örneği, set, kesişim). Parça stoğu ve ham tedarikçi dizisi.
+const PARTI_0134 = [{ id: 9, ad: "Güz Partisi", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100_DS: 70 } }];
+function SiparisEkrani({ modeller = [F34.AK100], partiler = PARTI_0134, parts = F34.veri().parts, malzemeler = [F34.P304], tedarikciler = F34.TED, hamTed = null, stok = [{ id: 1, partId: 42, miktar: 100 }] }) {
+  return <MakinaMaliyeti aktifKullanici="kerem" giderler={[]} giderTurleri={[]} setGiderTurleri={bos} tedarikciler={tedarikciler} stock={[]} customers={[]} partStockLog={[]}
+    parts={parts} malzemeler={malzemeler} standardModels={modeller} customModels={[]} setStandardModels={bos} setCustomModels={bos} uretimPartileri={partiler}
+    setUretimPartileri={bos} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} setAppSettings={bos} rates={{ usd: 41 }} serverPermissions={null} showToast={bos}
+    partStock={stok} rawTedarikciler={hamTed} baslangicGorunum="siparis" />;
+}
+const LAMA_0134 = { id: 47, ad: "Taşıyıcı lama", models: [], malzemeSatiri: { malzemeId: 502, bicim: "lama", kalinlik: 10, genislik: 20, boy: 125 } };
 // Spec 0097: Parti Hesabı'nın tarihli satırları ve dönem kilitli pay; veri tests/fixtures/0097-veri.js (motor ve ekran testleriyle aynı).
 function MaliyetEkrani0097() {
   const [uretimPartileri, setUretimPartileri] = useState(V97.PARTILER);
@@ -1002,6 +1012,7 @@ const EKRANLAR = {
   "katalog-parca-0099-ekle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "Tedarikçi ekle", "sec:Hammadde tedarikçisi 1=31", "doldur:Hammadde tutarı 1=7000", "Tedarikçi ekle", "sec:Hammadde tedarikçisi 2=32", "doldur:Hammadde tutarı 2=9000", "kaydir:Hammadde tedarikçileri"]],
   "katalog-parca-0099-elle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Alış maliyeti"]],
   "katalog-model-ekmaliyet": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Ek Maliyet Kalemleri"]],
+  "katalog-model-0134-parti": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "dugme:Parti başına gir", "kaydir:Makina Kiti"]],
   "katalog-calisan": [ayarlar("calisanlar"), []],
   "musteri-detay": [musteriDetay(), ["~Yeni Sahip"]],
   // Spec 0011: serbest içerikli şerit örneği (yalnız "sonra"; önceki bileşen children almıyordu). Üç aile.
@@ -1076,6 +1087,12 @@ const EKRANLAR = {
   // Spec 0022: üretim partisi.
   // Spec 0088 R23/4: parti yönetimi Makina Maliyeti ekranına taşındı (aynı parti verisi, makinaMaliyet verilir).
   "maliyet-uretim-partileri": maliyetPartiEkrani([]),
+  "maliyet-siparis": [<SiparisEkrani />, []],
+  "maliyet-siparis-tablolar": [<SiparisEkrani />, ["kaydir:Malzeme ihtiyacı (ana tedarikçiye göre)"]],
+  "maliyet-siparis-bos": [<SiparisEkrani partiler={[]} />, []],
+  "maliyet-siparis-hatali": [<SiparisEkrani partiler={[{ ...PARTI_0134[0], planlananAdetler: { AK100_DS: 70, YOK_MODEL: 4 } }, { id: 10, ad: "Hatalı", baslangicAy: "2026-10", bitisAy: null, planlananAdetler: { AK100_DS: 0 } }]} />, []],
+  "maliyet-siparis-neden": [<SiparisEkrani modeller={[F34.model("AK100_DS", [[41, 1], [42, 8], [44, 1], [47, 2]])]} parts={[...F34.veri().parts, LAMA_0134]} malzemeler={[{ ...F34.P304, tedarikciId: 99 }, { id: 502, ad: "8620", ozgulAgirlik: 7.85 }]}
+    tedarikciler={F34.TED} hamTed={[...F34.TED, { id: 99, ad: "Eski Döküm", deletedAt: "2026-09-01" }]} partiler={[{ ...PARTI_0134[0] }]} />, ["kaydir:Malzeme ihtiyacı (ana tedarikçiye göre)"]],
   // Spec 0089 R11, R12: parti değişim kutusunun yeni yeri (Makina Maliyeti › Üretim Partileri) ve kovalar kutusunda kopmuş
   // atama sayısı (iki modeli silinmiş tek kalem: "1 kalem").
   "maliyet-0089-parti-degisim": maliyetPartiEkrani(["kaydir:Kapanmış partilerin aylarında"]),

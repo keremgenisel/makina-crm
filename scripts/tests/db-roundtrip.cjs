@@ -957,6 +957,33 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0132 AC-61: boş nesne olarak yazılan malzeme satırı gövdede yok", !("malzemeSatiri" in c.parts.find(p => p.id === 8)));
 }
 
+// ── Spec 0134 C4, AC-58–AC-60 (Karar 28): emniyet payı parçada ve malzemede kendi sütunu; boş pay NULL ve gövdede yok; payı olmayan
+// parça ve malzemenin gövdesi spec öncesiyle birebir (0097 ve 0132 altınları).
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  check("spec 0134 AC-58: payı olmayan parçaların gövdesi spec öncesiyle birebir, emniyetPayi anahtarı yok", esit(dbmod.readBlobFromDb().parts, once.parts));
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.parts[0].emniyetPayi = 10;
+  girdi.parts[1].emniyetPayi = 0;
+  girdi.malzemeler = [{ id: 601, ad: "Paylı", emniyetPayi: 12.5 }, { id: 602, ad: "Paysız" }];
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ps = ham.prepare(`SELECT id, emniyetPayi FROM parts`).all();
+  const ms = ham.prepare(`SELECT id, emniyetPayi FROM malzemeler`).all();
+  ham.close();
+  check("spec 0134 C4: parça payı REAL sütunda, boş pay NULL", ps.find(r => r.id === 7)?.emniyetPayi === 10 && ps.find(r => r.id === 8)?.emniyetPayi === 0 && ps.filter(r => r.id !== 7 && r.id !== 8).every(r => r.emniyetPayi === null));
+  check("spec 0134 C4: malzeme payı REAL sütunda, boş pay NULL", ms.find(r => r.id === 601)?.emniyetPayi === 12.5 && ms.find(r => r.id === 602)?.emniyetPayi === null);
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0134 AC-59: parçanın payı (sıfır dahil) geri gelir", c.parts.find(p => p.id === 7)?.emniyetPayi === 10 && c.parts.find(p => p.id === 8)?.emniyetPayi === 0);
+  check("spec 0134 AC-60 / AC-58: malzemenin payı geri gelir, paysız malzemede anahtar yok", c.malzemeler.find(m => m.id === 601)?.emniyetPayi === 12.5 && esit(c.malzemeler.find(m => m.id === 602), { id: 602, ad: "Paysız" }));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

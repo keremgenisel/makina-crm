@@ -1761,6 +1761,7 @@ export default function App() {
           standardModels={standardModels} customModels={liveCustomModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels}
           uretimPartileri={liveUretimPartileri} setUretimPartileri={setUretimPartileri} appSettings={appSettings} setAppSettings={setAppSettings} rates={rates}
           tumMusteriler={customers} serverPermissions={effectivePermissions} showToast={showToast}
+          partStock={partStock} rawTedarikciler={tedarikciler} rawParts={parts} factory={factory}
           key={`maliyet-${maliyetAcilis?.no || 0}`} baslangicGorunum={maliyetAcilis?.gorunum || "modeller"} />}
         {activeTab === "analiz"    && <Analiz    customers={liveCustomers} services={liveServices} partSales={livePartSales} yedekParcaSatislar={liveYedekParcaSatislar} parts={liveParts} appSettings={appSettings} />}
         {activeTab === "notes"     && <Notes ref={notesRef} notes={liveNotes} setNotes={setNotes} showToast={showToast} serverPermissions={effectivePermissions} aktifKullanici={savedUsername} />}

@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { Settings } from "../../src/components/Settings";
 import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
 import {
-  SET_BOS_METNI, SET_BOLUM_BASLIGI, SET_AYNI_PARCA, KIT_ADET_HATASI, SILINMIS_PARCA, BULUNAMAYAN_PARCA, KAYNAK_ICERIK, SET_PASIF_NEDENI,
+  SET_BOS_METNI, SET_BOLUM_BASLIGI, SET_AYNI_PARCA, SET_ADET_HATASI, /* spec 0134 ile: set içeriğinin kendi sabiti (R6/2) */ SILINMIS_PARCA, BULUNAMAYAN_PARCA, KAYNAK_ICERIK, SET_PASIF_NEDENI,
   setEksikMetni, setFiyatsizMetni, setBileseniHatasi, SET_FIYAT_DUGMESI, GECERLILIK_ETIKETI, GECMIS_BASLIGI, SET_BILESEN_ARA,
 } from "../../src/lib/urunAgaci";
 
@@ -86,7 +86,7 @@ describe("Spec 0121 A: setin içeriği bölümü (R2, R2/2)", () => {
       bilesenSec(7); adet(1, v);
       kaydet();
       expect("setIcerigi" in kayit(9)).toBe(false);
-      expect(within(screen.getAllByTestId("set-bilesen-satiri")[0]).getByText(KIT_ADET_HATASI)).toBeTruthy();
+      expect(within(screen.getAllByTestId("set-bilesen-satiri")[0]).getByText(SET_ADET_HATASI)).toBeTruthy();
       cleanup();
     }
   });

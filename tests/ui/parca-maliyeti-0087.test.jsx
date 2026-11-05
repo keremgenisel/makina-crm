@@ -2,6 +2,7 @@
 // Spec 0087: Ayarlar › Katalog'da parça maliyeti ve ürün ağacı adetleri. Gerçek Settings bileşeni, App gibi bağlanır:
 // panellere çöpü süzülmüş diziler, setter'lara tam diziler (CLAUDE.md "live array" kuralı). Adetin tek kaynağı model kitidir.
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { KIT_ADET_HATASI } from "../../src/lib/urunAgaci";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { Settings } from "../../src/components/Settings";
@@ -195,23 +196,24 @@ describe("Spec 0087: ürün ağacı adetleri (ekran)", () => {
     expect(durum.customModels[0].deletedAt).toBe("2026-10-01T00:00:00.000Z");
   });
 
-  it("AC-15: 0, negatif ve ondalık adet reddedilir, ne parça ne kit yazılır; model kartında da aynı kural", () => {
+  // Spec 0134 ile (R6/2, AC-11b): ondalık kabul edilir; dört ondalık reddedilir. Ret metni kit doğrulayıcısının yeni metnidir.
+  it("AC-15 (spec 0134 ile): 0, negatif ve dört ondalıklı adet reddedilir, ne parça ne kit yazılır; model kartında da aynı kural", () => {
     render(<Katalog />);
-    for (const deger of ["0", "-2", "1,5"]) {
+    for (const deger of ["0", "-2", "1,1234"]) {
       duzenle("Rulman");
       fireEvent.change(screen.getByLabelText("AK100_DS adedi"), { target: { value: deger } });
       fireEvent.change(screen.getByLabelText("Alış maliyeti"), { target: { value: "99" } });
       kaydet();
-      expect(screen.getByText("Adet en az 1 tam sayı olmalı.")).toBeTruthy();
+      expect(screen.getByText(KIT_ADET_HATASI)).toBeTruthy();
       expect(durum.parts.find(p => p.id === 7).maliyet).toBe(120.5);
       expect(kit(durum.standardModels, "AK100_DS")[0].miktar).toBe(2);
       fireEvent.click(screen.getByRole("button", { name: "İptal" }));
     }
     panel("Makina Modelleri");
     fireEvent.click(screen.getByText("AK100_DS").closest("tr").querySelector("button.btn--ghost"));
-    fireEvent.change(screen.getByLabelText("Rulman kit adedi"), { target: { value: "2,5" } });
+    fireEvent.change(screen.getByLabelText("Rulman kit adedi"), { target: { value: "2,5555" } });
     kaydet();
-    expect(screen.getByText("Adet en az 1 tam sayı olmalı.")).toBeTruthy();
+    expect(screen.getByText(KIT_ADET_HATASI)).toBeTruthy();
     expect(kit(durum.standardModels, "AK100_DS")[0].miktar).toBe(2);
   });
 

@@ -5,7 +5,7 @@ import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, Sear
 import { HataMetni, Ipucu } from "./tasarim";
 import { tutarMetni } from "../lib/tutarGirdisi";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
-import { EK_MALIYET_IPUCU, ekMaliyetDogrula, kitAdediDogrula, modelAdiParcalardaTasi, modelAdiParcalaraDokunurMu } from "../lib/urunAgaci";
+import { EK_MALIYET_IPUCU, ekMaliyetDogrula, kitAdediDogrula, kitAdetMetni, partiAdediCevir, modelAdiParcalardaTasi, modelAdiParcalaraDokunurMu } from "../lib/urunAgaci";
 import { useFilteredList } from "../hooks/useFilteredList";
 import { uretimdeMi, uretimIsaretiDegistir, uretimIsaretiTasi, uretimIsaretiDusur } from "../lib/uretimdekiModeller";
 
@@ -13,6 +13,36 @@ const PER_PAGE = 10;
 
 // Spec 0087 R8/1, R16: `setParts` ad taşıma zincirinin parça yarısı içindir (parçanın model işareti yeni ada taşınır);
 // `baskasiKilitli` Settings'in canlı kilit listesidir.
+// Spec 0134 R6c, R6c/2, Karar 37 (AC-11f, AC-11g, AC-93, AC-94): kit satırında parti başına adet girişi. "70 makinaya 8 adet"
+// girilince makina başı değer (üç ondalık, en yakına) alana yazılır ve yanında gösterilir; iki girdi kayda yazılmaz (`_parti`
+// geçicidir, kayıt fonksiyonu atar). Çevirme kuralı `urunAgaci.partiAdediCevir`'dedir.
+export const PARTI_BASINA_BAGLANTI = "Parti başına gir";
+const PartiBasinaGiris = ({ row, onChange }) => {
+  const p = row._parti;
+  if (!p) return <button type="button" onClick={() => onChange({ _parti: { adet: "", buyukluk: "" } })}
+    style={{ border: "none", background: "none", padding: "2px 0", color: "var(--n500, #64748b)", fontSize: 11.5, cursor: "pointer", textDecoration: "underline" }}>{PARTI_BASINA_BAGLANTI}</button>;
+  const r = partiAdediCevir(p.adet, p.buyukluk);
+  const yaz = (alan, v) => {
+    const yeni = { ...p, [alan]: v };
+    const c = partiAdediCevir(yeni.adet, yeni.buyukluk);
+    onChange({ _parti: yeni, ...(c.deger != null ? { miktar: kitAdetMetni(c.deger) } : {}) });
+  };
+  const bos = !String(p.adet).trim() && !String(p.buyukluk).trim();
+  return (
+    <div data-testid="parti-basina" style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 4, fontSize: 12, color: "var(--n600, #475569)" }}>
+      <input inputMode="decimal" value={p.adet} aria-label={`${row.ad} parti adedi`} placeholder="8" onChange={e => yaz("adet", e.target.value)}
+        style={{ width: 64, padding: "3px 6px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }} />
+      <span>adet /</span>
+      <input inputMode="numeric" value={p.buyukluk} aria-label={`${row.ad} parti büyüklüğü`} placeholder="70" onChange={e => yaz("buyukluk", e.target.value)}
+        style={{ width: 64, padding: "3px 6px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, fontSize: 12, fontFamily: "inherit" }} />
+      <span>makina</span>
+      {r.deger != null ? <span data-testid="parti-cevrilen" style={{ fontWeight: 700, color: "var(--blu700, #1d4ed8)" }}>= {kitAdetMetni(r.deger)} / makina</span>
+        : !bos && <HataMetni>{r.hata}</HataMetni>}
+      <button type="button" onClick={() => onChange({ _parti: undefined })} style={{ border: "none", background: "none", color: "var(--n500, #64748b)", fontSize: 11.5, cursor: "pointer", textDecoration: "underline" }}>Kapat</button>
+    </div>
+  );
+};
+
 export const ModelsManager = ({ standardModels, setStandardModels, customModels, setCustomModels, showToast = () => {}, setCustomers = null, setStock = null, parts = [], setParts = null, appSettings = {}, setAppSettings = null, setGiderler = null, setGiderTanimlari = null, baskasiKilitli = null }) => {
   // Analiz > Model Servis Yoğunluğu'nda gösterilecek modeller: appSettings.analizGizliModeller = GİZLENEN
   // model adları. Model adı bu listede YOKSA gösterilir → onay kutusu işaretli = göster (varsayılan: hepsi açık).
@@ -43,7 +73,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
   });
 
   // Spec 0087: formda kit adedi ve ek kalem tutarı ham metindir; kayıtta doğrulanıp sayıya çevrilir.
-  const formaAc = (m) => ({ ...m, defaultParcalar: (m.defaultParcalar || []).map(r => ({ ...r, miktar: String(r.miktar ?? "") })),
+  const formaAc = (m) => ({ ...m, defaultParcalar: (m.defaultParcalar || []).map(r => ({ ...r, miktar: kitAdetMetni(r.miktar) })),
     ekMaliyetler: (m.ekMaliyetler || []).map(k => ({ ad: k.ad, tutar: tutarMetni(k.tutar) })) });
   const openAdd = () => { setMForm(empty); setFormHata({ kit: {}, ek: {} }); setModelModal({ mode: "add" }); };
   const openEdit = (m, isStd) => { setMForm(formaAc(m)); setFormHata({ kit: {}, ek: {} }); setModelModal({ mode: isStd ? "edit-std" : "edit-custom", orig: m.model }); };
@@ -53,7 +83,8 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
     if (!name) return;
     // AC-15: kit adedi iki kapıda aynı kuraldan (en az 1 tam sayı). AC-26: ek kalemin adı boş ya da tutarı negatif reddedilir.
     const kitHata = {};
-    const kit = (mForm.defaultParcalar || []).map((r, i) => { const d = kitAdediDogrula(r.miktar); if (d.hata || d.bos) kitHata[i] = d.hata || "Adet girilmedi."; return { ...r, miktar: d.deger }; });
+    // Spec 0134 Karar 37, R6c/2: parti başına girişin geçici alanı (`_parti`) kayda yazılmaz.
+    const kit = (mForm.defaultParcalar || []).map((r, i) => { const { _parti, ...satir } = r; const d = kitAdediDogrula(r.miktar); if (d.hata || d.bos) kitHata[i] = d.hata || "Adet girilmedi."; return { ...satir, miktar: d.deger }; });
     const ek = ekMaliyetDogrula(mForm.ekMaliyetler);
     setFormHata({ kit: kitHata, ek: ek.hatalar });
     if (Object.keys(kitHata).length || !ek.gecerli) return;
@@ -245,9 +276,10 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
               {(mForm.defaultParcalar || []).length > 0 && (
                 <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                   {(mForm.defaultParcalar || []).map((row, i) => (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 32px", gap: 8, alignItems: "center" }}>
+                    <div key={i}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 32px", gap: 8, alignItems: "center" }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: "var(--blu700, #1d4ed8)" }}>{row.ad}{formHata.kit[i] && <HataMetni>{formHata.kit[i]}</HataMetni>}</span>
-                      <input inputMode="numeric" value={row.miktar ?? ""} aria-label={`${row.ad} kit adedi`}
+                      <input inputMode="decimal" value={row.miktar ?? ""} aria-label={`${row.ad} kit adedi`}
                         onChange={e => setMForm(prev => {
                           const arr = [...prev.defaultParcalar];
                           arr[i] = { ...arr[i], miktar: e.target.value };
@@ -257,6 +289,12 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
                       <button type="button"
                         onClick={() => setMForm(prev => ({ ...prev, defaultParcalar: prev.defaultParcalar.filter((_, idx) => idx !== i) }))}
                         style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid var(--redBr, #fecaca)", background: "var(--redBg, #fef2f2)", color: "var(--red600, #dc2626)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon name="trash" size={15} /></button>
+                    </div>
+                    <PartiBasinaGiris row={row} onChange={(degisim) => setMForm(prev => {
+                      const arr = [...prev.defaultParcalar];
+                      arr[i] = { ...arr[i], ...degisim };
+                      return { ...prev, defaultParcalar: arr };
+                    })} />
                     </div>
                   ))}
                 </div>

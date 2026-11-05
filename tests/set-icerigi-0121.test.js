@@ -5,7 +5,7 @@ import fs from "node:fs";
 import {
   setIcerigiDogrula, setKatalogu, setOzeti, setMi, parcaMaliyetKurus, parcaMaliyetiVar, maliyetGirildiMi, parcaMaliyetMetni,
   maliyetKaynagi, maliyetGecmisiYaz, gecmisliKayit, setBilesenAdi, setBileseniSecilebilirMi, setIcerikSatiri,
-  SET_AYNI_PARCA, SET_KENDISI, SET_IC_ICE, KIT_ADET_HATASI, SILINMIS_PARCA, BULUNAMAYAN_PARCA, LISTEDE_OLMAYAN_PARCA,
+  SET_AYNI_PARCA, SET_KENDISI, SET_IC_ICE, SET_ADET_HATASI, /* spec 0134 ile: set içeriğinin kendi sabiti (R6/2) */ SILINMIS_PARCA, BULUNAMAYAN_PARCA, LISTEDE_OLMAYAN_PARCA,
   SET_EXCEL_HATASI, setBileseniHatasi,
 } from "../src/lib/urunAgaci";
 import {
@@ -47,7 +47,7 @@ describe("Spec 0121 A: içerik doğrulaması", () => {
     for (const m of ["0", "", "1,5", "2.5", "-1", "abc"]) {
       const r = setIcerigiDogrula([{ partId: "1", miktar: m }], { kendiId: 99, parts: HEPSI });
       expect(r.gecerli).toBe(false);
-      expect(r.hatalar[0]).toBe(KIT_ADET_HATASI);
+      expect(r.hatalar[0]).toBe(SET_ADET_HATASI);
     }
   });
   it("AC-4: aynı parça ikinci kez kayda girmez ve adedin artırılması söylenir", () => {

@@ -14,7 +14,9 @@ const require = createRequire(import.meta.url);
 const root = path.join(__dirname, "..");
 
 describe("Makina Maliyeti alan hizası (Electron altında gerçek yerleşim)", () => {
-  it("1920, 1440 ve 1280 px: Parti Hesabı'nın seçicisi ile düğmesi, Hesap Ayarları'nın üç alanı ve etiketi aynı hizada", async () => {
+  // Spec 0134 AC-1, AC-89, AC-100: aynı düzenek beşinci sekmeyi (Sipariş İhtiyacı), parça stoğunu ve tedarikçi listesini taşır;
+  // görünüm çubuğu üç genişlikte tek satırda ve pencerenin içinde, tablo belgeyi yatay taşırmaz.
+  it("1920, 1440 ve 1280 px: Parti Hesabı'nın seçicisi ile düğmesi, Hesap Ayarları'nın üç alanı ve etiketi aynı hizada; AC-1 / AC-100: beş sekmeli çubuk tek satırda", async () => {
     const outDir = mkdtempSync(path.join(os.tmpdir(), "maliyet-"));
     await build({
       configFile: false, logLevel: "error", root: path.join(root, "scripts", "tests", "layout"), base: "./", plugins: [react()],

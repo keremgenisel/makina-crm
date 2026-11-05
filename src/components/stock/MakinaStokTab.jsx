@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, fmtKalipCapi, kalipCapiYaz } from "../../lib/utils";
+import { kitStokAdedi } from "../../lib/urunAgaci";
 import { netGeriEklenmis, netDusumleri, stokGeriAl, netDusumAyni } from "../../lib/stokHareketi";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, LockConflict, KalipCapiFields } from "../ui";
@@ -71,8 +72,10 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
   // olduğundan kırpma tabanı geri-alma sonrası stok: partStock+partStockLog snapshot'ından bu makinanın
   // eski makina_uretimi düşümleri geri eklenir (add'de o makinaya log yok → taban = partStock). Log
   // kırpılmış gerçek düşümü tutar → geri-alma tutarlı.
+  // Spec 0134 R6/3, Karar 36 (AC-72): ondalık kit adedi stoğa çevrilirken yukarı yuvarlanır (0,114 → 1). Yuvarlama bu çağıranda;
+  // ortak `stokKirparakDus` değişmez (servis ve satış düşümleriyle ortak, AC-73).
   const deductParts = (parcalar, stockId) => {
-    const valid = parcalar.filter(r => r.partId && parseInt(r.miktar) > 0);
+    const valid = parcalar.map(r => ({ ...r, miktar: kitStokAdedi(r.miktar) })).filter(r => r.partId && r.miktar > 0);
     if (!valid.length) return;
     const taban = netGeriEklenmis(partStock, partStockLog, stockId, "makina_uretimi");
     const { dusumler } = stokKirparakDus(taban, valid);
@@ -103,7 +106,8 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
       const stockId = form.id;
       // Spec 0065 R16: eski kit tüketimi silinmez, karşı hareket yazılır (üretim tarihi ilk tüketimden okunduğu için kaymaz).
       // Kit değişmemiş ve tam düşülmüşse stoğa dokunulmaz (log iki satır büyürdü; stok sonucu aynı).
-      const kitAyni = netDusumAyni(partStockLog, stockId, "makina_uretimi", form.parcalar || []);
+      // Triyaj (bulgu 5), spec 0134 R6/3: karşılaştırma düşümle aynı yuvarlanmış adedi görür (ortak `netDusumAyni` parseInt okur).
+      const kitAyni = netDusumAyni(partStockLog, stockId, "makina_uretimi", (form.parcalar || []).map(r => ({ ...r, miktar: kitStokAdedi(r.miktar) })));
       if (!kitAyni) stokGeriAl(stockId, "makina_uretimi", setPartStock, setPartStockLog, { tarih: today(), notlar: `${form.model} kiti düzenlendi` });
       // Spec 0002 M3: üretim tarihi taşımayan eski "geri dönen" satırın tanınması not metnine bağlı; düzenlemede
       // not değişebileceği için özgün tarih (çöpteki müşteriden, ESKİ model+seriyle) şimdi satıra yazılır.
@@ -320,7 +324,7 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
                 {selectedModelKit.length > 0 && (
                   <Btn small onClick={() => setForm(p => ({
                     ...p,
-                    parcalar: selectedModelKit.map(r => ({ partId: String(r.partId), miktar: r.miktar })),
+                    parcalar: selectedModelKit.map(r => ({ partId: String(r.partId), miktar: kitStokAdedi(r.miktar) })), // spec 0134 Karar 36
                   }))}>
                     <Icon name="box" size={12} /> Kiti Uygula ({selectedModelKit.length} parça)
                   </Btn>

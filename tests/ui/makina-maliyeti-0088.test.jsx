@@ -35,7 +35,7 @@ describe("Spec 0088: ekran ve görünümler", () => {
   it("R3, AC-48: dört görünüm bu sırayla, açılış Model Maliyetleri; \"bugünkü ayarlarla\" ibaresi", () => {
     render(<H />);
     expect(within(screen.getByRole("radiogroup", { name: "Görünüm" })).getAllByRole("radio").map(r => r.textContent))
-      .toEqual(["Model Maliyetleri", "Parti Hesabı", "Üretim Partileri", "Hesap Ayarları"]);
+      .toEqual(["Model Maliyetleri", "Parti Hesabı", "Üretim Partileri", "Hesap Ayarları", "Sipariş İhtiyacı"]); // spec 0134 ile beşinci görünüm
     expect(screen.getByRole("radio", { name: "Model Maliyetleri" }).getAttribute("aria-checked")).toBe("true");
     expect(screen.getByTestId("bugunku-ayar-ibaresi").textContent).toBe(BUGUNKU_AYAR_IBARESI);
   });
