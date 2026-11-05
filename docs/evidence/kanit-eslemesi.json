@@ -7566,16 +7566,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-model-0134-parti",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 37 (parti başına giriş)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-model-ekmaliyet",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 37 (parti başına giriş)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/KalipManager.jsx": [
@@ -10645,184 +10643,154 @@
         "ekran": "maliyet-0097-parti-tarihli"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0089-parti-degisim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0090-parti-neden",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0092-partiler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0092-pay",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0093-plan-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0093-plan-gizli-adet",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0093-plan-suzulmus",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0097-parti-acik",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0097-parti-baslamadi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-0097-parti-tarihli",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-ayarlar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-ayarlar-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-ayarlar-oneri",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-ayarlar-rol-uyari",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-bos-ayar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-bos-rol",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-katsayi-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller-bos-uretimde",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller-dokum",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller-isaret-bilgi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller-isaret-uyari",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller-uretimde-acik",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-modeller-uretimde-kapali",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-parti",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-parti-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-parti-plan-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-parti-planli",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-uretim-partileri",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-uretim-partisi-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 44 (beşinci sekme)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/maliyet/PayOzeti.jsx": [
@@ -11307,22 +11275,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-duzenle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MalzemeFiyatPenceresi.jsx": [
@@ -11349,132 +11314,111 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-kirilim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-tutarsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0097-gecmis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0097-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-ekle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-elle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-yetkisiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0115-ipucu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0121-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0121-set",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0122-panel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0132-malzeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 Karar 28 (emniyet payı)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/maliyet/SiparisIhtiyaci.jsx": [
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-siparis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 R1 (yeni görünüm)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-siparis-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 R1 (yeni görünüm)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-siparis-hatali",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 R1 (yeni görünüm)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-siparis-neden",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 R1 (yeni görünüm)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0134-piksel-raporu.json",
+        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-siparis-tablolar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0134 R1 (yeni görünüm)"
+        "beklenen": "ayni"
       }
     ]
   }

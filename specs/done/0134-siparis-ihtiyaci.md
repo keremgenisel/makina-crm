@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-05; plan turu Karar 28–44, uygulama Karar 45–47, triyaj Karar 48–50) |
+| **Durum** | Tamamlandı (2026-11-05, commit `acbd5f53`; plan turu Karar 28–44, uygulama Karar 45–47, triyaj Karar 48–50) |
 | **Sahip** | Analist (yazım) · geliştirici (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Makina Maliyeti (beşinci görünüm **Sipariş İhtiyacı**), saf motor (yeni sipariş motoru), `src/lib/urunAgaci.js` ve 0132'nin malzeme motoru okunur, parça kartı ve malzeme kartı (emniyet payı alanı), `src/components/stock/MakinaStokTab.jsx` (ondalık kitin stok düşümü), yazdırma kurucusu (`src/lib/siparisRaporu.js`), `src/App.jsx` (yeni `partStock` prop'u) |
@@ -423,31 +423,31 @@ Geliştiricinin uygulama planındaki on yedi öneri Takım Yöneticisi tarafınd
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap React'sız **saf motorda** yazıldı ve kendi testi var; arayüz yalnız gösteriyor.
-- [ ] Ağırlık ve kilo maliyeti 0132'nin motorundan okunuyor; ikinci formül yok ve bu kaynak taramasıyla sabitlendi.
-- [ ] Emniyet payı alanında **dört nokta kuralı** uygulandı ve `db-roundtrip` ile `db-clean-install` testlerine eklendi; alan **kartlarda** girilir, Sipariş İhtiyacı ekranından yazılmaz (C4/2, R21/2).
-- [ ] Sunucunun bölüm eşlemesi **değişmedi** ve 0132'nin "Makina Maliyeti malzemeyi yalnız okur" kriteri aynen geçerli (AC-62).
-- [ ] Malzeme satırının anahtarı malzeme ve **ham kesit**; aynı malzemenin iki kesiti ayrı satır (R12/2).
-- [ ] Boy fiyatından hesaplanan parça oranla hesaplanıyor; kilo ve özgül ağırlık istenmiyor, satır eksik sayılmıyor (R12/3).
-- [ ] Ondalık kit adedi stoktan düşerken yukarı yuvarlanıyor ve ortak kırpma yardımcısının imzası değişmedi (R6/3, AC-73).
-- [ ] Kit adedi doğrulayıcısı ikiye ayrıldı; **iki** kit kapısı birlikte gevşedi, set içeriği tam sayı kaldı (C1/2).
-- [ ] Ekran eldeki parça stoğunu prop olarak alıyor ve motor stoğu parametre alıyor (R24, C3/2).
-- [ ] Boy adedi yalnız tek boyutta kesilen biçimlerde hesaplanıyor; lama ve sacda nedeni yazıyor (R13/3).
-- [ ] Boy katı şartı kapsam dışı (X9) ve malzeme kaydına yeni alan eklenmedi (AC-71).
-- [ ] Görünüm çubuğu var olan Electron yerleşim düzeneğinde beşinci sekmeyle ölçüldü (AC-1, AC-100).
-- [ ] Yazdırma kurucusu kendi modülünde, adları "siparis" önekli ve gider gizlilik taraması yeşil (R20/2, AC-101).
-- [ ] Yeni veri bölümü **yok** ve bu açıkça yazıldı.
-- [ ] Yeni eylem izni **eklenmedi** ve bu açıkça yazıldı.
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı **yalnız Türkçe** ve bunun gerekçesi (X5) spec'te yazılı.
-- [ ] Para gösteriliyor: TL, USD ve EUR kuralına uyuldu, tanınmayan para birimi tanımlı biçimde ele alındı.
-- [ ] Arayüz kriterlerinin **görsel kanıtı** eklendi, boş ve hata durumları dâhil.
-- [ ] Salt okunurluk mutasyonla ölçüldü: ekranı sürerken hiçbir veri bölümüne yazım yapılmadığı kanıtlandı.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi (yeni kavram: sipariş ihtiyacı hesabı ve fire ile boy adedi ayrımı).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap React'sız **saf motorda** yazıldı ve kendi testi var; arayüz yalnız gösteriyor.
+- [x] Ağırlık ve kilo maliyeti 0132'nin motorundan okunuyor; ikinci formül yok ve bu kaynak taramasıyla sabitlendi.
+- [x] Emniyet payı alanında **dört nokta kuralı** uygulandı ve `db-roundtrip` ile `db-clean-install` testlerine eklendi; alan **kartlarda** girilir, Sipariş İhtiyacı ekranından yazılmaz (C4/2, R21/2).
+- [x] Sunucunun bölüm eşlemesi **değişmedi** ve 0132'nin "Makina Maliyeti malzemeyi yalnız okur" kriteri aynen geçerli (AC-62).
+- [x] Malzeme satırının anahtarı malzeme ve **ham kesit**; aynı malzemenin iki kesiti ayrı satır (R12/2).
+- [x] Boy fiyatından hesaplanan parça oranla hesaplanıyor; kilo ve özgül ağırlık istenmiyor, satır eksik sayılmıyor (R12/3).
+- [x] Ondalık kit adedi stoktan düşerken yukarı yuvarlanıyor ve ortak kırpma yardımcısının imzası değişmedi (R6/3, AC-73).
+- [x] Kit adedi doğrulayıcısı ikiye ayrıldı; **iki** kit kapısı birlikte gevşedi, set içeriği tam sayı kaldı (C1/2).
+- [x] Ekran eldeki parça stoğunu prop olarak alıyor ve motor stoğu parametre alıyor (R24, C3/2).
+- [x] Boy adedi yalnız tek boyutta kesilen biçimlerde hesaplanıyor; lama ve sacda nedeni yazıyor (R13/3).
+- [x] Boy katı şartı kapsam dışı (X9) ve malzeme kaydına yeni alan eklenmedi (AC-71).
+- [x] Görünüm çubuğu var olan Electron yerleşim düzeneğinde beşinci sekmeyle ölçüldü (AC-1, AC-100).
+- [x] Yazdırma kurucusu kendi modülünde, adları "siparis" önekli ve gider gizlilik taraması yeşil (R20/2, AC-101).
+- [x] Yeni veri bölümü **yok** ve bu açıkça yazıldı.
+- [x] Yeni eylem izni **eklenmedi** ve bu açıkça yazıldı.
+- [x] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı **yalnız Türkçe** ve bunun gerekçesi (X5) spec'te yazılı.
+- [x] Para gösteriliyor: TL, USD ve EUR kuralına uyuldu, tanınmayan para birimi tanımlı biçimde ele alındı.
+- [x] Arayüz kriterlerinin **görsel kanıtı** eklendi, boş ve hata durumları dâhil.
+- [x] Salt okunurluk mutasyonla ölçüldü: ekranı sürerken hiçbir veri bölümüne yazım yapılmadığı kanıtlandı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi (yeni kavram: sipariş ihtiyacı hesabı ve fire ile boy adedi ayrımı).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -479,3 +479,23 @@ Sorular 16 ve 17 ters yönde cevaplanmıştı (ikisi de "öneri" onayı aldı). 
 ### Analistin ölçümle değiştirdiği bir kural
 
 Soru 6'nın cevabında işleme payı ile firenin ayrı tutulması kabul edildi ve gerekçesi "bunlar fiziken iki ayrı şey" diye yazılmıştı. Hesabı kurarken ölçtüm: boy adedi uzunluktan hesaplandığında kesim kaybı artan kilosunda **zaten görünüyor**, yani fire yüzdesi aynı kaybı üçüncü kez sayıyor ve rakamı bir boy fazla çıkarıyor (Context'teki tablo). Bu yüzden R16 fireyi boy hesabından çıkardı ve yalnız kiloyla alınan malzemede bıraktı. İşleme payı ile fire ayrı alanlar olarak kalıyor (soru 6'nın kararı korundu), değişen yalnız firenin sipariş hesabına nerede girdiğidir.
+
+---
+
+## SCORECARD
+
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Uygulama commit** | `acbd5f53` | Dal `feat/0134-siparis`, taban `eca03258`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | QA turu (karar 1–27), plan turu (Karar 28–44), uygulama (Karar 45–47), triyaj (Karar 48–50) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: altı bulgu, iki bilgi maddesi |
+| **Bulgu gerçek/gürültü oranı** | 6 / 0 | İkisi önemli (kayan nokta kesiti iki satıra bölüyordu, boy yönteminde fire sessiz düşüyordu), dördü küçük; bilgi maddelerinden biri kod, biri spec notu |
+| **Regresyon sayısı** | 0 | Tam takım 483 dosya, 6744 test (Electron dahil); lint 0 hata, uyarı 62 |
+| **Kaçan hata** | 0 | |
+
+**Uygulamada bulunanlar:** yazdırma düğmesi maliyet klasörüne konamadı (0088'in gizlilik taraması yazdırma API'sini orada yasaklıyor, Karar 45); üretimdeki modeller Makina Maliyeti'nde süzülemedi (0093 C6), görünüm model maliyeti satırlarının işaretinden süzüyor (Karar 41 daraltıldı). Kit doğrulayıcısının ayrılması 0087 AC-15'i ters çevirdi, 0121 ve 0124'ün set sabitini yeniden adlandırdı. Mutasyon ölçümü: uygulamada on bozma (ikisi eşdeğer, ikisi boşluk gösterdi ve bekçisi yazıldı), salt okunurluk bozması yazıcı casusuyla yakalandı; triyajda beş bozma, hepsi yakalandı.
+
+**Görsel kanıt:** değişen küme iki taban × iki sonra çekiminin çapraz karşılaştırmasıyla: 56 ekran (112 görüntü; 50 ekran beşinci sekme, emniyet payı alanı ve parti başına giriş yüzünden değişti, 6 ekran yeni). Electron'da beş sekmeli çubuk 1920, 1440 ve 1280 pikselde tek satırda (Karar 42'nin sorusu doğmadı). Taban son kodla 112 görüntüde 0 fark; beş dosyadaki 56 `degisti` kaydı kapanışta `ayni` ve `0134-taban-piksel-raporu.json`'a çevrildi.
+
+**Bu spec'ten çıkarılan ders:** ölçüden türeyen değerleri anahtar olarak kullanmadan önce yuvarlamak gerekir: 10,1 + 0,2 ile 10,3 aynı kesittir ama aynı sayı değildir. İkinci ders: bir kuralın gerekçesi (R16: "kesim kaybı artanda zaten görünür") yalnız bir hesap yolunda doğruysa, kural da yalnız o yolda uygulanmalı.
+

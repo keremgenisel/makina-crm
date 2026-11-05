@@ -1,6 +1,6 @@
 # 0134 uygulama planı: bir sonraki parti için tedarikçi sipariş ihtiyacı
 
-Spec: `specs/0134-siparis-ihtiyaci.md` (QA turu karar 1–27, plan turu Karar 28–44). Dal `feat/0134-siparis` (`../wt0134`), taban main `eca03258`. Plan Takım Yöneticisi'nin 2026-11-05 onayıyla; on yedi önerinin hepsi kabul edildi.
+Spec: `specs/done/0134-siparis-ihtiyaci.md` (QA turu karar 1–27, plan turu Karar 28–44). Dal `feat/0134-siparis` (`../wt0134`), taban main `eca03258`. Plan Takım Yöneticisi'nin 2026-11-05 onayıyla; on yedi önerinin hepsi kabul edildi.
 
 ## 1. Dosyalar
 
