@@ -132,7 +132,9 @@ describe("Spec 0068 R3–R5: çek dışa aktarma satırı", () => {
   });
   it("AC-7 / AC-31: SettingsExport'a eklenen tek yeni prop cekler; gider/kasa bölümleri okunmaz", () => {
     const s = oku("src/components/settings/SettingsExport.jsx");
-    expect(s).toMatch(/yedekParcaSatislar = \[\], serverPermissions = null, cekler = null \}\) => \{/);
+    // Spec 0132 ile (R21, AC-72): parça şablonunun dışa aktarması malzeme listesini alır (malzeme kaynaklı parçanın çözülmüş
+    // maliyeti); iddia (gider/kasa bölümleri okunmaz) aynı.
+    expect(s).toMatch(/yedekParcaSatislar = \[\], malzemeler = \[\], serverPermissions = null, cekler = null \}\) => \{/);
     expect(s).not.toMatch(/tedarikciler|hesapHareketleri|giderler|kasaHesaplari/);
   });
 });

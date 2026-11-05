@@ -39,7 +39,9 @@ export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "p
   // Spec 0077 R30, R35: bugüne kadar birleşmeyen yedi bölüm (çakışmada yeni bayi, not, stok satırı, parça, kalıp ve parça
   // türü tanımı ile özel model kayboluyordu). Bayilerin birleştirilmemesi kararı bu spec'le geri alındı. standardModels
   // bilinçli olarak YOK (X7: soft-delete taşımıyor, tek mutasyonu düzenleme).
-  "dealers", "notes", "stock", "parts", "kalipDefs", "partTypeDefs", "customModels"];
+  "dealers", "notes", "stock", "parts", "kalipDefs", "partTypeDefs", "customModels",
+  // Spec 0132 C5 (AC-59): malzeme kataloğu; bu PC'de eklenen malzeme yeniden yüklemede kaybolmasın.
+  "malzemeler"];
 
 // Spec 0077 R30 (S3): bölümün kimlik alanı. Özel makina modelinin kimliği adıdır (custom_models.model), `id` yoktur;
 // yeniden kimliklendirilmez (aynı ad aynı modeldir). Diğer bölümler `id`.
@@ -202,7 +204,13 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null, ta
     // parçalara uygulanır; sunucuda zaten duran setin içeriği eşlenmez (bilinen sınır, 0096 hammadde emsali, Karar 22).
     .map(p => (Array.isArray(p.setIcerigi) && p.setIcerigi.length
       ? { ...p, setIcerigi: p.setIcerigi.map(r => (r?.partId != null ? { ...r, partId: remapGevsek(maps.parts, r.partId) } : r)) }
+      : p))
+    // Spec 0132 C5 (AC-60): parçanın malzeme satırı yeniden atanan malzeme kimliğini izler (0096 tedarikçi emsali).
+    .map(p => (p?.malzemeSatiri?.malzemeId != null
+      ? { ...p, malzemeSatiri: { ...p.malzemeSatiri, malzemeId: remapGevsek(maps.malzemeler, p.malzemeSatiri.malzemeId) } }
       : p));
+  // Spec 0132 C9: malzemenin ana tedarikçisi yeniden atanan tedarikçi kimliğini izler.
+  adds.malzemeler = adds.malzemeler.map(m => (m.tedarikciId != null ? { ...m, tedarikciId: remapGevsek(maps.tedarikciler, m.tedarikciId) } : m));
   // Spec 0058 R14 (Q3): kapsam dışı girişi kaynağına göre kaydını izler (servis, Extra Kalıp, yedek parça ya da hareket).
   // Bilinen sınır: birleştirme yalnız eklemeleri yeniden uygular; başka PC yazarken yapılan "kapsama al" geri gelebilir.
   const KAPSAM_HARITA = { servis: "services", kalip: "partSales", yedekParca: "yedekParcaSatislar" };

@@ -219,6 +219,16 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && JSON.stringify(b.parts.find(p => p.id === 54)?.setIcerigi) === JSON.stringify(icerik));
 }
 
+// Spec 0132 AC-61, AC-87 (C5): temiz kurulumda malzeme tablosu ve parçanın malzeme satırı ilk oturumda yazılır.
+{
+  let h = null;
+  const satir = { malzemeId: 91, bicim: "lama", kalinlik: 10, genislik: 20, boy: 125 };
+  try { dbmod.writeBlobToDb({ malzemeler: [{ id: 91, ad: "8620", ozgulAgirlik: 7.85, kiloFiyati: 95, bantlar: [{ alt: 0, fiyat: 95 }] }], parts: [{ id: 92, ad: "Çubuk", models: [], malzemeSatiri: satir }] }); } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0132: temiz kurulumda malzemeler tablosu ve malzemeSatiri sütunu var ve yazıldı", h === null
+    && b.malzemeler?.find(m => m.id === 91)?.bantlar?.length === 1 && JSON.stringify(b.parts.find(p => p.id === 92)?.malzemeSatiri) === JSON.stringify(satir));
+}
+
 // Spec 0100 AC-38 (C2): temiz kurulumda stok satırının üretim durumu ilk oturumda yazılır; durumsuz satırda alan yok.
 {
   let h = null;

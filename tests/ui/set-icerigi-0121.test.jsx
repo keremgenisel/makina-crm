@@ -262,16 +262,17 @@ describe("Spec 0121: kaynak taramaları (C1, R2/2, R2/3)", () => {
   });
   it("AC-38 (dokuz okuyucu): maliyet zincirinin PartManager çağrıları katalogla", () => {
     const pm = kod("src/components/PartManager.jsx");
-    expect(pm).toMatch(/maliyetGirildiMi\(p, undefined, katalog\)/);
-    expect(pm).toMatch(/maliyetGirildiMi\(k, undefined, katalog\)/);
-    expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog\)/);
-    expect(pm.match(/maliyetKaynagi\([^)]*katalog\)/g).length).toBeGreaterThanOrEqual(3);
+    // Spec 0132 ile (C1/2): dördüncü parametre malzeme haritasıdır; desenler yeni imzayı arar, iddia (katalog geçer) aynı.
+    expect(pm).toMatch(/maliyetGirildiMi\(p, undefined, katalog, malzemeKat\)/);
+    expect(pm).toMatch(/maliyetGirildiMi\(k, undefined, katalog, malzemeKat\)/);
+    expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat\)/);
+    expect(pm.match(/maliyetKaynagi\([^)]*katalog, malzemeKat\)/g).length).toBeGreaterThanOrEqual(3);
     expect(pm).toMatch(/set: setMi\(temel\)/);
     expect(kod("src/lib/urunAgaci.js")).toMatch(/set: setMi\(temel\)/);
     // Spec 0124 ile (R9/2, Karar 31): içe aktarmanın geçmiş kapısı dosyadan gelen içeriği de sayar (`setOlacak`).
     expect(kod("src/lib/parcaAktarma.js")).toMatch(/set: setOlacak/);
     expect(kod("src/lib/parcaAktarma.js")).toMatch(/const setOlacak = setMi\(mevcut\) \|\| !!yeniIcerik;/);
-    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap\)/);
-    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog\)/);
+    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
+    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat\)/);
   });
 });

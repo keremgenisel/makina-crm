@@ -23,6 +23,8 @@ const BLOB_SECTIONS = [
   "cekler",
   // Kasa iş listesinden kapsam dışı bırakılanlar (spec 0058)
   "kasaKapsamDisi",
+  // Malzeme kataloğu (spec 0132)
+  "malzemeler",
 ];
 
 // Her veri bölümü hangi izin grubuna bağlı. Gruplar src/lib/permissions.js ile aynı:
@@ -50,6 +52,8 @@ const SECTION_GROUP = {
   kalipDefs: "settings",
   partTypeDefs: "settings",
   calisanlar: "settings",
+  // Spec 0132 C5/2: katalog emsali; stockActions seçilmez (0087 C7'nin bilinen sınırı büyümesin).
+  malzemeler: "settings",
   standardModels: "settings",
   customModels: "settings",
   factory: "settings",
@@ -122,6 +126,8 @@ const BOLUM_SEKMELERI = {
   kalipDefs:      ["settings"],
   partTypeDefs:   ["settings"],
   calisanlar:     ["settings"],
+  // Spec 0132 C5/2 (AC-77): Makina Maliyeti malzemeyi yalnız okur; ikinci sekme yazılmaz.
+  malzemeler:     ["settings"],
   // Spec 0088 C9: Makina Maliyeti ekranı modelin kâr katsayısını ve Extra Kalıp liste fiyatını yazar.
   standardModels: ["settings", "maliyet"],
   customModels:   ["settings", "maliyet"],

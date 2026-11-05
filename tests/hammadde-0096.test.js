@@ -16,6 +16,8 @@ import { uid } from "../src/lib/utils";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge";
 import { KILIT_ALANLARI } from "../src/lib/kilitAlanlari";
+// Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
+import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
 // Spec 0097 ile (R20/2, plan P11): içe aktarma yerel günü zorunlu parametre olarak alır.
 const BUGUN = "2026-10-20";
 
@@ -212,7 +214,8 @@ describe("Spec 0096: kaynak taramaları", () => {
     expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/p\.maliyet|maliyet == null/);
     // Spec 0097 ile (C1/2, AC-56): tarihli okuma aynı fonksiyonun ikinci parametresidir; desen yeni imzayı arar (gevşetilmedi).
     // Spec 0121 ile (R9/2, AC-38): üçüncü parametre katalogdur (setin maliyeti); desen yeni imzayı arar, iddia aynı.
-    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap\)/);
+    // Spec 0132 ile (C1/2, R16/4): dördüncü parametre malzeme haritasıdır; desen yeni imzayı arar, iddia aynı.
+    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
   });
   it("AC-41: satır tutarlarını TL olarak toplayan ikinci yer yok (kırılım toplamı yalnız urunAgaci'nde, kuruşla)", () => {
     // Kapsam: parça kırılımını (`hammaddeler`) okuyan dosyalar; gider tarafının kendi `.tutar` toplamları bu kavramdan değil.
@@ -224,7 +227,7 @@ describe("Spec 0096: kaynak taramaları", () => {
     expect(kod("src/lib/urunAgaci.js")).toMatch(/reduce\(\(a, h\) => a \+ kurus\(h\.tutar\), 0\)/);
   });
   it("AC-31: yeni eylem izni, veri bölümü ve kilit alanı yok; birleştirme anahtarları aynı", () => {
-    const simdi = JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI }));
+    const simdi = bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
     expect(simdi).toEqual(JSON.parse(readFileSync("tests/fixtures/0093-tarama-once.json", "utf8")));
     expect(Object.keys(KILIT_ALANLARI)).not.toContain("hammadde");
     expect(kod("electron/serverAuth.cjs")).not.toMatch(/hammadde/);

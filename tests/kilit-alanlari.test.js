@@ -141,3 +141,17 @@ describe("Spec 0064: değişmeyenler (C1, C6, R16, X6)", () => {
     for (const f of ["electron/server.cjs", "electron/serverAuth.cjs", "electron/db.cjs", "src/lib/merge.js"]) expect(oku(f), f).not.toMatch(/kilitAlanlari|KILIT_ALANLARI/);
   });
 });
+
+// Spec 0132 C6, C6/2 (AC-86): malzeme paneli Ayarlar panel kilidiyle; yeni iki dosya `ayar` alanının pencere listesinde, kendi
+// kilit alanı yok (Karar 31: fiyat penceresi parça panelinin kilidine bakmaz çünkü parçaya yazmaz). Parçanın malzeme satırı
+// bileşeni veri yazmaz (prop ile form durumunu günceller), listeye girmesi gerekmez.
+describe("Spec 0132: malzeme kilidi", () => {
+  it("AC-86: AYAR_KILITLI.malzemeler ve iki yeni dosya ayar.pencereler'de; ayrı kilit alanı yok", () => {
+    expect(AYAR_KILITLI.malzemeler).toBe("Malzemeler");
+    expect(kilitEtiketi("ayar", "malzemeler")).toBe("Ayarlar paneli · Malzemeler");
+    for (const f of ["src/components/MalzemeManager.jsx", "src/components/MalzemeFiyatPenceresi.jsx"]) expect(KILIT_ALANLARI.ayar.pencereler, f).toContain(f);
+    expect(Object.keys(KILIT_ALANLARI)).not.toContain("malzeme");
+    expect(oku("src/components/MalzemeFiyatPenceresi.jsx")).not.toMatch(/useLock|baskasiKilitli|kilitliIse/);
+    expect(oku("src/components/MalzemeSatiriAlani.jsx")).not.toMatch(/setMalzemeler|setParts\b/);
+  });
+});

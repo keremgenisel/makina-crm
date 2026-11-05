@@ -11,6 +11,8 @@ import { hesapsizTahsilatlar } from "../src/lib/kasa";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge";
 import { KILIT_ALANLARI } from "../src/lib/kilitAlanlari";
+// Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
+import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
 
 const kod = (f) => readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map(l => l.replace(/(^|[^:"'`])\/\/.*$/, "$1")).join("\n");
 const tara = (d) => readdirSync(d).flatMap(e => { const p = `${d}/${e}`; return statSync(p).isDirectory() ? (p === "src/lib/map" ? [] : tara(p)) : /\.(jsx?|cjs|mjs)$/.test(e) ? [p] : []; });
@@ -107,7 +109,7 @@ describe("Spec 0098: kaynak taramaları", () => {
     expect(kod("src/components/ServisPanosu.jsx")).toMatch(/kasaHesaplari=\{kasaHesaplari\} hesapVarsayilan=\{tahsilatHesapVarsayilan\}/g);
   });
   it("AC-40 / R21 / R22: veri bölümü, birleştirme anahtarı, eylem kimliği ve kilit alanı değişmedi", () => {
-    const simdi = JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI }));
+    const simdi = bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
     expect(simdi).toEqual(JSON.parse(readFileSync("tests/fixtures/0093-tarama-once.json", "utf8")));
     expect(Object.keys(KILIT_ALANLARI).join()).not.toMatch(/tahsilat/);
     expect(kod("electron/db.cjs")).not.toMatch(/tahsilat_hesap/);

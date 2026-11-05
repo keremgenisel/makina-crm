@@ -36,7 +36,9 @@ describe("Spec 0078 A: kapsam ve veri", () => {
     const db = oku("electron/db.cjs");
     const m = db.match(/const TABLES_WITH_TRASH = \[([\s\S]*?)\];/);
     const tablolar = [...m[1].matchAll(/"([a-z_]+)"/g)].map(x => x[1]);
-    expect(tablolar).toHaveLength(22);
+    // Spec 0132 ile (C7): malzeme kartı da çöp kutusuna gider; liste yirmi üç, iddia (dört kasa/gider tablosu var, kapsam dışı yok) aynı.
+    expect(tablolar).toHaveLength(23);
+    expect(tablolar).toContain("malzemeler");
     for (const t of ["hesap_hareketleri", "cekler", "gider_tanimlari", "kasa_hesaplari"]) expect(tablolar, t).toContain(t);
     expect(tablolar).not.toContain("kasa_kapsam_disi");
     expect(db).not.toMatch(/0078.*[Gg]oc|Gocu0078/);
@@ -177,7 +179,9 @@ describe("Spec 0078 D: geri alma, kalıcı silme, çek koruması", () => {
   // Spec 0082 ile güncellendi: standart gider temizliği kalktı (yirmi yedi → yirmi altı, beş bölüm).
   it("AC-8, R22: beş bölüm için ayrı 30 günlük temizlik çağrısı (toplam yirmi altı)", () => {
     const app = oku("src/App.jsx");
-    expect((app.match(/purgeOldTrash\(/g) || []).length).toBe(26);
+    // Spec 0132 ile (C7, AC-20): malzeme kartının otuz günlük temizliği yirmi yedinci çağrı.
+    expect((app.match(/purgeOldTrash\(/g) || []).length).toBe(27);
+    expect(app).toMatch(/data\.malzemeler = purgeOldTrash\(data\.malzemeler/);
     for (const b of ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "kasaHesaplari"]) expect(app, b).toMatch(new RegExp(`data\\.${b} = purgeOldTrash\\(data\\.${b}`));
   });
   it("R35: bağsız çek, çeke bağlı canlı hareket varken silinemez (ödenmiş/yazılmış verilen çek)", () => {

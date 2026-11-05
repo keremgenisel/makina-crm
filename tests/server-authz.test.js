@@ -1785,3 +1785,35 @@ describe("Spec 0117: kalıbın sevk alanları sunucuda yeni kural istemez (C4, R
     expect(yaz(JSON.stringify({ tabs: ["customers"], customerActions: [] }), eski, yeni).ok).toBe(false);
   });
 });
+
+// Spec 0132 C5/2, R20 (AC-54, AC-77): malzeme kataloğu yeni bir veri bölümüdür ama yeni yetki açmaz. Grup "settings" (görünür
+// alt sekme listesi), sekme yalnız Ayarlar; Makina Maliyeti malzemeyi yalnız okur ve tek başına yazma hakkı vermez.
+describe("Spec 0132: malzeme kataloğu sunucuda", () => {
+  const eski = { malzemeler: [{ id: 501, ad: "304 Paslanmaz", kiloFiyati: 2.95 }] };
+  const yeni = { malzemeler: [{ id: 501, ad: "304 Paslanmaz", kiloFiyati: 3.15 }, { id: 502, ad: "8620" }] };
+  it("AC-77: Ayarlar sekmesi olmayan kullanıcının malzeme yazımı reddedilir; Makina Maliyeti sekmesi tek başına yazma hakkı vermez", () => {
+    expect(degisenBolumler(eski, yeni)).toEqual(["malzemeler"]);
+    const maliyetci = JSON.stringify({ tabs: ["dashboard", "gider", "maliyet"] });
+    const r = yazmaYetkisiVar(maliyetci, "user", ["malzemeler"], eski, yeni);
+    expect(r.ok).toBe(false);
+    expect(r.reddedilenBolum).toBe("malzemeler");
+    expect(yazmaYetkisiVar(READONLY, "user", ["malzemeler"], eski, yeni).ok).toBe(false);
+  });
+  it("AC-77 / AC-54: Ayarlar sekmeli kullanıcı yazar; yeni eylem izni ya da kayıt düzeyinde kimlik yok", () => {
+    const ayarci = JSON.stringify({ tabs: ["dashboard", "settings"] });
+    expect(yazmaYetkisiVar(ayarci, "user", ["malzemeler"], eski, yeni).ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, ayarci, "user").ok).toBe(true);
+    expect(EYLEM_IDLERI.malzemeler).toBeUndefined();
+    expect(ALAN_IZINLERI.malzemeler).toBeUndefined();
+    expect(SECTION_GROUP.malzemeler).toBe("settings");
+    expect(BOLUM_SEKMELERI.malzemeler).toEqual(["settings"]);
+  });
+  it("C5/2: parçanın malzeme satırı parça bölümünün alanıdır (bölüm düzeyinde güvenilir, 0087 C7 sınırı büyümedi)", () => {
+    const pe = { parts: [{ id: 41, ad: "Mil" }] };
+    const py = { parts: [{ id: 41, ad: "Mil", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 78 } }] };
+    const ayarci = JSON.stringify({ tabs: ["dashboard", "settings"] });
+    expect(degisenBolumler(pe, py)).toEqual(["parts"]);
+    expect(yazmaYetkisiVar(ayarci, "user", ["parts"], pe, py).ok).toBe(true);
+    expect(SECTION_GROUP.parts).toBe("stockActions");
+  });
+});

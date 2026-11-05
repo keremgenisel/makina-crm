@@ -92,6 +92,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("bayiSilici",  bcrypt.hashSync("sil123", 10), "user", BAYI_SILICI);
   dbmod.createUser("giderci",     bcrypt.hashSync("gider123", 10), "user", GIDERCI);
   dbmod.createUser("ayarci",      bcrypt.hashSync("ayar123", 10), "user", AYARCI);
+  // Spec 0132 AC-77: Giderler + Makina Maliyeti sekmeli, Ayarlar sekmesi olmayan kullanıcı (malzemeyi okur, yazamaz).
+  dbmod.createUser("maliyetci0132", bcrypt.hashSync("maliyet123", 10), "user", JSON.stringify({ tabs: ["dashboard", "gider", "maliyet"] }));
   dbmod.createUser("odemeci",     bcrypt.hashSync("odeme123", 10), "user", ODEMECI);
   dbmod.createUser("kasasiz",     bcrypt.hashSync("kasa1234", 10), "user", KASASIZ);
   dbmod.createUser("kasafinsiz",  bcrypt.hashSync("kasa1234", 10), "user", KASA_FINANSSIZ);
@@ -523,6 +525,29 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     const a82 = await (await api("/api/audit?limit=300", {}, adminTok)).json();
     const satirlar82 = (a82.rows || []).filter(r => r.action === "veri_kaydedildi" && r.username === "giderci");
     check("spec 0082 AC-17: bu yazımların işlem geçmişinde standart gider bölüm adı yok", satirlar82.length > 0 && satirlar82.every(r => !/Standart/.test(r.entity_name || "")));
+  }
+
+  // ── Spec 0132 AC-77, Karar 34 (karışık sürüm): malzeme bölümü. Ayarlar sekmeli kullanıcı yazar, Makina Maliyeti sekmeli
+  // kullanıcı 403 alır; malzeme bölümünü göndermeyen (güncellenmemiş) istemcinin yazımı saklı listeyi silmez; işlem geçmişi bölüm
+  // adını yazar. Sürüm notu: önce sunucu PC (eski sunucu bölümü tanımaz, yeni istemcinin malzemesini düşürür).
+  {
+    const ayarTok32 = (await login("ayarci", "ayar123")).body.token;
+    const malTok32 = (await login("maliyetci0132", "maliyet123")).body.token;
+    let m32 = await gUst(adminTok);
+    const malzeme = { id: 13201, ad: "304 Paslanmaz", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50 };
+    const r1 = await postData({ ...m32, dataVersion: undefined, malzemeler: [malzeme] }, m32.dataVersion, ayarTok32);
+    check("spec 0132 AC-77: Ayarlar sekmeli kullanıcı malzeme yazar → 200", r1.status === 200 && (await gUst(adminTok)).malzemeler?.some(m => m.id === 13201));
+    m32 = await gUst(malTok32);
+    check("spec 0132 AC-77: Makina Maliyeti sekmeli kullanıcı malzemeyi okur", m32.malzemeler?.some(m => m.id === 13201));
+    const r2 = await postData({ ...m32, dataVersion: undefined, malzemeler: [{ ...malzeme, kiloFiyati: 3.4 }] }, m32.dataVersion, malTok32);
+    check("spec 0132 AC-77: Ayarlar sekmesi olmayan (Makina Maliyeti sekmeli) kullanıcının malzeme yazımı → 403", r2.status === 403);
+    m32 = await gUst(adminTok);
+    const { malzemeler: _yok, ...eskiGovde } = m32;
+    const r3 = await postData({ ...eskiGovde, dataVersion: undefined }, m32.dataVersion, adminTok);
+    check("spec 0132 Karar 34: malzeme bölümünü göndermeyen eski istemci yazımı → 200 ve saklı malzeme yerinde",
+      r3.status === 200 && (await gUst(adminTok)).malzemeler?.find(m => m.id === 13201)?.kiloFiyati === 2.95);
+    const a32 = await (await api("/api/audit?limit=300", {}, adminTok)).json();
+    check("spec 0132 C5/3: malzeme yazımının işlem geçmişi bölüm adını yazar", (a32.rows || []).some(r => r.action === "veri_kaydedildi" && r.username === "ayarci" && /Malzemeler/.test(r.entity_name || "")));
   }
 
   // ── Spec 0040: çek portföyü (AC-20, AC-33, AC-34) ─────────────────────────────

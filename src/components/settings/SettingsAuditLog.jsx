@@ -10,7 +10,7 @@ const ENTITY_LABELS = {
   yedek_parca_satis: "Yedek Parça Satışı",
   // Gider kaydı (spec 0001)
   gider: "Gider", gider_tanim: "Tekrarlayan Gider", gider_tur: "Gider Türü", tedarikci: "Tedarikçi",
-  uretim_partisi: "Üretim Partisi", // spec 0022; etiketi 0068 ile eklendi (önceden ham anahtar görünüyordu)
+  uretim_partisi: "Üretim Partisi", malzeme: "Malzeme", // spec 0132 // spec 0022; etiketi 0068 ile eklendi (önceden ham anahtar görünüyordu)
   // Kasa (spec 0024)
   kasa_hesap: "Kasa/Banka Hesabı", kasa_kapsam: "Kasa İş Listesi", kasa_hareketi: "Kasa Hareketi", virman: "Virman", avans: "Çalışan Avansı", cek: "Çek",
 };
@@ -24,6 +24,7 @@ const ACTION_LABELS = {
   stok_eklendi: "Stok Eklendi", stok_duzeltildi: "Stok Düzeltildi",
   set_hazirlandi: "Set Hazırlandı", set_geri_alindi: "Set Hazırlama Geri Alındı", // spec 0121 R30/2
   set_parcalandi: "Set Parçalandı", set_parcalama_geri_alindi: "Set Parçalama Geri Alındı", // spec 0130 R19
+  fiyat_guncellendi: "Fiyat Güncellendi", // spec 0132 R6
   temizlendi: "Temizlendi", geri_alindi: "Geri Alındı",
   // Servis ve Kargo Panosu + yedek parça satışı işlemleri
   durum_degisti: "Durum Değişti", teknisyen_degisti: "Teknisyen Değişti", sorumlu_degisti: "Kargo Sorumlusu Değişti", kalip_sorumlu_degisti: "Kalıp Sorumlusu Değişti", // spec 0119 R11/2

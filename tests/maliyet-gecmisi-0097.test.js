@@ -13,6 +13,8 @@ import { buildMergePlan, MERGE_KEYS } from "../src/lib/merge";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { KILIT_ALANLARI } from "../src/lib/kilitAlanlari";
 import * as V from "./fixtures/0097-veri";
+// Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
+import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
 
 const BUGUN = V.BUGUN;
 const parca = (o = {}) => ({ id: 1, ad: "Rulman", models: [], ...o });
@@ -369,7 +371,9 @@ describe("Spec 0097: kaynak taramaları", () => {
   });
   it("AC-37 / C1: geçmişin kuruşu TL alanıyla toplanmaz; tarihli okuma ikinci bir çözücüye kopyalanmadı", () => {
     for (const [f] of Object.entries(say(/maliyetGecmisi/))) expect(kod(f)).not.toMatch(/maliyetGecmisi[^\n]*\.maliyet\b|\.maliyet\b[^\n]*maliyetGecmisi/);
-    expect(Object.keys(say(/\.gecerli\s*<=/))).toEqual(["src/lib/urunAgaci.js"]);
+    // Spec 0132 ile (Karar 24, C3): tarihli okumanın kuralı ortak modüle (gecerlilik.js) indi; parça ve malzeme geçmişi aynı
+    // fonksiyonu çağırır. İddia aynı: kural tek yerde, ikinci çözücüye kopyalanmadı.
+    expect(Object.keys(say(/\.gecerli\s*<=/))).toEqual(["src/lib/gecerlilik.js"]);
   });
   it("AC-41 / R5/4: urunAgaci saat okumaz; parça paneli varsayılan günü useBugun'dan alır, today() kullanmaz", () => {
     expect(kod("src/lib/urunAgaci.js")).not.toMatch(/Date\.now|new Date\(\)|yerelBugun|today\(/);
@@ -387,7 +391,7 @@ describe("Spec 0097: kaynak taramaları", () => {
     expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/const anahtar = `\$\{k\}\|\$\{gun\}`;/);
   });
   it("AC-34: yeni izin, veri bölümü, sunucu kuralı ve kilit alanı yok (spec 0093'ün tarama fikstürü aynı)", () => {
-    const simdi = JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI }));
+    const simdi = bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
     expect(simdi).toEqual(JSON.parse(readFileSync("tests/fixtures/0093-tarama-once.json", "utf8")));
     expect(Object.keys(KILIT_ALANLARI).join()).not.toMatch(/gecmis/i);
     expect(kod("electron/serverAuth.cjs")).not.toMatch(/maliyetGecmisi/);

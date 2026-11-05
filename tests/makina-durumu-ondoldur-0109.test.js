@@ -8,6 +8,8 @@ import { URETIM_DURUMU } from "../src/lib/stokDurumu.js";
 import { MAKINA_DURUMU } from "../src/lib/musteriDurumu.js";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge.js";
+// Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
+import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
 
 const kok = path.join(__dirname, "..");
 const oku = (f) => readFileSync(path.join(kok, f), "utf-8");
@@ -59,7 +61,7 @@ describe("Spec 0109: kaynak taramaları", () => {
     expect(form).toMatch(/\.\.\.\(p\.model !== m\.model \? makinaDurumuTemizle\(p\) : p\)/);
   });
   it("AC-24: yeni bölüm, birleştirme anahtarı, izin ya da ayar alanı yok (anlamsal tarama, YAZ_0109=1 yeniden yazar)", () => {
-    const simdi = () => JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI }));
+    const simdi = () => bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
     if (process.env.YAZ_0109 === "1") writeFileSync(path.join(kok, "tests/fixtures/0109-tarama-once.json"), JSON.stringify(simdi(), null, 2) + "\n");
     expect(simdi()).toEqual(JSON.parse(oku("tests/fixtures/0109-tarama-once.json")));
     for (const f of ["electron/db.cjs", "electron/serverAuth.cjs", "electron/server.cjs", "src/lib/merge.js"]) {

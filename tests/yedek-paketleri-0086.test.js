@@ -46,7 +46,8 @@ describe("Spec 0086 R1, R2: paket listesi ve cümle", () => {
       stok: "makina stoğu, parça stoğu, stok hareketleri, üretim formları, yedek parça satışları",
       bayi: "bayiler",
       dosyalar: "dosyalar",
-      tanim: "özel modeller, standart modeller, kalıp tanımları, parça tipleri, yedek parça tanımları, firma çalışanları",
+      // Spec 0132 ile (R22, C5/3): Tanımlar paketi malzeme listesini de sayar.
+      tanim: "özel modeller, standart modeller, kalıp tanımları, parça tipleri, yedek parça tanımları, malzemeler, firma çalışanları",
       not: "notlar",
       gider: "giderler, tekrarlayan giderler, gider türleri, tedarikçiler, üretim partileri, kasa ve banka hesapları, hesap hareketleri, bağsız ve verilen çekler, kasa iş listesi (kapsam dışı)",
       ayar: "firma bilgileri, uygulama ayarları, e-posta yapılandırması, e-posta geçmişi",
@@ -151,8 +152,9 @@ describe("Spec 0086 R3, R10, R9: taramalar", () => {
       .map(({ p, b }) => `${p}:${b}`);
     expect(eksik).toEqual([]);
   });
-  it("AC-15 (R10): paketlerin bolumler birleşimi bütün veri bölümlerine (sunucu BOLUM_ADLARI = BLOB_SECTIONS, 32) eşit", () => {
-    expect(BLOB).toHaveLength(32);
+  it("AC-15 (R10): paketlerin bolumler birleşimi bütün veri bölümlerine (sunucu BOLUM_ADLARI = BLOB_SECTIONS, 33) eşit", () => {
+    // Spec 0132 ile (C5/3): malzemeler otuz üçüncü bölüm; iddia (birleşim = bütün bölümler) aynı.
+    expect(BLOB).toHaveLength(33);
     expect([...BIRLESIM].sort()).toEqual([...BLOB].sort());
   });
   it("AC-16 (R9): renderer ve sunucu sözlüğü 32 blob bölümünde aynı anahtar ve adlar; iki e-posta alanı eşitliğin dışında", () => {
@@ -164,7 +166,7 @@ describe("Spec 0086 R3, R10, R9: taramalar", () => {
     const liste = JSON.parse(kaynak.slice(kaynak.indexOf("[", i), kaynak.indexOf("]", i) + 1));
     // factory/appSettings tekil nesne, standardModels model listesi: kimliksiz. partTypeDefs: X7, açık bulgu (specs/README.md).
     const KIMLIKSIZ = ["factory", "appSettings", "standardModels"], BILINEN_EKSIK = ["partTypeDefs"];
-    expect(liste).toHaveLength(28);
+    expect(liste).toHaveLength(29); // spec 0132 ile (C5/3): malzemeler kimlikli bölüm
     expect([...liste].sort()).toEqual(BIRLESIM.filter(b => !KIMLIKSIZ.includes(b) && !BILINEN_EKSIK.includes(b)).sort());
     const claude = oku("CLAUDE.md");
     expect(claude).toContain("üç senkron noktası");

@@ -917,6 +917,46 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   }
 }
 
+// ── Spec 0132 AC-61, AC-87 (C5): malzeme kataloğu ve parçanın malzeme satırı. Malzeme satırı olmayan parçaların okunan gövdesi spec
+// öncesi fikstürle birebir aynı (anahtar yok); malzeme kaydının bütün alanları (bantlar ve fiyat geçmişi JSON) gidiş dönüşte
+// korunur; boş alan gövdeye yazılmaz (null olarak da değil); çöp damgası korunur.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b = dbmod.readBlobFromDb();
+  check("spec 0132 AC-61: malzeme satırı olmayan parçaların gövdesi spec öncesiyle birebir, malzemeSatiri anahtarı yok", esit(b.parts, once.parts) && b.parts.every(p => !("malzemeSatiri" in p)));
+  const tam = { id: 501, ad: "304 Paslanmaz", alasim: "AISI 304", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50,
+    bantlar: [{ alt: 0, fiyat: 2.95 }, { alt: 151, fiyat: 3.2 }], boyFiyati: 900, geldigiBoy: 6, tedarikciId: 31, asgariSiparis: 250, fire: 8,
+    fiyatGecmisi: [{ gecerli: "", kiloFiyati: 2.85, paraBirimi: "USD", kur: 48 }, { gecerli: "2026-06-01", kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, bantlar: [{ alt: 0, fiyat: 2.95 }] }] };
+  const sade = { id: 502, ad: "Sade" };
+  const cop = { id: 503, ad: "Çöpteki", ozgulAgirlik: 7.85, deletedAt: "2026-10-01T09:00:00.000Z" };
+  const satir = { malzemeId: 501, bicim: "mil", yontem: "boy", cap: 140, boy: 78, payCap: 4, payBoy: 5, fire: 8 };
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.malzemeler = [tam, sade, cop];
+  girdi.parts[0].malzemeSatiri = satir;
+  girdi.parts[1].malzemeSatiri = {};
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ps = ham.prepare(`SELECT id, malzemeSatiri FROM parts`).all();
+  const ms = ham.prepare(`SELECT * FROM malzemeler WHERE id = 502`).get();
+  ham.close();
+  check("spec 0132 AC-61: boş malzeme satırı NULL, dolu satır JSON nesne", ps.find(r => r.id === 8)?.malzemeSatiri === null && JSON.parse(ps.find(r => r.id === 7)?.malzemeSatiri || "{}").malzemeId === 501);
+  check("spec 0132 AC-61: sade malzemenin boş alanları NULL yazıldı", ms && ms.ozgulAgirlik === null && ms.bantlar === null && ms.fiyatGecmisi === null && ms.deletedAt === null);
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  // Anahtar sırası JSON sütunlarında farklıdır (sunucunun karşılaştırması sıradan bağımsız, stableStringify); içerik birebir.
+  const sirali = (o) => Object.fromEntries(Object.keys(o).sort().map(k => [k, o[k]]));
+  check("spec 0132 AC-87: malzeme kaydının bütün alanları birebir geri gelir", esit(sirali(c.malzemeler.find(m => m.id === 501)), sirali(tam)));
+  check("spec 0132 AC-61: sade malzemenin gövdesi yalnız id ve ad (boş alan anahtarı yok)", esit(c.malzemeler.find(m => m.id === 502), sade));
+  check("spec 0132 C7: çöpteki malzemenin damgası korunur", c.malzemeler.find(m => m.id === 503)?.deletedAt === cop.deletedAt);
+  check("spec 0132 C5: parçanın malzeme satırı birebir geri gelir", esit(c.parts.find(p => p.id === 7)?.malzemeSatiri, satir));
+  check("spec 0132 AC-61: boş nesne olarak yazılan malzeme satırı gövdede yok", !("malzemeSatiri" in c.parts.find(p => p.id === 8)));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

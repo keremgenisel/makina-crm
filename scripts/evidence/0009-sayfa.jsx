@@ -206,6 +206,20 @@ const PARCA_0087 = [
   { id: 9, ad: "Perçin", kod: "P-4", tip: "Standart", models: [], maliyet: 0 },
   { id: 10, ad: "Pleksi kapak", kod: "PK-2", tip: "Standart", fiyatTRY: 300, models: [] },
 ];
+// Spec 0132: malzeme kataloğu (döviz fiyatlı, bantlı, eksik bilgili) ve malzeme satırlı parçalar.
+const MALZEME_0132 = [
+  { id: 501, ad: "304 Paslanmaz", alasim: "AISI 304", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, fire: 8, geldigiBoy: 6, tedarikciId: 11,
+    bantlar: [{ alt: 0, fiyat: 2.95 }, { alt: 151, fiyat: 3.2 }],
+    fiyatGecmisi: [{ gecerli: "", kiloFiyati: 2.85, paraBirimi: "USD", kur: 48, bantlar: [{ alt: 0, fiyat: 2.85 }, { alt: 151, fiyat: 3.1 }] }, { gecerli: "2026-06-01", kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, bantlar: [{ alt: 0, fiyat: 2.95 }, { alt: 151, fiyat: 3.2 }] }] },
+  { id: 502, ad: "8620", alasim: "Semente çelik", ozgulAgirlik: 7.85, kiloFiyati: 95 },
+  { id: 503, ad: "Alüminyum", kiloFiyati: 4.1, paraBirimi: "EUR" },
+];
+const PARCA_0132 = [
+  { id: 41, ad: "Kesme mili", kod: "KM-140", tip: "Standart", fiyatTRY: 4500, models: ["AK100"], malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5 } },
+  { id: 42, ad: "Kazan iç çubuğu", kod: "KI-1", tip: "Standart", models: [], malzemeSatiri: { malzemeId: 502, bicim: "lama", kalinlik: 10, genislik: 20, boy: 125 } },
+  { id: 43, ad: "Konveyör borusu", kod: "KB-19", tip: "Standart", models: [], malzemeSatiri: { malzemeId: 503, bicim: "boru", cap: 19, et: 1.5, boy: 173 } },
+  ...PARCA_0087,
+];
 // Spec 0121 R34: içeriği olan (set) fikstür parçası; yoksa rozet ve "Set Hazırla" hiç çizilmez.
 const SET_0121 = { id: 20, ad: "100_AYNA MAHRUTİ DİŞLİSİ TAKIM", kod: "AY-T", tip: "Standart", fiyatTRY: 3000, models: [],
   setIcerigi: [{ partId: 21, miktar: 2 }, { partId: 22, miktar: 1 }, { partId: 23, miktar: 4 }] };
@@ -969,6 +983,18 @@ const EKRANLAR = {
   "ayarlar-trash-0123": [ayarlar("trash", { rawParts: [{ ...BILESEN_0121[0], deletedAt: "2026-10-20T09:00:00.000Z" }, { id: 24, ad: "Eski kapak", deletedAt: "2026-10-21T09:00:00.000Z" }, SET_0121] }), []],
   // Spec 0122 R15(c), Karar 31: açık bileşen paneli (yazılmış metinle süzülmüş).
   "katalog-parca-0122-panel": [ayarlar("yedekparca", { parts: PARCA_0121_BOS, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Setin içeriği", "odak:Bileşen ara...=r"]],
+  // Spec 0132: malzeme paneli (boş, liste, kart, hata, düzenleme ve geçmiş, fiyat penceresi ve etki, çevrimdışı kur), parça kartının
+  // malzeme satırı, parça listesinin kaynak satırı ve Çöp Kutusu'nda korunan malzeme.
+  "katalog-malzeme-bos": [ayarlar("malzemeler"), []],
+  "katalog-malzeme": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, rawParts: PARCA_0132 }), []],
+  "katalog-malzeme-yeni": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, rawParts: PARCA_0132, rates: { usd: 42.15, eur: 48.9 } }), ["~Yeni Malzeme"]],
+  "katalog-malzeme-hata": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, rawParts: PARCA_0132 }), ["~Yeni Malzeme", "doldur:Malzeme adı=304 paslanmaz", "doldur:Özgül ağırlık=0", "doldur:Varsayılan fire=120", "Kaydet"]],
+  "katalog-malzeme-duzenle": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, rawParts: PARCA_0132 }), ["baslik:Düzenle"]],
+  "katalog-malzeme-fiyat": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, rawParts: PARCA_0132, rates: { usd: 42.15, eur: 48.9 } }), ["baslik:Fiyatı Güncelle", "doldur:Kilo fiyatı=3,40", "kaydir:Etkisi"]],
+  "katalog-malzeme-fiyat-cevrimdisi": [ayarlar("malzemeler", { malzemeler: MALZEME_0132.slice(0, 1), rawParts: PARCA_0132, rates: null, ratesErr: true }), ["baslik:Fiyatı Güncelle"]],
+  "katalog-parca-0132-malzeme": [ayarlar("yedekparca", { parts: PARCA_0132, malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Malzemeden maliyet"]],
+  "katalog-parca-0132-liste": [ayarlar("yedekparca", { parts: PARCA_0132, malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), []],
+  "ayarlar-trash-0132": [ayarlar("trash", { rawMalzemeler: [{ ...MALZEME_0132[1], deletedAt: "2026-10-20T09:00:00.000Z" }, { id: 509, ad: "Teflon", deletedAt: "2026-10-21T09:00:00.000Z" }], rawParts: PARCA_0132 }), []],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],
   // Spec 0099: kırılım toplamının yeri. Yetkisiz kullanıcının penceresi (C3, değişmez), iki tedarikçili ekleme penceresi (AC-19)
   // ve kırılımsız elle maliyetli parçanın penceresi (R10, değişmez).

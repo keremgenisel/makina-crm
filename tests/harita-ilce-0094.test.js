@@ -5,6 +5,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge";
+// Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
+import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
 
 const kod = (f) => readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map(l => l.replace(/(^|[^:"'`])\/\/.*$/, "$1")).join("\n");
 const tara = (d) => readdirSync(d).flatMap(e => { const p = `${d}/${e}`; return statSync(p).isDirectory() ? tara(p) : /\.(jsx?|cjs|mjs)$/.test(e) ? [p] : []; });
@@ -58,7 +60,7 @@ describe("Spec 0094: değişmeyenler (R7, R12)", () => {
     for (const f of tara("src")) expect(kod(f), f).not.toMatch(/\.map\(\s*\w+\s*=>\s*\(\{\s*\.\.\.\w+,\s*ilce\s*:/);
   });
   it("AC-23: yeni veri bölümü, birleştirme anahtarı, izin ve ayar alanı yok (0093'ün spec öncesi fikstürüyle aynı, plan P10)", () => {
-    const simdi = JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI }));
+    const simdi = bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
     expect(simdi).toEqual(JSON.parse(readFileSync("tests/fixtures/0093-tarama-once.json", "utf8")));
   });
 });

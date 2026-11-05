@@ -13,6 +13,7 @@ import { partiAylari, canliPartiler } from "./uretimPartisi";
 import { makinaListesi, satisKurBilgisi, katDegeriDogrula, URETIM_KAYNAK } from "./makinaMaliyeti";
 import { gercekSatisBedeli, trLower } from "./utils";
 import { parcaMaliyetKurus, gecerliGunMu, setMi, setIcerigiOf } from "./urunAgaci";
+import { malzemeKatalogu } from "./malzeme";
 
 // ── Rol ──────────────────────────────────────────────────────────────────────
 export const MALIYET_ROLU = { URUN_AGACI: "urunAgaci", GENEL: "genel", YOK: "yok" };
@@ -201,14 +202,15 @@ const parcaHaritasi = (parts = []) => new Map((parts || []).filter(p => !p.delet
 const oneriKurus = (toplamK, katsayi) => (Number(katsayi) > 0 ? Math.round(toplamK * Number(katsayi)) : null);
 // Spec 0097 R2, R9: `tarih` verilirse kit satırlarının birim maliyeti o günde geçerli değerdir (tek okuma yolunun uzantısı); verilmezse
 // bugünkü (Model Maliyetleri, C4). Parça kaydının çöp durumu tarihlenmez (C7): çöpteki parça haritada yok, tarihli okumada da eksik.
-export const modelMaliyeti = (model, partMap, payK = 0, tarih) => {
+// Spec 0132 R16/4, C1/2: `malzemeKat` (malzeme listesinin haritası) malzeme satırlı parçanın birim maliyetini çözer.
+export const modelMaliyeti = (model, partMap, payK = 0, tarih, malzemeKat) => {
   const kit = (model.defaultParcalar || []).map(r => {
     const p = partMap.get(String(r.partId));
     const adet = Number(r.miktar) || 0;
     if (!p) return { partId: r.partId, ad: r.ad || "", adet, birimK: null, satirK: 0, eksik: true, neden: "parcaYok" };
     // Spec 0096 C1 (AC-19): birim maliyet parçanın tek okuma yolundan (hammadde kırılımı varsa onun toplamı, kuruş).
     // Spec 0121 R9/2: harita (canlı parçalar) aynı zamanda setin kataloğudur; setin birim maliyeti bileşenlerinden.
-    const birimK = parcaMaliyetKurus(p, tarih, partMap);
+    const birimK = parcaMaliyetKurus(p, tarih, partMap, malzemeKat);
     if (birimK == null) return { partId: r.partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
     return { partId: r.partId, ad: p.ad, adet, birimK, satirK: birimK * adet, eksik: false, neden: null };
   });
@@ -236,9 +238,11 @@ export const modelMaliyeti = (model, partMap, payK = 0, tarih) => {
 // (`adetNeden`: null | "ayarsiz") ve işaret durumunu (`isaret`: null | "eskimis" | "yanlis") taşır; hesap bütün canlı
 // modeller içindir, hangi satırın çizileceğine ekran karar verir. Seçeneksiz çıktı birebir eskisidir (AC-41).
 export const MODEL_ISARET = { ESKIMIS: "eskimis", YANLIS: "yanlis" };
-export const modelMaliyetleri = ({ standardModels = [], customModels = [], parts = [] } = {}, payK = 0, secenek = null) => {
+// Spec 0132 R16/4 (Ölçüm J): veri nesnesi `malzemeler`i de taşır; harita bir kez kurulur.
+export const modelMaliyetleri = ({ standardModels = [], customModels = [], parts = [], malzemeler = [] } = {}, payK = 0, secenek = null) => {
   const partMap = parcaHaritasi(parts);
-  const satirlar = [...standardModels, ...customModels].filter(m => m && !m.deletedAt).map(m => modelMaliyeti(m, partMap, payK));
+  const malzemeKat = malzemeKatalogu(malzemeler);
+  const satirlar = [...standardModels, ...customModels].filter(m => m && !m.deletedAt).map(m => modelMaliyeti(m, partMap, payK, undefined, malzemeKat));
   if (!secenek) return satirlar;
   const disi = new Set(secenek.uretimdeDisi || []);
   const adetler = secenek.uretim?.modelAdetleri || null;
@@ -296,12 +300,13 @@ export const partiHesabi = (parti, veri, { payK = 0, modeller = [], rates = null
   // C12: tarihli direkt maliyet belirgin (model, gün) başına bir kez hesaplanır (makina başına değil).
   const hamModeller = katalog ? new Map([...(katalog.standardModels || []), ...(katalog.customModels || [])].filter(m => m && !m.deletedAt).map(m => [trLower(m.model), m])) : null;
   const partMap = katalog ? parcaHaritasi(katalog.parts) : null;
+  const malzemeKat = katalog ? malzemeKatalogu(katalog.malzemeler) : null; // 0132 R16/4
   const onbellek = new Map();
   const direktOf = (k, gun) => {
     const bugunku = modelMap.get(k);
     if (!hamModeller || gun == null || !hamModeller.has(k)) return { direktK: bugunku.direktK, eksikSayisi: bugunku.eksikSayisi };
     const anahtar = `${k}|${gun}`;
-    if (!onbellek.has(anahtar)) { const r = modelMaliyeti(hamModeller.get(k), partMap, 0, gun); onbellek.set(anahtar, { direktK: r.direktK, eksikSayisi: r.eksikSayisi }); }
+    if (!onbellek.has(anahtar)) { const r = modelMaliyeti(hamModeller.get(k), partMap, 0, gun, malzemeKat); onbellek.set(anahtar, { direktK: r.direktK, eksikSayisi: r.eksikSayisi }); }
     return onbellek.get(anahtar);
   };
   // R16, R16/2, R18 (P8): türetilen satırın payı partinin kendi aylarından, makina başına toplanır; durum "tamam" değilse yazılmaz.

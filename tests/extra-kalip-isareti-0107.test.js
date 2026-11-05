@@ -10,6 +10,8 @@ import { enEskiBekleyenKalipTarihi } from "../src/components/stock/UretimFormu.j
 import { kalipSatisiEkle } from "../src/lib/kalipSatisi.js";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge.js";
+// Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
+import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
 
 const kok = path.join(__dirname, "..");
 const oku = (f) => readFileSync(path.join(kok, f), "utf-8");
@@ -97,8 +99,8 @@ describe("Spec 0107: kaynak taramaları", () => {
   // Fikstür `YAZ_0107=1` ile yeniden yazılır.
   it("AC-25 / AC-35: yeni bölüm, birleştirme anahtarı, izin ya da ayar alanı yok; ekleme kolunun işaret satırları aynı", () => {
     const isaretSatirlari = (f) => oku(f).split("\n").filter(l => l.includes("uretimFormGonder")).map(l => l.trim());
-    const simdi = () => JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI,
-      kalipSatisiIsaret: isaretSatirlari("src/lib/kalipSatisi.js"), partSaleFormIsaret: isaretSatirlari("src/components/PartSaleForm.jsx") }));
+    const simdi = () => bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI,
+      kalipSatisiIsaret: isaretSatirlari("src/lib/kalipSatisi.js"), partSaleFormIsaret: isaretSatirlari("src/components/PartSaleForm.jsx") })));
     if (process.env.YAZ_0107 === "1") writeFileSync(path.join(kok, "tests/fixtures/0107-tarama-once.json"), JSON.stringify(simdi(), null, 2) + "\n");
     expect(simdi()).toEqual(JSON.parse(oku("tests/fixtures/0107-tarama-once.json")));
     // Bu işin adları sunucu, veritabanı, birleştirme ve izin dosyalarına girmez.

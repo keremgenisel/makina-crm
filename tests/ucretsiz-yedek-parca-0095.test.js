@@ -16,6 +16,8 @@ import { yedekParcaExportRow, YEDEK_PARCA_EXPORT_HEAD } from "../src/components/
 import { ucretsizUygula, yedekParcaRec, yedekParcaGuncelle, yeniYedekParcaSatisCoklu, garantiDurumu } from "../src/lib/yedekParcaSatis";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge";
+// Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
+import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
 
 const KDV = [{ from: "2000-01-01", rate: 20 }];
 const FAB = { name: "Altuntaş Makina" };
@@ -325,7 +327,7 @@ describe("Spec 0095: kaynak taramaları", () => {
     for (const f of ["src/lib/yedekParcaSatis.js", "src/components/YedekParcaSatisForm.jsx"]) expect(kod(f), f).not.toMatch(/parcaGarantiDisi|parcaUcretsizMi/);
   });
   it("AC-31: yeni eylem izni, veri bölümü, birleştirme anahtarı ve ayar alanı yok (0093'ün spec öncesi fikstürüyle aynı)", () => {
-    const simdi = JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI }));
+    const simdi = bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
     expect(simdi).toEqual(JSON.parse(readFileSync("tests/fixtures/0093-tarama-once.json", "utf8")));
     expect(kod("electron/serverAuth.cjs")).not.toMatch(/ucretsiz/i);
   });

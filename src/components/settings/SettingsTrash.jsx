@@ -16,6 +16,7 @@ import { makeCanDo } from "../../lib/permissions";
 import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
 import { uretimFormDonemMetni } from "../stock/uretimFormPrint";
 import { setteGecenParcalar, setteGecenParcaMi, setteBirakilanEki, SETTE_PARCA_NEDENI, SETTE_PARCA_RED_METNI } from "../../lib/urunAgaci";
+import { kullanilanMalzemeler, malzemeCopEtiketi, KULLANIMDA_MALZEME_NEDENI, KULLANIMDA_MALZEME_RED } from "../../lib/malzeme";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -33,6 +34,8 @@ export const SettingsTrash = ({
   // Spec 0068 R8, R9, R11, R21: tedarikçi ve üretim partisi de çöp kutusuna gider. Satırlar gider satırlarıyla aynı kapıda
   // (gider yetkisi); geri alma ve kalıcı silme silme izniyle (tedarikçide tedarikci_delete, partide gider_tanim).
   rawTedarikciler = [], setTedarikciler = null, rawUretimPartileri = [], setUretimPartileri = null, serverPermissions = null,
+  // Spec 0132 C7: malzeme kartı (katalog yetkisiyle; gider yetkisi istemez).
+  rawMalzemeler = [], setMalzemeler = null,
   // Spec 0078 R1, R23 (0082 R8 ile beş): kasa/gider bölümleri. Hareket, tanım ve tür gider yetkisiyle; kasa hesabı ve çek kasa
   // yetkisiyle görünür ve boşaltılır. rawHesapHareketleri null ise (bölümü göndermeyen sunucu) hareket satırı yoktur.
   rawHesapHareketleri = null, setHesapHareketleri = null, rawGiderTanimlari = [], setGiderTanimlari = null, setGiderTurleri = null,
@@ -221,6 +224,20 @@ export const SettingsTrash = ({
   // Spec 0123 R1/2, R3/6, C2 (Karar 5, 27): iki harita, çizim başına. Kalıcı Sil bütün parçalardan, "çöpü boşalt" kalacaklardan.
   const setteKorunanParcalar = setteGecenParcalar(rawParts || []);
   const bosaltmadaSetteKorunanParcalar = setteGecenParcalar((rawParts || []).filter(x => !x.deletedAt));
+  // Spec 0132 C7, AC-18–AC-20, AC-93: malzeme. Geri almada ad çakışması trLower ile (tek yardımcı); bir parçanın (çöpteki dahil)
+  // malzeme satırında geçen malzeme kalıcı silinmez, düğme kalır ve nedeni satırda (0123 emsali). "Çöpü boşalt" kalacak parçalardan.
+  const korunanMalzemeler = kullanilanMalzemeler(rawParts || []);
+  const bosaltmadaKorunanMalzemeler = kullanilanMalzemeler((rawParts || []).filter(x => !x.deletedAt));
+  const restoreMalzeme = (m) => {
+    const h = geriAlmaAdCakismasi(m, rawMalzemeler, "malzeme");
+    if (h) { showToast(h, "err"); return; }
+    setMalzemeler?.(p => p.map(x => (x.id === m.id ? { ...x, deletedAt: undefined } : x)));
+    showToast("Malzeme geri alındı; bağlı parçaların maliyeti yeniden hesaplanır.");
+  };
+  const purgeMalzeme = (m) => {
+    if (korunanMalzemeler.has(String(m.id))) { showToast(KULLANIMDA_MALZEME_RED, "err"); return; }
+    setMalzemeler?.(p => p.filter(x => x.id !== m.id)); showToast("Malzeme kalıcı olarak silindi.");
+  };
   const purgeTedarikci = (t) => {
     if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${KIRILIMDA_TEDARIKCI_NEDENI}`, "err"); return; }
     setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi.");
@@ -295,6 +312,7 @@ export const SettingsTrash = ({
     setKalipDefs(p => p.filter(x => !x.deletedAt));
     setParts?.(p => p.filter(x => !x.deletedAt || setteGecenParcaMi(x.id, bosaltmadaSetteKorunanParcalar))); // spec 0123 R4, AC-7
     setCustomModels(p => p.filter(x => !x.deletedAt));
+    setMalzemeler?.(p => p.filter(x => !x.deletedAt || bosaltmadaKorunanMalzemeler.has(String(x.id)))); // spec 0132 AC-20
     setTeklifler?.(p => p.filter(x => !x.deletedAt));
     setFaturalar?.(p => p.filter(x => !x.deletedAt));
     setUretimFormlari?.(p => p.filter(x => !x.deletedAt));
@@ -338,6 +356,8 @@ export const SettingsTrash = ({
     rawKalipDefs.filter(k => k.deletedAt).forEach(k => items.push({ key: `kalip-${k.id}`, type: "Kalıp Tanımı", label: k.ad || "—", deletedAt: k.deletedAt, restore: () => restoreKalipDef(k), purge: () => purgeKalipDef(k) }));
     rawParts.filter(p => p.deletedAt).forEach(p => items.push({ key: `part-${p.id}`, type: "Yedek Parça Tanımı", label: p.ad || "—", deletedAt: p.deletedAt, restore: () => restorePart(p), purge: () => purgePart(p),
       neden: setteGecenParcaMi(p.id, setteKorunanParcalar) ? SETTE_PARCA_NEDENI : null })); // spec 0123 R4/3: düğme kalır, neden satırda
+    (rawMalzemeler || []).filter(m => m.deletedAt).forEach(m => items.push({ key: `malzeme-${m.id}`, type: "Malzeme", label: malzemeCopEtiketi(m) || "—", deletedAt: m.deletedAt,
+      restore: () => restoreMalzeme(m), purge: () => purgeMalzeme(m), neden: korunanMalzemeler.has(String(m.id)) ? KULLANIMDA_MALZEME_NEDENI : null })); // spec 0132 AC-19
     rawCustomModels.filter(m => m.deletedAt).forEach(m => items.push({ key: `model-${m.model}`, type: "Model", label: m.model || "—", deletedAt: m.deletedAt, restore: () => restoreCustomModel(m), purge: () => purgeCustomModel(m) }));
     rawTeklifler.filter(t => t.deletedAt).forEach(t => items.push({ key: `teklif-${t.id}`, type: t.type === "proforma" ? "Proforma" : "Teklif", label: `${t.no || "—"} · ${t.firma || "—"}`, deletedAt: t.deletedAt, restore: () => restoreTeklif(t), purge: () => purgeTeklif(t) }));
     rawFaturalar.filter(f => f.deletedAt).forEach(f => items.push({ key: `fatura-${f.id}`, type: "Fatura", label: `${f.no || "—"} · ${f.firma || "—"}`, deletedAt: f.deletedAt, restore: () => restoreFatura(f), purge: () => purgeFatura(f) }));
@@ -390,7 +410,7 @@ export const SettingsTrash = ({
         neden: korunanCekler.has(String(c.id)) ? BAGLI_HAREKETLI_CEK_NEDENI : null }));
     }
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawHesapHareketleri, rawGiderTanimlari, rawKasaHesaplari, cekler, kasaVeriYetki, setHesapHareketleri, setKasaHesaplari, setCekler, rawGiderler, giderTurleri, giderYetki, rawTedarikciler, rawUretimPartileri, tedarikciYetki, partiYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
+  }, [rawHesapHareketleri, rawGiderTanimlari, rawKasaHesaplari, cekler, kasaVeriYetki, setHesapHareketleri, setKasaHesaplari, setCekler, rawGiderler, giderTurleri, giderYetki, rawTedarikciler, rawUretimPartileri, rawMalzemeler, tedarikciYetki, partiYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

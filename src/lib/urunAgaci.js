@@ -8,6 +8,10 @@
 import { tutarCoz, kurus } from "./gider";
 import { tutarMetni } from "./tutarGirdisi";
 import { parseMoney, partFiyatForCurrency } from "./utils";
+import { gecerliGunMu, gunMetni, gecerlilikTarihiDogrula, tarihteGecerliIndeks } from "./gecerlilik";
+import { malzemeSatiriVar, malzemeParcaKurus } from "./malzeme";
+// Spec 0132 Karar 24: tarih kuralları ortak modüle taşındı; çağıranlar değişmesin diye aynı adla yeniden dışa verilir.
+export { gecerliGunMu, gunMetni, gecerlilikTarihiDogrula, TARIH_GECERSIZ_HATASI, TARIH_GELECEK_HATASI, tarihOnceHatasi, tarihSonraHatasi } from "./gecerlilik";
 
 // R1: maliyet TL'dir ve KDV hariçtir (matrah, 0076 R14). Alan KDV ayırmaz.
 export const MALIYET_ETIKETI = "Alış maliyeti (TL, KDV hariç)";
@@ -44,22 +48,24 @@ const bugunkuKurus = (p) => {
 // Spec 0121 R8, R9, R9/2, C2: üçüncü parametre `katalog` (`setKatalogu`'nun Map'i). İçeriği olan parçada (set) maliyet
 // bileşenlerin toplamıdır ve elle girilen maliyet ile hammadde kırılımı okunmaz; katalog verilmezse set `null` döner (asla sıfır
 // ya da eski elle değer değil). İçeriği olmayan parçada katalog okunmaz, çıktı spec öncesiyle birebir aynıdır (AC-14).
-export const parcaMaliyetKurus = (p, tarih, katalog) => {
+// Spec 0132 R9/2, R16/2, R16/3, C1/2: dördüncü parametre `malzemeKat` (`malzeme.malzemeKatalogu`'nun Map'i). Öncelik set içeriği,
+// malzeme satırı, hammadde kırılımı, elle girilen tutar. Malzeme satırı olan parçada maliyet malzemenin (tarihli) fiyatından
+// türer; parçanın kendi maliyet geçmişi, kırılımı ve elle değeri okunmaz (Karar 33). Liste verilmezse `null` (asla sıfır).
+// Malzeme satırı olmayan parçada liste okunmaz, çıktı spec öncesiyle birebir aynıdır (C8, AC-56).
+export const parcaMaliyetKurus = (p, tarih, katalog, malzemeKat) => {
   if (!p) return null;
-  if (setMi(p)) return setOzeti(p.setIcerigi, katalog, tarih).maliyetK;
-  return tekilMaliyetKurus(p, tarih);
+  if (setMi(p)) return setOzeti(p.setIcerigi, katalog, tarih, malzemeKat).maliyetK;
+  return tekilMaliyetKurus(p, tarih, malzemeKat);
 };
-const tekilMaliyetKurus = (p, tarih) => {
+const tekilMaliyetKurus = (p, tarih, malzemeKat) => {
+  if (malzemeSatiriVar(p)) return malzemeParcaKurus(p.malzemeSatiri, malzemeKat, tarih);
   const bugunku = bugunkuKurus(p);
   if (tarih === undefined) return bugunku;
   const g = maliyetGecmisiOf(p);
-  if (!g.length || !gecerliGunMu(tarih)) return bugunku;
-  let i = -1;
-  for (let j = 0; j < g.length; j++) if (g[j].gecerli <= tarih) i = j;
-  if (i < 0 || i === g.length - 1) return bugunku;
-  return g[i].kurus;
+  const i = tarihteGecerliIndeks(g, tarih); // 0132 Karar 24: kural ortak modülde
+  return i < 0 ? bugunku : g[i].kurus;
 };
-export const parcaMaliyetiVar = (p, tarih, katalog) => parcaMaliyetKurus(p, tarih, katalog) != null;
+export const parcaMaliyetiVar = (p, tarih, katalog, malzemeKat) => parcaMaliyetKurus(p, tarih, katalog, malzemeKat) != null;
 
 // ── Spec 0121: setin içeriği (`parts[].setIcerigi = [{ partId, miktar }]`) ──────────────────────────────────────────────────
 // R1, R1/2, R1/3: içeriği olan parça settir; ayrı kayıt türü değildir. Adı kopyalanmaz (R6), okuma anında katalogdan çözülür.
@@ -71,13 +77,13 @@ export const setKatalogu = (parts = []) => new Map((parts || []).filter(p => p &
 // R2/3, R8, R8/2, R10, R5/2, R11/2, R12, Karar 46: setin özeti, TEK hesap. Bileşenin maliyeti kendi (elle ya da kırılım,
 // tarihli) değeridir; içeriği olan bileşene hiç bakılmaz, eksik sayılır (özyineleme yok, AC-42). Bir bileşen eksikse setin
 // maliyeti `null`. Fiyat toplamı TL fiyatının tek okuma yolundan, tam lira; fiyatı olmayan satır sayılmaz ve sayısı döner.
-export const setOzeti = (icerik, katalog, tarih) => {
+export const setOzeti = (icerik, katalog, tarih, malzemeKat) => {
   const satirlar = (Array.isArray(icerik) ? icerik : []).filter(r => r && r.partId != null && r.partId !== "");
   let toplamK = 0, eksik = 0, fiyatToplam = 0, fiyatsiz = 0;
   for (const r of satirlar) {
     const adet = Number(r.miktar) || 0;
     const b = katalog instanceof Map ? katalog.get(String(r.partId)) : null;
-    const birimK = b && !setMi(b) ? tekilMaliyetKurus(b, tarih) : null;
+    const birimK = b && !setMi(b) ? tekilMaliyetKurus(b, tarih, malzemeKat) : null; // 0132 AC-64
     if (birimK == null) eksik++; else toplamK += birimK * adet;
     const f = b ? parseMoney(partFiyatForCurrency(b, "TRY")) : 0;
     if (f > 0) fiyatToplam += f * adet; else fiyatsiz++;
@@ -89,17 +95,9 @@ export const setOzeti = (icerik, katalog, tarih) => {
 // R1/3: `parts[].maliyetGecmisi = [{ gecerli, kurus }]`, satır kimliği yok, eskiden yeniye sıralı; ilk kaydın `gecerli`'si
 // "" ("başlangıçtan beri"), diğerleri "YYYY-AA-GG"; `kurus` tamsayı ya da `null` ("girilmedi", R4/3). Birimi kuruştur, kardeş
 // `maliyet` alanı TL'dir; ikisi hiçbir yerde toplanmaz. C2: geçmişte saklanan kuruş 0096 C2'nin bilinçli istisnasıdır.
-const GUN_DESEN = /^\d{4}-\d{2}-\d{2}$/;
-export const gecerliGunMu = (t) => {
-  if (typeof t !== "string" || !GUN_DESEN.test(t)) return false;
-  const [y, a, g] = t.split("-").map(Number);
-  const d = new Date(Date.UTC(y, a - 1, g));
-  return d.getUTCFullYear() === y && d.getUTCMonth() === a - 1 && d.getUTCDate() === g;
-};
 export const maliyetGecmisiOf = (p) => (Array.isArray(p?.maliyetGecmisi) ? p.maliyetGecmisi : [])
   .map(x => ({ gecerli: x?.gecerli || "", kurus: x?.kurus == null ? null : x.kurus }))
   .sort((a, b) => (a.gecerli < b.gecerli ? -1 : a.gecerli > b.gecerli ? 1 : 0));
-export const gunMetni = (t) => (gecerliGunMu(t) ? t.split("-").reverse().join(".") : "");
 
 // R5, R5/3, R8, R8/3: metinler (testler buradan okur).
 export const BASLANGICTAN_BERI = "başlangıçtan beri";
@@ -107,22 +105,6 @@ export const GIRILMEDI_IBARESI = "girilmedi";
 export const GECERLILIK_ETIKETI = "Geçerlilik tarihi";
 export const GECERLILIK_IPUCU = "Bu düzenlemede maliyet değişirse bu tarihten geçerli olur; daha önce üretilen makinalar eski maliyetle hesaplanır.";
 export const GECMIS_BASLIGI = "Maliyet geçmişi";
-export const TARIH_GECERSIZ_HATASI = "Geçerlilik tarihi takvimde var olan bir gün olmalı.";
-export const TARIH_GELECEK_HATASI = "Geçerlilik tarihi bugünden sonra olamaz.";
-export const tarihOnceHatasi = (t) => `Geçerlilik tarihi ${gunMetni(t)} tarihli kayıttan önce olamaz.`;
-// Triyaj (bulgu 1): tarih düzeltmesinde sondan bir önceki kayıtla AYNI gün de reddedilir (aynı güne ikinci kayıt yazılmaz, R4/2).
-export const tarihSonraHatasi = (t) => `Geçerlilik tarihi ${gunMetni(t)} tarihli kayıttan sonra olmalı.`;
-
-// R6, R6/3 (plan P2), C5: biçim ve takvim, gelecek tarih yasak, alt sınırdan önceki tarih yasak (alt sınır "" ise yok).
-// `esitRed` (triyaj bulgu 1): alt sınırla aynı gün de reddedilir; tarih düzeltmesinde kullanılır.
-export const gecerlilikTarihiDogrula = (tarih, bugun, altSinir = "", { esitRed = false } = {}) => {
-  if (!gecerliGunMu(tarih)) return TARIH_GECERSIZ_HATASI;
-  if (tarih > bugun) return TARIH_GELECEK_HATASI;
-  if (altSinir && esitRed && tarih <= altSinir) return tarihSonraHatasi(altSinir);
-  if (altSinir && tarih < altSinir) return tarihOnceHatasi(altSinir);
-  return null;
-};
-
 // R4, R4/2, R4/3, R6/3, R7, R7/2, R21, R21/2, R3/2 (plan P1, P2, P3, P5): TEK karar motoru. İki çağıranı var: parça kartının kayıt
 // fonksiyonu ve içe aktarma (kaynak taraması sabitler). Saf: saati okumaz, `bugun` parametredir (R5/4). `eski` kayıttaki parça
 // (yeni parçada null: kayıt yazılmaz, R5/2), `cozulmusK` yeni kaydın tek okuma yolundan çözülmüş maliyeti, `tarih` girilen
@@ -130,12 +112,17 @@ export const gecerlilikTarihiDogrula = (tarih, bugun, altSinir = "", { esitRed =
 // geçmiş eski hâlidir ve kayıt yapılmamalıdır.
 // Spec 0121 R7/2, C11 (Karar 43): `set` yeni kaydın içeriği doluysa true; o zaman motor HİÇ çalışmaz, kayıtta duran geçmiş aynen
 // döner (silinmez). Kapı tek yerdedir; üç çağıran (kayıt fonksiyonu, kayıttan önceki tarih yoklaması, içe aktarma) geçirir.
-export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false, set = false } = {}) => {
+// Spec 0132 R16/2, R16/3 (AC-63): `malzeme` yeni kaydın malzeme satırı doluysa true; set kapısının ikizi, motor HİÇ çalışmaz.
+// Triyaj (bulgu 6, Karar 45): malzeme satırı kaldırılan parçada eski değer kayıttaki elle tutar DEĞİL, malzemeden çözülen bugünkü
+// maliyettir (`malzemeKat` ile); böylece geçişte geçmişe "o tarihe kadar malzeme maliyeti" satırı yazılır ve kapanmış partilerin
+// maliyeti değişmez. Liste verilmezse (ya da malzeme eksikse) eski değer bilinmez, kayıt yazılmaz (bilinen sınır).
+export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false, set = false, malzeme = false, malzemeKat = null } = {}) => {
   const g = maliyetGecmisiOf(eski);
   if (!eski) return { gecmis: [], hata: null };
-  if (set) return { gecmis: g, hata: null };
+  if (set || malzeme) return { gecmis: g, hata: null };
   if (!gecerliGunMu(bugun)) throw new Error("maliyetGecmisiYaz: bugun (YYYY-AA-GG) gerekli");
-  const eskiK = bugunkuKurus(eski); // P5: karar kayıtta saklı son kuruştan değil, eski kaydın çözülmüş değerinden
+  // P5: karar kayıtta saklı son kuruştan değil, eski kaydın çözülmüş değerinden
+  const eskiK = malzemeSatiriVar(eski) && !setMi(eski) ? malzemeParcaKurus(eski.malzemeSatiri, malzemeKat) : bugunkuKurus(eski);
   const yeniK = cozulmusK == null ? null : cozulmusK;
   // P5: son kayıt her yazımda bugünkü değere eşitlenir (karışık sürümde ayrışmış olabilir).
   const taban = g.length ? [...g.slice(0, -1), { gecerli: g[g.length - 1].gecerli, kurus: eskiK }] : [];
@@ -163,7 +150,7 @@ export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = f
 // değiştiren dar bir yarış) null döner ve çağıran kaydı HİÇ değiştirmez: yeni maliyet tarihsiz geçmişle yazılmasın.
 export const gecmisliKayit = (temel, eski = null, ek = null) => {
   if (!eski || !ek) { const g = eski?.maliyetGecmisi || []; return { ...temel, ...(g.length ? { maliyetGecmisi: g } : {}) }; }
-  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel) });
+  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel), malzeme: malzemeSatiriVar(temel) });
   if (r.hata) return null;
   return { ...temel, ...(r.gecmis.length ? { maliyetGecmisi: r.gecmis } : {}) };
 };
@@ -181,14 +168,16 @@ export const maliyetGecmisiSatirlari = (p) => {
 export const maliyetGirildiMi = parcaMaliyetiVar;
 // Plan P7: kuruştan biçimleyici (parça paneli makina maliyeti motorunu içe almaz). Girilmemiş "—", sıfır "0,00 ₺".
 export const maliyetMetniKurus = (k) => (k == null ? "—" : `${ikiHane.format(k / 100)} ₺`);
-export const parcaMaliyetMetni = (p, tarih, katalog) => maliyetMetniKurus(parcaMaliyetKurus(p, tarih, katalog));
+export const parcaMaliyetMetni = (p, tarih, katalog, malzemeKat) => maliyetMetniKurus(parcaMaliyetKurus(p, tarih, katalog, malzemeKat));
 // Elle girilmiş maliyetin form metni (düzenleme açılışı; kayıttaki elle alanın tek okuyucusu, AC-32).
 export const elleMaliyetMetni = (p) => tutarMetni(p?.maliyet);
 
 // R9, R9/2, R21: maliyetin kaynağı. Kartta iki ibare, listede yalnız kırılımdan gelende ikinci satır.
 // Spec 0121 R9/2: içeriği olan parçada üçüncü tür (maliyet eksik olsa da kaynak içeriktir).
-export const maliyetKaynagi = (p, tarih, katalog) => (setMi(p) ? { tur: "icerik", n: setIcerigiOf(p).length }
-  : kirilimTutarliMi(p) ? { tur: "kirilim", n: tutarliSatirlar(p).length } : parcaMaliyetiVar(p, tarih, katalog) ? { tur: "elle" } : null);
+// Spec 0132 R9/2, AC-65: malzeme satırı dördüncü tür; kaynak saklanmaz, türer (maliyet eksik olsa da kaynak malzemedir).
+export const maliyetKaynagi = (p, tarih, katalog, malzemeKat) => (setMi(p) ? { tur: "icerik", n: setIcerigiOf(p).length }
+  : malzemeSatiriVar(p) ? { tur: "malzeme" }
+  : kirilimTutarliMi(p) ? { tur: "kirilim", n: tutarliSatirlar(p).length } : parcaMaliyetiVar(p, tarih, katalog, malzemeKat) ? { tur: "elle" } : null);
 export const KAYNAK_ELLE = "Elle girildi";
 export const kaynakListeMetni = (n) => `${n} tedarikçiden`;
 // Spec 0099 C5/2, Karar 6: kartın kaynak ibaresi iki kullanıcı türü için tek, sayısız metindir; tedarikçi sayısı yetkili

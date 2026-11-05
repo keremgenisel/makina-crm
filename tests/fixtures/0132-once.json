@@ -1,0 +1,343 @@
+{
+ "maliyet": [
+  [
+   12050,
+   12050,
+   12050,
+   12050
+  ],
+  [
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   750,
+   500,
+   750,
+   750
+  ],
+  [
+   null,
+   null,
+   null,
+   null
+  ],
+  [
+   34525,
+   34525,
+   34525,
+   34525
+  ],
+  [
+   1200,
+   1200,
+   1200,
+   1200
+  ],
+  [
+   9900,
+   9900,
+   9900,
+   9900
+  ],
+  [
+   58625,
+   58625,
+   58625,
+   58625
+  ],
+  [
+   null,
+   null,
+   null,
+   null
+  ]
+ ],
+ "metin": [
+  "120,50 ₺",
+  "0,00 ₺",
+  "7,50 ₺",
+  "—",
+  "345,25 ₺",
+  "12,00 ₺",
+  "99,00 ₺",
+  "586,25 ₺",
+  "—"
+ ],
+ "kaynak": [
+  {
+   "tur": "elle"
+  },
+  {
+   "tur": "elle"
+  },
+  {
+   "tur": "elle"
+  },
+  null,
+  {
+   "tur": "kirilim",
+   "n": 2
+  },
+  {
+   "tur": "elle"
+  },
+  {
+   "tur": "elle"
+  },
+  {
+   "tur": "icerik",
+   "n": 2
+  },
+  {
+   "tur": "icerik",
+   "n": 1
+  }
+ ],
+ "girildi": [
+  true,
+  true,
+  true,
+  false,
+  true,
+  true,
+  true,
+  true,
+  false
+ ],
+ "disa": [
+  [
+   "Rulman",
+   "",
+   "R1",
+   "Standart",
+   "",
+   "",
+   "450",
+   "",
+   "",
+   120.5,
+   ""
+  ],
+  [
+   "Hediye vida",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   0,
+   ""
+  ],
+  [
+   "Pul",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   7.5,
+   ""
+  ],
+  [
+   "Maliyetsiz",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   ""
+  ],
+  [
+   "Kırılımlı mil",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   345.25,
+   ""
+  ],
+  [
+   "Kırılımı boş",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   12,
+   ""
+  ],
+  [
+   "Çöpte",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   99,
+   ""
+  ],
+  [
+   "Set",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "900",
+   "",
+   "",
+   586.25,
+   "Rulman x 2; Kırılımlı mil x 1"
+  ],
+  [
+   "Eksik set",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "Maliyetsiz x 1"
+  ]
+ ],
+ "modeller": [
+  {
+   "model": "AK100",
+   "kit": [
+    {
+     "partId": "1",
+     "ad": "Rulman",
+     "adet": 2,
+     "birimK": 12050,
+     "satirK": 24100,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "3",
+     "ad": "Pul",
+     "adet": 3,
+     "birimK": 750,
+     "satirK": 2250,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "5",
+     "ad": "Kırılımlı mil",
+     "adet": 1,
+     "birimK": 34525,
+     "satirK": 34525,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "8",
+     "ad": "Set",
+     "adet": 1,
+     "birimK": 58625,
+     "satirK": 58625,
+     "eksik": false,
+     "neden": null
+    }
+   ],
+   "ek": [
+    {
+     "ad": "Büküm",
+     "tutarK": 9000
+    }
+   ],
+   "setKesisimleri": [
+    {
+     "setAd": "Set",
+     "bilesenAd": "Rulman"
+    },
+    {
+     "setAd": "Set",
+     "bilesenAd": "Kırılımlı mil"
+    }
+   ],
+   "kitBos": false,
+   "eksikSayisi": 0,
+   "direktK": 128500,
+   "payK": 12345,
+   "toplamK": 140845,
+   "katsayi": 1.4,
+   "oneriK": 197183,
+   "kalipListeK": null
+  },
+  {
+   "model": "OZEL",
+   "kit": [
+    {
+     "partId": "4",
+     "ad": "Maliyetsiz",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "9",
+     "ad": "Eksik set",
+     "adet": 2,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "maliyetYok"
+    },
+    {
+     "partId": "99",
+     "ad": "",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    }
+   ],
+   "ek": [],
+   "setKesisimleri": [
+    {
+     "setAd": "Eksik set",
+     "bilesenAd": "Maliyetsiz"
+    }
+   ],
+   "kitBos": false,
+   "eksikSayisi": 3,
+   "direktK": 0,
+   "payK": 12345,
+   "toplamK": 12345,
+   "katsayi": null,
+   "oneriK": null,
+   "kalipListeK": null
+  }
+ ]
+}

@@ -34,7 +34,7 @@ export const YEDEK_PAKETLERI = [
   { id: "stok", ad: "Stok ve üretim", bolumler: ["stock", "partStock", "partStockLog", "uretimFormlari", "yedekParcaSatislar"] },
   { id: "bayi", ad: "Bayiler", bolumler: ["dealers"] },
   { id: "dosyalar", ad: "Dosyalar", bolumler: ["dosyalar"], notlar: [{ metin: DOSYA_NOTU }] },
-  { id: "tanim", ad: "Tanımlar", bolumler: ["customModels", "standardModels", "kalipDefs", "partTypeDefs", "parts", "calisanlar"] },
+  { id: "tanim", ad: "Tanımlar", bolumler: ["customModels", "standardModels", "kalipDefs", "partTypeDefs", "parts", "malzemeler", "calisanlar"] },
   { id: "not", ad: "Notlar", bolumler: ["notes"] },
   { id: "gider", ad: "Giderler",
     bolumler: ["giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri",

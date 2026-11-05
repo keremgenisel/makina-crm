@@ -22,7 +22,7 @@ export const BUGUNKU_AYAR_IBARESI = "Bugünkü tür rolü, varsayılan adet ve d
 
 export const MakinaMaliyeti = ({
   aktifKullanici = "", giderler = [], giderTurleri = [], setGiderTurleri, tedarikciler = [], stock = [], customers = [], partStockLog = [],
-  parts = [], standardModels = [], customModels = [], setStandardModels, setCustomModels, uretimPartileri = [], setUretimPartileri,
+  parts = [], malzemeler = [], standardModels = [], customModels = [], setStandardModels, setCustomModels, uretimPartileri = [], setUretimPartileri,
   appSettings = {}, setAppSettings, rates = null, tumMusteriler = null, serverPermissions = null, showToast = () => {}, baslangicGorunum = "modeller",
 }) => {
   const [gorunum, setGorunum] = useState(() => gecerliGorunum(baslangicGorunum));
@@ -37,15 +37,16 @@ export const MakinaMaliyeti = ({
   const katalog = useMemo(() => [...standardModels, ...customModels].filter(m => m && !m.deletedAt).map(m => m.model), [standardModels, customModels]);
   const gercek = useMemo(() => gercekUretim(veri, ayarlar, pay.havuzK, { modelKirilimi: true, katalog }), [veri, ayarlar, pay.havuzK, katalog]);
   const uretimdeDisi = appSettings?.uretimdeOlmayanModeller;
-  const modeller = useMemo(() => modelMaliyetleri({ standardModels, customModels, parts }, pay.payK, { uretimdeDisi, uretim: gercek }),
-    [standardModels, customModels, parts, pay.payK, uretimdeDisi, gercek]);
+  // Spec 0132 R16/4 (Ölçüm J, AC-89): malzeme listesi motorun veri nesnesinde ve bağımlılıkta; zam ekranda okunur.
+  const modeller = useMemo(() => modelMaliyetleri({ standardModels, customModels, parts, malzemeler }, pay.payK, { uretimdeDisi, uretim: gercek }),
+    [standardModels, customModels, parts, malzemeler, pay.payK, uretimdeDisi, gercek]);
   // Spec 0090 R12–R37, R37/3 (K8): parti payı burada kurulur (App'te ağır hesap yok). Üretim tarihi zinciri çöpteki müşteriyi de
   // okur (stoğa dönen makinanın özgün tarihi); bu yüzden müşteriler ham dizidir (bugünkü motorun girdisiyle aynı).
   const veriHam = useMemo(() => ({ ...veri, customers: tumMusteriler || customers }), [veri, tumMusteriler, customers]);
   const partiSonucu = useMemo(() => partiGenelPaylari(veriHam, bugun), [veriHam, bugun]);
   // Spec 0097 R9/2, R9/4, C11: Parti Hesabı tarihli maliyeti katalogdan kurar ve payla AYNI ham müşteri dizisini okur; dönem kilitli
   // pay burada zaten hesaplanıyor, görünüme geçirilir (yeni ağır hesap yok).
-  const parcaKatalogu = useMemo(() => ({ parts, standardModels, customModels }), [parts, standardModels, customModels]);
+  const parcaKatalogu = useMemo(() => ({ parts, malzemeler, standardModels, customModels }), [parts, malzemeler, standardModels, customModels]);
   // Triyaj (bulgu 2): kapanış haritası kaydedilen partinin aralığından (tek yol, C15).
   const kapanisHavuzu = (parti) => partiKapanisHavuzu(veri, parti, bugun);
   const ortak = { pay, gercek, modeller, canDo, baskasiKilitli, showToast };

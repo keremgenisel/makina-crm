@@ -8,7 +8,7 @@ import { PARCA_AKTARMA_BASLIKLARI, PARCA_SABLON_ORNEGI, parcaSatirlariniCoz, par
 import { SET_ICERIGI_BASLIGI, SET_ICERIGI_BICIMI, icerikYazilacakMetni, icerikYazildiMetni } from "../../lib/urunAgaci";
 
 
-export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts, partTypeDefs = [], setPartTypeDefs = null }) => {
+export const SettingsImport = ({ customers, setCustomers, setServices, flash, parts = [], setParts, partTypeDefs = [], setPartTypeDefs = null, malzemeler = [] }) => {
   // CSV ayrıştırıcı (tırnak içi ; ve satır sonu destekli, ayraç ; veya ,)
   const parseCSV = (text) => {
     text = text.replace(/^\uFEFF/, ""); // BOM temizliği
@@ -177,7 +177,7 @@ export const SettingsImport = ({ customers, setCustomers, setServices, flash, pa
   };
 
   // Yedek parça satırlarını kayıt dizisine çevirir (spec 0087: saf çekirdek lib/parcaAktarma.js'te)
-  const partsRowsToRecords = (rows) => parcaSatirlariniCoz(rows, parts, Date.now(), yerelBugun()); // spec 0097 R20/2: içe aktarma günü yerel gündür
+  const partsRowsToRecords = (rows) => parcaSatirlariniCoz(rows, parts, Date.now(), yerelBugun(), malzemeler); // spec 0132 R21 (AC-73) // spec 0097 R20/2: içe aktarma günü yerel gündür
 
   // xlsx (SheetJS) paketinde npm üzerinden düzeltilmemiş bilinen bir Prototip Kirlenmesi/ReDoS açığı var
   // (GHSA-4r6h-8v6p-xvw6, GHSA-5pgg-2g8v-p4x9). Kaynağı tamamen engelleyemediğimiz için saldırı yüzeyini
