@@ -3250,34 +3250,29 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-kaliplar-0125-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 C6 (Katalog menüsünde Malzemeler maddesi)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-model",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 C6 (Katalog menüsünde Malzemeler maddesi)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-model-ekmaliyet",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 C6 (Katalog menüsünde Malzemeler maddesi)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-model-uretimde",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 C6 (Katalog menüsünde Malzemeler maddesi)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "kilit-katalog-paneli",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 C6 (Katalog menüsünde Malzemeler maddesi)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -5616,28 +5611,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-backup-paketler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R22 (Tanımlar paketinin cümlesi malzemeleri sayar)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-backup-paketler-gidersiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R22 (Tanımlar paketinin cümlesi malzemeleri sayar)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-backup-paketler-kasasiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R22 (Tanımlar paketinin cümlesi malzemeleri sayar)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "kilit-geri-yukleme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R22 (Tanımlar paketinin cümlesi malzemeleri sayar)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsCompany.jsx": [
@@ -6069,10 +6060,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-trash-0132",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 C7 (yeni ekran)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -8058,136 +8048,114 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-0096-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-0096-yetkisiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-maliyetsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-kirilim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-tutarsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0097-gecmis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0097-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-ekle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-elle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-yetkisiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0115-ipucu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0121-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0121-set",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0122-panel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0123-sil",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0125-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0132-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9–R14 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0132-malzeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9–R14 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9 (Katalog menüsünde Malzemeler maddesi; parça kartında malzeme bölümü)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartTypeManager.jsx": [
@@ -11112,74 +11080,63 @@
     ],
     "src/components/MalzemeManager.jsx": [
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-duzenle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat-cevrimdisi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MalzemeFiyatPenceresi.jsx": [
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat-cevrimdisi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R1–R8, R17 (yeni ekran)"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MalzemeSatiriAlani.jsx": [
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0132-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9–R14 (yeni ekran)"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0132-piksel-raporu.json",
+        "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0132-malzeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-05 · spec 0132 R9–R14 (yeni ekran)"
+        "beklenen": "ayni"
       }
     ]
   }

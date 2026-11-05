@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Uygulandı, kapanış bekliyor (2026-11-05; plan turu Karar 24–34, uygulama Karar 35–40, triyaj Karar 41–46). Kökeni: Takım Yöneticisi'nin 33 sorusu, QA turu 23 bulgu |
+| **Durum** | Tamamlandı (2026-11-05, commit `75f8402d`; plan turu Karar 24–34, uygulama Karar 35–40, triyaj Karar 41–46). Kökeni: Takım Yöneticisi'nin 33 sorusu, QA turu 23 bulgu |
 | **Sahip** | Analist (yazım) · geliştirici (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog (yeni **Malzemeler** paneli), Ayarlar › Katalog › Parça/Yedek Parça, Ayarlar › Çöp Kutusu, Ayarlar › Yedekleme ve İçe Aktar, Makina Maliyeti › Model Maliyetleri, Excel parça şablonu (`src/lib/parcaAktarma.js`), saf motor `src/lib/urunAgaci.js` ve yeni saf malzeme motoru |
@@ -385,27 +385,27 @@ Takım Yöneticisi planın on bir önerisinin hepsini onayladı.
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap içeren iş React'sız **saf motorda** yazıldı ve kendi testi var; arayüz yalnız gösteriyor.
-- [ ] Aynı sayıyı üreten başka bir ekran/rapor varsa ikisi **aynı kaynağı** kullanıyor (maliyetin tek okuma yolu kaynak taramasıyla sabitlendi).
-- [ ] Yeni kalıcı alanlarda **dört nokta kuralı** uygulandı ve `db-roundtrip` ile `db-clean-install` testlerine eklendi.
-- [ ] Yeni veri bölümü için `BLOB_SECTIONS` + `SECTION_GROUP` + `BOLUM_SEKMELERI` + `MERGE_KEYS` + `App.mergeLocalIntoReloaded` satırı eklendi; değerleri C5/2'de yazılı.
-- [ ] Yedek paketinin `bolumler` listesi, geri yükleme dalı, kimlik sayacı listesi ve **iki** bölüm adı sözlüğü birlikte yazıldı; yedek kapsam ve sözlük eşitliği testleri yeşil (C5/3).
-- [ ] Maliyetin tek okuma yolunun dördüncü parametresi eklendi, listesiz çağrının "girilmedi" döndüğü ölçüldü ve geçmiş kapısı (malzeme kaynaklı parçada motor çalışmaz) sabitlendi (R16/2).
-- [ ] Excel içe ve dışa aktarmanın malzeme kaynaklı parçadaki davranışı ölçüldü; şablonun sütun sayısı değişmedi (R21).
-- [ ] Malzeme listesi model maliyeti motorunun veri nesnesine ve ekranların önbellek bağımlılıklarına yazıldı; zammın etkisi **ekranda** ölçüldü (R16/4).
-- [ ] Yeni eylem izni **eklenmedi** ve bu açıkça yazıldı; panel kimliği `AYAR_KILITLI`'ya, yeni dosyalar `KILIT_ALANLARI.ayar.pencereler`'e eklendi ve kilit kapsam taraması yeşil (C6/2).
-- [ ] Ana tedarikçi alanının gider yetkisi kapısı ölçüldü: yetkisiz kullanıcıda alan çizilmiyor ve saklı bağ kayıtta korunuyor (R20/2).
-- [ ] Çöp kutusu geri alma, kalıcı silme, çöpü boşaltma ve otuz günlük temizlik simetrisi korundu.
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; bu spec'te yazdırma çıktısı yok ve bu açıkça yazıldı.
-- [ ] Para gösteriliyor: TL, USD ve EUR kuralına uyuldu, tanınmayan para birimi tanımlı biçimde ele alındı.
-- [ ] Arayüz kriterlerinin **görsel kanıtı** eklendi, boş ve hata durumları dâhil.
-- [ ] Kıyas testi yeşil: malzeme satırı olmayan veride çıktı spec öncesiyle birebir aynı.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi (yeni kavram: malzeme kartı ve maliyetin dördüncü kaynağı).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap içeren iş React'sız **saf motorda** yazıldı ve kendi testi var; arayüz yalnız gösteriyor.
+- [x] Aynı sayıyı üreten başka bir ekran/rapor varsa ikisi **aynı kaynağı** kullanıyor (maliyetin tek okuma yolu kaynak taramasıyla sabitlendi).
+- [x] Yeni kalıcı alanlarda **dört nokta kuralı** uygulandı ve `db-roundtrip` ile `db-clean-install` testlerine eklendi.
+- [x] Yeni veri bölümü için `BLOB_SECTIONS` + `SECTION_GROUP` + `BOLUM_SEKMELERI` + `MERGE_KEYS` + `App.mergeLocalIntoReloaded` satırı eklendi; değerleri C5/2'de yazılı.
+- [x] Yedek paketinin `bolumler` listesi, geri yükleme dalı, kimlik sayacı listesi ve **iki** bölüm adı sözlüğü birlikte yazıldı; yedek kapsam ve sözlük eşitliği testleri yeşil (C5/3).
+- [x] Maliyetin tek okuma yolunun dördüncü parametresi eklendi, listesiz çağrının "girilmedi" döndüğü ölçüldü ve geçmiş kapısı (malzeme kaynaklı parçada motor çalışmaz) sabitlendi (R16/2).
+- [x] Excel içe ve dışa aktarmanın malzeme kaynaklı parçadaki davranışı ölçüldü; şablonun sütun sayısı değişmedi (R21).
+- [x] Malzeme listesi model maliyeti motorunun veri nesnesine ve ekranların önbellek bağımlılıklarına yazıldı; zammın etkisi **ekranda** ölçüldü (R16/4).
+- [x] Yeni eylem izni **eklenmedi** ve bu açıkça yazıldı; panel kimliği `AYAR_KILITLI`'ya, yeni dosyalar `KILIT_ALANLARI.ayar.pencereler`'e eklendi ve kilit kapsam taraması yeşil (C6/2).
+- [x] Ana tedarikçi alanının gider yetkisi kapısı ölçüldü: yetkisiz kullanıcıda alan çizilmiyor ve saklı bağ kayıtta korunuyor (R20/2).
+- [x] Çöp kutusu geri alma, kalıcı silme, çöpü boşaltma ve otuz günlük temizlik simetrisi korundu.
+- [x] Kullanıcıya görünen tüm metinler Türkçe; bu spec'te yazdırma çıktısı yok ve bu açıkça yazıldı.
+- [x] Para gösteriliyor: TL, USD ve EUR kuralına uyuldu, tanınmayan para birimi tanımlı biçimde ele alındı.
+- [x] Arayüz kriterlerinin **görsel kanıtı** eklendi, boş ve hata durumları dâhil.
+- [x] Kıyas testi yeşil: malzeme satırı olmayan veride çıktı spec öncesiyle birebir aynı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi (yeni kavram: malzeme kartı ve maliyetin dördüncü kaynağı).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -453,3 +453,23 @@ Takım Yöneticisi 2026-11-05'te 33 sorunun hepsini cevapladı. Aşağıdaki tab
 
 1. **Kur (10 ile 28).** Soru 10 "günün kuru varsayılan gelsin" diyordu, soru 28 "kur malzeme kartında elle sabitlensin ve kuru değiştirmek zam gibi muamele görsün". İkisi birden kabul edilince çeliştiler. Uzlaştırma: **saklanan değer sabitlenmiş kurdur** (28 kazanır, çünkü sebebi daha güçlü: her gün değişen fiyat listesiyle teklif vermek zorlaşır), **günün kuru yalnız güncelleme penceresinde öneri olarak gelir** (10 bu biçimde yaşar). Böylece kur değiştirmek bir zam kaydıdır ve tarihli geçmişe girer. Karar tek satırda geri çevrilebilir: öneri kaldırılırsa kur her zaman elle yazılır.
 2. **Adet (16 ile 17).** Soru 16 "parti başına girilsin, makina başı türetilsin", soru 17 "esas kaynak makina başı olsun, parti toplamı türetilsin" diyordu; ikisi ters yönde. Uzlaştırma önerisi **C** spec'ine aittir ve orada karara sunulacak: **saklanan doğruluk kaynağı makina başıdır** (17; uygulamanın kiti ve üretim partileri ekranı bu yöndedir), **parti başına giriş formun çevirme kolaylığı olur** (16; girilen parti adedi parti büyüklüğüne bölünür). Bunun ölçülmüş bir bedeli var ve C yazılırken karar gerekecek: kit adedi bugün tam sayı zorunlu (`urunAgaci.js:255`), oysa motor ondalığı okuyor (`makinaStandartMaliyet.js:207`); 70 makinaya 8 adet giren parça makina başına 0,114 adet düşüyor.
+
+---
+
+## SCORECARD
+
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Uygulama commit** | `75f8402d` | Dal `feat/0132-malzeme`, taban `cda169c9`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 5 | Onaydan sonra iki revizyon (R18 sayımı, QA'nın 23 bulgusu), plan turu (Karar 24–34), uygulama (Karar 35–40), triyaj (Karar 41–46) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: dokuz bulgu |
+| **Bulgu gerçek/gürültü oranı** | 9 / 0 | Dördü önemli (kur sessizce değişiyordu, noktalı üç ondalık bin kat büyüyordu, etki önizlemesi seti yanlış sayıyordu, bantlı malzemede gereksiz tek fiyat), dördü küçük, biri süreç |
+| **Regresyon sayısı** | 0 | Tam takım 478 dosya, 6652 test (Electron dahil); lint 0 hata |
+| **Kaçan hata** | 0 | |
+
+**Uygulamada bulunanlar:** önceki spec'lerin "yeni veri bölümü yok" bekçileri (0093–0109) tek ayıklama yardımcısıyla sürdürüldü (Karar 38); AC-38'in girdileri tam ve yuvarlanmış ağırlıkta tesadüfen aynı kuruşa düştüğü için AC-39 ayrı fiyatla ölçüldü (Karar 37); AC-89'un önbellek bozması varsayılan `[]` prop'larının her çizimde önbelleği zaten bozması yüzünden yakalanmıyordu, sabit referanslı test eklendi. Triyajda iki bozma (her bağlı parçayı değişmiş say; düzenleme kartı fiyatı formdan yazar) bütün testlerden geçiyordu; ikisine bekçi yazıldı ve mutasyonla ölçüldü.
+
+**Görsel kanıt:** değişen küme iki taban × iki sonra çekiminin çapraz karşılaştırmasıyla bulundu (açılır liste oku 96 piksel katlarında gidip geliyor): 39 ekran (78 görüntü, 20'si yeni). Triyajdan sonra 39 ekran son kodla yeniden çekildi, gerçek değişiklik yalnız dört fiyat penceresi görüntüsünde. Taban son kodla 78 görüntüde 0 fark; dokuz dosyadaki 43 `degisti` kaydı kapanışta `ayni` ve `0132-taban-piksel-raporu.json`'a çevrildi.
+
+**Bu spec'ten çıkarılan ders:** bir kriterin metnine harfiyen uyan kod, kuralın kendisini çiğneyebilir: AC-9 "kur alanına günün kuru gelir" diyordu, R5 ise "kuru değiştirmek zamdır". Testlerin önce alana eski değeri yazmak zorunda kalması bu çelişkinin işaretiydi; bir test kendi düzeneğinde kodun davranışını geri alıyorsa kriter yeniden okunmalı.
+

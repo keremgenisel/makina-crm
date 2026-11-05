@@ -1,6 +1,6 @@
 # 0132 uygulama planı: malzeme kataloğu ve malzemeden türeyen parça maliyeti
 
-Spec: `specs/0132-malzeme-katalogu-ve-parca-maliyeti.md` (QA turu karar 1–23, plan turu Karar 24–34). Dal `feat/0132-malzeme`,
+Spec: `specs/done/0132-malzeme-katalogu-ve-parca-maliyeti.md` (QA turu karar 1–23, plan turu Karar 24–34). Dal `feat/0132-malzeme`,
 taban `cda169c9`.
 
 ## 1. Dosyalar
