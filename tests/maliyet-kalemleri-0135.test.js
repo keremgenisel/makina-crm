@@ -334,8 +334,9 @@ describe("Spec 0135: kaynak taramaları", () => {
   });
   it("AC-81 / AC-106: kart ekranlarının kanıtı (iki kip, boş, dolu, hata) var; değişen kart kayıtları 'degisti' ve onaylı, yeni bileşenin kaydı var", () => {
     const { dosyalar } = JSON.parse(readFileSync("docs/evidence/kanit-eslemesi.json", "utf8"));
-    const R = "docs/evidence/0135-piksel-raporu.json";
-    const rapor = JSON.parse(readFileSync(R, "utf8")).map(x => x.ad);
+    // Kapanışta kayıtlar taban raporuna ve "ayni"ye çevrildi (AC-11c); değişimin kanıtı 0135-piksel-raporu.json'da durur.
+    const R = "docs/evidence/0135-taban-piksel-raporu.json";
+    const rapor = JSON.parse(readFileSync("docs/evidence/0135-piksel-raporu.json", "utf8")).map(x => x.ad);
     for (const e of ["elle", "hesapla-bos", "dolu", "hata", "onay"]) expect(rapor).toContain(`katalog-parca-0135-${e}-aydinlik.png`);
     const yeni = dosyalar["src/components/MaliyetKalemleriAlani.jsx"].filter(k => k.rapor === R);
     expect(yeni.length).toBeGreaterThan(0);

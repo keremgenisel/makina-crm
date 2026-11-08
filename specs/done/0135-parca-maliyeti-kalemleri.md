@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | **Uygulanıyor** (2026-11-08 onaylandı; plan turu Karar 30–44 aynı gün onaylandı, plan `specs/0135-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (2026-11-08, commit `c8ab3a76`; plan `specs/done/0135-uygulama-plani.md`; plan turu Karar 30–44, uygulama Karar 45–50, triyaj Karar 51–53) |
 | **Sahip** | Analist (yazım) · geliştirici (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **QA turu** | 2026-11-08, 29 bulgu (5 Bloklayıcı, 13 Önemli, 11 Küçük) işlendi; Kararlar bölümünde |
@@ -562,38 +562,38 @@ Aşağıdaki her satır HEAD'deki kodda doğrulandı; kriterler bu ölçümlere 
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Kalem toplamı React'sız saf motorda yazıldı ve kendi testi var; parça kartı çarpım ve toplama yapmıyor (kaynak taraması).
-- [ ] Maliyetin tek okuma yolu korundu; kalemleri toplayan ikinci bir yer yok (kaynak taraması).
-- [ ] `maliyetKalemleri` sütunu dört nokta kuralıyla eklendi ve `db-roundtrip` ile `db-clean-install` testlerine girdi.
-- [ ] Yeni veri bölümü yok; birleştirme kuralı `merge.js` içinde kalemlerin bağlarını yeniden eşliyor.
-- [ ] **Yeni eylem izni eklenmedi** ve bu açıkça yazıldı; sunucu tarafı değişmedi (tarama).
-- [ ] Malzemenin ve tedarikçinin kalıcı silme koruması dört kapıda birden kalemleri okuyor.
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; bu iş yazdırma çıktısı üretmiyor.
-- [ ] Para kuralına uyuluyor: dövizli malzemede kur eksikse maliyet "girilmedi" yazıyor, sıfır yazmıyor.
-- [ ] Kalem alanı olmayan veride kıyas altını birebir eşleşiyor (C8).
-- [ ] Kalıcı alanın şekli R45'teki gibi; tür ayırıcısı, düz malzeme alanları, adet ve boş tutarın gösterimi uygulamada aynı (AC-90, AC-91).
-- [ ] Kalem listesinin türetmesi tek saf yardımcıda; eski iki alanı doğrudan okuyan başka yer yok (kaynak taraması, AC-110).
-- [ ] "Kullanıcı maliyet bölümüne dokundu" işareti kuruldu; dokunulmayan parçanın gövdesi birebir korunuyor ve Excel içe aktarması işareti kurmuyor (AC-94, AC-96, AC-114).
-- [ ] Kalem listesi dolu kayıtta üç eski alan (malzeme satırı, hammadde kırılımı, elle maliyet) siliniyor; zincir elle değere düşmüyor (AC-97, AC-98).
-- [ ] Emniyet payı parça düzeyinde kaldı ve yedeği malzemelerin paylarının en büyüğü; 0134'ün yuvarlama sırası ve iki sütunu dokunulmadı (AC-52, AC-53, AC-92).
-- [ ] 0096 ve 0099'un gizlilik çizgisi korundu: gider yetkisi olmayan kullanıcı hiçbir yerde tedarikçi adı görmüyor (AC-93).
-- [ ] Malzemenin ve tedarikçinin kullanım sayaçları ve metinleri de kalemleri okuyor (AC-104, AC-105).
-- [ ] Parça listesinin tedarikçi süzgeci türetilmiş kalem listesinden okuyor (AC-99, AC-100).
-- [ ] Set ile kalem listesinin pasifliği iki yönlü; set dolu kayıtta kalem alanı yazılmıyor (AC-107, AC-108).
-- [ ] Birleştirmede bugünkü üç yeniden eşleme yerinde kaldı ve kalem içindeki ikisi eklendi (AC-111).
-- [ ] Excel'in iki bildirim metni tek metne indi (AC-113).
-- [ ] Kalkan metin sabitlerinin listesi spec'te sayıldı ve taramayla sabitlendi; gerekçeli kalanlar yazıldı (AC-117).
-- [ ] Kanıt eşlemesindeki değişen ekran kayıtları `degisti` ve onay satırına çevrildi; yeni bileşen dosyasının kaydı eklendi (AC-106).
-- [ ] **Ters çevrilen kriterler** test yorumlarında "spec 0135 ile" notuyla işaretlendi (0099, 0096, 0132, 0134).
-- [ ] Geçerlilik tarihi kapısı dar kaldı: yalnız işlem kalemi olan parçanın geçmişi bugünkü gibi yazılıyor (0097 bozulmadı) ve malzeme kalemi olan parçada alanın yerine ibare çiziliyor.
-- [ ] Arayüz kriterlerinin görsel kanıtı eklendi; boş ve hata durumları dâhil.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi; 0096 ve 0132'nin ilgili bölümlerine bu spec'in değiştirdiği kurallar işlendi.
-- [ ] **Sürüm notu yazıldı:** önce sunucu PC, sonra bütün istemciler; güncelleme bitene kadar parça kartında maliyet düzenlenmez. Notta iki bilinen sonuç da yazılı (C7/2).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Kalem toplamı React'sız saf motorda yazıldı ve kendi testi var; parça kartı çarpım ve toplama yapmıyor (kaynak taraması).
+- [x] Maliyetin tek okuma yolu korundu; kalemleri toplayan ikinci bir yer yok (kaynak taraması).
+- [x] `maliyetKalemleri` sütunu dört nokta kuralıyla eklendi ve `db-roundtrip` ile `db-clean-install` testlerine girdi.
+- [x] Yeni veri bölümü yok; birleştirme kuralı `merge.js` içinde kalemlerin bağlarını yeniden eşliyor.
+- [x] **Yeni eylem izni eklenmedi** ve bu açıkça yazıldı; sunucu tarafı değişmedi (tarama).
+- [x] Malzemenin ve tedarikçinin kalıcı silme koruması dört kapıda birden kalemleri okuyor.
+- [x] Kullanıcıya görünen tüm metinler Türkçe; bu iş yazdırma çıktısı üretmiyor.
+- [x] Para kuralına uyuluyor: dövizli malzemede kur eksikse maliyet "girilmedi" yazıyor, sıfır yazmıyor.
+- [x] Kalem alanı olmayan veride kıyas altını birebir eşleşiyor (C8).
+- [x] Kalıcı alanın şekli R45'teki gibi; tür ayırıcısı, düz malzeme alanları, adet ve boş tutarın gösterimi uygulamada aynı (AC-90, AC-91).
+- [x] Kalem listesinin türetmesi tek saf yardımcıda; eski iki alanı doğrudan okuyan başka yer yok (kaynak taraması, AC-110).
+- [x] "Kullanıcı maliyet bölümüne dokundu" işareti kuruldu; dokunulmayan parçanın gövdesi birebir korunuyor ve Excel içe aktarması işareti kurmuyor (AC-94, AC-96, AC-114).
+- [x] Kalem listesi dolu kayıtta üç eski alan (malzeme satırı, hammadde kırılımı, elle maliyet) siliniyor; zincir elle değere düşmüyor (AC-97, AC-98).
+- [x] Emniyet payı parça düzeyinde kaldı ve yedeği malzemelerin paylarının en büyüğü; 0134'ün yuvarlama sırası ve iki sütunu dokunulmadı (AC-52, AC-53, AC-92).
+- [x] 0096 ve 0099'un gizlilik çizgisi korundu: gider yetkisi olmayan kullanıcı hiçbir yerde tedarikçi adı görmüyor (AC-93).
+- [x] Malzemenin ve tedarikçinin kullanım sayaçları ve metinleri de kalemleri okuyor (AC-104, AC-105).
+- [x] Parça listesinin tedarikçi süzgeci türetilmiş kalem listesinden okuyor (AC-99, AC-100).
+- [x] Set ile kalem listesinin pasifliği iki yönlü; set dolu kayıtta kalem alanı yazılmıyor (AC-107, AC-108).
+- [x] Birleştirmede bugünkü üç yeniden eşleme yerinde kaldı ve kalem içindeki ikisi eklendi (AC-111).
+- [x] Excel'in iki bildirim metni tek metne indi (AC-113).
+- [x] Kalkan metin sabitlerinin listesi spec'te sayıldı ve taramayla sabitlendi; gerekçeli kalanlar yazıldı (AC-117).
+- [x] Kanıt eşlemesindeki değişen ekran kayıtları `degisti` ve onay satırına çevrildi; yeni bileşen dosyasının kaydı eklendi (AC-106).
+- [x] **Ters çevrilen kriterler** test yorumlarında "spec 0135 ile" notuyla işaretlendi (0099, 0096, 0132, 0134).
+- [x] Geçerlilik tarihi kapısı dar kaldı: yalnız işlem kalemi olan parçanın geçmişi bugünkü gibi yazılıyor (0097 bozulmadı) ve malzeme kalemi olan parçada alanın yerine ibare çiziliyor.
+- [x] Arayüz kriterlerinin görsel kanıtı eklendi; boş ve hata durumları dâhil.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi; 0096 ve 0132'nin ilgili bölümlerine bu spec'in değiştirdiği kurallar işlendi.
+- [x] **Sürüm notu yazıldı:** önce sunucu PC, sonra bütün istemciler; güncelleme bitene kadar parça kartında maliyet düzenlenmez. Notta iki bilinen sonuç da yazılı (C7/2).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -651,10 +651,15 @@ Aşağıdaki her satır HEAD'deki kodda doğrulandı; kriterler bu ölçümlere 
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `c8ab3a76` | Dal `feat/0135-maliyet-kalemleri`, taban `3d7f8a7c`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | QA turu (29 bulgu), plan turu (Karar 30–44), uygulama (Karar 45–50), triyaj (Karar 51–53) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: üç bulgu, bir bilgi maddesi |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Üçü küçük: kalem hatası silinen satırdan komşu satıra kayıyordu, üç bozma kaçtı (Elle sabit'e geçişte eski elle tutar, ekleme kartında set pasifliği ve Escape), adet iki yerde iki kuralla okunuyordu |
+| **Regresyon sayısı** | 0 | Tam takım 478 dosya, 6888 test ve Electron 14 dosya, 22 test; lint 0 hata, uyarı 62 (tabanla aynı) |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** iki kaldır düğmesi aynı erişilebilir adı taşıyordu; boş tutar uyarısı yalnız kayıt anında üretildiği için hiç görünmüyordu; hatalı kalemde kaynak ibaresi kayboluyordu; dokunulmamış set kaydı eski kalem alanını geri yazıyordu (Karar 45–48). Kıyas altını (`0135-once.json`) spec öncesi kodda ayrı bir çalışma kopyasında üretildi; eski veride maliyet zinciri, sipariş, model maliyeti, satış fiyatı, Excel ve zam etkisi birebir aynı. Mutasyon ölçümü: uygulamada altı bozma (malzeme korumasını ilk kaleme indiren biri kaçtı, test güçlendirildi), triyajda beş bozma, hepsi yakalandı.
+
+**Görsel kanıt:** 47 ekran (94 görüntü): 32 ekran kart, liste ibaresi, kullanım ve sipariş metinleri yüzünden değişti, 9 ekran yeni, 6 ekran 0 fark. Tabanın ilk çekiminde beş değişmeyen ekranda 46–96 piksellik açılır liste oku gürültüsü çıktı; taban yeniden çekilince yeni kodla 0 fark. Taban son kodla 94 görüntüde 0 fark; yedi dosyadaki 81 kayıt kapanışta `ayni` ve `0135-taban-piksel-raporu.json`'a çevrildi.
+
+**Bu spec'ten çıkarılan ders:** göçsüz bir model değişikliğinde "kullanıcının dokunmadığı kayıt değişmez" kuralı, form kaydı birleştirerek yazıyorsa ancak geçici bir "dokunuldu" işaretiyle sağlanır; yoksa parçanın adını değiştirmek bile eski alanları siler. İkinci ders: türetmeyi tek yardımcıya toplamak yetmez, o yardımcı hiçbir lib modülünü içe almamalı; yoksa onu çağıran modüller arasında yeni bir döngüsel içe aktarma doğar.

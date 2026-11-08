@@ -1,6 +1,6 @@
 # 0135 uygulama planı: parça maliyetinde tek kip, çok malzeme ve işlem kalemi
 
-Spec: `specs/0135-parca-maliyeti-kalemleri.md` (QA turu 29 bulgu, plan turu Karar 30–44). Dal `feat/0135-maliyet-kalemleri` (`../wt0135`), taban main `3d7f8a7c`. Plan Takım Yöneticisi'nin 2026-11-08 onayıyla; on beş önerinin hepsi kabul edildi.
+Spec: `specs/done/0135-parca-maliyeti-kalemleri.md` (QA turu 29 bulgu, plan turu Karar 30–44). Dal `feat/0135-maliyet-kalemleri` (`../wt0135`), taban main `3d7f8a7c`. Plan Takım Yöneticisi'nin 2026-11-08 onayıyla; on beş önerinin hepsi kabul edildi.
 
 ## 1. Dosyalar
 
