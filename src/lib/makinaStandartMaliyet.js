@@ -14,6 +14,7 @@ import { makinaListesi, satisKurBilgisi, katDegeriDogrula, URETIM_KAYNAK } from 
 import { gercekSatisBedeli, trLower } from "./utils";
 import { parcaMaliyetKurus, gecerliGunMu, setMi, setIcerigiOf } from "./urunAgaci";
 import { malzemeKatalogu } from "./malzeme";
+import { disIslemKatalogu } from "./disIslem";
 
 // ── Rol ──────────────────────────────────────────────────────────────────────
 export const MALIYET_ROLU = { URUN_AGACI: "urunAgaci", GENEL: "genel", YOK: "yok" };
@@ -203,14 +204,15 @@ const oneriKurus = (toplamK, katsayi) => (Number(katsayi) > 0 ? Math.round(topla
 // Spec 0097 R2, R9: `tarih` verilirse kit satırlarının birim maliyeti o günde geçerli değerdir (tek okuma yolunun uzantısı); verilmezse
 // bugünkü (Model Maliyetleri, C4). Parça kaydının çöp durumu tarihlenmez (C7): çöpteki parça haritada yok, tarihli okumada da eksik.
 // Spec 0132 R16/4, C1/2: `malzemeKat` (malzeme listesinin haritası) malzeme satırlı parçanın birim maliyetini çözer.
-export const modelMaliyeti = (model, partMap, payK = 0, tarih, malzemeKat) => {
+// Spec 0137 R20, R34 (AC-64): `islemKat` (dış işlem kataloğunun haritası) katalog bağlı işlem kalemini çözer.
+export const modelMaliyeti = (model, partMap, payK = 0, tarih, malzemeKat, islemKat) => {
   const kit = (model.defaultParcalar || []).map(r => {
     const p = partMap.get(String(r.partId));
     const adet = Number(r.miktar) || 0;
     if (!p) return { partId: r.partId, ad: r.ad || "", adet, birimK: null, satirK: 0, eksik: true, neden: "parcaYok" };
     // Spec 0096 C1 (AC-19): birim maliyet parçanın tek okuma yolundan (hammadde kırılımı varsa onun toplamı, kuruş).
     // Spec 0121 R9/2: harita (canlı parçalar) aynı zamanda setin kataloğudur; setin birim maliyeti bileşenlerinden.
-    const birimK = parcaMaliyetKurus(p, tarih, partMap, malzemeKat);
+    const birimK = parcaMaliyetKurus(p, tarih, partMap, malzemeKat, islemKat);
     if (birimK == null) return { partId: r.partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
     // Spec 0134 Karar 34: ondalık kitte satır kuruşa yuvarlanır (tam sayı kitte çarpım zaten tam sayı, çıktı birebir aynı).
     return { partId: r.partId, ad: p.ad, adet, birimK, satirK: Math.round(birimK * adet), eksik: false, neden: null };
@@ -240,10 +242,11 @@ export const modelMaliyeti = (model, partMap, payK = 0, tarih, malzemeKat) => {
 // modeller içindir, hangi satırın çizileceğine ekran karar verir. Seçeneksiz çıktı birebir eskisidir (AC-41).
 export const MODEL_ISARET = { ESKIMIS: "eskimis", YANLIS: "yanlis" };
 // Spec 0132 R16/4 (Ölçüm J): veri nesnesi `malzemeler`i de taşır; harita bir kez kurulur.
-export const modelMaliyetleri = ({ standardModels = [], customModels = [], parts = [], malzemeler = [] } = {}, payK = 0, secenek = null) => {
+export const modelMaliyetleri = ({ standardModels = [], customModels = [], parts = [], malzemeler = [], disIslemler = [] } = {}, payK = 0, secenek = null) => {
   const partMap = parcaHaritasi(parts);
   const malzemeKat = malzemeKatalogu(malzemeler);
-  const satirlar = [...standardModels, ...customModels].filter(m => m && !m.deletedAt).map(m => modelMaliyeti(m, partMap, payK, undefined, malzemeKat));
+  const islemKat = disIslemKatalogu(disIslemler); // spec 0137 R34
+  const satirlar = [...standardModels, ...customModels].filter(m => m && !m.deletedAt).map(m => modelMaliyeti(m, partMap, payK, undefined, malzemeKat, islemKat));
   if (!secenek) return satirlar;
   const disi = new Set(secenek.uretimdeDisi || []);
   const adetler = secenek.uretim?.modelAdetleri || null;
@@ -300,15 +303,15 @@ const tarihliDirekt = (katalog, modeller = []) => {
   // Triyaj (bulgu 1): model adı büyük/küçük harften bağımsız eşlenir (eski motorun `modelKey` kuralı, trLower).
   const modelMap = new Map(modeller.map(m => [trLower(m.model), m]));
   const hamModeller = katalog ? new Map([...(katalog.standardModels || []), ...(katalog.customModels || [])].filter(m => m && !m.deletedAt).map(m => [trLower(m.model), m])) : null;
-  let partMap = null, malzemeKat = null; // 0132 R16/4
+  let partMap = null, malzemeKat = null, islemKat = null; // 0132 R16/4, 0137 R34 (tembel: donmuş partide hiç kurulmaz)
   const onbellek = new Map();
   const direktOf = (k, gun) => {
     const bugunku = modelMap.get(k);
     if (!hamModeller || gun == null || !hamModeller.has(k)) return { direktK: bugunku.direktK, eksikSayisi: bugunku.eksikSayisi };
     const anahtar = `${k}|${gun}`;
     if (!onbellek.has(anahtar)) {
-      if (!partMap) { partMap = parcaHaritasi(katalog.parts); malzemeKat = malzemeKatalogu(katalog.malzemeler); }
-      const r = modelMaliyeti(hamModeller.get(k), partMap, 0, gun, malzemeKat); onbellek.set(anahtar, { direktK: r.direktK, eksikSayisi: r.eksikSayisi });
+      if (!partMap) { partMap = parcaHaritasi(katalog.parts); malzemeKat = malzemeKatalogu(katalog.malzemeler); islemKat = disIslemKatalogu(katalog.disIslemler); }
+      const r = modelMaliyeti(hamModeller.get(k), partMap, 0, gun, malzemeKat, islemKat); onbellek.set(anahtar, { direktK: r.direktK, eksikSayisi: r.eksikSayisi });
     }
     return onbellek.get(anahtar);
   };

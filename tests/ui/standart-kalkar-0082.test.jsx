@@ -216,7 +216,8 @@ describe("Spec 0082: yedek (R7, C5)", () => {
     const once = YEDEK_ANAHTARLARI_ONCE.split(",");
     expect(once).toContain("standartGiderler");
     // Spec 0132 ile (R22, AC-87): yedek malzeme listesini de taşır; iddia (standart gider bölümü yok, öteki küme aynı) korunur.
-    expect(Object.keys(yedek).sort()).toEqual([...once.filter(x => x !== "standartGiderler"), "malzemeler"].sort());
+    // Spec 0137 ile (C4, AC-75): dış işlem kataloğu da yedeğe girer; iddia aynı.
+    expect(Object.keys(yedek).sort()).toEqual([...once.filter(x => x !== "standartGiderler"), "malzemeler", "disIslemler"].sort());
     expect(yedek.schemaVersion).toBe(3);
   });
   it.each([["tam", null], ["kısmi (yalnız Giderler paketi)", "Giderler"]])("AC-20: standart bölümlü eski yedek %s geri yüklenir; diğer bölümler yüklenir, hata yok, bölüm yok sayılır", async (_, paket) => {

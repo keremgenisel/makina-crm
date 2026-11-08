@@ -320,7 +320,7 @@ describe("Spec 0132: tek okuma yolu ve öncelik", () => {
   });
   it("AC-85 / AC-53: sayaç malzeme listesini alır; malzemesi tam parça sayılmaz, eksik ya da çöpteki sayılır; kit bağına bakılmaz", () => {
     const pm = kod("src/components/PartManager.jsx");
-    expect(pm).toMatch(/const maliyetsizSayi = parts\.filter\(p => !maliyetGirildiMi\(p, undefined, katalog, malzemeKat\)\)\.length;/);
+    expect(pm).toMatch(/const maliyetsizSayi = parts\.filter\(p => !maliyetGirildiMi\(p, undefined, katalog, malzemeKat, islemKat\)\)\.length;/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
     expect(pm).not.toMatch(/maliyetsizSayi[^\n]*defaultParcalar/);
     const say = (parcalar, k) => parcalar.filter(x => !maliyetGirildiMi(x, undefined, setKatalogu(parcalar), k)).length;
     expect(say([{ id: 1, malzemeSatiri: MIL }], kat())).toBe(0);
@@ -335,21 +335,21 @@ describe("Spec 0132: tek okuma yolu ve öncelik", () => {
   });
   it("C1/2: on üç çağrı yeri malzeme listesini ya da kapısını geçirir", () => {
     const u = kod("src/lib/urunAgaci.js");
-    expect(u).toMatch(/setOzeti\(p\.setIcerigi, katalog, tarih, malzemeKat\)/);
-    expect(u).toMatch(/tekilMaliyetKurus\(p, tarih, malzemeKat\)/);
-    expect(u).toMatch(/tekilMaliyetKurus\(b, tarih, malzemeKat\)/);
+    expect(u).toMatch(/setOzeti\(p\.setIcerigi, katalog, tarih, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
+    expect(u).toMatch(/tekilMaliyetKurus\(p, tarih, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
+    expect(u).toMatch(/tekilMaliyetKurus\(b, tarih, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
     // Spec 0135 ile (R35, tuzak 5): geçmiş kapısı "en az bir malzeme kalemi var mı"; desen yeni kapıyı arar, iddia aynı.
     expect(u).toMatch(/malzeme: malzemeKalemiVarMiYerel\(temel\)/);
     const pm = kod("src/components/PartManager.jsx");
-    expect(pm).toMatch(/malzeme: maliyetKalemleriOf\(temel\)\.some\(x => x\.tur === KALEM_TUR\.MALZEME\) \}\)\.hata/);
-    expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat\)/);
-    expect(pm).toMatch(/maliyetKaynagi\(p, undefined, katalog, malzemeKat\)/);
-    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
+    expect(pm).toMatch(/malzeme: maliyetKalemleriOf\(temel\)\.some\(x => x\.tur === KALEM_TUR\.MALZEME\), katalogIslem:/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
+    expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
+    expect(pm).toMatch(/maliyetKaynagi\(p, undefined, katalog, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
+    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
     const a = kod("src/lib/parcaAktarma.js");
-    expect(a).toMatch(/parcaMaliyetKurus\(p, undefined, katalog, malzemeKat\)/);
+    expect(a).toMatch(/parcaMaliyetKurus\(p, undefined, katalog, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
     expect(a).toMatch(/set: setOlacak, malzeme: malzemeKalemiVarMi\(mevcut\)/); // spec 0135 ile
     // Spec 0133 ile: dördüncü parametre fiyat ayarları (maliyete bağlı parçanın TL hücresi türetilmiş fiyat, R16).
-    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat, appSettings\?\.fiyatAyarlari\)/);
+    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat, appSettings\?\.fiyatAyarlari, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
   });
   it("C2: malzeme motoru saat okumaz, React almaz", () => {
     const m = kod("src/lib/malzeme.js");

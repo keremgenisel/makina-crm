@@ -93,7 +93,8 @@ describe("Spec 0132 gerçek App", () => {
     expect(app).toMatch(/apply\(setMalzemeler, "malzemeler"\)/);
     expect(app).toMatch(/silmeUygula\(setMalzemeler, "malzemeler"\)/);
     expect(app).toMatch(/if \(Array\.isArray\(data\.malzemeler\)\) setMalzemeler\(data\.malzemeler\);/);
-    expect((app.match(/tedarikciler, malzemeler, uretimPartileri/g) || []).length).toBe(3); // kayıt, bağımlılık, otomatik yedek
+    // Spec 0137 ile (C4): dış işlem listesi malzemenin hemen ardından; iddia (üç satır malzemeyi taşır) aynı.
+    expect((app.match(/tedarikciler, malzemeler, disIslemler, uretimPartileri/g) || []).length).toBe(3); // kayıt, bağımlılık, otomatik yedek
     expect(app).toMatch(/parts=\{liveParts\} malzemeler=\{liveMalzemeler\}/);
   });
   it("AC-52: model süzmesinin iki okuyucusu (Model Maliyetleri, müşteri formu) yerinde; stok formu ve Evrak işareti okumaz", () => {

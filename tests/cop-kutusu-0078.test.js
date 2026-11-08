@@ -37,7 +37,8 @@ describe("Spec 0078 A: kapsam ve veri", () => {
     const m = db.match(/const TABLES_WITH_TRASH = \[([\s\S]*?)\];/);
     const tablolar = [...m[1].matchAll(/"([a-z_]+)"/g)].map(x => x[1]);
     // Spec 0132 ile (C7): malzeme kartı da çöp kutusuna gider; liste yirmi üç, iddia (dört kasa/gider tablosu var, kapsam dışı yok) aynı.
-    expect(tablolar).toHaveLength(23);
+    // Spec 0137 ile (R23, C11): dış işlem tablosu da çöp kutusuna gider (yirmi üç → yirmi dört); iddia (göç yok, kapsam dışı yok) aynı.
+    expect(tablolar).toHaveLength(24);
     expect(tablolar).toContain("malzemeler");
     for (const t of ["hesap_hareketleri", "cekler", "gider_tanimlari", "kasa_hesaplari"]) expect(tablolar, t).toContain(t);
     expect(tablolar).not.toContain("kasa_kapsam_disi");
@@ -180,7 +181,8 @@ describe("Spec 0078 D: geri alma, kalıcı silme, çek koruması", () => {
   it("AC-8, R22: beş bölüm için ayrı 30 günlük temizlik çağrısı (toplam yirmi altı)", () => {
     const app = oku("src/App.jsx");
     // Spec 0132 ile (C7, AC-20): malzeme kartının otuz günlük temizliği yirmi yedinci çağrı.
-    expect((app.match(/purgeOldTrash\(/g) || []).length).toBe(27);
+    // Spec 0137 ile (R21): dış işlem kataloğunun otuz günlük temizliği (yirmi yedi → yirmi sekiz).
+    expect((app.match(/purgeOldTrash\(/g) || []).length).toBe(28);
     expect(app).toMatch(/data\.malzemeler = purgeOldTrash\(data\.malzemeler/);
     for (const b of ["hesapHareketleri", "cekler", "giderTanimlari", "giderTurleri", "kasaHesaplari"]) expect(app, b).toMatch(new RegExp(`data\\.${b} = purgeOldTrash\\(data\\.${b}`));
   });

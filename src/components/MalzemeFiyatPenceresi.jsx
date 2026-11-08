@@ -14,7 +14,7 @@ import { FiyatAlanlari } from "./MalzemeManager";
 export const FIYAT_PENCERE_BASLIGI = "Malzeme Fiyatını Güncelle";
 export const GECERLILIK_IPUCU = "Bu tarihten önceki tarihli maliyet sorguları eski fiyatla kalır; bugünden sonraki tarih seçilemez.";
 
-export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler, parts = [], rates = null, ratesErr = false, bugun, onClose, fiyatAyarlari = null, showToast = () => {}, serverPermissions = null }) => {
+export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler, parts = [], rates = null, ratesErr = false, bugun, onClose, fiyatAyarlari = null, showToast = () => {}, serverPermissions = null, disIslemler = [] }) => {
   const [form, setForm] = useState(() => {
     const f = malzemeFormu(malzeme);
     // R5, AC-9, AC-10 (triyaj bulgu 1, Karar 41): kur alanı KAYITLI kurla açılır; kuru değiştirmek bir zamdır ve yalnız kullanıcı
@@ -29,7 +29,8 @@ export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler,
   const v = useMemo(() => malzemeDogrula(form, malzemeler, malzeme.id), [form, malzemeler, malzeme.id]);
   // `v` forma bağlı önbellekte; `yeni` ve etki ondan türer (eski hâldeki satır içi eslint susturması kalktı, triyaj bulgu 9).
   const yeni = useMemo(() => (v.gecerli ? tanimsizSiz({ ...malzeme, ...fiyatAlanlari(v.kayit) }) : null), [v, malzeme]);
-  const etki = useMemo(() => (yeni ? fiyatEtkisi(malzeme, yeni, parts, malzemeler, { fiyatAyarlari }) : null), [yeni, malzeme, parts, malzemeler, fiyatAyarlari]);
+  // Spec 0137 R32, AC-109 (triyaj bulgu 1): dış işlem listesi de geçer; hem malzeme hem katalog işlem kalemi taşıyan parça çözülür ve sayılır.
+  const etki = useMemo(() => (yeni ? fiyatEtkisi(malzeme, yeni, parts, malzemeler, { fiyatAyarlari, disIslemler }) : null), [yeni, malzeme, parts, malzemeler, fiyatAyarlari, disIslemler]);
 
   const kaydet = () => {
     if (!v.gecerli) { setHatalar(v.hatalar); return; }

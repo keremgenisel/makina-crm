@@ -1830,3 +1830,30 @@ describe("Spec 0132: malzeme kataloğu sunucuda", () => {
     expect(SECTION_GROUP.parts).toBe("stockActions");
   });
 });
+
+// Spec 0137 C6, R24 (AC-76, AC-77, AC-70): dış işlem kataloğu yeni bir veri bölümüdür ama yeni yetki açmaz (malzemenin ikizi). Grup
+// "settings", sekme yalnız Ayarlar; Makina Maliyeti tek başına yazma hakkı vermez. Boş liste ↔ boş liste sahte değişiklik değildir.
+describe("Spec 0137: dış işlem kataloğu sunucuda", () => {
+  const eski = { disIslemler: [{ id: 701, ad: "Isıl İşlem", birim: "adet", birimFiyati: 20 }] };
+  const yeni = { disIslemler: [{ id: 701, ad: "Isıl İşlem", birim: "adet", birimFiyati: 25 }, { id: 702, ad: "Galvano", birim: "kilo" }] };
+  it("AC-76: Ayarlar sekmesi olmayan kullanıcının dış işlem yazımı reddedilir; Makina Maliyeti sekmesi yazma hakkı vermez", () => {
+    expect(degisenBolumler(eski, yeni)).toEqual(["disIslemler"]);
+    const maliyetci = JSON.stringify({ tabs: ["dashboard", "gider", "maliyet"] });
+    const r = yazmaYetkisiVar(maliyetci, "user", ["disIslemler"], eski, yeni);
+    expect(r.ok).toBe(false);
+    expect(r.reddedilenBolum).toBe("disIslemler");
+    expect(yazmaYetkisiVar(READONLY, "user", ["disIslemler"], eski, yeni).ok).toBe(false);
+  });
+  it("AC-77: Ayarlar sekmeli kullanıcı yeni eylem izni olmadan işlem ekler; kayıt düzeyinde kimlik yok", () => {
+    const ayarci = JSON.stringify({ tabs: ["dashboard", "settings"] });
+    expect(yazmaYetkisiVar(ayarci, "user", ["disIslemler"], eski, yeni).ok).toBe(true);
+    expect(eylemDenetimi(eski, yeni, ayarci, "user").ok).toBe(true);
+    expect(EYLEM_IDLERI.disIslemler).toBeUndefined();
+    expect(ALAN_IZINLERI.disIslemler).toBeUndefined();
+    expect(SECTION_GROUP.disIslemler).toBe("settings");
+    expect(BOLUM_SEKMELERI.disIslemler).toEqual(["settings"]);
+  });
+  it("AC-70: boş katalog yeniden yazıldığında sunucu sahte değişiklik görmez", () => {
+    expect(degisenBolumler({ disIslemler: [] }, { disIslemler: [] })).toEqual([]);
+  });
+});

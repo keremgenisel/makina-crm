@@ -134,7 +134,8 @@ describe("Spec 0068 R3–R5: çek dışa aktarma satırı", () => {
     const s = oku("src/components/settings/SettingsExport.jsx");
     // Spec 0132 ile (R21, AC-72): parça şablonunun dışa aktarması malzeme listesini alır (malzeme kaynaklı parçanın çözülmüş
     // maliyeti); iddia (gider/kasa bölümleri okunmaz) aynı.
-    expect(s).toMatch(/yedekParcaSatislar = \[\], malzemeler = \[\], serverPermissions = null, cekler = null \}\) => \{/);
+    // Spec 0137 ile (R35, AC-113): dış işlem listesi de alınır (katalog bağlı işlem kalemli parçanın maliyeti); iddia aynı.
+    expect(s).toMatch(/yedekParcaSatislar = \[\], malzemeler = \[\], disIslemler = \[\], serverPermissions = null, cekler = null \}\) => \{/);
     expect(s).not.toMatch(/tedarikciler|hesapHareketleri|giderler|kasaHesaplari/);
   });
 });

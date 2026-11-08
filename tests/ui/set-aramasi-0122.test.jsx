@@ -236,10 +236,12 @@ describe("Spec 0122: kaynak taramaları", () => {
     const cagrilar = dosyalar("src").filter(f => !f.endsWith("ui.jsx"))
       .flatMap(f => ham(f).split("\n").filter(l => l.includes("<SearchPick")).map(l => [f, l.trim()]));
     // Spec 0126 ile: Evrak'ın seçim penceresi onuncu çağrı ve yedinci dosyadır (KalemSecPenceresi.jsx'te tek çağrı).
-    expect(cagrilar).toHaveLength(10);
-    expect(new Set(cagrilar.map(c => c[0])).size).toBe(7);
+    // Spec 0137 ile (R10/3): parça kartının katalog işlem kalemi on birinci çağrı ve sekizinci dosyadır (MaliyetKalemleriAlani.jsx'te tek).
+    expect(cagrilar).toHaveLength(11);
+    expect(new Set(cagrilar.map(c => c[0])).size).toBe(8);
     expect(cagrilar.filter(c => c[0].endsWith("KalemSecPenceresi.jsx"))).toHaveLength(1);
-    const otekiler = cagrilar.filter(c => !c[0].endsWith("PartManager.jsx") && !c[0].endsWith("KalemSecPenceresi.jsx"));
+    expect(cagrilar.filter(c => c[0].endsWith("MaliyetKalemleriAlani.jsx"))).toHaveLength(1);
+    const otekiler = cagrilar.filter(c => !c[0].endsWith("PartManager.jsx") && !c[0].endsWith("KalemSecPenceresi.jsx") && !c[0].endsWith("MaliyetKalemleriAlani.jsx"));
     expect(otekiler.map(c => c.join(" ")).sort()).toEqual(SEKIZ.map(c => c.join(" ")).sort());
     expect(cagrilar.filter(c => c[0].endsWith("PartManager.jsx"))).toHaveLength(1);
     const ui = ham("src/components/ui.jsx");

@@ -25,9 +25,9 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   // Spec 0063 R7, R8, R16: iki satış formunun tahsilat hesabı; App yalnız Kasa yetkisiyle doldurur, yoksa null (boş dizi değil).
   kasaHesaplari = null, tahsilatHesapVarsayilan = null,
   // Spec 0133 Karar 31: bayi detayının yedek parça formu da satış fiyatının tek yolundan okur.
-  malzemeler = [], appSettings = null }) => {
+  malzemeler = [], disIslemler = [] /* spec 0137 R30, R35 */, appSettings = null }) => {
   // Spec 0133 R10/3, Karar 32: satış fiyatının bağlamı ekranda bir kez kurulur, formlara yalnız bağlam iner.
-  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, disIslemler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, disIslemler, appSettings?.fiyatAyarlari]);
   const canDo = makeCanDo(serverPermissions, "dealerActions");
   // Spec 0007 R1/R11: "Bayi Aracılığıyla Kalıp Satışı" mevcut Extra Kalıp ekleme iznine bağlı (yeni izin yok).
   const canCust = makeCanDo(serverPermissions, "customerActions");

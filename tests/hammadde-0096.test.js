@@ -184,7 +184,7 @@ describe("Spec 0096 triyaj", () => {
     expect(tedarikciKullanim(31, [], [], [], harita)).toEqual(tedarikciKullanim(31, [], [], parts));
     const t = kod("src/components/gider/Tedarikciler.jsx");
     expect(t.match(/kalemdeGecenTedarikciler\(/g)).toHaveLength(1);
-    expect(t).toMatch(/useMemo\(\(\) => kalemdeGecenTedarikciler\(parts\), \[parts\]\)/);
+    expect(t).toMatch(/useMemo\(\(\) => kalemdeGecenTedarikciler\(parts, disIslemler\), \[parts, disIslemler\]\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
     expect(t.match(/tedarikciKullanim\(t\.id, giderler, giderTanimlari, parts, kirilimHaritasi\)/g)).toHaveLength(2);
   });
 });
@@ -221,7 +221,7 @@ describe("Spec 0096: kaynak taramaları", () => {
     // Spec 0097 ile (C1/2, AC-56): tarihli okuma aynı fonksiyonun ikinci parametresidir; desen yeni imzayı arar (gevşetilmedi).
     // Spec 0121 ile (R9/2, AC-38): üçüncü parametre katalogdur (setin maliyeti); desen yeni imzayı arar, iddia aynı.
     // Spec 0132 ile (C1/2, R16/4): dördüncü parametre malzeme haritasıdır; desen yeni imzayı arar, iddia aynı.
-    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
+    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
   });
   it("AC-41: satır tutarlarını TL olarak toplayan ikinci yer yok (kalem toplamı yalnız urunAgaci'nde, kuruşla)", () => {
     // Spec 0135 ile (R23/2, C1, C1/2): kırılımı doğrudan okuyan yer yalnız türetme modülü (ve gerekçeli db/merge istisnaları);

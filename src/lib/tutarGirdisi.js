@@ -91,3 +91,8 @@ export const tutarGirdisiIsle = ({ yeni = "", onceki = "", imlec = null, tus = n
 
 // Saklanan sayıyı forma ham metin olarak geri koymak için (düzenleme açılışı). Spec 0087 R3: GiderAlanlari'ndan taşındı.
 export const tutarMetni = (n) => (n == null || n === "" ? "" : String(n).replace(".", ","));
+
+// Spec 0132 Karar 42 (spec 0137 Karar 38 ile buraya taşındı): tek noktalı ve noktadan sonra üç+ haneli virgülsüz sayı ("2.955")
+// belirsizdir; `tutarCoz` onu binlik sayar. Malzeme ve dış işlem doğrulayıcıları reddeder.
+export const BELIRSIZ_DESEN = /^\s*-?\d+\.\d{3,}\s*$/;
+export const BELIRSIZ_HATASI = "Belirsiz sayı (nokta binlik mi ondalık mı anlaşılmıyor); ondalığı virgülle yazın, ör. 2,955.";

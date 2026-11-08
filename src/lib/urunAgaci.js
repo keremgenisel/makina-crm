@@ -9,8 +9,9 @@ import { tutarCoz, kurus } from "./gider";
 import { tutarMetni } from "./tutarGirdisi";
 import { parseMoney, partFiyatForCurrency } from "./utils";
 import { gecerliGunMu, gunMetni, gecerlilikTarihiDogrula, tarihteGecerliIndeks } from "./gecerlilik";
-import { malzemeOzeti, malzemeSatiriDogrula, malzemeSatiriFormu, BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./malzeme";
-import { maliyetKalemleriOf, KALEM_TUR, MALIYET_KALEM_SINIRI } from "./maliyetKalemleri";
+import { malzemeOzeti, malzemeSatiriDogrula, malzemeSatiriFormu, parcaIslenmisKg, BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./malzeme";
+import { maliyetKalemleriOf, KALEM_TUR, MALIYET_KALEM_SINIRI, katalogIslemMi, kalemYoluMu } from "./maliyetKalemleri";
+import { islemKalemiOzeti, kiloMiktariDogrula, birimOf, BIRIM } from "./disIslem";
 // Spec 0132 Karar 24: tarih kuralları ortak modüle taşındı; çağıranlar değişmesin diye aynı adla yeniden dışa verilir.
 export { gecerliGunMu, gunMetni, gecerlilikTarihiDogrula, TARIH_GECERSIZ_HATASI, TARIH_GELECEK_HATASI, tarihOnceHatasi, tarihSonraHatasi } from "./gecerlilik";
 
@@ -40,10 +41,17 @@ export const KALEM_ADET_UST = 1000;
 // Triyaj (bulgu 3): malzeme kaleminin adedinin TEK okuyucusu (maliyet ve sipariş aynı kural); tam sayı değil ya da 1'den küçükse
 // null, yani kalem çözülemez (maliyet "girilmedi", siparişte eksik).
 export const kalemAdetiOf = (k) => { const n = Number(k?.adet ?? 1); return Number.isInteger(n) && n >= 1 ? n : null; };
-// Kalemlerin tek hesabı; parça kartının canlı özeti de bunu okur (C2, kart çarpım ve toplama yapmaz). `tarih` yalnız malzeme
-// kalemlerine iner (R35/4: işlem kalemi bugünkü tutarıyla girer).
-export const maliyetKalemleriOzeti = (kalemler, malzemeKat, tarih) => {
+// Kalemlerin tek hesabı; parça kartının canlı özeti de bunu okur (C2, kart çarpım ve toplama yapmaz). `tarih` malzeme kalemlerine
+// ve katalog bağlı işlem kalemlerine iner; serbest işlem kalemi bugünkü tutarıyla girer (0135 R35/4, spec 0137 R18).
+// Spec 0137 R11–R15/4, R15/2, R15/3: dördüncü parametre `islemKat` (`disIslem.disIslemKatalogu`'nun Map'i). Katalog bağlı kalemin
+// tutarı `disIslem.islemKalemiOzeti`'nden (çarpım orada, C3); kilo tabanı malzeme kalemlerinin işlenmiş ağırlığıdır ve yalnız
+// gerekince bir kez okunur. Çözülemeyen katalog kalemi `islemEksik` yapar ve toplam null olur (kısmi toplam yok); serbest kalemin
+// boş tutarı yalnız toplama girmez (iki "boş" ayrıdır). Katalog kalemi olmayan veride çıktı spec öncesiyle birebir (R25).
+export const maliyetKalemleriOzeti = (kalemler, malzemeKat, tarih, islemKat) => {
+  let kgTaban;
+  const kgOku = () => (kgTaban ??= parcaIslenmisKg((kalemler || []).filter(k => k.tur === KALEM_TUR.MALZEME), malzemeKat));
   const satirlar = (kalemler || []).map(k => {
+    if (katalogIslemMi(k)) return islemKalemiOzeti(k, islemKat, tarih, kgOku);
     if (k.tur === KALEM_TUR.MALZEME) {
       const oz = malzemeOzeti(k, malzemeKat, tarih);
       const adet = kalemAdetiOf(k);
@@ -54,18 +62,19 @@ export const maliyetKalemleriOzeti = (kalemler, malzemeKat, tarih) => {
     return { tur: KALEM_TUR.ISLEM, tutarK: bos ? null : kurus(k.tutar), bos, cozuldu: true };
   });
   const malzemeEksik = satirlar.some(r => r.tur === KALEM_TUR.MALZEME && !r.cozuldu);
+  const islemEksik = satirlar.some(r => r.katalog && !r.cozuldu);
   const katkili = satirlar.filter(r => r.tutarK != null);
-  const toplamK = !satirlar.length || malzemeEksik || !katkili.length ? null : katkili.reduce((a, r) => a + r.tutarK, 0);
+  const toplamK = !satirlar.length || malzemeEksik || islemEksik || !katkili.length ? null : katkili.reduce((a, r) => a + r.tutarK, 0);
   return {
-    satirlar, toplamK,
+    satirlar, toplamK, islemEksik,
     malzeme: satirlar.filter(r => r.tur === KALEM_TUR.MALZEME).length, islem: satirlar.filter(r => r.tur === KALEM_TUR.ISLEM).length,
     bosIslem: satirlar.filter(r => r.tur === KALEM_TUR.ISLEM && r.bos).length,
   };
 };
 // Set dışı parçanın bugünkü çözülmüş maliyeti (kalem listesi ya da elle).
-const bugunkuKurus = (p, malzemeKat) => {
+const bugunkuKurus = (p, malzemeKat, islemKat) => {
   const kalemler = maliyetKalemleriOf(p);
-  if (kalemler.length) return maliyetKalemleriOzeti(kalemler, malzemeKat).toplamK;
+  if (kalemler.length) return maliyetKalemleriOzeti(kalemler, malzemeKat, undefined, islemKat).toplamK;
   return p.maliyet == null || p.maliyet === "" ? null : kurus(p.maliyet);
 };
 // Spec 0097 R2, R2/2, R2/4, R3/2: tarih aynı fonksiyonun ikinci parametresidir. Tarihsiz çağrı bugünkü çözülmüş maliyettir
@@ -83,21 +92,25 @@ const bugunkuKurus = (p, malzemeKat) => {
 // Spec 0135 R27, R35, R35/4: öncelik set içeriği, kalem listesi, elle tutar. En az bir malzeme kalemi varsa parçanın kendi geçmişi
 // okunmaz; malzeme kalemleri o tarihin malzeme fiyatıyla, işlem kalemleri bugünkü tutarıyla girer (karma okuma). Yalnız işlem
 // kalemi olan parçada bugünkü kırılım davranışı sürer (geçmiş araması; 0097 R5/3).
-export const parcaMaliyetKurus = (p, tarih, katalog, malzemeKat) => {
+// Spec 0137 R30, R29, C1: BEŞİNCİ parametre `islemKat` (`disIslem.disIslemKatalogu`'nun Map'i; konumlu, 0132'nin dördüncüsü emsali).
+// Verilmezse katalog bağlı işlem kalemi taşıyan parça `null` ("girilmedi", asla sıfır). Kalem yolu en az bir malzeme kalemi YA DA
+// katalog bağlı işlem kalemi varken kullanılır (parçanın kendi geçmişi okunmaz); yalnız serbest işlem kalemi olan parçada bugünkü
+// geçmiş araması sürer. Çağrıların hepsi kataloğu taşır (kaynak taraması, AC-115); bağlamı tek kurucu verir (`fiyatBaglamiKur`).
+export const parcaMaliyetKurus = (p, tarih, katalog, malzemeKat, islemKat) => {
   if (!p) return null;
-  if (setMi(p)) return setOzeti(p.setIcerigi, katalog, tarih, malzemeKat).maliyetK;
-  return tekilMaliyetKurus(p, tarih, malzemeKat);
+  if (setMi(p)) return setOzeti(p.setIcerigi, katalog, tarih, malzemeKat, islemKat).maliyetK;
+  return tekilMaliyetKurus(p, tarih, malzemeKat, islemKat);
 };
-const tekilMaliyetKurus = (p, tarih, malzemeKat) => {
+const tekilMaliyetKurus = (p, tarih, malzemeKat, islemKat) => {
   const kalemler = maliyetKalemleriOf(p);
-  if (kalemler.some(k => k.tur === KALEM_TUR.MALZEME)) return maliyetKalemleriOzeti(kalemler, malzemeKat, tarih).toplamK;
-  const bugunku = bugunkuKurus(p, malzemeKat);
+  if (kalemYoluMu(p)) return maliyetKalemleriOzeti(kalemler, malzemeKat, tarih, islemKat).toplamK;
+  const bugunku = bugunkuKurus(p, malzemeKat, islemKat);
   if (tarih === undefined) return bugunku;
   const g = maliyetGecmisiOf(p);
   const i = tarihteGecerliIndeks(g, tarih); // 0132 Karar 24: kural ortak modülde
   return i < 0 ? bugunku : g[i].kurus;
 };
-export const parcaMaliyetiVar = (p, tarih, katalog, malzemeKat) => parcaMaliyetKurus(p, tarih, katalog, malzemeKat) != null;
+export const parcaMaliyetiVar = (p, tarih, katalog, malzemeKat, islemKat) => parcaMaliyetKurus(p, tarih, katalog, malzemeKat, islemKat) != null;
 
 // ── Spec 0121: setin içeriği (`parts[].setIcerigi = [{ partId, miktar }]`) ──────────────────────────────────────────────────
 // R1, R1/2, R1/3: içeriği olan parça settir; ayrı kayıt türü değildir. Adı kopyalanmaz (R6), okuma anında katalogdan çözülür.
@@ -111,13 +124,15 @@ export const setKatalogu = (parts = []) => new Map((parts || []).filter(p => p &
 // maliyeti `null`. Fiyat toplamı TL fiyatının tek okuma yolundan, tam lira; fiyatı olmayan satır sayılmaz ve sayısı döner.
 // Spec 0133 Karar 30: beşinci parametre isteğe bağlı fiyat okuyucusu (bileşen → TL fiyatı); verilmezse bugünkü elle girilen
 // TL fiyatı. Maliyet motoru fiyat kavramını bilmez, okuyucuyu parça kartı verir (`parcaFiyati.setFiyatOkuyucu`).
-export const setOzeti = (icerik, katalog, tarih, malzemeKat, fiyatOku = null) => {
+// Spec 0137 R33, plan turu Karar 34: beşinci parametre `islemKat` (bileşenin katalog bağlı işlem kalemi çözülsün, AC-111); fiyat
+// okuyucusu altıncıya kaydı.
+export const setOzeti = (icerik, katalog, tarih, malzemeKat, islemKat, fiyatOku = null) => {
   const satirlar = (Array.isArray(icerik) ? icerik : []).filter(r => r && r.partId != null && r.partId !== "");
   let toplamK = 0, eksik = 0, fiyatToplam = 0, fiyatsiz = 0;
   for (const r of satirlar) {
     const adet = Number(r.miktar) || 0;
     const b = katalog instanceof Map ? katalog.get(String(r.partId)) : null;
-    const birimK = b && !setMi(b) ? tekilMaliyetKurus(b, tarih, malzemeKat) : null; // 0132 AC-64
+    const birimK = b && !setMi(b) ? tekilMaliyetKurus(b, tarih, malzemeKat, islemKat) : null; // 0132 AC-64, 0137 R33
     if (birimK == null) eksik++; else toplamK += birimK * adet;
     const f = b ? parseMoney(fiyatOku ? fiyatOku(b) : partFiyatForCurrency(b, "TRY")) : 0;
     if (f > 0) fiyatToplam += f * adet; else fiyatsiz++;
@@ -152,13 +167,15 @@ export const GECMIS_BASLIGI = "Maliyet geçmişi";
 // Triyaj (bulgu 6, Karar 45): malzeme satırı kaldırılan parçada eski değer kayıttaki elle tutar DEĞİL, malzemeden çözülen bugünkü
 // maliyettir (`malzemeKat` ile); böylece geçişte geçmişe "o tarihe kadar malzeme maliyeti" satırı yazılır ve kapanmış partilerin
 // maliyeti değişmez. Liste verilmezse (ya da malzeme eksikse) eski değer bilinmez, kayıt yazılmaz (bilinen sınır).
-export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false, set = false, malzeme = false, malzemeKat = null } = {}) => {
+// Spec 0137 R29, R29/2, plan turu Karar 40: `katalogIslem` yeni kayıtta katalog bağlı işlem kalemi varsa true; kapı
+// `set || malzeme || katalogIslem` olur (motor HİÇ çalışmaz). Eski değer işlem kataloğuyla da çözülür (`islemKat`).
+export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false, set = false, malzeme = false, katalogIslem = false, malzemeKat = null, islemKat = null } = {}) => {
   const g = maliyetGecmisiOf(eski);
   if (!eski) return { gecmis: [], hata: null };
-  if (set || malzeme) return { gecmis: g, hata: null };
+  if (set || malzeme || katalogIslem) return { gecmis: g, hata: null };
   if (!gecerliGunMu(bugun)) throw new Error("maliyetGecmisiYaz: bugun (YYYY-AA-GG) gerekli");
   // P5: karar kayıtta saklı son kuruştan değil, eski kaydın çözülmüş değerinden
-  const eskiK = bugunkuKurus(eski, malzemeKat);
+  const eskiK = bugunkuKurus(eski, malzemeKat, islemKat);
   const yeniK = cozulmusK == null ? null : cozulmusK;
   // P5: son kayıt her yazımda bugünkü değere eşitlenir (karışık sürümde ayrışmış olabilir).
   const taban = g.length ? [...g.slice(0, -1), { gecerli: g[g.length - 1].gecerli, kurus: eskiK }] : [];
@@ -185,19 +202,22 @@ export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = f
 // kayıt (eklemede null: geçmiş yazılmaz), `ek` kaydın başında çözülmüş tarih bilgisi. Karar hata dönerse (doğrulamadan sonra kaydı
 // değiştiren dar bir yarış) null döner ve çağıran kaydı HİÇ değiştirmez: yeni maliyet tarihsiz geçmişle yazılmasın.
 const malzemeKalemiVarMiYerel = (p) => maliyetKalemleriOf(p).some(k => k.tur === KALEM_TUR.MALZEME);
+// Spec 0137 R29/2: `ek` set ve iki listeyi (`katalog`, `malzemeKat`, `islemKat`) taşıyabilir; yeni değer ve eski değer onlarla çözülür.
 export const gecmisliKayit = (temel, eski = null, ek = null) => {
   if (!eski || !ek) { const g = eski?.maliyetGecmisi || []; return { ...temel, ...(g.length ? { maliyetGecmisi: g } : {}) }; }
-  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel), malzeme: malzemeKalemiVarMiYerel(temel) });
+  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel, undefined, ek.katalog, ek.malzemeKat, ek.islemKat),
+    { ...ek, set: setMi(temel), malzeme: malzemeKalemiVarMiYerel(temel), katalogIslem: maliyetKalemleriOf(temel).some(katalogIslemMi) });
   if (r.hata) return null;
   return { ...temel, ...(r.gecmis.length ? { maliyetGecmisi: r.gecmis } : {}) };
 };
 
 // R8, R8/3: parça kartının salt okunur listesi, en yeni üstte (saklama sırasının tersi). Son kaydın tutarı R3/2 gereği
 // bugünkü çözülmüş değerdir.
-export const maliyetGecmisiSatirlari = (p) => {
+// Spec 0137 R29/2: son kaydın bugünkü değeri iki listeyle çözülür (verilmezse eski davranış).
+export const maliyetGecmisiSatirlari = (p, malzemeKat, islemKat) => {
   const g = maliyetGecmisiOf(p);
   return g.map((x, i) => {
-    const k = i === g.length - 1 ? bugunkuKurus(p) : x.kurus;
+    const k = i === g.length - 1 ? bugunkuKurus(p, malzemeKat, islemKat) : x.kurus;
     return { gecerli: x.gecerli, tarihMetni: x.gecerli ? gunMetni(x.gecerli) : BASLANGICTAN_BERI, tutarMetni: k == null ? GIRILMEDI_IBARESI : maliyetMetniKurus(k) };
   }).reverse();
 };
@@ -205,17 +225,18 @@ export const maliyetGecmisiSatirlari = (p) => {
 export const maliyetGirildiMi = parcaMaliyetiVar;
 // Plan P7: kuruştan biçimleyici (parça paneli makina maliyeti motorunu içe almaz). Girilmemiş "—", sıfır "0,00 ₺".
 export const maliyetMetniKurus = (k) => (k == null ? "—" : `${ikiHane.format(k / 100)} ₺`);
-export const parcaMaliyetMetni = (p, tarih, katalog, malzemeKat) => maliyetMetniKurus(parcaMaliyetKurus(p, tarih, katalog, malzemeKat));
+export const parcaMaliyetMetni = (p, tarih, katalog, malzemeKat, islemKat) => maliyetMetniKurus(parcaMaliyetKurus(p, tarih, katalog, malzemeKat, islemKat));
 // Elle girilmiş maliyetin form metni (düzenleme açılışı; kayıttaki elle alanın tek okuyucusu, AC-32).
 export const elleMaliyetMetni = (p) => tutarMetni(p?.maliyet);
 
 // Spec 0135 R39, R39/2: maliyetin kaynağı üç türdür: set içeriği, kalem listesi (kaç malzeme, kaç işlem kalemi), elle. Kaynak
 // saklanmaz, türer. Kalem ibaresi yetki istemez (tedarikçi kimliği taşımaz, C6/2).
-export const maliyetKaynagi = (p, tarih, katalog, malzemeKat) => {
+// Spec 0137 R20/2 (AC-125): iki işlem çeşidi ayrılmaz, metin aynen.
+export const maliyetKaynagi = (p, tarih, katalog, malzemeKat, islemKat) => {
   if (setMi(p)) return { tur: "icerik", n: setIcerigiOf(p).length };
   const kalemler = maliyetKalemleriOf(p);
   if (kalemler.length) return { tur: "kalem", malzeme: kalemler.filter(k => k.tur === KALEM_TUR.MALZEME).length, islem: kalemler.filter(k => k.tur === KALEM_TUR.ISLEM).length };
-  return parcaMaliyetiVar(p, tarih, katalog, malzemeKat) ? { tur: "elle" } : null;
+  return parcaMaliyetiVar(p, tarih, katalog, malzemeKat, islemKat) ? { tur: "elle" } : null;
 };
 export const KAYNAK_ELLE = "Elle girildi";
 export const kalemKaynakMetni = ({ malzeme = 0, islem = 0 } = {}) => `Maliyet kalemlerinden hesaplanıyor (${malzeme} malzeme, ${islem} işlem kalemi)`;
@@ -242,6 +263,13 @@ export const ISLEM_AD_HATASI = "İşlem adı boş olamaz.";
 export const ISLEM_TUTAR_SAYI_HATASI = "Tutar sayı olmalı.";
 export const ISLEM_TUTAR_NEGATIF_HATASI = "Tutar negatif olamaz.";
 export const ISLEM_TUTAR_UYARISI = "Tutar girilmedi; bu kalem toplama girmez.";
+// Spec 0137 plan turu Karar 36: katalog çeşidinde işlem seçilmeden kayıt yapılmaz.
+export const ISLEM_SECILMEDI = "İşlem seçilmedi.";
+// Spec 0137 R10, R17, Karar 37: işlem kaleminin iki çeşidi. Formda çeşit geçici `_cesit` alanındadır (kayda yazılmaz); serbest
+// kalemin formu spec öncesiyle aynıdır (anahtarı yok), katalog kalemininki `_cesit: "katalog"` taşır.
+export const CESIT = Object.freeze({ KATALOG: "katalog", SERBEST: "serbest" });
+export const CESIT_ADI = { katalog: "Katalogdan", serbest: "Serbest" };
+export const formCesidi = (f) => (f?._cesit === CESIT.KATALOG ? CESIT.KATALOG : CESIT.SERBEST);
 // R13, R13/2 (AC-24, AC-25, AC-115): adedin ayrıştırıcısı setin içeriğindeki adetle aynı (yalnız rakam deseni, binlik ayracı yok);
 // iki ayrı metin: tam sayı olmayan değere setin metni, üst sınırı aşana kendi metni. Boş adet de tam sayı değildir.
 export const kalemAdediDogrula = (ham) => {
@@ -263,7 +291,11 @@ const islemTutariDogrula = (ham) => {
 };
 // Formdaki kalemler (metin alanları) → kayıt biçimi. Dönüş { kayit, hatalar: { [i]: { alan: metin } }, uyarilar: { [i]: metin },
 // gecerli }. Hatalı malzeme kalemi kaydı engeller; tutarı boş işlem kalemi yalnız uyarır (R43). Sınır doğrulamada yok (R9/2).
-export const kalemlerDogrula = (formKalemler = []) => {
+// Spec 0137 R12, R13/2, Karar 36, 41: ikinci parametre birim kaynağı (Map); katalog çeşidinde miktar seçilen işlemin birimiyle
+// doğrulanır (adette 1..1000 tam sayı, kiloda boş serbest). Triyaj (bulgu 2): parça kartı ham haritayı (`disIslemHamKatalogu`, çöptekiler
+// dahil) geçirir, böylece çöpteki adet birimli işlem de adet kuralıyla doğrulanır. İşlem hiç bulunmazsa birimi bilinmez, kilo kuralıyla
+// doğrulanır (kayıt engellenmez; maliyet "girilmedi" olur, R15).
+export const kalemlerDogrula = (formKalemler = [], islemKat = null) => {
   const kayit = []; const hatalar = {}; const uyarilar = {}; const satirlar = [];
   (formKalemler || []).forEach((f, i) => {
     if (f?.tur === KALEM_TUR.MALZEME) {
@@ -274,6 +306,19 @@ export const kalemlerDogrula = (formKalemler = []) => {
       if (a.hata) h.adet = a.hata;
       if (Object.keys(h).length) { hatalar[i] = h; satirlar[i] = null; return; }
       satirlar[i] = { tur: KALEM_TUR.MALZEME, ...ms.kayit, adet: a.deger };
+      kayit.push(satirlar[i]);
+      return;
+    }
+    if (f?.tur === KALEM_TUR.ISLEM && formCesidi(f) === CESIT.KATALOG) {
+      const h = {};
+      const id = f.islemId == null ? "" : String(f.islemId).trim();
+      if (!id) h.islemId = ISLEM_SECILMEDI;
+      const m = id && islemKat instanceof Map ? islemKat.get(id) : null;
+      let miktar = null;
+      if (m && birimOf(m) === BIRIM.ADET) { const a = kalemAdediDogrula(f.miktar); if (a.hata) h.miktar = a.hata; else miktar = a.deger; }
+      else { const kg = kiloMiktariDogrula(f.miktar); if (kg.hata) h.miktar = kg.hata; else miktar = kg.deger; }
+      if (Object.keys(h).length) { hatalar[i] = h; satirlar[i] = null; return; }
+      satirlar[i] = { tur: KALEM_TUR.ISLEM, islemId: kimlikCoz(id), ...(miktar != null ? { miktar } : {}) };
       kayit.push(satirlar[i]);
       return;
     }
@@ -294,12 +339,13 @@ export const kalemlerDogrula = (formKalemler = []) => {
 };
 // C2 (0099 C1/2 deseni): parça kartının canlı kalem özeti TEK sonuçtan. Satırlar formdaki sırayla hizalıdır; hatalı satırın
 // tutarı yoktur ve hatalı satır varken toplam "girilmedi"dir (AC-27: kısmi toplam yazılmaz). Kart çarpım ve toplama yapmaz.
-export const formKalemOzeti = (formKalemler = [], malzemeKat) => {
-  const d = kalemlerDogrula(formKalemler);
-  const oz = maliyetKalemleriOzeti(d.kayit, malzemeKat);
+// Triyaj (bulgu 2): dördüncü parametre doğrulamanın birim kaynağı (ham harita); verilmezse hesabın canlı haritası.
+export const formKalemOzeti = (formKalemler = [], malzemeKat, islemKat, birimKat = islemKat) => {
+  const d = kalemlerDogrula(formKalemler, birimKat);
+  const oz = maliyetKalemleriOzeti(d.kayit, malzemeKat, undefined, islemKat);
   let j = 0;
   const satirlar = (formKalemler || []).map((_, i) => (d.satirlar[i] ? oz.satirlar[j++] : { hatali: true, tutarK: null }));
-  return { satirlar, kayit: d.kayit, gecerli: d.gecerli, uyarilar: d.uyarilar, toplamK: d.gecerli ? oz.toplamK : null,
+  return { satirlar, kayit: d.kayit, gecerli: d.gecerli, uyarilar: d.uyarilar, toplamK: d.gecerli ? oz.toplamK : null, islemEksik: oz.islemEksik,
     malzeme: (formKalemler || []).filter(k => k?.tur === KALEM_TUR.MALZEME).length, islem: (formKalemler || []).filter(k => k?.tur === KALEM_TUR.ISLEM).length };
 };
 // Kayıttan forma (düzenleme açılışı). `_anahtar` geçici satır anahtarıdır, kayda yazılmaz (plan turu Karar 38).
@@ -307,7 +353,26 @@ let anahtarSayaci = 0;
 export const yeniKalemAnahtari = () => `k${++anahtarSayaci}`;
 export const kalemFormu = (k) => (k?.tur === KALEM_TUR.MALZEME
   ? { tur: KALEM_TUR.MALZEME, _anahtar: yeniKalemAnahtari(), ...malzemeSatiriFormu(k), adet: k.adet == null ? "1" : String(k.adet) }
+  : katalogIslemMi(k) || k?._cesit === CESIT.KATALOG ? katalogKalemFormu(k)
   : { tur: KALEM_TUR.ISLEM, _anahtar: yeniKalemAnahtari(), ad: k?.ad ?? "", tedarikciId: k?.tedarikciId == null ? "" : String(k.tedarikciId), tutar: tutarMetni(k?.tutar) });
+// Spec 0137 R27/2: katalog kaleminin formu yalnız işlem ve miktarı taşır (serbest alanlar yok). Miktar metindir, ondalık virgülle.
+const katalogKalemFormu = (k) => ({ tur: KALEM_TUR.ISLEM, _cesit: CESIT.KATALOG, _anahtar: k?._anahtar || yeniKalemAnahtari(),
+  islemId: k?.islemId == null ? "" : String(k.islemId), miktar: k?.miktar == null || k.miktar === "" ? "" : String(k.miktar).replace(".", ",") });
+// R17, R17/2 (AC-46, AC-47, AC-124): çeşit değişimi. Öteki çeşidin alanları düşer; anahtar korunur (React satır kimliği).
+export const kalemCesidiDegistir = (f, cesit) => (cesit === CESIT.KATALOG
+  ? katalogKalemFormu({ _anahtar: f?._anahtar })
+  : { tur: KALEM_TUR.ISLEM, _anahtar: f?._anahtar || yeniKalemAnahtari(), ad: "", tedarikciId: "", tutar: "" });
+// Silinecek alanda veri var mı (dolu ise onay sorulur, R17/2).
+export const cesitVerisiDolu = (f) => (formCesidi(f) === CESIT.KATALOG
+  ? String(f.islemId ?? "").trim() !== "" || String(f.miktar ?? "").trim() !== ""
+  : String(f.ad ?? "").trim() !== "" || String(f.tedarikciId ?? "").trim() !== "" || String(f.tutar ?? "").trim() !== "");
+// Karar 42: kalemde işlem değişince birimi farklıysa miktar o birimin varsayılanına döner (adette "1", kiloda boş).
+export const katalogIslemSec = (f, islemId, islemKat) => {
+  const eski = islemKat instanceof Map ? islemKat.get(String(f.islemId)) : null;
+  const yeni = islemKat instanceof Map ? islemKat.get(String(islemId)) : null;
+  const ayniBirim = eski && yeni && birimOf(eski) === birimOf(yeni);
+  return { ...f, islemId: String(islemId), miktar: ayniBirim ? f.miktar : (yeni && birimOf(yeni) === BIRIM.KILO ? "" : "1") };
+};
 export const kalemleriFormu = (kalemler = []) => (kalemler || []).map(kalemFormu);
 export const bosMalzemeKalemi = () => ({ ...kalemFormu({ tur: KALEM_TUR.MALZEME }), malzemeId: "", adet: "1" });
 export const bosIslemKalemi = () => kalemFormu({ tur: KALEM_TUR.ISLEM });
@@ -315,10 +380,20 @@ export const bosIslemKalemi = () => kalemFormu({ tur: KALEM_TUR.ISLEM });
 export const formKalemDolu = (kalemler = []) => (kalemler || []).length > 0;
 
 // Kalem listesinin altındaki ibareler (R20, R20/2, R35/2, R35/4) ve boş durum (R40, R41).
+// Spec 0137 R19/2 (AC-120): yalnız SERBEST işlem kalemi varken çizilir; metin aynen (serbest kalemli eski veride ekran aynı kalır).
 export const ISLEM_ZAM_IBARESI = "İşlem tutarları sabittir; malzeme fiyatına gelen zam yalnız malzeme kalemlerini günceller.";
+// Spec 0137 R19, R19/3 (AC-52, AC-53): yalnız serbest işlem kalemi VE malzeme kalemi varken çizilir; metin aynen.
 export const KARMA_TARIH_IBARESI = "Geçmiş bir tarihin maliyetinde malzeme kalemleri o tarihin fiyatıyla, işlem kalemleri bugünkü tutarıyla hesaplanır.";
 export const MALZEME_GECMIS_IBARESI = "Bu parçanın maliyet geçmişi malzemenin kendi fiyat geçmişinden gelir; geçerlilik tarihi girilmez.";
-export const KALEM_BOS_METNI = "Henüz maliyet kalemi yok. Malzeme kalemi malzemeden hesaplanır, işlem kalemi (lazer kesim, büküm, kaplama, işçilik) sabit tutardır.";
+// Spec 0137 R19/2 (AC-121): boş durum iki işlem çeşidini birden anlatır.
+export const KALEM_BOS_METNI = "Henüz maliyet kalemi yok. Malzeme kalemi malzemeden hesaplanır. İşlem kalemi Dış İşlemler kataloğundan seçilirse fiyatı katalogdan gelir ve zamla güncellenir; serbest işlem kalemi (lazer kesim, büküm, kaplama, işçilik) sabit tutardır.";
+// R29 (AC-107): katalog bağlı işlem kalemi olan parçada geçmiş ve geçerlilik tarihi çizilmez.
+export const KALEM_GECMIS_IBARESI = "Bu parçanın maliyet geçmişi malzemelerin ve dış işlemlerin kendi fiyat geçmişinden gelir; geçerlilik tarihi girilmez.";
+// R10/3 (AC-122): katalog boşken seçici yerine.
+export const ISLEM_KATALOG_BOS_NEDENI = "Henüz dış işlem tanımlanmadı. Dış işlemler Ayarlar › Katalog › Dış İşlemler panelinden eklenir.";
+export const ISLEM_ARA = "İşlem ara...";
+export const KILO_TURET_IPUCU = "Boş bırakılırsa parçanın işlenmiş ağırlığından (işleme payı ve fire hariç) türetilir.";
+export const CESIT_DEGISIM_ONAYI = "Bu kalemin girilmiş bilgileri silinecek. Çeşit değiştirilsin mi?";
 export const MALZEME_KATALOG_BOS_NEDENI = "Henüz malzeme tanımlanmadı. Malzemeler Ayarlar › Katalog › Malzemeler panelinden eklenir.";
 export const KALEM_TOPLAM_ETIKETI = "Toplam, parçanın alış maliyeti";
 export const KALEM_BOLUM_BASLIGI = "Maliyet kalemleri";

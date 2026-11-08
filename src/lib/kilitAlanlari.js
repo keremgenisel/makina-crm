@@ -44,7 +44,9 @@ export const KILIT_ALANLARI = {
   ayar: { etiket: "Ayarlar paneli", pencereler: ["src/components/Settings.jsx", "src/components/maliyet/ModelMaliyetleri.jsx", "src/components/maliyet/HesapAyarlari.jsx",
     "src/components/ModelsManager.jsx", "src/components/PartManager.jsx", "src/components/KalipManager.jsx", "src/components/PartTypeManager.jsx",
     // Spec 0132 C6/2 (AC-86): malzeme paneli ve fiyat güncelleme penceresi `ayar:malzemeler` kilidi altında çizilir.
-    "src/components/MalzemeManager.jsx", "src/components/MalzemeFiyatPenceresi.jsx"] },
+    "src/components/MalzemeManager.jsx", "src/components/MalzemeFiyatPenceresi.jsx",
+    // Spec 0137 R24, R24/2 (AC-133): dış işlem paneli ve fiyat güncelleme penceresi `ayar:disislemler` kilidi altında çizilir.
+    "src/components/DisIslemManager.jsx", "src/components/DisIslemFiyatPenceresi.jsx"] },
   // Spec 0088 R32 (plan sapması S2): Hesap Ayarları formu; Ayarlar paneli olmadığı için `ayar` alanına giremez (AYAR_KILITLI kuralı).
   maliyet_ayar: { etiket: "Makina Maliyeti hesap ayarları", pencereler: ["src/components/maliyet/HesapAyarlari.jsx"] },
 };
@@ -55,7 +57,7 @@ export const KILIT_ALANLARI = {
 // `autoLockMinutes`'i yazdığı için kilitlidir (plan notu).
 export const AYAR_KILITLI = {
   app: "Uygulama", musteri: "Müşteri Görünümü", fiyat: "Fiyat Ayarları", servispano: "Servis ve Kargo Panosu", company: "Firma Bilgileri", calisanlar: "Firma Çalışanları",
-  models: "Makina Modelleri", kaliplar: "Kalıp Modelleri", yedekparca: "Parça/Yedek Parça", parcatipi: "Parça Tipleri", malzemeler: "Malzemeler",
+  models: "Makina Modelleri", kaliplar: "Kalıp Modelleri", yedekparca: "Parça/Yedek Parça", parcatipi: "Parça Tipleri", malzemeler: "Malzemeler", disislemler: "Dış İşlemler",
   gidertur: "Gider Türleri", gidertanim: "Tekrarlayan Giderler", giderayar: "Gider Ayarları",
   kdv: "KDV Oranı", kkkomisyon: "Kredi Kartı Komisyonları", evrak: "Teklif/Proforma/Yurt Dışı Fatura", ceviri: "Çeviriler", takip: "Takip Süreleri",
   mailsablon: "E-posta Şablonları", security: "Uygulama Şifresi", backup: "Yedekleme", import: "İçe Aktar", optimize: "Resim Optimize", trash: "Çöp Kutusu", sahipsiz: "Sahipsiz Kayıtlar",

@@ -11,7 +11,7 @@ const ENTITY_LABELS = {
   yedek_parca_satis: "Yedek Parça Satışı",
   // Gider kaydı (spec 0001)
   gider: "Gider", gider_tanim: "Tekrarlayan Gider", gider_tur: "Gider Türü", tedarikci: "Tedarikçi",
-  uretim_partisi: "Üretim Partisi", malzeme: "Malzeme", // spec 0132 // spec 0022; etiketi 0068 ile eklendi (önceden ham anahtar görünüyordu)
+  uretim_partisi: "Üretim Partisi", malzeme: "Malzeme", dis_islem: "Dış İşlem", // spec 0137 R24/3; spec 0132 // spec 0022; etiketi 0068 ile eklendi (önceden ham anahtar görünüyordu)
   // Kasa (spec 0024)
   kasa_hesap: "Kasa/Banka Hesabı", kasa_kapsam: "Kasa İş Listesi", kasa_hareketi: "Kasa Hareketi", virman: "Virman", avans: "Çalışan Avansı", cek: "Çek",
 };

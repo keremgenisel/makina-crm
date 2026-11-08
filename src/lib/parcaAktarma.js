@@ -8,7 +8,8 @@ import { parcaMaliyetDogrula, parcaMaliyetKurus, KALEM_EXCEL_HATASI, maliyetGecm
   setIcerigiOf, setIcerigiDogrula, setteGecenParcalar, icerenSetAdlariHaritasi, setIcerigiHucresi, setIcerigiHucresiParcala, setIcerigiParcasiCoz, setIcerigiExcelHatasi,
   SET_BILESEN_BULUNAMADI, SET_ICERIGI_BASLIGI, SET_ICERIGI_ORNEGI } from "./urunAgaci";
 import { malzemeKatalogu } from "./malzeme";
-import { kalemVarMi, malzemeKalemiVarMi } from "./maliyetKalemleri";
+import { disIslemKatalogu } from "./disIslem";
+import { kalemVarMi, malzemeKalemiVarMi, katalogIslemVarMi } from "./maliyetKalemleri";
 import { maliyeteBagliMi, parcaSatisFiyati, fiyatAyariOf } from "./parcaFiyati";
 import { tutarCoz } from "./gider";
 export const FIYAT_EXCEL_HATASI = "bu parçanın fiyatı maliyetten türüyor, Excel'deki fiyat alınmadı.";
@@ -30,13 +31,14 @@ export const MALIYET_BELIRSIZ_HATASI = "Maliyet belirsiz (nokta binlik mi ondal�
 // Spec 0121 R12/2 (AC-50): setin hücresi çözülmüş maliyeti taşır; katalog (`setKatalogu`) çağıranda bir kez kurulur ve geçirilir.
 // Katalog verilmezse set hücresi boş kalır (C2); içerik Excel'e hiç girmez (X10).
 // Spec 0132 R21 (AC-72): malzeme satırlı parçanın hücresi çözülmüş maliyeti taşır; `malzemeKat` çağıranda bir kez kurulur.
-const maliyetHucresi = (p, katalog, malzemeKat) => { const k = parcaMaliyetKurus(p, undefined, katalog, malzemeKat); return k == null ? "" : k / 100; };
+// Spec 0137 R20, R30 (AC-66, AC-113): beşinci argüman dış işlem kataloğunun haritası.
+const maliyetHucresi = (p, katalog, malzemeKat, islemKat) => { const k = parcaMaliyetKurus(p, undefined, katalog, malzemeKat, islemKat); return k == null ? "" : k / 100; };
 // Spec 0124 R3, R3/3: on birinci hücre içerik (ad canlı katalogdan); katalog verilmezse boş.
 // Spec 0133 R18 (AC-42, AC-43): dördüncü parametre fiyat ayarı; maliyete bağlı parçanın TL hücresi yürürlükteki (türetilmiş)
 // fiyattır, elle sabit parçada girilen değer birebir (kıyas, C4). Döviz hücreleri elle.
-const tlHucresi = (p, katalog, malzemeKat, fiyatAyarlari) => (maliyeteBagliMi(p)
-  ? parcaSatisFiyati(p, "TRY", { setKat: katalog, malzemeKat, ayar: fiyatAyariOf(fiyatAyarlari) }).deger : (p.fiyatTRY ?? ""));
-export const parcaDisaAktarmaSatiri = (p, katalog, malzemeKat, fiyatAyarlari = null) => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", tlHucresi(p, katalog, malzemeKat, fiyatAyarlari), p.fiyatUSD ?? "", p.fiyatEUR ?? "", maliyetHucresi(p, katalog, malzemeKat),
+const tlHucresi = (p, katalog, malzemeKat, fiyatAyarlari, islemKat) => (maliyeteBagliMi(p)
+  ? parcaSatisFiyati(p, "TRY", { setKat: katalog, malzemeKat, islemKat, ayar: fiyatAyariOf(fiyatAyarlari) }).deger : (p.fiyatTRY ?? ""));
+export const parcaDisaAktarmaSatiri = (p, katalog, malzemeKat, fiyatAyarlari = null, islemKat = undefined) => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", tlHucresi(p, katalog, malzemeKat, fiyatAyarlari, islemKat), p.fiyatUSD ?? "", p.fiyatEUR ?? "", maliyetHucresi(p, katalog, malzemeKat, islemKat),
   setIcerigiHucresi(p, katalog)];
 
 // Satırlar (ilk satır başlık) → kayıt dizisi. `idBaslangic` yeni parçaların kimlik tabanıdır (ekranda Date.now()).
@@ -45,10 +47,12 @@ export const parcaDisaAktarmaSatiri = (p, katalog, malzemeKat, fiyatAyarlari = n
 // Spec 0132 R21 (AC-73): beşinci parametre malzeme listesi; malzeme satırlı parçanın hücresi karşılaştırma için çözülür.
 // Spec 0133 R19, R19/2 (AC-44, AC-75, AC-76): altıncı parametre fiyat ayarı. Maliyete bağlı parçanın TL hücresi kayda yazılmaz
 // (kayıttaki değer korunur); bildirim yalnız dosyadaki değer yürürlükteki fiyattan farklıysa, satır numarasıyla.
-export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), bugun, malzemeler = null, fiyatAyarlari = null) => {
+// Spec 0137 R30, R35 (AC-67, AC-113): yedinci parametre dış işlem listesi; katalog bağlı işlem kalemli parçanın hücresi onunla çözülür.
+export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), bugun, malzemeler = null, fiyatAyarlari = null, disIslemler = null) => {
   if (!gecerliGunMu(bugun)) throw new Error("parcaSatirlariniCoz: bugun (YYYY-AA-GG) gerekli");
   const malzemeKat = malzemeler ? malzemeKatalogu(malzemeler) : null;
-  const fiyatBag = { setKat: setKatalogu(parts), malzemeKat, ayar: fiyatAyariOf(fiyatAyarlari) }; // spec 0133: bir kez
+  const islemKat = disIslemler ? disIslemKatalogu(disIslemler) : null;
+  const fiyatBag = { setKat: setKatalogu(parts), malzemeKat, islemKat, ayar: fiyatAyariOf(fiyatAyarlari) }; // spec 0133: bir kez
   const dataRows = rows.slice(1);
   const newParts = []; const errors = [];
   let yeniler = 0, guncellenenler = 0, icerikYazilanlar = 0;
@@ -192,14 +196,14 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
     // bildirim tek metne iner; dışa aktarmanın yazdığı rakam geri yüklenirse bildirim yok. R37/3 (AC-114): içe aktarma kalem
     // alanına ve eski üç alana hiç dokunmaz (aşağıdaki kayıt nesnesi onları taşımaz; uygulama kolu eskisini korur).
     const kalemli = !!mevcut && !setOlacak && kalemVarMi(mevcut) && !m.bos && !m.hata;
-    if (kalemli && kurus(m.deger) !== parcaMaliyetKurus(mevcut, undefined, undefined, malzemeKat)) errors.push(`Satır ${idx + 2}: ${KALEM_EXCEL_HATASI}`);
+    if (kalemli && kurus(m.deger) !== parcaMaliyetKurus(mevcut, undefined, fiyatBag.setKat, malzemeKat, islemKat)) errors.push(`Satır ${idx + 2}: ${KALEM_EXCEL_HATASI}`);
     // Spec 0121 R12/2 (AC-50): setin maliyet hücresi alınmaz (maliyet içerikten gelir); dışa aktarmanın yazdığı rakam geri
     // yüklenirse bildirim yok, farklı rakamda neden satır numarasıyla bildirilir (0096 triyaj emsali). Spec 0124 R9: karşılaştırma
     // dosya sonrası içerikle ve katalogla.
     const setli = setOlacak && !m.bos && !m.hata;
     const setKaydi = { ...(mevcut || {}), id, ...(yeniIcerik ? { setIcerigi: yeniIcerik } : {}) };
     // Triyaj (bulgu 5): bileşeni malzemeden hesaplanan sette dışa aktarmanın rakamı malzeme listesiyle okunur.
-    if (setli && kurus(m.deger) !== parcaMaliyetKurus(setKaydi, undefined, sonucKatalog, malzemeKat)) errors.push(`Satır ${idx + 2}: ${SET_EXCEL_HATASI}`);
+    if (setli && kurus(m.deger) !== parcaMaliyetKurus(setKaydi, undefined, sonucKatalog, malzemeKat, islemKat)) errors.push(`Satır ${idx + 2}: ${SET_EXCEL_HATASI}`);
     if (mevcut && maliyeteBagliMi(mevcut) && cell(6) !== "") {
       const yurur = parcaSatisFiyati(mevcut, "TRY", fiyatBag).deger;
       const dosya = tutarCoz(cell(6)); // Excel sayıyı "4082.69" biçiminde verir; tutarCoz noktayı ondalık okur
@@ -209,7 +213,9 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
     const maliyetAlani = m.bos || m.hata || kalemli || setli ? {} : { maliyet: m.deger };
     // R20, R4: geçmiş mevcut kayıttan türer; değer değişmiyorsa geçmiş alanı hiç yazılmaz (uygulama kolu eskisini korur).
     // Spec 0124 R9/2: `set` kapısı dosyadan gelen yeni hâle göre.
-    const gecmisKarari = mevcut ? maliyetGecmisiYaz(mevcut, parcaMaliyetKurus({ ...mevcut, ...maliyetAlani }), { tarih: bugun, bugun, set: setOlacak, malzeme: malzemeKalemiVarMi(mevcut) }) : null;
+    // Spec 0137 R29, R29/2: kapı katalog bağlı işlem kalemini de sayar; değerler iki listeyle çözülür.
+    const gecmisKarari = mevcut ? maliyetGecmisiYaz(mevcut, parcaMaliyetKurus({ ...mevcut, ...maliyetAlani }, undefined, fiyatBag.setKat, malzemeKat, islemKat),
+      { tarih: bugun, bugun, set: setOlacak, malzeme: malzemeKalemiVarMi(mevcut), katalogIslem: katalogIslemVarMi(mevcut), malzemeKat, islemKat }) : null;
     const gecmisAlani = gecmisKarari && !gecmisKarari.hata && JSON.stringify(gecmisKarari.gecmis) !== JSON.stringify(mevcut.maliyetGecmisi || [])
       ? { maliyetGecmisi: gecmisKarari.gecmis } : {};
     if (gecmisKarari?.hata) errors.push(`Satır ${idx + 2}: ${gecmisKarari.hata} Maliyet alınmadı.`);

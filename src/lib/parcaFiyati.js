@@ -6,6 +6,7 @@
 import { partFiyatForCurrency } from "./utils";
 import { parcaMaliyetKurus, setKatalogu } from "./urunAgaci";
 import { malzemeKatalogu, BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./malzeme";
+import { disIslemKatalogu } from "./disIslem";
 import { tutarCoz } from "./gider";
 
 // ── Kip (R1, R1/2, AC-94) ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -58,8 +59,9 @@ export const fiyatAyariOf = (fa) => {
 
 // ── Bağlam (R10/3, Karar 32, AC-55) ─────────────────────────────────────────────────────────────────────────────────────
 // Ekran bağlamı BİR KEZ kurar (useMemo); formlar yalnız bağlamı alır. `fiyatAyarlari` uygulama ayarının alt nesnesi.
-export const fiyatBaglamiKur = ({ parts = [], malzemeler = [], fiyatAyarlari = null } = {}) => ({
-  setKat: setKatalogu(parts), malzemeKat: malzemeKatalogu(malzemeler), ayar: fiyatAyariOf(fiyatAyarlari),
+// Spec 0137 R30 (Karar 32'nin dersi): dış işlem kataloğu da bağlamın anahtarıdır (`islemKat`); ekranlar kendi Map'ini kurmaz.
+export const fiyatBaglamiKur = ({ parts = [], malzemeler = [], disIslemler = [], fiyatAyarlari = null } = {}) => ({
+  setKat: setKatalogu(parts), malzemeKat: malzemeKatalogu(malzemeler), islemKat: disIslemKatalogu(disIslemler), ayar: fiyatAyariOf(fiyatAyarlari),
 });
 
 // ── Nedenler (R11, R11/2, AC-85: tek sabit kümesi) ──────────────────────────────────────────────────────────────────────
@@ -72,7 +74,7 @@ export const TURETILEMEDI = "fiyat türetilemedi";
 // Dönüş { fiyatK (kuruş | null), neden, kat }. Maliyet tarih verilmeden okunur (bugünkü). Çarpım kuruşa bir kez yuvarlanır;
 // yuvarlama yukarı ve yalnız türetilmiş fiyata.
 export const turetilmisFiyat = (p, baglam) => {
-  const maliyetK = parcaMaliyetKurus(p, undefined, baglam?.setKat, baglam?.malzemeKat);
+  const maliyetK = parcaMaliyetKurus(p, undefined, baglam?.setKat, baglam?.malzemeKat, baglam?.islemKat); // spec 0137 R20, AC-65
   const kat = karKatiOf(p) ?? baglam?.ayar?.varsayilanKat ?? null;
   if (maliyetK == null) return { fiyatK: null, neden: NEDEN_MALIYET_YOK, kat };
   if (kat == null) return { fiyatK: null, neden: NEDEN_KAT_YOK, kat: null };

@@ -180,11 +180,11 @@ export const Documents = ({
   openDocId = null,
   onDocOpenConsumed = null,
   aktifKullanici = null, // spec 0128 R1: silme onayının kendi kilidini engel saymaması için
-  malzemeler = [], // spec 0133 R10/3: maliyete bağlı parçanın fiyatı malzemeden türeyebilir
+  malzemeler = [], disIslemler = [] /* spec 0137 R30, R35 */, // spec 0133 R10/3: maliyete bağlı parçanın fiyatı malzemeden türeyebilir
 }) => {
   const effectiveTur = effectiveTeklifTur;
   // Spec 0133 R10, Karar 32: satır fiyatının tek okuma yolu; bağlam ekranda bir kez kurulur.
-  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, disIslemler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, disIslemler, appSettings?.fiyatAyarlari]);
   const kaydedildiMi = (t) => teklifKaydedildiMi(t, { customers, partSales, yedekParcaSatislar, parts });
   const uretimDurumu = (t) => teklifUretimDurumu(t, { parts, customers });
   const evrakFormConfig = appSettings?.evrakFormConfig || null;

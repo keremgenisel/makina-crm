@@ -50,5 +50,15 @@ export const kalemVarMi = (p) => maliyetKalemleriOf(p).length > 0;
 export const malzemeKalemiVarMi = (p) => maliyetKalemleriOf(p).some(k => k.tur === KALEM_TUR.MALZEME);
 // R31, R33: parçanın malzeme kalemlerinde geçen malzeme kimlikleri (metin, tekilleştirilmiş).
 export const kalemMalzemeIdleri = (p) => [...new Set(malzemeKalemleri(p).filter(k => doluMu(k.malzemeId)).map(k => String(k.malzemeId)))];
-// R32, R46: parçanın işlem kalemlerinde geçen tedarikçi kimlikleri (metin, tekilleştirilmiş).
-export const kalemTedarikciIdleri = (p) => [...new Set(islemKalemleri(p).filter(k => doluMu(k.tedarikciId)).map(k => String(k.tedarikciId)))];
+// Spec 0137 R10/2, R27/2: işlem kaleminin iki çeşidi; katalog bağlı kalemin ayırt edicisi `islemId` anahtarının varlığıdır. Üçüncü
+// bir `tur` değeri yoktur (AC-88): güncellenmemiş istemci üçüncü türü tamamen düşürürdü.
+export const katalogIslemMi = (k) => !!k && k.tur === KALEM_TUR.ISLEM && doluMu(k.islemId);
+export const serbestIslemMi = (k) => !!k && k.tur === KALEM_TUR.ISLEM && !doluMu(k.islemId);
+export const katalogIslemVarMi = (p) => maliyetKalemleriOf(p).some(katalogIslemMi);
+// R29, plan turu Karar 40: tarihli okumanın kalem yolu (parçanın kendi maliyet geçmişi ne yazılır ne okunur): en az bir malzeme
+// kalemi YA DA katalog bağlı işlem kalemi.
+export const kalemYoluMu = (p) => maliyetKalemleriOf(p).some(k => k.tur === KALEM_TUR.MALZEME || katalogIslemMi(k));
+// R21, R2/2: parçanın katalog bağlı kalemlerinde geçen işlem kimlikleri (metin, tekilleştirilmiş).
+export const kalemIslemIdleri = (p) => [...new Set(maliyetKalemleriOf(p).filter(katalogIslemMi).map(k => String(k.islemId)))];
+// R32, R46: parçanın SERBEST işlem kalemlerinde geçen tedarikçi kimlikleri (katalog bağlı kalemde tedarikçi yoktur, R10/4).
+export const kalemTedarikciIdleri = (p) => [...new Set(islemKalemleri(p).filter(k => !katalogIslemMi(k) && doluMu(k.tedarikciId)).map(k => String(k.tedarikciId)))];

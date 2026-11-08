@@ -246,6 +246,19 @@ const GOVDE_0135 = { id: 51, ad: "Kazan gövdesi", kod: "KG-1", tip: "Standart",
 ] };
 const PIM_0135 = { id: 52, ad: "Kaplamalı pim", kod: "KP-3", tip: "Standart", models: [], maliyetKalemleri: [{ tur: "islem", ad: "Kaplama", tedarikciId: 32, tutar: 40 }],
   maliyetGecmisi: [{ gecerli: "", kurus: 3000 }, { gecerli: "2026-05-01", kurus: 4000 }] };
+// Spec 0137: dış işlem kataloğu (kullanılan, kullanılmayan, dövizli, fiyatsız) ve katalog bağlı kalemli parçalar.
+const ISLEM_0137 = [
+  { id: 801, ad: "Galvano", birim: "kilo", birimFiyati: 30, tedarikciId: 31, fiyatGecmisi: [{ gecerli: "", birimFiyati: 26, paraBirimi: "TRY" }, { gecerli: "2026-06-01", birimFiyati: 30, paraBirimi: "TRY" }] },
+  { id: 802, ad: "Isıl işlem", birim: "adet", birimFiyati: 20 },
+  { id: 803, ad: "Lazer kesim", birim: "adet", birimFiyati: 2, paraBirimi: "USD", kur: 50 },
+  { id: 804, ad: "Kama açma", birim: "adet" },
+];
+const PARCA_0137 = [
+  { id: 61, ad: "Galvanizli lama", kod: "GL-1", tip: "Standart", fiyatTRY: 900, fiyatKipi: "maliyet", karKati: 2, models: [], maliyetKalemleri: [
+    { tur: "malzeme", malzemeId: 502, bicim: "lama", kalinlik: 10, genislik: 120, boy: 300, adet: 1 },
+    { tur: "islem", islemId: 801 }, { tur: "islem", islemId: 802, miktar: 2 }, { tur: "islem", ad: "Büküm", tedarikciId: 32, tutar: 5 }] },
+  { id: 62, ad: "Kamalı mil", kod: "KM-2", tip: "Standart", models: [], maliyetKalemleri: [{ tur: "islem", islemId: 804, miktar: 1 }] },
+];
 const PARCA_0121_BOS = [...BILESEN_0121, SET_0121];
 const STOK_0121 = [{ id: 1, partId: "21", miktar: 10 }, { id: 2, partId: "22", miktar: 6 }, { id: 3, partId: "23", miktar: 20 }, { id: 4, partId: "20", miktar: 2 }];
 const STOK_0121_EKSIK = [{ id: 1, partId: "21", miktar: 10 }, { id: 3, partId: "23", miktar: 1 }];
@@ -393,7 +406,7 @@ const H0060 = [
   { id: 4, tur: "odeme", tarih: "2026-09-15", tutar: t0060(603, "ana")[0].tutar, hesapId: 1, giderId: 603, taksitId: t0060(603, "ana")[0].id, yontem: "Havale" },
 ];
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED, satis = SATIS, parcalar = [] }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED, satis = SATIS, parcalar = [], disIslemler = [] }) {
   const [giderler, setGiderler] = useState(g0);
   // Spec 0024: h0 verilirse ödeme durumu hareketlerden türer (App gibi); verilmezse eski ekranlar saklı durumu okur.
   const [hareketler, setHareketler] = useState(h0);
@@ -403,7 +416,7 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
   return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={tanimlar} setGiderTanimlari={setTanimlar}
     giderTurleri={turler} tedarikciler={ted} setTedarikciler={setTed}
     calisanlar={CAL} standardModels={MODELLER} customModels={[]} appSettings={ayar} serverPermissions={null}
-    satisVerisi={satis} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}} parts={parcalar}
+    satisVerisi={satis} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}} parts={parcalar} disIslemler={disIslemler}
     uretimPartileri={partiler} setUretimPartileri={setPartiler}
     setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})}
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})}
@@ -1071,6 +1084,19 @@ const EKRANLAR = {
   "katalog-parca-0135-onay": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "dugme:Elle sabit"]],
   "katalog-parca-0135-yalniz-islem": [ayarlar("yedekparca", { parts: [PIM_0135], standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Geçerlilik tarihi"]],
   "katalog-parca-0135-liste": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), []],
+  // Spec 0137: dış işlem paneli, fiyat penceresi, parça kartının katalog kalemi, çöp kutusu ve tedarikçi koruması.
+  "katalog-disislem-bos": [ayarlar("disislemler"), []],
+  "katalog-disislem": [ayarlar("disislemler", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096 }), []],
+  "katalog-disislem-yeni": [ayarlar("disislemler", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096, rates: { usd: 42.15, eur: 48.9 } }), ["~Yeni Dış İşlem"]],
+  "katalog-disislem-hata": [ayarlar("disislemler", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096 }), ["~Yeni Dış İşlem", "doldur:İşlem adı=galvano", "doldur:Birim fiyatı=2.955", "Kaydet"]],
+  "katalog-disislem-duzenle": [ayarlar("disislemler", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096 }), ["baslik:Düzenle"]],
+  "katalog-disislem-fiyat": [ayarlar("disislemler", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096, appSettings: { ...AYAR, fiyatAyarlari: { varsayilanKat: 2 } }, rates: { usd: 42.15, eur: 48.9 } }), ["dugme:Fiyatı Güncelle", "doldur:Birim fiyatı=36", "kaydir:Etkisi"]],
+  "katalog-disislem-sil": [ayarlar("disislemler", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096 }), ["baslik:Sil"]],
+  "katalog-parca-0137-katalog": [ayarlar("yedekparca", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:İşlem kalemi 1"]],
+  "katalog-parca-0137-neden": [ayarlar("yedekparca", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096, standardModels: MODELLER_0087, parts: [PARCA_0137[1]], rawParts: [PARCA_0137[1]] }), ["baslik:Düzenle", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0137-onay": [ayarlar("yedekparca", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "dugme:Katalogdan"]],
+  "katalog-parca-0137-liste": [ayarlar("yedekparca", { disIslemler: ISLEM_0137, rawDisIslemler: ISLEM_0137, parts: PARCA_0137, rawParts: PARCA_0137, malzemeler: MALZEME_0132, tedarikciler: TED_0096, standardModels: MODELLER_0087 }), []],
+  "ayarlar-trash-0137": [ayarlar("trash", { rawDisIslemler: [{ ...ISLEM_0137[0], deletedAt: "2026-10-20T09:00:00.000Z" }, { ...ISLEM_0137[3], deletedAt: "2026-10-21T09:00:00.000Z" }], rawParts: PARCA_0137 }), []],
   "katalog-model-ekmaliyet": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Ek Maliyet Kalemleri"]],
   "katalog-model-0134-parti": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "dugme:Parti başına gir", "kaydir:Makina Kiti"]],
   "katalog-calisan": [ayarlar("calisanlar"), []],
@@ -1445,6 +1471,7 @@ const EKRANLAR = {
   // Spec 0096: hammadde rozetli tedarikçi listesi (kullanım parça sayar) ve parça sayısını yazan "silinemez" penceresi.
   "giderler-0096-tedarikciler": [<GiderEkrani tedler={TED_0096} parcalar={PARCA_0096} />, ["Tedarikler ve Ekstre"]],
   "giderler-0096-tedarikci-sil": [<GiderEkrani tedler={[TED_0096[0]]} parcalar={PARCA_0096} />, ["Tedarikler ve Ekstre", "baslik:Sil"]],
+  "giderler-0137-tedarikci-sil": [<GiderEkrani tedler={[TED_0096[0]]} disIslemler={ISLEM_0137} />, ["Tedarikler ve Ekstre", "baslik:Sil"]],
   "anasayfa-0062-hatirlatma": [hatirlatma62, ["Gider Ödemeleri"]],
   "anasayfa-0062-hatirlatma-sayfa2": [hatirlatma62, [...sayfa2(["Gider Ödemeleri"]), "kaydir:Yaklaşan ("]], // son "Sonraki ›" yaklaşan bölümün
   "giderler-acik-kalemler": [<GiderEkrani g0={G0061} h0={H0060} />, ["dugme:Açık kalemler (tüm dönemler)"]],

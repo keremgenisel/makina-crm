@@ -1051,26 +1051,42 @@ export const turKullanim = (turId, giderler = [], tanimlar = []) => ({
 // geri alınan parçanın bağı kopmasın); "çöpü boşalt" kalacak parçaları verir.
 // Spec 0135 R32, R32/2, C5, C5/2: türetilmiş kalem listesinin işlem kalemleri okunur (eski kırılım dahil, tek türetme yolundan);
 // aynı tedarikçi bir parçanın birden çok işlem kaleminde geçebildiği için (R15/2) parça bir kez sayılır.
-export const kalemdeGecenTedarikciler = (parts = []) => {
+// Spec 0137 R22, R22/2 (AC-62, AC-63, AC-131): ikinci parametre dış işlem kataloğu (canlı ve çöpteki; çöpteki işlem geri alınabilir).
+// İşlemin tedarikçisi aynı haritaya `islem` / `islemCop` olarak girer; dört kapı (Tedarikler'in silme düğmesi, Kalıcı Sil, çöpü
+// boşalt, otuz günlük temizlik) bu tek haritayı okur. Parça sayıları değişmez (işlemi yalnız katalogda olan tedarikçide `parca: 0`).
+// Parçasız tedarikçide değer `{ parca: 0, cop: 0, islem, islemCop }`; işlemsiz tedarikçide şekil spec öncesiyle aynı (`{ parca, cop }`).
+const bosKullanim = () => ({ parca: 0, cop: 0 });
+export const kalemdeGecenTedarikciler = (parts = [], disIslemler = []) => {
   const m = new Map();
   for (const p of parts || []) for (const k of kalemTedarikciIdleri(p)) {
-    const x = m.get(k) || { parca: 0, cop: 0 };
+    const x = m.get(k) || bosKullanim();
     x.parca += 1; if (p?.deletedAt) x.cop += 1;
+    m.set(k, x);
+  }
+  for (const d of disIslemler || []) {
+    if (!d || d.tedarikciId == null || d.tedarikciId === "") continue;
+    const k = String(d.tedarikciId); const x = m.get(k) || bosKullanim();
+    x.islem = (x.islem || 0) + 1; if (d.deletedAt) x.islemCop = (x.islemCop || 0) + 1;
     m.set(k, x);
   }
   return m;
 };
 // Çöp Kutusu satırının korunma nedeni (R13/2, AC-37); spec 0135 R32/2 ile kalem dilinde.
 export const KALEMDE_TEDARIKCI_NEDENI = "Bir parçanın maliyet kaleminde geçiyor; önce Ayarlar › Katalog › Parça/Yedek Parça'da kalemden çıkarın.";
+// Spec 0137 R22/2 (AC-132): dış işlem kataloğunda da geçen tedarikçinin nedeni iki adresi birden söyler.
+export const KALEMDE_VE_KATALOGDA_TEDARIKCI_NEDENI = "Bir parçanın maliyet kaleminde ya da bir dış işlemde geçiyor; önce Ayarlar › Katalog › Parça/Yedek Parça'da kalemden ve Ayarlar › Katalog › Dış İşlemler'de işlemden çıkarın.";
+export const tedarikciKorumaNedeni = (k) => (!k ? null : k.islem > 0 ? KALEMDE_VE_KATALOGDA_TEDARIKCI_NEDENI : KALEMDE_TEDARIKCI_NEDENI);
 // Spec 0096 R13, R13/3: parça kırılımı da kullanımdır (`parca`, `parcaCop`); dördüncü parametre verilmezse eski çıktı + sıfırlar.
 // Triyaj (bulgu 3): beşinci parametre hazır harita (`kalemdeGecenTedarikciler`); liste onu bir kez kurar, satır başına parça taranmaz.
 export const tedarikciKullanim = (tedId, giderler = [], tanimlar = [], parts = [], harita = null) => {
-  const p = (harita || kalemdeGecenTedarikciler(parts)).get(String(tedId)) || { parca: 0, cop: 0 };
+  const p = (harita || kalemdeGecenTedarikciler(parts)).get(String(tedId)) || bosKullanim();
   return {
     kalem: giderler.filter(k => String(k.tedarikciId) === String(tedId)).length,
     cop: giderler.filter(k => String(k.tedarikciId) === String(tedId) && k.deletedAt).length,
     tanim: tanimlar.filter(t => String(t.tedarikciId) === String(tedId)).length,
     parca: p.parca, parcaCop: p.cop,
+    // Spec 0137 R22/2: katalog işlemleri (harita dış işlemlerle kurulduysa).
+    islem: p.islem || 0, islemCop: p.islemCop || 0,
   };
 };
 export const tedarikciAdHatasi = (ad, tedarikciler = [], haricId = null) => {

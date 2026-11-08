@@ -266,18 +266,18 @@ describe("Spec 0121: kaynak taramaları (C1, R2/2, R2/3)", () => {
   it("AC-38 (dokuz okuyucu): maliyet zincirinin PartManager çağrıları katalogla", () => {
     const pm = kod("src/components/PartManager.jsx");
     // Spec 0132 ile (C1/2): dördüncü parametre malzeme haritasıdır; desenler yeni imzayı arar, iddia (katalog geçer) aynı.
-    expect(pm).toMatch(/maliyetGirildiMi\(p, undefined, katalog, malzemeKat\)/);
-    expect(pm).toMatch(/maliyetGirildiMi\(k, undefined, katalog, malzemeKat\)/);
-    expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat\)/);
+    expect(pm).toMatch(/maliyetGirildiMi\(p, undefined, katalog, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
+    expect(pm).toMatch(/maliyetGirildiMi\(k, undefined, katalog, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
+    expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
     // Spec 0135 ile (R39): liste hücresinde kırılımın ikinci çağrısı kalktı (tek kalem ibaresi); iki çağrı da katalogla.
-    expect(pm.match(/maliyetKaynagi\([^)]*katalog, malzemeKat\)/g).length).toBeGreaterThanOrEqual(2);
+    expect(pm.match(/maliyetKaynagi\([^)]*katalog, malzemeKat, islemKat\)/g).length).toBeGreaterThanOrEqual(2); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
     expect(pm).toMatch(/set: setMi\(temel\)/);
     expect(kod("src/lib/urunAgaci.js")).toMatch(/set: setMi\(temel\)/);
     // Spec 0124 ile (R9/2, Karar 31): içe aktarmanın geçmiş kapısı dosyadan gelen içeriği de sayar (`setOlacak`).
     expect(kod("src/lib/parcaAktarma.js")).toMatch(/set: setOlacak/);
     expect(kod("src/lib/parcaAktarma.js")).toMatch(/const setOlacak = setMi\(mevcut\) \|\| !!yeniIcerik;/);
-    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
+    expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
     // Spec 0133 ile: dördüncü parametre fiyat ayarları (maliyete bağlı parçanın TL hücresi türetilmiş fiyat, R16).
-    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat, appSettings\?\.fiyatAyarlari\)/);
+    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat, appSettings\?\.fiyatAyarlari, islemKat\)/); // spec 0137 ile (R30, Karar 34): beşinci argüman dış işlem kataloğu; iddia aynı
   });
 });

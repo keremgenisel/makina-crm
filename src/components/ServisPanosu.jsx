@@ -74,7 +74,7 @@ const bosForm = (factoryName) => ({
 
 export const ServisPanosu = ({
   services = [], setServices, customers = [], calisanlar = [], factory = null,
-  parts = [], malzemeler = [], dealers = [], kdvRates = null, geoData = null, loadingGeo = false,
+  parts = [], malzemeler = [], disIslemler = [] /* spec 0137 R30, R35 */, dealers = [], kdvRates = null, geoData = null, loadingGeo = false,
   setPartStock = null, setPartStockLog = null, partStock = [], partStockLog = [],
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, appSettings = null,
   showToast = () => {}, serverPermissions = null, kiosk = false, onKilitle = null,
@@ -89,7 +89,7 @@ export const ServisPanosu = ({
   uretimFormlari = [], setUretimFormlari = null, uretimYetki = false, partTypeDefs = null,
 }) => {
   // Spec 0133 R10/3, Karar 32: satış fiyatının bağlamı ekranda bir kez kurulur, formlara yalnız bağlam iner.
-  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, disIslemler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, disIslemler, appSettings?.fiyatAyarlari]);
   const canDo = makeCanDo(serverPermissions, "customerActions");
   const canKargoDuzenle = makeCanDo(serverPermissions, "stockActions")("yedek_parca_edit");
   // Extra Kalıp kargo pano işlemleri (kargo desenine paralel; ayrı izinler).

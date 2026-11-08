@@ -22,9 +22,11 @@ const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "modell
 // Tek satıra sığar (AC-58: Model Maliyetleri ekranlarında fark yalnız şeritte kalsın, alttaki içerik kaymasın).
 export const BUGUNKU_AYAR_IBARESI = "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri ile planlanan adet satırlarını etkiler; üretilmiş makinalar üretim günü maliyetiyle hesaplanır.";
 
+// Spec 0137 R34: varsayılan boş liste kararlı referanstır (her çizimde yeni dizi model memosunu ve sapmayı yeniden koştururdu, 0136 AC-80).
+const BOS_ISLEMLER = [];
 export const MakinaMaliyeti = ({
   aktifKullanici = "", giderler = [], giderTurleri = [], setGiderTurleri, tedarikciler = [], stock = [], customers = [], partStockLog = [],
-  parts = [], malzemeler = [], standardModels = [], customModels = [], setStandardModels, setCustomModels, uretimPartileri = [], setUretimPartileri,
+  parts = [], malzemeler = [], disIslemler = BOS_ISLEMLER /* spec 0137 R34 */, standardModels = [], customModels = [], setStandardModels, setCustomModels, uretimPartileri = [], setUretimPartileri,
   appSettings = {}, setAppSettings, rates = null, tumMusteriler = null, serverPermissions = null, showToast = () => {}, baslangicGorunum = "modeller",
   // Spec 0134 R24, R19/2, C3/2: eldeki parça stoğu (salt okunur) ve yalnız ad çözümü için ham tedarikçi ve parça dizileri.
   partStock = [], rawTedarikciler = null, rawParts = null, factory = null,
@@ -42,15 +44,16 @@ export const MakinaMaliyeti = ({
   const gercek = useMemo(() => gercekUretim(veri, ayarlar, pay.havuzK, { modelKirilimi: true, katalog }), [veri, ayarlar, pay.havuzK, katalog]);
   const uretimdeDisi = appSettings?.uretimdeOlmayanModeller;
   // Spec 0132 R16/4 (Ölçüm J, AC-89): malzeme listesi motorun veri nesnesinde ve bağımlılıkta; zam ekranda okunur.
-  const modeller = useMemo(() => modelMaliyetleri({ standardModels, customModels, parts, malzemeler }, pay.payK, { uretimdeDisi, uretim: gercek }),
-    [standardModels, customModels, parts, malzemeler, pay.payK, uretimdeDisi, gercek]);
+  // Spec 0137 R20, R34 (AC-64): dış işlem listesi de motorun veri nesnesinde ve bağımlılıkta; işlem zammı ekranda okunur.
+  const modeller = useMemo(() => modelMaliyetleri({ standardModels, customModels, parts, malzemeler, disIslemler }, pay.payK, { uretimdeDisi, uretim: gercek }),
+    [standardModels, customModels, parts, malzemeler, disIslemler, pay.payK, uretimdeDisi, gercek]);
   // Spec 0090 R12–R37, R37/3 (K8): parti payı burada kurulur (App'te ağır hesap yok). Üretim tarihi zinciri çöpteki müşteriyi de
   // okur (stoğa dönen makinanın özgün tarihi); bu yüzden müşteriler ham dizidir (bugünkü motorun girdisiyle aynı).
   const veriHam = useMemo(() => ({ ...veri, customers: tumMusteriler || customers }), [veri, tumMusteriler, customers]);
   const partiSonucu = useMemo(() => partiGenelPaylari(veriHam, bugun), [veriHam, bugun]);
   // Spec 0097 R9/2, R9/4, C11: Parti Hesabı tarihli maliyeti katalogdan kurar ve payla AYNI ham müşteri dizisini okur; dönem kilitli
   // pay burada zaten hesaplanıyor, görünüme geçirilir (yeni ağır hesap yok).
-  const parcaKatalogu = useMemo(() => ({ parts, malzemeler, standardModels, customModels }), [parts, malzemeler, standardModels, customModels]);
+  const parcaKatalogu = useMemo(() => ({ parts, malzemeler, disIslemler, standardModels, customModels }), [parts, malzemeler, disIslemler, standardModels, customModels]); // spec 0137 R34
   // Triyaj (bulgu 2): kapanış haritası kaydedilen partinin aralığından (tek yol, C15).
   const kapanisHavuzu = (parti) => partiKapanisHavuzu(veri, parti, bugun);
   // Triyaj (bulgu 3): sapma girdisi kararlı nesne; her çizimde yeni nesne Üretim Partileri'nin useMemo'sunu boşa çıkarırdı.

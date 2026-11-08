@@ -15,7 +15,7 @@ export const Stock = ({
   stock, setStock,
   models = ALTUNMAK_MODELS,
   showToast = () => {},
-  parts = [], rawParts = null, malzemeler = [],
+  parts = [], rawParts = null, malzemeler = [], disIslemler = [] /* spec 0137 R30, R35 */,
   partStock = [], setPartStock = () => {},
   partStockLog = [], setPartStockLog = () => {},
   appSettings = {}, setAppSettings = () => {},
@@ -33,7 +33,7 @@ export const Stock = ({
   geoData = null, loadingGeo = false,
 }) => {
   // Spec 0133 R10/3, Karar 32: satış fiyatının bağlamı ekranda bir kez kurulur, formlara yalnız bağlam iner.
-  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, disIslemler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, disIslemler, appSettings?.fiyatAyarlari]);
   const [subTab, setSubTab] = useState(defaultSubTab || "makina");
   // Bayi detayından "Yedek Parça Satışına git" — ilgili sekmeyi aç (zaten stok'a mount olurken açılır,
   // ama stok zaten açıksa bu effect sekmeyi değiştirir).
