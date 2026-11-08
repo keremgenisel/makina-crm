@@ -346,7 +346,8 @@ describe("Spec 0132: tek okuma yolu ve öncelik", () => {
     const a = kod("src/lib/parcaAktarma.js");
     expect(a).toMatch(/parcaMaliyetKurus\(p, undefined, katalog, malzemeKat\)/);
     expect(a).toMatch(/set: setOlacak, malzeme: malzemeSatiriVar\(mevcut\)/);
-    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat\)/);
+    // Spec 0133 ile: dördüncü parametre fiyat ayarları (maliyete bağlı parçanın TL hücresi türetilmiş fiyat, R16).
+    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat, appSettings\?\.fiyatAyarlari\)/);
   });
   it("C2: malzeme motoru saat okumaz, React almaz", () => {
     const m = kod("src/lib/malzeme.js");

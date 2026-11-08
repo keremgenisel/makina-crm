@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS stock (
 );
 
 CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, content TEXT, updatedAt TEXT, olusturan TEXT, deletedAt TEXT);
-CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT, adEN TEXT, kod TEXT, tanim TEXT, tanimEN TEXT, fiyatTRY REAL, fiyatUSD REAL, fiyatEUR REAL, models TEXT, deletedAt TEXT, tip TEXT, resim TEXT, maliyet REAL, hammaddeler TEXT, maliyetGecmisi TEXT, setIcerigi TEXT, malzemeSatiri TEXT, emniyetPayi REAL);
+CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, ad TEXT, adEN TEXT, kod TEXT, tanim TEXT, tanimEN TEXT, fiyatTRY REAL, fiyatUSD REAL, fiyatEUR REAL, models TEXT, deletedAt TEXT, tip TEXT, resim TEXT, maliyet REAL, hammaddeler TEXT, maliyetGecmisi TEXT, setIcerigi TEXT, malzemeSatiri TEXT, emniyetPayi REAL, fiyatKipi TEXT, karKati REAL);
 
 CREATE TABLE IF NOT EXISTS part_stock (
   id INTEGER PRIMARY KEY,
@@ -345,7 +345,7 @@ CREATE TABLE IF NOT EXISTS teklifler (
 );
 
 CREATE TABLE IF NOT EXISTS factory (id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, contact TEXT, phone TEXT, email TEXT, adres TEXT, country TEXT, city TEXT, ilce TEXT, note TEXT, bankaAdi TEXT, hesapAdi TEXT, swift TEXT, ibanTL TEXT, ibanEUR TEXT, ibanUSD TEXT, gtipNo TEXT, bankalar TEXT, evrakFirmaAdi TEXT, web TEXT, faturaFirmaAdi TEXT, haritaKonum TEXT);
-CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT, giderAyarlari TEXT, maliyetAyarlari TEXT, uretimdeOlmayanModeller TEXT);
+CREATE TABLE IF NOT EXISTS app_settings (id INTEGER PRIMARY KEY CHECK (id = 1), autoBackup INTEGER, backupFolder TEXT, frequency TEXT, lastBackup TEXT, kdvRate REAL, kdvRates TEXT, kaseResmi TEXT, pinnedPartIds TEXT, evrakFormConfig TEXT, calismaSaatleri TEXT, servisAlarm TEXT, krediKartiKomisyonlari TEXT, musteriSutunlari TEXT, analizGizliModeller TEXT, giderAyarlari TEXT, maliyetAyarlari TEXT, uretimdeOlmayanModeller TEXT, fiyatAyarlari TEXT);
 
 CREATE TABLE IF NOT EXISTS faturalar (
   id INTEGER PRIMARY KEY,
@@ -569,6 +569,10 @@ const PARTS_SET_ICERIGI_COLUMN = [["setIcerigi", "TEXT"]];
 const PARTS_MALZEME_SATIRI_COLUMN = [["malzemeSatiri", "TEXT"]];
 // Spec 0134 C4, Karar 28: emniyet payı yüzdesi parçada ve malzemede; boşken gövdeye yazılmaz (AC-58).
 const EMNIYET_PAYI_COLUMN = [["emniyetPayi", "REAL"]];
+// Spec 0133 C5, C5/2, R1/2: fiyat kipi (yalnız "maliyet" değeri yazılır; elle sabit kip değer olarak saklanmaz) ve parçanın kâr katı;
+// ayar `app_settings.fiyatAyarlari` (JSON, Karar 33). Boş değer okumada gövdeye yazılmaz (AC-47).
+const PARTS_FIYAT_COLUMNS = [["fiyatKipi", "TEXT"], ["karKati", "REAL"]];
+const APP_SETTINGS_FIYAT_COLUMN = [["fiyatAyarlari", "TEXT"]];
 const nesneYaz = (v) => (v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length ? JSON.stringify(v) : null);
 const APP_SETTINGS_KASE_COLUMN = [["kaseResmi", "TEXT"]];
 const APP_SETTINGS_PINNED_COLUMN = [["pinnedPartIds", "TEXT"]];
@@ -911,8 +915,8 @@ function populateAll(conn, data, skip = new Set()) {
 
   if (Array.isArray(data.parts) && !skip.has("parts")) {
     conn.prepare(`DELETE FROM parts`).run();
-    const stmt = conn.prepare(`INSERT INTO parts (id, ad, adEN, kod, tanim, tanimEN, fiyatTRY, fiyatUSD, fiyatEUR, models, deletedAt, tip, resim, maliyet, hammaddeler, maliyetGecmisi, setIcerigi, malzemeSatiri, emniyetPayi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const p of data.parts) stmt.run(p.id, p.ad ?? null, p.adEN ?? null, p.kod ?? null, p.tanim ?? null, p.tanimEN ?? null, p.fiyatTRY ?? null, p.fiyatUSD ?? null, p.fiyatEUR ?? null, json(p.models ?? []), p.deletedAt ?? null, p.tip ?? "Standart", p.resim ?? null, p.maliyet ?? null, hammaddeYaz(p.hammaddeler), hammaddeYaz(p.maliyetGecmisi), hammaddeYaz(p.setIcerigi), nesneYaz(p.malzemeSatiri), p.emniyetPayi ?? null);
+    const stmt = conn.prepare(`INSERT INTO parts (id, ad, adEN, kod, tanim, tanimEN, fiyatTRY, fiyatUSD, fiyatEUR, models, deletedAt, tip, resim, maliyet, hammaddeler, maliyetGecmisi, setIcerigi, malzemeSatiri, emniyetPayi, fiyatKipi, karKati) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const p of data.parts) stmt.run(p.id, p.ad ?? null, p.adEN ?? null, p.kod ?? null, p.tanim ?? null, p.tanimEN ?? null, p.fiyatTRY ?? null, p.fiyatUSD ?? null, p.fiyatEUR ?? null, json(p.models ?? []), p.deletedAt ?? null, p.tip ?? "Standart", p.resim ?? null, p.maliyet ?? null, hammaddeYaz(p.hammaddeler), hammaddeYaz(p.maliyetGecmisi), hammaddeYaz(p.setIcerigi), nesneYaz(p.malzemeSatiri), p.emniyetPayi ?? null, p.fiyatKipi === "maliyet" ? "maliyet" : null, p.karKati ?? null);
   }
 
   if (Array.isArray(data.partStock) && !skip.has("partStock")) {
@@ -1067,8 +1071,8 @@ function populateAll(conn, data, skip = new Set()) {
   if (data.appSettings && !skip.has("appSettings")) {
     conn.prepare(`DELETE FROM app_settings`).run();
     const s = data.appSettings;
-    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari, uretimdeOlmayanModeller) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []), json(s.giderAyarlari ?? null), s.maliyetAyarlari ? json(s.maliyetAyarlari) : null, s.uretimdeOlmayanModeller?.length ? json(s.uretimdeOlmayanModeller) : null);
+    conn.prepare(`INSERT INTO app_settings (id, autoBackup, backupFolder, frequency, lastBackup, kdvRate, kdvRates, kaseResmi, pinnedPartIds, evrakFormConfig, autoLockMinutes, teklifTakipGun, tahsilatTakipGun, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari, uretimdeOlmayanModeller, fiyatAyarlari) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(toInt(s.autoBackup), s.backupFolder ?? null, s.frequency ?? null, s.lastBackup ?? null, s.kdvRate ?? null, json(s.kdvRates), s.kaseResmi ?? null, json(s.pinnedPartIds ?? []), json(s.evrakFormConfig ?? null), s.autoLockMinutes ?? null, s.teklifTakipGun ?? null, s.tahsilatTakipGun ?? null, json(s.translations ?? null), json(s.mailTemplates ?? null), json(s.calismaSaatleri ?? null), json(s.servisAlarm ?? null), json(s.krediKartiKomisyonlari ?? null), json(s.musteriSutunlari ?? null), json(s.analizGizliModeller ?? []), json(s.giderAyarlari ?? null), s.maliyetAyarlari ? json(s.maliyetAyarlari) : null, s.uretimdeOlmayanModeller?.length ? json(s.uretimdeOlmayanModeller) : null, s.fiyatAyarlari && Object.keys(s.fiyatAyarlari).length ? json(s.fiyatAyarlari) : null);
   }
 
   if (Array.isArray(data.faturalar) && !skip.has("faturalar")) {
@@ -1175,6 +1179,8 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "parts", PARTS_MALZEME_SATIRI_COLUMN); // spec 0132
   ensureColumns(conn, "parts", EMNIYET_PAYI_COLUMN); // spec 0134
   ensureColumns(conn, "malzemeler", EMNIYET_PAYI_COLUMN); // spec 0134
+  ensureColumns(conn, "parts", PARTS_FIYAT_COLUMNS); // spec 0133
+  ensureColumns(conn, "app_settings", APP_SETTINGS_FIYAT_COLUMN); // spec 0133
   ensureColumns(conn, "tedarikciler", TEDARIKCI_HAMMADDE_COLUMN); // spec 0096
   ensureColumns(conn, "standard_models", MODELS_EK_MALIYET_COLUMN);
   ensureColumns(conn, "custom_models", MODELS_EK_MALIYET_COLUMN);
@@ -1515,7 +1521,7 @@ function readBlobFromDb() {
   // Spec 0087 C4: boş maliyet gövdeye yazılmaz (`...p` yayılsaydı her parça `maliyet: null` taşırdı ve maliyeti tanımayan
   // istemcinin gövdesi sunucu karşılaştırmasında değişmiş görünürdü).
   // Spec 0096 C3/2: hammadde kırılımı da ayrıştırılır, yalnız doluyken gövdeye yazılır (`...p` her parçaya `hammaddeler: null` koyardı).
-  const parts = db.prepare(`SELECT * FROM parts`).all().map(({ maliyet, hammaddeler, maliyetGecmisi, setIcerigi, malzemeSatiri, emniyetPayi, ...p }) => ({
+  const parts = db.prepare(`SELECT * FROM parts`).all().map(({ maliyet, hammaddeler, maliyetGecmisi, setIcerigi, malzemeSatiri, emniyetPayi, fiyatKipi, karKati, ...p }) => ({
     ...p,
     adEN: p.adEN ?? "",
     kod: p.kod ?? "",
@@ -1530,6 +1536,7 @@ function readBlobFromDb() {
     ...(() => { const c = parseJsonCol(setIcerigi, []); return Array.isArray(c) && c.length ? { setIcerigi: c } : {}; })(), // spec 0121 C5
     ...(() => { const s = parseJsonCol(malzemeSatiri, null); return s && typeof s === "object" && !Array.isArray(s) && Object.keys(s).length ? { malzemeSatiri: s } : {}; })(), // spec 0132 C5
     ...(emniyetPayi == null ? {} : { emniyetPayi }), // spec 0134 C4
+    ...(fiyatKipi === "maliyet" ? { fiyatKipi } : {}), ...(karKati == null ? {} : { karKati }), // spec 0133 C5
   }));
 
   const partStock = db.prepare(`SELECT * FROM part_stock`).all().map((s) => ({
@@ -1637,8 +1644,8 @@ function readBlobFromDb() {
   const settingsRow = db.prepare(`SELECT * FROM app_settings WHERE id = 1`).get();
   let appSettings = null;
   if (settingsRow) {
-    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari, uretimdeOlmayanModeller, ...rest } = settingsRow;
-    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []), giderAyarlari: parseJsonCol(giderAyarlari, null), ...(maliyetAyarlari ? { maliyetAyarlari: parseJsonCol(maliyetAyarlari, null) } : {}),
+    const { id, autoBackup, kdvRates, pinnedPartIds, evrakFormConfig, translations, mailTemplates, calismaSaatleri, servisAlarm, krediKartiKomisyonlari, musteriSutunlari, analizGizliModeller, giderAyarlari, maliyetAyarlari, uretimdeOlmayanModeller, fiyatAyarlari, ...rest } = settingsRow;
+    appSettings = { ...rest, autoBackup: toBool(autoBackup), kdvRates: parseJsonCol(kdvRates, undefined), pinnedPartIds: parseJsonCol(pinnedPartIds, []), evrakFormConfig: parseJsonCol(evrakFormConfig, null), translations: parseJsonCol(translations, null), mailTemplates: parseJsonCol(mailTemplates, null), calismaSaatleri: parseJsonCol(calismaSaatleri, null), servisAlarm: parseJsonCol(servisAlarm, null), krediKartiKomisyonlari: parseJsonCol(krediKartiKomisyonlari, undefined), musteriSutunlari: parseJsonCol(musteriSutunlari, null), analizGizliModeller: parseJsonCol(analizGizliModeller, []), giderAyarlari: parseJsonCol(giderAyarlari, null), ...(maliyetAyarlari ? { maliyetAyarlari: parseJsonCol(maliyetAyarlari, null) } : {}), ...(fiyatAyarlari ? { fiyatAyarlari: parseJsonCol(fiyatAyarlari, null) } : {}),
       ...(uretimdeOlmayanModeller ? { uretimdeOlmayanModeller: parseJsonCol(uretimdeOlmayanModeller, []) } : {}) };
   }
 

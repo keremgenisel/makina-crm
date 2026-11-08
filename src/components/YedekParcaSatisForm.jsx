@@ -1,5 +1,6 @@
 import { CUR_SYM, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, yerelBugun, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { today, yerelBugun, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { formSatisFiyati } from "../lib/parcaFiyati";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { Ipucu, Segment, UyariSeridi, HataMetni } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
@@ -17,7 +18,7 @@ import { SetIcerikSatiri } from "./stock/SetRozeti";
 // "Makinaya tahsis et" ile parça parça yapılır; burada yalnız satış + kargo bilgisi girilir.
 const KARGO_DURUMLARI = ["Hazırlanıyor", "Kargoya Verildi", "Teslim Edildi"];
 
-export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], customers = [], parts = [], partStock = [], calisanlar = [], onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, geoData = null, loadingGeo = false, kasaHesaplari = null, hesapVarsayilan = null }) => {
+export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], customers = [], parts = [], fiyatBaglami = null, partStock = [], calisanlar = [], onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, geoData = null, loadingGeo = false, kasaHesaplari = null, hesapVarsayilan = null }) => {
   // Alıcı listesine bayilerin yanı sıra anlaşmalı servis firmaları da dahil (onlar da yedek parça alır).
   const bayiler = (dealers || []).filter(d => d.bayiMi !== false || d.anlasmaliServisMi);
   const kargociAdlari = (calisanlar || []).map(c => c.ad).filter(Boolean); // "Kargoyu verecek kişi" önerileri
@@ -56,7 +57,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
   const setSatir = (i, alan, deger) => setForm(p => ({ ...hatasiz(p), satirlar: (p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]).map((s, idx) => idx === i ? { ...s, [alan]: deger } : s) }));
   const satirEkle = () => setForm(p => ({ ...hatasiz(p), satirlar: [...(p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]), { partId: "", miktar: "", birimFiyat: "" }] }));
   const satirSil = (i) => setForm(p => ({ ...hatasiz(p), satirlar: (p.satirlar || []).filter((_, idx) => idx !== i) }));
-  const parcaSec = (i, prc) => setForm(p => ({ ...hatasiz(p), satirlar: (p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]).map((s, idx) => idx === i ? { ...s, partId: String(prc.id), birimFiyat: s.birimFiyat || partFiyatForCurrency(prc, p.currency || "TRY") || "" } : s) }));
+  const parcaSec = (i, prc) => setForm(p => ({ ...hatasiz(p), satirlar: (p.satirlar || [{ partId: "", miktar: "", birimFiyat: "" }]).map((s, idx) => idx === i ? { ...s, partId: String(prc.id), birimFiyat: s.birimFiyat || formSatisFiyati(prc, p.currency || "TRY", fiyatBaglami) || "" } : s) }));
   const toplam = isEdit
     ? miktar * birim
     : satirlar.reduce((s, r) => s + (parseInt(r.miktar) || 0) * parseMoney(r.birimFiyat), 0);
@@ -145,7 +146,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
               USD/EUR fiyatı olan parça satırları yeni para birimine göre güncellenir (ServiceForm ile aynı). */}
           <Select value={cur} onChange={e => {
             const yeniPB = e.target.value;
-            const yeniFiyat = (partId) => { const part = partId ? parts.find(pt => String(pt.id) === String(partId)) : null; return part ? partFiyatForCurrency(part, yeniPB) : ""; };
+            const yeniFiyat = (partId) => { const part = partId ? parts.find(pt => String(pt.id) === String(partId)) : null; return part ? formSatisFiyati(part, yeniPB, fiyatBaglami) : ""; };
             setForm(p => ({
               ...p,
               currency: yeniPB,
@@ -187,7 +188,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
             parts.length === 0
               ? <div style={{ fontSize: 12, color: "var(--red600, #dc2626)" }}>Tanımlı yedek parça yok. Ayarlar → Katalog → Yedek Parçalar'dan ekleyin.</div>
               : <SearchPick items={parts} getLabel={p => `${parcaAdi(p)}${p.kod ? " · " + p.kod : ""}`} getKey={p => p.id} placeholder="Parça ara..."
-                  onPick={p => setForm(prev => ({ ...prev, partId: String(p.id), birimFiyat: prev.birimFiyat || partFiyatForCurrency(p, prev.currency || "TRY") || "" }))} />
+                  onPick={p => setForm(prev => ({ ...prev, partId: String(p.id), birimFiyat: prev.birimFiyat || formSatisFiyati(p, prev.currency || "TRY", fiyatBaglami) || "" }))} />
           )}
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

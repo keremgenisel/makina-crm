@@ -73,14 +73,17 @@ describe("Spec 0087: parça maliyeti (saf)", () => {
     expect(maliyetMetni(1234.5)).toBe("1.234,50 ₺");
   });
 
-  it("AC-6: maliyet satış fiyatı değildir; satışın tek fiyat okuyucusu maliyetten etkilenmez ve satış ekranları maliyeti okumaz", () => {
+  // Spec 0133 ile (R10/2, AC-54): "fiyat maliyetten etkilenmez" yarısı ters çevrildi; maliyete bağlı parçanın satış fiyatı maliyetten
+  // türer (tests/parca-fiyati-0133.test.js AC-54). Burada kalan iddia: elle sabit (kipsiz) parçada ham fiyat okuyucusu maliyetten
+  // etkilenmez ve satış ekranları maliyeti okumaz. Tarama deseni `parcaMaliyetKurus|\.maliyet\b` ile daraltıldı; dosya listesi aynen.
+  it("AC-6: elle sabit parçada fiyat maliyetten etkilenmez; satış ekranları maliyeti okumaz", () => {
     const p = { fiyatTRY: 450, fiyatUSD: 12, fiyatEUR: "" };
     for (const c of ["TRY", "USD", "EUR"]) expect(partFiyatForCurrency({ ...p, maliyet: 99.9 }, c)).toBe(partFiyatForCurrency(p, c));
     for (const f of ["src/components/Documents.jsx", "src/components/ServiceForm.jsx", "src/components/YedekParcaSatisForm.jsx",
       "src/components/stock/PartStokTab.jsx", "src/components/PartSaleForm.jsx", "src/lib/yedekParcaSatis.js",
       // Spec 0126 Karar 18: Evrak'ın seçim penceresi de bir satış ekranıdır.
       "src/components/documents/KalemSecPenceresi.jsx"]) {
-      expect(kod(f), f).not.toMatch(/\.maliyet\b|urunAgaci/);
+      expect(kod(f), f).not.toMatch(/parcaMaliyetKurus|\.maliyet\b/);
     }
   });
 

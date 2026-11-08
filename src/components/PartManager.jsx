@@ -2,9 +2,15 @@ import { useState, useMemo } from "react";
 import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
 import { CUR_SYM, tipRenk } from "../lib/constants";
 import { Icon, Field, Input, MoneyInput, TutarInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload, Select, SearchPick } from "./ui";
-import { HataMetni, Ipucu, UyariSeridi, BolumBasligi } from "./tasarim";
+import { HataMetni, Ipucu, UyariSeridi, BolumBasligi, Segment } from "./tasarim";
 import { malzemeKatalogu, malzemeOzeti, malzemeSatiriDogrula, malzemeSatiriFormu, malzemeSatiriVar, KAYNAK_MALZEME, MALZEME_ELLE_IPUCU, emniyetPayiDogrula, sayiMetni } from "../lib/malzeme";
 import { MalzemeSatiriAlani } from "./MalzemeSatiriAlani";
+import { FiyatListesiDugmesi } from "./rapor/FiyatListesiDugmesi";
+import { logAction } from "../lib/audit";
+import {
+  fiyatBaglamiKur, fiyatKipiOf, maliyeteBagliMi, parcaSatisFiyati, turetilmisFiyat, turetilmisFiyatSayisi, katDogrula, katMetni, kipYaz,
+  topluKipOzeti, topluKipMetni, maliyetsizUyariMetni, katsizUyariMetni, TOPLU_KAT_YOK_NEDENI, farkMetni, setFiyatOkuyucu, KIP_MALIYET, KIP_ELLE, KIP_ADLARI, DOVIZ_NOTU, ZARAR_UYARISI,
+} from "../lib/parcaFiyati";
 import { kalipAdDeseni, parcaKalipIsiMi, PARCA_TIP_IPUCU } from "../lib/kalipTamiri";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { MALIYET_ETIKETI, MALIYET_IPUCU, KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, maliyetGirildiMi, parcaMaliyetDogrula,
@@ -32,6 +38,45 @@ const PriceFields = ({ value, onChange }) => (
     <MoneyInput value={value.fiyatEUR} sym={CUR_SYM.EUR} onChange={v => onChange({ ...value, fiyatEUR: v })} />
   </div>
 );
+
+// Spec 0133 R1–R3, R12/2, R13, R14, R7/3 (AC-2, AC-28, AC-32, AC-87, AC-88, Karar 37): parça kartının fiyat bölümü. Kip seçici;
+// maliyete bağlı kipte TL alanı pasiftir ve türetilmiş değeri gösterir (değer kayda yazılmaz, R13/2), altında neden ya da elle
+// girilen ile türetilenin farkı; parçanın kâr katı ve zarar uyarısı; döviz alanları elle kalır ve nedeni tek sabittir.
+export const FIYAT_KIPI_ETIKETI = "Fiyat kipi";
+export const KAT_ETIKETI = "Parçanın kâr katı";
+const FiyatAlani = ({ value, onChange, turetilen = null, eskiTL = null, varsayilanKat = null, katHata = null }) => {
+  const kip = value.fiyatKipi === KIP_MALIYET ? KIP_MALIYET : KIP_ELLE;
+  const kat = katDogrula(value.karKati);
+  return (
+    <div data-testid="fiyat-bolumu">
+      <div style={{ marginBottom: 6 }}>
+        <Segment kip="radyo" genislik="icerik" ariaLabel={FIYAT_KIPI_ETIKETI} value={kip} onChange={v => onChange({ ...value, fiyatKipi: v === KIP_MALIYET ? KIP_MALIYET : "" })}
+          options={[{ value: KIP_ELLE, label: KIP_ADLARI[KIP_ELLE] }, { value: KIP_MALIYET, label: KIP_ADLARI[KIP_MALIYET] }]} />
+      </div>
+      {kip === KIP_ELLE ? <PriceFields value={value} onChange={onChange} /> : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+            <Input value={turetilen?.fiyatK == null ? "" : `${turetilmisFiyatSayisi(turetilen.fiyatK / 100)} ${CUR_SYM.TRY}`} disabled readOnly aria-label="TL fiyatı (türetilen)" placeholder="—" />
+            <MoneyInput value={value.fiyatUSD} sym={CUR_SYM.USD} onChange={v => onChange({ ...value, fiyatUSD: v })} />
+            <MoneyInput value={value.fiyatEUR} sym={CUR_SYM.EUR} onChange={v => onChange({ ...value, fiyatEUR: v })} />
+          </div>
+          {turetilen?.neden && <div data-testid="fiyat-neden" style={{ fontSize: 12, color: "var(--amb800, #92400e)", marginTop: 4 }}>{turetilen.neden}</div>}
+          {turetilen?.fiyatK != null && Number(eskiTL) > 0 && Math.round(Number(eskiTL) * 100) !== turetilen.fiyatK &&
+            <div data-testid="fiyat-fark" style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{farkMetni(turetilmisFiyatSayisi(Number(eskiTL)), `${turetilmisFiyatSayisi(turetilen.fiyatK / 100)} ₺`)}</div>}
+          <div data-testid="doviz-notu"><Ipucu>{DOVIZ_NOTU}</Ipucu></div>
+          <div style={{ maxWidth: 260, marginTop: 6 }}>
+            <Field label={KAT_ETIKETI}>
+              <Input value={value.karKati ?? ""} onChange={e => onChange({ ...value, karKati: e.target.value })} aria-label={KAT_ETIKETI}
+                placeholder={varsayilanKat != null ? `Varsayılan: ${katMetni(varsayilanKat)}` : "Varsayılan girilmedi"} />
+              <HataMetni>{katHata}</HataMetni>
+            </Field>
+          </div>
+          {!kat.hata && (kat.zarar || (kat.bos && varsayilanKat != null && varsayilanKat < 1)) && <UyariSeridi aile="uyari" testId="kat-zarar">{ZARAR_UYARISI}</UyariSeridi>}
+        </>
+      )}
+    </div>
+  );
+};
 
 const ModelChips = ({ selected = [], allModels = [], onChange }) => (
   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
@@ -185,7 +230,9 @@ const HammaddeAlani = ({ satirlar = [], setSatirlar, tedarikciler = [], hatalar 
 // Spec 0121 R2, R2/2, R2/3, R3–R6/2, R11, R11/2, R12: setin içeriği bölümü. Satırlar form biçimindedir (kimlik ve adet metin),
 // adlar HAM diziden çözülür (çöpteki / bulunamayan), seçici canlı ve içeriği boş parçaları listeler (kendisi hariç). Toplamlar
 // ebeveynin tek `formMaliyeti` sonucundan (`ozet`) gelir; bölüm toplama yazmaz (0099 AC-26).
-const SetIcerigiAlani = ({ satirlar = [], setSatirlar, kendiId = null, parts = [], hamParts = [], hatalar = {}, genel = null, ozet = null, onFiyat }) => {
+// Spec 0133 R22, AC-70: maliyete bağlı kipte "TL fiyatı toplamına eşitle" pasiftir ve nedenini yazar.
+export const SET_FIYAT_MALIYET_NEDENI = "Fiyat maliyetten türüyor; toplam elle sabit kipte fiyata yazılabilir.";
+const SetIcerigiAlani = ({ satirlar = [], setSatirlar, kendiId = null, parts = [], hamParts = [], hatalar = {}, genel = null, ozet = null, onFiyat, fiyatPasif = false }) => {
   // Spec 0122 R2/2, R6: adaylar tek kuraldan (içerikte olan parça listelenmez); tıklama satırı adet "1" ile hemen ekler.
   const adaylar = setBilesenAdaylari(parts, kendiId, satirlar);
   const guncelle = (i, deger) => setSatirlar(satirlar.map((s, j) => (j === i ? { ...s, miktar: deger } : s)));
@@ -223,8 +270,9 @@ const SetIcerigiAlani = ({ satirlar = [], setSatirlar, kendiId = null, parts = [
           {ozet.eksik > 0 && <div data-testid="set-eksik" style={{ fontSize: 12, color: "var(--amb800, #92400e)" }}>{setEksikMetni(ozet.eksik)}</div>}
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
             <span>{SET_FIYAT_ETIKETI}: <b data-testid="set-fiyat-toplami">{fmtCur(ozet.fiyatToplam, "TRY")}</b></span>
-            <Btn small variant="ghost" onClick={onFiyat} disabled={!(ozet.fiyatToplam > 0)}>{SET_FIYAT_DUGMESI}</Btn>
+            <Btn small variant="ghost" onClick={onFiyat} disabled={fiyatPasif || !(ozet.fiyatToplam > 0)}>{SET_FIYAT_DUGMESI}</Btn>
           </div>
+          {fiyatPasif && <div data-testid="set-fiyat-pasif" style={{ fontSize: 12, color: "var(--n600, #475569)" }}>{SET_FIYAT_MALIYET_NEDENI}</div>}
           {ozet.fiyatsiz > 0 && <div data-testid="set-fiyatsiz" style={{ fontSize: 12, color: "var(--n600, #475569)" }}>{setFiyatsizMetni(ozet.fiyatsiz)}</div>}
         </div>
       )}
@@ -301,19 +349,28 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   setStandardModels = null, setCustomModels = null, partTypeDefs = [], baskasiKilitli = null, rawCustomModels = null, tedarikciler = [], giderYetki = false, rawParts = null, baslangicArama = "",
   // Spec 0132 C1/2: canlı malzeme listesi; harita bir kez kurulur ve tek okuma yolunun dördüncü parametresi olur. `rawMalzemeler`
   // yalnız seçili ama çöpteki malzemenin adını çözmek içindir.
-  malzemeler = [], rawMalzemeler = null }) => {
+  malzemeler = [], rawMalzemeler = null,
+  // Spec 0133 R6, R8, Karar 32: uygulama ayarının fiyat alt nesnesi; bağlam bir kez kurulur.
+  fiyatAyarlari = null,
+  // Triyaj (bulgu 2, 4): işlem geçmişi istemcide sunucuya gitsin; fiyat listesi firma bilgisiyle basılsın.
+  serverPermissions = null, factory = null }) => {
   const allModels = [...standardModels, ...customModels];
   // Spec 0121 R6/2 (AC-40): ad çözümü ham diziden; verilmezse canlı diziye düşülür. R9/2: katalog canlı parçalardan, bir kez.
   const hamParts = Array.isArray(rawParts) && rawParts.length ? rawParts : parts; // verilmemiş ya da boş ham dizi canlıya düşer
   const katalog = useMemo(() => setKatalogu(parts), [parts]);
   const malzemeKat = useMemo(() => malzemeKatalogu(malzemeler), [malzemeler]);
-  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "", maliyet: "", hammaddeler: [], setIcerigi: [], malzemeSatiri: malzemeSatiriFormu(null), emniyetPayi: "" };
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari }), [parts, malzemeler, fiyatAyarlari]);
+  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "", maliyet: "", hammaddeler: [], setIcerigi: [], malzemeSatiri: malzemeSatiriFormu(null), emniyetPayi: "", fiyatKipi: "", karKati: "" };
   // Spec 0087 R4, C4 (plan P4): maliyetin ham metni kayıtta sayıya çevrilir; boşsa alan gövdeye hiç yazılmaz.
   // Spec 0096 R7, R7/2, C12: kırılım da HER çağrıda ayrıştırılır (düzenleme `{ ...x, ...editForm }` birleştirmesidir; boşaltılan
   // kırılım eski kayıttan geri gelmesin) ve yalnız doluyken yazılır; kırılımda tutar varsa `maliyet` anahtarı her çağrıda silinir.
   // Spec 0121 R7: içerik de HER çağrıda yeniden kurulur ve yalnız doluyken yazılır (boşaltılan içerik eski kayıttan geri gelmesin).
   const hazirlaTemel = (kayit) => {
-    const { maliyet, hammaddeler, maliyetGecmisi: _formKopyasi, setIcerigi, malzemeSatiri, emniyetPayi, ...geri } = kayit;
+    const { maliyet, hammaddeler, maliyetGecmisi: _formKopyasi, setIcerigi, malzemeSatiri, emniyetPayi, fiyatKipi, karKati, ...geri } = kayit;
+    // Spec 0133 R13/2, R1/2 (AC-79, AC-80): kip ve parçanın katı HER çağrıda silinir, yalnız dolu değerle yazılır (elle sabit kip
+    // değer olarak saklanmaz). Kat yalnız maliyete bağlı kipte anlamlıdır.
+    const kipMaliyet = fiyatKipi === KIP_MALIYET;
+    const kat = kipMaliyet ? katDogrula(karKati).deger : null;
     // Spec 0134 Karar 28, C4: emniyet payı her çağrıda yeniden kurulur ve yalnız doluyken yazılır (boş değer gövdeye girmez, AC-58).
     const pay = emniyetPayiDogrula(emniyetPayi).deger;
     // Spec 0132 Karar 28: malzeme satırı her çağrıda yeniden kurulur (boşaltılan satır eski kayıttan geri gelmesin); yalnız doluyken.
@@ -323,13 +380,20 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     const kirilimli = kirilim.some(h => h.tutar != null);
     const d = parcaMaliyetDogrula(maliyet);
     const icerik = setIcerigiDogrula(setIcerigi).kayit;
-    return { ...geri, ...(kirilimli || d.bos || d.hata ? {} : { maliyet: d.deger }), ...(kirilim.length ? { hammaddeler: kirilim } : {}), ...(icerik.length ? { setIcerigi: icerik } : {}), ...(ms ? { malzemeSatiri: ms } : {}), ...(pay != null ? { emniyetPayi: pay } : {}) };
+    return { ...geri, ...(kirilimli || d.bos || d.hata ? {} : { maliyet: d.deger }), ...(kirilim.length ? { hammaddeler: kirilim } : {}), ...(icerik.length ? { setIcerigi: icerik } : {}), ...(ms ? { malzemeSatiri: ms } : {}), ...(pay != null ? { emniyetPayi: pay } : {}), ...(kipMaliyet ? { fiyatKipi: KIP_MALIYET } : {}), ...(kat != null ? { karKati: kat } : {}) };
   };
   // Spec 0097 R4, C13, C13/2 (tuzak 2, 3, 9): formdan gelen geçmiş kopyası atılır; geçmiş güncelleyicinin içindeki ESKİ kayıttan
   // (`eski`) ve yeni kaydın ÇÖZÜLMÜŞ maliyetinden (kırılım toplamı dahil) tek karar motoruyla yazılır. Tarih ve bugün `ek` ile
   // kaydın başında bir kez çözülmüş gelir; bu fonksiyon saat okumaz. Yeni parçada (`eski` yok) geçmiş yazılmaz (R5/2).
   // Triyaj (bulgu 4): karar hata dönerse kayıt hiç değişmez (eski kayıt aynen döner).
-  const hazirla = (kayit, eski = null, ek = null) => gecmisliKayit(hazirlaTemel(kayit), eski, ek) ?? eski;
+  // Spec 0133 R13/2 (AC-79): maliyete bağlı kipte TL fiyat alanı formdan OKUNMAZ; kayıttaki değer aynen korunur (pasif alanın
+  // gösterdiği türetilmiş değer gövdeye sızmaz). Yeni parçada formun boş değeri kalır.
+  const tlKoru = (temel, eski) => {
+    if (!maliyeteBagliMi(temel) || !eski) return temel;
+    const { fiyatTRY: _f, ...geri } = temel;
+    return "fiyatTRY" in eski ? { ...geri, fiyatTRY: eski.fiyatTRY } : geri;
+  };
+  const hazirla = (kayit, eski = null, ek = null) => gecmisliKayit(tlKoru(hazirlaTemel(kayit), eski), eski, ek) ?? eski;
   const { form, setForm, editId, editForm, setEditForm, confirmDel, add, startEdit, cancelEdit, saveEdit, requestDelete, cancelDelete, confirmDelete } =
     useSimpleDefList({
       items: parts,
@@ -358,7 +422,10 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   // Spec 0096 R10, R10/2, R22, C14: tedarikçi süzgeci (gider yetkisiyle). Seçenek kümesi canlı parçaların kırılımında geçen
   // tedarikçiler (sayılı) ve "girilmemiş"; sayfa sıfırlaması süzgeci yazan fonksiyonda (kancanın imzası değişmez).
   const [suzgec, setSuzgecRaw] = useState(SUZGEC_TUMU);
+  // Spec 0133 R4, R4/3 (AC-30): fiyat kipi süzgeci (üç seçenek, Segment); tedarikçi süzgeciyle birlikte uygulanır.
+  const [kipSuzgec, setKipSuzgecRaw] = useState("tumu");
   const suzgecFn = (p) => {
+    if (kipSuzgec !== "tumu" && fiyatKipiOf(p) !== kipSuzgec) return false;
     if (!giderYetki || suzgec === SUZGEC_TUMU) return true;
     const h = p.hammaddeler || [];
     if (suzgec === SUZGEC_GIRILMEMIS) return h.length === 0;
@@ -366,6 +433,20 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   };
   const { search, setSearch, page, setPage, filtered, paged } = useFilteredList(parts, { searchFields: ["ad"], filterFn: suzgecFn, perPage: PER_PAGE, baslangicArama }); // spec 0125 R5/2
   const setSuzgec = (v) => { setSuzgecRaw(v); setPage(1); };
+  const setKipSuzgec = (v) => { setKipSuzgecRaw(v); setPage(1); };
+  const kipSayisi = (k) => parts.filter(p => fiyatKipiOf(p) === k).length;
+  // Spec 0133 R4/2, X10 (AC-29, AC-49, AC-77, Karar 34, 35): toplu kip değiştirme süzgeçten geçen listenin BÜTÜNÜNDE (sayfaya bakmaz,
+  // satır seçimi yok). Onay sayıları yazar; maliyetsiz parçalar sayılır ama işlem yine uygulanabilir (AC-50).
+  const [topluKip, setTopluKip] = useState(null);
+  const katYok = fiyatBaglami.ayar.varsayilanKat == null; // triyaj (bulgu 1)
+  const topluOzet = (kip) => topluKipOzeti(filtered, kip, fiyatBaglami);
+  const topluUygula = () => {
+    const oz = topluOzet(topluKip); const idler = new Set(oz.idler);
+    setParts(p => p.map(x => (idler.has(String(x.id)) ? kipYaz(x, topluKip) : x)));
+    logAction({ serverPermissions, action: "fiyat_kipi_degisti", entity: "parca_tanimi", entityName: `${oz.degisecek} parça`, detail: { kip: topluKip, adet: oz.degisecek } });
+    showToast(`${oz.degisecek} parçanın fiyat kipi değişti.`);
+    setTopluKip(null);
+  };
   const suzgecSecenekleri = (() => {
     const say = new Map();
     for (const p of parts) for (const h of p.hammaddeler || []) { const k = String(h.tedarikciId); say.set(k, (say.get(k) || 0) + 1); }
@@ -373,7 +454,19 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   })();
   const girilmemisSayi = parts.filter(p => !(p.hammaddeler || []).length).length;
 
+  // Spec 0133 R10, R11/2, AC-18, AC-86: hücre tek okuma yolundan. Elle sabit parçada bugünkü biçim (birebir, C4); maliyete bağlı
+  // parçanın TL fiyatı kuruşlu tek gösterim yardımcısıyla, türetilemezse "—" ve açıklayıcı başlık (neden).
   const priceSummary = (p) => {
+    if (maliyeteBagliMi(p)) {
+      const tl = parcaSatisFiyati(p, "TRY", fiyatBaglami);
+      const doviz = ["USD", "EUR"].filter(c => parseMoney(p[`fiyat${c}`]) > 0).map(c => fmtCur(parseMoney(p[`fiyat${c}`]), c));
+      return (
+        <span data-testid="parca-fiyat-turetilen" title={tl.neden || undefined}>
+          {[tl.deger === "" ? "—" : `${CUR_SYM.TRY}${turetilmisFiyatSayisi(tl.deger)}`, ...doviz].join(" · ")}
+          <span style={{ display: "block", fontSize: 11, color: "var(--n500, #64748b)" }}>{KIP_ADLARI[KIP_MALIYET]}</span>
+        </span>
+      );
+    }
     const bits = [];
     if (parseMoney(p.fiyatTRY) > 0) bits.push(fmtCur(parseMoney(p.fiyatTRY), "TRY"));
     if (parseMoney(p.fiyatUSD) > 0) bits.push(fmtCur(parseMoney(p.fiyatUSD), "USD"));
@@ -404,7 +497,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     // Spec 0096 R17/3: kırılım formda hep form biçiminde (tutar metin), yetkisiz kullanıcıda da (bölüm çizilmese de taşınır).
     // Spec 0097 C13: geçmiş forma kopyalanmaz (kayıt fonksiyonu onu kayıttan okur).
     const { maliyetGecmisi: _g, ...kayit } = k;
-    startEdit({ ...kayit, maliyet: elleMaliyetMetni(k), hammaddeler: hammaddeFormu(k.hammaddeler), setIcerigi: setIcerigiFormu(k.setIcerigi), malzemeSatiri: malzemeSatiriFormu(k.malzemeSatiri), emniyetPayi: sayiMetni(k.emniyetPayi) });
+    startEdit({ ...kayit, maliyet: elleMaliyetMetni(k), hammaddeler: hammaddeFormu(k.hammaddeler), setIcerigi: setIcerigiFormu(k.setIcerigi), malzemeSatiri: malzemeSatiriFormu(k.malzemeSatiri), emniyetPayi: sayiMetni(k.emniyetPayi), fiyatKipi: maliyeteBagliMi(k) ? KIP_MALIYET : "", karKati: katMetni(k.karKati) });
   };
 
   // R7, R14–R16, plan P5: doğrula → karşı bölüme yazılacaksa kilide anlık bak (reddedilirse kayıt bütünüyle yazılmaz) →
@@ -435,8 +528,9 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     // Spec 0132 R16/2 (AC-63): malzeme kaynaklı kayıtta da geçmiş motoru çalışmaz (`malzeme` kapısı).
     const tarihHata = temel ? maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel), malzeme: malzemeSatiriVar(temel) }).hata : null;
     const pay = emniyetPayiDogrula(f.emniyetPayi); // spec 0134 AC-21
-    setHatalar({ maliyet: m.hata, adet: adetHata, hammadde: h.hatalar, tarih: tarihHata, set: si.hatalar, setGenel: si.genel, malzeme: ms.hatalar, pay: pay.hata });
-    if (m.hata || Object.keys(adetHata).length || !h.gecerli || !si.gecerli || !ms.gecerli || tarihHata || pay.hata) return;
+    const kat = f.fiyatKipi === KIP_MALIYET ? katDogrula(f.karKati) : { hata: null }; // spec 0133 AC-6, AC-60–AC-63
+    setHatalar({ maliyet: m.hata, adet: adetHata, hammadde: h.hatalar, tarih: tarihHata, set: si.hatalar, setGenel: si.genel, malzeme: ms.hatalar, pay: pay.hata, kat: kat.hata });
+    if (m.hata || Object.keys(adetHata).length || !h.gecerli || !si.gecerli || !ms.gecerli || tarihHata || pay.hata || kat.hata) return;
     const kitGirdisi = { partId: kip === "ekle" ? "__yeni__" : editId, ad: (f.ad || "").trim(), models: f.models || [], eskiModeller: eski?.models || [], adetler: adetMap };
     // Triyaj (bulgu 3): yazma kararı TAM özel model dizisiyle verilir; kit satırı yalnız çöpteki bir modelde duruyorsa ad
     // taşıması da yazılsın (geri alınan model eski adı basmasın). Canlı dizi yalnız ekranda çizilenleri taşır.
@@ -461,16 +555,20 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     // Spec 0132 R16/4, C1/2: malzeme satırının canlı özeti de bu tek sonuçtan (ağırlık, tutar, eksiklik); set kazanırsa yok.
     const ms = icerik.length ? null : malzemeSatiriDogrula(f?.malzemeSatiri).kayit;
     const p = { hammaddeler: kayit, maliyet: parcaMaliyetDogrula(f?.maliyet).deger, ...(icerik.length ? { setIcerigi: icerik } : {}), ...(ms ? { malzemeSatiri: ms } : {}) };
-    const set = icerik.length ? setOzeti(icerik, katalog, undefined, malzemeKat) : null;
+    const set = icerik.length ? setOzeti(icerik, katalog, undefined, malzemeKat, setFiyatOkuyucu(fiyatBaglami)) : null; // spec 0133 Karar 30
     const malzeme = ms ? malzemeOzeti(ms, malzemeKat) : null;
-    return { kirilimK: !set && !malzeme && kayit.some(h => h.tutar != null) ? parcaMaliyetKurus(p) : null, kaynak: maliyetKaynagi(p, undefined, katalog, malzemeKat), set, malzeme };
+    // Spec 0133 R2, R11 (AC-2): türetilmiş TL fiyatı formun aynı tek sonucundan; kayda yazılmaz.
+    const fiyat = f?.fiyatKipi === KIP_MALIYET ? turetilmisFiyat({ ...p, karKati: f.karKati }, fiyatBaglami) : null;
+    return { kirilimK: !set && !malzeme && kayit.some(h => h.tutar != null) ? parcaMaliyetKurus(p) : null, kaynak: maliyetKaynagi(p, undefined, katalog, malzemeKat), set, malzeme, fiyat };
   };
   const canliEkle = addOpen ? formMaliyeti(form) : null;
   const canliDuzenle = editId !== null ? formMaliyeti(editForm) : null;
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
+        {/* Spec 0133 R17/2, AC-92: fiyat listesi süzgeçten geçen canlı parçaları katalog sırasıyla basar (Karar 35). */}
+        <FiyatListesiDugmesi parcalar={filtered} baglam={fiyatBaglami} factory={factory} />
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Parça/Yedek Parça Ekle</Btn>
       </div>
       {maliyetsizSayi > 0 && (
@@ -487,6 +585,10 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
       </div>
       {/* Spec 0096 C14: süzgeç Select'tir (tasarım sözlüğünde adıyla istisna); yalnız gider yetkisiyle (R10/2). */}
+      <div data-testid="fiyat-kipi-suzgeci">
+        <Segment kip="dugme" genislik="icerik" ariaLabel="Fiyat kipi süzgeci" value={kipSuzgec} onChange={setKipSuzgec}
+          options={[{ value: "tumu", label: "Tümü", sayi: parts.length }, { value: KIP_MALIYET, label: KIP_ADLARI[KIP_MALIYET], sayi: kipSayisi(KIP_MALIYET) }, { value: KIP_ELLE, label: KIP_ADLARI[KIP_ELLE], sayi: kipSayisi(KIP_ELLE) }]} />
+      </div>
       {giderYetki && (
         <div style={{ width: 280 }} data-testid="tedarikci-suzgeci">
           <Select aria-label="Hammadde tedarikçisi süzgeci" value={suzgec} onChange={e => setSuzgec(e.target.value)}>
@@ -498,6 +600,17 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       )}
       </div>
 
+      {filtered.length > 0 && (
+        <div data-testid="toplu-kip" style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+          {[KIP_MALIYET, KIP_ELLE].map(k => (
+            <Btn key={k} small variant="ghost" disabled={topluOzet(k).degisecek === 0 || (k === KIP_MALIYET && katYok)} onClick={() => setTopluKip(k)}>{topluKipMetni(filtered.length, k)}</Btn>))}
+          {katYok && <span data-testid="toplu-kat-yok" style={{ fontSize: 12, color: "var(--n600, #475569)", alignSelf: "center" }}>{TOPLU_KAT_YOK_NEDENI}</span>}
+        </div>
+      )}
+      {topluKip && (() => { const oz = topluOzet(topluKip); return (
+        <ConfirmDialog title="Fiyat kipini değiştir" icon="check" onCancel={() => setTopluKip(null)} onConfirm={topluUygula} confirmLabel="Uygula" confirmIcon="check" confirmVariant="primary"
+          message={<span data-testid="toplu-kip-onay">{`Listedeki ${oz.toplam} parçanın ${oz.degisecek} tanesinin fiyat kipi "${KIP_ADLARI[topluKip]}" olacak.`}{oz.maliyetsiz > 0 && <><br />{maliyetsizUyariMetni(oz.maliyetsiz)}</>}{oz.katsiz > 0 && <><br />{katsizUyariMetni(oz.katsiz)}</>}</span>} />
+      ); })()}
       <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
         {filtered.length === 0 ? (
           <div style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>
@@ -613,7 +726,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
           </div>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
-            <PriceFields value={form} onChange={setForm} />
+            <FiyatAlani value={form} onChange={setForm} turetilen={canliEkle?.fiyat} eskiTL={form.fiyatTRY} varsayilanKat={fiyatBaglami.ayar.varsayilanKat} katHata={hatalar.kat} />
           </Field>
           <MaliyetAlani value={form.maliyet} onChange={v => setForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...canliEkle} giderYetki={giderYetki} />
           <MalzemeSatiriAlani satir={form.malzemeSatiri} setSatir={v => setForm(p => ({ ...p, malzemeSatiri: v }))} malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler}
@@ -621,7 +734,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             hatalar={hatalar.malzeme} ozet={canliEkle?.malzeme} pasif={!!canliEkle?.set} />
           {giderYetki && <fieldset disabled={!!canliEkle?.set || !!canliEkle?.malzeme} style={FIELDSET_STILI}><HammaddeAlani satirlar={form.hammaddeler || []} setSatirlar={v => setForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} toplam={canliEkle} /></fieldset>}
           <SetIcerigiAlani satirlar={form.setIcerigi || []} setSatirlar={v => setForm(p => ({ ...p, setIcerigi: v }))} parts={parts} hamParts={hamParts}
-            hatalar={hatalar.set} genel={hatalar.setGenel} ozet={canliEkle?.set} onFiyat={() => setForm(p => ({ ...p, fiyatTRY: String(canliEkle.set.fiyatToplam) }))} />
+            hatalar={hatalar.set} genel={hatalar.setGenel} ozet={canliEkle?.set} fiyatPasif={form.fiyatKipi === KIP_MALIYET} onFiyat={() => setForm(p => ({ ...p, fiyatTRY: String(canliEkle.set.fiyatToplam) }))} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={form.tip || "Standart"} onChange={v => setForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />
@@ -670,7 +783,8 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
           </div>
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
-            <PriceFields value={editForm} onChange={setEditForm} />
+            <FiyatAlani value={editForm} onChange={setEditForm} turetilen={canliDuzenle?.fiyat} eskiTL={parts.find(x => x.id === editId)?.fiyatTRY}
+              varsayilanKat={fiyatBaglami.ayar.varsayilanKat} katHata={hatalar.kat} />
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12 }}>
             <MaliyetAlani value={editForm.maliyet} onChange={v => setEditForm(p => ({ ...p, maliyet: v }))} hata={hatalar.maliyet} {...canliDuzenle} giderYetki={giderYetki} />
@@ -684,7 +798,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             hatalar={hatalar.malzeme} ozet={canliDuzenle?.malzeme} pasif={!!canliDuzenle?.set} />
           {giderYetki && <fieldset disabled={!!canliDuzenle?.set || !!canliDuzenle?.malzeme} style={FIELDSET_STILI}><HammaddeAlani satirlar={editForm.hammaddeler || []} setSatirlar={v => setEditForm(p => ({ ...p, hammaddeler: v }))} tedarikciler={tedarikciler} hatalar={hatalar.hammadde} toplam={canliDuzenle} /></fieldset>}
           <SetIcerigiAlani satirlar={editForm.setIcerigi || []} setSatirlar={v => setEditForm(p => ({ ...p, setIcerigi: v }))} kendiId={editId} parts={parts} hamParts={hamParts}
-            hatalar={hatalar.set} genel={hatalar.setGenel} ozet={canliDuzenle?.set} onFiyat={() => setEditForm(p => ({ ...p, fiyatTRY: String(canliDuzenle.set.fiyatToplam) }))} />
+            hatalar={hatalar.set} genel={hatalar.setGenel} ozet={canliDuzenle?.set} fiyatPasif={editForm.fiyatKipi === KIP_MALIYET} onFiyat={() => setEditForm(p => ({ ...p, fiyatTRY: String(canliDuzenle.set.fiyatToplam) }))} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Parça Tipi">
             <TipSelector value={editForm.tip || "Standart"} onChange={v => setEditForm(p => ({ ...p, tip: v }))} partTypeDefs={partTypeDefs} />

@@ -14,7 +14,7 @@ import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/se
 import { KILIT_ALANLARI } from "../src/lib/kilitAlanlari";
 import * as V from "./fixtures/0097-veri";
 // Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
-import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
+import { yeniAlanlariAyikla } from "./fixtures/0133-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır
 
 const BUGUN = V.BUGUN;
 const parca = (o = {}) => ({ id: 1, ad: "Rulman", models: [], ...o });
@@ -170,7 +170,9 @@ describe("Spec 0097: tarih doğrulaması ve düzeltme (R6, R6/3, R7, R7/2)", () 
     expect(gecmisliKayit({ ...k, maliyet: 30 }, k, { tarih: "2026-06-01", bugun: BUGUN }).maliyetGecmisi.at(-1)).toEqual({ gecerli: "2026-06-01", kurus: 3000 });
     // Eklemede (eski yok) geçmiş yazılmaz.
     expect("maliyetGecmisi" in gecmisliKayit(parca({ maliyet: 5 }), null, null)).toBe(false);
-    expect(kod("src/components/PartManager.jsx")).toMatch(/gecmisliKayit\(hazirlaTemel\(kayit\), eski, ek\) \?\? eski/);
+    // Spec 0133 ile: kayıt fonksiyonunun temel adımı ile geçmiş adımı arasına `tlKoru` girdi (maliyete bağlı parçada saklı TL fiyatı
+    // korunur, R3/2); karar hata dönerse kayıt yine hiç değişmez (`?? eski`).
+    expect(kod("src/components/PartManager.jsx")).toMatch(/gecmisliKayit\(tlKoru\(hazirlaTemel\(kayit\), eski\), eski, ek\) \?\? eski/);
   });
   it("AC-41: karar motoru bugünü parametre olarak alır, verilmezse hata verir (saati kendisi okumaz)", () => {
     expect(() => maliyetGecmisiYaz(parca({ maliyet: 1 }), 200, { tarih: "2026-01-01" })).toThrow(/bugun/);
@@ -391,7 +393,7 @@ describe("Spec 0097: kaynak taramaları", () => {
     expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/const anahtar = `\$\{k\}\|\$\{gun\}`;/);
   });
   it("AC-34: yeni izin, veri bölümü, sunucu kuralı ve kilit alanı yok (spec 0093'ün tarama fikstürü aynı)", () => {
-    const simdi = bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
+    const simdi = yeniAlanlariAyikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
     expect(simdi).toEqual(JSON.parse(readFileSync("tests/fixtures/0093-tarama-once.json", "utf8")));
     expect(Object.keys(KILIT_ALANLARI).join()).not.toMatch(/gecmis/i);
     expect(kod("electron/serverAuth.cjs")).not.toMatch(/maliyetGecmisi/);

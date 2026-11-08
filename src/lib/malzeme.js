@@ -13,6 +13,7 @@ import { gecerliGunMu, gecerlilikTarihiDogrula, tarihteGecerliIndeks } from "./g
 // Triyaj (bulgu 3): etki önizlemesi maliyetin TEK okuma yolundan geçer. urunAgaci bu modülü içe aldığı için döngüdür; ikisi de
 // yalnız çağrı anında kullanılır (modül yüklenirken okunmaz).
 import { parcaMaliyetKurus, setKatalogu } from "./urunAgaci";
+import { parcaSatisFiyati, fiyatAyariOf } from "./parcaFiyati"; // spec 0133 R16/2 (döngü: çağrı anında okunur)
 
 // ── Sabitler ve biçimler ──────────────────────────────────────────────────────────────────────────────────────────────────
 export const PARA_BIRIMLERI = ["TRY", "USD", "EUR"];
@@ -409,7 +410,10 @@ export const KULLANIMDA_MALZEME_RED = "Bu malzeme bir parçanın malzeme satır�
 // Triyaj (bulgu 3): maliyet TEK okuma yolundan (`parcaMaliyetKurus`, set kataloğuyla) okunur ve BÜTÜN canlı parçalar karşılaştırılır:
 // set içeriği dolu parçanın malzeme satırı okunmaz (değişmez), bileşeni bu malzemeden olan set değişir. `bagli` malzeme satırında
 // bu malzeme geçen canlı parça sayısıdır; satırlar maliyeti DEĞİŞEN canlı parçalardır.
-export const fiyatEtkisi = (eski, yeni, parts = [], malzemeler = []) => {
+// Spec 0133 R16, R16/2 (AC-38–AC-40, AC-73, AC-74): beşinci parametre İSTEĞE BAĞLI fiyat ayarı (`{ fiyatAyarlari }`). Verilmezse
+// dönüş birebir aynıdır (altın `0133-etki-once.json`); verilince her satıra eski ve yeni satış fiyatı (`oncekiFiyat`, `yeniFiyat`;
+// TL, türetilmemişse "") ve sonuca fiyatı değişen parça sayısı (`fiyatDegisen`) eklenir. Fiyat tek okuma yolundan; burada çarpım yok.
+export const fiyatEtkisi = (eski, yeni, parts = [], malzemeler = [], fiyatSecenegi = undefined) => {
   const katEski = malzemeKatalogu(malzemeler.map(m => (String(m.id) === String(eski.id) ? eski : m)));
   const katYeni = malzemeKatalogu(malzemeler.map(m => (String(m.id) === String(eski.id) ? yeni : m)));
   const canli = (parts || []).filter(p => p && !p.deletedAt);
@@ -421,10 +425,18 @@ export const fiyatEtkisi = (eski, yeni, parts = [], malzemeler = []) => {
     const sonra = parcaMaliyetKurus(p, undefined, setKat, katYeni);
     if (once !== sonra) satirlar.push({ id: p.id, ad: p.ad, once, sonra });
   }
-  return { bagli, degisen: satirlar.length, satirlar };
+  if (fiyatSecenegi === undefined) return { bagli, degisen: satirlar.length, satirlar };
+  const bEski = { setKat, malzemeKat: katEski, ayar: fiyatAyariOf(fiyatSecenegi?.fiyatAyarlari) };
+  const bYeni = { ...bEski, malzemeKat: katYeni };
+  const fiyatli = satirlar.map(r => {
+    const p = canli.find(x => String(x.id) === String(r.id));
+    return { ...r, oncekiFiyat: parcaSatisFiyati(p, "TRY", bEski).deger, yeniFiyat: parcaSatisFiyati(p, "TRY", bYeni).deger };
+  });
+  return { bagli, degisen: satirlar.length, satirlar: fiyatli, fiyatDegisen: fiyatli.filter(r => r.oncekiFiyat !== r.yeniFiyat).length };
 };
 export const ORNEK_SATIR = 5;
 export const BAGLI_PARCA_YOK = "Bu malzemeye bağlı parça yok.";
+export const fiyatEtkiMetni = (e) => (e.fiyatDegisen ? `${e.fiyatDegisen} parçanın satış fiyatı değişecek.` : "Satış fiyatı değişecek parça yok (bağlı parçaların fiyatı elle sabit).");
 export const etkiMetni = (e) => (e.bagli === 0 ? BAGLI_PARCA_YOK : `${e.degisen} parçanın maliyeti değişecek (${e.bagli} bağlı parça).`);
 
 // ── Kur önerisi (R5, R5/2, AC-9, AC-10, AC-95) ──────────────────────────────────────────────────────────────────────────

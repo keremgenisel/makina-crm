@@ -59,9 +59,9 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
 **Örnek:** `src/components/Giderler.jsx:294`
-**Örnek:** `src/components/Documents.jsx:1133`
-**Örnek:** `src/components/Customers.jsx:529` (düğme kipi, içerik genişliği, sayı rozeti)
-**Örnek:** `src/components/Stock.jsx:58` (sekme kipi)
+**Örnek:** `src/components/Documents.jsx:1137`
+**Örnek:** `src/components/Customers.jsx:532` (düğme kipi, içerik genişliği, sayı rozeti)
+**Örnek:** `src/components/Stock.jsx:61` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:130` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:336` (form içi, düğme kipi, eşit genişlik)
 
@@ -77,6 +77,8 @@ Segment ile `ui.jsx` `Select` (açılır liste) arasındaki seçim ölçüyle ya
   **İstisna (spec 0096 C14):** Ayarlar › Katalog › Parça/Yedek Parça'nın **hammadde tedarikçisi süzgeci** `Select`'tir
   (`src/components/PartManager.jsx`, `aria-label="Hammadde tedarikçisi süzgeci"`): seçenekler tedarikçi adlarıdır, uzun ve
   sayısı sınırsızdır; segment çubuğu birkaç satıra yayılırdı. Yalnız gider yetkisiyle çizilir.
+  Aynı paneldeki ikinci süzgeç, **fiyat kipi süzgeci** (spec 0133 R4/3), kuralın kendisidir: üç seçenek, `Segment` `dugme`
+  (`aria-label` "Fiyat kipi süzgeci"); iki süzgeç birlikte uygulanır.
 
 İlk uygulaması ödeme yöntemidir: beş seçenekli (kasa yetkisiyle ANA hedefte yedi) olduğu için ödeme satırının yöntemi
 açılır listedir (`src/components/gider/OdemeGirisi.jsx`; gider formu ve ödeme penceresi aynı bileşen, spec 0053). Kalem ve
@@ -140,10 +142,10 @@ Spec 0016 ile:
 
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
-**Örnek:** `src/components/Documents.jsx:1128` (kart, etiket başlık)
+**Örnek:** `src/components/Documents.jsx:1132` (kart, etiket başlık)
 **Örnek:** `src/components/gider/DonemRaporu.jsx:44` (kart, başlık + alt satır)
-**Örnek:** `src/components/SimpleDealers.jsx:373` (başlıksız liste kabı)
-**Örnek:** `src/components/SimpleDealers.jsx:559` (detay bölümü, başlık)
+**Örnek:** `src/components/SimpleDealers.jsx:378` (başlıksız liste kabı)
+**Örnek:** `src/components/SimpleDealers.jsx:564` (detay bölümü, başlık)
 **Örnek:** `src/components/customers/detail/CustomerFilesSection.jsx:102` (denetimli katlanma, eylem yuvası)
 **Örnek:** `src/components/customers/detail/MachineTimeline.jsx:106` (eylem yuvası, alt başlık)
 
@@ -190,8 +192,8 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
 **Örnek:** `src/components/Giderler.jsx:361`
-**Örnek:** `src/components/Customers.jsx:564` (iki durum, sabit açıklama, spec 0016 R6)
-**Örnek:** `src/components/Documents.jsx:881` (ayrımlı ekran, yalnız başlık)
+**Örnek:** `src/components/Customers.jsx:567` (iki durum, sabit açıklama, spec 0016 R6)
+**Örnek:** `src/components/Documents.jsx:885` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
 
@@ -218,7 +220,7 @@ notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avansların
 
 **Örnek:** `src/components/Giderler.jsx:329`
 **Örnek:** `src/components/Kasa.jsx:595` (sayfa sonundaki şerit, spec 0083)
-**Örnek:** `src/components/stock/PartStokTab.jsx:149` (hata ailesi)
+**Örnek:** `src/components/stock/PartStokTab.jsx:154` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
 

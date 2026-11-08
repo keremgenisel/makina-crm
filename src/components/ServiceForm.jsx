@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, yerelBugun, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, partFiyatForCurrency, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { today, yerelBugun, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { formSatisFiyati } from "../lib/parcaFiyati";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
@@ -17,7 +18,7 @@ import { SetIcerikSatiri } from "./stock/SetRozeti";
 // "Yeni Servis Talebi") tarafından paylaşılır. Tek form olduğu için ikisi de
 // senkron kalır; ayrı bir kopya tutmak Makina Geçmişi'nde çözdüğümüz çift-form
 // sorununu burada da yaratırdı.
-export const ServiceForm = ({ title, form, setForm, customers, parts = [], dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [], kasaHesaplari = null, hesapVarsayilan = null, partTypeDefs = null }) => {
+export const ServiceForm = ({ title, form, setForm, customers, parts = [], fiyatBaglami = null, dealers = [], factory = null, onSave, onCancel, kdvRates = DEFAULT_KDV_RATES, krediKartiKomisyonlari = null, draftBar = null, dosyalar = [], dosyaEkleyebilir = false, dosyaCevrimdisi = false, showToast = () => {}, geoData = null, loadingGeo = false, calisanlar = [], kasaHesaplari = null, hesapVarsayilan = null, partTypeDefs = null }) => {
   // Teknisyen: firma çalışanları (Ayarlar) açılır listeden seçilir; listede olmayan harici usta için
   // "Diğer (elle yaz)" seçeneği serbest metin kutusu açar. Açılır liste, seçili olsa bile TÜM çalışanları
   // gösterir (datalist gibi önce silmek gerekmez).
@@ -413,7 +414,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
             {parcaKumesi.suzuluMu && <div data-testid="parca-suzgec-ibaresi"><Ipucu>{PARCA_SUZGEC_IBARESI}</Ipucu></div>}
             {kalipKutusu && !parcaKumesi.suzulebilir && <div data-testid="parca-suzgec-neden"><Ipucu>{PARCA_SUZGEC_NEDENI}</Ipucu></div>}
             <SearchPick items={parcaKumesi.liste} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
-              onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, adEN: p.adEN || "", miktar: 1, fiyat: partFiyatForCurrency(p, prev.currency || "TRY"), disTedarik: false }] }))} />
+              onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, adEN: p.adEN || "", miktar: 1, fiyat: formSatisFiyati(p, prev.currency || "TRY", fiyatBaglami), disTedarik: false }] }))} />
           </div>
         )}
       </Field>
@@ -512,7 +513,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], deale
                   const tanim = item.partId
                     ? parts.find(pt => String(pt.id) === String(item.partId))
                     : parts.find(pt => pt.ad === ad);
-                  const yeniFiyat = tanim ? partFiyatForCurrency(tanim, yeniPB) : "";
+                  const yeniFiyat = tanim ? formSatisFiyati(tanim, yeniPB, fiyatBaglami) : "";
                   return yeniFiyat === "" ? item : { ...item, fiyat: yeniFiyat };
                 }),
               }));

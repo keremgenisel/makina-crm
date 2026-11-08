@@ -11,10 +11,19 @@ import { SetHazirlaPenceresi } from "./SetHazirlaPenceresi";
 import { SetParcalaPenceresi } from "./SetParcalaPenceresi";
 import { SetRozeti, setBilesenSayisi } from "./SetRozeti";
 import { SET_HAZIRLA_DUGMESI, SET_PARCALA_DUGMESI } from "../../lib/setUretimi";
+import { parcaSatisFiyati, turetilmisFiyatSayisi } from "../../lib/parcaFiyati";
+
+// Spec 0133 R10, AC-17, AC-69: listedeki ve pano kartındaki fiyat tek okuma yolundan. Elle sabit parçada ve dövizde bugünkü tam sayı
+// biçimi (birebir, C4); maliyete bağlı parçanın TL fiyatı kuruşlu tek gösterim yardımcısıyla; türetilemeyen fiyat yazılmaz.
+const fmtN = (n) => Number(n) ? Number(n).toLocaleString("tr-TR", { maximumFractionDigits: 0 }) : null;
+const fiyatSayisi = (part, pb, baglam) => {
+  const r = parcaSatisFiyati(part, pb, baglam);
+  return r.turetilmis ? (r.deger === "" ? null : turetilmisFiyatSayisi(r.deger)) : fmtN(r.deger);
+};
 
 const PER_PAGE = 15;
 
-export const PartStokTab = ({ parts = [], rawParts = null, partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null, aktifKullanici = null }) => {
+export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null, aktifKullanici = null }) => {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   // Spec 0065 R18: tutarlılık raporu salt okunurdur. Spec 0121 R25/2: hareket listesi artık setin hazırlamasını geri alabilir
@@ -119,12 +128,8 @@ export const PartStokTab = ({ parts = [], rawParts = null, partStock = [], setPa
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             {pinnedRows.map(({ part, miktar }) => {
               const ac = cardAccent(miktar);
-              const fmtN = (n) => Number(n) ? Number(n).toLocaleString("tr-TR", { maximumFractionDigits: 0 }) : null;
-              const fiyatlar = [
-                fmtN(part.fiyatTRY) && `₺ ${fmtN(part.fiyatTRY)}`,
-                fmtN(part.fiyatUSD) && `$ ${fmtN(part.fiyatUSD)}`,
-                fmtN(part.fiyatEUR) && `€ ${fmtN(part.fiyatEUR)}`,
-              ].filter(Boolean);
+              const [t, u, e] = ["TRY", "USD", "EUR"].map(pb => fiyatSayisi(part, pb, fiyatBaglami));
+              const fiyatlar = [t && `₺ ${t}`, u && `$ ${u}`, e && `€ ${e}`].filter(Boolean);
               return (
                 <div key={part.id} style={{ background: ac.bg, border: `1px solid ${ac.border}`, borderRadius: 12, padding: "14px 20px", minWidth: 150, flex: "0 0 auto" }}>
                   <div style={{ fontSize: 12, color: "var(--n500, #64748b)", fontWeight: 600, marginBottom: 6, maxWidth: 180, lineHeight: 1.4 }}>{part.ad}</div>
@@ -177,12 +182,8 @@ export const PartStokTab = ({ parts = [], rawParts = null, partStock = [], setPa
             </thead>
             <tbody>
               {pagedRows.map(({ part, stok, miktar }) => {
-                const fmtN = (n) => Number(n) ? Number(n).toLocaleString("tr-TR", { maximumFractionDigits: 0 }) : null;
-                const fiyatlar = [
-                  fmtN(part.fiyatTRY) && { sym: "₺", val: fmtN(part.fiyatTRY) },
-                  fmtN(part.fiyatUSD) && { sym: "$", val: fmtN(part.fiyatUSD) },
-                  fmtN(part.fiyatEUR) && { sym: "€", val: fmtN(part.fiyatEUR) },
-                ].filter(Boolean);
+                const [t, u, e] = ["TRY", "USD", "EUR"].map(pb => fiyatSayisi(part, pb, fiyatBaglami));
+                const fiyatlar = [t && { sym: "₺", val: t }, u && { sym: "$", val: u }, e && { sym: "€", val: e }].filter(Boolean);
                 const isPinned = pinnedPartIds.includes(String(part.id));
                 return (
                 <tr key={part.id} style={{ borderBottom: "1px solid var(--n150, #f1f5f9)", background: rowBg(miktar) }}

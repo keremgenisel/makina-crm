@@ -17,7 +17,7 @@ import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/se
 import { MERGE_KEYS } from "../src/lib/merge";
 import { KILIT_ALANLARI } from "../src/lib/kilitAlanlari";
 // Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
-import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
+import { yeniAlanlariAyikla } from "./fixtures/0133-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır
 // Spec 0097 ile (R20/2, plan P11): içe aktarma yerel günü zorunlu parametre olarak alır.
 const BUGUN = "2026-10-20";
 
@@ -227,7 +227,7 @@ describe("Spec 0096: kaynak taramaları", () => {
     expect(kod("src/lib/urunAgaci.js")).toMatch(/reduce\(\(a, h\) => a \+ kurus\(h\.tutar\), 0\)/);
   });
   it("AC-31: yeni eylem izni, veri bölümü ve kilit alanı yok; birleştirme anahtarları aynı", () => {
-    const simdi = bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
+    const simdi = yeniAlanlariAyikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
     expect(simdi).toEqual(JSON.parse(readFileSync("tests/fixtures/0093-tarama-once.json", "utf8")));
     expect(Object.keys(KILIT_ALANLARI)).not.toContain("hammadde");
     expect(kod("electron/serverAuth.cjs")).not.toMatch(/hammadde/);
@@ -235,7 +235,12 @@ describe("Spec 0096: kaynak taramaları", () => {
   it("AC-44 (kaynak): parça paneli süzgeci Select; yerel pil ya da segment çubuğu yok; sözlükte adıyla istisna", () => {
     const pm = kod("src/components/PartManager.jsx");
     expect(pm).toMatch(/<Select aria-label="Hammadde tedarikçisi süzgeci"/);
-    expect(pm).not.toMatch(/<Segment/);
+    // Spec 0133 ile (R4/3, AC-84): panele iki Segment geldi (fiyat kipi süzgeci ve kartın kip seçicisi). 0096'nın iddiası, tedarikçi
+    // süzgecinin Select olması ve başka segment çubuğu olmaması, bu iki adla sınırlanarak korunur.
+    const segmentler = pm.match(/<Segment[^>]*ariaLabel=\{?"?([^"}\s]+)/g) || [];
+    expect(segmentler.length).toBe(2);
+    expect(pm).toMatch(/<Segment kip="dugme" genislik="icerik" ariaLabel="Fiyat kipi süzgeci"/);
+    expect(pm).toMatch(/<Segment kip="radyo" genislik="icerik" ariaLabel=\{FIYAT_KIPI_ETIKETI\}/);
     expect(readFileSync("docs/tasarim-sozlugu.md", "utf8")).toMatch(/İstisna \(spec 0096 C14\):\*\* Ayarlar › Katalog › Parça\/Yedek Parça'nın \*\*hammadde tedarikçisi süzgeci\*\* `Select`/);
   });
   it("AC-22 (kaynak): useFilteredList imzası değişmedi; sayfa sıfırlaması süzgeci yazan fonksiyonda", () => {

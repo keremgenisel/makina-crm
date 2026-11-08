@@ -3,7 +3,9 @@ import { logAction } from "../lib/audit";
 import { Field, Input, Btn, Modal } from "./ui";
 import { HataMetni, Ipucu, BolumBasligi, UyariSeridi } from "./tasarim";
 import { maliyetMetniKurus } from "../lib/urunAgaci";
-import { malzemeFormu, malzemeDogrula, fiyatGecmisiYaz, fiyatEtkisi, etkiMetni, ORNEK_SATIR, kurOnerisi, dovizMi } from "../lib/malzeme";
+import { malzemeFormu, malzemeDogrula, fiyatGecmisiYaz, fiyatEtkisi, etkiMetni, fiyatEtkiMetni, ORNEK_SATIR, kurOnerisi, dovizMi } from "../lib/malzeme";
+import { turetilmisFiyatMetni } from "../lib/parcaFiyati";
+import { parseMoney } from "../lib/utils";
 import { FiyatAlanlari } from "./MalzemeManager";
 
 // Spec 0132 R5, R6, R6/2, R17 (AC-9, AC-10, AC-21–AC-23, AC-48–AC-50, AC-79, AC-80, AC-95): fiyat kümesinin tarihli güncellemesi.
@@ -12,7 +14,7 @@ import { FiyatAlanlari } from "./MalzemeManager";
 export const FIYAT_PENCERE_BASLIGI = "Malzeme Fiyatını Güncelle";
 export const GECERLILIK_IPUCU = "Bu tarihten önceki tarihli maliyet sorguları eski fiyatla kalır; bugünden sonraki tarih seçilemez.";
 
-export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler, parts = [], rates = null, ratesErr = false, bugun, onClose, showToast = () => {}, serverPermissions = null }) => {
+export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler, parts = [], rates = null, ratesErr = false, bugun, onClose, fiyatAyarlari = null, showToast = () => {}, serverPermissions = null }) => {
   const [form, setForm] = useState(() => {
     const f = malzemeFormu(malzeme);
     // R5, AC-9, AC-10 (triyaj bulgu 1, Karar 41): kur alanı KAYITLI kurla açılır; kuru değiştirmek bir zamdır ve yalnız kullanıcı
@@ -27,7 +29,7 @@ export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler,
   const v = useMemo(() => malzemeDogrula(form, malzemeler, malzeme.id), [form, malzemeler, malzeme.id]);
   // `v` forma bağlı önbellekte; `yeni` ve etki ondan türer (eski hâldeki satır içi eslint susturması kalktı, triyaj bulgu 9).
   const yeni = useMemo(() => (v.gecerli ? tanimsizSiz({ ...malzeme, ...fiyatAlanlari(v.kayit) }) : null), [v, malzeme]);
-  const etki = useMemo(() => (yeni ? fiyatEtkisi(malzeme, yeni, parts, malzemeler) : null), [yeni, malzeme, parts, malzemeler]);
+  const etki = useMemo(() => (yeni ? fiyatEtkisi(malzeme, yeni, parts, malzemeler, { fiyatAyarlari }) : null), [yeni, malzeme, parts, malzemeler, fiyatAyarlari]);
 
   const kaydet = () => {
     if (!v.gecerli) { setHatalar(v.hatalar); return; }
@@ -55,14 +57,19 @@ export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler,
       {!etki ? <Ipucu>Alanlardaki hata düzelince etki burada görünür.</Ipucu> : (
         <div data-testid="fiyat-etkisi">
           <UyariSeridi aile={etki.degisen ? "uyari" : "bilgi"}><span data-testid="fiyat-etki-metni">{etkiMetni(etki)}</span></UyariSeridi>
+          {/* Spec 0133 R16, AC-38, AC-40: maliyet özetinin yanında satış fiyatı özeti (fiyatı değişen parça sayısı, sıfır dahil). */}
+          {etki.bagli > 0 && <div data-testid="fiyat-etki-satis" style={{ fontSize: 12.5, marginTop: 6, color: "var(--n600, #475569)" }}>{fiyatEtkiMetni(etki)}</div>}
           {etki.satirlar.length > 0 && (
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, marginTop: 8 }}>
-              <thead><tr style={{ color: "var(--n500, #64748b)", textAlign: "left" }}><th style={{ padding: "4px 6px" }}>Parça</th><th style={{ padding: "4px 6px", textAlign: "right" }}>Eski maliyet</th><th style={{ padding: "4px 6px", textAlign: "right" }}>Yeni maliyet</th></tr></thead>
+              <thead><tr style={{ color: "var(--n500, #64748b)", textAlign: "left" }}><th style={{ padding: "4px 6px" }}>Parça</th><th style={{ padding: "4px 6px", textAlign: "right" }}>Eski maliyet</th><th style={{ padding: "4px 6px", textAlign: "right" }}>Yeni maliyet</th><th style={{ padding: "4px 6px", textAlign: "right" }}>Eski fiyat</th><th style={{ padding: "4px 6px", textAlign: "right" }}>Yeni fiyat</th></tr></thead>
               <tbody>{etki.satirlar.slice(0, ORNEK_SATIR).map(s => (
                 <tr key={s.id} data-testid="fiyat-etki-satiri" style={{ borderTop: "1px solid var(--n100, #f1f5f9)" }}>
                   <td style={{ padding: "4px 6px" }}>{s.ad}</td>
                   <td style={{ padding: "4px 6px", textAlign: "right" }}>{maliyetMetniKurus(s.once)}</td>
                   <td style={{ padding: "4px 6px", textAlign: "right", fontWeight: 700 }}>{maliyetMetniKurus(s.sonra)}</td>
+                  {/* AC-39: eski ve yeni satış fiyatı; elle sabit parçada fiyat aynıdır, "—" yalnız türetilemeyende. */}
+                  <td data-testid="fiyat-etki-eski-fiyat" style={{ padding: "4px 6px", textAlign: "right" }}>{s.oncekiFiyat === "" || s.oncekiFiyat == null ? "—" : turetilmisFiyatMetni(parseMoney(s.oncekiFiyat))}</td>
+                  <td data-testid="fiyat-etki-yeni-fiyat" style={{ padding: "4px 6px", textAlign: "right", fontWeight: 700 }}>{s.yeniFiyat === "" || s.yeniFiyat == null ? "—" : turetilmisFiyatMetni(parseMoney(s.yeniFiyat))}</td>
                 </tr>))}</tbody>
             </table>
           )}

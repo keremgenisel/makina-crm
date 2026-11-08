@@ -11,6 +11,7 @@ import { KartBolum, Ipucu } from "./tasarim";
 import { URETIM_ISARETI_IPUCU } from "../lib/uretimdekiModeller";
 import { SettingsApp } from "./settings/SettingsApp";
 import { SettingsMusteri } from "./settings/SettingsMusteri";
+import { SettingsFiyat } from "./settings/SettingsFiyat";
 import { SettingsServisPanosu } from "./settings/SettingsServisPanosu";
 import { SettingsBackup } from "./settings/SettingsBackup";
 import { SettingsSecurity } from "./settings/SettingsSecurity";
@@ -48,7 +49,7 @@ import { SettingsGider } from "./settings/SettingsGider";
 // "Evrak & Süreçler" (KDV/evrak/takip) olarak bölündü. Görünürlük öğe id'sine göre süzülür
 // (visibleGroups), grup adından bağımsız — öğeleri taşımak izinleri etkilemez.
 const SETTINGS_GROUPS = [
-  { grup: "Uygulama", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "musteri", label: "Müşteri Görünümü", icon: "customers" }, { id: "servispano", label: "Servis ve Kargo Panosu", icon: "service" }] },
+  { grup: "Uygulama", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "musteri", label: "Müşteri Görünümü", icon: "customers" }, { id: "fiyat", label: "Fiyat Ayarları", icon: "parts" }, { id: "servispano", label: "Servis ve Kargo Panosu", icon: "service" }] },
   { grup: "Firma", items: [{ id: "company", label: "Firma Bilgileri", icon: "machine" }, { id: "calisanlar", label: "Firma Çalışanları", icon: "customers" }] },
   { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "securitystatus", label: "Güvenlik Durumu", icon: "lock" }] },
   { grup: "Sunucu", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
@@ -210,6 +211,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
       ) : (<>
       {settingsTab === "app" && <SettingsApp version={version} flash={flash} appUpd={appUpd} onCheckUpdate={onCheckUpdate} onStartUpdate={onStartUpdate} />}
       {settingsTab === "musteri" && <SettingsMusteri appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
+      {settingsTab === "fiyat" && <SettingsFiyat appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
       {settingsTab === "servispano" && <SettingsServisPanosu appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 
       {settingsTab === "company" && <SettingsCompany factory={factory} setFactory={setFactory} appSettings={appSettings} setAppSettings={setAppSettings} setCustomers={setCustomers} setServices={setServices} flash={flash} />}
@@ -285,7 +287,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
             rawCustomModels={rawCustomModels.length >= customModels.length ? rawCustomModels : customModels}
             // Spec 0096 C11 (plan P1): tedarikçi listesi parça paneline gider yetkisiyle kapatılarak verilir; App'ten gelen dizi
             // ham ve kapısız kalır çünkü aynı dizi yedeğe gidiyor (App'te kapatılsa yetkisiz kullanıcının yedeği boş liste taşırdı).
-            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} malzemeler={malzemeler} rawMalzemeler={rawMalzemeler ?? malzemeler} />
+            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} malzemeler={malzemeler} rawMalzemeler={rawMalzemeler ?? malzemeler} fiyatAyarlari={appSettings?.fiyatAyarlari} serverPermissions={serverPermissions} factory={factory} />
         </KartBolum>
       )}
 
@@ -294,7 +296,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
       {settingsTab === "malzemeler" && (
         <KartBolum title="Malzemeler" icon="box" wide>
           <MalzemeManager malzemeler={malzemeler} setMalzemeler={setMalzemeler} parts={rawParts.length ? rawParts : parts} rates={rates} ratesErr={ratesErr}
-            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} bugun={bugun} showToast={showToast} serverPermissions={serverPermissions} />
+            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} bugun={bugun} showToast={showToast} serverPermissions={serverPermissions} fiyatAyarlari={appSettings?.fiyatAyarlari} />
         </KartBolum>
       )}
 
@@ -361,7 +363,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
 
       {settingsTab === "import" && (
         <SettingsImport customers={customers} setCustomers={setCustomers} setServices={setServices} flash={flash}
-          parts={parts} setParts={setParts} partTypeDefs={partTypeDefs} setPartTypeDefs={setPartTypeDefs} malzemeler={malzemeler} />
+          parts={parts} setParts={setParts} partTypeDefs={partTypeDefs} setPartTypeDefs={setPartTypeDefs} malzemeler={malzemeler} fiyatAyarlari={appSettings?.fiyatAyarlari} />
       )}
 
       {settingsTab === "optimize" && (

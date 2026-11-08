@@ -77,7 +77,9 @@ export const setKatalogu = (parts = []) => new Map((parts || []).filter(p => p &
 // R2/3, R8, R8/2, R10, R5/2, R11/2, R12, Karar 46: setin özeti, TEK hesap. Bileşenin maliyeti kendi (elle ya da kırılım,
 // tarihli) değeridir; içeriği olan bileşene hiç bakılmaz, eksik sayılır (özyineleme yok, AC-42). Bir bileşen eksikse setin
 // maliyeti `null`. Fiyat toplamı TL fiyatının tek okuma yolundan, tam lira; fiyatı olmayan satır sayılmaz ve sayısı döner.
-export const setOzeti = (icerik, katalog, tarih, malzemeKat) => {
+// Spec 0133 Karar 30: beşinci parametre isteğe bağlı fiyat okuyucusu (bileşen → TL fiyatı); verilmezse bugünkü elle girilen
+// TL fiyatı. Maliyet motoru fiyat kavramını bilmez, okuyucuyu parça kartı verir (`parcaFiyati.setFiyatOkuyucu`).
+export const setOzeti = (icerik, katalog, tarih, malzemeKat, fiyatOku = null) => {
   const satirlar = (Array.isArray(icerik) ? icerik : []).filter(r => r && r.partId != null && r.partId !== "");
   let toplamK = 0, eksik = 0, fiyatToplam = 0, fiyatsiz = 0;
   for (const r of satirlar) {
@@ -85,7 +87,7 @@ export const setOzeti = (icerik, katalog, tarih, malzemeKat) => {
     const b = katalog instanceof Map ? katalog.get(String(r.partId)) : null;
     const birimK = b && !setMi(b) ? tekilMaliyetKurus(b, tarih, malzemeKat) : null; // 0132 AC-64
     if (birimK == null) eksik++; else toplamK += birimK * adet;
-    const f = b ? parseMoney(partFiyatForCurrency(b, "TRY")) : 0;
+    const f = b ? parseMoney(fiyatOku ? fiyatOku(b) : partFiyatForCurrency(b, "TRY")) : 0;
     if (f > 0) fiyatToplam += f * adet; else fiyatsiz++;
   }
   return { maliyetK: satirlar.length && !eksik ? toplamK : null, eksik, fiyatToplam: Math.round(fiyatToplam), fiyatsiz, bilesen: satirlar.length };
@@ -388,7 +390,8 @@ export const SET_PASIF_NEDENI = "Maliyet setin içeriğinden geliyor; elle giril
 export const SET_TOPLAM_ETIKETI = "Setin maliyeti (bileşenlerin toplamı)";
 export const setEksikMetni = (n) => `${n} bileşenin maliyeti yok; setin maliyeti "girilmedi" sayılır.`;
 export const SET_FIYAT_ETIKETI = "Bileşenlerin TL fiyatı toplamı";
-export const setFiyatsizMetni = (n) => `${n} bileşenin TL fiyatı yok, toplama girmedi.`;
+// Spec 0133 R22/2 (AC-72): sayaç iki nedeni kapsar (fiyatı girilmemiş ya da maliyete bağlı olup fiyatı türetilemeyen bileşen).
+export const setFiyatsizMetni = (n) => `${n} bileşenin TL fiyatı yok (girilmemiş ya da maliyetten türetilemiyor), toplama girmedi.`;
 export const SET_FIYAT_DUGMESI = "TL fiyatı toplamına eşitle";
 // R24/2, R26/2: rozet ve seçimden sonraki satır.
 export const setRozetMetni = (n) => `SET · ${n} bileşen`;

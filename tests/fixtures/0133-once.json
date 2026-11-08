@@ -1,0 +1,330 @@
+{
+  "katalog": [
+    "—RulmanStandartR-61TR · EN—₺450 · $12100,00 ₺",
+    "—KayışStandartK-62TR · EN—₺1.250 · €30—",
+    "—PimStandartP-63TR · EN———",
+    "—Bağlantı setiSET · 2 bileşenStandartS-64TR · EN—₺1.000—",
+    "—Kesme miliStandartM-65TR · EN—₺4.5001.701,12 ₺Malzemeden hesaplanıyor",
+    "—Excel puluStandartE-66TR · EN—₺10040,00 ₺"
+  ],
+  "stok": {
+    "satirlar": [
+      "Rulman—₺ 450$ 125adet—+ EkleDüzeltHareketler★",
+      "Kayış—₺ 1.250€ 305adet—+ EkleDüzeltHareketler★",
+      "Pim——5adet—+ EkleDüzeltHareketler★",
+      "Bağlantı setiSET · 2 bileşen—₺ 1.0005adet—+ EkleDüzeltSet HazırlaSeti ParçalaHareketler★",
+      "Kesme mili—₺ 4.5005adet—+ EkleDüzeltHareketler★",
+      "Excel pulu—₺ 1005adet—+ EkleDüzeltHareketler★"
+    ],
+    "govde": "DashboardRulman5adet₺ 450  ·  $ 12Kayış5adet₺ 1.250  ·  € 30Pim5adetBağlantı seti5adet₺ 1.000Kesme mili5adet₺ 4.500Excel pulu5adet₺ 1006 parçada stok azaldı (5 veya altı) Stok Tutarlılığı Stoğa Parça EkleYedek ParçaModellerFiyatStokSon GüncellemeRulman—₺ 450$ 125adet—+ EkleDüzeltHareketler★Kayış—₺ 1.250€ 305adet—+ EkleDüzeltHareketler★Pim——5adet—+ EkleDüzeltHareketler★Bağlantı setiSET · 2 bileşen—₺ 1.0005adet—+ EkleDüzeltSet HazırlaSeti ParçalaHareketler★Kesme mili—₺ 4.5005adet—+ EkleDüzeltHareketler★Excel pulu—₺ 1005adet—+ EkleDüzeltHareketler★"
+  },
+  "evrak": {
+    "61-TRY": {
+      "birimFiyat": "450",
+      "tlKarsiligi": ""
+    },
+    "61-USD": {
+      "birimFiyat": "12",
+      "tlKarsiligi": ""
+    },
+    "61-EUR": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "62-TRY": {
+      "birimFiyat": "1.250",
+      "tlKarsiligi": ""
+    },
+    "62-USD": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "62-EUR": {
+      "birimFiyat": "30",
+      "tlKarsiligi": ""
+    },
+    "63-TRY": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "63-USD": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "63-EUR": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "64-TRY": {
+      "birimFiyat": "1.000",
+      "tlKarsiligi": ""
+    },
+    "64-USD": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "64-EUR": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "65-TRY": {
+      "birimFiyat": "4.500",
+      "tlKarsiligi": ""
+    },
+    "65-USD": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "65-EUR": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "66-TRY": {
+      "birimFiyat": "99,5",
+      "tlKarsiligi": ""
+    },
+    "66-USD": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    },
+    "66-EUR": {
+      "birimFiyat": "",
+      "tlKarsiligi": ""
+    }
+  },
+  "servis": {
+    "61-TRY": {
+      "secim": 450,
+      "pb": 450
+    },
+    "61-USD": {
+      "secim": 450,
+      "pb": 12
+    },
+    "61-EUR": {
+      "secim": 450,
+      "pb": 450
+    },
+    "62-TRY": {
+      "secim": "1250",
+      "pb": "1250"
+    },
+    "62-USD": {
+      "secim": "1250",
+      "pb": "1250"
+    },
+    "62-EUR": {
+      "secim": "1250",
+      "pb": 30
+    },
+    "63-TRY": {
+      "secim": "",
+      "pb": ""
+    },
+    "63-USD": {
+      "secim": "",
+      "pb": ""
+    },
+    "63-EUR": {
+      "secim": "",
+      "pb": ""
+    },
+    "64-TRY": {
+      "secim": 1000,
+      "pb": 1000
+    },
+    "64-USD": {
+      "secim": 1000,
+      "pb": 1000
+    },
+    "64-EUR": {
+      "secim": 1000,
+      "pb": 1000
+    },
+    "65-TRY": {
+      "secim": 4500,
+      "pb": 4500
+    },
+    "65-USD": {
+      "secim": 4500,
+      "pb": 4500
+    },
+    "65-EUR": {
+      "secim": 4500,
+      "pb": 4500
+    },
+    "66-TRY": {
+      "secim": 99.5,
+      "pb": 99.5
+    },
+    "66-USD": {
+      "secim": 99.5,
+      "pb": 99.5
+    },
+    "66-EUR": {
+      "secim": 99.5,
+      "pb": 99.5
+    }
+  },
+  "yedek": {
+    "61-TRY": {
+      "secim": 450,
+      "pb": 450
+    },
+    "61-USD": {
+      "secim": 450,
+      "pb": 12
+    },
+    "61-EUR": {
+      "secim": 450,
+      "pb": 450
+    },
+    "62-TRY": {
+      "secim": "1250",
+      "pb": "1250"
+    },
+    "62-USD": {
+      "secim": "1250",
+      "pb": "1250"
+    },
+    "62-EUR": {
+      "secim": "1250",
+      "pb": 30
+    },
+    "63-TRY": {
+      "secim": "",
+      "pb": ""
+    },
+    "63-USD": {
+      "secim": "",
+      "pb": ""
+    },
+    "63-EUR": {
+      "secim": "",
+      "pb": ""
+    },
+    "64-TRY": {
+      "secim": 1000,
+      "pb": 1000
+    },
+    "64-USD": {
+      "secim": 1000,
+      "pb": 1000
+    },
+    "64-EUR": {
+      "secim": 1000,
+      "pb": 1000
+    },
+    "65-TRY": {
+      "secim": 4500,
+      "pb": 4500
+    },
+    "65-USD": {
+      "secim": 4500,
+      "pb": 4500
+    },
+    "65-EUR": {
+      "secim": 4500,
+      "pb": 4500
+    },
+    "66-TRY": {
+      "secim": 99.5,
+      "pb": 99.5
+    },
+    "66-USD": {
+      "secim": 99.5,
+      "pb": 99.5
+    },
+    "66-EUR": {
+      "secim": 99.5,
+      "pb": 99.5
+    }
+  },
+  "setToplami": {
+    "maliyetK": null,
+    "eksik": 1,
+    "fiyatToplam": 2150,
+    "fiyatsiz": 0,
+    "bilesen": 2
+  },
+  "disaAktarma": [
+    [
+      "Rulman",
+      "",
+      "R-61",
+      "Standart",
+      "",
+      "",
+      450,
+      12,
+      "",
+      100,
+      ""
+    ],
+    [
+      "Kayış",
+      "",
+      "K-62",
+      "Standart",
+      "",
+      "",
+      "1250",
+      "",
+      30,
+      "",
+      ""
+    ],
+    [
+      "Pim",
+      "",
+      "P-63",
+      "Standart",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    [
+      "Bağlantı seti",
+      "",
+      "S-64",
+      "Standart",
+      "",
+      "",
+      1000,
+      "",
+      "",
+      "",
+      "Rulman x 2; Kayış x 1"
+    ],
+    [
+      "Kesme mili",
+      "",
+      "M-65",
+      "Standart",
+      "",
+      "",
+      4500,
+      "",
+      "",
+      1701.12,
+      ""
+    ],
+    [
+      "Excel pulu",
+      "",
+      "E-66",
+      "Standart",
+      "",
+      "",
+      99.5,
+      "",
+      "",
+      40,
+      ""
+    ]
+  ]
+}

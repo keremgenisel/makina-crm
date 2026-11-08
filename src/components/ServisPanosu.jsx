@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { grupKimlikleri, today, yerelBugun, fmtTR, uid, bumpId, parseMoney, tahsilEdilecekKdv, tahsilKdvOrani, normalizeSaleType, simdiYerel, sureDk, sureBicim, sureBicimSaat, fmtZaman, fmtZamanTam, isAltuntasServisi, islemFirmaGoster, disServisMi, parcaAdi, servisParcaSatirTutari } from "../lib/utils";
+import { fiyatBaglamiKur } from "../lib/parcaFiyati";
 import { tahsilatGunuYaz, tahsilatGunuFormHatasi } from "../lib/satisTahsilat";
 import { kartKomisyonuSnapshot, kartYansitmaAyrim, yansitilanKomisyon } from "../lib/krediKarti";
 import { satisTevkifatUygula, satisTevkifatDogrula, kartTabanKaydi, kartTabanIsaretle } from "../lib/satisTevkifat";
@@ -73,7 +74,7 @@ const bosForm = (factoryName) => ({
 
 export const ServisPanosu = ({
   services = [], setServices, customers = [], calisanlar = [], factory = null,
-  parts = [], dealers = [], kdvRates = null, geoData = null, loadingGeo = false,
+  parts = [], malzemeler = [], dealers = [], kdvRates = null, geoData = null, loadingGeo = false,
   setPartStock = null, setPartStockLog = null, partStock = [], partStockLog = [],
   dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, appSettings = null,
   showToast = () => {}, serverPermissions = null, kiosk = false, onKilitle = null,
@@ -87,6 +88,8 @@ export const ServisPanosu = ({
   // verilir (kiosk ve ayrı pencere vermez, C13). `uretimYetki` = Stok sekmesi görünür (R27/2).
   uretimFormlari = [], setUretimFormlari = null, uretimYetki = false, partTypeDefs = null,
 }) => {
+  // Spec 0133 R10/3, Karar 32: satış fiyatının bağlamı ekranda bir kez kurulur, formlara yalnız bağlam iner.
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
   const canDo = makeCanDo(serverPermissions, "customerActions");
   const canKargoDuzenle = makeCanDo(serverPermissions, "stockActions")("yedek_parca_edit");
   // Extra Kalıp kargo pano işlemleri (kargo desenine paralel; ayrı izinler).
@@ -1005,7 +1008,7 @@ export const ServisPanosu = ({
 
       {/* Panodan yeni yedek parça satışı (Yeni Servis Talebi düğmesinin yanından) */}
       {ypForm && (
-        <YedekParcaSatisForm title="Yeni Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
+        <YedekParcaSatisForm fiyatBaglami={fiyatBaglami} title="Yeni Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo} kasaHesaplari={kasaHesaplari} hesapVarsayilan={tahsilatHesapVarsayilan}
@@ -1020,7 +1023,7 @@ export const ServisPanosu = ({
             onForce={forceSvLock} onCancel={() => setSvModal(null)} />
         </Modal>
       ) : (
-        <ServiceForm
+        <ServiceForm fiyatBaglami={fiyatBaglami}
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={form} setForm={setForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}

@@ -17,6 +17,7 @@ import { buildPrintHtml, buildFaturaHtml } from "../lib/printTemplates";
 import { FaturaFormModal } from "./documents/FaturaFormModal";
 import { KalemSecPenceresi } from "./documents/KalemSecPenceresi";
 import { SetIcerikSatiri, setEtiketEki, PARCA_YER_TUTUCU } from "./stock/SetRozeti";
+import { fiyatBaglamiKur, parcaSatisFiyati } from "../lib/parcaFiyati";
 
 const PER_PAGE = 15;
 const CUR_LABEL = { TRY: "TL", EUR: "EURO", USD: "USD" };
@@ -179,8 +180,11 @@ export const Documents = ({
   openDocId = null,
   onDocOpenConsumed = null,
   aktifKullanici = null, // spec 0128 R1: silme onayının kendi kilidini engel saymaması için
+  malzemeler = [], // spec 0133 R10/3: maliyete bağlı parçanın fiyatı malzemeden türeyebilir
 }) => {
   const effectiveTur = effectiveTeklifTur;
+  // Spec 0133 R10, Karar 32: satır fiyatının tek okuma yolu; bağlam ekranda bir kez kurulur.
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
   const kaydedildiMi = (t) => teklifKaydedildiMi(t, { customers, partSales, yedekParcaSatislar, parts });
   const uretimDurumu = (t) => teklifUretimDurumu(t, { parts, customers });
   const evrakFormConfig = appSettings?.evrakFormConfig || null;
@@ -717,7 +721,7 @@ export const Documents = ({
       const part = parts.find(pt => String(pt.id) === String(partId));
       if (!part) return r;
       const cur = p?.currency || "TRY";
-      const raw = cur === "USD" ? part.fiyatUSD : cur === "EUR" ? part.fiyatEUR : part.fiyatTRY;
+      const raw = parcaSatisFiyati(part, cur === "USD" || cur === "EUR" ? cur : "TRY", fiyatBaglami).deger; // spec 0133 R10
       const num = parseMoney(raw);
       const birimFiyat = num > 0 ? num.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : "";
       const tl = calcTL(birimFiyat, p?.kurRate);

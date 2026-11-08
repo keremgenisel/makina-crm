@@ -273,6 +273,7 @@ describe("Spec 0121: kaynak taramaları (C1, R2/2, R2/3)", () => {
     expect(kod("src/lib/parcaAktarma.js")).toMatch(/set: setOlacak/);
     expect(kod("src/lib/parcaAktarma.js")).toMatch(/const setOlacak = setMi\(mevcut\) \|\| !!yeniIcerik;/);
     expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
-    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat\)/);
+    // Spec 0133 ile: dördüncü parametre fiyat ayarları (maliyete bağlı parçanın TL hücresi türetilmiş fiyat, R16).
+    expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat, appSettings\?\.fiyatAyarlari\)/);
   });
 });

@@ -199,7 +199,7 @@ describe("Spec 0122: var olan testlerle ölçülen kriterler (triyaj bulgu 5)", 
     "AC-8": [["tests/ui/set-icerigi-0121.test.jsx", "it(\"AC-3: adet 0"], ["tests/ui/set-icerigi-0121.test.jsx", "it(\"AC-7 / AC-8 / AC-40:"]],
     "AC-9": [["tests/kirilim-toplami-0099.test.js", "it(\"AC-26: PartManager'da formMaliyeti("], ["tests/ui/set-icerigi-0121.test.jsx", "it(\"AC-51 / C1:"]],
     "AC-29": [["tests/kanit-eslemesi.test.js", "it(\"AC-11b / AC-11c: eşlemedeki her kayıt kurallara uyar"]],
-    "AC-31": [["tests/kirilim-toplami-0099.test.js", "expect(say(s, \"reduce(\")).toBe(0);"], ["tests/hammadde-0096.test.js", "expect(pm).not.toMatch(/<Segment/);"]],
+    "AC-31": [["tests/kirilim-toplami-0099.test.js", "expect(say(s, \"reduce(\")).toBe(0);"], ["tests/hammadde-0096.test.js", "expect(segmentler.length).toBe(2);"]], // spec 0133 ile: iki Segment adla sınırlandı (R4/3)
   };
   for (const [ac, testler] of Object.entries(KAPSAM)) {
     it(`${ac}: ölçen var olan testler yerinde (${testler.map(t => t[0].split("/").pop()).join(", ")})`, () => {

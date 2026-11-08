@@ -984,6 +984,42 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0134 AC-60 / AC-58: malzemenin payı geri gelir, paysız malzemede anahtar yok", c.malzemeler.find(m => m.id === 601)?.emniyetPayi === 12.5 && esit(c.malzemeler.find(m => m.id === 602), { id: 602, ad: "Paysız" }));
 }
 
+// ── Spec 0133 C5, C5/2, AC-47, AC-80, AC-94 (Karar 33): fiyat kipi ve parçanın katı `parts`'ta kendi sütunu; elle sabit kip değer
+// olarak saklanmaz ve gövdede anahtar yok; varsayılan kat ile yuvarlama `app_settings.fiyatAyarlari` JSON, boşken NULL ve anahtar yok.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b0 = dbmod.readBlobFromDb();
+  check("spec 0133 AC-47: kipsiz parçaların gövdesi spec öncesiyle birebir, fiyatKipi ve karKati anahtarı yok", esit(b0.parts, once.parts) && b0.parts.every(p => !("fiyatKipi" in p) && !("karKati" in p)));
+  check("spec 0133 Karar 33: fiyat ayarı girilmemişken appSettings'te anahtar yok", !("fiyatAyarlari" in (b0.appSettings || {})));
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.parts[0].fiyatKipi = "maliyet";
+  girdi.parts[0].karKati = 2.457;
+  girdi.parts[1].fiyatKipi = "elle"; // tanınmayan değer saklanmaz (R1/2)
+  girdi.appSettings = { ...(girdi.appSettings || {}), fiyatAyarlari: { varsayilanKat: 2.4, yuvarlama: "yukari10" } };
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ps = ham.prepare(`SELECT id, fiyatKipi, karKati FROM parts`).all();
+  const as = ham.prepare(`SELECT fiyatAyarlari FROM app_settings WHERE id = 1`).get();
+  ham.close();
+  check("spec 0133 C5/2: kip TEXT ve yalnız 'maliyet', kat REAL; ötekilerde NULL", ps.find(r => r.id === 7)?.fiyatKipi === "maliyet" && ps.find(r => r.id === 7)?.karKati === 2.457
+    && ps.filter(r => r.id !== 7).every(r => r.fiyatKipi === null && r.karKati === null));
+  check("spec 0133 Karar 33: fiyat ayarı JSON sütunda", JSON.parse(as?.fiyatAyarlari || "{}").yuvarlama === "yukari10");
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0133 AC-94 / AC-80: kip ve kat geri gelir; tanınmayan kip gövdede yok", c.parts.find(p => p.id === 7)?.fiyatKipi === "maliyet" && c.parts.find(p => p.id === 7)?.karKati === 2.457
+    && !("fiyatKipi" in c.parts.find(p => p.id === 8)));
+  check("spec 0133 Karar 33: fiyat ayarı birebir geri gelir", esit(c.appSettings.fiyatAyarlari, { varsayilanKat: 2.4, yuvarlama: "yukari10" }));
+  const bos = structuredClone(c);
+  bos.appSettings = { ...bos.appSettings, fiyatAyarlari: undefined };
+  dbmod.writeBlobToDb(bos);
+  check("spec 0133 (0091 R24/4 emsali): undefined ayar NULL yazılır ve gövdede anahtar yok", !("fiyatAyarlari" in dbmod.readBlobFromDb().appSettings));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

@@ -358,7 +358,7 @@ export const SettingsExport = ({ customers, services, dealers, stock, partSales,
     // Spec 0121 R12/2 (AC-50): setin maliyet hücresi çözülmüş maliyeti taşır; katalog bir kez kurulur.
     const katalog = setKatalogu(parts);
     const malzemeKat = malzemeKatalogu(malzemeler); // spec 0132 R21 (AC-72): malzeme kaynaklı parçanın çözülmüş maliyeti
-    const rows = [PARCA_AKTARMA_BASLIKLARI, ...parts.map(p => parcaDisaAktarmaSatiri(p, katalog, malzemeKat))];
+    const rows = [PARCA_AKTARMA_BASLIKLARI, ...parts.map(p => parcaDisaAktarmaSatiri(p, katalog, malzemeKat, appSettings?.fiyatAyarlari))];
     try {
       if (mode === "email") { const b64 = await xlsxToBase64(rows, "Yedek Parça"); openExportMailXLSXBase64(b64, "yedek-parca-tanimlari.xlsx", "Yedek Parça Tanımları"); return; }
       await downloadXlsx(rows, "yedek-parca-tanimlari.xlsx", "Yedek Parça"); flash("ok", "Yedek parça tanımları Excel olarak indirildi.");

@@ -1,0 +1,24 @@
+{
+  "bagli": 2,
+  "degisen": 3,
+  "satirlar": [
+    {
+      "id": 65,
+      "ad": "Kesme mili",
+      "once": 170112,
+      "sonra": 196062
+    },
+    {
+      "id": 67,
+      "ad": "Bağlı mil",
+      "once": 14233,
+      "sonra": 16404
+    },
+    {
+      "id": 68,
+      "ad": "Mil seti",
+      "once": 340224,
+      "sonra": 392124
+    }
+  ]
+}

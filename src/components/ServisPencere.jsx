@@ -22,6 +22,7 @@ const BOS = {
   dosyalar: [], yedekParcaSatislar: [], partSales: [], serverPermissions: null,
   aktifKullanici: "", kargoYetki: false, kalipYetki: false, dosyaCevrimdisi: false,
   uretimFormlari: [], partTypeDefs: null, // spec 0115 R11/2, R32: salt okunur (YAZILABILIR'e girmez, C13)
+  malzemeler: [], // spec 0133 R10/4: salt okunur; pano fiyat bağlamını bu düz listeden kurar (Map köprüden geçmez)
 };
 
 export function ServisPencere() {
@@ -108,7 +109,7 @@ export function ServisPencere() {
             `tahsilatHesapVarsayilan` verilmez; aynı kayıt sekmedeki panodan ya da müşteri detayından işaretlenir. */
         <ServisPanosu
           services={withoutDeleted(snap.services)} setServices={s.services}
-          customers={snap.customers} calisanlar={snap.calisanlar} parts={snap.parts} dealers={snap.dealers}
+          customers={snap.customers} calisanlar={snap.calisanlar} parts={snap.parts} malzemeler={snap.malzemeler} dealers={snap.dealers}
           factory={snap.factory} kdvRates={snap.appSettings?.kdvRates} geoData={snap.geoData} loadingGeo={snap.loadingGeo}
           setPartStock={s.partStock} setPartStockLog={s.partStockLog} partStock={snap.partStock} partStockLog={snap.partStockLog}
           dosyalar={snap.dosyalar} setDosyalar={s.dosyalar} dosyaCevrimdisi={snap.dosyaCevrimdisi}

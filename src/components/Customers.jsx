@@ -6,6 +6,7 @@ import { servisParcaGeriAl } from "../lib/servisStok";
 import { netDusumleri, IADE_TIPI } from "../lib/stokHareketi";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, yedekParcaTahsisliMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
 import { grupKimlikleri, today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
+import { fiyatBaglamiKur } from "../lib/parcaFiyati";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
 import { ihracKayitliUygula, ihracKayitliDogrula, satisTipiSecimi, satisTipiPilStili } from "../lib/ihracKayitli";
@@ -28,7 +29,7 @@ import { useKilitListesi } from "../hooks/useKilitListesi";
 export const Customers = ({
   customers, setCustomers, services = [], setServices = null, dealers = null, models = ALTUNMAK_MODELS,
   factory = null, geoData = null, loadingGeo = false, stock = null, setStock = null,
-  partSales = [], setPartSales = null, parts = [], payments = [], setPayments = null,
+  partSales = [], setPartSales = null, parts = [], malzemeler = [], payments = [], setPayments = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null,
   // Gider kaydı (spec 0001 R7): giderYetki formdaki maliyet alanlarını açar; spec 0090 R39 ile silme onayında bağlı gider sayısı yok.
   // rates satış kuru içindir (spec 0002 R12). Spec 0067 R8: makina maliyeti müşteri ekranına artık gelmez.
@@ -51,6 +52,8 @@ export const Customers = ({
   appSettings = {}, onDetailClosed = null, openNewPrefill = null, onCustomerLinked = null, onPrefillConsumed = null,
   serverPermissions = null, onGoYedekParca = null, focusServiceId = null, focusKalipId = null, focusGorusmeId = null, focusTaksitId = null, focusOdemeId = null, focusNonce = 0,
 }) => {
+  // Spec 0133 R10/3, Karar 32: satış fiyatının bağlamı ekranda bir kez kurulur, formlara yalnız bağlam iner.
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
   const [modal, setModal] = useState(null);
@@ -689,7 +692,7 @@ export const Customers = ({
       )}
 
       {detailView && (
-        <CustomerDetailModal
+        <CustomerDetailModal fiyatBaglami={fiyatBaglami}
           gorusmeler={gorusmeler} setGorusmeler={setGorusmeler}
           dosyalar={dosyalar} setDosyalar={setDosyalar} dosyaCevrimdisi={dosyaCevrimdisi}
           detailView={detailView} durumBaglami={durumBaglami} tamirHarita={tamirHarita}

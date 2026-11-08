@@ -374,6 +374,19 @@ describe("appSettings alan düzeyi denetimi (bölüm iki sahipli)", () => {
     expect(yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, { appSettings: { ...eski.appSettings } }).ok).toBe(true);
   });
 
+  // Spec 0133 R21, C7/2 (AC-81): fiyat ayarı (varsayılan kâr katı, yuvarlama) eşlemede Ayarlar sekmesiyle AÇIKÇA listelenir;
+  // yeni eylem izni yoktur. Bilinçli bedel: Ayarlar sekmesi olan her kullanıcı ayarı değiştirir.
+  it("spec 0133 AC-81: fiyatAyarlari açıkça eşlenir; Ayarlar sekmesi olmayan reddedilir, olan yazar", () => {
+    expect(AYAR_ALAN_SEKMELERI.fiyatAyarlari).toEqual(["settings"]);
+    const yeni = { appSettings: { ...eski.appSettings, fiyatAyarlari: { varsayilanKat: 2.4, yuvarlama: "yukari10" } } };
+    expect(yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, yeni).reddedilenAlan).toBe("fiyatAyarlari");
+    expect(yazmaYetkisiVar(JSON.stringify({ tabs: ["settings"] }), "user", ["appSettings"], eski, yeni).ok).toBe(true);
+  });
+  it("spec 0133 (0091 R24/4 emsali): anahtarsız kayıtlı gövde ile undefined değerli fiyat ayarı aynı sayılır", () => {
+    const yeni = { appSettings: { ...eski.appSettings, fiyatAyarlari: undefined } };
+    expect(yazmaYetkisiVar(YENI_KULLANICI, "user", ["appSettings"], eski, yeni).ok).toBe(true);
+  });
+
   it("settings grubu tümden engelliyse alan denetimine bakılmadan reddedilir", () => {
     const yeni = { appSettings: { ...eski.appSettings, pinnedPartIds: ["7"] } };
     expect(yazmaYetkisiVar(READONLY, "user", ["appSettings"], eski, yeni).ok).toBe(false);

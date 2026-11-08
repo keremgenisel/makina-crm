@@ -51,7 +51,7 @@ import { MakinaDurumuSecici } from "./DurumSecici";
 import { tamirDogrula, tamirListesiKur, tamirYaz, tamirSevkKur, tamirListesi } from "../../lib/kalipTamiri";
 import { DilSecPenceresi } from "../DilSecPenceresi";
 
-export const CustomerDetailModal = ({
+export const CustomerDetailModal = ({ fiyatBaglami = null,
   detailView,
   odakServisId = null,
   odakKalipId = null,
@@ -1530,7 +1530,7 @@ export const CustomerDetailModal = ({
 
 
       {svModal && (
-        <ServiceForm
+        <ServiceForm fiyatBaglami={fiyatBaglami}
           title={svModal === "add" ? "Yeni Servis Talebi" : "Servis Talebini Düzenle"}
           form={svForm} setForm={setSvForm} customers={customers} parts={parts} dealers={dealers} factory={factory} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
@@ -1563,7 +1563,7 @@ export const CustomerDetailModal = ({
           <LockConflict lockedBy={ypLock.lockedBy} lockedAt={ypLock.lockedAt} onForce={forceYpLock} onCancel={() => setYpForm(null)} />
         </Modal>
       ) : (
-        <YedekParcaSatisForm title={(ypForm.id || ypForm.batchEdit) ? "Yedek Parça Satışını Düzenle" : "Yedek Parça Satışı"} form={ypForm} setForm={setYpForm}
+        <YedekParcaSatisForm fiyatBaglami={fiyatBaglami} title={(ypForm.id || ypForm.batchEdit) ? "Yedek Parça Satışını Düzenle" : "Yedek Parça Satışı"} form={ypForm} setForm={setYpForm}
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
           krediKartiKomisyonlari={appSettings?.krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}

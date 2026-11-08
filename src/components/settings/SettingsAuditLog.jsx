@@ -3,6 +3,7 @@ import { Btn, Icon, ConfirmDialog, Modal, DateInput } from "../ui";
 import { logAction } from "../../lib/audit";
 
 const ENTITY_LABELS = {
+  parca_tanimi: "Parça Tanımı", // spec 0133 R4 (toplu fiyat kipi değişikliği)
   musteri: "Müşteri", bayi: "Bayi", servis: "Servis", kalip_satisi: "Kalıp Satışı",
   odeme: "Ödeme/Kapora", stok_makina: "Makina Stoğu", stok_parca: "Parça Stoğu",
   uretim_formu: "Üretim Formu", teklif: "Teklif", proforma: "Proforma", fatura: "Fatura", not: "Not",
@@ -15,6 +16,7 @@ const ENTITY_LABELS = {
   kasa_hesap: "Kasa/Banka Hesabı", kasa_kapsam: "Kasa İş Listesi", kasa_hareketi: "Kasa Hareketi", virman: "Virman", avans: "Çalışan Avansı", cek: "Çek",
 };
 const ACTION_LABELS = {
+  fiyat_kipi_degisti: "Fiyat Kipi Değişti", // spec 0133 R4
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
   veri_kaydedildi: "Veri Kaydedildi", yuklendi: "Yüklendi", crm_kaydedildi: "CRM'e Kaydedildi",
   yeni_sahip: "Yeni Sahip (Devir)", servis_odendi: "Servis Ödendi", servis_odeme_iptal: "Servis Ödeme İptal",

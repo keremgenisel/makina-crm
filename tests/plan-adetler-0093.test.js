@@ -9,7 +9,7 @@ import { URETIM_ISARETI_IPUCU, URETIM_DEGIL_IBARESI, uretimdeMi } from "../src/l
 import { URETIM_METIN } from "../src/components/maliyet/ModelMaliyetleri";
 import * as PH from "../src/components/maliyet/PartiHesabi";
 // Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
-import { bolum0132Ayikla } from "./fixtures/0132-yeni-bolum";
+import { yeniAlanlariAyikla } from "./fixtures/0133-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır
 
 const kod = (f) => readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").split("\n").map(l => l.replace(/(^|[^:"'`])\/\/.*$/, "$1")).join("\n");
 const tara = (d) => readdirSync(d).flatMap(e => { const p = `${d}/${e}`; return statSync(p).isDirectory() ? tara(p) : /\.(jsx?|cjs|mjs)$/.test(e) ? [p] : []; });
@@ -108,7 +108,7 @@ describe("Spec 0093: işaret okuma yolu (C4, C7, R12/2)", () => {
 });
 
 describe("Spec 0093: değişmeyenler (R9, C5)", () => {
-  const simdi = () => bolum0132Ayikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
+  const simdi = () => yeniAlanlariAyikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
   it("AC-21 / AC-21/2 / AC-21/3: dört liste spec öncesiyle aynı; PartiHesabi setAppSettings çağırmaz", () => {
     if (process.env.YAZ_0093 === "1") writeFileSync("tests/fixtures/0093-tarama-once.json", JSON.stringify(simdi(), null, 2) + "\n");
     expect(simdi()).toEqual(JSON.parse(readFileSync("tests/fixtures/0093-tarama-once.json", "utf8")));

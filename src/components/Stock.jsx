@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { fiyatBaglamiKur } from "../lib/parcaFiyati";
 import { ALTUNMAK_MODELS } from "../lib/constants";
 import { makeCanDo } from "../lib/permissions";
 import { MakinaStokTab } from "./stock/MakinaStokTab";
@@ -14,7 +15,7 @@ export const Stock = ({
   stock, setStock,
   models = ALTUNMAK_MODELS,
   showToast = () => {},
-  parts = [], rawParts = null,
+  parts = [], rawParts = null, malzemeler = [],
   partStock = [], setPartStock = () => {},
   partStockLog = [], setPartStockLog = () => {},
   appSettings = {}, setAppSettings = () => {},
@@ -31,6 +32,8 @@ export const Stock = ({
   yedekOdakId = null, onYedekOdakConsumed = null,
   geoData = null, loadingGeo = false,
 }) => {
+  // Spec 0133 R10/3, Karar 32: satış fiyatının bağlamı ekranda bir kez kurulur, formlara yalnız bağlam iner.
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
   const [subTab, setSubTab] = useState(defaultSubTab || "makina");
   // Bayi detayından "Yedek Parça Satışına git" — ilgili sekmeyi aç (zaten stok'a mount olurken açılır,
   // ama stok zaten açıksa bu effect sekmeyi değiştirir).
@@ -69,13 +72,13 @@ export const Stock = ({
         <PartiUretimPanosu stock={stock} customers={customers} uretimPartileri={uretimPartileri} />
       )}
       {subTab === "parca" && (
-        <PartStokTab parts={parts} rawParts={rawParts} partStock={partStock} setPartStock={setPartStock}
+        <PartStokTab fiyatBaglami={fiyatBaglami} parts={parts} rawParts={rawParts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast}
           appSettings={appSettings} setAppSettings={setAppSettings}
           canDoStock={canDoStock} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} />
       )}
       {subTab === "yedeksatis" && (
-        <YedekParcaSatisTab
+        <YedekParcaSatisTab fiyatBaglami={fiyatBaglami}
           yedekParcaSatislar={yedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
           dealers={dealers} parts={parts} customers={customers} calisanlar={calisanlar} factory={factory}
           partStock={partStock} setPartStock={setPartStock} partStockLog={partStockLog} setPartStockLog={setPartStockLog}

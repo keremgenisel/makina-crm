@@ -54,7 +54,7 @@ export const KILIT_ALANLARI = {
 // export) ve bilgisayara özgü ayar yazanlar (eposta, server, danger) burada yoktur. `security` paylaşılan
 // `autoLockMinutes`'i yazdığı için kilitlidir (plan notu).
 export const AYAR_KILITLI = {
-  app: "Uygulama", musteri: "Müşteri Görünümü", servispano: "Servis ve Kargo Panosu", company: "Firma Bilgileri", calisanlar: "Firma Çalışanları",
+  app: "Uygulama", musteri: "Müşteri Görünümü", fiyat: "Fiyat Ayarları", servispano: "Servis ve Kargo Panosu", company: "Firma Bilgileri", calisanlar: "Firma Çalışanları",
   models: "Makina Modelleri", kaliplar: "Kalıp Modelleri", yedekparca: "Parça/Yedek Parça", parcatipi: "Parça Tipleri", malzemeler: "Malzemeler",
   gidertur: "Gider Türleri", gidertanim: "Tekrarlayan Giderler", giderayar: "Gider Ayarları",
   kdv: "KDV Oranı", kkkomisyon: "Kredi Kartı Komisyonları", evrak: "Teklif/Proforma/Yurt Dışı Fatura", ceviri: "Çeviriler", takip: "Takip Süreleri",
@@ -101,7 +101,7 @@ export const KILITSIZ_DOSYALAR = {
 };
 // Settings.jsx'in `ayar` kilidi altında çizilen panel dosyaları (her biri bir AYAR_KILITLI kimliğinin panelidir).
 export const AYAR_PANEL_DOSYALARI = [
-  "src/components/settings/SettingsApp.jsx", "src/components/settings/SettingsMusteri.jsx", "src/components/settings/SettingsServisPanosu.jsx",
+  "src/components/settings/SettingsApp.jsx", "src/components/settings/SettingsMusteri.jsx", "src/components/settings/SettingsFiyat.jsx", "src/components/settings/SettingsServisPanosu.jsx",
   "src/components/settings/SettingsCompany.jsx", "src/components/settings/GiderTurManager.jsx", "src/components/settings/SettingsGiderTanimlari.jsx",
   "src/components/settings/SettingsGider.jsx", "src/components/settings/SettingsKdv.jsx", "src/components/settings/SettingsKKKomisyon.jsx",
   "src/components/settings/SettingsDocuments.jsx", "src/components/settings/SettingsTranslations.jsx", "src/components/settings/SettingsTakip.jsx",

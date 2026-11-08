@@ -3,6 +3,7 @@ import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
 import { grupKimlikleri, uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, parcaAdi, aramaNormalize, tahsilEdilecekKdv } from "../lib/utils";
+import { fiyatBaglamiKur } from "../lib/parcaFiyati";
 import { makeCanDo } from "../lib/permissions";
 import { kartTahsilEdildiMi } from "../lib/krediKarti";
 import { YedekParcaSatisForm } from "./YedekParcaSatisForm";
@@ -22,7 +23,11 @@ import { DealerFilesSection } from "./DealerFilesSection";
 export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoData, loadingGeo, services = [], customers = [], setServices = null, setCustomers = null, dosyalar = [], setDosyalar = null, dosyaCevrimdisi = false, kdvRates = DEFAULT_KDV_RATES, initialFilter = "all", onGoCustomerDetail = null, showToast = () => {}, serverPermissions = null, canEditFactory = true, openDetailId = null, onOpenDetailConsumed = null, aktifKullanici = null,
   yedekParcaSatislar = [], setYedekParcaSatislar = null, parts = [], partStock = [], setPartStock = null, setPartStockLog = null, calisanlar = [], onGoYedekParca = null, partSales = [], setPartSales = null, krediKartiKomisyonlari = null, kalipDefs = [],
   // Spec 0063 R7, R8, R16: iki satış formunun tahsilat hesabı; App yalnız Kasa yetkisiyle doldurur, yoksa null (boş dizi değil).
-  kasaHesaplari = null, tahsilatHesapVarsayilan = null }) => {
+  kasaHesaplari = null, tahsilatHesapVarsayilan = null,
+  // Spec 0133 Karar 31: bayi detayının yedek parça formu da satış fiyatının tek yolundan okur.
+  malzemeler = [], appSettings = null }) => {
+  // Spec 0133 R10/3, Karar 32: satış fiyatının bağlamı ekranda bir kez kurulur, formlara yalnız bağlam iner.
+  const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari: appSettings?.fiyatAyarlari }), [parts, malzemeler, appSettings?.fiyatAyarlari]);
   const canDo = makeCanDo(serverPermissions, "dealerActions");
   // Spec 0007 R1/R11: "Bayi Aracılığıyla Kalıp Satışı" mevcut Extra Kalıp ekleme iznine bağlı (yeni izin yok).
   const canCust = makeCanDo(serverPermissions, "customerActions");
@@ -763,7 +768,7 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       )}
 
       {ypForm && (
-        <YedekParcaSatisForm title="Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
+        <YedekParcaSatisForm fiyatBaglami={fiyatBaglami} title="Yedek Parça Satışı" form={ypForm} setForm={setYpForm}
           dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar} kdvRates={kdvRates}
           krediKartiKomisyonlari={krediKartiKomisyonlari}
           geoData={geoData} loadingGeo={loadingGeo}

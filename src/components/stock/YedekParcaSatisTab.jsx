@@ -63,7 +63,7 @@ export const gruplaSatislar = (kayitlar, { dealers = [], customers = [], kdvRate
 // Para-birimi bazlı tutar haritasını "48.500 ₺ + 1.200 $" gibi metne çevir.
 const curOzet = (m) => Object.entries(m).filter(([, v]) => v > 0).map(([c, v]) => fmtCur(v, c)).join(" + ");
 
-export const YedekParcaSatisTab = ({
+export const YedekParcaSatisTab = ({ fiyatBaglami = null,
   yedekParcaSatislar = [], setYedekParcaSatislar,
   dealers = [], parts = [], customers = [], calisanlar = [], factory = null,
   partStock = [], setPartStock, partStockLog = [], setPartStockLog,
@@ -367,7 +367,7 @@ export const YedekParcaSatisTab = ({
           <LockConflict lockedBy={ypLock.lockedBy} lockedAt={ypLock.lockedAt} onForce={forceYpLock} onCancel={() => setModal(null)} />
         </Modal>
       ) : (
-        <YedekParcaSatisForm
+        <YedekParcaSatisForm fiyatBaglami={fiyatBaglami}
           title={modal === "add" ? "Yeni Yedek Parça Satışı" : "Yedek Parça Satışını Düzenle"}
           form={form} setForm={setForm} dealers={dealers} customers={customers} parts={parts} partStock={partStock} calisanlar={calisanlar}
           kdvRates={kdvRates} krediKartiKomisyonlari={krediKartiKomisyonlari} geoData={geoData} loadingGeo={loadingGeo} onSave={kaydet} onCancel={() => setModal(null)}

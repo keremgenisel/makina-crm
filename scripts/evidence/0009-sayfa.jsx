@@ -221,6 +221,10 @@ const PARCA_0132 = [
   { id: 43, ad: "Konveyör borusu", kod: "KB-19", tip: "Standart", models: [], malzemeSatiri: { malzemeId: 503, bicim: "boru", cap: 19, et: 1.5, boy: 173 } },
   ...PARCA_0087,
 ];
+// Spec 0133: maliyete bağlı parçalar (malzemeden, kendi katlı, maliyetsiz), elle sabit ve fiyat ayarı.
+const PARCA_0133 = PARCA_0132.map(p => (p.id === 41 ? { ...p, fiyatKipi: "maliyet", fiyatUSD: 95 } : p.id === 7 ? { ...p, fiyatKipi: "maliyet", karKati: 3 }
+  : p.id === 8 ? { ...p, fiyatKipi: "maliyet" } : p));
+const AYAR_0133 = () => ({ giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 }, fiyatAyarlari: { varsayilanKat: 2.4, yuvarlama: "yukari10" } });
 // Spec 0121 R34: içeriği olan (set) fikstür parçası; yoksa rozet ve "Set Hazırla" hiç çizilmez.
 const SET_0121 = { id: 20, ad: "100_AYNA MAHRUTİ DİŞLİSİ TAKIM", kod: "AY-T", tip: "Standart", fiyatTRY: 3000, models: [],
   setIcerigi: [{ partId: 21, miktar: 2 }, { partId: 22, miktar: 1 }, { partId: 23, miktar: 4 }] };
@@ -1004,6 +1008,21 @@ const EKRANLAR = {
   "katalog-malzeme-fiyat-cevrimdisi": [ayarlar("malzemeler", { malzemeler: MALZEME_0132.slice(0, 1), rawParts: PARCA_0132, rates: null, ratesErr: true }), ["baslik:Fiyatı Güncelle"]],
   "katalog-parca-0132-malzeme": [ayarlar("yedekparca", { parts: PARCA_0132, malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Malzemeden maliyet"]],
   "katalog-parca-0132-liste": [ayarlar("yedekparca", { parts: PARCA_0132, malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), []],
+  // Spec 0133: fiyat kipi süzgeci, toplu kip, türetilmiş fiyat hücreleri; kartın fiyat bölümü (neden, fark, döviz notu, kat, zarar);
+  // set düğmesinin pasifliği; Fiyat Ayarları paneli; zam penceresinin fiyat etkisi.
+  "katalog-parca-0133-liste": [ayarlar("yedekparca", { parts: PARCA_0133, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), []],
+  "katalog-parca-0133-suzgec": [ayarlar("yedekparca", { parts: PARCA_0133, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["etiket:Maliyete bağlı (3)"]],
+  "katalog-parca-0133-toplu": [ayarlar("yedekparca", { parts: PARCA_0133, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["etiket:Elle sabit (4)", "dugme:Listedeki 4 parçayı maliyete bağla"]],
+  "katalog-parca-0133-kart": [ayarlar("yedekparca", { parts: PARCA_0133.filter(p => p.id === 41), malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["baslik:Düzenle", "kaydir:Fiyat (TL"]],
+  "katalog-parca-0133-neden": [ayarlar("yedekparca", { parts: PARCA_0133.filter(p => p.id === 8), standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["baslik:Düzenle", "kaydir:Fiyat (TL"]],
+  "katalog-parca-0133-fark": [ayarlar("yedekparca", { parts: PARCA_0087.filter(p => p.id === 7), standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["baslik:Düzenle", "dugme:Maliyete bağlı", "kaydir:Fiyat (TL"]],
+  "katalog-parca-0133-zarar": [ayarlar("yedekparca", { parts: PARCA_0133.filter(p => p.id === 41), malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["baslik:Düzenle", "doldur:Parçanın kâr katı=0,90", "kaydir:Fiyat (TL"]],
+  "katalog-parca-0133-set": [ayarlar("yedekparca", { parts: PARCA_0121_SET.map(p => (p.id === 20 ? { ...p, fiyatKipi: "maliyet" } : p)), standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["baslik:Düzenle", "kaydir:Setin içeriği"]],
+  "ayarlar-fiyat-0133-bos": [ayarlar("fiyat", {}), []],
+  "ayarlar-fiyat-0133": [ayarlar("fiyat", { appSettings: AYAR_0133() }), []],
+  "ayarlar-fiyat-0133-hata": [ayarlar("fiyat", {}), ["doldur:Varsayılan kâr katı=2.400", "dugme:Kaydet"]],
+  "ayarlar-fiyat-0133-zarar": [ayarlar("fiyat", {}), ["doldur:Varsayılan kâr katı=0,8"]],
+  "katalog-malzeme-0133-fiyat": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, parts: PARCA_0133, rawParts: PARCA_0133, rates: { usd: 42.15, eur: 48.9 }, appSettings: AYAR_0133() }), ["baslik:Fiyatı Güncelle", "doldur:Bant 1 kilo fiyatı=3,40", "kaydir:Etkisi"]],
   "ayarlar-trash-0132": [ayarlar("trash", { rawMalzemeler: [{ ...MALZEME_0132[1], deletedAt: "2026-10-20T09:00:00.000Z" }, { id: 509, ad: "Teflon", deletedAt: "2026-10-21T09:00:00.000Z" }], rawParts: PARCA_0132 }), []],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],
   // Spec 0099: kırılım toplamının yeri. Yetkisiz kullanıcının penceresi (C3, değişmez), iki tedarikçili ekleme penceresi (AC-19)
