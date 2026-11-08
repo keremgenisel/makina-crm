@@ -327,7 +327,7 @@ describe("Spec 0136: kaynak taramaları", () => {
     for (const f of ["electron/serverAuth.cjs", "electron/server.cjs", "src/lib/merge.js", "src/components/settings/serverPermissionDefs.js", "src/lib/permissions.js"]) {
       expect(oku(f), f).not.toMatch(/kapanisMaliyeti/);
     }
-    expect(oku("specs/0136-uretilmis-makinanin-maliyeti-donar.md")).toMatch(/\*\*X13\.\*\* Çakışma birleştirmesinin dondurulmuş görüntüyü geri uygulaması/);
+    expect(oku("specs/done/0136-uretilmis-makinanin-maliyeti-donar.md")).toMatch(/\*\*X13\.\*\* Çakışma birleştirmesinin dondurulmuş görüntüyü geri uygulaması/);
   });
   it("AC-51: görüntüyü tek fonksiyon üretir; React, saat ve ekran durumu okumaz", () => {
     const m = kod("src/lib/makinaStandartMaliyet.js");
@@ -350,6 +350,6 @@ describe("Spec 0136: kaynak taramaları", () => {
     }
   });
   it("AC-84: sürüm notu önce sunucu PC, sonra istemciler", () => {
-    expect(oku("specs/0136-uygulama-plani.md")).toMatch(/Önce sunucu PC, sonra bütün istemciler güncellenmeli/);
+    expect(oku("specs/done/0136-uygulama-plani.md")).toMatch(/Önce sunucu PC, sonra bütün istemciler güncellenmeli/);
   });
 });

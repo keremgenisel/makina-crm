@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | **Uygulanıyor** (2026-11-08 onaylandı; plan turu Karar 36–47 aynı gün onaylandı, plan `specs/0136-uygulama-plani.md`) |
+| **Durum** | **Tamamlandı** (2026-11-08, commit `90bb9282`; plan `specs/done/0136-uygulama-plani.md`, plan turu Karar 36–47, uygulama 48–51, triyaj 52–53) |
 | **Sahip** | Analist (yazım) · geliştirici (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Makina Maliyeti › Üretim Partileri ve Parti Hesabı, saf motorlar `src/lib/uretimPartisi.js` ve `src/lib/makinaStandartMaliyet.js`, `src/components/MakinaMaliyeti.jsx` (yeni geri çağırım ve sapma memosu), `src/components/gider/UretimPartileri.jsx` (kapanış girdisi, kapanma tarihi, yeniden açma onayı, sapma kutusu), `src/components/maliyet/PartiHesabi.jsx` (dondurulmuş satır, şerit, planlanan adet kapısı), `electron/db.cjs` (yeni sütun) |
@@ -455,7 +455,7 @@ Takım Yöneticisi 35 bulgunun tamamını onayladı.
 - [ ] Ekran metinleri tek sabitte: “dondurulmadı” ibaresi, kapanış tarihi şeridi, yeniden açma onayı, planlanan adet kapısının nedeni ve sapma kutusunun üç metni (R12/2, R22, R22/2, R23, R24, R25).
 - [ ] Bilinen sınırlar yazıldı: stoğa dönen makina (X10), modeli katalogda olmayan makina (X9), çakışma birleştirmesi (X13).
 - [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -505,10 +505,15 @@ Takım Yöneticisi 35 bulgunun tamamını onayladı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `90bb9282` | Dal `feat/0136-maliyet-donar`, taban `d26752b7`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | QA turu (35 bulgu), plan turu (Karar 36–47), uygulama (Karar 48–51), triyaj (Karar 52–53) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: dört küçük bulgu |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Testler pay toplamını, satırın toplam maliyetini ve özeti karşılaştırmıyordu (üç bozma kaçtı); donmuş partinin başlangıç ayı değişince maliyet onaysız yeniden donuyordu; sapma girdisi her çizimde yeni nesneydi; dondurulmamış satırın tek neden metni iki durumda yanlıştı |
+| **Regresyon sayısı** | 0 | Tam takım 483 dosya, 6951 test ve Electron 14 dosya; lint 0 hata, uyarı 62 (tabanla aynı) |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** sapma satırının işareti ekranda hesaplanamıyordu (0090 AC-51 parti ekranında `Math` yasaklar), motora alındı; Karar 44'ün planlanan adetler kapısı dört eski testin partisini açığa çevirdi; gelecek bitişin reddi 0090'ın bir triyaj testini bu ayda biten partiye çevirdi (Karar 48–51). Kıyas altını (`0136-once.json`) spec öncesi kodda ayrı bir çalışma kopyasında üretildi; görüntüsüz veride parti payı, parti hesabı, kâr özeti ve iki ekranın metni birebir aynı. Mutasyon ölçümü: uygulamada on iki bozma, triyajda yedi bozma, hepsi yakalandı.
+
+**Görsel kanıt:** 14 ekran (28 görüntü): 7 eski ekran kapanış tarihi, "dondurulmadı" ibaresi, şerit ve pasif düğme yüzünden değişti, 7 ekran yeni; taranan öteki 26 ekran 0 fark. Kapanış çekiminde dört Parti Hesabı ekranı onaylı görüntüden yalnız pasif "Planlanan adetler" düğmesinin bölgesinde (4.636–5.166 piksel) ayrıldı; son kodla iki çekim birbirine 0 fark verdiği için o dört ekranın "sonra" görüntüsü yenilendi. Taban son kodla 28 görüntüde 0 fark; üç dosyadaki 28 kayıt kapanışta `ayni` ve `0136-taban-piksel-raporu.json`'a çevrildi.
+
+**Bu spec'ten çıkarılan ders:** bir rakamı dondurmak, "ne zaman yeniden hesaplanır" sorusunu kapatmaz, taşır: bitişin silinmesi yazılıydı ama başlangıç ayının değişmesi de aynı kaybı yaşatıyordu; aralığın tek yardımcıda tanımlanması onayı, görüntünün hesaplanmasını ve kapanış yolunu aynı karara bağladı. İkinci ders: donmuş bir rakamın testi birim sütunla yetinmemeli, kullanıcının gördüğü toplamları da karşılaştırmalı.

@@ -1,6 +1,6 @@
 # 0136 uygulama planı: üretilmiş makinanın maliyeti donar
 
-Spec: `specs/0136-uretilmis-makinanin-maliyeti-donar.md` (QA turu 35 bulgu, plan turu Karar 36–47). Dal `feat/0136-maliyet-donar` (`../wt0136`), taban main `d26752b7`. Plan Takım Yöneticisi'nin 2026-11-08 onayıyla; on bir önerinin hepsi kabul edildi.
+Spec: `specs/done/0136-uretilmis-makinanin-maliyeti-donar.md` (QA turu 35 bulgu, plan turu Karar 36–47). Dal `feat/0136-maliyet-donar` (`../wt0136`), taban main `d26752b7`. Plan Takım Yöneticisi'nin 2026-11-08 onayıyla; on bir önerinin hepsi kabul edildi.
 
 ## 1. Dosyalar
 

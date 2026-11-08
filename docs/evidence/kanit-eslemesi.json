@@ -8918,64 +8918,54 @@
         "ekran": "maliyet-0092-partiler"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-uretim-partileri",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0089-parti-degisim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0090-parti-neden",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-uretim-partisi-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0092-partiler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-partiler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R25"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-partiler-donmus-sapmasiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-partiler-dondurulmadi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R12/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-acma-onayi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R23"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-gelecek-bitis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R3/2"
+        "beklenen": "ayni"
       }
     ],
     "src/components/Kasa.jsx": [
@@ -11238,88 +11228,74 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-uretim-partileri",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0089-parti-degisim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0090-parti-neden",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-uretim-partisi-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0092-partiler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-parti",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0097-parti-tarihli",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-partiler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R25"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-partiler-donmus-sapmasiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-partiler-dondurulmadi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R12/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-parti-donmus",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-parti-dondurulmadi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R12/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-acma-onayi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R23"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-gelecek-bitis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R3/2"
+        "beklenen": "ayni"
       }
     ],
     "src/components/maliyet/PayOzeti.jsx": [
@@ -11596,28 +11572,24 @@
         "ekran": "maliyet-0097-parti-baslamadi"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-parti",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0097-parti-tarihli",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-parti-donmus",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R22/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0136-piksel-raporu.json",
+        "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-parti-dondurulmadi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0136 R12/2"
+        "beklenen": "ayni"
       }
     ],
     "src/components/maliyet/HesapAyarlari.jsx": [
