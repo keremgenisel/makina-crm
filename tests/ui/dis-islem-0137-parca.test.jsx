@@ -241,3 +241,22 @@ describe("Düğme düzeni (2026-11-08): katalog kaleminde işlem bilgisi ile ade
     expect(bilgi.style.minHeight).toBe("38px");
   });
 });
+
+describe("Düğme düzeni (2026-11-08): parça kartında kalem ve bileşen silme düğmeleri kırmızı", () => {
+  it("malzeme, serbest işlem ve katalog işlem kaleminin kaldır düğmesi uygulamanın kırmızı silme düğmesidir", () => {
+    render(<Katalog />); ekleAc(); yaz("Yedek Parça Adı (TR)", "Yeni"); hesapla();
+    fireEvent.click(screen.getByRole("button", { name: /Malzeme ekle/ }));
+    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
+    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
+    cesit(2, "Katalogdan");
+    for (const ad of ["Malzeme kalemini kaldır 1", "İşlem kalemini kaldır 1", "İşlem kalemini kaldır 2"]) {
+      expect(screen.getByRole("button", { name: ad }).className).toContain("btn--danger");
+    }
+  });
+  it("setin bileşen satırındaki kaldır düğmesi de kırmızı (kaynak)", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("src/components/PartManager.jsx", "utf8");
+    expect(src).toMatch(/variant="danger" title="Bileşeni kaldır"/);
+    expect(src).not.toMatch(/variant="ghost" title="(Bileşeni|Kalemi) kaldır"/);
+  });
+});

@@ -167,7 +167,7 @@ const SetIcerigiAlani = ({ satirlar = [], setSatirlar, kendiId = null, parts = [
               <div style={{ display: "grid", gridTemplateColumns: "minmax(160px, 2fr) 96px auto", gap: 8, alignItems: "center" }}>
                 <span style={{ fontSize: 13, fontWeight: 600 }}>{setBilesenAdi(s.partId, hamParts)}</span>
                 <Input value={s.miktar ?? ""} inputMode="numeric" aria-label={`Bileşen adedi ${i + 1}`} placeholder="Adet" onChange={e => guncelle(i, e.target.value)} />
-                <Btn small variant="ghost" title="Bileşeni kaldır" aria-label={`Bileşeni kaldır ${i + 1}`} onClick={() => setSatirlar(satirlar.filter((_, j) => j !== i))}><Icon name="trash" size={12} /></Btn>
+                <Btn small variant="danger" title="Bileşeni kaldır" aria-label={`Bileşeni kaldır ${i + 1}`} onClick={() => setSatirlar(satirlar.filter((_, j) => j !== i))}><Icon name="trash" size={12} /></Btn>
               </div>
               <HataMetni>{hatalar[i] || ""}</HataMetni>
             </div>

@@ -27,7 +27,7 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, sira = 1, malzemeler = [],
         <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>{`Malzeme kalemi ${n}`}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <b data-testid="kalem-tutar" style={{ fontSize: 13, color: "var(--blu700, #1d4ed8)" }}>{ozet?.tutarK == null ? "girilmedi" : maliyetMetniKurus(ozet.tutarK)}</b>
-          {onKaldir && <Btn small variant="ghost" title="Kalemi kaldır" aria-label={`Malzeme kalemini kaldır ${n}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>}
+          {onKaldir && <Btn small variant="danger" title="Kalemi kaldır" aria-label={`Malzeme kalemini kaldır ${n}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>}
         </span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: secili ? "2fr 1fr 1fr 1fr" : "2fr 1fr", gap: 12 }}>

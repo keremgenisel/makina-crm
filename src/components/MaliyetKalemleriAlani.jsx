@@ -60,7 +60,7 @@ const KatalogIslemSatiri = ({ satir, setSatir, sira, disIslemler = [], hamDisIsl
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <b data-testid="kalem-tutar" style={{ fontSize: 13, color: "var(--blu700, #1d4ed8)" }}>{ozet?.tutarK == null ? "—" : maliyetMetniKurus(ozet.tutarK)}</b>
-          <Btn small variant="ghost" title="Kalemi kaldır" aria-label={`İşlem kalemini kaldır ${sira}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>
+          <Btn small variant="danger" title="Kalemi kaldır" aria-label={`İşlem kalemini kaldır ${sira}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>
         </span>
       </div>
       {katalogBos ? (
@@ -108,7 +108,7 @@ const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hat
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <b data-testid="kalem-tutar" style={{ fontSize: 13, color: "var(--blu700, #1d4ed8)" }}>{ozet?.tutarK == null ? "—" : maliyetMetniKurus(ozet.tutarK)}</b>
-          <Btn small variant="ghost" title="Kalemi kaldır" aria-label={`İşlem kalemini kaldır ${sira}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>
+          <Btn small variant="danger" title="Kalemi kaldır" aria-label={`İşlem kalemini kaldır ${sira}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>
         </span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: giderYetki ? "2fr 2fr 1fr" : "2fr 1fr", gap: 12 }}>
