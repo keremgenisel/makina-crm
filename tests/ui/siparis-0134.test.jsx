@@ -147,3 +147,12 @@ describe("Spec 0134: yazdırma ve salt okunurluk", () => {
     for (const [ad, f] of Object.entries(yaz)) expect(f, ad).not.toHaveBeenCalled();
   });
 });
+
+describe("Düğme düzeni (2026-11-08): model satırının silme düğmesi", () => {
+  it("silme düğmesi uygulamanın kırmızı silme düğmesidir ve sütunu düğmeye göre genişler", () => {
+    render(<Ekran />);
+    const sil = screen.getByRole("button", { name: "Model satırı 1 sil" });
+    expect(sil.className).toContain("btn--danger");
+    expect(sil.parentElement.style.gridTemplateColumns).toBe("1fr 130px auto");
+  });
+});

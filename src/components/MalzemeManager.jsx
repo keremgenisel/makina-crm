@@ -151,10 +151,12 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>{m.ozgulAgirlik != null ? String(m.ozgulAgirlik).replace(".", ",") : "—"}</td>
                     <td style={{ padding: "10px 14px" }} data-testid="malzeme-fiyat">{kumeOzeti(fiyatKumesi(m))}</td>
                     <td style={{ padding: "10px 14px", color: "var(--n600, #475569)" }}>{kullanimMetni(k)}</td>
-                    <td style={{ padding: "10px 14px", whiteSpace: "nowrap", textAlign: "right" }}>
-                      <Btn small variant="ghost" title={FIYAT_GUNCELLE} onClick={() => setFiyat(m)}>{FIYAT_GUNCELLE}</Btn>
-                      <Btn small variant="ghost" title="Düzenle" aria-label={`${m.ad} düzenle`} onClick={() => ac(m)}><Icon name="edit" size={13} /></Btn>
-                      <Btn small variant="ghost" title="Sil" aria-label={`${m.ad} sil`} onClick={() => setSil(m)}><Icon name="trash" size={13} /></Btn>
+                    <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
+                      <div data-testid="satir-eylemleri" style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+                        <Btn small variant="ghost" title={FIYAT_GUNCELLE} onClick={() => setFiyat(m)}>{FIYAT_GUNCELLE}</Btn>
+                        <Btn small variant="ghost" title="Düzenle" aria-label={`${m.ad} düzenle`} onClick={() => ac(m)}><Icon name="edit" size={12} /></Btn>
+                        <Btn small variant="danger" title="Sil" aria-label={`${m.ad} sil`} onClick={() => setSil(m)}><Icon name="trash" size={12} /></Btn>
+                      </div>
                     </td>
                   </tr>
                 );

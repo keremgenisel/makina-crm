@@ -350,3 +350,17 @@ describe("Spec 0137 triyaj: malzeme zammı penceresi (R32)", () => {
     expect(screen.getByTestId("fiyat-etki-satis").textContent).toBe("Satış fiyatı değişecek parça yok (bağlı parçaların fiyatı elle sabit).");
   });
 });
+
+describe("Düğme düzeni (2026-11-08): dış işlem satırında eylem düğmeleri", () => {
+  it("düğmeler aralıklı tek kapta durur, silme düğmesi uygulamanın kırmızı silme düğmesidir", () => {
+    render(<Panel />);
+    const r = screen.getAllByTestId("dis-islem-satiri")[0];
+    const kap = within(r).getByTestId("satir-eylemleri");
+    expect(kap.style.display).toBe("flex");
+    expect(kap.style.gap).toBe("6px");
+    const sil = within(r).getByRole("button", { name: /sil$/ });
+    expect(kap.contains(sil)).toBe(true);
+    expect(sil.className).toContain("btn--danger");
+    expect(within(r).getByRole("button", { name: /düzenle$/ }).className).toContain("btn--ghost");
+  });
+});

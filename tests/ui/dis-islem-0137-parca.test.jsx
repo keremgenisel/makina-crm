@@ -227,3 +227,17 @@ describe("Spec 0137: kartın üç metni ve geçmiş (R19–R19/3, R29)", () => {
     expect(within(satir("Karma mil")).getByTestId("parca-maliyet-kalem").textContent).toBe(kalemKaynakMetni({ malzeme: 1, islem: 2 }));
   });
 });
+
+describe("Düğme düzeni (2026-11-08): katalog kaleminde işlem bilgisi ile adet aynı hizada", () => {
+  it("işlem bilgisi kendi etiketiyle adet alanının yanında durur; iki sütun aynı etiket satırından başlar", () => {
+    render(<Katalog />); yeniKatalogKalemi();
+    sec("Isıl İşlem");
+    const bilgi = screen.getByTestId("katalog-islem-bilgi");
+    const islemSutunu = bilgi.parentElement;
+    const adetSutunu = screen.getByLabelText("İşlem miktarı 1").parentElement;
+    expect(islemSutunu.parentElement).toBe(adetSutunu.parentElement);
+    expect(islemSutunu.querySelector("label").textContent).toBe("İşlem");
+    expect(adetSutunu.querySelector("label").textContent).toBe("Adet");
+    expect(bilgi.style.minHeight).toBe("38px");
+  });
+});

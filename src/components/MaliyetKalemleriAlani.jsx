@@ -73,10 +73,12 @@ const KatalogIslemSatiri = ({ satir, setSatir, sira, disIslemler = [], hamDisIsl
       <HataMetni>{hatalar.islemId}</HataMetni>
       {islem && (
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, alignItems: "start" }}>
-          <div data-testid="katalog-islem-bilgi" style={{ fontSize: 12.5 }}>
-            <b>{islem.ad}</b>{!canli ? <span style={{ color: "var(--red700, #b91c1c)" }}> (silinmiş işlem)</span> : null}
-            <div style={{ color: "var(--n600, #475569)" }}>Birim: {BIRIM_ADI[birim]} · Birim fiyatı: {kumeOzeti(fiyatKumesi(islem), birim)}</div>
-          </div>
+          <Field label="İşlem">
+            <div data-testid="katalog-islem-bilgi" style={{ fontSize: 12.5, minHeight: 38, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div><b>{islem.ad}</b>{!canli ? <span style={{ color: "var(--red700, #b91c1c)" }}> (silinmiş işlem)</span> : null}</div>
+              <div style={{ color: "var(--n600, #475569)" }}>Birim: {BIRIM_ADI[birim]} · Birim fiyatı: {kumeOzeti(fiyatKumesi(islem), birim)}</div>
+            </div>
+          </Field>
           <Field label={birim === BIRIM.KILO ? "Kilo" : "Adet"}>
             <Input value={satir.miktar ?? ""} inputMode="decimal" onChange={e => setSatir({ ...satir, miktar: e.target.value })}
               placeholder={birim === BIRIM.KILO ? "Ağırlıktan türet" : "1"} aria-label={`İşlem miktarı ${sira}`} />

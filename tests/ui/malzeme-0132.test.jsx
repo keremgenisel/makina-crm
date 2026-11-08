@@ -305,3 +305,17 @@ describe("Spec 0132: çöp kutusu", () => {
     expect(durum.malzemeler.map(m => m.id)).toEqual([501]);
   });
 });
+
+describe("Düğme düzeni (2026-11-08): malzeme satırında eylem düğmeleri", () => {
+  it("düğmeler aralıklı tek kapta durur, silme düğmesi uygulamanın kırmızı silme düğmesidir", () => {
+    render(<Panel />);
+    const r = satir("8620");
+    const kap = within(r).getByTestId("satir-eylemleri");
+    expect(kap.style.display).toBe("flex");
+    expect(kap.style.gap).toBe("6px");
+    const sil = within(r).getByRole("button", { name: /sil$/ });
+    expect(kap.contains(sil)).toBe(true);
+    expect(sil.className).toContain("btn--danger");
+    expect(within(r).getByRole("button", { name: /düzenle$/ }).className).toContain("btn--ghost");
+  });
+});

@@ -67,13 +67,13 @@ export const SiparisIhtiyaci = ({ modelSatirlari = [], modeller = [], parts = []
         <div data-testid="siparis-model-satirlari" style={{ display: "grid", gap: 6, margin: "6px 0 12px", maxWidth: 560 }}>
           {satirlar.map((s, i) => (
             <div key={i}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 130px 34px", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 130px auto", gap: 8, alignItems: "center" }}>
                 <Select value={s.model} onChange={e => yaz(i, "model", e.target.value)} aria-label={`Model ${i + 1}`}>
                   <option value="">Model seçin</option>
                   {secenekler(s.model).map(m => <option key={m} value={m}>{m}</option>)}
                 </Select>
                 <Input value={s.adet} inputMode="numeric" onChange={e => yaz(i, "adet", e.target.value)} placeholder="Makina adedi" aria-label={`Makina adedi ${i + 1}`} />
-                <Btn small variant="ghost" aria-label={`Model satırı ${i + 1} sil`} onClick={() => setSatirlar(p => p.filter((_, j) => j !== i))}><Icon name="trash" size={13} /></Btn>
+                <Btn small variant="danger" title="Sil" aria-label={`Model satırı ${i + 1} sil`} onClick={() => setSatirlar(p => p.filter((_, j) => j !== i))}><Icon name="trash" size={12} /></Btn>
               </div>
               <HataMetni>{sonuc.satirlar[i]?.hata || ""}</HataMetni>
             </div>
