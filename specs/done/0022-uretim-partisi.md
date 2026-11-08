@@ -61,6 +61,8 @@ kaça mal oldu" sorusu, üretimin kaç aya yayıldığından bağımsız olarak 
 - **R8.** Parti kapandığında (bitiş ayı girildiğinde) **geçici ibaresi kalkar**; rakam dondurulmaz.
   Sonradan o aylara gider eklenirse pay yeniden hesaplanır (0002 C10) ve bu durum **dönem raporunda bir
   satır** olarak gösterilir ("kapanmış partinin ayına gider eklendi", 0001'in "düşen atamalar" deseni).
+  *(Spec 0136 ile ters çevrildi: parti kapanınca direkt maliyet, genel gider payı ve havuz dondurulur; sonradan
+  oluşan fark rakamı değiştirmez, sapma kutusunda yazılır.)*
   Kayıt anında modal çıkarılmaz; her gider düzenlemesinde kapanmış partileri taramak orantısız olurdu.
 - **R9.** Model havuzu payları (malzeme) ve makinaya doğrudan atanmış giderler **değişmez**; parti yalnız
   ortak gider payının tabanını değiştirir.

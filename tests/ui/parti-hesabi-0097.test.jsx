@@ -98,11 +98,14 @@ describe("Spec 0097: genel gider payı ve ibareler (R16–R19/2)", () => {
     expect(BUGUNKU_AYAR_IBARESI).not.toMatch(/bir parçanın maliyeti/);
     expect(BUGUNKU_AYAR_IBARESI).toMatch(/^Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri ile planlanan adet satırlarını etkiler/);
   });
-  it("AC-46: plan penceresi bugünkü model listesinden (iki model), tarihli gruplamadan etkilenmez", () => {
+  // Spec 0136 ile (R24, Karar 44): kapanmış partide (Kış) düğme pasif; pencere açık partide (Bahar) sınanır.
+  it("AC-46 (spec 0136 ile): plan penceresi bugünkü model listesinden (iki model), tarihli gruplamadan etkilenmez", () => {
     render(<MH />);
+    expect(screen.getByRole("button", { name: /Planlanan adetler/ }).disabled).toBe(true);
+    parti(2);
     fireEvent.click(screen.getByRole("button", { name: /Planlanan adetler/ }));
     expect(screen.getByLabelText("AK100 planlanan adedi").value).toBe("");
-    expect(screen.getByLabelText("OZ planlanan adedi").value).toBe("3");
+    expect(screen.getByLabelText("OZ planlanan adedi").value).toBe("2");
   });
   it("AC-47 / R9/4: ham müşteri dizisiyle stoğa dönen makina gerçek tarihine (Ocak grubuna) çözülür", () => {
     const stock = [...V.STOCK, { id: 7, model: "AK100", serialNo: "D7", partiId: 1, note: "Silinen müşteriden geri döndü" }];

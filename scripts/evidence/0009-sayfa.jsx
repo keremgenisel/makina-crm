@@ -36,6 +36,8 @@ import { MakinaMaliyeti } from "../../src/components/MakinaMaliyeti";
 import { GiderTurManager } from "../../src/components/settings/GiderTurManager";
 import * as M88 from "../../tests/fixtures/0088-veri.js";
 import * as V97 from "../../tests/fixtures/0097-veri.js";
+import * as V136 from "../../tests/fixtures/0136-veri.js";
+import { partiGenelPaylari as pgp136, partiKapanisGoruntusu as pkg136, modelMaliyetleri as mm136 } from "../../src/lib/makinaStandartMaliyet";
 import * as F34 from "../../tests/fixtures/0134-veri.js";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
 import { odemeleriUygula, turHaritasi, giderKalemDogrula } from "../../src/lib/gider";
@@ -805,6 +807,23 @@ function MaliyetEkrani0097() {
     uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} appSettings={{ giderAyarlari: { yururlukAy: V97.YURURLUK }, maliyetAyarlari: V97.AYAR }} setAppSettings={bos}
     rates={{}} tumMusteriler={V97.CUSTOMERS} serverPermissions={null} showToast={bos} baslangicGorunum="parti" />;
 }
+// Spec 0136: dondurulmuş maliyet. Veri tests/fixtures/0136-veri.js; Kış bugünkü veriyle (malzemeden hesaplanan Mil dahil) kapatılmış
+// sayılır (kapanış 02.04.2026). `zam` malzemenin kilo fiyatını üçe katlar (direkt sapma), `ekMakina` kapanıştan sonra Kış'a makina
+// bağlar (kapanıştaki adet ve dondurulmamış satır), `donmus` false iken partiler görüntüsüz (0090 ay havuzlu Kış, dondurulmadı).
+const MALZ_136 = { id: 2, ad: "8620", ozgulAgirlik: 7.85, kiloFiyati: 100 };
+const PARCA_136 = [...V136.PARCALAR, { id: 3, ad: "Mil", models: ["AK100"], malzemeSatiri: { malzemeId: 2, bicim: "mil", cap: 20, boy: 100 } }];
+const STD_136 = [{ ...V136.STANDART[0], defaultParcalar: [...V136.STANDART[0].defaultParcalar, { partId: "3", ad: "Mil", miktar: 1 }] }];
+const KAT_136 = { parts: PARCA_136, malzemeler: [MALZ_136], standardModels: STD_136, customModels: V136.OZEL };
+const KIS_136 = { ...V136.PARTILER[0], kapanisMaliyeti: { ...pkg136(V136.veri(), V136.PARTILER[0], V136.BUGUN, { katalog: KAT_136, modeller: mm136(KAT_136, 65000, {}),
+  partiPay: pgp136(V136.veri(), V136.BUGUN).partiler.find(p => p.id === 1) }), kapanisGunu: "2026-04-02" } };
+function MaliyetEkrani0136({ donmus = true, zam = false, ekMakina = false, gorunum = "partiler" }) {
+  const [uretimPartileri, setUretimPartileri] = useState(donmus ? [KIS_136, ...V136.PARTILER.slice(1)] : V136.PARTILER);
+  const stock = ekMakina ? [...V136.STOCK, { id: 8, model: "AK100", serialNo: "S8", partiId: 1, uretimTarihi: "2026-01-20" }] : V136.STOCK;
+  return <MakinaMaliyeti aktifKullanici="kerem" giderler={V136.GIDERLER} giderTurleri={V136.TURLER} setGiderTurleri={bos} tedarikciler={[]} stock={stock} customers={V136.CUSTOMERS}
+    partStockLog={[]} parts={PARCA_136} malzemeler={[zam ? { ...MALZ_136, kiloFiyati: 300 } : MALZ_136]} standardModels={STD_136} customModels={V136.OZEL} setStandardModels={bos} setCustomModels={bos}
+    uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} appSettings={{ giderAyarlari: { yururlukAy: V136.YURURLUK }, maliyetAyarlari: V136.AYAR }} setAppSettings={bos}
+    rates={{}} tumMusteriler={V136.CUSTOMERS} serverPermissions={null} showToast={bos} baslangicGorunum={gorunum} />;
+}
 // Spec 0090 R13: parti havuzu yalnız rolü "Genel gidere girer" türlerden; kanıt verisinde bütün türlere bu rol verilir.
 const GENEL_TURLER = TURLER.map(t => ({ ...t, maliyetRolu: "genel" }));
 const maliyetPartiEkrani = (adimlar) => maliyetEkrani({ p0: [P_KAPALI, P_ACIK], musteriler: PARTI_MUSTERI, stok: PARTI_STOK, giderler: GIDERLER, turler: GENEL_TURLER }, ["Üretim Partileri", ...adimlar]);
@@ -1157,6 +1176,13 @@ const EKRANLAR = {
   "maliyet-modeller-bos-uretimde": maliyetEkrani({ a0: { uretimdeOlmayanModeller: ["AK100", "AK120", "AK200"] } }),
   "maliyet-parti": maliyetEkrani({}, ["Parti Hesabı"]),
   "maliyet-0097-parti-tarihli": [<MaliyetEkrani0097 />, []],
+  "maliyet-0136-partiler": [<MaliyetEkrani0136 zam ekMakina />, []],
+  "maliyet-0136-partiler-donmus-sapmasiz": [<MaliyetEkrani0136 />, []],
+  "maliyet-0136-partiler-dondurulmadi": [<MaliyetEkrani0136 donmus={false} />, []],
+  "maliyet-0136-parti-donmus": [<MaliyetEkrani0136 zam ekMakina gorunum="parti" />, []],
+  "maliyet-0136-parti-dondurulmadi": [<MaliyetEkrani0136 donmus={false} gorunum="parti" />, []],
+  "maliyet-0136-acma-onayi": [<MaliyetEkrani0136 />, ["satir-ilk-dugme:3", "doldur:Bitiş ayı=", "dugme:Kaydet"]],
+  "maliyet-0136-gelecek-bitis": [<MaliyetEkrani0136 />, ["satir-ilk-dugme:2", "doldur:Bitiş ayı=2099-08", "dugme:Kaydet"]],
   "maliyet-0097-parti-acik": [<MaliyetEkrani0097 />, ["sec:Üretim partisi=2"]],
   "maliyet-0097-parti-baslamadi": [<MaliyetEkrani0097 />, ["sec:Üretim partisi=3"]],
   "maliyet-parti-planli": maliyetEkrani({}, ["Parti Hesabı", "sec:Üretim partisi=803"]),

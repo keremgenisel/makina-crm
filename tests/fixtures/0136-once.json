@@ -1,0 +1,494 @@
+{
+ "pay": {
+  "partiler": [
+   {
+    "id": 1,
+    "adet": 4,
+    "havuzK": 600001,
+    "makinaBasiK": 150000,
+    "durum": "tamam",
+    "neden": null,
+    "kaynak": "Partinin aylarındaki genel gider",
+    "acik": false,
+    "degisimler": [
+     {
+      "ay": "2026-02",
+      "kapanistaK": 180000,
+      "bugunK": 200000,
+      "farkK": 20000,
+      "farkMutlakK": 20000,
+      "artti": true
+     }
+    ],
+    "makinaPaylari": [
+     {
+      "anahtar": "stok:1",
+      "payK": 150001
+     },
+     {
+      "anahtar": "stok:2",
+      "payK": 150000
+     },
+     {
+      "anahtar": "musteri:11",
+      "payK": 150000
+     },
+     {
+      "anahtar": "stok:3",
+      "payK": 150000
+     }
+    ]
+   },
+   {
+    "id": 2,
+    "adet": 1,
+    "havuzK": 25000,
+    "makinaBasiK": 25000,
+    "durum": "tamam",
+    "neden": null,
+    "kaynak": "Partinin aylarındaki genel gider",
+    "acik": true,
+    "degisimler": [],
+    "makinaPaylari": [
+     {
+      "anahtar": "stok:4",
+      "payK": 25000
+     }
+    ]
+   },
+   {
+    "id": 3,
+    "adet": 1,
+    "havuzK": 0,
+    "makinaBasiK": 0,
+    "durum": "baslamadi",
+    "neden": "Parti henüz başlamadı; havuz başlangıç ayından itibaren oluşur.",
+    "kaynak": "Partinin aylarındaki genel gider",
+    "acik": true,
+    "degisimler": [],
+    "makinaPaylari": [
+     {
+      "anahtar": "stok:5",
+      "payK": 0
+     }
+    ]
+   },
+   {
+    "id": 4,
+    "adet": 1,
+    "havuzK": 0,
+    "makinaBasiK": 0,
+    "durum": "yururlukOncesi",
+    "neden": "Partinin bütün ayları gider takibinin yürürlük ayından önce.",
+    "kaynak": "Partinin aylarındaki genel gider",
+    "acik": false,
+    "degisimler": [],
+    "makinaPaylari": [
+     {
+      "anahtar": "stok:6",
+      "payK": 0
+     }
+    ]
+   }
+  ],
+  "aylar": [
+   [
+    "2026-01",
+    100001
+   ],
+   [
+    "2026-02",
+    200000
+   ],
+   [
+    "2026-03",
+    300000
+   ],
+   [
+    "2026-04",
+    0
+   ],
+   [
+    "2026-05",
+    50000
+   ],
+   [
+    "2026-06",
+    0
+   ]
+  ],
+  "yururlukAy": "2026-01",
+  "roller": {
+   "rolsuzTurSayisi": 0,
+   "genelTurSayisi": 1,
+   "urunAgaciTurSayisi": 0
+  },
+  "yayilanAdet": 0
+ },
+ "hesap": [
+  {
+   "satirlar": [
+    {
+     "model": "AK100",
+     "turetilenAdet": 2,
+     "katsayi": 1.5,
+     "anahtar": "AK100#1",
+     "adet": 2,
+     "planlanan": false,
+     "direktK": 2600,
+     "eksikSayisi": 0,
+     "payK": 150000,
+     "payKaynak": "parti",
+     "payNeden": null,
+     "payToplamK": 300001,
+     "ayAraligi": {
+      "ilk": "2026-01",
+      "son": "2026-01"
+     },
+     "tarihsiz": false,
+     "toplamK": 152600,
+     "oneriK": 228900,
+     "toplamMaliyetK": 305201,
+     "oneriCiroK": 457802
+    },
+    {
+     "model": "AK100",
+     "turetilenAdet": 1,
+     "katsayi": 1.5,
+     "anahtar": "AK100#2",
+     "adet": 1,
+     "planlanan": false,
+     "direktK": 3600,
+     "eksikSayisi": 0,
+     "payK": 150000,
+     "payKaynak": "parti",
+     "payNeden": null,
+     "payToplamK": 150000,
+     "ayAraligi": {
+      "ilk": "2026-02",
+      "son": "2026-02"
+     },
+     "tarihsiz": false,
+     "toplamK": 153600,
+     "oneriK": 230400,
+     "toplamMaliyetK": 153600,
+     "oneriCiroK": 230400
+    },
+    {
+     "model": "AK100",
+     "turetilenAdet": 1,
+     "katsayi": 1.5,
+     "anahtar": "AK100#3",
+     "adet": 1,
+     "planlanan": false,
+     "direktK": 3600,
+     "eksikSayisi": 0,
+     "payK": 150000,
+     "payKaynak": "parti",
+     "payNeden": null,
+     "payToplamK": 150000,
+     "ayAraligi": null,
+     "tarihsiz": true,
+     "toplamK": 153600,
+     "oneriK": 230400,
+     "toplamMaliyetK": 153600,
+     "oneriCiroK": 230400
+    },
+    {
+     "model": "OZ",
+     "turetilenAdet": 0,
+     "katsayi": 2,
+     "anahtar": "OZ",
+     "adet": 3,
+     "planlanan": true,
+     "direktK": 1500,
+     "eksikSayisi": 0,
+     "payK": 150000,
+     "payKaynak": "parti",
+     "payNeden": null,
+     "payToplamK": 450000,
+     "ayAraligi": null,
+     "tarihsiz": false,
+     "toplamK": 151500,
+     "oneriK": 303000,
+     "toplamMaliyetK": 454500,
+     "oneriCiroK": 909000
+    }
+   ],
+   "bulunamayan": [],
+   "bos": false,
+   "payDurumu": null,
+   "ozet": {
+    "toplamStandartK": 1066901,
+    "onerilenCiroK": 1827602,
+    "katsayisiz": 0,
+    "satisK": 1000000,
+    "oneriyeGoreKarK": 760701,
+    "gercegeGoreKarK": 846400,
+    "satilmisStandartK": 153600,
+    "kirilim": {
+     "satilmis": 1,
+     "stokta": 3,
+     "bedelsiz": 0,
+     "kursuz": 0,
+     "modelYok": 0
+    },
+    "kurDurumlari": {
+     "kayitli": 0,
+     "yaklasik": 0
+    }
+   },
+   "tedarik": {
+    "donem": {
+     "bas": "2026-01",
+     "bit": "2026-03"
+    },
+    "baslamadi": false,
+    "yururlukOncesi": false,
+    "tedarikK": 0,
+    "standartDirektK": 16900,
+    "farkK": -16900,
+    "paylasanParti": 0
+   }
+  },
+  {
+   "satirlar": [
+    {
+     "model": "AK100",
+     "turetilenAdet": 1,
+     "katsayi": 1.5,
+     "anahtar": "AK100",
+     "adet": 1,
+     "planlanan": false,
+     "direktK": 3600,
+     "eksikSayisi": 0,
+     "payK": 25000,
+     "payKaynak": "parti",
+     "payNeden": null,
+     "payToplamK": 25000,
+     "ayAraligi": {
+      "ilk": "2026-05",
+      "son": "2026-05"
+     },
+     "tarihsiz": false,
+     "toplamK": 28600,
+     "oneriK": 42900,
+     "toplamMaliyetK": 28600,
+     "oneriCiroK": 42900
+    },
+    {
+     "model": "OZ",
+     "turetilenAdet": 0,
+     "katsayi": 2,
+     "anahtar": "OZ",
+     "adet": 2,
+     "planlanan": true,
+     "direktK": 1500,
+     "eksikSayisi": 0,
+     "payK": 65000,
+     "payKaynak": "ayarlar",
+     "payNeden": null,
+     "payToplamK": 130000,
+     "ayAraligi": null,
+     "tarihsiz": false,
+     "toplamK": 66500,
+     "oneriK": 133000,
+     "toplamMaliyetK": 133000,
+     "oneriCiroK": 266000
+    }
+   ],
+   "bulunamayan": [],
+   "bos": false,
+   "payDurumu": null,
+   "ozet": {
+    "toplamStandartK": 161600,
+    "onerilenCiroK": 308900,
+    "katsayisiz": 0,
+    "satisK": 0,
+    "oneriyeGoreKarK": 147300,
+    "gercegeGoreKarK": 0,
+    "satilmisStandartK": 0,
+    "kirilim": {
+     "satilmis": 0,
+     "stokta": 1,
+     "bedelsiz": 0,
+     "kursuz": 0,
+     "modelYok": 0
+    },
+    "kurDurumlari": {
+     "kayitli": 0,
+     "yaklasik": 0
+    }
+   },
+   "tedarik": {
+    "donem": {
+     "bas": "2026-04",
+     "bit": "2026-06"
+    },
+    "baslamadi": false,
+    "yururlukOncesi": false,
+    "tedarikK": 0,
+    "standartDirektK": 6600,
+    "farkK": -6600,
+    "paylasanParti": 0
+   }
+  },
+  {
+   "satirlar": [
+    {
+     "model": "AK100",
+     "turetilenAdet": 1,
+     "katsayi": 1.5,
+     "anahtar": "AK100",
+     "adet": 1,
+     "planlanan": false,
+     "direktK": 3600,
+     "eksikSayisi": 0,
+     "payK": null,
+     "payKaynak": "parti",
+     "payNeden": null,
+     "payToplamK": 0,
+     "ayAraligi": {
+      "ilk": "2026-06",
+      "son": "2026-06"
+     },
+     "tarihsiz": false,
+     "toplamK": 3600,
+     "oneriK": 5400,
+     "toplamMaliyetK": 3600,
+     "oneriCiroK": 5400
+    },
+    {
+     "model": "OZ",
+     "turetilenAdet": 0,
+     "katsayi": 2,
+     "anahtar": "OZ",
+     "adet": 5,
+     "planlanan": true,
+     "direktK": 1500,
+     "eksikSayisi": 0,
+     "payK": 65000,
+     "payKaynak": "ayarlar",
+     "payNeden": null,
+     "payToplamK": 325000,
+     "ayAraligi": null,
+     "tarihsiz": false,
+     "toplamK": 66500,
+     "oneriK": 133000,
+     "toplamMaliyetK": 332500,
+     "oneriCiroK": 665000
+    }
+   ],
+   "bulunamayan": [],
+   "bos": false,
+   "payDurumu": {
+    "durum": "baslamadi",
+    "neden": "Parti henüz başlamadı; havuz başlangıç ayından itibaren oluşur."
+   },
+   "ozet": {
+    "toplamStandartK": 336100,
+    "onerilenCiroK": 670400,
+    "katsayisiz": 0,
+    "satisK": 0,
+    "oneriyeGoreKarK": 334300,
+    "gercegeGoreKarK": 0,
+    "satilmisStandartK": 0,
+    "kirilim": {
+     "satilmis": 0,
+     "stokta": 1,
+     "bedelsiz": 0,
+     "kursuz": 0,
+     "modelYok": 0
+    },
+    "kurDurumlari": {
+     "kayitli": 0,
+     "yaklasik": 0
+    }
+   },
+   "tedarik": {
+    "donem": {
+     "bas": "2026-09",
+     "bit": "2026-06"
+    },
+    "baslamadi": true,
+    "yururlukOncesi": false,
+    "tedarikK": 0,
+    "standartDirektK": 11100,
+    "farkK": -11100,
+    "paylasanParti": 0
+   }
+  },
+  {
+   "satirlar": [
+    {
+     "model": "OZ",
+     "turetilenAdet": 1,
+     "katsayi": 2,
+     "anahtar": "OZ",
+     "adet": 1,
+     "planlanan": false,
+     "direktK": 1000,
+     "eksikSayisi": 0,
+     "payK": null,
+     "payKaynak": "parti",
+     "payNeden": null,
+     "payToplamK": 0,
+     "ayAraligi": {
+      "ilk": "2025-11",
+      "son": "2025-11"
+     },
+     "tarihsiz": false,
+     "toplamK": 1000,
+     "oneriK": 2000,
+     "toplamMaliyetK": 1000,
+     "oneriCiroK": 2000
+    }
+   ],
+   "bulunamayan": [],
+   "bos": false,
+   "payDurumu": {
+    "durum": "yururlukOncesi",
+    "neden": "Partinin bütün ayları gider takibinin yürürlük ayından önce."
+   },
+   "ozet": {
+    "toplamStandartK": 1000,
+    "onerilenCiroK": 2000,
+    "katsayisiz": 0,
+    "satisK": 0,
+    "oneriyeGoreKarK": 1000,
+    "gercegeGoreKarK": 0,
+    "satilmisStandartK": 0,
+    "kirilim": {
+     "satilmis": 0,
+     "stokta": 1,
+     "bedelsiz": 0,
+     "kursuz": 0,
+     "modelYok": 0
+    },
+    "kurDurumlari": {
+     "kayitli": 0,
+     "yaklasik": 0
+    }
+   },
+   "tedarik": {
+    "donem": {
+     "bas": "2025-11",
+     "bit": "2025-12"
+    },
+    "baslamadi": false,
+    "yururlukOncesi": true,
+    "tedarikK": 0,
+    "standartDirektK": 1000,
+    "farkK": -1000,
+    "paylasanParti": 0
+   }
+  }
+ ],
+ "partilerEkrani": "Makina MaliyetiModel MaliyetleriParti HesabıÜretim PartileriHesap AyarlarıSipariş İhtiyacıBugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri ile planlanan adet satırlarını etkiler; üretilmiş makinalar üretim günü maliyetiyle hesaplanır.Parti parti üretimde, partinin sürdüğü ayların genel gideri (rolü “Genel gidere girer” olan türler) o ayın hak sahiplerine makina adediyle bölünür; o ay üretilmiş partisiz makinalar da birer pay alır. Makinalar stok kaydından partiye bağlanır; satılınca bağ satış kaydında korunur. Yeni Üretim PartisiPartiDönemDurumMakinaGenel gider havuzuMakina başı payGüzEylül 2026 – sürüyorAçık · geçici1Parti henüz başlamadı; havuz başlangıç ayından itibaren oluşur.— BaharNisan 2026 – sürüyorAçık · geçici1250,00 ₺Partinin aylarındaki genel gider250,00 ₺geçici KışOcak 2026 – Mart 2026Kapalı46.000,01 ₺Partinin aylarındaki genel gider1.500,00 ₺ EskiKasım 2025 – Aralık 2025Kapalı1Partinin bütün ayları gider takibinin yürürlük ayından önce.— Kapanmış partilerin aylarında değişen ortak giderParti kapandıktan sonra bu aylara gider eklendi, değişti ya da silindi. Paylar bugünkü veriyle yeniden hesaplandı.2026-02Kış · kapanışta 1.800,00 ₺, bugün 2.000,00 ₺+ 200,00 ₺",
+ "partiEkrani": [
+  "Makina MaliyetiModel MaliyetleriParti HesabıÜretim PartileriHesap AyarlarıSipariş İhtiyacıBugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri ile planlanan adet satırlarını etkiler; üretilmiş makinalar üretim günü maliyetiyle hesaplanır.Üretim partisiKışBaharGüzEski Planlanan adetler1 makinanın partisi yok; parti hesabına girmezler.ModelAdetDirekt (birim)Genel gider payı (birim)Partinin kendi aylarının genel gideri; Üretim Partileri'ndeki makina başı payla aynıdır. Artık kuruş ilk üretilen makinadadır, satırın toplamı birim × adetten farklı olabilir.Toplam (birim)Önerilen satış (birim)Toplam maliyetÖnerilen ciroAK10001.2026226,00 ₺1.500,00 ₺1.526,00 ₺2.289,00 ₺3.052,01 ₺4.578,02 ₺AK10002.2026136,00 ₺1.500,00 ₺1.536,00 ₺2.304,00 ₺1.536,00 ₺2.304,00 ₺AK100Üretim tarihi bilinmiyor; bugünkü maliyetle hesaplandı.136,00 ₺1.500,00 ₺1.536,00 ₺2.304,00 ₺1.536,00 ₺2.304,00 ₺OZ3planlanan15,00 ₺1.500,00 ₺partinin aylarından1.515,00 ₺3.030,00 ₺4.545,00 ₺9.090,00 ₺Parti özetiToplam standart maliyet10.669,01 ₺Önerilen ciro (KDV hariç)18.276,02 ₺Gerçekleşen satış (KDV hariç)10.000,00 ₺Öneriye göre kâr7.607,01 ₺Gerçeğe göre kâr8.464,00 ₺Satılmış 1 · Stokta 3 · Bedelsiz 0 · Kuru olmayan 0Öneriye göre kâr partinin bütün adedinden hesaplanır (önerilen ciro − toplam standart maliyet); gerçeğe göre kâr yalnız satılmış makinalardan (gerçekleşen satış − o makinaların standart maliyeti). Bedelsiz ve kuru olmayan satışlar ikisine de girmez.Gerçekleşen tedarik karşılaştırmasıGerçekleşen tedarik (2026-01 – 2026-03)0,00 ₺Standart direkt maliyet169,00 ₺Fark-169,00 ₺Fark bir hata değildir: dönemde \"Ürün ağacından gelir\" rolündeki türlere girilen gider ile partinin ürün ağacından hesaplanan direkt maliyeti arasındaki farktır.Taban farkı: standart direkt maliyet KDV hariç matrahtır, gerçekleşen tutar indirilemeyen KDV'yi de içerir; farkın sıfır olmaması normaldir.Dönem farkı: parti başlamadan önce alınmış tedarik kapsam dışıdır.",
+  "Makina MaliyetiModel MaliyetleriParti HesabıÜretim PartileriHesap AyarlarıSipariş İhtiyacıBugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri ile planlanan adet satırlarını etkiler; üretilmiş makinalar üretim günü maliyetiyle hesaplanır.Üretim partisiKışBaharGüzEski Planlanan adetler1 makinanın partisi yok; parti hesabına girmezler.ModelAdetDirekt (birim)Genel gider payı (birim)Partinin kendi aylarının genel gideri; Üretim Partileri'ndeki makina başı payla aynıdır. Artık kuruş ilk üretilen makinadadır, satırın toplamı birim × adetten farklı olabilir.Toplam (birim)Önerilen satış (birim)Toplam maliyetÖnerilen ciroAK10005.2026136,00 ₺250,00 ₺286,00 ₺429,00 ₺286,00 ₺429,00 ₺OZ2planlanan15,00 ₺650,00 ₺hesap ayarlarından665,00 ₺1.330,00 ₺1.330,00 ₺2.660,00 ₺Parti özetiToplam standart maliyet1.616,00 ₺Önerilen ciro (KDV hariç)3.089,00 ₺Gerçekleşen satış (KDV hariç)0,00 ₺Öneriye göre kâr1.473,00 ₺Gerçeğe göre kâr0,00 ₺Satılmış 0 · Stokta 1 · Bedelsiz 0 · Kuru olmayan 0Öneriye göre kâr partinin bütün adedinden hesaplanır (önerilen ciro − toplam standart maliyet); gerçeğe göre kâr yalnız satılmış makinalardan (gerçekleşen satış − o makinaların standart maliyeti). Bedelsiz ve kuru olmayan satışlar ikisine de girmez.Gerçekleşen tedarik karşılaştırmasıGerçekleşen tedarik (2026-04 – 2026-06)0,00 ₺Standart direkt maliyet66,00 ₺Fark-66,00 ₺Fark bir hata değildir: dönemde \"Ürün ağacından gelir\" rolündeki türlere girilen gider ile partinin ürün ağacından hesaplanan direkt maliyeti arasındaki farktır.Taban farkı: standart direkt maliyet KDV hariç matrahtır, gerçekleşen tutar indirilemeyen KDV'yi de içerir; farkın sıfır olmaması normaldir.Dönem farkı: parti başlamadan önce alınmış tedarik kapsam dışıdır.",
+  "Makina MaliyetiModel MaliyetleriParti HesabıÜretim PartileriHesap AyarlarıSipariş İhtiyacıBugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri ile planlanan adet satırlarını etkiler; üretilmiş makinalar üretim günü maliyetiyle hesaplanır.Üretim partisiKışBaharGüzEski Planlanan adetler1 makinanın partisi yok; parti hesabına girmezler.Genel gider payı yazılmayan satırlar var: Parti henüz başlamadı; havuz başlangıç ayından itibaren oluşur.ModelAdetDirekt (birim)Genel gider payı (birim)Partinin kendi aylarının genel gideri; Üretim Partileri'ndeki makina başı payla aynıdır. Artık kuruş ilk üretilen makinadadır, satırın toplamı birim × adetten farklı olabilir.Toplam (birim)Önerilen satış (birim)Toplam maliyetÖnerilen ciroAK10006.2026136,00 ₺—36,00 ₺54,00 ₺36,00 ₺54,00 ₺OZ5planlanan15,00 ₺650,00 ₺hesap ayarlarından665,00 ₺1.330,00 ₺3.325,00 ₺6.650,00 ₺Parti özetiToplam standart maliyet3.361,00 ₺Önerilen ciro (KDV hariç)6.704,00 ₺Gerçekleşen satış (KDV hariç)0,00 ₺Öneriye göre kâr3.343,00 ₺Gerçeğe göre kâr0,00 ₺Satılmış 0 · Stokta 1 · Bedelsiz 0 · Kuru olmayan 0Öneriye göre kâr partinin bütün adedinden hesaplanır (önerilen ciro − toplam standart maliyet); gerçeğe göre kâr yalnız satılmış makinalardan (gerçekleşen satış − o makinaların standart maliyeti). Bedelsiz ve kuru olmayan satışlar ikisine de girmez.Gerçekleşen tedarik karşılaştırmasıParti henüz başlamadı (başlangıç 2026-09); gerçekleşen tedarik karşılaştırması parti başladıktan sonra yapılır.",
+  "Makina MaliyetiModel MaliyetleriParti HesabıÜretim PartileriHesap AyarlarıSipariş İhtiyacıBugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri ile planlanan adet satırlarını etkiler; üretilmiş makinalar üretim günü maliyetiyle hesaplanır.Üretim partisiKışBaharGüzEski Planlanan adetler1 makinanın partisi yok; parti hesabına girmezler.Genel gider payı yazılmayan satırlar var: Partinin bütün ayları gider takibinin yürürlük ayından önce.ModelAdetDirekt (birim)Genel gider payı (birim)Partinin kendi aylarının genel gideri; Üretim Partileri'ndeki makina başı payla aynıdır. Artık kuruş ilk üretilen makinadadır, satırın toplamı birim × adetten farklı olabilir.Toplam (birim)Önerilen satış (birim)Toplam maliyetÖnerilen ciroOZ11.2025110,00 ₺—10,00 ₺20,00 ₺10,00 ₺20,00 ₺Parti özetiToplam standart maliyet10,00 ₺Önerilen ciro (KDV hariç)20,00 ₺Gerçekleşen satış (KDV hariç)0,00 ₺Öneriye göre kâr10,00 ₺Gerçeğe göre kâr0,00 ₺Satılmış 0 · Stokta 1 · Bedelsiz 0 · Kuru olmayan 0Öneriye göre kâr partinin bütün adedinden hesaplanır (önerilen ciro − toplam standart maliyet); gerçeğe göre kâr yalnız satılmış makinalardan (gerçekleşen satış − o makinaların standart maliyeti). Bedelsiz ve kuru olmayan satışlar ikisine de girmez.Gerçekleşen tedarik karşılaştırmasıPartinin dönemi gider takibinin yürürlüğünden önce; karşılaştırma yapılamıyor.Fark bir hata değildir: dönemde \"Ürün ağacından gelir\" rolündeki türlere girilen gider ile partinin ürün ağacından hesaplanan direkt maliyeti arasındaki farktır.Taban farkı: standart direkt maliyet KDV hariç matrahtır, gerçekleşen tutar indirilemeyen KDV'yi de içerir; farkın sıfır olmaması normaldir.Dönem farkı: parti başlamadan önce alınmış tedarik kapsam dışıdır."
+ ]
+}

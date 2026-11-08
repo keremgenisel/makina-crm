@@ -4,6 +4,7 @@ import { KartBolum, BosDurum, HataMetni, Ipucu, UyariSeridi } from "../tasarim";
 import { kilitRedMesaji } from "../../lib/kilitAlanlari";
 import { kurusMetni, partiHesabi, partisizMakinaSayisi, planAdediDogrula, planAdetleriYaz, modelSayilari, ayAraligiMetni, PAY_KAYNAK_METNI, TARIHSIZ_SATIR_NEDENI } from "../../lib/makinaStandartMaliyet";
 import { URETIM_DEGIL_IBARESI } from "../../lib/uretimdekiModeller";
+import { donmusSeritMetni, DONDURULMADI_IBARESI, DONMUS_KATSAYI_IPUCU, DONMUS_TEDARIK_NOTU, PLAN_KAPALI_NEDENI } from "../../lib/uretimPartisi";
 
 // Spec 0088 R17–R22: seçilen partinin model-adet tablosu (partiye bağlı makinalardan ya da planlanan adetten), özet
 // (standart maliyet, önerilen ciro, gerçekleşen satış, iki kâr) ve gerçekleşen tedarik karşılaştırması.
@@ -83,8 +84,15 @@ export const PartiHesabi = ({ pay, modeller, canDo, baskasiKilitli, showToast, v
           </Select>
         </Field>
         {/* Kullanıcı isteği 2026-10-18: düğme seçiciyle aynı hizada; Field'ın alt boşluğu (14 px) düğmeye de verilir. */}
-        {yetki && <div style={{ marginBottom: 14 }}><Btn variant="ghost" onClick={planAc}><Icon name="edit" size={14} /> Planlanan adetler</Btn></div>}
+        {yetki && <div style={{ marginBottom: 14 }}>{/* Spec 0136 R24 (AC-74, Karar 44): kapanmış partide düğme pasif, pencere açılmaz. */}<Btn variant="ghost" onClick={planAc} disabled={!!parti.bitisAy} title={parti.bitisAy ? PLAN_KAPALI_NEDENI : undefined}><Icon name="edit" size={14} /> Planlanan adetler</Btn></div>}
       </div>
+      {yetki && parti.bitisAy && <Ipucu><span data-testid="plan-kapali-nedeni">{PLAN_KAPALI_NEDENI}</span></Ipucu>}
+      {/* Spec 0136 R12/2, R22/2 (AC-29, AC-70, AC-71): kapanmış partide tablonun üstünde TEK şerit; satır başına tekrar etmez. */}
+      {parti.bitisAy && (
+        <div style={{ margin: "8px 0" }}>{hesap.dondurma
+          ? <UyariSeridi aile="bilgi" testId="donmus-serit">{donmusSeritMetni(hesap.dondurma.kapanisGunu)}</UyariSeridi>
+          : <UyariSeridi aile="uyari" testId="dondurulmadi-serit">{DONDURULMADI_IBARESI}</UyariSeridi>}</div>
+      )}
       {partisiz > 0 && <Ipucu><span data-testid="partisiz-makina">{`${partisiz} makinanın partisi yok; parti hesabına girmezler.`}</span></Ipucu>}
       {/* Triyaj (bulgu 1): planlı ve partiye bağlı makinadan türeyen bulunamayan satırların metni ayrı. */}
       {hesap.bulunamayan.some(b => b.planlanan) && (
@@ -116,6 +124,7 @@ export const PartiHesabi = ({ pay, modeller, canDo, baskasiKilitli, showToast, v
                     <td style={{ ...td, textAlign: "left", fontWeight: 700 }}>{r.model}{r.eksikSayisi > 0 && <span style={{ marginLeft: 6, fontSize: 11, color: "var(--warnTx, #854d0e)" }}>eksik</span>}
                       {r.ayAraligi && <div data-testid="parti-satir-araligi" style={{ fontSize: 11, fontWeight: 400, color: "var(--n500, #64748b)" }}>{ayAraligiMetni(r.ayAraligi)}</div>}
                       {r.tarihsiz && <div data-testid="parti-satir-neden" style={{ fontSize: 11, fontWeight: 400, color: "var(--warnTx, #854d0e)", whiteSpace: "normal", maxWidth: 220 }}>{TARIHSIZ_SATIR_NEDENI}</div>}
+                      {r.dondurulmadi && <div data-testid="parti-satir-dondurulmadi" style={{ fontSize: 11, fontWeight: 400, color: "var(--warnTx, #854d0e)", whiteSpace: "normal", maxWidth: 220 }}>{r.dondurmaNeden}</div>}
                     </td>
                     <td style={td}>{r.adet}{r.planlanan && <span data-testid="planlanan" style={{ marginLeft: 6, fontSize: 11, color: "var(--n500, #64748b)" }}>planlanan</span>}</td>
                     <td style={td}>{kurusMetni(r.direktK)}</td><td style={td}>{kurusMetni(r.payK)}{r.planlanan && <div data-testid="pay-kaynagi" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{r.payNeden || PAY_KAYNAK_METNI[r.payKaynak]}</div>}</td><td style={td}>{kurusMetni(r.toplamK)}</td>
@@ -139,6 +148,7 @@ export const PartiHesabi = ({ pay, modeller, canDo, baskasiKilitli, showToast, v
             {o.kirilim.kursuz > 0 && <Ipucu><span data-testid="kursuz-not">{`${o.kirilim.kursuz} döviz satışının kuru yok; gerçekleşen satışa girmedi.`}</span></Ipucu>}
             {(o.kurDurumlari.kayitli + o.kurDurumlari.yaklasik) > 0 && <Ipucu>{`Döviz satışları TL'ye çevrildi: ${o.kurDurumlari.kayitli} kayıtlı kurla, ${o.kurDurumlari.yaklasik} güncel kurla (yaklaşık).`}</Ipucu>}
             <Ipucu>{KAR_KUMELERI_NOTU}</Ipucu>
+            {hesap.dondurma && <Ipucu><span data-testid="donmus-katsayi">{DONMUS_KATSAYI_IPUCU}</span></Ipucu>}
           </KartBolum>
         </>
       )}
@@ -155,6 +165,7 @@ export const PartiHesabi = ({ pay, modeller, canDo, baskasiKilitli, showToast, v
           <Ipucu>{TEDARIK_FARK_CUMLESI}</Ipucu>
           <Ipucu>{TEDARIK_TABAN_CUMLESI}</Ipucu>
           <Ipucu><span data-testid="tedarik-donem">{donemCumlesi(t.paylasanParti)}</span></Ipucu>
+          {hesap.dondurma && <Ipucu><span data-testid="donmus-tedarik">{DONMUS_TEDARIK_NOTU}</span></Ipucu>}
         </>}
       </KartBolum>
 

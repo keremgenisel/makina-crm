@@ -238,6 +238,15 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.malzemeler?.find(m => m.id === 93)?.emniyetPayi === 7 && b.parts.find(p => p.id === 94)?.emniyetPayi === 3);
 }
 
+// Spec 0136 AC-43 (C4): temiz kurulumda kapanış maliyet görüntüsü sütunu ilk oturumda yazılır ve okunur.
+{
+  let h = null;
+  const g = { kapanisGunu: "2026-04-02", makinalar: { "stok:1": { direktK: 100, eksikSayisi: 0, payK: 5, tarihsiz: false } }, planlar: {}, havuzK: 5, makinaBasiK: 5, adet: 1, durum: "tamam", neden: null };
+  try { dbmod.writeBlobToDb({ uretimPartileri: [{ id: 97, ad: "Kapalı", baslangicAy: "2026-01", bitisAy: "2026-02", kapanisMaliyeti: g }] }); } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0136: temiz kurulumda kapanisMaliyeti sütunu var ve yazıldı", h === null && JSON.stringify(b.uretimPartileri.find(p => p.id === 97)?.kapanisMaliyeti) === JSON.stringify(g));
+}
+
 // Spec 0135 AC-79 (C4): temiz kurulumda maliyet kalemleri sütunu ilk oturumda yazılır ve okunur.
 {
   let h = null;

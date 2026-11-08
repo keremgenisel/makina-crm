@@ -17,7 +17,7 @@ const { MakinaMaliyeti } = await import("../../src/components/MakinaMaliyeti");
 const { UretimPartileri, PARTI_BASLIK_CUMLESI, PARTI_BOS_METNI } = await import("../../src/components/gider/UretimPartileri");
 const { PAY_AYRIM_IBARESI } = await import("../../src/components/maliyet/PartiHesabi");
 const { PARTI_NEDEN, PARTI_KAYNAK_IBARESI } = await import("../../src/lib/makinaStandartMaliyet");
-const { KAPANIS_HARITA_YOK } = await import("../../src/lib/uretimPartisi");
+const { KAPANIS_HARITA_YOK, GELECEK_BITIS_HATASI } = await import("../../src/lib/uretimPartisi");
 
 afterEach(() => { cleanup(); vi.useRealTimers(); casus.n = 0; delete window.crmStorage; vi.unstubAllGlobals(); localStorage.clear(); });
 
@@ -158,7 +158,9 @@ describe("Spec 0090: kapanış anlık görüntüsü ekranda (R23–R26, R37)", (
     expect(satirlar).toHaveLength(1);
     expect(satirlar[0].textContent).toBe("2026-03Yeni · kapanışta 1.500,00 ₺, bugün 2.000,00 ₺+ 500,00 ₺");
   });
-  it("triyaj bulgu 2: yürürlük boşken ve bitişi gelecekte olan yeni kapalı parti ekrandan kaydedilir", () => {
+  // Spec 0136 ile (R3/2, AC-57): bitişi gelecekte olan parti artık kaydedilmez; triyajın asıl konusu (yürürlük boşken kapanış)
+  // bu ayda biten partiyle sınanır.
+  it("triyaj bulgu 2 (spec 0136 ile): yürürlük boşken bu ayda biten yeni kapalı parti ekrandan kaydedilir; gelecek bitiş reddedilir", () => {
     let st;
     const showToast = vi.fn();
     render(<MH appSettings={{ giderAyarlari: {} }} giderler={GID} showToast={showToast} onState={s => { st = s; }} />);
@@ -168,9 +170,13 @@ describe("Spec 0090: kapanış anlık görüntüsü ekranda (R23–R26, R37)", (
     fireEvent.change(screen.getByLabelText("Başlangıç ayı"), { target: { value: "2026-02" } });
     fireEvent.change(screen.getByLabelText("Bitiş ayı"), { target: { value: "2026-08" } });
     fireEvent.click(screen.getByText("Kaydet"));
+    expect(screen.getByText(GELECEK_BITIS_HATASI)).toBeTruthy();
+    expect(st).toHaveLength(0);
+    fireEvent.change(screen.getByLabelText("Bitiş ayı"), { target: { value: "2026-06" } });
+    fireEvent.click(screen.getByText("Kaydet"));
     expect(showToast).not.toHaveBeenCalledWith(KAPANIS_HARITA_YOK, "err");
     expect(st).toHaveLength(1);
-    expect(st[0].kapanisGenelHavuzlari).toEqual({ "2026-02": 100000, "2026-03": 200000, "2026-04": 0, "2026-05": 0, "2026-06": 0, "2026-07": 0, "2026-08": 0 });
+    expect(st[0].kapanisGenelHavuzlari).toEqual({ "2026-02": 100000, "2026-03": 200000, "2026-04": 0, "2026-05": 0, "2026-06": 0 });
   });
   it("AC-45/2: ay tablosu verilmezse kapanış kaydı yapılmaz ve nedeni bildirimle söylenir", () => {
     const setUretimPartileri = vi.fn(), showToast = vi.fn();

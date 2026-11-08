@@ -110,7 +110,8 @@ describe("Spec 0091: Makina Modelleri paneli (R1–R5, R28)", () => {
 });
 
 // ── Makina Maliyeti › Model Maliyetleri ──────────────────────────────────────────────────────────────────────────────
-const PARTI = [{ id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: "2026-12" }];
+// Spec 0136 ile (R24, Karar 44): planlanan adetler penceresi kapanmış partide açılmadığı için parti açık (bitiş yok).
+const PARTI = [{ id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: null }];
 const PARTILI_STOK = V.STOCK.map(s => (s.id === 3 ? { ...s, partiId: 1 } : s));
 function MH({ a0 = { uretimdeOlmayanModeller: V.URETIMDE_DISI }, ayar = V.AYARLAR, std = V.STANDART, ozel = V.OZEL, stok = PARTILI_STOK, gorunum = "modeller" }) {
   const [appSettings, setAppSettings] = useState({ giderAyarlari: { yururlukAy: "2026-01" }, ...(ayar ? { maliyetAyarlari: ayar } : {}), ...a0 });

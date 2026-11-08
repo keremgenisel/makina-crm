@@ -3,7 +3,7 @@ import { Segment, UyariSeridi } from "./tasarim";
 import { makeCanDo } from "../lib/permissions";
 import { useBugun } from "../hooks/useBugun";
 import { useKilitListesi } from "../hooks/useKilitListesi";
-import { genelGiderPayi, gercekUretim, modelMaliyetleri, partiGenelPaylari, partiKapanisHavuzu } from "../lib/makinaStandartMaliyet";
+import { genelGiderPayi, gercekUretim, modelMaliyetleri, partiGenelPaylari, partiKapanisGoruntusu, partiKapanisHavuzu } from "../lib/makinaStandartMaliyet";
 import { ModelMaliyetleri } from "./maliyet/ModelMaliyetleri";
 import { PartiHesabi } from "./maliyet/PartiHesabi";
 import { HesapAyarlari } from "./maliyet/HesapAyarlari";
@@ -53,6 +53,16 @@ export const MakinaMaliyeti = ({
   const parcaKatalogu = useMemo(() => ({ parts, malzemeler, standardModels, customModels }), [parts, malzemeler, standardModels, customModels]);
   // Triyaj (bulgu 2): kapanış haritası kaydedilen partinin aralığından (tek yol, C15).
   const kapanisHavuzu = (parti) => partiKapanisHavuzu(veri, parti, bugun);
+  // Triyaj (bulgu 3): sapma girdisi kararlı nesne; her çizimde yeni nesne Üretim Partileri'nin useMemo'sunu boşa çıkarırdı.
+  const sapmaGirdisi = useMemo(() => ({ veri: veriHam, katalog: parcaKatalogu, modeller }), [veriHam, parcaKatalogu, modeller]);
+  // Spec 0136 R1/2, R20 (plan turu Karar 36): kapanış görüntüsünün payı KAYDEDİLECEK kayıtla kurulur; partinin yerine yeni kayıt
+  // konmuş veriyle parti payı yeniden hesaplanır ve o partinin satırı görüntüye verilir. Direkt maliyet Parti Hesabı'yla aynı yoldan.
+  const kapanisGoruntusu = (parti) => {
+    const listede = uretimPartileri.some(p => String(p.id) === String(parti.id));
+    const veriYeni = { ...veriHam, uretimPartileri: listede ? uretimPartileri.map(p => (String(p.id) === String(parti.id) ? parti : p)) : [...uretimPartileri, parti] };
+    const partiPay = partiGenelPaylari(veriYeni, bugun).partiler.find(x => String(x.id) === String(parti.id)) || null;
+    return partiKapanisGoruntusu(veriYeni, parti, bugun, { katalog: parcaKatalogu, modeller, partiPay });
+  };
   const ortak = { pay, gercek, modeller, canDo, baskasiKilitli, showToast };
   const katalogModelleri = useMemo(() => [...standardModels, ...customModels].filter(m => m && !m.deletedAt), [standardModels, customModels]);
 
@@ -66,7 +76,8 @@ export const MakinaMaliyeti = ({
       {gorunum === "modeller" && <ModelMaliyetleri {...ortak} standardModels={standardModels} setStandardModels={setStandardModels} setCustomModels={setCustomModels} />}
       {gorunum === "parti" && <PartiHesabi {...ortak} veri={veriHam} katalog={parcaKatalogu} partiSonucu={partiSonucu} rates={rates} bugun={bugun} uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers} />}
       {gorunum === "partiler" && <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
-        partiSonucu={partiSonucu} kapanisHavuzu={kapanisHavuzu} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />}
+        partiSonucu={partiSonucu} kapanisHavuzu={kapanisHavuzu} kapanisGoruntusu={kapanisGoruntusu}
+        sapmaGirdisi={sapmaGirdisi} bugun={bugun} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />}
       {gorunum === "siparis" && <SiparisIhtiyaci modelSatirlari={modeller} modeller={katalogModelleri} parts={parts} hamParts={rawParts} partStock={partStock}
         malzemeler={malzemeler} tedarikciler={tedarikciler} hamTedarikciler={rawTedarikciler} uretimPartileri={uretimPartileri} factory={factory} bugun={bugun} />}
       {gorunum === "ayarlar" && <HesapAyarlari {...ortak} ayarlar={ayarlar} setAppSettings={setAppSettings} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} bugun={bugun} />}

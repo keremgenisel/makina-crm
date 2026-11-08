@@ -24,12 +24,13 @@ const GIZLI = ["AK200_ESKI", "OZ2_ESKI", "OZ3_ESKI"];
 const TUMU = [...STD, ...OZEL].map(m => m.model);
 const PLAN1 = { AK100: 3, AK200_ESKI: 4, OZ2_ESKI: 2, SILINEN: 5 };
 const PARTILER = [
-  { id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: "2026-12", planlananAdetler: PLAN1 },
+  { id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: null, planlananAdetler: PLAN1 },
   { id: 2, ad: "Olcum", baslangicAy: "2026-01", bitisAy: "2026-12", planlananAdetler: { AK200_ESKI: 4 } },
 ];
 const STOCK = [{ id: 11, model: "OZ3_ESKI", serialNo: "S11", uretimTarihi: "2026-03-01", partiId: 1 }, { id: 12, model: "AK200_ESKI", serialNo: "S12", uretimTarihi: "2026-03-01", partiId: 2 }];
 const TURLER = [{ id: 1, ad: "Genel", davranis: "normal", maliyetRolu: "genel" }];
 const GIDERLER = [{ id: 1, tarih: "2026-02-10", turId: 1, tutar: 10000, kdvOrani: 0, modelSatirlari: [], taksitler: [] }];
+// Spec 0136 R24 ile: planlanan adetler penceresi kapanmış partide açılmaz (Karar 44); pencereyi sınayan partiler açık (bitiş yok).
 const AYAR = { baslangicAy: "2026-01", bitisAy: "2026-12", varsayilanAdet: 20 }; // pay 10.000 / 20 = 500 TL
 
 let durum;
@@ -68,7 +69,7 @@ describe("Spec 0093: ızgara yalnız üretimdeki modeller (R1, R2)", () => {
     expect(izgaraAdlari()).toEqual(["AK100", "AK300", "OZ1", "OZ3_ESKI"].map(ad));
   });
   it("AC-19 / AC-19/2: harf büyüklüğüyle ayrılan iki addan yalnız işaretli olan gizlenir (pencere motorun kararını kullanır)", () => {
-    render(<H std={[mdl("AK100")]} ozel={[mdl("ak100")]} gizli={["AK100"]} partiler={[{ id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: "2026-12" }]} />); pencereAc();
+    render(<H std={[mdl("AK100")]} ozel={[mdl("ak100")]} gizli={["AK100"]} partiler={[{ id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: null }]} />); pencereAc();
     expect(izgaraAdlari()).toEqual([ad("ak100")]);
     expect(screen.queryByTestId("plan-gizli-listesi")).toBeNull();
   });
@@ -99,7 +100,7 @@ describe("Spec 0093: kayıtlı adedi olan gizli model kendi bölümünde (R3)", 
     expect(screen.queryByLabelText(gizliAd("AK100"))).toBeNull();
   });
   it("AC-4/3: saklı 0 ve boş değer çizilmez; geçersiz saklı değer çizilir, hatası görünür ve düzeltilebilir", () => {
-    render(<H partiler={[{ id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: "2026-12", planlananAdetler: { AK200_ESKI: 0, OZ2_ESKI: "", OZ3_ESKI: "abc" } }]} />); pencereAc();
+    render(<H partiler={[{ id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: null, planlananAdetler: { AK200_ESKI: 0, OZ2_ESKI: "", OZ3_ESKI: "abc" } }]} />); pencereAc();
     expect(screen.queryByLabelText(gizliAd("AK200_ESKI"))).toBeNull();
     expect(screen.queryByLabelText(gizliAd("OZ2_ESKI"))).toBeNull();
     expect(screen.getByLabelText(gizliAd("OZ3_ESKI")).value).toBe("abc");
@@ -175,7 +176,7 @@ describe("Spec 0093: süzgeç satırı ve boş durumlar (R4, R7)", () => {
     expect(kayitli()).toEqual({ AK100: 3, AK200_ESKI: 7, OZ2_ESKI: 2 });
   });
   it("AC-11 / AC-11/2 / AC-28: katalog boşken 'Tanımlı makina modeli yok'; sayılı metin yok; bulunamayan bölümü ve Kaydet çizilir", () => {
-    render(<H std={[]} ozel={[]} gizli={[]} partiler={[{ id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: "2026-12", planlananAdetler: { SILINEN: 5 } }]} />); pencereAc();
+    render(<H std={[]} ozel={[]} gizli={[]} partiler={[{ id: 1, ad: "Yaz", baslangicAy: "2026-01", bitisAy: null, planlananAdetler: { SILINEN: 5 } }]} />); pencereAc();
     const b = screen.getByTestId("bos-plan-model");
     expect(b.textContent).toContain(PLAN_BOS_MODEL.baslik);
     expect(b.textContent).toContain(PLAN_BOS_MODEL.metin);

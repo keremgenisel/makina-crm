@@ -217,6 +217,8 @@ görebiliyor. Rakamın neyi kapsamadığı (stoktan çekilen parçaların maliye
   yalnız havuzları geriye dönük sürprizden korur, ortak gider payı doğası gereği korunmaz. Rakamı
   dondurmak bu spec'in salt okunur olma kararını (C4) bozacağı için kabul edilmiştir; maliyetin
   gösterildiği ekranda "bugünkü veriye göre hesaplanmıştır" notu bulunur.
+  *(Spec 0136 ile ters çevrildi: Makina Maliyeti'nde kapanmış üretim partisinin makina maliyeti kapanış anında
+  dondurulur ve kaydedilir (`uretim_partileri.kapanisMaliyeti`); bugünkü veriyle oluşan fark ayrı kutuda gösterilir.)*
 - **C9.** Hesap, makina, havuz ve ay üçlüsünü **tek geçişte** çözer; her makina için bütün kalemleri
   yeniden taramaz. Arayüz sonucu memoize eder. Bu projede binlerce kayıt var ve maliyet ekranı her
   açılışta yeniden hesaplanacak.

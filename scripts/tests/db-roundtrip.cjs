@@ -1054,6 +1054,34 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0135 AC-77: boş olarak yazılan kalem listesi gövdede yok", !("maliyetKalemleri" in c.parts.find(p => p.id === 8)));
 }
 
+// ── Spec 0136 R19, R19/2, C4, AC-42, AC-44, AC-48, AC-49: kapanış maliyet görüntüsü (`kapanisMaliyeti`) JSON sütunda. Dolu görüntü
+// bütün alanlarıyla geri gelir; boş haritalı ama markörlü görüntü yazılır; görüntüsüz partinin gövdesinde anahtar yok (null da değil).
+{
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  const tam = { kapanisGunu: "2026-04-02", makinalar: { "stok:1": { direktK: 2600, eksikSayisi: 0, payK: 150001, tarihsiz: false }, "musteri:11": { direktK: null, eksikSayisi: 0, payK: 150000, tarihsiz: true, neden: "modelYok" } },
+    planlar: { OZ: { direktK: 1500, eksikSayisi: 1 } }, havuzK: 600001, makinaBasiK: 150000, adet: 2, durum: "tamam", neden: null };
+  const bosHarita = { kapanisGunu: "2026-04-02", makinalar: {}, planlar: {}, havuzK: 0, makinaBasiK: null, adet: 0, durum: "makinaYok", neden: "Bağlı makina yok." };
+  const partiler = [
+    { id: 91, ad: "Dolu", baslangicAy: "2026-01", bitisAy: "2026-03", kapanmaZamani: "2026-04-02T09:00:00", kapanisMaliyeti: tam },
+    { id: 92, ad: "Boş", baslangicAy: "2026-01", bitisAy: "2026-01", kapanmaZamani: "2026-04-02T09:00:00", kapanisMaliyeti: bosHarita },
+    { id: 93, ad: "Görüntüsüz", baslangicAy: "2026-01", bitisAy: "2026-02", kapanmaZamani: "2026-03-01T09:00:00" },
+    { id: 94, ad: "Açık", baslangicAy: "2026-04", bitisAy: null },
+  ];
+  dbmod.writeBlobToDb({ uretimPartileri: partiler });
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ps = ham.prepare(`SELECT id, kapanisMaliyeti FROM uretim_partileri`).all();
+  ham.close();
+  check("spec 0136 AC-44: görüntüsüz partide sütun NULL", ps.find(r => r.id === 93)?.kapanisMaliyeti === null && ps.find(r => r.id === 94)?.kapanisMaliyeti === null);
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  const bul = (id) => c.uretimPartileri.find(p => p.id === id);
+  check("spec 0136 AC-42 / AC-47: görüntünün bütün alanları birebir geri gelir (kuruş, null, neden)", esit(bul(91).kapanisMaliyeti, tam));
+  check("spec 0136 AC-48: boş haritalı markörlü görüntü yazılır ve okunur", esit(bul(92).kapanisMaliyeti, bosHarita));
+  check("spec 0136 AC-49: görüntüsüz partinin gövdesinde anahtar yok (null da değil)", !("kapanisMaliyeti" in bul(93)) && !("kapanisMaliyeti" in bul(94)));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

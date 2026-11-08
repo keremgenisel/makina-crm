@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { uid, simdiYerel } from "../../lib/utils";
-import { partiDogrula, partiKapanisUygula, partiMakinaSayisi } from "../../lib/uretimPartisi";
-import { kurusMetni, PARTI_DURUM } from "../../lib/makinaStandartMaliyet";
+import { partiDogrula, partiKapanisUygula, partiMakinaSayisi, kapanisMaliyetiOf, partiDondurmaDurumu, DONDURMA, kapanisTarihiMetni, DONDURULMADI_KISA,
+  DONDURULMADI_IBARESI, kapanistaAdetMetni, YENIDEN_ACMA_ONAYI, YENIDEN_ACMA_BASLIGI, KAPANIS_DONDU_BILDIRIMI, kapanisAraligiAyniMi, ARALIK_DEGISIM_BASLIGI,
+  ARALIK_DEGISIM_ONAYI, KAPANIS_YENIDEN_DONDU_BILDIRIMI, SAPMA_BASLIGI, SAPMA_ALT_BASLIGI, SAPMA_DUZELTME,
+  SAPMA_DIREKT_ETIKETI, SAPMA_PAY_ETIKETI, DEGISIM_BASLIGI, DEGISIM_ALT_BASLIGI } from "../../lib/uretimPartisi";
+import { kurusMetni, PARTI_DURUM, partiGosterimi, partiMaliyetSapmalari } from "../../lib/makinaStandartMaliyet";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
@@ -23,10 +26,11 @@ const ayAdi = (ay) => { if (!ay) return ""; const [y, m] = ay.split("-").map(Num
 export const PARTI_BASLIK_CUMLESI = "Parti parti üretimde, partinin sürdüğü ayların genel gideri (rolü “Genel gidere girer” olan türler) o ayın hak sahiplerine makina adediyle bölünür; o ay üretilmiş partisiz makinalar da birer pay alır. Makinalar stok kaydından partiye bağlanır; satılınca bağ satış kaydında korunur.";
 export const PARTI_BOS_METNI = "Partisiz makinalar da üretildikleri ayın genel gider bölünmesinde birer pay alır.";
 
-export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stock = [], customers = [], partiSonucu = null, kapanisHavuzu = null, canDo = () => true, showToast = () => {}, serverPermissions }) => {
+export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stock = [], customers = [], partiSonucu = null, kapanisHavuzu = null, kapanisGoruntusu = null, sapmaGirdisi = null, bugun = null, canDo = () => true, showToast = () => {}, serverPermissions }) => {
   const [form, setForm] = useState(null);
   const [hatalar, setHatalar] = useState({});
   const [sil, setSil] = useState(null);
+  const [acmaOnayi, setAcmaOnayi] = useState(null);
   // Spec 0064 R4: üretim partisi formu ve silme onayı aynı partinin kilidini paylaşır (yeni partide kilit yok).
   const kilitId = form?.id ?? sil?.p?.id ?? null;
   const { lockConflict: partiKilidi, forceAcquire: partiKilidiDevral } = useLock("uretim_partisi", kilitId);
@@ -37,27 +41,43 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
   // 0090 öncesi kapanmış partinin eski görüntüsü okunmaz). Metin, başlık ve testId aynı.
   const ad = new Map(uretimPartileri.map(p => [String(p.id), p.ad]));
   const partiDegisimleri = (partiSonucu?.partiler || []).filter(p => p.degisimler.length);
+  // Spec 0136 R13–R15, R21, R25 (plan turu Karar 45): direkt maliyet ve partinin kendi payının sapması tek useMemo'da, opt-in
+  // motordan; kutu bugünkü ay havuzu satırlarına bu satırları ekler. Görüntüsüz veride kutunun metni bugünkü gibi (Karar 47).
+  const sapmalar = useMemo(() => (sapmaGirdisi ? partiMaliyetSapmalari(sapmaGirdisi.veri, { katalog: sapmaGirdisi.katalog, modeller: sapmaGirdisi.modeller, partiSonucu }) : []),
+    [sapmaGirdisi, partiSonucu]);
+  const partiKaydi = new Map(uretimPartileri.map(p => [String(p.id), p]));
+  const kutudaDonmus = sapmalar.length > 0 || partiDegisimleri.some(p => kapanisMaliyetiOf(partiKaydi.get(String(p.id))));
   const yetki = canDo("gider_tanim");
 
   const ac = (p) => { setHatalar({}); setForm(p ? { ...BOS, ...p } : { ...BOS }); };
   const kaydet = () => {
-    const { hatalar: h, kayit } = partiDogrula(form, uretimPartileri);
+    const { hatalar: h, kayit } = partiDogrula(form, uretimPartileri, bugun);
     setHatalar(h);
     if (!kayit) return;
     const yeni = form.id == null;
     const eski = yeni ? null : uretimPartileri.find(p => p.id === form.id);
+    // Spec 0136 R11/2, R23 (AC-72, AC-73): dondurulmuş partinin bitişi silinirken onay sorulur; iptal edilirse kayıt değişmez.
+    // Triyaj (bulgu 2, Karar 52): aralık (başlangıç ya da bitiş) değişince de sorulur, çünkü maliyet yeniden dondurulur.
+    if (kapanisMaliyetiOf(eski) && !kapanisAraligiAyniMi(eski, kayit)) { setAcmaOnayi({ eski, kayit, acma: !kayit.bitisAy }); return; }
+    yaz(eski, kayit, yeni);
+  };
+  const yaz = (eski, kayit, yeni) => {
     // Spec 0090 R23, R26, R37: bitiş girilince (ya da aralık değişince) ayların genel gider havuzu anlık görüntü olarak
     // yazılır; harita yoksa ya da bir ay haritada yoksa kayıt yapılmaz ve nedeni söylenir (sessizce boş görüntü yazılmaz).
     // Triyaj (bulgu 2): harita kaydedilen partinin aralığından (kapanisHavuzu); verilmezse motor sonucunun haritası.
-    const yeniKayit = { ...kayit, id: form.id ?? uid() };
+    const yeniKayit = { ...kayit, id: eski?.id ?? form?.id ?? uid() };
     const havuz = kapanisHavuzu ? kapanisHavuzu(yeniKayit) : partiSonucu ? { aylar: partiSonucu.aylar, yururlukAy: partiSonucu.yururlukAy } : null;
-    const sonuc = partiKapanisUygula(eski, yeniKayit, havuz, simdiYerel());
+    // Spec 0136 R1/2, R20 (Karar 36): maliyet görüntüsü kaydedilecek kayıtla; geri çağırım yoksa (eski çağıran) 0090 davranışı.
+    // Triyaj (bulgu 3): aralığı değişmeyen düzenlemede görüntü kullanılmaz, hesaplanmaz.
+    const goruntu = kapanisGoruntusu && yeniKayit.bitisAy && !kapanisAraligiAyniMi(eski, yeniKayit) ? kapanisGoruntusu(yeniKayit) : undefined;
+    const sonuc = partiKapanisUygula(eski, yeniKayit, havuz, simdiYerel(), goruntu);
     if (sonuc.hata) { showToast(sonuc.hata, "err"); return; }
     const son = sonuc.kayit;
     setUretimPartileri(p => (yeni ? [...p, son] : p.map(x => (x.id === son.id ? son : x))));
     logAction({ serverPermissions, action: yeni ? "olusturuldu" : "duzenlendi", entity: "uretim_partisi", entityId: son.id, entityName: son.ad });
     setForm(null);
-    showToast(yeni ? "Üretim partisi eklendi." : son.bitisAy && !eski?.bitisAy ? "Parti kapatıldı: maliyetlerdeki “geçici” ibaresi kalktı." : "Üretim partisi güncellendi.");
+    const kapandi = son.bitisAy && son.kapanmaZamani && son.kapanmaZamani !== eski?.kapanmaZamani;
+    showToast(yeni && !kapandi ? "Üretim partisi eklendi." : kapandi && kapanisMaliyetiOf(son) ? (kapanisMaliyetiOf(eski) ? KAPANIS_YENIDEN_DONDU_BILDIRIMI : KAPANIS_DONDU_BILDIRIMI) : son.bitisAy && !eski?.bitisAy ? "Parti kapatıldı: maliyetlerdeki “geçici” ibaresi kalktı." : yeni ? "Üretim partisi eklendi." : "Üretim partisi güncellendi.");
   };
   const silOnayla = () => {
     const zaman = new Date().toISOString();
@@ -89,16 +109,24 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
             </tr></thead>
             <tbody>
               {sirali.map(p => {
-                const o = ozet.get(String(p.id));
+                const canli = ozet.get(String(p.id));
+                // Spec 0136 R10/2, R22: havuz, makina başı pay, durum ve neden görüntüden; adet canlı, kapanıştaki adet ayrıca.
+                const o = partiGosterimi(canli, p);
                 const acik = !p.bitisAy;
+                const dondurulmadi = partiDondurmaDurumu(p) === DONDURMA.DONDURULMADI;
                 return (
                   <tr key={p.id} data-testid="parti-satiri">
                     <td style={td}><b>{p.ad}</b>{p.aciklama && <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginTop: 2 }}>{p.aciklama}</div>}</td>
                     <td style={{ ...td, whiteSpace: "nowrap" }}>{ayAdi(p.baslangicAy)} – {acik ? "sürüyor" : ayAdi(p.bitisAy)}</td>
-                    <td style={td}>{acik ? <Rozet renk="turuncu" title="Parti kapanınca maliyetlerdeki geçici ibaresi kalkar">Açık · geçici</Rozet> : <Rozet renk="yesil">Kapalı</Rozet>}</td>
+                    <td style={td}>{acik ? <Rozet renk="turuncu" title="Parti kapanınca maliyetlerdeki geçici ibaresi kalkar">Açık · geçici</Rozet> : <>
+                      <Rozet renk="yesil">Kapalı</Rozet>
+                      {kapanisTarihiMetni(p.kapanmaZamani) && <div data-testid="parti-kapanis-tarihi" style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 3, whiteSpace: "nowrap" }}>{kapanisTarihiMetni(p.kapanmaZamani)}</div>}
+                      {dondurulmadi && <div data-testid="parti-dondurulmadi" title={DONDURULMADI_IBARESI} style={{ fontSize: 11, color: "var(--amb700, #b45309)", marginTop: 2 }}>{DONDURULMADI_KISA}</div>}
+                    </>}</td>
                     {/* Spec 0090 R31: dört hücre yalnız motor nesnesinden (adet, neden ipucu, havuz, makina başı pay). */}
                     <td style={{ ...td, textAlign: "right" }} data-testid="parti-adet">
                       <b>{o ? o.adet : "—"}</b>
+                      {o?.kapanisAdet != null && o.kapanisAdet !== o.adet && <div data-testid="parti-kapanis-adet" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{kapanistaAdetMetni(o.kapanisAdet)}</div>}
                       {o?.durum === PARTI_DURUM.MAKINA_YOK && <Ipucu>{o.neden}</Ipucu>}
                     </td>
                     <td style={{ ...td, textAlign: "right", fontVariantNumeric: "tabular-nums" }} data-testid="parti-havuz">
@@ -122,8 +150,8 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
         </KartBolum>
       )}
 
-      {partiDegisimleri.length > 0 && (
-        <KartBolum varyant="kart" baslikStili="baslik" title="Kapanmış partilerin aylarında değişen ortak gider" altBaslik="Parti kapandıktan sonra bu aylara gider eklendi, değişti ya da silindi. Paylar bugünkü veriyle yeniden hesaplandı." baslikBosluk={10} baslikRengi="inherit" testId="parti-degisimleri">
+      {(partiDegisimleri.length > 0 || sapmalar.length > 0) && (
+        <KartBolum varyant="kart" baslikStili="baslik" title={kutudaDonmus ? SAPMA_BASLIGI : DEGISIM_BASLIGI} altBaslik={kutudaDonmus ? SAPMA_ALT_BASLIGI : DEGISIM_ALT_BASLIGI} baslikBosluk={10} baslikRengi="inherit" testId="parti-degisimleri">
           {partiDegisimleri.flatMap(p => p.degisimler.map(d => (
             <div key={`${p.id}-${d.ay}`} style={satirStil} data-testid="parti-degisim-satiri">
               <span style={{ color: "var(--n600, #475569)" }}>{d.ay}</span>
@@ -131,6 +159,14 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
               <b style={{ textAlign: "right" }}>{d.artti ? "+ " : "− "}{kurusMetni(d.farkMutlakK)}</b>
             </div>
           )))}
+          {sapmalar.flatMap(s => [["direkt", SAPMA_DIREKT_ETIKETI, s.direkt], ["pay", SAPMA_PAY_ETIKETI, s.pay]].filter(x => x[2]).map(([tur, etiket, d]) => (
+            <div key={`${s.id}-${tur}`} style={satirStil} data-testid={`parti-sapma-${tur}`}>
+              <span style={{ color: "var(--n600, #475569)" }}>{etiket}</span>
+              <span><b>{s.ad}</b> <span style={{ color: "var(--amb700, #b45309)", fontSize: 12 }}>· kapanışta {kurusMetni(d.kapanistaK)}, bugün {kurusMetni(d.bugunK)}</span></span>
+              <b style={{ textAlign: "right" }}>{d.artti ? "+ " : "− "}{kurusMetni(d.farkMutlakK)}</b>
+            </div>
+          )))}
+          {kutudaDonmus && <div data-testid="sapma-duzeltme" style={{ paddingTop: 8 }}><Ipucu>{SAPMA_DUZELTME}</Ipucu></div>}
         </KartBolum>
       )}
 
@@ -140,7 +176,7 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
         </Modal>
       )}
       {form && !kilitli && (
-        <Modal title={form.id == null ? "Yeni Üretim Partisi" : "Üretim Partisini Düzenle"} onClose={() => setForm(null)} wide
+        <Modal title={form.id == null ? "Yeni Üretim Partisi" : "Üretim Partisini Düzenle"} onClose={() => { if (acmaOnayi) return; setForm(null); }} wide
           footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={() => setForm(null)}>İptal</Btn><Btn onClick={kaydet}><Icon name="check" size={14} /> Kaydet</Btn></div>}>
           <Field label="Parti adı veya numarası *"><Input aria-label="Parti adı" value={form.ad} onChange={e => setForm(f => ({ ...f, ad: e.target.value }))} placeholder="Örn. 2026-1" /><HataMetni>{hatalar.ad}</HataMetni></Field>
           <div style={{ display: "flex", gap: 12 }}>
@@ -155,6 +191,11 @@ export const UretimPartileri = ({ uretimPartileri = [], setUretimPartileri, stoc
           </div>
           <Field label="Açıklama"><Input aria-label="Açıklama" value={form.aciklama || ""} onChange={e => setForm(f => ({ ...f, aciklama: e.target.value }))} placeholder="Opsiyonel (ör. 70 makinalık bahar üretimi)" /></Field>
         </Modal>
+      )}
+      {acmaOnayi && (
+        <ConfirmDialog title={acmaOnayi.acma ? YENIDEN_ACMA_BASLIGI : ARALIK_DEGISIM_BASLIGI} message={acmaOnayi.acma ? YENIDEN_ACMA_ONAYI : ARALIK_DEGISIM_ONAYI}
+          confirmLabel={acmaOnayi.acma ? "Bitiş ayını sil" : "Yeniden dondur"}
+          onConfirm={() => { const { eski, kayit } = acmaOnayi; setAcmaOnayi(null); yaz(eski, kayit, false); }} onCancel={() => setAcmaOnayi(null)} />
       )}
       {sil && !kilitli && (
         <ConfirmDialog title="Üretim partisi silinsin mi?"
