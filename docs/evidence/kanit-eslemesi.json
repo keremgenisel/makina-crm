@@ -3275,28 +3275,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-app",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-musteri",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-servispano",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-fiyat-0133",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -8192,190 +8188,159 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-0096-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-0096-yetkisiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-maliyetsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-kirilim",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0096-tutarsiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0097-gecmis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0097-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-ekle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-elle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0099-yetkisiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0115-ipucu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0121-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0121-set",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0122-panel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0123-sil",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0125-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0132-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0132-malzeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0133-fark",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0133-kart",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0133-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0133-neden",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0133-set",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0133-suzgec",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0133-toplu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0133-zarar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartTypeManager.jsx": [
@@ -11500,22 +11465,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-0133-fiyat",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat-cevrimdisi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MalzemeFiyatPenceresi.jsx": [
@@ -11530,22 +11492,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-0133-fiyat",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat-cevrimdisi",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MalzemeSatiriAlani.jsx": [
@@ -11669,28 +11628,24 @@
     ],
     "src/components/settings/SettingsFiyat.jsx": [
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-fiyat-0133",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-fiyat-0133-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-fiyat-0133-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0133-piksel-raporu.json",
+        "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-fiyat-0133-zarar",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0133 Karar 39"
+        "beklenen": "ayni"
       }
     ]
   }

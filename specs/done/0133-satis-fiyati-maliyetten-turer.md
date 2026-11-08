@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-05); plan turu Karar 29–40 (2026-11-08) |
+| **Durum** | Tamamlandı (2026-11-08, commit `7249fbb7`; plan turu Karar 29–40, uygulama Karar 41–43, triyaj Karar 44–49) |
 | **Sahip** | Analist (yazım) · geliştirici (uygulama) |
 | **Onaylayan** | Takım Yöneticisi |
 | **QA turu** | 2026-11-08, 28 bulgu (4 Bloklayıcı / 13 Önemli / 11 Küçük); hepsi onaylandı ve işlendi |
@@ -469,41 +469,59 @@ Triyaj (2026-11-08):
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Hesap React'sız **saf fonksiyonda** yazıldı ve kendi testi var; arayüz yalnız gösteriyor.
-- [ ] Satış fiyatının **tek okuma yolu** kuruldu ve kaynak taramasıyla sabitlendi; fiyat alanlarını doğrudan okuyan gösterim satırı kalmadı.
-- [ ] Yol **yeni bir saf modülde** (`src/lib/parcaFiyati.js`) duruyor; yedi satış dosyasında maliyet alanının ve maliyet motorunun adı geçmiyor, 0087 AC-6'nın dosya listesi korundu ve fiyat yarısı "spec 0133 ile" ters çevrildi.
-- [ ] Kâr katını ve yuvarlamayı uygulayan çarpımın **tek yeri** taramayla sabitlendi; makina tarafının öneri fiyatı gerekçeli istisna olarak yazılı.
-- [ ] Prop zinciri kuruldu (malzeme listesi Müşteriler, Stok ve Evrak'a; uygulama ayarı iki satış formuna) ve zincirin kesilmesi testle ölçüldü.
-- [ ] Panonun ayrı penceresi ile kiosk türetilmiş fiyatı gösteriyor; malzeme listesi köprüde **salt okunur** ve yazılabilir bölümlere girmedi.
-- [ ] Katın doğrulayıcısı belirsiz sayıyı reddediyor, üst sınırı 100 ve en çok üç ondalık; varsayılan kat ile parçanın katı aynı fonksiyondan geçiyor.
-- [ ] Yuvarlamanın yönü ekran metninde yazılı ve "en yakın" ile ayrımı bir kriterle ölçüldü.
-- [ ] Varsayılan kat temiz kurulumda boş; 2,77 yalnız öneri olarak gösteriliyor.
-- [ ] Türetilmiş fiyat kuruş hesaplanıyor, gösterimi tek yardımcıdan geliyor ve setin bileşen fiyatı toplamı bugünkü gibi tam lira kaldı.
-- [ ] Maliyete bağlı kipte setin fiyat düğmesi pasif ve nedeni yazıyor; setin fiyatı maliyetinden türüyor.
-- [ ] Zam penceresinin etki hesabı **opt-in** parametreyle genişledi; parametresiz dönüş altın dosyayla birebir aynı.
-- [ ] Excel'e kip sütunu eklenmedi (X9) ve içe aktarma bildirimi yalnız değer farklıysa yazılıyor.
-- [ ] Toplu kip değiştirme süzülmüş listenin bütününde çalışıyor; satır seçimi eklenmedi (X10, tarama).
-- [ ] Kayıt fonksiyonu kip ile katı her çağrıda siliyor ve maliyete bağlı kipte TL fiyatı formdan okumuyor; kaydedilen gövdeyle ölçüldü.
-- [ ] Yeni ayar alanı sunucunun ayar alanı eşlemesinde açıkça listelendi ve yeni eylem izni eklenmemesinin bedeli yazıldı.
-- [ ] Ayar kendi panelinde ("Fiyat Ayarları") yaşıyor ve panel Ayarlar kilit listesinde; bugünkü "Uygulama" paneli yazıcı prop'u almıyor.
-- [ ] Fiyatın yokluğunun nedenleri tek sabit kümesinden geliyor ve her ekrandaki yeri kriterle sabitlendi.
-- [ ] Fiyat listesinin kurucusu kendi modülünde, kapsamı süzülmüş canlı parçalar ve sırası katalog sırası.
-- [ ] Türetme bugünkü maliyetten yapılıyor (çağrı ölçüldü); tarihli maliyet sorgusu yalnız maliyet tarafında kaldı.
-- [ ] Zarar uyarısı kaydı engellemiyor, hata biçiminde çizilmiyor ve listede rozet basılmıyor.
-- [ ] Maliyetin tek okuma yoluna fiyat kavramı sızmadı (tarama).
-- [ ] Yeni kalıcı alanlarda **dört nokta kuralı** uygulandı ve `db-roundtrip` ile `db-clean-install` testlerine eklendi; boş değerin gövdeye yazılmadığı ölçüldü.
-- [ ] Yeni veri bölümü **yok** ve bu açıkça yazıldı.
-- [ ] Yeni eylem izni **eklenmedi** ve bu açıkça yazıldı; yetkisiz kullanıcının türetilmiş fiyatı gördüğü ölçüldü.
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı **yalnız Türkçe** ve gerekçesi spec'te yazılı.
-- [ ] Para kuralına uyuldu: türetme yalnız TL, döviz elle, tanınmayan para birimi tanımlı biçimde.
-- [ ] Arayüz kriterlerinin **görsel kanıtı** eklendi, boş ve hata durumları dâhil.
-- [ ] Kıyas testi yeşil: kipi girilmemiş veride bütün fiyat rakamları ve ekran metinleri spec öncesiyle birebir aynı; kıyas kümesi yedi kalemle sayıldı (C4/2).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md` güncellendi (yeni kavram: fiyat kipi ve satış fiyatının tek okuma yolu).
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Hesap React'sız **saf fonksiyonda** yazıldı ve kendi testi var; arayüz yalnız gösteriyor.
+- [x] Satış fiyatının **tek okuma yolu** kuruldu ve kaynak taramasıyla sabitlendi; fiyat alanlarını doğrudan okuyan gösterim satırı kalmadı.
+- [x] Yol **yeni bir saf modülde** (`src/lib/parcaFiyati.js`) duruyor; yedi satış dosyasında maliyet alanının ve maliyet motorunun adı geçmiyor, 0087 AC-6'nın dosya listesi korundu ve fiyat yarısı "spec 0133 ile" ters çevrildi.
+- [x] Kâr katını ve yuvarlamayı uygulayan çarpımın **tek yeri** taramayla sabitlendi; makina tarafının öneri fiyatı gerekçeli istisna olarak yazılı.
+- [x] Prop zinciri kuruldu (malzeme listesi Müşteriler, Stok ve Evrak'a; uygulama ayarı iki satış formuna) ve zincirin kesilmesi testle ölçüldü.
+- [x] Panonun ayrı penceresi ile kiosk türetilmiş fiyatı gösteriyor; malzeme listesi köprüde **salt okunur** ve yazılabilir bölümlere girmedi.
+- [x] Katın doğrulayıcısı belirsiz sayıyı reddediyor, üst sınırı 100 ve en çok üç ondalık; varsayılan kat ile parçanın katı aynı fonksiyondan geçiyor.
+- [x] Yuvarlamanın yönü ekran metninde yazılı ve "en yakın" ile ayrımı bir kriterle ölçüldü.
+- [x] Varsayılan kat temiz kurulumda boş; 2,77 yalnız öneri olarak gösteriliyor.
+- [x] Türetilmiş fiyat kuruş hesaplanıyor, gösterimi tek yardımcıdan geliyor ve setin bileşen fiyatı toplamı bugünkü gibi tam lira kaldı.
+- [x] Maliyete bağlı kipte setin fiyat düğmesi pasif ve nedeni yazıyor; setin fiyatı maliyetinden türüyor.
+- [x] Zam penceresinin etki hesabı **opt-in** parametreyle genişledi; parametresiz dönüş altın dosyayla birebir aynı.
+- [x] Excel'e kip sütunu eklenmedi (X9) ve içe aktarma bildirimi yalnız değer farklıysa yazılıyor.
+- [x] Toplu kip değiştirme süzülmüş listenin bütününde çalışıyor; satır seçimi eklenmedi (X10, tarama).
+- [x] Kayıt fonksiyonu kip ile katı her çağrıda siliyor ve maliyete bağlı kipte TL fiyatı formdan okumuyor; kaydedilen gövdeyle ölçüldü.
+- [x] Yeni ayar alanı sunucunun ayar alanı eşlemesinde açıkça listelendi ve yeni eylem izni eklenmemesinin bedeli yazıldı.
+- [x] Ayar kendi panelinde ("Fiyat Ayarları") yaşıyor ve panel Ayarlar kilit listesinde; bugünkü "Uygulama" paneli yazıcı prop'u almıyor.
+- [x] Fiyatın yokluğunun nedenleri tek sabit kümesinden geliyor ve her ekrandaki yeri kriterle sabitlendi.
+- [x] Fiyat listesinin kurucusu kendi modülünde, kapsamı süzülmüş canlı parçalar ve sırası katalog sırası.
+- [x] Türetme bugünkü maliyetten yapılıyor (çağrı ölçüldü); tarihli maliyet sorgusu yalnız maliyet tarafında kaldı.
+- [x] Zarar uyarısı kaydı engellemiyor, hata biçiminde çizilmiyor ve listede rozet basılmıyor.
+- [x] Maliyetin tek okuma yoluna fiyat kavramı sızmadı (tarama).
+- [x] Yeni kalıcı alanlarda **dört nokta kuralı** uygulandı ve `db-roundtrip` ile `db-clean-install` testlerine eklendi; boş değerin gövdeye yazılmadığı ölçüldü.
+- [x] Yeni veri bölümü **yok** ve bu açıkça yazıldı.
+- [x] Yeni eylem izni **eklenmedi** ve bu açıkça yazıldı; yetkisiz kullanıcının türetilmiş fiyatı gördüğü ölçüldü.
+- [x] Kullanıcıya görünen tüm metinler Türkçe; yazdırma çıktısı **yalnız Türkçe** ve gerekçesi spec'te yazılı.
+- [x] Para kuralına uyuldu: türetme yalnız TL, döviz elle, tanınmayan para birimi tanımlı biçimde.
+- [x] Arayüz kriterlerinin **görsel kanıtı** eklendi, boş ve hata durumları dâhil.
+- [x] Kıyas testi yeşil: kipi girilmemiş veride bütün fiyat rakamları ve ekran metinleri spec öncesiyle birebir aynı; kıyas kümesi yedi kalemle sayıldı (C4/2).
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md` güncellendi (yeni kavram: fiyat kipi ve satış fiyatının tek okuma yolu).
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+
+
+## SCORECARD
+
+| Ölçüt | Değer | Not |
+|---|---|---|
+| **Uygulama commit** | `7249fbb7` | Dal `feat/0133-satis-fiyati`, taban `fd589a0d`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 4 | QA turu (28 bulgu), plan turu (Karar 29–40), uygulama (Karar 41–43), triyaj (Karar 44–49) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: yedi bulgu, bir bilgi maddesi |
+| **Bulgu gerçek/gürültü oranı** | 7 / 0 | Biri önemli (varsayılan kat boşken toplu bağlama bütün fiyatları boşaltıyordu), altısı küçük (denetim izi istemcide kayboluyordu, iki bozma kaçtı, fiyat listesi firmasız, iki yolda farklı kat kuralı, yarım kuruş, form sıfırlanması) |
+| **Regresyon sayısı** | 0 | Tam takım 488 dosya, 6854 test (Electron dahil); lint 0 hata, uyarı 62 (tabanla aynı) |
+| **Kaçan hata** | 0 | |
+
+**Uygulamada bulunanlar:** `malzeme.js` ↔ `parcaFiyati.js` döngüsel içe aktarması modül düzeyindeki takma adı `undefined` bıraktı ve belirsiz kat sessizce kabul edildi (birim testi yeşildi, ekran testi farklı yükleme sırasıyla yakaladı; Karar 41). Boşaltılan fiyat ayarı 0091'in iki dersiyle yazıldı (Karar 43). Kıyas altını (`0133-once.json`) ve etki altını (`0133-etki-once.json`) spec öncesi kodda ayrı bir çalışma kopyasında yeniden üretilip birebir doğrulandı. Mutasyon ölçümü: uygulamada yedi bozma (biri, `tlKoru`'nun kaldırılması, kaçtı; test elle kipte TL değiştirip sonra bağlayacak şekilde güçlendirildi), triyajda altı bozma, hepsi yakalandı.
+
+**Görsel kanıt:** değişen küme iki taban × iki sonra çekiminin çapraz karşılaştırmasıyla: 41 ekran (82 görüntü; 28 ekran parça paneline süzgeç ve toplu işlem satırı, Uygulama menüsüne yeni öğe ve zam penceresinin fiyat sütunları yüzünden değişti, 13 ekran yeni). Malzeme ekranlarındaki 96–192 piksellik açılır liste oku gürültüsü yeniden çekimle ayıklandı. Taban son kodla 82 görüntüde 0 fark; beş dosyadaki 45 `degisti` kaydı kapanışta `ayni` ve `0133-taban-piksel-raporu.json`'a çevrildi.
+
+**Bu spec'ten çıkarılan ders:** iki modül birbirini içe alıyorsa karşı modülden gelen ad yalnız çağrı anında okunmalı; modül düzeyindeki bir takma ad yükleme sırasına bağlı olarak boş kalır ve bunu yalnız farklı sırayla yükleyen bir test görür. İkinci ders: ayar "boş doğar" kararı veriliyorsa, o ayara dayanan toplu işlem de boşken kapatılmalı; yoksa ilk günün ilk tıklaması bütün veriyi geçersiz kılar.
 
 ---
 

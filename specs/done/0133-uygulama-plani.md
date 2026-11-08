@@ -1,6 +1,6 @@
 # 0133 uygulama planı: satış fiyatının maliyetten türemesi
 
-Spec: `specs/0133-satis-fiyati-maliyetten-turer.md` (QA turu 28 bulgu, plan turu Karar 29–40). Dal `feat/0133-satis-fiyati` (`../wt0133`), taban main `fd589a0d`. Plan Takım Yöneticisi'nin 2026-11-08 onayıyla; on iki önerinin hepsi kabul edildi.
+Spec: `specs/done/0133-satis-fiyati-maliyetten-turer.md` (QA turu 28 bulgu, plan turu Karar 29–40). Dal `feat/0133-satis-fiyati` (`../wt0133`), taban main `fd589a0d`. Plan Takım Yöneticisi'nin 2026-11-08 onayıyla; on iki önerinin hepsi kabul edildi.
 
 ## 1. Dosyalar
 
