@@ -1,6 +1,6 @@
 # 0137 uygulama planı: dış işlem kataloğu ve işlem bedelinin zam zinciri
 
-Spec: `specs/0137-dis-islem-katalogu.md` (QA turu 32 bulgu, plan turu Karar 33–46). Dal `feat/0137-dis-islem` (`../wt0137`), taban main `5d2f4285`. Plan Takım Yöneticisi'nin 2026-11-08 onayıyla; on dört önerinin hepsi kabul edildi.
+Spec: `specs/done/0137-dis-islem-katalogu.md` (QA turu 32 bulgu, plan turu Karar 33–46). Dal `feat/0137-dis-islem` (`../wt0137`), taban main `5d2f4285`. Plan Takım Yöneticisi'nin 2026-11-08 onayıyla; on dört önerinin hepsi kabul edildi.
 
 ## 1. Dosyalar
 

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | **Onaylandı** (2026-11-08; plan turu Karar 33–46 aynı gün onaylandı) |
+| **Durum** | **Tamamlandı** (2026-11-08, commit `85fcb759`; plan `specs/done/0137-uygulama-plani.md`, plan turu Karar 33–46, triyaj 47–48) |
 | **Sahip** | Analist (yazdı), geliştirme atanmadı |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog (yeni panel), parça kartının maliyet kalemleri, maliyetin tek okuma yolu (`urunAgaci.parcaMaliyetKurus`), parçanın maliyet geçmişi (`maliyetGecmisiYaz`), setin özeti (`setOzeti`), malzeme zammının etki önizlemesi (`malzeme.fiyatEtkisi`), Makina Maliyeti (Model Maliyetleri, Parti Hesabı), satış fiyatı türetmesi (`parcaFiyati`), Excel dışa ve içe aktarma (`SettingsExport`, `SettingsImport`), tedarikçi koruması, çöp kutusu, İşlem Geçmişi etiketleri, kayıt kilidi, yeni veri bölümü |
@@ -587,10 +587,15 @@ Takım Yöneticisi planın bütün önerilerini aynı gün onayladı. Spec'te ya
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `85fcb759` | Dal `feat/0137-dis-islem`, taban `5d2f4285`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (32 bulgu), plan turu (Karar 33–46), triyaj (Karar 47–48) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: bir orta, bir küçük bulgu |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | Malzeme zammı penceresi dış işlem listesini almıyordu (karma parça ekranda yine sayılmıyordu); çöpteki adet birimli işlemin miktarı kilo kuralıyla doğrulanıyordu |
+| **Regresyon sayısı** | 0 | Tam takım 489 dosya, 7096 test ve Electron 14 dosya; lint 0 hata, uyarı 62 (tabanla aynı) |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** belirsiz sayı kuralı döngüsüz `tutarGirdisi.js`'e taşındı (dış işlem motoru malzemeyi içe almadan okusun); kilo yuvarlaması iki yerdeydi ve mutasyon ölçümü bunu gösterdi, tek yere indi; Makina Maliyeti'ndeki boş liste varsayılanı her çizimde yeni dizi üretip 0136'nın sapma sayacını yeniden koşturuyordu, sabit referansa çevrildi; Giderler'e eklenen prop sözlüğün satır atıflarını kaydırmasın diye aynı satıra alındı. Kıyas altını (`0137-once.json`) spec öncesi kodla üretildi; katalog kalemsiz veride bütün çıktılar birebir aynı. Mutasyon ölçümü: uygulamada on sekiz bozma (iki tur), triyajda iki bozma, hepsi yakalandı.
+
+**Görsel kanıt:** 74 ekran (148 görüntü): 61 eski ekran değişti (Katalog menüsündeki yeni öğe, serbest işlem kalemindeki çeşit seçicisi, yeni boş durum metni, yedek paketi cümlesi), 13 ekran yeni. Taban eski kodla ayrı çalışma kopyasında çekildi; iki ekranın taban çekimi adım atlamıştı ve yeniden çekildi; saat metni taşıyan iki Stok kilit ekranı rapor dışı. Kapanışta son kod onaylı 148 görüntünün hepsiyle 0 fark verdi (`0137-taban-piksel-raporu.json`; ara bir kararlılık çekiminde `katalog-parca` aydınlık görüntüsünün tek seferlik gürültüsü yeniden çekimde kayboldu); 141 kayıt `ayni`ye çevrildi.
+
+**Bu spec'ten çıkarılan ders:** motorun doğru olması ekranın doğru olduğunu göstermez: zam önizlemesi motor testinde karma parçayı sayıyordu, ama listeyi pencereye taşıyan iki halka eksikti ve ekranda hiçbir şey değişmemişti. Yeni bir parametre bir prop zinciriyle ekrana iniyorsa, ölçüm o zincirin ucunda (gerçek bileşende) yapılmalı. İkinci ders: aynı kavramın iki okuyucusu (kartın birim etiketi ve doğrulama) aynı kaynaktan okumalı; biri ham, biri canlı listeden okuyunca çöpteki kayıtta ayrıştılar.
