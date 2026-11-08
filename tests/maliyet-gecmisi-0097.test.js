@@ -172,7 +172,8 @@ describe("Spec 0097: tarih doğrulaması ve düzeltme (R6, R6/3, R7, R7/2)", () 
     expect("maliyetGecmisi" in gecmisliKayit(parca({ maliyet: 5 }), null, null)).toBe(false);
     // Spec 0133 ile: kayıt fonksiyonunun temel adımı ile geçmiş adımı arasına `tlKoru` girdi (maliyete bağlı parçada saklı TL fiyatı
     // korunur, R3/2); karar hata dönerse kayıt yine hiç değişmez (`?? eski`).
-    expect(kod("src/components/PartManager.jsx")).toMatch(/gecmisliKayit\(tlKoru\(hazirlaTemel\(kayit\), eski\), eski, ek\) \?\? eski/);
+    // Spec 0135 ile (R26/2): hazırlama eski kaydı da alır (dokunulmamış maliyet alanları ondan); desen yeni imzayı arar, iddia aynı.
+    expect(kod("src/components/PartManager.jsx")).toMatch(/gecmisliKayit\(tlKoru\(hazirlaTemel\(kayit, eski\), eski\), eski, ek\) \?\? eski/);
   });
   it("AC-41: karar motoru bugünü parametre olarak alır, verilmezse hata verir (saati kendisi okumaz)", () => {
     expect(() => maliyetGecmisiYaz(parca({ maliyet: 1 }), 200, { tarih: "2026-01-01" })).toThrow(/bugun/);

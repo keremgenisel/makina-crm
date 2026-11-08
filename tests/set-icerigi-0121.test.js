@@ -113,7 +113,7 @@ describe("Spec 0121 B: maliyet", () => {
     expect(maliyetGirildiMi(SET, undefined, KAT)).toBe(true);
     expect(parcaMaliyetMetni(SET, undefined, KAT)).toBe("302,00 ₺");
     expect(maliyetKaynagi(SET, undefined, KAT)).toEqual({ tur: "icerik", n: 2 });
-    expect(maliyetKaynagi(PARCALAR[2], undefined, KAT).tur).toBe("kirilim");
+    expect(maliyetKaynagi(PARCALAR[2], undefined, KAT).tur).toBe("kalem"); // spec 0135 ile (R39): kırılım işlem kalemi
     expect(maliyetKaynagi(PARCALAR[0], undefined, KAT).tur).toBe("elle");
   });
   it("AC-7 / AC-8: çöpteki ve bulunamayan bileşen maliyeti eksik yapar; ad ham diziden iki ayrı ibareyle", () => {

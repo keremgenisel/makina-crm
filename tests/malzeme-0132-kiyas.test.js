@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import { parcaDisaAktarmaSatiri } from "../src/lib/parcaAktarma";
 import { parcaMaliyetKurus, parcaMaliyetMetni, maliyetKaynagi, maliyetGirildiMi, setKatalogu } from "../src/lib/urunAgaci";
+import { kaynakEski } from "./fixtures/0135-ayikla.js"; // spec 0135 ile: kaynak kalem diline geçti (R39)
 import { modelMaliyetleri } from "../src/lib/makinaStandartMaliyet";
 import { MALZEMELER, PARCALAR, MODELLER, TARIHLER } from "./fixtures/0132-veri";
 
@@ -16,7 +17,7 @@ const simdi = () => {
   return JSON.parse(JSON.stringify({
     maliyet: PARCALAR.map(p => TARIHLER.map(t => parcaMaliyetKurus(p, t, kat, malzemeHaritasi))),
     metin: PARCALAR.map(p => parcaMaliyetMetni(p, undefined, kat, malzemeHaritasi)),
-    kaynak: PARCALAR.map(p => maliyetKaynagi(p, undefined, kat, malzemeHaritasi)),
+    kaynak: PARCALAR.map(p => kaynakEski(maliyetKaynagi(p, undefined, kat, malzemeHaritasi))),
     girildi: PARCALAR.map(p => maliyetGirildiMi(p, undefined, kat, malzemeHaritasi)),
     disa: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, kat, malzemeHaritasi)),
     modeller: modelMaliyetleri({ ...MODELLER, parts: PARCALAR, malzemeler: MALZEMELER }, 12345),

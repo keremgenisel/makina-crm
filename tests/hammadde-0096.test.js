@@ -5,10 +5,13 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import {
-  parcaMaliyetKurus, parcaMaliyetiVar, maliyetGirildiMi, parcaMaliyetMetni, maliyetKaynagi, kirilimTutarliMi, hammaddeDogrula, hammaddeFormu,
-  hammaddeTedarikciAdi, hammaddeSecilebilirMi, SILINMIS_TEDARIKCI, BULUNAMAYAN_TEDARIKCI, TEDARIKCI_SECILMEDI, HAMMADDE_EXCEL_HATASI,
+  parcaMaliyetKurus, parcaMaliyetiVar, maliyetGirildiMi, parcaMaliyetMetni, maliyetKaynagi,
+  SILINMIS_TEDARIKCI, BULUNAMAYAN_TEDARIKCI, KALEM_EXCEL_HATASI, kalemlerDogrula, kalemleriFormu, tedarikciAdiCoz, islemTedarikciSecenekleri,
+  ISLEM_TUTAR_SAYI_HATASI, ISLEM_TUTAR_NEGATIF_HATASI,
 } from "../src/lib/urunAgaci";
-import { tedarikciKullanim, kirilimdaGecenTedarikciler } from "../src/lib/gider";
+// Spec 0135 ile (R23, R24, R32, R37/2): kırılım işlem kalemine dönüştü; koruma yardımcısı ve Excel metni kalem dilinde.
+import { maliyetKalemleriOf, kalemVarMi } from "../src/lib/maliyetKalemleri";
+import { tedarikciKullanim, kalemdeGecenTedarikciler } from "../src/lib/gider";
 import { modelMaliyetleri } from "../src/lib/makinaStandartMaliyet";
 import { parcaDisaAktarmaSatiri, parcaSatirlariniCoz, PARCA_AKTARMA_BASLIKLARI } from "../src/lib/parcaAktarma";
 import { buildMergePlan } from "../src/lib/merge";
@@ -44,19 +47,19 @@ describe("Spec 0096: tek okuma yolu (C1, C2, C9)", () => {
     const p = parca({ maliyet: 1250, hammaddeler: [satir(31, null), satir(32, null)] });
     expect(parcaMaliyetKurus(p)).toBe(125000);
     expect(maliyetKaynagi(p)).toEqual({ tur: "elle" });
-    expect(kirilimTutarliMi(p)).toBe(false);
+    expect(kalemVarMi(p)).toBe(false); // spec 0135 ile (plan turu Karar 32): tutarsız kırılım satırı kalem olmaz
   });
   it("AC-11 (motor): bir satırda tutar varken maliyet tutarlı satırların toplamı; elle değer okunmaz (R5)", () => {
     const p = parca({ maliyet: 99999, hammaddeler: [satir(31, 7000), satir(32, null)] });
     expect(parcaMaliyetKurus(p)).toBe(700000);
-    expect(maliyetKaynagi(p)).toEqual({ tur: "kirilim", n: 1 });
-    expect(hammaddeDogrula(hammaddeFormu(p.hammaddeler)).tutarsizVar).toBe(true);
+    // Spec 0135 ile (R39): kaynak kalem türüdür; tutarsız satır kalem olmadığı için bir işlem kalemi sayılır.
+    expect(maliyetKaynagi(p)).toEqual({ tur: "kalem", malzeme: 0, islem: 1 });
   });
   it("AC-43: tutarı sıfır satır girilmiş sayılır: maliyet 0,00 ₺ ve tutarsız uyarısı yok", () => {
     const p = parca({ hammaddeler: [satir(31, 0)] });
     expect(parcaMaliyetMetni(p)).toBe("0,00 ₺");
     expect(parcaMaliyetiVar(p)).toBe(true);
-    expect(hammaddeDogrula([{ tedarikciId: "31", tutar: "0" }]).tutarsizVar).toBe(false);
+    expect(kalemlerDogrula([{ tur: "islem", ad: "Hammadde alımı", tedarikciId: "31", tutar: "0" }]).uyarilar).toEqual({}); // spec 0135 ile
   });
   it("AC-16 (motor): kırılımsız ve maliyetsiz parça girilmedi; liste metni '—'", () => {
     expect(parcaMaliyetKurus(parca())).toBeNull();
@@ -65,58 +68,59 @@ describe("Spec 0096: tek okuma yolu (C1, C2, C9)", () => {
   });
 });
 
-describe("Spec 0096: doğrulayıcı (R11, R12, R23, R17/3)", () => {
-  it("AC-42: tedarikçisi ve tutarı boş satır atılır; tedarikçisi boş tutarı dolu satır 'Tedarikçi seçilmedi.'", () => {
-    const r = hammaddeDogrula([{ tedarikciId: "", tutar: "" }, { tedarikciId: "", tutar: "500" }, { tedarikciId: "31", tutar: "1.000,50" }]);
-    expect(r.hatalar).toEqual({ 1: TEDARIKCI_SECILMEDI });
-    expect(r.gecerli).toBe(false);
-    expect(r.kayit).toEqual([{ tedarikciId: 31, tutar: 1000.5 }]);
+describe("Spec 0096: doğrulayıcı (R11, R12, R23, R17/3); spec 0135 ile işlem kalemi doğrulayıcısı", () => {
+  // Spec 0135 ile (R15/2, R18, R19, R19/2): tedarikçisi boş kalem geçerlidir (fabrikanın kendi işi), aynı tedarikçi iki kalemde
+  // serbesttir; negatif ve sayıya çevrilemeyen tutar hata kalır. Kırılımın doğrulayıcısı ve form dönüştürücüsü kalktı.
+  it("AC-42 (spec 0135 ile ters çevrildi): tedarikçisi boş işlem kalemi geçerli", () => {
+    const r = kalemlerDogrula([{ tur: "islem", ad: "Büküm", tedarikciId: "", tutar: "500" }, { tur: "islem", ad: "Alım", tedarikciId: "31", tutar: "1.000,50" }]);
+    expect(r.gecerli).toBe(true);
+    expect(r.kayit).toEqual([{ tur: "islem", ad: "Büküm", tutar: 500 }, { tur: "islem", ad: "Alım", tedarikciId: 31, tutar: 1000.5 }]);
   });
   it("AC-14 (motor): negatif ve sayıya çevrilemeyen tutar satırında hata", () => {
-    const r = hammaddeDogrula([{ tedarikciId: "31", tutar: "-5" }, { tedarikciId: "32", tutar: "abc" }]);
-    expect(r.hatalar).toEqual({ 0: "Tutar negatif olamaz.", 1: "Tutar sayı olmalı." });
+    const r = kalemlerDogrula([{ tur: "islem", ad: "A", tedarikciId: "31", tutar: "-5" }, { tur: "islem", ad: "B", tedarikciId: "32", tutar: "abc" }]);
+    expect(r.hatalar).toEqual({ 0: { tutar: ISLEM_TUTAR_NEGATIF_HATASI }, 1: { tutar: ISLEM_TUTAR_SAYI_HATASI } });
   });
-  it("AC-15 (motor): aynı tedarikçi ikinci kez hata", () => {
-    expect(hammaddeDogrula([{ tedarikciId: "31", tutar: "1" }, { tedarikciId: "31", tutar: "2" }]).hatalar).toEqual({ 1: "Bu tedarikçi bu parçada zaten var." });
+  it("AC-15 (spec 0135 ile ters çevrildi): aynı tedarikçi iki işlem kaleminde serbest", () => {
+    expect(kalemlerDogrula([{ tur: "islem", ad: "Lazer", tedarikciId: "31", tutar: "1" }, { tur: "islem", ad: "Büküm", tedarikciId: "31", tutar: "2" }]).hatalar).toEqual({});
   });
   it("R17/3 (AC-6 motor yarısı): kayıt → form → kayıt gidiş dönüşü birebir (kuruş, boş tutar, sıra)", () => {
-    const kayit = [satir(31, 8000.55), satir(33, null), satir(32, 0), satir(34, 1234567.89)];
-    expect(hammaddeDogrula(hammaddeFormu(kayit)).kayit).toEqual(kayit);
+    const kayit = maliyetKalemleriOf(parca({ hammaddeler: [satir(31, 8000.55), satir(32, 0), satir(34, 1234567.89)] }));
+    expect(kalemlerDogrula(kalemleriFormu(kayit)).kayit).toEqual(kayit);
   });
 });
 
 describe("Spec 0096: tedarikçi adı çözücü (R14, R16, R16/2, R17/2)", () => {
   const ham = [{ id: 31, ad: "Demir Çelik", hammadde: true }, { id: 32, ad: "Eski Sac", hammadde: true, deletedAt: "2026-10-01" }, { id: 33, ad: "Yakıt A.Ş." }];
   it("AC-25: ad kimlikten çözülür (ad değişince yeni ad görünür, maliyet değişmez)", () => {
-    expect(hammaddeTedarikciAdi(31, ham)).toBe("Demir Çelik");
-    expect(hammaddeTedarikciAdi(31, [{ ...ham[0], ad: "Demir Çelik Sanayi" }])).toBe("Demir Çelik Sanayi");
+    expect(tedarikciAdiCoz(31, ham)).toBe("Demir Çelik");
+    expect(tedarikciAdiCoz(31, [{ ...ham[0], ad: "Demir Çelik Sanayi" }])).toBe("Demir Çelik Sanayi");
   });
   it("AC-27 / AC-39 (motor): çöpteki tedarikçinin adı çözülür ve işaretlenir; seçilebilir değil; tutar maliyete girer", () => {
-    expect(hammaddeTedarikciAdi(32, ham)).toBe(`Eski Sac (${SILINMIS_TEDARIKCI})`);
-    expect(hammaddeSecilebilirMi(ham[1])).toBe(false);
+    expect(tedarikciAdiCoz(32, ham)).toBe(`Eski Sac (${SILINMIS_TEDARIKCI})`);
+    expect(islemTedarikciSecenekleri(ham).map(t => t.id)).not.toContain(32);
     expect(parcaMaliyetKurus(parca({ hammaddeler: [satir(32, 500)] }))).toBe(50000);
   });
   it("AC-38 (motor): kaydı bulunamayan kimlik kendi metnini alır, tutar maliyete girer", () => {
-    expect(hammaddeTedarikciAdi(999, ham)).toBe(BULUNAMAYAN_TEDARIKCI);
+    expect(tedarikciAdiCoz(999, ham)).toBe(BULUNAMAYAN_TEDARIKCI);
   });
-  it("AC-26 (motor) / R4: işareti olmayan tedarikçi seçilemez; işareti kaldırılsa da kırılım ve maliyet aynı", () => {
-    expect(hammaddeSecilebilirMi(ham[2])).toBe(false);
-    expect(hammaddeSecilebilirMi(ham[0])).toBe(true);
-    expect(hammaddeTedarikciAdi(33, ham)).toBe("Yakıt A.Ş.");
+  it("AC-26 (motor) / R4, spec 0135 R17/2 ile ters çevrildi: işaretsiz tedarikçi de seçilir, işaretliler başta", () => {
+    expect(islemTedarikciSecenekleri(ham).map(t => t.id)).toEqual([31, 33]);
+    expect(tedarikciAdiCoz(33, ham)).toBe("Yakıt A.Ş.");
   });
 });
 
 describe("Spec 0096: tedarikçi kullanımı ve koruma (R13, R13/2, R13/3, R13/5)", () => {
   const parts = [parca({ id: 1, hammaddeler: [satir(31, 100)] }), parca({ id: 2, hammaddeler: [satir(31, null), satir(32, 5)] }), parca({ id: 3, deletedAt: "x", hammaddeler: [satir(31, 1)] })];
   it("AC-24 / AC-48 / AC-50 (motor): kullanım parça sayısını ve çöptekini ayrıca sayar; dördüncü parametresiz çağrı eski", () => {
-    expect(tedarikciKullanim(31, [], [], parts)).toMatchObject({ kalem: 0, tanim: 0, parca: 3, parcaCop: 1 });
+    // Spec 0135 ile (R32, plan turu Karar 32): ikinci parçada 31'in satırı tutarsız; kalem olmadığı için sayılmaz (3 → 2).
+    expect(tedarikciKullanim(31, [], [], parts)).toMatchObject({ kalem: 0, tanim: 0, parca: 2, parcaCop: 1 });
     expect(tedarikciKullanim(32, [], [], parts)).toMatchObject({ parca: 1, parcaCop: 0 });
     expect(tedarikciKullanim(31, [], [])).toMatchObject({ kalem: 0, cop: 0, tanim: 0, parca: 0, parcaCop: 0 });
   });
   it("R13/2: dört kapının tek yardımcısı; çöpteki parça da korur, kalacak parçalar verilince korumaz (AC-50)", () => {
-    expect([...kirilimdaGecenTedarikciler(parts).keys()].sort()).toEqual(["31", "32"]);
-    expect(kirilimdaGecenTedarikciler([parca({ deletedAt: "x", hammaddeler: [satir(77, 1)] })]).has("77")).toBe(true);
-    expect(kirilimdaGecenTedarikciler([]).size).toBe(0);
+    expect([...kalemdeGecenTedarikciler(parts).keys()].sort()).toEqual(["31", "32"]);
+    expect(kalemdeGecenTedarikciler([parca({ deletedAt: "x", hammaddeler: [satir(77, 1)] })]).has("77")).toBe(true);
+    expect(kalemdeGecenTedarikciler([]).size).toBe(0);
   });
 });
 
@@ -153,7 +157,7 @@ describe("Spec 0096: aktarma (R24, C9)", () => {
     expect("maliyet" in r.parts.find(p => p.ad === "Ayna")).toBe(false);
     expect(r.parts.find(p => p.ad === "Pul").maliyet).toBe(7.5);
     expect(r.parts.find(p => p.ad === "İşaretli").maliyet).toBe(9); // tutarsız kırılım: maliyet bugünkü gibi elle (R6)
-    expect(r.errors).toEqual([`Satır 2: ${HAMMADDE_EXCEL_HATASI}`]);
+    expect(r.errors).toEqual([`Satır 2: ${KALEM_EXCEL_HATASI}`]);
   });
 });
 
@@ -166,7 +170,7 @@ describe("Spec 0096 triyaj", () => {
     const metin = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, ["Ayna", "", "", "", "", "", "", "", "", "17.001,00"]], mevcut, 100, BUGUN);
     expect(metin.errors).toEqual([]); // Türkçe biçimli aynı toplam da aynı sayılır
     const farkli = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, ["Ayna", "", "", "", "", "", "", "", "", "17000"]], mevcut, 100, BUGUN);
-    expect(farkli.errors).toEqual([`Satır 2: ${HAMMADDE_EXCEL_HATASI}`]);
+    expect(farkli.errors).toEqual([`Satır 2: ${KALEM_EXCEL_HATASI}`]);
     expect("maliyet" in farkli.parts[0]).toBe(false);
   });
   it("bulgu 1: parça içe aktarma özeti bildirimleri 'uyarı' diye sayar, 'satır atlandı' demez", () => {
@@ -175,12 +179,12 @@ describe("Spec 0096 triyaj", () => {
     expect(k).not.toMatch(/partsImportPreview\.errors\.length\} satır atlandı/);
   });
   it("bulgu 3: hazır haritayla kullanım sayımı aynı sonucu verir; liste haritayı bir kez kurar ve iki çağrıya geçirir", () => {
-    const parts = [parca({ id: 1, hammaddeler: [satir(31, 1)] }), parca({ id: 2, deletedAt: "x", hammaddeler: [satir(31, null)] })];
-    const harita = kirilimdaGecenTedarikciler(parts);
+    const parts = [parca({ id: 1, hammaddeler: [satir(31, 1)] }), parca({ id: 2, deletedAt: "x", hammaddeler: [satir(31, 4)] })];
+    const harita = kalemdeGecenTedarikciler(parts);
     expect(tedarikciKullanim(31, [], [], [], harita)).toEqual(tedarikciKullanim(31, [], [], parts));
     const t = kod("src/components/gider/Tedarikciler.jsx");
-    expect(t.match(/kirilimdaGecenTedarikciler\(/g)).toHaveLength(1);
-    expect(t).toMatch(/useMemo\(\(\) => kirilimdaGecenTedarikciler\(parts\), \[parts\]\)/);
+    expect(t.match(/kalemdeGecenTedarikciler\(/g)).toHaveLength(1);
+    expect(t).toMatch(/useMemo\(\(\) => kalemdeGecenTedarikciler\(parts\), \[parts\]\)/);
     expect(t.match(/tedarikciKullanim\(t\.id, giderler, giderTanimlari, parts, kirilimHaritasi\)/g)).toHaveLength(2);
   });
 });
@@ -208,7 +212,9 @@ describe("Spec 0096: kaynak taramaları", () => {
   it("AC-32: parçanın maliyet alanını doğrudan okuyan yer yalnız tek okuma yolu; motorun satır içi ölçütü kalktı (istisnalar tam yollu, sayılı)", () => {
     expect(say(/\.maliyet\b/)).toEqual({
       "src/lib/urunAgaci.js": 2, // tek okuma yolu (parcaMaliyetKurus) ve elle maliyetin form metni (elleMaliyetMetni)
-      "src/components/PartManager.jsx": 4, // FORM durumunun okunması (f.maliyet, form.maliyet, editForm.maliyet), kayıt değil
+      // FORM durumunun okunması (f.maliyet, form.maliyet, editForm.maliyet), kayıt değil. Spec 0135 ile 6: kip onayının doluluk
+      // denetimi ve dokunulmamış kopyanın yerel nesnesindeki anahtar (maliyetAlanlari.maliyet) eklendi.
+      "src/components/PartManager.jsx": 6,
       "src/lib/makinaMaliyeti.js": 2, // stok partisi toplayıcısının yerel alanı (x.maliyet), parça kaydı değil
     });
     expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/p\.maliyet|maliyet == null/);
@@ -217,14 +223,17 @@ describe("Spec 0096: kaynak taramaları", () => {
     // Spec 0132 ile (C1/2, R16/4): dördüncü parametre malzeme haritasıdır; desen yeni imzayı arar, iddia aynı.
     expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
   });
-  it("AC-41: satır tutarlarını TL olarak toplayan ikinci yer yok (kırılım toplamı yalnız urunAgaci'nde, kuruşla)", () => {
-    // Kapsam: parça kırılımını (`hammaddeler`) okuyan dosyalar; gider tarafının kendi `.tutar` toplamları bu kavramdan değil.
-    // gider.js kırılımı yalnız tedarikçi kimliği için sayar (kirilimdaGecenTedarikciler); oradaki tutar toplamları gider kalemlerinindir.
-    const okuyanlar = Object.keys(say(/hammaddeler/)).filter(f => f !== "src/lib/gider.js");
-    expect(kod("src/lib/gider.js").match(/hammaddeler/g)).toHaveLength(1);
-    const toplayan = okuyanlar.filter(f => /reduce\([^\n]*tutar/.test(kod(f)));
+  it("AC-41: satır tutarlarını TL olarak toplayan ikinci yer yok (kalem toplamı yalnız urunAgaci'nde, kuruşla)", () => {
+    // Spec 0135 ile (R23/2, C1, C1/2): kırılımı doğrudan okuyan yer yalnız türetme modülü (ve gerekçeli db/merge istisnaları);
+    // kalemlerin kuruş toplamı tek yerde, urunAgaci'nin maliyetKalemleriOzeti'nde.
+    expect(Object.keys(say(/hammaddeler/)).sort()).toEqual(["src/lib/maliyetKalemleri.js", "src/lib/merge.js"]);
+    const kalemOkuyanlar = new Set(Object.keys(say(/maliyetKalemleri|maliyetKalemleriOf/)));
+    // Gerekçeli istisnalar: gider.js (gider kaleminin taksit satırları) ve siparisIhtiyaci.js (tedarikçi gruplarının sipariş tutarı)
+    // kalem okur ama oradaki tutar toplamları kalem tutarı değildir.
+    const ISTISNA = ["src/lib/gider.js", "src/lib/siparisIhtiyaci.js"];
+    const toplayan = Object.keys(say(/reduce\([^\n]*tutar/)).filter(f => kalemOkuyanlar.has(f) && !ISTISNA.includes(f));
     expect(toplayan).toEqual(["src/lib/urunAgaci.js"]);
-    expect(kod("src/lib/urunAgaci.js")).toMatch(/reduce\(\(a, h\) => a \+ kurus\(h\.tutar\), 0\)/);
+    expect(kod("src/lib/urunAgaci.js")).toMatch(/katkili\.reduce\(\(a, r\) => a \+ r\.tutarK, 0\)/);
   });
   it("AC-31: yeni eylem izni, veri bölümü ve kilit alanı yok; birleştirme anahtarları aynı", () => {
     const simdi = yeniAlanlariAyikla(JSON.parse(JSON.stringify({ BLOB_SECTIONS, MERGE_KEYS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI })));
@@ -234,14 +243,15 @@ describe("Spec 0096: kaynak taramaları", () => {
   });
   it("AC-44 (kaynak): parça paneli süzgeci Select; yerel pil ya da segment çubuğu yok; sözlükte adıyla istisna", () => {
     const pm = kod("src/components/PartManager.jsx");
-    expect(pm).toMatch(/<Select aria-label="Hammadde tedarikçisi süzgeci"/);
+    expect(pm).toMatch(/<Select aria-label="Tedarikçi süzgeci"/); // spec 0135 ile (R46): süzgecin adı
     // Spec 0133 ile (R4/3, AC-84): panele iki Segment geldi (fiyat kipi süzgeci ve kartın kip seçicisi). 0096'nın iddiası, tedarikçi
-    // süzgecinin Select olması ve başka segment çubuğu olmaması, bu iki adla sınırlanarak korunur.
+    // süzgecinin Select olması ve başka segment çubuğu olmaması, bu iki adla sınırlanarak korunur. Spec 0135'in maliyet kipi seçicisi
+    // kendi bileşenindedir (MaliyetKalemleriAlani.jsx), panelin sayısını değiştirmez.
     const segmentler = pm.match(/<Segment[^>]*ariaLabel=\{?"?([^"}\s]+)/g) || [];
     expect(segmentler.length).toBe(2);
     expect(pm).toMatch(/<Segment kip="dugme" genislik="icerik" ariaLabel="Fiyat kipi süzgeci"/);
     expect(pm).toMatch(/<Segment kip="radyo" genislik="icerik" ariaLabel=\{FIYAT_KIPI_ETIKETI\}/);
-    expect(readFileSync("docs/tasarim-sozlugu.md", "utf8")).toMatch(/İstisna \(spec 0096 C14\):\*\* Ayarlar › Katalog › Parça\/Yedek Parça'nın \*\*hammadde tedarikçisi süzgeci\*\* `Select`/);
+    expect(readFileSync("docs/tasarim-sozlugu.md", "utf8")).toMatch(/İstisna \(spec 0096 C14\):\*\* Ayarlar › Katalog › Parça\/Yedek Parça'nın \*\*tedarikçi süzgeci\*\* `Select`/);
   });
   it("AC-22 (kaynak): useFilteredList imzası değişmedi; sayfa sıfırlaması süzgeci yazan fonksiyonda", () => {
     // Spec 0100 ile (plan P2): kanca isteğe bağlı `ikinciFiltre` aldı (parametresiz çağrı birebir eski); 0096'nın iddiası olan "parça

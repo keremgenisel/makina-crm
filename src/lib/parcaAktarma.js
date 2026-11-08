@@ -4,10 +4,11 @@
 // SONA eklenir, yoksa eski şablonla alınmış dosyalar sessizce kayar.
 import { trLower } from "./utils";
 import { kurus } from "./gider";
-import { parcaMaliyetDogrula, parcaMaliyetKurus, kirilimTutarliMi, HAMMADDE_EXCEL_HATASI, maliyetGecmisiYaz, gecerliGunMu, setMi, setKatalogu, SET_EXCEL_HATASI,
+import { parcaMaliyetDogrula, parcaMaliyetKurus, KALEM_EXCEL_HATASI, maliyetGecmisiYaz, gecerliGunMu, setMi, setKatalogu, SET_EXCEL_HATASI,
   setIcerigiOf, setIcerigiDogrula, setteGecenParcalar, icerenSetAdlariHaritasi, setIcerigiHucresi, setIcerigiHucresiParcala, setIcerigiParcasiCoz, setIcerigiExcelHatasi,
   SET_BILESEN_BULUNAMADI, SET_ICERIGI_BASLIGI, SET_ICERIGI_ORNEGI } from "./urunAgaci";
-import { malzemeSatiriVar, malzemeKatalogu, MALZEME_EXCEL_HATASI } from "./malzeme";
+import { malzemeKatalogu } from "./malzeme";
+import { kalemVarMi, malzemeKalemiVarMi } from "./maliyetKalemleri";
 import { maliyeteBagliMi, parcaSatisFiyati, fiyatAyariOf } from "./parcaFiyati";
 import { tutarCoz } from "./gider";
 export const FIYAT_EXCEL_HATASI = "bu parçanın fiyatı maliyetten türüyor, Excel'deki fiyat alınmadı.";
@@ -162,7 +163,7 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
   const dosyaMaliyeti = new Map();
   satirlar.forEach(({ r, cell, mevcut, id }) => {
     const { m } = maliyetCoz(r, cell);
-    if (!m.bos && !m.hata && !setMi(mevcut) && !gecerli.has(id) && !(mevcut && (kirilimTutarliMi(mevcut) || malzemeSatiriVar(mevcut)))) dosyaMaliyeti.set(id, m.deger);
+    if (!m.bos && !m.hata && !setMi(mevcut) && !gecerli.has(id) && !(mevcut && kalemVarMi(mevcut))) dosyaMaliyeti.set(id, m.deger);
   });
   const sonucKatalog = setKatalogu(katalogKur(kabul).map(p => (dosyaMaliyeti.has(p.id) ? { ...p, maliyet: dosyaMaliyeti.get(p.id) } : p)));
   satirlar.forEach(({ r, idx, cell, ad, mevcut, id }) => {
@@ -187,10 +188,11 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
     // Spec 0121 triyaj (bulgu 1): set kontrolü kırılımdan önce gelir; saklı kırılımı da olan sette neden "içerikten"dir (aşağıda).
     // Spec 0132 R21 (AC-73): malzeme satırlı parçada hücre alınmaz; set kazanır, malzeme kırılımdan önce gelir (R9/2 önceliği).
     // Dışa aktarmanın yazdığı rakam geri yüklenirse bildirim yok, farklı rakamda (ya da liste verilmediyse) neden yazılır.
-    const malzemeli = !!mevcut && !setOlacak && malzemeSatiriVar(mevcut) && !m.bos && !m.hata;
-    if (malzemeli && kurus(m.deger) !== parcaMaliyetKurus(mevcut, undefined, undefined, malzemeKat)) errors.push(`Satır ${idx + 2}: ${MALZEME_EXCEL_HATASI}`);
-    const kirilimli = !!mevcut && !setOlacak && !malzemeli && kirilimTutarliMi(mevcut) && !m.bos && !m.hata;
-    if (kirilimli && kurus(m.deger) !== parcaMaliyetKurus(mevcut)) errors.push(`Satır ${idx + 2}: ${HAMMADDE_EXCEL_HATASI}`);
+    // Spec 0135 R37, R37/2 (AC-72, AC-113): kalem listesi olan (eski alanlardan türeyen dahil) parçada hücre alınmaz ve iki eski
+    // bildirim tek metne iner; dışa aktarmanın yazdığı rakam geri yüklenirse bildirim yok. R37/3 (AC-114): içe aktarma kalem
+    // alanına ve eski üç alana hiç dokunmaz (aşağıdaki kayıt nesnesi onları taşımaz; uygulama kolu eskisini korur).
+    const kalemli = !!mevcut && !setOlacak && kalemVarMi(mevcut) && !m.bos && !m.hata;
+    if (kalemli && kurus(m.deger) !== parcaMaliyetKurus(mevcut, undefined, undefined, malzemeKat)) errors.push(`Satır ${idx + 2}: ${KALEM_EXCEL_HATASI}`);
     // Spec 0121 R12/2 (AC-50): setin maliyet hücresi alınmaz (maliyet içerikten gelir); dışa aktarmanın yazdığı rakam geri
     // yüklenirse bildirim yok, farklı rakamda neden satır numarasıyla bildirilir (0096 triyaj emsali). Spec 0124 R9: karşılaştırma
     // dosya sonrası içerikle ve katalogla.
@@ -204,10 +206,10 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
       if (yurur === "" || dosya.gecersiz || Math.round(dosya.deger * 100) !== Math.round(Number(yurur) * 100)) errors.push(`Satır ${idx + 2}: ${FIYAT_EXCEL_HATASI}`);
     }
     if (mevcut) guncellenenler++; else yeniler++;
-    const maliyetAlani = m.bos || m.hata || kirilimli || setli || malzemeli ? {} : { maliyet: m.deger };
+    const maliyetAlani = m.bos || m.hata || kalemli || setli ? {} : { maliyet: m.deger };
     // R20, R4: geçmiş mevcut kayıttan türer; değer değişmiyorsa geçmiş alanı hiç yazılmaz (uygulama kolu eskisini korur).
     // Spec 0124 R9/2: `set` kapısı dosyadan gelen yeni hâle göre.
-    const gecmisKarari = mevcut ? maliyetGecmisiYaz(mevcut, parcaMaliyetKurus({ ...mevcut, ...maliyetAlani }), { tarih: bugun, bugun, set: setOlacak, malzeme: malzemeSatiriVar(mevcut) }) : null;
+    const gecmisKarari = mevcut ? maliyetGecmisiYaz(mevcut, parcaMaliyetKurus({ ...mevcut, ...maliyetAlani }), { tarih: bugun, bugun, set: setOlacak, malzeme: malzemeKalemiVarMi(mevcut) }) : null;
     const gecmisAlani = gecmisKarari && !gecmisKarari.hata && JSON.stringify(gecmisKarari.gecmis) !== JSON.stringify(mevcut.maliyetGecmisi || [])
       ? { maliyetGecmisi: gecmisKarari.gecmis } : {};
     if (gecmisKarari?.hata) errors.push(`Satır ${idx + 2}: ${gecmisKarari.hata} Maliyet alınmadı.`);

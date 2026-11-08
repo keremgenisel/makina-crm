@@ -287,13 +287,14 @@ describe("Spec 0132: çöp kutusu", () => {
     expect(durum.malzemeler[0].deletedAt).toBeUndefined();
   });
   it("AC-19: parçanın malzeme satırında geçen malzeme kalıcı silinmez; düğme kalır, neden satırda, onayda hata", () => {
+    // Spec 0135 ile (R31/2, R39/3): neden ve ret metni kalem dilinde (sabitler KALEMDE_MALZEME_*).
     render(<Cop m0={[{ ...C8620, deletedAt: COP }]} />);
     const r = copSatiri("8620");
-    expect(r.textContent).toContain(M.KULLANIMDA_MALZEME_NEDENI);
+    expect(r.textContent).toContain(M.KALEMDE_MALZEME_NEDENI);
     fireEvent.click(within(r).getByRole("button", { name: /Kalıcı Sil/ }));
     fireEvent.click(screen.getByRole("button", { name: /Evet, Sil/ }));
     expect(durum.malzemeler).toHaveLength(1);
-    expect(toast.mock.calls.some(c => c[0] === M.KULLANIMDA_MALZEME_RED)).toBe(true);
+    expect(toast.mock.calls.some(c => c[0] === M.KALEMDE_MALZEME_RED)).toBe(true);
   });
   it("AC-20: çöpü boşaltma, canlı bir parçanın malzeme satırında geçen malzemeyi bırakır", () => {
     const parts = [{ id: 41, ad: "Kesme mili", malzemeSatiri: { malzemeId: 501, bicim: "mil" } }];

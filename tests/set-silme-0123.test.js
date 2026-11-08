@@ -7,7 +7,7 @@ import {
   setteGecenParcalar, parcaKullanimi, setteGecenParcaMi, setKullanimAdlari, parcaKullanimMetni, adListesi,
   SETTE_PARCA_NEDENI, SETTE_PARCA_RED_METNI, SILINMIS_PARCA, parcaKitAdetleri, setteBirakilanEki,
 } from "../src/lib/urunAgaci";
-import { KIRILIMDA_TEDARIKCI_NEDENI } from "../src/lib/gider";
+import { KALEMDE_TEDARIKCI_NEDENI } from "../src/lib/gider";
 import { purgeOldTrash } from "../src/lib/utils";
 
 const COP = "2026-10-01T09:00:00.000Z";
@@ -79,7 +79,7 @@ describe("Spec 0123 A: saf yardımcılar (R1)", () => {
   });
   it("AC-26 / AC-27 (metin): neden ve ret metni; 0096'nın kalıbı ve adresi", () => {
     expect(SETTE_PARCA_NEDENI).toBe("Bir setin içeriğinde bileşen olarak geçiyor; önce Ayarlar › Katalog › Parça/Yedek Parça'da o setin içeriğinden çıkarın.");
-    expect(SETTE_PARCA_NEDENI.split("; önce ")[1].split("'da")[0]).toBe(KIRILIMDA_TEDARIKCI_NEDENI.split("; önce ")[1].split("'da")[0]);
+    expect(SETTE_PARCA_NEDENI.split("; önce ")[1].split("'da")[0]).toBe(KALEMDE_TEDARIKCI_NEDENI.split("; önce ")[1].split("'da")[0]);
     expect(SETTE_PARCA_RED_METNI).toBe(`Yedek parça tanımı kalıcı silinemez: ${SETTE_PARCA_NEDENI}`);
   });
 });

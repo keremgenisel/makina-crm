@@ -183,14 +183,16 @@ describe("Spec 0121 B: maliyet ve fiyat (R2/3, R8, R10, R11)", () => {
     expect(yeni.fiyatEUR).toBe("");
     expect(yeni.setIcerigi).toEqual([{ partId: 7, miktar: 3 }]);
   });
-  it("Karar 42 (triyaj bulgu 3): içerik doluyken hammadde bölümü pasif, içerik boşken etkin", () => {
+  it("Karar 42 (triyaj bulgu 3): içerik doluyken maliyet bölümü pasif, içerik boşken etkin", () => {
+    // Spec 0135 ile (R5, R5/2): hammadde bölümü kalktı; içerik doluyken maliyet kipi seçicisi ve elle alan pasif.
     render(<Katalog />);
     duzenle("Rulman Seti");
-    expect(screen.getByTestId("hammadde-bolumu").closest("fieldset").disabled).toBe(true);
+    expect(screen.getByRole("radio", { name: "Hesapla" }).disabled).toBe(true);
+    expect(screen.getByLabelText("Alış maliyeti").disabled).toBe(true);
     cleanup();
     render(<Katalog />);
     duzenle("Kayış");
-    expect(screen.getByTestId("hammadde-bolumu").closest("fieldset").disabled).toBe(false);
+    expect(screen.getByRole("radio", { name: "Hesapla" }).disabled).toBe(false);
   });
   it("AC-16: bileşenin TL fiyatı yoksa toplam o satırı saymaz ve ekranda söyler", () => {
     render(<Katalog />);
@@ -201,8 +203,9 @@ describe("Spec 0121 B: maliyet ve fiyat (R2/3, R8, R10, R11)", () => {
     render(<Katalog />);
     // Kayış (girilmemiş) + Bozuk Set (eksik bileşen) = 2; Rulman Seti çözülür, sayılmaz.
     expect(screen.getByTestId("maliyetsiz-parca").textContent).toContain("2 parçanın");
-    const sec = [...screen.getByLabelText("Hammadde tedarikçisi süzgeci").options].map(o => o.textContent);
-    expect(sec.at(-1)).toBe("Hammadde tedarikçisi girilmemiş (5)");
+    // Spec 0135 ile (R46): süzgecin adı ve "girilmemiş" seçeneği kalem dilinde; sayı aynı.
+    const sec = [...screen.getByLabelText("Tedarikçi süzgeci").options].map(o => o.textContent);
+    expect(sec.at(-1)).toBe("İşlem kaleminde tedarikçi girilmemiş (5)");
   });
   it("AC-13 / AC-39 (kart yolu): setin kaydında maliyet geçmişi yazılmaz, var olan geçmiş korunur; tarih alanı ve geçmiş listesi çizilmez", () => {
     render(<Katalog />);
@@ -266,7 +269,8 @@ describe("Spec 0121: kaynak taramaları (C1, R2/2, R2/3)", () => {
     expect(pm).toMatch(/maliyetGirildiMi\(p, undefined, katalog, malzemeKat\)/);
     expect(pm).toMatch(/maliyetGirildiMi\(k, undefined, katalog, malzemeKat\)/);
     expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat\)/);
-    expect(pm.match(/maliyetKaynagi\([^)]*katalog, malzemeKat\)/g).length).toBeGreaterThanOrEqual(3);
+    // Spec 0135 ile (R39): liste hücresinde kırılımın ikinci çağrısı kalktı (tek kalem ibaresi); iki çağrı da katalogla.
+    expect(pm.match(/maliyetKaynagi\([^)]*katalog, malzemeKat\)/g).length).toBeGreaterThanOrEqual(2);
     expect(pm).toMatch(/set: setMi\(temel\)/);
     expect(kod("src/lib/urunAgaci.js")).toMatch(/set: setMi\(temel\)/);
     // Spec 0124 ile (R9/2, Karar 31): içe aktarmanın geçmiş kapısı dosyadan gelen içeriği de sayar (`setOlacak`).

@@ -7,7 +7,10 @@ import { render, screen, fireEvent, cleanup, within } from "@testing-library/rea
 import { useState } from "react";
 import { Settings } from "../../src/components/Settings";
 import * as M from "../../src/lib/malzeme";
-import { MALZEME_BOLUM_BASLIGI } from "../../src/components/MalzemeSatiriAlani";
+// Spec 0135 ile (R1, R7, R12, R25, R25/2, R26/2, R35/2, R39): malzeme satırı kalem listesinin malzeme kalemi oldu. Kart kipi
+// kayıttan türer, alanların erişilebilir adları satır numarasıyla biter, karttan dokunularak kaydedilen parçada `malzemeSatiri`
+// yerine `maliyetKalemleri` yazılır ve elle maliyet silinir. 0132'nin hesap kriterleri (ağırlık, fire, ölçü, eksiklik) aynen.
+import { kalemKaynakMetni, KALEM_SET_PASIF_NEDENI, MALZEME_GECMIS_IBARESI } from "../../src/lib/urunAgaci";
 
 vi.mock("../../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
 afterEach(() => { cleanup(); });
@@ -44,28 +47,29 @@ const duzenle = (ad) => {
 const yaz = (ad, v) => fireEvent.change(screen.getByLabelText(ad), { target: { value: v } });
 const kaydet = () => fireEvent.click(screen.getByRole("button", { name: /Kaydet/ }));
 const kayit = (id) => durum.parts.find(p => p.id === id);
+const BIR_MALZEME = kalemKaynakMetni({ malzeme: 1, islem: 0 });
 
 describe("Spec 0132: parça kartının malzeme satırı", () => {
-  it("AC-28 / R9/2: malzeme satırı doluyken elle maliyet ve hammadde kırılımı pasif; kaynak ve neden kartta", () => {
+  it("AC-28 / R9/2 (spec 0135 ile): malzeme kalemi olan parça Hesapla kipinde açılır; elle alan ve hammadde bölümü çizilmez, kaynak kartta", () => {
     render(<Katalog />);
     duzenle("Kesme mili");
-    expect(screen.getByLabelText("Alış maliyeti").disabled).toBe(true);
-    expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(M.KAYNAK_MALZEME);
-    expect(screen.getByText(M.MALZEME_ELLE_IPUCU)).toBeTruthy();
-    const kirilim = screen.getByText("Hammadde tedarikçileri").closest("fieldset");
-    expect(kirilim.disabled).toBe(true);
+    expect(screen.getByRole("radio", { name: "Hesapla" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.queryByLabelText("Alış maliyeti")).toBeNull();
+    expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(BIR_MALZEME);
+    expect(screen.queryByText("Hammadde tedarikçileri")).toBeNull();
   });
   it("AC-29: biçim seçilince istediği ölçüler çizilir; boruda et kalınlığına pay alanı yok (AC-82)", () => {
     render(<Katalog />);
     duzenle("Kesme mili");
     const olculer = () => within(screen.getByTestId("malzeme-olculer")).getAllByRole("textbox").map(e => e.getAttribute("aria-label"));
-    expect(olculer()).toEqual(["Çap", "Çap işleme payı", "Boy", "Boy işleme payı"]);
-    fireEvent.change(screen.getByLabelText("Biçim"), { target: { value: "lama" } });
-    expect(olculer()).toEqual(["Kalınlık", "Kalınlık işleme payı", "Genişlik", "Genişlik işleme payı", "Boy", "Boy işleme payı"]);
-    fireEvent.change(screen.getByLabelText("Biçim"), { target: { value: "boru" } });
-    expect(olculer()).toEqual(["Çap", "Çap işleme payı", "Et kalınlığı", "Boy", "Boy işleme payı"]);
-    fireEvent.change(screen.getByLabelText("Biçim"), { target: { value: "sac" } });
-    expect(olculer()).toEqual(["Kalınlık", "Kalınlık işleme payı", "En", "En işleme payı", "Boy", "Boy işleme payı"]);
+    const n = (a) => a.map(x => `${x} 1`); // spec 0135 ile: adlar kalemin numarasıyla biter
+    expect(olculer()).toEqual(n(["Çap", "Çap işleme payı", "Boy", "Boy işleme payı"]));
+    fireEvent.change(screen.getByLabelText("Biçim 1"), { target: { value: "lama" } });
+    expect(olculer()).toEqual(n(["Kalınlık", "Kalınlık işleme payı", "Genişlik", "Genişlik işleme payı", "Boy", "Boy işleme payı"]));
+    fireEvent.change(screen.getByLabelText("Biçim 1"), { target: { value: "boru" } });
+    expect(olculer()).toEqual(n(["Çap", "Çap işleme payı", "Et kalınlığı", "Boy", "Boy işleme payı"]));
+    fireEvent.change(screen.getByLabelText("Biçim 1"), { target: { value: "sac" } });
+    expect(olculer()).toEqual(n(["Kalınlık", "Kalınlık işleme payı", "En", "En işleme payı", "Boy", "Boy işleme payı"]));
   });
   it("AC-30–AC-38 (ekran): canlı ağırlık üç ondalıkla, maliyet 1.701,12 ₺; ölçü değişince anında güncellenir", () => {
     render(<Katalog />);
@@ -73,7 +77,7 @@ describe("Spec 0132: parça kartının malzeme satırı", () => {
     expect(screen.getByTestId("malzeme-ham-kg").textContent).toBe("10,679 kg");
     expect(screen.getByTestId("malzeme-fireli-kg").textContent).toBe("11,533 kg");
     expect(screen.getByTestId("malzeme-maliyet").textContent).toBe("1.701,12 ₺");
-    yaz("Çap işleme payı", ""); yaz("Boy işleme payı", ""); yaz("Parça firesi", "");
+    yaz("Çap işleme payı 1", ""); yaz("Boy işleme payı 1", ""); yaz("Parça firesi 1", "");
     expect(screen.getByTestId("malzeme-ham-kg").textContent).toBe("9,486 kg");
   });
   it("AC-41 (ekran): kilo yönteminde özgül ağırlığı boş malzeme: maliyet girilmedi ve nedeni", () => {
@@ -85,58 +89,72 @@ describe("Spec 0132: parça kartının malzeme satırı", () => {
   it("AC-45 / AC-46 / AC-84: eksik ölçü kaydedilir; sıfır ölçü ve aralık dışı fire reddedilir, nedeni alanda", () => {
     render(<Katalog />);
     duzenle("Kesme mili");
-    yaz("Çap", "0"); yaz("Parça firesi", "150"); kaydet();
+    yaz("Çap 1", "0"); yaz("Parça firesi 1", "150"); kaydet();
     expect(screen.getByText(M.OLCU_HATASI)).toBeTruthy();
     expect(screen.getByText(M.FIRE_HATASI)).toBeTruthy();
     expect(kayit(41).malzemeSatiri.cap).toBe(140);
-    yaz("Çap", ""); yaz("Parça firesi", "8"); kaydet();
-    expect(kayit(41).malzemeSatiri).not.toHaveProperty("cap");
-    expect(kayit(41).malzemeSatiri.boy).toBe(78);
+    yaz("Çap 1", ""); yaz("Parça firesi 1", "8"); kaydet();
+    // Spec 0135 ile (R25): dokunularak kaydedilen parçada malzeme satırı kalem listesine geçer.
+    expect(kayit(41)).not.toHaveProperty("malzemeSatiri");
+    expect(kayit(41).maliyetKalemleri[0]).not.toHaveProperty("cap");
+    expect(kayit(41).maliyetKalemleri[0].boy).toBe(78);
   });
   it("AC-63 / AC-65 / Karar 33: malzeme kaynaklı parça kaydında geçmişe satır yazılmaz, saklı geçmiş ve elle değer durur; kaynak alanı saklanmaz", () => {
     render(<Katalog />);
     duzenle("Kesme mili");
-    yaz("Boy", "90"); kaydet();
+    yaz("Boy 1", "90"); kaydet();
     const k = kayit(41);
-    expect(k.malzemeSatiri.boy).toBe(90);
+    expect(k.maliyetKalemleri[0].boy).toBe(90);
     expect(k.maliyetGecmisi).toEqual(GECMIS);
-    expect(k.maliyet).toBe(12);
+    // Spec 0135 ile ters çevrildi (R25/2, AC-97): kalem listesi dolu kayıtta elle maliyet de silinir (Karar 33'ün "elle değer durur" yarısı).
+    expect(k).not.toHaveProperty("maliyet");
     expect(Object.keys(k)).not.toContain("maliyetKaynagi");
-    // Malzeme kaynaklı parçada geçerlilik tarihi ve parçanın geçmiş listesi çizilmez (R16/3).
+    // Malzeme kaynaklı parçada geçerlilik tarihi ve parçanın geçmiş listesi çizilmez (R16/3); spec 0135 R35/2: yerinde ibare.
     duzenle("Kesme mili");
     expect(screen.queryByLabelText("Geçerlilik tarihi")).toBeNull();
     expect(screen.queryByTestId("maliyet-gecmisi")).toBeNull();
+    expect(screen.getByText(MALZEME_GECMIS_IBARESI)).toBeTruthy();
   });
   it("AC-66: set içeriği dolu parçada malzeme satırı pasif ve nedeni kartta", () => {
     render(<Katalog />);
     duzenle("Set");
-    expect(screen.getByTestId("malzeme-satiri-bolumu").disabled).toBe(true);
-    expect(screen.getByTestId("malzeme-set-pasif").textContent).toBe(M.MALZEME_SET_IPUCU);
+    // Spec 0135 ile (R5, R5/2): set doluyken kip seçicisi ve kalem listesi pasif, nedenleri kartta.
+    expect(screen.getByRole("radio", { name: "Hesapla" }).disabled).toBe(true);
+    expect(screen.getByTestId("kalem-listesi").disabled).toBe(true);
+    expect(screen.getByTestId("kalem-set-pasif").textContent).toBe(KALEM_SET_PASIF_NEDENI);
   });
   it("AC-28 (yeni parça): malzeme seçilip ölçü girilerek kaydedilir; malzeme kaldırılınca satır kayıttan düşer", () => {
     render(<Katalog />);
     fireEvent.click(screen.getByRole("button", { name: /Parça\/Yedek Parça Ekle/ }));
-    expect(screen.getByText(MALZEME_BOLUM_BASLIGI)).toBeTruthy();
     yaz("Yedek Parça Adı (TR)", "Yeni mil");
-    fireEvent.change(screen.getByLabelText("Malzeme"), { target: { value: "501" } });
-    yaz("Çap", "50"); yaz("Boy", "100"); kaydet();
+    // Spec 0135 ile (R1, R7, R40): Hesapla kipi seçilir, malzeme kalemi eklenir; kayıtta tek kalem (adet 1).
+    fireEvent.click(screen.getByRole("radio", { name: "Hesapla" }));
+    fireEvent.click(screen.getByRole("button", { name: /Malzeme ekle/ }));
+    fireEvent.change(screen.getByLabelText("Malzeme 1"), { target: { value: "501" } });
+    yaz("Çap 1", "50"); yaz("Boy 1", "100"); kaydet();
     const y = durum.parts.find(p => p.ad === "Yeni mil");
-    expect(y.malzemeSatiri).toEqual({ malzemeId: 501, bicim: "mil", cap: 50, boy: 100 });
+    expect(y.maliyetKalemleri).toEqual([{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 50, boy: 100, adet: 1 }]);
+    expect(y).not.toHaveProperty("malzemeSatiri");
     expect(y).not.toHaveProperty("maliyetGecmisi");
     duzenle("Yeni mil");
-    fireEvent.change(screen.getByLabelText("Malzeme"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Malzeme kalemini kaldır 1" }));
     kaydet();
-    expect(durum.parts.find(p => p.ad === "Yeni mil")).not.toHaveProperty("malzemeSatiri");
+    expect(durum.parts.find(p => p.ad === "Yeni mil")).not.toHaveProperty("maliyetKalemleri");
   });
   // Triyaj (bulgu 6, Karar 45): satır kaldırılınca geçmişe "o güne kadar malzeme maliyeti" yazılır; kapanmış partiler değişmez.
   it("Bulgu 6: malzeme satırı kaldırılınca geçmişe malzemenin maliyeti yazılır, yeni elle değer seçilen tarihten geçerli", () => {
     render(<Katalog p0={[{ id: 46, ad: "Geçiş mili", models: [], maliyet: 10, malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5, fire: 8 } }]} />);
     duzenle("Geçiş mili");
-    fireEvent.change(screen.getByLabelText("Malzeme"), { target: { value: "" } });
+    // Spec 0135 ile (R4, R36, AC-69): kip Elle sabit yapılınca (onayla) kalemler kalkar; yeni elle değer girilir.
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Maliyet kipi" })).getByRole("radio", { name: "Elle sabit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Değiştir" }));
+    fireEvent.change(screen.getByLabelText("Alış maliyeti"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Geçerlilik tarihi"), { target: { value: "2026-10-01" } });
     kaydet();
     const k = kayit(46);
     expect(k).not.toHaveProperty("malzemeSatiri");
+    expect(k).not.toHaveProperty("maliyetKalemleri");
+    expect(k.maliyet).toBe(10);
     expect(k.maliyetGecmisi).toEqual([{ gecerli: "", kurus: 170112 }, { gecerli: "2026-10-01", kurus: 1000 }]);
   });
   it("AC-61: dokunulmamış malzemesiz parça kaydedilince gövdesi aynı kalır", () => {
@@ -150,14 +168,14 @@ describe("Spec 0132: parça kartının malzeme satırı", () => {
     render(<Katalog />);
     // Çıplak (girilmedi) + Alüminyum kapak (eksik malzeme); Kesme mili, Pul ve Set sayılmaz.
     expect(screen.getByTestId("maliyetsiz-parca").textContent).toMatch(/^2 parçanın/);
-    expect(screen.getAllByTestId("parca-maliyet-malzeme")).toHaveLength(2);
+    expect(screen.getAllByTestId("parca-maliyet-kalem")).toHaveLength(2); // spec 0135 ile (R39): tek kalem ibaresi
   });
   it("R20/2 / AC-76: gider yetkisi olmayan kullanıcı malzeme satırını görür ve yazar", () => {
     render(<Katalog giderYetki={false} />);
     duzenle("Kesme mili");
-    expect(screen.getByTestId("malzeme-satiri-bolumu").disabled).toBe(false);
-    yaz("Çap", "150"); kaydet();
-    expect(kayit(41).malzemeSatiri.cap).toBe(150);
+    expect(screen.getByTestId("kalem-listesi").disabled).toBe(false);
+    yaz("Çap 1", "150"); kaydet();
+    expect(kayit(41).maliyetKalemleri[0].cap).toBe(150); // spec 0135 ile (R25)
   });
   it("Çöpteki malzemeye bağlı parça: seçicide adı ibareyle, maliyet girilmedi (AC-43 ekran)", () => {
     function K() {
@@ -166,7 +184,7 @@ describe("Spec 0132: parça kartının malzeme satırı", () => {
     }
     render(<K />);
     duzenle("Kesme mili");
-    expect(screen.getByLabelText("Malzeme").selectedOptions[0].textContent).toBe("304 Paslanmaz (silinmiş malzeme)");
+    expect(screen.getByLabelText("Malzeme 1").selectedOptions[0].textContent).toBe("304 Paslanmaz (silinmiş malzeme)");
     expect(screen.getByTestId("malzeme-maliyet").textContent).toContain("girilmedi");
   });
 });

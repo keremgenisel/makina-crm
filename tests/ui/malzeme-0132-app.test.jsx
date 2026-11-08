@@ -6,7 +6,7 @@ process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
-import { KULLANIMDA_MALZEME_NEDENI } from "../../src/lib/malzeme";
+import { KALEMDE_MALZEME_NEDENI } from "../../src/lib/malzeme";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); delete window.crmStorage; delete window.appServer; });
 const { default: App } = await import("../../src/App");
@@ -78,14 +78,14 @@ describe("Spec 0132 gerçek App", () => {
     await baslat();
     await ayarlar("Veri Yönetimi", "Çöp Kutusu");
     const satir = (await screen.findByText("Eski çelik")).closest("tr");
-    expect(within(satir).getByTestId("cop-neden").textContent).toBe(KULLANIMDA_MALZEME_NEDENI);
+    expect(within(satir).getByTestId("cop-neden").textContent).toBe(KALEMDE_MALZEME_NEDENI);
     expect(screen.queryByText("Kullanılmayan")).toBeNull();
   });
   it("AC-85 (App): parça listesinde malzemesi tam parça maliyetli, sayaç yalnız gerçekten eksik olanı sayar", async () => {
     await baslat();
     await ayarlar("Katalog", "Parça/Yedek Parça");
     const parca = (await screen.findByText("Kesme mili")).closest("tr");
-    expect(within(parca).getByTestId("parca-maliyet").textContent).toBe("1.701,12 ₺Malzemeden hesaplanıyor");
+    expect(within(parca).getByTestId("parca-maliyet").textContent).toBe("1.701,12 ₺Maliyet kalemlerinden hesaplanıyor (1 malzeme, 0 işlem kalemi)"); // spec 0135 ile (R39): tek kalem ibaresi
     expect(screen.queryByTestId("maliyetsiz-parca")).toBeNull();
   });
   it("AC-59 (kaynak) / C5: yükleme, kayıt, otomatik yedek, birleştirme ve silme satırları malzemeyi taşır", () => {

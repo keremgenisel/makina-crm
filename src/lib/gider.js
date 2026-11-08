@@ -4,6 +4,7 @@
 // konvansiyonuyla düz string ("YYYY-MM-DD", ay "YYYY-MM") karşılaştırılır, Date'e çevrilmez.
 // Para hesabı kuruş tamsayısıyla yapılır (K32): kayan noktada 3 × 33.333,33 gibi toplamlar sahte
 // "aşım" üretirdi. Dışarı TL (kuruş / 100) döner.
+import { kalemTedarikciIdleri } from "./maliyetKalemleri";
 import { trLower, getKdvRateForDate, uid as varsayilanUid } from "./utils";
 
 // Spec 0074 R1: SGK, kira ve personel gibi kilitli bir davranıştır (tek ANA hedefli kalem; KDV, tedarikçi ve atama yok).
@@ -1045,26 +1046,26 @@ export const turKullanim = (turId, giderler = [], tanimlar = []) => ({
   cop: giderler.filter(k => String(k.turId) === String(turId) && k.deletedAt).length,
   tanim: tanimlar.filter(t => String(t.turId) === String(turId)).length,
 });
-// Spec 0096 R13/2: parça hammadde kırılımında geçen tedarikçiler, tedarikçi kimliği (metin) → { parca, cop }. Tedarikçiyi kalıcı
-// silen dört kapının (silme düğmesi, Kalıcı Sil, çöpü boşalt, otuz günlük temizlik) TEK yardımcısı. R13/5: canlı ve çöpteki
-// parçalar sayılır (çöpten geri alınan parçanın bağı kopmasın); "çöpü boşalt" kalacak parçaları verir.
-export const kirilimdaGecenTedarikciler = (parts = []) => {
+// Spec 0096 R13/2: parçada geçen tedarikçiler, tedarikçi kimliği (metin) → { parca, cop }. Tedarikçiyi kalıcı silen dört kapının
+// (silme düğmesi, Kalıcı Sil, çöpü boşalt, otuz günlük temizlik) TEK yardımcısı. R13/5: canlı ve çöpteki parçalar sayılır (çöpten
+// geri alınan parçanın bağı kopmasın); "çöpü boşalt" kalacak parçaları verir.
+// Spec 0135 R32, R32/2, C5, C5/2: türetilmiş kalem listesinin işlem kalemleri okunur (eski kırılım dahil, tek türetme yolundan);
+// aynı tedarikçi bir parçanın birden çok işlem kaleminde geçebildiği için (R15/2) parça bir kez sayılır.
+export const kalemdeGecenTedarikciler = (parts = []) => {
   const m = new Map();
-  for (const p of parts || []) for (const h of p?.hammaddeler || []) {
-    if (h?.tedarikciId == null || h.tedarikciId === "") continue;
-    const k = String(h.tedarikciId);
+  for (const p of parts || []) for (const k of kalemTedarikciIdleri(p)) {
     const x = m.get(k) || { parca: 0, cop: 0 };
-    x.parca += 1; if (p.deletedAt) x.cop += 1;
+    x.parca += 1; if (p?.deletedAt) x.cop += 1;
     m.set(k, x);
   }
   return m;
 };
-// Çöp Kutusu satırının korunma nedeni (R13/2, AC-37).
-export const KIRILIMDA_TEDARIKCI_NEDENI = "Bir parçanın hammadde kırılımında geçiyor; önce Ayarlar › Katalog › Parça/Yedek Parça'da kırılımdan çıkarın.";
+// Çöp Kutusu satırının korunma nedeni (R13/2, AC-37); spec 0135 R32/2 ile kalem dilinde.
+export const KALEMDE_TEDARIKCI_NEDENI = "Bir parçanın maliyet kaleminde geçiyor; önce Ayarlar › Katalog › Parça/Yedek Parça'da kalemden çıkarın.";
 // Spec 0096 R13, R13/3: parça kırılımı da kullanımdır (`parca`, `parcaCop`); dördüncü parametre verilmezse eski çıktı + sıfırlar.
-// Triyaj (bulgu 3): beşinci parametre hazır harita (`kirilimdaGecenTedarikciler`); liste onu bir kez kurar, satır başına parça taranmaz.
+// Triyaj (bulgu 3): beşinci parametre hazır harita (`kalemdeGecenTedarikciler`); liste onu bir kez kurar, satır başına parça taranmaz.
 export const tedarikciKullanim = (tedId, giderler = [], tanimlar = [], parts = [], harita = null) => {
-  const p = (harita || kirilimdaGecenTedarikciler(parts)).get(String(tedId)) || { parca: 0, cop: 0 };
+  const p = (harita || kalemdeGecenTedarikciler(parts)).get(String(tedId)) || { parca: 0, cop: 0 };
   return {
     kalem: giderler.filter(k => String(k.tedarikciId) === String(tedId)).length,
     cop: giderler.filter(k => String(k.tedarikciId) === String(tedId) && k.deletedAt).length,

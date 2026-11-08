@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { uid } from "../../lib/utils";
-import { tedarikciAdHatasi, tedarikciKullanim, kirilimdaGecenTedarikciler } from "../../lib/gider";
+import { tedarikciAdHatasi, tedarikciKullanim, kalemdeGecenTedarikciler } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
@@ -17,14 +17,14 @@ import { tedarikciEkstresi } from "../../lib/kasa";
 const BOS = { id: null, ad: "", yetkili: "", telefon: "", eposta: "", vergiDairesi: "", vergiNo: "", adres: "", not: "" };
 // Spec 0096 R1, R2: hammadde tedarikçisi işareti (yalnız bu formdan konur, C7). Kapalıyken kayıtta alan hiç yoktur (C4).
 export const HAMMADDE_ISARET_ETIKETI = "Hammadde tedarikçisi";
-export const HAMMADDE_ISARET_IPUCU = "İşaretli tedarikçi, Ayarlar › Katalog › Parça/Yedek Parça'da parçaların hammadde kırılımında seçilebilir.";
+export const HAMMADDE_ISARET_IPUCU = "İşaretli tedarikçi, Ayarlar › Katalog › Parça/Yedek Parça'da parçaların işlem kaleminin tedarikçi seçicisinde başta listelenir.";
 // R13/4: "silinemez" penceresinin yönlendirme cümleleri kullanım türüne göre.
 export const SIL_KALEM_YONLENDIRME = "Silmek için önce kalemlerde başka tedarikçi seçin.";
-export const SIL_PARCA_YONLENDIRME = "Silmek için önce Ayarlar › Katalog › Parça/Yedek Parça'da bu parçaların hammadde kırılımından tedarikçiyi çıkarın.";
+export const SIL_PARCA_YONLENDIRME = "Silmek için önce Ayarlar › Katalog › Parça/Yedek Parça'da bu parçaların maliyet kaleminden tedarikçiyi çıkarın.";
 // R13/3: kullanım hücresi (parça sayısı da yazar; parçasız tedarikçide metin spec öncesiyle aynı).
 export const kullanimMetni = (k) => {
   const gider = k.kalem + k.tanim ? `${k.kalem} kalem${k.cop ? ` (${k.cop}’i çöpte)` : ""}${k.tanim ? ` · ${k.tanim} tanım` : ""}` : "";
-  const parca = k.parca ? `${k.parca} parçada${k.parcaCop ? ` (${k.parcaCop}’i çöpte)` : ""}` : "";
+  const parca = k.parca ? `${k.parca} parçanın maliyet kaleminde${k.parcaCop ? ` (${k.parcaCop}’i çöpte)` : ""}` : "";
   return [gider, parca].filter(Boolean).join(" · ") || "Kullanılmıyor";
 };
 
@@ -58,7 +58,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
     setForm(null);
     showToast(yeni ? "Tedarikçi eklendi." : "Tedarikçi güncellendi. Bağlı kalemler yeni adla görünür.");
   };
-  const kirilimHaritasi = useMemo(() => kirilimdaGecenTedarikciler(parts), [parts]); // triyaj: bir kez kurulur
+  const kirilimHaritasi = useMemo(() => kalemdeGecenTedarikciler(parts), [parts]); // triyaj: bir kez kurulur
   const silAc = (t) => setSil({ t, k: tedarikciKullanim(t.id, giderler, giderTanimlari, parts, kirilimHaritasi) });
   const silOnayla = () => {
     const zaman = new Date().toISOString();
@@ -144,9 +144,9 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
               Bu tedarikçi <b>{sil.k.kalem} gider kaleminde</b>{sil.k.cop ? <> kullanılıyor, <b>{sil.k.cop}’i çöp kutusunda</b></> : " kullanılıyor"}{sil.k.tanim ? <> ve <b>{sil.k.tanim} tekrarlayan tanımda</b> geçiyor</> : null}.
               Çöpteki kalem geri alınırsa tedarikçi bağı kopmasın diye o da sayılır. {SIL_KALEM_YONLENDIRME}
             </>}
-            {/* Spec 0096 R13, R13/4, R13/5: parça kırılımı da kullanımdır; cümle kullanım türüne göre. */}
+            {/* Spec 0096 R13, R13/4, R13/5; spec 0135 R32/2: parçanın maliyet kalemi de kullanımdır; cümle kalem dilinde. */}
             {sil.k.parca > 0 && <div data-testid="tedarikci-parca-kullanim" style={{ marginTop: sil.k.kalem + sil.k.tanim > 0 ? 8 : 0 }}>
-              Bu tedarikçi <b>{sil.k.parca} parçanın</b> hammadde kırılımında geçiyor{sil.k.parcaCop ? <> (<b>{sil.k.parcaCop}’i çöp kutusunda</b>)</> : null}. {SIL_PARCA_YONLENDIRME}
+              Bu tedarikçi <b>{sil.k.parca} parçanın</b> maliyet kaleminde geçiyor{sil.k.parcaCop ? <> (<b>{sil.k.parcaCop}’i çöp kutusunda</b>)</> : null}. {SIL_PARCA_YONLENDIRME}
             </div>}
             {(() => { const b = ekstreHesapla(sil.t).bakiye; return b > 0 ? <div data-testid="tedarikci-kalan-borc" style={{ marginTop: 8, color: "var(--red700, #b91c1c)", fontWeight: 700 }}>Bu tedarikçiye {tl2(b)} kalan borç var. Tedarikçi silinse bile borç kapanmaz; silinmiş tedarikçinin ekstresine erişilemez.</div> : null; })()}
           </div>

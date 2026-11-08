@@ -33,11 +33,14 @@ const kaydet = () => fireEvent.click(screen.getByRole("button", { name: /^Kaydet
 const kayit = (id) => durum.parts.find(p => p.id === id);
 
 describe("Spec 0134: parça kartında emniyet payı", () => {
-  it("AC-59: malzeme satırlı parçada pay firenin komşusunda girilir, kaydedilip yeniden açılınca korunur", () => {
+  it("AC-59: malzeme satırlı parçada pay girilir, kaydedilip yeniden açılınca korunur", () => {
     render(<H />);
     duzenle("Kesme mili");
-    const fire = screen.getByLabelText("Parça firesi"); const pay = screen.getByLabelText("Parça emniyet payı");
-    expect(fire.closest("div[style*='grid']")).toBe(pay.closest("div[style*='grid']"));
+    // Spec 0135 ile (R6, R6/2): pay malzeme bölümünün ızgarasından çıktı, kip seçicisinin altındaki kendi yerinde (iki kipte de
+    // çizilir); "firenin komşusu" iddiası yeni yere göre güncellendi, payın parçanın kendi alanı olduğu iddiası korunur.
+    const pay = screen.getByLabelText("Parça emniyet payı");
+    expect(pay.closest("[data-testid='emniyet-payi-alani']")).toBeTruthy();
+    expect(pay.closest("[data-testid='kalem-listesi']")).toBeNull();
     fireEvent.change(pay, { target: { value: "10" } });
     kaydet();
     expect(kayit(41).emniyetPayi).toBe(10);
@@ -45,7 +48,7 @@ describe("Spec 0134: parça kartında emniyet payı", () => {
     duzenle("Kesme mili");
     expect(screen.getByLabelText("Parça emniyet payı").value).toBe("10");
   });
-  it("Karar 28: malzemesiz hazır parçada da pay girilir; malzeme satırı kaldırılınca pay kaybolmaz", () => {
+  it("Karar 28: malzemesiz hazır parçada da pay girilir; malzeme kalemi kaldırılınca pay kaybolmaz", () => {
     render(<H />);
     duzenle("Pul");
     fireEvent.change(screen.getByLabelText("Parça emniyet payı"), { target: { value: "12,5" } });
@@ -53,10 +56,11 @@ describe("Spec 0134: parça kartında emniyet payı", () => {
     expect(kayit(42).emniyetPayi).toBe(12.5);
     duzenle("Kesme mili");
     fireEvent.change(screen.getByLabelText("Parça emniyet payı"), { target: { value: "5" } });
-    fireEvent.change(screen.getByLabelText("Malzeme"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Malzeme kalemini kaldır 1" })); // spec 0135 ile: kalem listesinden kaldırılır
     kaydet();
     expect(kayit(41)).toMatchObject({ emniyetPayi: 5 });
     expect(kayit(41)).not.toHaveProperty("malzemeSatiri");
+    expect(kayit(41)).not.toHaveProperty("maliyetKalemleri");
   });
   it("AC-21: 0–100 dışı reddedilir, nedeni alanın altında; kayıt yazılmaz", () => {
     render(<H />);

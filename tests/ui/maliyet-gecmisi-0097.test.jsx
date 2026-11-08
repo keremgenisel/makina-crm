@@ -144,10 +144,12 @@ describe("Spec 0097: parça kartı (R5–R8)", () => {
   it("AC-40 / AC-5: kırılımlı parçada elle alan pasifken tarih alanı etkin; kırılım tutarı değişince o tarihle kayıt", () => {
     render(<Katalog />);
     duzenle("Ayna");
-    expect(screen.getByLabelText("Alış maliyeti").disabled).toBe(true);
+    // Spec 0135 ile (R35/3, AC-82, AC-83): kırılım işlem kalemi oldu; yalnız işlem kalemi olan parçada tarih alanı etkin, elle alan
+    // çizilmez (Hesapla kipi), toplam kalem listesinin altında.
+    expect(screen.queryByLabelText("Alış maliyeti")).toBeNull();
     expect(screen.getByLabelText(GECERLILIK_ETIKETI).disabled).toBe(false);
-    expect(screen.getByTestId("hammadde-toplam")).toBeTruthy(); // spec 0099 ile: rakamlı satırın yerine toplam kutusu
-    fireEvent.change(screen.getByLabelText("Hammadde tutarı 1"), { target: { value: "200" } });
+    expect(screen.getByTestId("kalem-toplam")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("İşlem tutarı 1"), { target: { value: "200" } });
     tarih("2026-04-01");
     kaydet();
     expect(kayit(9).maliyetGecmisi).toEqual([{ gecerli: "", kurus: 17000 }, { gecerli: "2026-04-01", kurus: 20000 }]);

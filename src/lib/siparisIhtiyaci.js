@@ -7,13 +7,14 @@
 //   2. Setin toplam ihtiyacından setin kendi stoğu düşülür; kalan set adedi × bileşen miktarı bileşene eklenir.
 //   3. Bileşende patlatmadan gelen adede (× (1 + pay)) yukarı yuvarlanır, kit satırlarından gelenle toplanır.
 //   4. Her parçada sipariş = ihtiyaç − stok, sıfırın altına inmez (R8).
-//   5. Malzeme satırı olan parçanın SİPARİŞ adedi malzeme kesit satırına gider (AC-84: pay ikinci kez uygulanmaz).
+//   5. Malzeme kalemi olan parçanın SİPARİŞ adedi (× kalem adedi) her malzeme kaleminin kesit satırına gider (AC-84: pay ikinci kez uygulanmaz).
 import { trLower, totalMiktar } from "./utils";
-import { setMi, setIcerigiOf } from "./urunAgaci";
+import { setMi, setIcerigiOf, kalemAdetiOf } from "./urunAgaci";
 import {
-  BICIMLER, PARA_BIRIMLERI, dovizMi, bantSec, bantlarOf, fiyatKumesi, hamOlculer, hamKesit, malzemeOzeti, malzemeSatiriVar,
+  BICIMLER, PARA_BIRIMLERI, dovizMi, bantSec, bantlarOf, fiyatKumesi, hamOlculer, hamKesit, malzemeOzeti,
   malzemeKatalogu, tamBoyKg, emniyetPayiDogrula, kgMetni,
 } from "./malzeme";
+import { malzemeKalemleri } from "./maliyetKalemleri";
 
 // ── Sabitler ve metinler ─────────────────────────────────────────────────────────────────────────────────────────────────
 export const MAKINA_ADET_UST = 10000; // R4/2
@@ -84,12 +85,14 @@ export const satirlariDogrula = (satirlar = [], modeller = []) => {
 };
 
 // R9/2, AC-81, AC-82: parçanın payı varsa o, yoksa malzemenin, ikisi de boşsa sıfır (fire önceliğinin ikizi).
+// Spec 0135 R29, R29/2, C9/2 (AC-52–AC-54, AC-92): pay PARÇA düzeyinde kalır; parçanın payı yoksa malzeme kalemlerinin
+// malzemelerinde girili payların EN BÜYÜĞÜ (güvenli taraf), hiçbiri yoksa sıfır. Pay parçanın adedine bir kez uygulanır.
 export const emniyetPayiOf = (p, malzemeKat) => {
   const kendi = emniyetPayiDogrula(p?.emniyetPayi).deger;
   if (kendi != null) return kendi;
-  const m = malzemeSatiriVar(p) && malzemeKat instanceof Map ? malzemeKat.get(String(p.malzemeSatiri.malzemeId)) : null;
-  const v = emniyetPayiDogrula(m?.emniyetPayi).deger;
-  return v == null ? 0 : v;
+  if (!(malzemeKat instanceof Map)) return 0;
+  const paylar = malzemeKalemleri(p).map(k => emniyetPayiDogrula(malzemeKat.get(String(k.malzemeId))?.emniyetPayi).deger).filter(v => v != null);
+  return paylar.length ? Math.max(...paylar) : 0;
 };
 
 // ── Ana hesap ────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -113,7 +116,7 @@ export const siparisIhtiyaci = (veri = {}) => {
         // R11/2: çöpteki parça kit satırının ad kopyasıyla
         partId: k, ad: p?.ad || adKopyasi || h?.ad || BULUNAMAYAN_PARCA, silinmis: !p, set: !!p && setMi(p), kaynaklar: [],
         ham: 0, ihtiyac: 0, pay: p ? emniyetPayiOf(p, malzemeKat) : 0, patlatmaHam: 0, stok: p ? stokOf(k) : 0, siparis: 0, patlatildi: false,
-        malzemeli: !!p && !setMi(p) && malzemeSatiriVar(p),
+        malzemeli: !!p && !setMi(p) && malzemeKalemleri(p).length > 0, // spec 0135 R30/2: malzeme kalemi var mı
       });
     }
     return kalemler.get(k);
@@ -178,22 +181,30 @@ export const siparisIhtiyaci = (veri = {}) => {
   const kesitler = new Map();
   const eksikParca = new Set(); const eksikMalzeme = new Set();
   for (const k of kalemler.values()) if (k.silinmis) eksikParca.add(k.partId);
+  // Spec 0135 R28 (AC-49–AC-51): parçanın BÜTÜN malzeme kalemleri okunur; her kalem kendi ham kesitiyle kendi kesit satırına
+  // girer ve kalemin adediyle çarpılır (adet = parçanın sipariş adedi × kalem adedi). İşlem kalemi satır üretmez (R30).
+  // Plan turu Karar 43: aynı parçanın aynı kesitte eşdeğer iki girişi dökümde tek satırda toplanır (hesap değişmez, C9).
   for (const k of kalemler.values()) {
     if (!k.malzemeli || k.siparis <= 0) continue;
     const p = canliParca.get(k.partId);
-    const satir = p.malzemeSatiri;
-    const m = malzemeKat.get(String(satir.malzemeId));
-    const yontem = satir.yontem === "boy" ? "boy" : "kilo";
-    const oz = malzemeOzeti(satir, malzemeKat); // R22/2, AC-97: tarih verilmez, bugünkü küme
-    // Triyaj (bulgu 1): ham ölçü kayan nokta toplamıdır (10,1 + 0,2 = 10,299999…); anahtar ve gösterim üç ondalığa yuvarlanır ki
-    // aynı ham kesit iki satıra bölünmesin (Karar 31'in asgari siparişi de tek satıra uygulansın).
-    const kesit = hamKesit(satir)?.map(x => Number(Number(x).toFixed(3))) ?? null;
-    if (!m || !kesit) { eksikParca.add(k.partId); if (m && !kesit) eksikMalzeme.add(String(m.id)); continue; }
-    const o = hamOlculer(satir);
-    if (yontem === "kilo" && oz.hamKg == null) { eksikParca.add(k.partId); eksikMalzeme.add(String(m.id)); continue; } // AC-41
-    const anahtar = [m.id, yontem, satir.bicim, ...kesit].join("|");
-    if (!kesitler.has(anahtar)) kesitler.set(anahtar, { anahtar, malzemeId: String(m.id), malzeme: m, bicim: satir.bicim, yontem, kesit, hamCap: o.cap ?? null, parcalar: [] });
-    kesitler.get(anahtar).parcalar.push({ partId: k.partId, ad: k.ad, adet: k.siparis, hamKg: oz.hamKg, fireliKg: oz.fireliKg, fire: oz.fire || 0, kesimBoyu: o.boy, oran: o.boy / ((Number(m.geldigiBoy) || 0) * 1000) });
+    for (const satir of malzemeKalemleri(p)) {
+      const m = malzemeKat.get(String(satir.malzemeId));
+      const yontem = satir.yontem === "boy" ? "boy" : "kilo";
+      const oz = malzemeOzeti(satir, malzemeKat); // R22/2, AC-97: tarih verilmez, bugünkü küme
+      // Triyaj (bulgu 1): ham ölçü kayan nokta toplamıdır (10,1 + 0,2 = 10,299999…); anahtar ve gösterim üç ondalığa yuvarlanır ki
+      // aynı ham kesit iki satıra bölünmesin (Karar 31'in asgari siparişi de tek satıra uygulansın).
+      const kesit = hamKesit(satir)?.map(x => Number(Number(x).toFixed(3))) ?? null;
+      if (!m || !kesit) { eksikParca.add(k.partId); if (m && !kesit) eksikMalzeme.add(String(m.id)); continue; }
+      const o = hamOlculer(satir);
+      if (yontem === "kilo" && oz.hamKg == null) { eksikParca.add(k.partId); eksikMalzeme.add(String(m.id)); continue; } // AC-41
+      const kalemAdedi = kalemAdetiOf(satir); // triyaj (bulgu 3): maliyetle aynı kural; geçersiz adet eksik sayılır
+      if (kalemAdedi == null) { eksikParca.add(k.partId); continue; }
+      const anahtar = [m.id, yontem, satir.bicim, ...kesit].join("|");
+      if (!kesitler.has(anahtar)) kesitler.set(anahtar, { anahtar, malzemeId: String(m.id), malzeme: m, bicim: satir.bicim, yontem, kesit, hamCap: o.cap ?? null, parcalar: [] });
+      const giris = { partId: k.partId, ad: k.ad, adet: k.siparis * kalemAdedi, hamKg: oz.hamKg, fireliKg: oz.fireliKg, fire: oz.fire || 0, kesimBoyu: o.boy, oran: o.boy / ((Number(m.geldigiBoy) || 0) * 1000) };
+      const ayni = kesitler.get(anahtar).parcalar.find(x => x.partId === giris.partId && x.hamKg === giris.hamKg && x.fireliKg === giris.fireliKg && x.fire === giris.fire && x.kesimBoyu === giris.kesimBoyu);
+      if (ayni) ayni.adet += giris.adet; else kesitler.get(anahtar).parcalar.push(giris);
+    }
   }
   const kesitSatirlari = [...kesitler.values()].map(ks => kesitHesabi(ks, eksikParca, eksikMalzeme));
 

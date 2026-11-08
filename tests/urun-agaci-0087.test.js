@@ -40,11 +40,12 @@ describe("Spec 0087: parça maliyeti (saf)", () => {
   });
 
   it("AC-2: maliyet alanı MoneyInput ya da parseMoney kullanmaz (kaynak taraması)", () => {
-    for (const f of ["src/components/PartManager.jsx", "src/components/ModelsManager.jsx", "src/lib/urunAgaci.js", "src/lib/parcaAktarma.js"]) {
+    // Spec 0135 ile (R1): elle maliyet alanı kip bölümüne (MaliyetKalemleriAlani.jsx) taşındı; tarama o dosyayı da kapsar.
+    for (const f of ["src/components/PartManager.jsx", "src/components/MaliyetKalemleriAlani.jsx", "src/components/ModelsManager.jsx", "src/lib/urunAgaci.js", "src/lib/parcaAktarma.js"]) {
       const satirlar = kod(f).split("\n").filter(l => /maliyet/i.test(l));
       for (const l of satirlar) expect(l, `${f}: ${l.trim()}`).not.toMatch(/MoneyInput|parseMoney/);
     }
-    const blok = oku("src/components/PartManager.jsx").split("const MaliyetAlani")[1].split("\n);")[0];
+    const blok = oku("src/components/MaliyetKalemleriAlani.jsx").split('data-testid="elle-maliyet"')[1].split("</Field>")[0];
     expect(blok).toContain("<TutarInput");
     expect(blok).not.toMatch(/MoneyInput|parseMoney/);
   });

@@ -7,7 +7,7 @@ import {
 } from "./lib/constants";
 import { URETIM_ALANI } from "./lib/uretimdekiModeller";
 import { today, setIdCounter, getIdCounter, uid, bumpId, clearMintedIds, parseMoney, calcCiro, calcKalanBorc, normalizeKdvRates, disAppSettingsSuz, mergeAppSettings, yerelYedekAyariOku, yerelYedekAyariYaz, safeStandardModels, purgeOldTrash, withoutDeleted, isTailscaleServerUrl, serverKonumEtiketi, surumDahaYeni, guncellemeSeridiGorunur, migrateTipSecimleri, simdiYerel } from "./lib/utils";
-import { odemeleriUygula, turHaritasi, canliModelSeti, kirilimdaGecenTedarikciler } from "./lib/gider";
+import { odemeleriUygula, turHaritasi, canliModelSeti, kalemdeGecenTedarikciler } from "./lib/gider";
 import { kullanilanMalzemeler } from "./lib/malzeme";
 import { setteGecenParcalar, setteGecenParcaMi } from "./lib/urunAgaci";
 import { hatirlatmaEsigi } from "./lib/odemeHatirlatma";
@@ -1113,7 +1113,7 @@ export default function App() {
       if (Array.isArray(data.calisanlar)) data.calisanlar = purgeOldTrash(data.calisanlar);
       if (Array.isArray(data.giderler)) data.giderler = purgeOldTrash(data.giderler);
       // Spec 0096 R13/2 (AC-37): parça hammadde kırılımında geçen tedarikçi otuz günlük temizlikte korunur (çek emsali).
-      if (Array.isArray(data.tedarikciler)) { const korunan = kirilimdaGecenTedarikciler(data.parts); data.tedarikciler = purgeOldTrash(data.tedarikciler, undefined, t => korunan.has(String(t.id))); } // spec 0068 R11
+      if (Array.isArray(data.tedarikciler)) { const korunan = kalemdeGecenTedarikciler(data.parts); data.tedarikciler = purgeOldTrash(data.tedarikciler, undefined, t => korunan.has(String(t.id))); } // spec 0068 R11
       if (Array.isArray(data.uretimPartileri)) data.uretimPartileri = purgeOldTrash(data.uretimPartileri);
       // Spec 0132 C7, AC-20: bir parçanın (çöpteki dahil) malzeme satırında geçen malzeme otuz günlük temizlikte korunur.
       if (Array.isArray(data.malzemeler)) { const korunan = kullanilanMalzemeler(data.parts); data.malzemeler = purgeOldTrash(data.malzemeler, undefined, m => korunan.has(String(m.id))); }

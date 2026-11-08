@@ -17,6 +17,7 @@ import { setOzeti, setKatalogu } from "../src/lib/urunAgaci";
 import { malzemeKatalogu } from "../src/lib/malzeme";
 import { parcaDisaAktarmaSatiri } from "../src/lib/parcaAktarma";
 import { PARCALAR, MALZEMELER } from "./fixtures/0133-veri.js";
+import { kalemMetniEski } from "./fixtures/0135-ayikla.js"; // spec 0135 ile: kaynak ibaresi kalem diline geçti (R39)
 
 vi.mock("../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
@@ -110,7 +111,7 @@ describe("Spec 0133: kıyas (elle sabit veride yedi kalem spec öncesiyle birebi
     if (yaz) writeFileSync(ALTIN, JSON.stringify(simdi, null, 2) + "\n");
     expect(existsSync(ALTIN)).toBe(true);
     const altin = JSON.parse(readFileSync(ALTIN, "utf8"));
-    expect(simdi.katalog).toEqual(altin.katalog);
+    expect(simdi.katalog.map(kalemMetniEski)).toEqual(altin.katalog);
     expect(simdi.stok).toEqual(altin.stok);
     expect(simdi.evrak).toEqual(altin.evrak);
     expect(simdi.servis).toEqual(altin.servis);

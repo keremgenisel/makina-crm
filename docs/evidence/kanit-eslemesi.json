@@ -5499,6 +5499,18 @@
         "rapor": "docs/evidence/0096-taban-piksel-raporu.json",
         "ekran": "giderler-0096-tedarikci-sil",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "giderler-0096-tedarikciler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "giderler-0096-tedarikci-sil",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
       }
     ],
     "src/components/settings/GiderTurManager.jsx": [
@@ -6083,6 +6095,12 @@
         "rapor": "docs/evidence/0132-taban-piksel-raporu.json",
         "ekran": "ayarlar-trash-0132",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "ayarlar-trash-0132",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -8341,6 +8359,237 @@
         "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-parca-yeni",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-yeni",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-kirilim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-tutarsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-gecmis",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0121-set",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0121-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0122-panel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0132-malzeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-kart",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-neden",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-fark",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-zarar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-set",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-yetkisiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-ekle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-elle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0115-ipucu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0096-yetkisiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0132-liste",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-liste",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-toplu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0123-sil",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-maliyetsiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0125-suzgec",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-elle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-hesapla-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-dolu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-set-pasif",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-yetkisiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-onay",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-yalniz-islem",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-liste",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
       }
     ],
     "src/components/PartTypeManager.jsx": [
@@ -11478,6 +11727,17 @@
         "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-fiyat-cevrimdisi",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-malzeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-malzeme-0133-fiyat",
+        "beklenen": "ayni"
       }
     ],
     "src/components/MalzemeFiyatPenceresi.jsx": [
@@ -11597,6 +11857,36 @@
         "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "katalog-parca-yeni",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0132-malzeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-dolu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-yetkisiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-onay",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
       }
     ],
     "src/components/maliyet/SiparisIhtiyaci.jsx": [
@@ -11624,6 +11914,23 @@
         "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
         "ekran": "maliyet-siparis-tablolar",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "maliyet-siparis",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "maliyet-siparis-tablolar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "maliyet-siparis-bos",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsFiyat.jsx": [
@@ -11646,6 +11953,182 @@
         "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-fiyat-0133-zarar",
         "beklenen": "ayni"
+      }
+    ],
+    "src/components/MaliyetKalemleriAlani.jsx": [
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-yeni",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-kirilim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-tutarsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0096-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-gecmis",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0097-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0121-set",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0121-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0122-panel",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0132-malzeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-kart",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-neden",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-fark",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-zarar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0133-set",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-yetkisiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-ekle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0099-elle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0115-ipucu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-elle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-hesapla-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-dolu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-set-pasif",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-yetkisiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-onay",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
+      },
+      {
+        "rapor": "docs/evidence/0135-piksel-raporu.json",
+        "ekran": "katalog-parca-0135-yalniz-islem",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-08 · spec 0135 AC-81"
       }
     ]
   }

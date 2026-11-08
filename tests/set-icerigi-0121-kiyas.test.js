@@ -7,6 +7,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import fs from "node:fs";
 import { parcaDisaAktarmaSatiri } from "../src/lib/parcaAktarma";
 import { parcaMaliyetKurus, maliyetGirildiMi, parcaMaliyetMetni, maliyetKaynagi } from "../src/lib/urunAgaci";
+import { kaynakEski } from "./fixtures/0135-ayikla.js"; // spec 0135 ile: kaynak kalem diline geçti (R39)
 import { modelMaliyetleri } from "../src/lib/makinaStandartMaliyet";
 import { hesaplaAylikRapor } from "../src/lib/aylikRapor";
 import { hesaplaAnaliz } from "../src/lib/analiz";
@@ -48,7 +49,7 @@ const VERI = {
 const PARCALAR_HEPSI = [...ICERIKSIZ, SET];
 
 const simdi = () => JSON.parse(JSON.stringify({
-  zincir: ICERIKSIZ.map(p => ({ k: parcaMaliyetKurus(p), t: parcaMaliyetKurus(p, "2026-02-01"), v: maliyetGirildiMi(p), m: parcaMaliyetMetni(p), kay: maliyetKaynagi(p) })),
+  zincir: ICERIKSIZ.map(p => ({ k: parcaMaliyetKurus(p), t: parcaMaliyetKurus(p, "2026-02-01"), v: maliyetGirildiMi(p), m: parcaMaliyetMetni(p), kay: kaynakEski(maliyetKaynagi(p)) })),
   // Spec 0124 ile (C4, Karar 1): on birinci hücre (set içeriği) eklendi; altın yenilenmez, ilk on hücre karşılaştırılır.
   disaAktarma: ICERIKSIZ.map(p => parcaDisaAktarmaSatiri(p).slice(0, 10)),
   modeller: modelMaliyetleri(MODELLER, 12345),

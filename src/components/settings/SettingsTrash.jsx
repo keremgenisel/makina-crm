@@ -10,13 +10,13 @@ import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { KartBolum } from "../tasarim";
 import { ciroluTahsilatIdleri, bagliHareketiOlanCekler, BAGLI_HAREKETLI_CEK_NEDENI } from "../../lib/cek";
-import { turHaritasi, kirilimdaGecenTedarikciler, KIRILIMDA_TEDARIKCI_NEDENI } from "../../lib/gider";
+import { turHaritasi, kalemdeGecenTedarikciler, KALEMDE_TEDARIKCI_NEDENI } from "../../lib/gider";
 import { copHareketGeriAlmaNedeni } from "../../lib/kasa";
 import { makeCanDo } from "../../lib/permissions";
 import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
 import { uretimFormDonemMetni } from "../stock/uretimFormPrint";
 import { setteGecenParcalar, setteGecenParcaMi, setteBirakilanEki, SETTE_PARCA_NEDENI, SETTE_PARCA_RED_METNI } from "../../lib/urunAgaci";
-import { kullanilanMalzemeler, malzemeCopEtiketi, KULLANIMDA_MALZEME_NEDENI, KULLANIMDA_MALZEME_RED } from "../../lib/malzeme";
+import { kullanilanMalzemeler, malzemeCopEtiketi, KALEMDE_MALZEME_NEDENI, KALEMDE_MALZEME_RED } from "../../lib/malzeme";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -219,8 +219,8 @@ export const SettingsTrash = ({
   };
   // Spec 0096 R13/2, R13/5 (AC-37, AC-50): parça hammadde kırılımında geçen tedarikçi kalıcı silinmez (ham parça dizisi: çöpteki
   // parça geri alınırsa bağ kopmasın). "Çöpü boşalt" çöpteki parçaları da kalıcı sildiği için orada kalacak parçalar sayılır.
-  const korunanTedarikciler = kirilimdaGecenTedarikciler(rawParts || []);
-  const bosaltmadaKorunanTedarikciler = kirilimdaGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt));
+  const korunanTedarikciler = kalemdeGecenTedarikciler(rawParts || []);
+  const bosaltmadaKorunanTedarikciler = kalemdeGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt));
   // Spec 0123 R1/2, R3/6, C2 (Karar 5, 27): iki harita, çizim başına. Kalıcı Sil bütün parçalardan, "çöpü boşalt" kalacaklardan.
   const setteKorunanParcalar = setteGecenParcalar(rawParts || []);
   const bosaltmadaSetteKorunanParcalar = setteGecenParcalar((rawParts || []).filter(x => !x.deletedAt));
@@ -235,11 +235,11 @@ export const SettingsTrash = ({
     showToast("Malzeme geri alındı; bağlı parçaların maliyeti yeniden hesaplanır.");
   };
   const purgeMalzeme = (m) => {
-    if (korunanMalzemeler.has(String(m.id))) { showToast(KULLANIMDA_MALZEME_RED, "err"); return; }
+    if (korunanMalzemeler.has(String(m.id))) { showToast(KALEMDE_MALZEME_RED, "err"); return; }
     setMalzemeler?.(p => p.filter(x => x.id !== m.id)); showToast("Malzeme kalıcı olarak silindi.");
   };
   const purgeTedarikci = (t) => {
-    if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${KIRILIMDA_TEDARIKCI_NEDENI}`, "err"); return; }
+    if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${KALEMDE_TEDARIKCI_NEDENI}`, "err"); return; }
     setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi.");
   };
   const restoreParti = (u) => {
@@ -357,7 +357,7 @@ export const SettingsTrash = ({
     rawParts.filter(p => p.deletedAt).forEach(p => items.push({ key: `part-${p.id}`, type: "Yedek Parça Tanımı", label: p.ad || "—", deletedAt: p.deletedAt, restore: () => restorePart(p), purge: () => purgePart(p),
       neden: setteGecenParcaMi(p.id, setteKorunanParcalar) ? SETTE_PARCA_NEDENI : null })); // spec 0123 R4/3: düğme kalır, neden satırda
     (rawMalzemeler || []).filter(m => m.deletedAt).forEach(m => items.push({ key: `malzeme-${m.id}`, type: "Malzeme", label: malzemeCopEtiketi(m) || "—", deletedAt: m.deletedAt,
-      restore: () => restoreMalzeme(m), purge: () => purgeMalzeme(m), neden: korunanMalzemeler.has(String(m.id)) ? KULLANIMDA_MALZEME_NEDENI : null })); // spec 0132 AC-19
+      restore: () => restoreMalzeme(m), purge: () => purgeMalzeme(m), neden: korunanMalzemeler.has(String(m.id)) ? KALEMDE_MALZEME_NEDENI : null })); // spec 0132 AC-19
     rawCustomModels.filter(m => m.deletedAt).forEach(m => items.push({ key: `model-${m.model}`, type: "Model", label: m.model || "—", deletedAt: m.deletedAt, restore: () => restoreCustomModel(m), purge: () => purgeCustomModel(m) }));
     rawTeklifler.filter(t => t.deletedAt).forEach(t => items.push({ key: `teklif-${t.id}`, type: t.type === "proforma" ? "Proforma" : "Teklif", label: `${t.no || "—"} · ${t.firma || "—"}`, deletedAt: t.deletedAt, restore: () => restoreTeklif(t), purge: () => purgeTeklif(t) }));
     rawFaturalar.filter(f => f.deletedAt).forEach(f => items.push({ key: `fatura-${f.id}`, type: "Fatura", label: `${f.no || "—"} · ${f.firma || "—"}`, deletedAt: f.deletedAt, restore: () => restoreFatura(f), purge: () => purgeFatura(f) }));
@@ -385,7 +385,7 @@ export const SettingsTrash = ({
       // Spec 0068 R11, R21: tedarikçi ve üretim partisi; düğmeler silme izniyle (izinsizde satır görünür, düğme yok).
       rawTedarikciler.filter(t => t.deletedAt).forEach(t => items.push({ key: `tedarikci-${t.id}`, type: "Tedarikçi", label: t.ad || "—", deletedAt: t.deletedAt,
         restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki && !korunanTedarikciler.has(String(t.id)) ? () => purgeTedarikci(t) : null,
-        neden: korunanTedarikciler.has(String(t.id)) ? KIRILIMDA_TEDARIKCI_NEDENI : null }));
+        neden: korunanTedarikciler.has(String(t.id)) ? KALEMDE_TEDARIKCI_NEDENI : null }));
       rawUretimPartileri.filter(u => u.deletedAt).forEach(u => items.push({ key: `parti-${u.id}`, type: "Üretim Partisi", label: `${u.ad || "—"} · ${u.baslangicAy || ""}${u.bitisAy ? " – " + u.bitisAy : " (açık)"}`, deletedAt: u.deletedAt,
         restore: partiYetki ? () => restoreParti(u) : null, purge: partiYetki ? () => purgeParti(u) : null }));
       // Spec 0078 R23, R24: hareket, tekrarlayan tanım ve gider türü (gider yetkisi). Çeke bağlı hareket

@@ -74,9 +74,10 @@ Segment ile `ui.jsx` `Select` (açılır liste) arasındaki seçim ölçüyle ya
   kısa seçimde).
 - Dört seçenek arada kalır: etiketler kısa ve form satırı genişse segment, dar formda açılır liste.
 - **Sekme ve süzgeç çubukları her zaman segmenttir** (spec 0014 birliği), seçenek sayısı ne olursa olsun.
-  **İstisna (spec 0096 C14):** Ayarlar › Katalog › Parça/Yedek Parça'nın **hammadde tedarikçisi süzgeci** `Select`'tir
-  (`src/components/PartManager.jsx`, `aria-label="Hammadde tedarikçisi süzgeci"`): seçenekler tedarikçi adlarıdır, uzun ve
-  sayısı sınırsızdır; segment çubuğu birkaç satıra yayılırdı. Yalnız gider yetkisiyle çizilir.
+  **İstisna (spec 0096 C14):** Ayarlar › Katalog › Parça/Yedek Parça'nın **tedarikçi süzgeci** `Select`'tir
+  (`src/components/PartManager.jsx`, `aria-label="Tedarikçi süzgeci"`; spec 0135 R46 ile adı değişti, seçenekleri parçaların
+  işlem kalemlerindeki tedarikçilerdir): seçenekler tedarikçi adlarıdır, uzun ve sayısı sınırsızdır; segment çubuğu birkaç
+  satıra yayılırdı. Yalnız gider yetkisiyle çizilir.
   Aynı paneldeki ikinci süzgeç, **fiyat kipi süzgeci** (spec 0133 R4/3), kuralın kendisidir: üç seçenek, `Segment` `dugme`
   (`aria-label` "Fiyat kipi süzgeci"); iki süzgeç birlikte uygulanır.
 
@@ -436,8 +437,9 @@ her biri ilgili ekranın dönüşüm işinde karara bağlanır.
 - `src/components/settings/SettingsGider.jsx` → eşik uyarısı (amber, `role="alert"`).
 - `src/components/gider/KdvKarsilastirmaKarti.jsx` → "karşılaştırma yapılamıyor" kesikli kutusu (10 köşe, gri zemin).
 - `src/components/Giderler.jsx` → "Hatırlatma kapsamı" aç/kapa düğmesi (`aria-pressed`).
-- `src/components/PartManager.jsx` → hammadde bölümünün toplam kutusu (`hammadde-toplam`): gider formunun `normal-ozet`
-  kutusunun yakın kopyası (nötr zemin, kenarlık, 12 köşe), tutarı eski rakamlı satırın mavisiyle (spec 0099 R14, Karar 5).
+- `src/components/MaliyetKalemleriAlani.jsx` → parça kartının kalem listesinin toplam kutusu (`kalem-toplam`): gider formunun
+  `normal-ozet` kutusunun yakın kopyası (nötr zemin, kenarlık, 12 köşe), tutarı mavi (spec 0099 R14, Karar 5; spec 0135 R11
+  ile hammadde bölümünün kutusunun yerine geçti).
 - `src/components/stock/PartStokTab.jsx` → "Stoğa Parça Ekle" penceresinin eylem satırı gövde içinde kalır: pencere
   `overflowVisible` (parça listesi pencerenin dışına açılır), alt yuvalı pencere gövdeyi kaydırdığı için listeyi kırpardı
   (spec 0015 R8, F5).

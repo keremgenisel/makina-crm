@@ -13,6 +13,7 @@ import { gecerliGunMu, gecerlilikTarihiDogrula, tarihteGecerliIndeks } from "./g
 // Triyaj (bulgu 3): etki önizlemesi maliyetin TEK okuma yolundan geçer. urunAgaci bu modülü içe aldığı için döngüdür; ikisi de
 // yalnız çağrı anında kullanılır (modül yüklenirken okunmaz).
 import { parcaMaliyetKurus, setKatalogu } from "./urunAgaci";
+import { kalemMalzemeIdleri } from "./maliyetKalemleri";
 import { parcaSatisFiyati, fiyatAyariOf } from "./parcaFiyati"; // spec 0133 R16/2 (döngü: çağrı anında okunur)
 
 // ── Sabitler ve biçimler ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -170,11 +171,7 @@ export const malzemeEksikleri = (m) => {
 export const malzemeEksikMi = (m) => malzemeEksikleri(m).length > 0;
 export const eksikMalzemeSayisi = (malzemeler = []) => (malzemeler || []).filter(m => m && !m.deletedAt && malzemeEksikMi(m)).length;
 
-// ── Parçanın malzeme satırı ─────────────────────────────────────────────────────────────────────────────────────────────
-export const malzemeSatiriVar = (p) => {
-  const s = p?.malzemeSatiri;
-  return !!s && typeof s === "object" && s.malzemeId != null && s.malzemeId !== "";
-};
+// ── Parçanın malzeme kalemleri (0132'nin tek satırı, spec 0135 ile kalem listesinin malzeme kalemleri) ──────────────────────
 // C1/2: katalog = Map(String(id) → malzeme), yalnız CANLI malzemeler (çöpteki malzemeye bağlı parça "girilmedi", AC-43).
 export const malzemeKatalogu = (malzemeler = []) => new Map((malzemeler || []).filter(m => m && !m.deletedAt).map(m => [String(m.id), m]));
 const fireOf = (satir, m) => {
@@ -389,22 +386,25 @@ export const malzemeSatiriFormu = (s) => {
 // ── Kullanım, çöp, etki önizlemesi ──────────────────────────────────────────────────────────────────────────────────────
 // R8, AC-17, AC-19: malzemeyi kullanan parçalar; `canli` silme onayı için, `cop` kalıcı silme koruması için (çöpteki parça geri
 // alınınca malzemesini arar, 0123 emsali).
+// Spec 0135 R31, R31/2 (AC-104): bütün malzeme kalemleri okunur (yalnız birinci değil); parça bir kez sayılır.
 export const malzemeKullanimi = (malzemeId, parts = []) => {
   let canli = 0, cop = 0;
   for (const p of parts || []) {
-    if (!malzemeSatiriVar(p) || String(p.malzemeSatiri.malzemeId) !== String(malzemeId)) continue;
+    if (!kalemMalzemeIdleri(p).includes(String(malzemeId))) continue;
     if (p.deletedAt) cop++; else canli++;
   }
   return { canli, cop };
 };
 export const malzemeKullanimdaMi = (malzemeId, parts = []) => { const k = malzemeKullanimi(malzemeId, parts); return k.canli + k.cop > 0; };
-export const kullanilanMalzemeler = (parts = []) => new Set((parts || []).filter(malzemeSatiriVar).map(p => String(p.malzemeSatiri.malzemeId)));
-export const kullanimMetni = (k) => (k.canli + k.cop === 0 ? "Hiçbir parçada kullanılmıyor."
-  : `${k.canli} parçada kullanılıyor${k.cop ? ` (${k.cop} parça çöpte)` : ""}.`);
+export const kullanilanMalzemeler = (parts = []) => new Set((parts || []).flatMap(kalemMalzemeIdleri));
+// Spec 0135 R31/2 (AC-104): metin kalem dilinde.
+export const kullanimMetni = (k) => (k.canli + k.cop === 0 ? "Hiçbir parçanın maliyet kaleminde kullanılmıyor."
+  : `${k.canli} parçanın maliyet kaleminde kullanılıyor${k.cop ? ` (${k.cop} parça çöpte)` : ""}.`);
 // C7/2, AC-94: çöp satırının etiketi tek yardımcıdan.
 export const malzemeCopEtiketi = (m) => (m?.alasim ? `${m.ad} · ${m.alasim}` : (m?.ad || ""));
-export const KULLANIMDA_MALZEME_NEDENI = "Bir parçanın malzeme satırında geçiyor; kalıcı silinemez.";
-export const KULLANIMDA_MALZEME_RED = "Bu malzeme bir parçanın malzeme satırında geçtiği için kalıcı silinemez.";
+// Spec 0135 R31/2, R39/3: metin kalem dilinde (eski "malzeme satırı" metinleri kalktı).
+export const KALEMDE_MALZEME_NEDENI = "Bir parçanın maliyet kaleminde geçiyor; kalıcı silinemez.";
+export const KALEMDE_MALZEME_RED = "Bu malzeme bir parçanın maliyet kaleminde geçtiği için kalıcı silinemez.";
 
 // R17, AC-48–AC-50: fiyat güncellemesinin etkisi. `eski` ve `yeni` aynı malzemenin iki hâli; bugünkü maliyet iki hâlle okunur.
 // Triyaj (bulgu 3): maliyet TEK okuma yolundan (`parcaMaliyetKurus`, set kataloğuyla) okunur ve BÜTÜN canlı parçalar karşılaştırılır:
@@ -418,7 +418,8 @@ export const fiyatEtkisi = (eski, yeni, parts = [], malzemeler = [], fiyatSecene
   const katYeni = malzemeKatalogu(malzemeler.map(m => (String(m.id) === String(eski.id) ? yeni : m)));
   const canli = (parts || []).filter(p => p && !p.deletedAt);
   const setKat = setKatalogu(canli);
-  const bagli = canli.filter(p => malzemeSatiriVar(p) && String(p.malzemeSatiri.malzemeId) === String(eski.id)).length;
+  // Spec 0135 R33 (AC-62): bağlı parça, malzemeyi HERHANGİ bir kaleminde kullanan parçadır.
+  const bagli = canli.filter(p => kalemMalzemeIdleri(p).includes(String(eski.id))).length;
   const satirlar = [];
   for (const p of canli) {
     const once = parcaMaliyetKurus(p, undefined, setKat, katEski);
@@ -457,8 +458,4 @@ export const BOS_BASLIK = "Henüz malzeme yok";
 export const BOS_METNI = "Kullandığınız malzemeleri \"Yeni Malzeme\" ile ekleyin; parça kartında malzemeden maliyet hesaplamak için önce malzeme gerekir.";
 export const eksikSayiMetni = (n) => `${n} malzemenin bilgisi eksik`;
 export const EKSIK_ROZETI = "eksik";
-export const KAYNAK_MALZEME = "Malzemeden hesaplanıyor";
-export const MALZEME_ELLE_IPUCU = "Malzeme satırı doluyken elle girilen maliyet ve hammadde kırılımı okunmaz; kayıtta durur, satır kaldırılırsa yeniden geçerli olur.";
-export const MALZEME_SET_IPUCU = "Bu parçanın set içeriği dolu; maliyet set içeriğinden gelir, malzeme satırı okunmaz.";
-export const MALZEME_EXCEL_HATASI = "bu parçanın maliyeti malzemeden hesaplanıyor, Excel'deki değer alınmadı.";
 export const BANT_LAMA_NOTU = "Bant yalnız yuvarlak mil ve boruda uygulanır; lama ve sacda tek kilo fiyatı kullanılır.";

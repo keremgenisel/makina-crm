@@ -208,6 +208,12 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null, ta
     // Spec 0132 C5 (AC-60): parçanın malzeme satırı yeniden atanan malzeme kimliğini izler (0096 tedarikçi emsali).
     .map(p => (p?.malzemeSatiri?.malzemeId != null
       ? { ...p, malzemeSatiri: { ...p.malzemeSatiri, malzemeId: remapGevsek(maps.malzemeler, p.malzemeSatiri.malzemeId) } }
+      : p))
+    // Spec 0135 R34, R34/2 (AC-64, AC-65, AC-111): maliyet kalemlerinin malzeme ve tedarikçi bağları da yeniden eşlenir. Üstteki
+    // üç eşleme kalır: güncellenmemiş istemci hâlâ eski alanlı parça ekler (göç yok, C7). Tür ayırıcısı hangi bağın eşleneceğini söyler.
+    .map(p => (Array.isArray(p.maliyetKalemleri) && p.maliyetKalemleri.length
+      ? { ...p, maliyetKalemleri: p.maliyetKalemleri.map(k => (k?.tur === "malzeme" && k.malzemeId != null ? { ...k, malzemeId: remapGevsek(maps.malzemeler, k.malzemeId) }
+        : k?.tur === "islem" && k.tedarikciId != null ? { ...k, tedarikciId: remapGevsek(maps.tedarikciler, k.tedarikciId) } : k)) }
       : p));
   // Spec 0132 C9: malzemenin ana tedarikçisi yeniden atanan tedarikçi kimliğini izler.
   adds.malzemeler = adds.malzemeler.map(m => (m.tedarikciId != null ? { ...m, tedarikciId: remapGevsek(maps.tedarikciler, m.tedarikciId) } : m));

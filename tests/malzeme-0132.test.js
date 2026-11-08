@@ -4,7 +4,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import * as M from "../src/lib/malzeme";
-import { parcaMaliyetKurus, parcaMaliyetiVar, maliyetKaynagi, maliyetGecmisiYaz, gecmisliKayit, setKatalogu, setOzeti, maliyetGirildiMi, gecerliGunMu, gecerlilikTarihiDogrula } from "../src/lib/urunAgaci";
+import { parcaMaliyetKurus, parcaMaliyetiVar, maliyetKaynagi, maliyetGecmisiYaz, gecmisliKayit, setKatalogu, setOzeti, maliyetGirildiMi, gecerliGunMu, gecerlilikTarihiDogrula, KALEM_EXCEL_HATASI } from "../src/lib/urunAgaci";
 import * as G from "../src/lib/gecerlilik";
 import { parcaDisaAktarmaSatiri, parcaSatirlariniCoz, PARCA_AKTARMA_BASLIKLARI } from "../src/lib/parcaAktarma";
 import { modelMaliyetleri } from "../src/lib/makinaStandartMaliyet";
@@ -292,7 +292,8 @@ describe("Spec 0132: tek okuma yolu ve öncelik", () => {
   });
   it("AC-65: kaynak saklanmaz; malzeme satırı ve kırılım birlikteyse maliyet malzemeden", () => {
     expect(parcaMaliyetKurus(p, undefined, undefined, kat())).toBe(oz(MIL).maliyetK);
-    expect(maliyetKaynagi(p, undefined, undefined, kat())).toEqual({ tur: "malzeme" });
+    // Spec 0135 ile (R39, plan turu Karar 31): kaynak kalem türüdür; malzeme satırı varken kırılım kaleme türetilmez.
+    expect(maliyetKaynagi(p, undefined, undefined, kat())).toEqual({ tur: "kalem", malzeme: 1, islem: 0 });
     expect(kod("src/lib/malzeme.js")).not.toMatch(/maliyetKaynak\s*:/);
   });
   it("AC-78: malzeme kaynaklı parçada tarihli sorgu malzemenin geçmişinden; parçanın kendi geçmişi okunmaz", () => {
@@ -337,15 +338,16 @@ describe("Spec 0132: tek okuma yolu ve öncelik", () => {
     expect(u).toMatch(/setOzeti\(p\.setIcerigi, katalog, tarih, malzemeKat\)/);
     expect(u).toMatch(/tekilMaliyetKurus\(p, tarih, malzemeKat\)/);
     expect(u).toMatch(/tekilMaliyetKurus\(b, tarih, malzemeKat\)/);
-    expect(u).toMatch(/malzeme: malzemeSatiriVar\(temel\)/);
+    // Spec 0135 ile (R35, tuzak 5): geçmiş kapısı "en az bir malzeme kalemi var mı"; desen yeni kapıyı arar, iddia aynı.
+    expect(u).toMatch(/malzeme: malzemeKalemiVarMiYerel\(temel\)/);
     const pm = kod("src/components/PartManager.jsx");
-    expect(pm).toMatch(/malzeme: malzemeSatiriVar\(temel\) \}\)\.hata/);
+    expect(pm).toMatch(/malzeme: maliyetKalemleriOf\(temel\)\.some\(x => x\.tur === KALEM_TUR\.MALZEME\) \}\)\.hata/);
     expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat\)/);
     expect(pm).toMatch(/maliyetKaynagi\(p, undefined, katalog, malzemeKat\)/);
     expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
     const a = kod("src/lib/parcaAktarma.js");
     expect(a).toMatch(/parcaMaliyetKurus\(p, undefined, katalog, malzemeKat\)/);
-    expect(a).toMatch(/set: setOlacak, malzeme: malzemeSatiriVar\(mevcut\)/);
+    expect(a).toMatch(/set: setOlacak, malzeme: malzemeKalemiVarMi\(mevcut\)/); // spec 0135 ile
     // Spec 0133 ile: dördüncü parametre fiyat ayarları (maliyete bağlı parçanın TL hücresi türetilmiş fiyat, R16).
     expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat, appSettings\?\.fiyatAyarlari\)/);
   });
@@ -364,7 +366,7 @@ describe("Spec 0132: Excel, model maliyeti ve etki", () => {
   it("AC-73: içe aktarma malzeme kaynaklı parçanın hücresini almaz, nedenini satır numarasıyla yazar; öteki hücreler yazılır", () => {
     const rows = [PARCA_AKTARMA_BASLIKLARI, ["Mil", "Shaft", "K-9", "", "", "", "450", "", "", "1234,56", ""]];
     const r = parcaSatirlariniCoz(rows, [PM], 1000, "2026-11-05", [P304, C8620]);
-    expect(r.errors).toEqual([`Satır 2: ${M.MALZEME_EXCEL_HATASI}`]);
+    expect(r.errors).toEqual([`Satır 2: ${KALEM_EXCEL_HATASI}`]); // spec 0135 ile (R37/2): tek bildirim metni
     expect(r.parts[0]).not.toHaveProperty("maliyet");
     expect(r.parts[0].adEN).toBe("Shaft"); expect(r.parts[0].fiyatTRY).toBe("450");
     // Dışa aktarılan rakam geri yüklenirse bildirim yok.

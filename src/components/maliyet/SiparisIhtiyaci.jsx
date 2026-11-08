@@ -17,7 +17,9 @@ export const BOS_BASLIK = "Model satırı yok";
 export const BOS_METNI = "Bir üretim partisi seçin ya da \"Model Satırı Ekle\" ile model ve makina adedi girin.";
 export const ELLE_GIRIS = "Parti seçilmedi (elle giriş)";
 export const IKI_KAYNAK = "kitten ve setten";
-export const hazirSayiMetni = (n) => `${n} hazır parça (malzeme satırı yok)`;
+// Spec 0135 R30/2 (AC-109): ölçüt "malzeme kalemi yok" kalır, metin kalem dilinde.
+export const hazirSayiMetni = (n) => `${n} parçada malzeme kalemi yok`;
+export const MALZEME_KALEMI_YOK_METNI = "Malzeme kalemi olan parça siparişi yok.";
 export const eksikMetni = (e) => `${e.parca} parçanın ve ${e.malzeme} malzemenin bilgisi eksik; tutarları toplama girmedi.`;
 const th = { padding: "8px 10px", fontSize: 11.5, color: "var(--n500, #64748b)", textAlign: "right", whiteSpace: "nowrap" };
 const td = { padding: "7px 10px", fontSize: 13, textAlign: "right", whiteSpace: "nowrap", borderTop: "1px solid var(--n100, #f1f5f9)" };
@@ -116,7 +118,7 @@ export const SiparisIhtiyaci = ({ modelSatirlari = [], modeller = [], parts = []
           </KartBolum>
 
           <div style={{ marginTop: 18 }}><BolumBasligi ust>Malzeme ihtiyacı (ana tedarikçiye göre)</BolumBasligi></div>
-          {sonuc.tedarikciGruplari.length === 0 ? <Ipucu><span data-testid="siparis-malzeme-yok">Malzeme satırı olan parça siparişi yok.</span></Ipucu> : sonuc.tedarikciGruplari.map(t => (
+          {sonuc.tedarikciGruplari.length === 0 ? <Ipucu><span data-testid="siparis-malzeme-yok">{MALZEME_KALEMI_YOK_METNI}</span></Ipucu> : sonuc.tedarikciGruplari.map(t => (
             <KartBolum key={t.tedarikciId ?? "yok"} varyant="kart" style={{ padding: 0, overflow: "auto", marginBottom: 10 }}>
               <div data-testid="siparis-tedarikci" style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", fontWeight: 700, fontSize: 13 }}>
                 <span>{t.ad}</span><span data-testid="siparis-tedarikci-toplam">{tl(t.tutarTLK)}</span>

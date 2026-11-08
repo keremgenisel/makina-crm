@@ -224,6 +224,8 @@ const PARCA_0132 = [
 // Spec 0133: maliyete bağlı parçalar (malzemeden, kendi katlı, maliyetsiz), elle sabit ve fiyat ayarı.
 const PARCA_0133 = PARCA_0132.map(p => (p.id === 41 ? { ...p, fiyatKipi: "maliyet", fiyatUSD: 95 } : p.id === 7 ? { ...p, fiyatKipi: "maliyet", karKati: 3 }
   : p.id === 8 ? { ...p, fiyatKipi: "maliyet" } : p));
+const PARCA_0135 = [{ id: 51, ad: "Kazan gövdesi", kod: "KG-1", tip: "Standart", fiyatTRY: 2500, models: [], maliyetKalemleri: [
+  { tur: "malzeme", malzemeId: 502, bicim: "lama", kalinlik: 10, genislik: 120, boy: 300, adet: 2 }, { tur: "islem", ad: "Lazer kesim", tedarikciId: 31, tutar: 125.5 }] }, ...PARCA_0132];
 const AYAR_0133 = () => ({ giderAyarlari: { yururlukAy: "2026-06", stopajOrani: 20, hatirlatmaEsikGun: 7 }, fiyatAyarlari: { varsayilanKat: 2.4, yuvarlama: "yukari10" } });
 // Spec 0121 R34: içeriği olan (set) fikstür parçası; yoksa rozet ve "Set Hazırla" hiç çizilmez.
 const SET_0121 = { id: 20, ad: "100_AYNA MAHRUTİ DİŞLİSİ TAKIM", kod: "AY-T", tip: "Standart", fiyatTRY: 3000, models: [],
@@ -234,6 +236,14 @@ const BILESEN_0121 = [
   { id: 23, ad: "Rulman 6204", kod: "R-6204", tip: "Standart", models: [], maliyet: 120.5 },
 ];
 const PARCA_0121_SET = [SET_0121, ...BILESEN_0121];
+// Spec 0135: maliyet kalemli parçalar (malzeme ve işlem birlikte; yalnız işlem kalemli ve geçmişli) ve eski biçimlilerle liste.
+const GOVDE_0135 = { id: 51, ad: "Kazan gövdesi", kod: "KG-1", tip: "Standart", fiyatTRY: 2500, models: [], maliyetKalemleri: [
+  { tur: "malzeme", malzemeId: 502, bicim: "lama", kalinlik: 10, genislik: 120, boy: 300, adet: 2 },
+  { tur: "islem", ad: "Lazer kesim", tedarikciId: 31, tutar: 125.5 },
+  { tur: "islem", ad: "Kaplama", tutar: null },
+] };
+const PIM_0135 = { id: 52, ad: "Kaplamalı pim", kod: "KP-3", tip: "Standart", models: [], maliyetKalemleri: [{ tur: "islem", ad: "Kaplama", tedarikciId: 32, tutar: 40 }],
+  maliyetGecmisi: [{ gecerli: "", kurus: 3000 }, { gecerli: "2026-05-01", kurus: 4000 }] };
 const PARCA_0121_BOS = [...BILESEN_0121, SET_0121];
 const STOK_0121 = [{ id: 1, partId: "21", miktar: 10 }, { id: 2, partId: "22", miktar: 6 }, { id: 3, partId: "23", miktar: 20 }, { id: 4, partId: "20", miktar: 2 }];
 const STOK_0121_EKSIK = [{ id: 1, partId: "21", miktar: 10 }, { id: 3, partId: "23", miktar: 1 }];
@@ -980,13 +990,14 @@ const EKRANLAR = {
   // Spec 0087 R18: parça formu (maliyetli düzenleme ve maliyetsiz yeni kayıt), maliyeti girilmemiş ibaresi, adetli kit ve ek kalem.
   "katalog-parca": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Kullanıldığı Modeller ve Kit Adetleri"]],
   // Spec 0096: kırılımlı parça kartı (pasif maliyet alanı), tutarsız kırılım uyarısı, boş durum, hata, süzgeç, gider yetkisiz görünüm.
-  "katalog-parca-0096-kirilim": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
-  "katalog-parca-0096-tutarsiz": [ayarlar("yedekparca", { parts: [MIL_0096, ...PARCA_0087], standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
-  "katalog-parca-0096-bos": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Hammadde tedarikçileri"]],
+  // Spec 0135 ile: hammadde bölümü kalem listesine dönüştü; kaydırma maliyet bölümünün başlığına (adımlar yeni etiketlerle).
+  "katalog-parca-0096-kirilim": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Alış maliyeti (TL"]],
+  "katalog-parca-0096-tutarsiz": [ayarlar("yedekparca", { parts: [MIL_0096, ...PARCA_0087], standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Alış maliyeti (TL"]],
+  "katalog-parca-0096-bos": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Alış maliyeti (TL"]],
   "katalog-parca-0097-gecmis": [ayarlar("yedekparca", { parts: PARCA_0097, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Maliyet geçmişi"]],
   "katalog-parca-0097-hata": [ayarlar("yedekparca", { parts: PARCA_0097, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Alış maliyeti=20", "doldur:Geçerlilik tarihi=2026-05-15", "Kaydet", "kaydir:Alış maliyeti"]],
-  "katalog-parca-0096-hata": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Hammadde tutarı 1=-5", "Kaydet", "kaydir:Hammadde tedarikçileri"]],
-  "ayarlar-yedekparca-0096-suzgec": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["sec:Hammadde tedarikçisi süzgeci=32"]],
+  "katalog-parca-0096-hata": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:İşlem tutarı 1=-5", "Kaydet", "kaydir:Maliyet kalemleri"]],
+  "ayarlar-yedekparca-0096-suzgec": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["sec:Tedarikçi süzgeci=32"]],
   "ayarlar-yedekparca-0096-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), []],
   "katalog-parca-yeni": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["~Parça/Yedek Parça Ekle"]],
   // Spec 0121 R34: setin kartı (içerik, toplam, pasif maliyet) ve içeriği boş parçanın kartı (boş durum).
@@ -1006,7 +1017,7 @@ const EKRANLAR = {
   "katalog-malzeme-duzenle": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, rawParts: PARCA_0132 }), ["baslik:Düzenle"]],
   "katalog-malzeme-fiyat": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, rawParts: PARCA_0132, rates: { usd: 42.15, eur: 48.9 } }), ["baslik:Fiyatı Güncelle", "doldur:Kilo fiyatı=3,40", "kaydir:Etkisi"]],
   "katalog-malzeme-fiyat-cevrimdisi": [ayarlar("malzemeler", { malzemeler: MALZEME_0132.slice(0, 1), rawParts: PARCA_0132, rates: null, ratesErr: true }), ["baslik:Fiyatı Güncelle"]],
-  "katalog-parca-0132-malzeme": [ayarlar("yedekparca", { parts: PARCA_0132, malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Malzemeden maliyet"]],
+  "katalog-parca-0132-malzeme": [ayarlar("yedekparca", { parts: PARCA_0132, malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Maliyet kalemleri"]],
   "katalog-parca-0132-liste": [ayarlar("yedekparca", { parts: PARCA_0132, malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), []],
   // Spec 0133: fiyat kipi süzgeci, toplu kip, türetilmiş fiyat hücreleri; kartın fiyat bölümü (neden, fark, döviz notu, kat, zarar);
   // set düğmesinin pasifliği; Fiyat Ayarları paneli; zam penceresinin fiyat etkisi.
@@ -1027,9 +1038,20 @@ const EKRANLAR = {
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],
   // Spec 0099: kırılım toplamının yeri. Yetkisiz kullanıcının penceresi (C3, değişmez), iki tedarikçili ekleme penceresi (AC-19)
   // ve kırılımsız elle maliyetli parçanın penceresi (R10, değişmez).
-  "katalog-parca-0099-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), ["baslik:Düzenle", "kaydir:Alış maliyeti"]],
-  "katalog-parca-0099-ekle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "Tedarikçi ekle", "sec:Hammadde tedarikçisi 1=31", "doldur:Hammadde tutarı 1=7000", "Tedarikçi ekle", "sec:Hammadde tedarikçisi 2=32", "doldur:Hammadde tutarı 2=9000", "kaydir:Hammadde tedarikçileri"]],
-  "katalog-parca-0099-elle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Alış maliyeti"]],
+  "katalog-parca-0099-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), ["baslik:Düzenle", "kaydir:Alış maliyeti (TL"]],
+  "katalog-parca-0099-ekle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "dugme:Hesapla", "dugme:İşlem ekle", "doldur:İşlem adı 1=Lazer kesim", "sec:İşlem tedarikçisi 1=31", "doldur:İşlem tutarı 1=7000", "dugme:İşlem ekle", "doldur:İşlem adı 2=Büküm", "sec:İşlem tedarikçisi 2=32", "doldur:İşlem tutarı 2=9000", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0099-elle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Alış maliyeti (TL"]],
+  // Spec 0135: tek kip seçimi, çok malzeme ve işlem kalemi (kart: iki kip, boş ve dolu liste, hata, set pasifliği, yetkisiz, onay,
+  // yalnız işlem kalemli parçanın geçmişi; liste: tek kalem ibaresi).
+  "katalog-parca-0135-elle": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "kaydir:Alış maliyeti (TL"]],
+  "katalog-parca-0135-hesapla-bos": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "dugme:Hesapla", "kaydir:Alış maliyeti (TL"]],
+  "katalog-parca-0135-dolu": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0135-hata": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Malzeme adedi 1=0", "doldur:İşlem tutarı 1=2.400", "doldur:İşlem adı 2=", "Kaydet", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0135-set-pasif": [ayarlar("yedekparca", { parts: PARCA_0121_SET.filter(p => p.id === 20), standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Alış maliyeti (TL"]],
+  "katalog-parca-0135-yetkisiz": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), ["baslik:Düzenle", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0135-onay": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "dugme:Elle sabit"]],
+  "katalog-parca-0135-yalniz-islem": [ayarlar("yedekparca", { parts: [PIM_0135], standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Geçerlilik tarihi"]],
+  "katalog-parca-0135-liste": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), []],
   "katalog-model-ekmaliyet": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Ek Maliyet Kalemleri"]],
   "katalog-model-0134-parti": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "dugme:Parti başına gir", "kaydir:Makina Kiti"]],
   "katalog-calisan": [ayarlar("calisanlar"), []],

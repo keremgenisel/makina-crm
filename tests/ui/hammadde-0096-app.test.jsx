@@ -3,7 +3,9 @@
 // kırılımdan gelen maliyet, otuz günlük otomatik temizliğin kırılımda geçen tedarikçiyi koruması (R13/2, AC-37).
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
-import { KIRILIMDA_TEDARIKCI_NEDENI } from "../../src/lib/gider";
+// Spec 0135 ile (R32/2, R39): koruma ve kullanım metinleri kalem dilinde, liste hücresinde tek kalem ibaresi.
+import { KALEMDE_TEDARIKCI_NEDENI } from "../../src/lib/gider";
+import { kalemKaynakMetni } from "../../src/lib/urunAgaci";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); delete window.crmStorage; delete window.appServer; });
 const { default: App } = await import("../../src/App");
@@ -40,7 +42,7 @@ describe("Spec 0096 gerçek App", () => {
     await baslat();
     await ayarlar("Veri Yönetimi", "Çöp Kutusu");
     const satir = (await screen.findByText("Eski Döküm")).closest("tr");
-    expect(within(satir).getByTestId("cop-neden").textContent).toBe(KIRILIMDA_TEDARIKCI_NEDENI);
+    expect(within(satir).getByTestId("cop-neden").textContent).toBe(KALEMDE_TEDARIKCI_NEDENI);
     expect(screen.queryByText("Kullanılmayan")).toBeNull();
   });
   it("AC-24 / AC-48 (App hattı): Tedarikler ve Ekstre kullanım hücresi parça kırılımını sayar; Katalog'da maliyet kırılımın toplamı", async () => {
@@ -48,10 +50,10 @@ describe("Spec 0096 gerçek App", () => {
     menu("Giderler");
     fireEvent.click((await screen.findAllByText("Tedarikler ve Ekstre"))[0]);
     const satir = (await screen.findByText("Demir Çelik")).closest("tr");
-    expect(within(satir).getAllByRole("cell")[2].textContent).toBe("1 parçada");
+    expect(within(satir).getAllByRole("cell")[2].textContent).toBe("1 parçanın maliyet kaleminde");
     expect(within(satir).getByTestId("hammadde-rozeti")).toBeTruthy();
     await ayarlar("Katalog", "Parça/Yedek Parça");
     const parca = (await screen.findByText("Ayna dişlisi")).closest("tr");
-    expect(within(parca).getByTestId("parca-maliyet").textContent).toBe("17.000,00 ₺3 tedarikçiden");
+    expect(within(parca).getByTestId("parca-maliyet").textContent).toBe(`17.000,00 ₺${kalemKaynakMetni({ malzeme: 0, islem: 3 })}`);
   });
 });

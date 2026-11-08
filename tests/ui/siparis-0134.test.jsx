@@ -109,7 +109,7 @@ describe("Spec 0134: tablolar ve uyarılar", () => {
   it("AC-55 / AC-85: stok sayılmamışsa uyarı iki sayıyla; AC-99: hazır parçalar nötr sayıyla", () => {
     render(<Ekran />);
     expect(screen.getByTestId("siparis-stok-uyarisi").textContent).toBe(S.STOK_UYARISI(0, 4));
-    expect(screen.getByTestId("siparis-hazir").textContent).toContain("2 hazır parça");
+    expect(screen.getByTestId("siparis-hazir").textContent).toContain("2 parçada malzeme kalemi yok"); // spec 0135 ile (R30/2): kalem dili
   });
   it("AC-26 / AC-29 / AC-31 / AC-36 (ekran): kesit satırı net, sipariş, boy, TL ve fire uyarısı; tedarikçi toplamı", () => {
     render(<Ekran />);

@@ -1020,6 +1020,40 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0133 (0091 R24/4 emsali): undefined ayar NULL yazılır ve gövdede anahtar yok", !("fiyatAyarlari" in dbmod.readBlobFromDb().appSettings));
 }
 
+// ── Spec 0135 R45, C4, C4/2, AC-77, AC-78, AC-90, AC-91: parçanın maliyet kalemleri JSON sütunda. Kalem listesi boş olan
+// parçaların gövdesi spec öncesiyle birebir (anahtar yok); dolu liste bütün alanlarıyla (malzemenin ölçüleri ve payları, adet,
+// işlemin adı, tedarikçisi, tutarı, boş tutarın null'ı) geri gelir; boş liste NULL yazılır.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  const b0 = dbmod.readBlobFromDb();
+  check("spec 0135 AC-77: kalemsiz parçaların gövdesi spec öncesiyle birebir, maliyetKalemleri anahtarı yok", esit(b0.parts, once.parts) && b0.parts.every(p => !("maliyetKalemleri" in p)));
+  const kalemler = [
+    { tur: "malzeme", malzemeId: 501, bicim: "boru", yontem: "boy", cap: 60, et: 5, boy: 400, payCap: 2, payBoy: 3, fire: 4, adet: 2 },
+    { tur: "islem", ad: "Lazer kesim", tedarikciId: 31, tutar: 125.5 },
+    { tur: "islem", ad: "Kaplama", tutar: null },
+  ];
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.parts[0].maliyetKalemleri = kalemler;
+  girdi.parts[1].maliyetKalemleri = [];
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ps = ham.prepare(`SELECT id, maliyetKalemleri FROM parts`).all();
+  ham.close();
+  check("spec 0135 AC-77: boş kalem listesi NULL, dolu liste JSON dizi", ps.find(r => r.id === 8)?.maliyetKalemleri === null && JSON.parse(ps.find(r => r.id === 7)?.maliyetKalemleri || "[]").length === 3);
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  const okunan = c.parts.find(p => p.id === 7)?.maliyetKalemleri;
+  check("spec 0135 AC-78: kalemlerin bütün alanları birebir geri gelir", esit(okunan, kalemler));
+  check("spec 0135 AC-90 / AC-91: tür ayırıcısı, düz malzeme alanları, tedarikçisiz kalemde anahtar yok, boş tutar null",
+    okunan?.[0]?.tur === "malzeme" && okunan?.[0]?.cap === 60 && okunan?.[1]?.tur === "islem" && !("tedarikciId" in (okunan?.[2] || {})) && okunan?.[2]?.tutar === null);
+  check("spec 0135 AC-77: boş olarak yazılan kalem listesi gövdede yok", !("maliyetKalemleri" in c.parts.find(p => p.id === 8)));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");
