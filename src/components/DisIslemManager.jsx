@@ -11,6 +11,7 @@ import {
   PANEL_IPUCU, BOS_BASLIK, BOS_METNI, eksikSayiMetni, EKSIK_ROZETI,
 } from "../lib/disIslem";
 import { DisIslemFiyatPenceresi } from "./DisIslemFiyatPenceresi";
+import { ornekDisIslemler, ORNEK_DUGMESI, ORNEK_IPUCU } from "../lib/ornekKatalog";
 
 // Spec 0137: Ayarlar › Katalog › Dış İşlemler (malzeme panelinin ikizi). Panel `ayar:disislemler` kilidi altında çizilir (Settings,
 // R24, R24/2); fiyat güncelleme penceresi aynı kilidi paylaşır. Liste canlı dizidir, yazım tam dizide işlevsel güncelleyiciyle
@@ -89,6 +90,14 @@ export const DisIslemManager = ({ disIslemler = [], setDisIslemler, parts = [], 
     setForm(null);
     showToast(yeni ? "Dış işlem eklendi." : "Dış işlem güncellendi.");
   };
+  // Örnek veriler (2026-11-09): yalnız liste boşken ve kullanıcı isterse; kayıtlar kartın doğrulayıcısından geçer (lib/ornekKatalog).
+  const ornekEkle = () => {
+    const ornekler = ornekDisIslemler({ mevcut: disIslemler, rates, ratesErr, yeniId: uid });
+    if (!ornekler.length) return;
+    setDisIslemler(p => [...p, ...ornekler]);
+    for (const m of ornekler) logAction({ serverPermissions, action: "olusturuldu", entity: "dis_islem", entityId: m.id, entityName: m.ad });
+    showToast(`${ornekler.length} örnek dış işlem eklendi.`);
+  };
   const silOnay = () => {
     const damga = new Date().toISOString();
     setDisIslemler(p => p.map(m => (String(m.id) === String(sil.id) ? { ...m, deletedAt: damga } : m)));
@@ -106,8 +115,12 @@ export const DisIslemManager = ({ disIslemler = [], setDisIslemler, parts = [], 
           {disIslemler.length} işlem
           {eksikSayi > 0 && <span data-testid="dis-islem-eksik-sayisi" style={{ marginLeft: 8, color: "var(--amb700, #b45309)" }}>· {eksikSayiMetni(eksikSayi)}</span>}
         </div>
-        <Btn onClick={() => ac(null)}><Icon name="plus" size={14} /> {ISLEM_EKLE}</Btn>
+        <div style={{ display: "flex", gap: 8 }}>
+          {disIslemler.length === 0 && <Btn variant="ghost" testId="ornek-dis-islem-ekle" onClick={ornekEkle}>{ORNEK_DUGMESI}</Btn>}
+          <Btn onClick={() => ac(null)}><Icon name="plus" size={14} /> {ISLEM_EKLE}</Btn>
+        </div>
       </div>
+      {disIslemler.length === 0 && <Ipucu>{ORNEK_IPUCU}</Ipucu>}
       {disIslemler.length === 0 ? (
         <BosDurum testId="bos-dis-islem" baslik={BOS_BASLIK} metin={BOS_METNI} />
       ) : (

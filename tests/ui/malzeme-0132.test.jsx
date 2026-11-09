@@ -319,3 +319,24 @@ describe("Düğme düzeni (2026-11-08): malzeme satırında eylem düğmeleri", 
     expect(within(r).getByRole("button", { name: /düzenle$/ }).className).toContain("btn--ghost");
   });
 });
+
+describe("Örnek veriler (2026-11-09): boş listede isteğe bağlı düğme", () => {
+  it("liste boşken düğme ve ipucu görünür; tıklanınca örnekler eklenir, iz düşer, düğme kaybolur", () => {
+    render(<Panel m0={[]} />);
+    fireEvent.click(screen.getByTestId("ornek-malzeme-ekle"));
+    expect(durum.malzemeler).toHaveLength(4);
+    expect(durum.malzemeler.every(m => m.ad.startsWith("Örnek: "))).toBe(true);
+    expect(denetim.kayitlar.filter(k => k.entity === "malzeme" && k.action === "olusturuldu")).toHaveLength(4);
+    expect(screen.queryByTestId("ornek-malzeme-ekle")).toBeNull();
+    expect(screen.getAllByTestId("malzeme-satiri")).toHaveLength(4);
+  });
+  it("listede kayıt varken düğme yok; çöpteki kayıtlar korunur", () => {
+    render(<Panel />);
+    expect(screen.queryByTestId("ornek-malzeme-ekle")).toBeNull();
+    cleanup();
+    render(<Panel m0={[{ ...C8620, deletedAt: "2026-10-01" }]} />);
+    fireEvent.click(screen.getByTestId("ornek-malzeme-ekle"));
+    expect(durum.malzemeler.find(m => m.id === 502).deletedAt).toBe("2026-10-01");
+    expect(durum.malzemeler).toHaveLength(5);
+  });
+});

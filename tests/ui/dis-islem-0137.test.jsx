@@ -364,3 +364,17 @@ describe("Düğme düzeni (2026-11-08): dış işlem satırında eylem düğmele
     expect(within(r).getByRole("button", { name: /düzenle$/ }).className).toContain("btn--ghost");
   });
 });
+
+describe("Örnek veriler (2026-11-09): boş listede isteğe bağlı düğme", () => {
+  it("liste boşken düğme görünür; tıklanınca örnekler eklenir, iz düşer, düğme kaybolur", () => {
+    render(<Panel d0={[]} />);
+    fireEvent.click(screen.getByTestId("ornek-dis-islem-ekle"));
+    expect(durum.disIslemler).toHaveLength(4);
+    expect(denetim.kayitlar.filter(k => k.entity === "dis_islem" && k.action === "olusturuldu")).toHaveLength(4);
+    expect(screen.queryByTestId("ornek-dis-islem-ekle")).toBeNull();
+  });
+  it("listede kayıt varken düğme yok", () => {
+    render(<Panel />);
+    expect(screen.queryByTestId("ornek-dis-islem-ekle")).toBeNull();
+  });
+});

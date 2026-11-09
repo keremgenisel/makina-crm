@@ -9,6 +9,7 @@ import {
   BANT_LAMA_NOTU, kumeOzeti, fiyatKumesi, EMNIYET_PAYI_ETIKETI, EMNIYET_PAYI_IPUCU,
 } from "../lib/malzeme";
 import { MalzemeFiyatPenceresi } from "./MalzemeFiyatPenceresi";
+import { ornekMalzemeler, ORNEK_DUGMESI, ORNEK_IPUCU } from "../lib/ornekKatalog";
 
 // Spec 0132: Ayarlar › Katalog › Malzemeler. Panel `ayar:malzemeler` kilidi altında çizilir (Settings, C6); fiyat güncelleme
 // penceresi aynı kilidi kullanır (Karar 31). Liste canlı dizidir, yazım tam dizide işlevsel güncelleyiciyle (çöptekiler korunur).
@@ -117,6 +118,14 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
     setSil(null);
     showToast("Malzeme çöp kutusuna taşındı.");
   };
+  // Örnek veriler (2026-11-09): yalnız liste boşken ve kullanıcı isterse; kayıtlar kartın doğrulayıcısından geçer (lib/ornekKatalog).
+  const ornekEkle = () => {
+    const ornekler = ornekMalzemeler({ mevcut: malzemeler, rates, ratesErr, yeniId: uid });
+    if (!ornekler.length) return;
+    setMalzemeler(p => [...p, ...ornekler]);
+    for (const m of ornekler) logAction({ serverPermissions, action: "olusturuldu", entity: "malzeme", entityId: m.id, entityName: m.ad });
+    showToast(`${ornekler.length} örnek malzeme eklendi.`);
+  };
   const eski = form?.id != null ? malzemeler.find(m => String(m.id) === String(form.id)) : null;
 
   return (
@@ -126,8 +135,12 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
         <div data-testid="malzeme-eksik-sayisi" style={{ fontSize: 12.5, color: eksikSayi ? "var(--amb700, #b45309)" : "var(--n500, #64748b)", fontWeight: 600 }}>
           {eksikSayi ? eksikSayiMetni(eksikSayi) : `${malzemeler.length} malzeme`}
         </div>
-        <Btn onClick={() => ac(null)}><Icon name="plus" size={14} /> {MALZEME_EKLE}</Btn>
+        <div style={{ display: "flex", gap: 8 }}>
+          {malzemeler.length === 0 && <Btn variant="ghost" testId="ornek-malzeme-ekle" onClick={ornekEkle}>{ORNEK_DUGMESI}</Btn>}
+          <Btn onClick={() => ac(null)}><Icon name="plus" size={14} /> {MALZEME_EKLE}</Btn>
+        </div>
       </div>
+      {malzemeler.length === 0 && <Ipucu>{ORNEK_IPUCU}</Ipucu>}
       {malzemeler.length === 0 ? (
         <BosDurum testId="bos-malzeme" baslik={BOS_BASLIK} metin={BOS_METNI} />
       ) : (
