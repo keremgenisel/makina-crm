@@ -174,7 +174,10 @@ describe("Spec 0087: ürün ağacı adetleri (saf)", () => {
     const yazan = kaynaklar().filter(f => /defaultParcalar/.test(kod(f)));
     // Spec 0088 ile: Makina Maliyeti motoru kiti OKUR (direkt maliyet, R11); yazmaz (taraması aşağıda).
     // Spec 0134 ile: sipariş motoru kiti yalnız OKUR (patlatma, C1).
-    expect(yazan.sort()).toEqual(["src/components/ModelsManager.jsx", "src/components/stock/MakinaStokTab.jsx", "src/lib/makinaStandartMaliyet.js", "src/lib/siparisIhtiyaci.js", "src/lib/urunAgaci.js"]);
+    // Spec 0139 ile: malzeme listesi aktarması kiti yalnız kitleriGuncelle ile yazar, defaultParcalar'ı doğrulama turunda OKUR.
+    expect(yazan.sort()).toEqual(["src/components/ModelsManager.jsx", "src/components/stock/MakinaStokTab.jsx", "src/lib/makinaStandartMaliyet.js", "src/lib/malzemeListesiAktarma.js", "src/lib/siparisIhtiyaci.js", "src/lib/urunAgaci.js"]);
+    expect(kod("src/lib/malzemeListesiAktarma.js")).not.toMatch(/defaultParcalar\s*:/);
+    expect(kod("src/lib/malzemeListesiAktarma.js")).toMatch(/kitleriGuncelle\(acc, \{/);
     expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/defaultParcalar\s*:/);
     // Parça paneli kite yalnız urunAgaci üzerinden yazar; model paneli parçanın işaretini yalnız urunAgaci üzerinden taşır.
     expect(kod("src/components/PartManager.jsx")).toMatch(/setStandardModels\?\.\(p => kitleriGuncelle\(p, kit\)\)/);

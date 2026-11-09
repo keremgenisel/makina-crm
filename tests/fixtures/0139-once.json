@@ -1,0 +1,1836 @@
+{
+ "ozet": [
+  {
+   "maliyetK": 65337,
+   "eksik": [],
+   "hamKg": 4.245416993488327,
+   "fireliKg": 4.585050352967393,
+   "fire": 8,
+   "fiyat": 2.85,
+   "bant": {
+    "alt": 0,
+    "fiyat": 2.85
+   },
+   "kur": 50,
+   "paraBirimi": "USD",
+   "yontem": "kilo"
+  },
+  {
+   "maliyetK": 5745,
+   "eksik": [],
+   "hamKg": 0.37327147272892486,
+   "fireliKg": 0.4031331905472389,
+   "fire": 8,
+   "fiyat": 2.85,
+   "bant": {
+    "alt": 0,
+    "fiyat": 2.85
+   },
+   "kur": 50,
+   "paraBirimi": "USD",
+   "yontem": "kilo"
+  },
+  {
+   "maliyetK": 150983,
+   "eksik": [],
+   "hamKg": 10.035443254048285,
+   "fireliKg": 10.236152119129251,
+   "fire": 2,
+   "fiyat": 2.95,
+   "bant": {
+    "alt": 101,
+    "fiyat": 2.95
+   },
+   "kur": 50,
+   "paraBirimi": "USD",
+   "yontem": "kilo"
+  },
+  {
+   "maliyetK": 2328,
+   "eksik": [],
+   "hamKg": 0.11413406110491718,
+   "fireliKg": 0.11413406110491718,
+   "fire": 0,
+   "fiyat": 4.08,
+   "bant": null,
+   "kur": 50,
+   "paraBirimi": "USD",
+   "yontem": "kilo"
+  },
+  {
+   "maliyetK": 3413,
+   "eksik": [],
+   "hamKg": 0.1975,
+   "fireliKg": 0.21330000000000002,
+   "fire": 8,
+   "fiyat": 3.2,
+   "bant": null,
+   "kur": 50,
+   "paraBirimi": "USD",
+   "yontem": "kilo"
+  },
+  {
+   "maliyetK": 6945,
+   "eksik": [],
+   "hamKg": 0.33228,
+   "fireliKg": 0.36550800000000006,
+   "fire": 10,
+   "fiyat": 190,
+   "bant": null,
+   "kur": 1,
+   "paraBirimi": "TRY",
+   "yontem": "kilo"
+  },
+  {
+   "maliyetK": 11200,
+   "eksik": [],
+   "hamKg": null,
+   "fireliKg": null,
+   "fire": 5,
+   "oran": 0.06666666666666667,
+   "fiyat": 1600,
+   "kur": 1,
+   "paraBirimi": "TRY",
+   "yontem": "boy"
+  },
+  {
+   "maliyetK": 32944,
+   "eksik": [],
+   "hamKg": 2.140602694339745,
+   "fireliKg": 2.311850909886925,
+   "fire": 8,
+   "fiyat": 2.85,
+   "bant": {
+    "alt": 0,
+    "fiyat": 2.85
+   },
+   "kur": 50,
+   "paraBirimi": "USD",
+   "yontem": "kilo"
+  }
+ ],
+ "maliyet": [
+  [
+   65337,
+   65337
+  ],
+  [
+   17235,
+   17235
+  ],
+  [
+   150983,
+   150983
+  ],
+  [
+   2328,
+   2328
+  ],
+  [
+   6826,
+   6826
+  ],
+  [
+   6945,
+   6945
+  ],
+  [
+   11200,
+   11200
+  ],
+  [
+   36944,
+   36944
+  ],
+  [
+   1500,
+   1500
+  ]
+ ],
+ "fiyat": [
+  {
+   "deger": "",
+   "kip": "maliyet",
+   "neden": "Varsayılan kâr katı girilmediği için fiyat türetilemedi (Ayarlar › Uygulama › Fiyat Ayarları).",
+   "turetilmis": true,
+   "kat": null
+  },
+  {
+   "deger": "",
+   "kip": "elle",
+   "neden": null,
+   "turetilmis": false
+  },
+  {
+   "deger": "",
+   "kip": "maliyet",
+   "neden": "Varsayılan kâr katı girilmediği için fiyat türetilemedi (Ayarlar › Uygulama › Fiyat Ayarları).",
+   "turetilmis": true,
+   "kat": null
+  },
+  {
+   "deger": "",
+   "kip": "elle",
+   "neden": null,
+   "turetilmis": false
+  },
+  {
+   "deger": "",
+   "kip": "elle",
+   "neden": null,
+   "turetilmis": false
+  },
+  {
+   "deger": "",
+   "kip": "maliyet",
+   "neden": "Varsayılan kâr katı girilmediği için fiyat türetilemedi (Ayarlar › Uygulama › Fiyat Ayarları).",
+   "turetilmis": true,
+   "kat": null
+  },
+  {
+   "deger": "",
+   "kip": "elle",
+   "neden": null,
+   "turetilmis": false
+  },
+  {
+   "deger": "",
+   "kip": "elle",
+   "neden": null,
+   "turetilmis": false
+  },
+  {
+   "deger": "",
+   "kip": "elle",
+   "neden": null,
+   "turetilmis": false
+  }
+ ],
+ "disa": [
+  [
+   "Kalın mil",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   653.37,
+   ""
+  ],
+  [
+   "İnce mil",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   172.35,
+   ""
+  ],
+  [
+   "Yatak",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   1509.83,
+   ""
+  ],
+  [
+   "Boru",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   23.28,
+   ""
+  ],
+  [
+   "Lama",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   68.26,
+   ""
+  ],
+  [
+   "Levha",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   69.45,
+   ""
+  ],
+  [
+   "Boy mil",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   112,
+   ""
+  ],
+  [
+   "Karma",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   369.44,
+   ""
+  ],
+  [
+   "Elle",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   15,
+   ""
+  ]
+ ],
+ "modeller": [
+  {
+   "model": "AK100_DS",
+   "kit": [
+    {
+     "partId": "1",
+     "ad": "Kalın mil",
+     "adet": 1,
+     "birimK": 65337,
+     "satirK": 65337,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "2",
+     "ad": "İnce mil",
+     "adet": 2,
+     "birimK": 17235,
+     "satirK": 34470,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "3",
+     "ad": "Yatak",
+     "adet": 1,
+     "birimK": 150983,
+     "satirK": 150983,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "4",
+     "ad": "Boru",
+     "adet": 1,
+     "birimK": 2328,
+     "satirK": 2328,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "5",
+     "ad": "Lama",
+     "adet": 1,
+     "birimK": 6826,
+     "satirK": 6826,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "6",
+     "ad": "Levha",
+     "adet": 1,
+     "birimK": 6945,
+     "satirK": 6945,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "7",
+     "ad": "Boy mil",
+     "adet": 1,
+     "birimK": 11200,
+     "satirK": 11200,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "8",
+     "ad": "Karma",
+     "adet": 1,
+     "birimK": 36944,
+     "satirK": 36944,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "9",
+     "ad": "Elle",
+     "adet": 1,
+     "birimK": 1500,
+     "satirK": 1500,
+     "eksik": false,
+     "neden": null
+    }
+   ],
+   "ek": [],
+   "kitBos": false,
+   "eksikSayisi": 0,
+   "direktK": 316533,
+   "payK": 12345,
+   "toplamK": 328878,
+   "katsayi": 2.77,
+   "oneriK": 910992,
+   "kalipListeK": null
+  }
+ ],
+ "parti": {
+  "satirlar": [
+   {
+    "model": "AK100_DS",
+    "turetilenAdet": 1,
+    "katsayi": 2.77,
+    "anahtar": "AK100_DS",
+    "adet": 10,
+    "planlanan": true,
+    "direktK": 316533,
+    "eksikSayisi": 0,
+    "payK": 1000,
+    "payKaynak": "ayarlar",
+    "payNeden": null,
+    "payToplamK": 10000,
+    "ayAraligi": null,
+    "tarihsiz": false,
+    "toplamK": 317533,
+    "oneriK": 879566,
+    "toplamMaliyetK": 3175330,
+    "oneriCiroK": 8795664
+   }
+  ],
+  "bulunamayan": [],
+  "bos": false,
+  "payDurumu": null,
+  "ozet": {
+   "toplamStandartK": 3175330,
+   "onerilenCiroK": 8795664,
+   "katsayisiz": 0,
+   "satisK": 0,
+   "oneriyeGoreKarK": 5620334,
+   "gercegeGoreKarK": 0,
+   "satilmisStandartK": 0,
+   "kirilim": {
+    "satilmis": 0,
+    "stokta": 1,
+    "bedelsiz": 0,
+    "kursuz": 0,
+    "modelYok": 0
+   },
+   "kurDurumlari": {
+    "kayitli": 0,
+    "yaklasik": 0
+   }
+  },
+  "tedarik": {
+   "donem": {
+    "bas": "2026-01",
+    "bit": "2026-11"
+   },
+   "baslamadi": false,
+   "yururlukOncesi": false,
+   "tedarikK": 0,
+   "standartDirektK": 3165330,
+   "farkK": -3165330,
+   "paylasanParti": 0
+  }
+ },
+ "siparis": {
+  "satirlar": [
+   {
+    "model": "AK100_DS",
+    "adet": 70,
+    "hata": null
+   }
+  ],
+  "hataliSayi": 0,
+  "gecerliSayi": 1,
+  "kitBos": [],
+  "kesisimler": [],
+  "parcalar": [
+   {
+    "partId": "1",
+    "ad": "Kalın mil",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 70,
+    "pay": 5,
+    "ihtiyac": 74,
+    "stok": 0,
+    "siparis": 74,
+    "malzemeli": true
+   },
+   {
+    "partId": "2",
+    "ad": "İnce mil",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 140,
+    "pay": 5,
+    "ihtiyac": 147,
+    "stok": 0,
+    "siparis": 147,
+    "malzemeli": true
+   },
+   {
+    "partId": "3",
+    "ad": "Yatak",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 70,
+    "pay": 5,
+    "ihtiyac": 74,
+    "stok": 0,
+    "siparis": 74,
+    "malzemeli": true
+   },
+   {
+    "partId": "4",
+    "ad": "Boru",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 70,
+    "pay": null,
+    "ihtiyac": 70,
+    "stok": 0,
+    "siparis": 70,
+    "malzemeli": true
+   },
+   {
+    "partId": "5",
+    "ad": "Lama",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 70,
+    "pay": 5,
+    "ihtiyac": 74,
+    "stok": 0,
+    "siparis": 74,
+    "malzemeli": true
+   },
+   {
+    "partId": "6",
+    "ad": "Levha",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 70,
+    "pay": null,
+    "ihtiyac": 70,
+    "stok": 0,
+    "siparis": 70,
+    "malzemeli": true
+   },
+   {
+    "partId": "7",
+    "ad": "Boy mil",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 70,
+    "pay": null,
+    "ihtiyac": 70,
+    "stok": 0,
+    "siparis": 70,
+    "malzemeli": true
+   },
+   {
+    "partId": "8",
+    "ad": "Karma",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 70,
+    "pay": 5,
+    "ihtiyac": 74,
+    "stok": 0,
+    "siparis": 74,
+    "malzemeli": true
+   },
+   {
+    "partId": "9",
+    "ad": "Elle",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "AK100_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 70,
+    "pay": null,
+    "ihtiyac": 70,
+    "stok": 0,
+    "siparis": 70,
+    "malzemeli": false
+   }
+  ],
+  "kesitler": [
+   {
+    "anahtar": "501|kilo|mil|62",
+    "malzemeId": "501",
+    "malzemeAd": "304 Çubuk",
+    "tedarikciId": null,
+    "bicim": "mil",
+    "yontem": "kilo",
+    "kesit": [
+     62
+    ],
+    "kesitMetni": "Ø62",
+    "paraBirimi": "USD",
+    "kur": 50,
+    "parcalar": [
+     {
+      "partId": "1",
+      "ad": "Kalın mil",
+      "adet": 74,
+      "hamKg": 4.245416993488327,
+      "fireliKg": 4.585050352967393,
+      "fire": 8,
+      "kesimBoyu": 178,
+      "oran": 0.029666666666666668
+     }
+    ],
+    "netKg": 314.1608575181362,
+    "fireKg": 25.132868601450895,
+    "siparisKg": 429.3118308021904,
+    "artanKg": 115.1509732840542,
+    "kgNeden": null,
+    "boyAdedi": 3,
+    "boyNeden": null,
+    "fireUyarisi": true,
+    "asgariFark": null,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "tutar": 1223.5387177862426,
+    "tutarK": 122354,
+    "tutarTLK": 6117694,
+    "tutarNeden": null
+   },
+   {
+    "anahtar": "501|kilo|mil|16",
+    "malzemeId": "501",
+    "malzemeAd": "304 Çubuk",
+    "tedarikciId": null,
+    "bicim": "mil",
+    "yontem": "kilo",
+    "kesit": [
+     16
+    ],
+    "kesitMetni": "Ø16",
+    "paraBirimi": "USD",
+    "kur": 50,
+    "parcalar": [
+     {
+      "partId": "2",
+      "ad": "İnce mil",
+      "adet": 441,
+      "hamKg": 0.37327147272892486,
+      "fireliKg": 0.4031331905472389,
+      "fire": 8,
+      "kesimBoyu": 235,
+      "oran": 0.03916666666666667
+     }
+    ],
+    "netKg": 164.61271947345585,
+    "fireKg": 13.16901755787649,
+    "siparisKg": 171.54603853073996,
+    "artanKg": 6.933319057284109,
+    "kgNeden": null,
+    "boyAdedi": 18,
+    "boyNeden": null,
+    "fireUyarisi": true,
+    "asgariFark": null,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "tutar": 488.9062098126089,
+    "tutarK": 48891,
+    "tutarTLK": 2444531,
+    "tutarNeden": null
+   },
+   {
+    "anahtar": "501|kilo|mil|144",
+    "malzemeId": "501",
+    "malzemeAd": "304 Çubuk",
+    "tedarikciId": null,
+    "bicim": "mil",
+    "yontem": "kilo",
+    "kesit": [
+     144
+    ],
+    "kesitMetni": "Ø144",
+    "paraBirimi": "USD",
+    "kur": 50,
+    "parcalar": [
+     {
+      "partId": "3",
+      "ad": "Yatak",
+      "adet": 74,
+      "hamKg": 10.035443254048285,
+      "fireliKg": 10.236152119129251,
+      "fire": 2,
+      "kesimBoyu": 78,
+      "oran": 0.013
+     }
+    ],
+    "netKg": 742.6228007995732,
+    "fireKg": 14.852456015991457,
+    "siparisKg": 771.9571733883297,
+    "artanKg": 29.334372588756537,
+    "kgNeden": null,
+    "boyAdedi": 1,
+    "boyNeden": null,
+    "fireUyarisi": true,
+    "asgariFark": null,
+    "fiyat": 2.95,
+    "bant": {
+     "alt": 101,
+     "fiyat": 2.95
+    },
+    "tutar": 2277.273661495573,
+    "tutarK": 227727,
+    "tutarTLK": 11386368,
+    "tutarNeden": null
+   },
+   {
+    "anahtar": "503|kilo|boru|19|1.5",
+    "malzemeId": "503",
+    "malzemeAd": "Boru 304",
+    "tedarikciId": null,
+    "bicim": "boru",
+    "yontem": "kilo",
+    "kesit": [
+     19,
+     1.5
+    ],
+    "kesitMetni": "Ø19 × 1,5 et",
+    "paraBirimi": "USD",
+    "kur": 50,
+    "parcalar": [
+     {
+      "partId": "4",
+      "ad": "Boru",
+      "adet": 70,
+      "hamKg": 0.11413406110491718,
+      "fireliKg": 0.11413406110491718,
+      "fire": 0,
+      "kesimBoyu": 173,
+      "oran": 0.028833333333333332
+     }
+    ],
+    "netKg": 7.989384277344203,
+    "fireKg": 0,
+    "siparisKg": 11.875220230569418,
+    "artanKg": 3.8858359532252154,
+    "kgNeden": null,
+    "boyAdedi": 3,
+    "boyNeden": null,
+    "fireUyarisi": null,
+    "asgariFark": null,
+    "fiyat": 4.08,
+    "bant": null,
+    "tutar": 48.45089854072323,
+    "tutarK": 4845,
+    "tutarTLK": 242254,
+    "tutarNeden": null
+   },
+   {
+    "anahtar": "501|kilo|lama|10|20",
+    "malzemeId": "501",
+    "malzemeAd": "304 Çubuk",
+    "tedarikciId": null,
+    "bicim": "lama",
+    "yontem": "kilo",
+    "kesit": [
+     10,
+     20
+    ],
+    "kesitMetni": "10 × 20",
+    "paraBirimi": "USD",
+    "kur": 50,
+    "parcalar": [
+     {
+      "partId": "5",
+      "ad": "Lama",
+      "adet": 148,
+      "hamKg": 0.1975,
+      "fireliKg": 0.21330000000000002,
+      "fire": 8,
+      "kesimBoyu": 125,
+      "oran": 0.020833333333333332
+     }
+    ],
+    "netKg": 29.23,
+    "fireKg": 2.3384000000000014,
+    "siparisKg": 31.5684,
+    "artanKg": null,
+    "kgNeden": null,
+    "boyAdedi": null,
+    "boyNeden": "Lama ve sacda boy adedi hesaplanmaz (kesit kartta yok); sipariş kilosu net ihtiyaç ile firenin toplamı.",
+    "fireUyarisi": null,
+    "asgariFark": null,
+    "fiyat": 3.2,
+    "bant": null,
+    "tutar": 101.01888000000001,
+    "tutarK": 10102,
+    "tutarTLK": 505094,
+    "tutarNeden": null
+   },
+   {
+    "anahtar": "502|kilo|sac|30|60",
+    "malzemeId": "502",
+    "malzemeAd": "Delrin levha",
+    "tedarikciId": null,
+    "bicim": "sac",
+    "yontem": "kilo",
+    "kesit": [
+     30,
+     60
+    ],
+    "kesitMetni": "30 × 60",
+    "paraBirimi": "TRY",
+    "kur": 1,
+    "parcalar": [
+     {
+      "partId": "6",
+      "ad": "Levha",
+      "adet": 70,
+      "hamKg": 0.33228,
+      "fireliKg": 0.36550800000000006,
+      "fire": 10,
+      "kesimBoyu": 130,
+      "oran": null
+     }
+    ],
+    "netKg": 23.259600000000002,
+    "fireKg": 2.3259600000000025,
+    "siparisKg": 25.585560000000005,
+    "artanKg": null,
+    "kgNeden": null,
+    "boyAdedi": null,
+    "boyNeden": "Lama ve sacda boy adedi hesaplanmaz (kesit kartta yok); sipariş kilosu net ihtiyaç ile firenin toplamı.",
+    "fireUyarisi": null,
+    "asgariFark": null,
+    "fiyat": 190,
+    "bant": null,
+    "tutar": 4861.256400000001,
+    "tutarK": 486126,
+    "tutarTLK": 486126,
+    "tutarNeden": null
+   },
+   {
+    "anahtar": "504|boy|mil|30",
+    "malzemeId": "504",
+    "malzemeAd": "Boy fiyatlı",
+    "tedarikciId": null,
+    "bicim": "mil",
+    "yontem": "boy",
+    "kesit": [
+     30
+    ],
+    "kesitMetni": "Ø30",
+    "paraBirimi": "TRY",
+    "kur": 1,
+    "parcalar": [
+     {
+      "partId": "7",
+      "ad": "Boy mil",
+      "adet": 70,
+      "hamKg": null,
+      "fireliKg": null,
+      "fire": 5,
+      "kesimBoyu": 400,
+      "oran": 0.06666666666666667
+     }
+    ],
+    "netKg": null,
+    "fireKg": null,
+    "siparisKg": null,
+    "artanKg": null,
+    "kgNeden": "Boy fiyatından hesaplanan parça; kilo hesaplanmaz.",
+    "boyAdedi": 5,
+    "boyNeden": null,
+    "fireUyarisi": true,
+    "asgariFark": null,
+    "fiyat": 1600,
+    "tutar": 8000,
+    "tutarK": 800000,
+    "tutarTLK": 800000,
+    "tutarNeden": null
+   },
+   {
+    "anahtar": "501|kilo|mil|50",
+    "malzemeId": "501",
+    "malzemeAd": "304 Çubuk",
+    "tedarikciId": null,
+    "bicim": "mil",
+    "yontem": "kilo",
+    "kesit": [
+     50
+    ],
+    "kesitMetni": "Ø50",
+    "paraBirimi": "USD",
+    "kur": 50,
+    "parcalar": [
+     {
+      "partId": "8",
+      "ad": "Karma",
+      "adet": 74,
+      "hamKg": 2.140602694339745,
+      "fireliKg": 2.311850909886925,
+      "fire": 8,
+      "kesimBoyu": 138,
+      "oran": 0.023
+     }
+    ],
+    "netKg": 158.40459938114114,
+    "fireKg": 12.672367950491317,
+    "siparisKg": 186.13936472519526,
+    "artanKg": 27.734765344054125,
+    "kgNeden": null,
+    "boyAdedi": 2,
+    "boyNeden": null,
+    "fireUyarisi": true,
+    "asgariFark": null,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "tutar": 530.4971894668065,
+    "tutarK": 53050,
+    "tutarTLK": 2652486,
+    "tutarNeden": null
+   }
+  ],
+  "malzemeGruplari": [
+   {
+    "malzemeId": "501",
+    "ad": "304 Çubuk",
+    "paraBirimi": "USD",
+    "tedarikciId": null,
+    "kesitler": [
+     {
+      "anahtar": "501|kilo|mil|62",
+      "malzemeId": "501",
+      "malzemeAd": "304 Çubuk",
+      "tedarikciId": null,
+      "bicim": "mil",
+      "yontem": "kilo",
+      "kesit": [
+       62
+      ],
+      "kesitMetni": "Ø62",
+      "paraBirimi": "USD",
+      "kur": 50,
+      "parcalar": [
+       {
+        "partId": "1",
+        "ad": "Kalın mil",
+        "adet": 74,
+        "hamKg": 4.245416993488327,
+        "fireliKg": 4.585050352967393,
+        "fire": 8,
+        "kesimBoyu": 178,
+        "oran": 0.029666666666666668
+       }
+      ],
+      "netKg": 314.1608575181362,
+      "fireKg": 25.132868601450895,
+      "siparisKg": 429.3118308021904,
+      "artanKg": 115.1509732840542,
+      "kgNeden": null,
+      "boyAdedi": 3,
+      "boyNeden": null,
+      "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+      "asgariFark": null,
+      "fiyat": 2.85,
+      "bant": {
+       "alt": 0,
+       "fiyat": 2.85
+      },
+      "tutar": 1223.5387177862426,
+      "tutarK": 122354,
+      "tutarTLK": 6117694,
+      "tutarNeden": null
+     },
+     {
+      "anahtar": "501|kilo|mil|16",
+      "malzemeId": "501",
+      "malzemeAd": "304 Çubuk",
+      "tedarikciId": null,
+      "bicim": "mil",
+      "yontem": "kilo",
+      "kesit": [
+       16
+      ],
+      "kesitMetni": "Ø16",
+      "paraBirimi": "USD",
+      "kur": 50,
+      "parcalar": [
+       {
+        "partId": "2",
+        "ad": "İnce mil",
+        "adet": 441,
+        "hamKg": 0.37327147272892486,
+        "fireliKg": 0.4031331905472389,
+        "fire": 8,
+        "kesimBoyu": 235,
+        "oran": 0.03916666666666667
+       }
+      ],
+      "netKg": 164.61271947345585,
+      "fireKg": 13.16901755787649,
+      "siparisKg": 171.54603853073996,
+      "artanKg": 6.933319057284109,
+      "kgNeden": null,
+      "boyAdedi": 18,
+      "boyNeden": null,
+      "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+      "asgariFark": null,
+      "fiyat": 2.85,
+      "bant": {
+       "alt": 0,
+       "fiyat": 2.85
+      },
+      "tutar": 488.9062098126089,
+      "tutarK": 48891,
+      "tutarTLK": 2444531,
+      "tutarNeden": null
+     },
+     {
+      "anahtar": "501|kilo|mil|144",
+      "malzemeId": "501",
+      "malzemeAd": "304 Çubuk",
+      "tedarikciId": null,
+      "bicim": "mil",
+      "yontem": "kilo",
+      "kesit": [
+       144
+      ],
+      "kesitMetni": "Ø144",
+      "paraBirimi": "USD",
+      "kur": 50,
+      "parcalar": [
+       {
+        "partId": "3",
+        "ad": "Yatak",
+        "adet": 74,
+        "hamKg": 10.035443254048285,
+        "fireliKg": 10.236152119129251,
+        "fire": 2,
+        "kesimBoyu": 78,
+        "oran": 0.013
+       }
+      ],
+      "netKg": 742.6228007995732,
+      "fireKg": 14.852456015991457,
+      "siparisKg": 771.9571733883297,
+      "artanKg": 29.334372588756537,
+      "kgNeden": null,
+      "boyAdedi": 1,
+      "boyNeden": null,
+      "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+      "asgariFark": null,
+      "fiyat": 2.95,
+      "bant": {
+       "alt": 101,
+       "fiyat": 2.95
+      },
+      "tutar": 2277.273661495573,
+      "tutarK": 227727,
+      "tutarTLK": 11386368,
+      "tutarNeden": null
+     },
+     {
+      "anahtar": "501|kilo|lama|10|20",
+      "malzemeId": "501",
+      "malzemeAd": "304 Çubuk",
+      "tedarikciId": null,
+      "bicim": "lama",
+      "yontem": "kilo",
+      "kesit": [
+       10,
+       20
+      ],
+      "kesitMetni": "10 × 20",
+      "paraBirimi": "USD",
+      "kur": 50,
+      "parcalar": [
+       {
+        "partId": "5",
+        "ad": "Lama",
+        "adet": 148,
+        "hamKg": 0.1975,
+        "fireliKg": 0.21330000000000002,
+        "fire": 8,
+        "kesimBoyu": 125,
+        "oran": 0.020833333333333332
+       }
+      ],
+      "netKg": 29.23,
+      "fireKg": 2.3384000000000014,
+      "siparisKg": 31.5684,
+      "artanKg": null,
+      "kgNeden": null,
+      "boyAdedi": null,
+      "boyNeden": "Lama ve sacda boy adedi hesaplanmaz (kesit kartta yok); sipariş kilosu net ihtiyaç ile firenin toplamı.",
+      "fireUyarisi": null,
+      "asgariFark": null,
+      "fiyat": 3.2,
+      "bant": null,
+      "tutar": 101.01888000000001,
+      "tutarK": 10102,
+      "tutarTLK": 505094,
+      "tutarNeden": null
+     },
+     {
+      "anahtar": "501|kilo|mil|50",
+      "malzemeId": "501",
+      "malzemeAd": "304 Çubuk",
+      "tedarikciId": null,
+      "bicim": "mil",
+      "yontem": "kilo",
+      "kesit": [
+       50
+      ],
+      "kesitMetni": "Ø50",
+      "paraBirimi": "USD",
+      "kur": 50,
+      "parcalar": [
+       {
+        "partId": "8",
+        "ad": "Karma",
+        "adet": 74,
+        "hamKg": 2.140602694339745,
+        "fireliKg": 2.311850909886925,
+        "fire": 8,
+        "kesimBoyu": 138,
+        "oran": 0.023
+       }
+      ],
+      "netKg": 158.40459938114114,
+      "fireKg": 12.672367950491317,
+      "siparisKg": 186.13936472519526,
+      "artanKg": 27.734765344054125,
+      "kgNeden": null,
+      "boyAdedi": 2,
+      "boyNeden": null,
+      "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+      "asgariFark": null,
+      "fiyat": 2.85,
+      "bant": {
+       "alt": 0,
+       "fiyat": 2.85
+      },
+      "tutar": 530.4971894668065,
+      "tutarK": 53050,
+      "tutarTLK": 2652486,
+      "tutarNeden": null
+     }
+    ],
+    "netKg": 1409.0309771723064,
+    "siparisKg": 1590.5228074464553,
+    "tutarTLK": 23106173,
+    "tutarsiz": 0
+   },
+   {
+    "malzemeId": "503",
+    "ad": "Boru 304",
+    "paraBirimi": "USD",
+    "tedarikciId": null,
+    "kesitler": [
+     {
+      "anahtar": "503|kilo|boru|19|1.5",
+      "malzemeId": "503",
+      "malzemeAd": "Boru 304",
+      "tedarikciId": null,
+      "bicim": "boru",
+      "yontem": "kilo",
+      "kesit": [
+       19,
+       1.5
+      ],
+      "kesitMetni": "Ø19 × 1,5 et",
+      "paraBirimi": "USD",
+      "kur": 50,
+      "parcalar": [
+       {
+        "partId": "4",
+        "ad": "Boru",
+        "adet": 70,
+        "hamKg": 0.11413406110491718,
+        "fireliKg": 0.11413406110491718,
+        "fire": 0,
+        "kesimBoyu": 173,
+        "oran": 0.028833333333333332
+       }
+      ],
+      "netKg": 7.989384277344203,
+      "fireKg": 0,
+      "siparisKg": 11.875220230569418,
+      "artanKg": 3.8858359532252154,
+      "kgNeden": null,
+      "boyAdedi": 3,
+      "boyNeden": null,
+      "fireUyarisi": null,
+      "asgariFark": null,
+      "fiyat": 4.08,
+      "bant": null,
+      "tutar": 48.45089854072323,
+      "tutarK": 4845,
+      "tutarTLK": 242254,
+      "tutarNeden": null
+     }
+    ],
+    "netKg": 7.989384277344203,
+    "siparisKg": 11.875220230569418,
+    "tutarTLK": 242254,
+    "tutarsiz": 0
+   },
+   {
+    "malzemeId": "502",
+    "ad": "Delrin levha",
+    "paraBirimi": "TRY",
+    "tedarikciId": null,
+    "kesitler": [
+     {
+      "anahtar": "502|kilo|sac|30|60",
+      "malzemeId": "502",
+      "malzemeAd": "Delrin levha",
+      "tedarikciId": null,
+      "bicim": "sac",
+      "yontem": "kilo",
+      "kesit": [
+       30,
+       60
+      ],
+      "kesitMetni": "30 × 60",
+      "paraBirimi": "TRY",
+      "kur": 1,
+      "parcalar": [
+       {
+        "partId": "6",
+        "ad": "Levha",
+        "adet": 70,
+        "hamKg": 0.33228,
+        "fireliKg": 0.36550800000000006,
+        "fire": 10,
+        "kesimBoyu": 130,
+        "oran": null
+       }
+      ],
+      "netKg": 23.259600000000002,
+      "fireKg": 2.3259600000000025,
+      "siparisKg": 25.585560000000005,
+      "artanKg": null,
+      "kgNeden": null,
+      "boyAdedi": null,
+      "boyNeden": "Lama ve sacda boy adedi hesaplanmaz (kesit kartta yok); sipariş kilosu net ihtiyaç ile firenin toplamı.",
+      "fireUyarisi": null,
+      "asgariFark": null,
+      "fiyat": 190,
+      "bant": null,
+      "tutar": 4861.256400000001,
+      "tutarK": 486126,
+      "tutarTLK": 486126,
+      "tutarNeden": null
+     }
+    ],
+    "netKg": 23.259600000000002,
+    "siparisKg": 25.585560000000005,
+    "tutarTLK": 486126,
+    "tutarsiz": 0
+   },
+   {
+    "malzemeId": "504",
+    "ad": "Boy fiyatlı",
+    "paraBirimi": "TRY",
+    "tedarikciId": null,
+    "kesitler": [
+     {
+      "anahtar": "504|boy|mil|30",
+      "malzemeId": "504",
+      "malzemeAd": "Boy fiyatlı",
+      "tedarikciId": null,
+      "bicim": "mil",
+      "yontem": "boy",
+      "kesit": [
+       30
+      ],
+      "kesitMetni": "Ø30",
+      "paraBirimi": "TRY",
+      "kur": 1,
+      "parcalar": [
+       {
+        "partId": "7",
+        "ad": "Boy mil",
+        "adet": 70,
+        "hamKg": null,
+        "fireliKg": null,
+        "fire": 5,
+        "kesimBoyu": 400,
+        "oran": 0.06666666666666667
+       }
+      ],
+      "netKg": null,
+      "fireKg": null,
+      "siparisKg": null,
+      "artanKg": null,
+      "kgNeden": "Boy fiyatından hesaplanan parça; kilo hesaplanmaz.",
+      "boyAdedi": 5,
+      "boyNeden": null,
+      "fireUyarisi": "Boy fiyatından hesaplanan parçada boy adedi tüketim oranından gelir; fire bu orana eklendi (maliyetle aynı).",
+      "asgariFark": null,
+      "fiyat": 1600,
+      "tutar": 8000,
+      "tutarK": 800000,
+      "tutarTLK": 800000,
+      "tutarNeden": null
+     }
+    ],
+    "netKg": 0,
+    "siparisKg": 0,
+    "tutarTLK": 800000,
+    "tutarsiz": 0
+   }
+  ],
+  "tedarikciGruplari": [
+   {
+    "tedarikciId": null,
+    "ad": "Ana tedarikçisi girilmemiş malzemeler",
+    "silinmis": false,
+    "yok": true,
+    "malzemeler": [
+     {
+      "malzemeId": "501",
+      "ad": "304 Çubuk",
+      "paraBirimi": "USD",
+      "tedarikciId": null,
+      "kesitler": [
+       {
+        "anahtar": "501|kilo|mil|62",
+        "malzemeId": "501",
+        "malzemeAd": "304 Çubuk",
+        "tedarikciId": null,
+        "bicim": "mil",
+        "yontem": "kilo",
+        "kesit": [
+         62
+        ],
+        "kesitMetni": "Ø62",
+        "paraBirimi": "USD",
+        "kur": 50,
+        "parcalar": [
+         {
+          "partId": "1",
+          "ad": "Kalın mil",
+          "adet": 74,
+          "hamKg": 4.245416993488327,
+          "fireliKg": 4.585050352967393,
+          "fire": 8,
+          "kesimBoyu": 178,
+          "oran": 0.029666666666666668
+         }
+        ],
+        "netKg": 314.1608575181362,
+        "fireKg": 25.132868601450895,
+        "siparisKg": 429.3118308021904,
+        "artanKg": 115.1509732840542,
+        "kgNeden": null,
+        "boyAdedi": 3,
+        "boyNeden": null,
+        "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+        "asgariFark": null,
+        "fiyat": 2.85,
+        "bant": {
+         "alt": 0,
+         "fiyat": 2.85
+        },
+        "tutar": 1223.5387177862426,
+        "tutarK": 122354,
+        "tutarTLK": 6117694,
+        "tutarNeden": null
+       },
+       {
+        "anahtar": "501|kilo|mil|16",
+        "malzemeId": "501",
+        "malzemeAd": "304 Çubuk",
+        "tedarikciId": null,
+        "bicim": "mil",
+        "yontem": "kilo",
+        "kesit": [
+         16
+        ],
+        "kesitMetni": "Ø16",
+        "paraBirimi": "USD",
+        "kur": 50,
+        "parcalar": [
+         {
+          "partId": "2",
+          "ad": "İnce mil",
+          "adet": 441,
+          "hamKg": 0.37327147272892486,
+          "fireliKg": 0.4031331905472389,
+          "fire": 8,
+          "kesimBoyu": 235,
+          "oran": 0.03916666666666667
+         }
+        ],
+        "netKg": 164.61271947345585,
+        "fireKg": 13.16901755787649,
+        "siparisKg": 171.54603853073996,
+        "artanKg": 6.933319057284109,
+        "kgNeden": null,
+        "boyAdedi": 18,
+        "boyNeden": null,
+        "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+        "asgariFark": null,
+        "fiyat": 2.85,
+        "bant": {
+         "alt": 0,
+         "fiyat": 2.85
+        },
+        "tutar": 488.9062098126089,
+        "tutarK": 48891,
+        "tutarTLK": 2444531,
+        "tutarNeden": null
+       },
+       {
+        "anahtar": "501|kilo|mil|144",
+        "malzemeId": "501",
+        "malzemeAd": "304 Çubuk",
+        "tedarikciId": null,
+        "bicim": "mil",
+        "yontem": "kilo",
+        "kesit": [
+         144
+        ],
+        "kesitMetni": "Ø144",
+        "paraBirimi": "USD",
+        "kur": 50,
+        "parcalar": [
+         {
+          "partId": "3",
+          "ad": "Yatak",
+          "adet": 74,
+          "hamKg": 10.035443254048285,
+          "fireliKg": 10.236152119129251,
+          "fire": 2,
+          "kesimBoyu": 78,
+          "oran": 0.013
+         }
+        ],
+        "netKg": 742.6228007995732,
+        "fireKg": 14.852456015991457,
+        "siparisKg": 771.9571733883297,
+        "artanKg": 29.334372588756537,
+        "kgNeden": null,
+        "boyAdedi": 1,
+        "boyNeden": null,
+        "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+        "asgariFark": null,
+        "fiyat": 2.95,
+        "bant": {
+         "alt": 101,
+         "fiyat": 2.95
+        },
+        "tutar": 2277.273661495573,
+        "tutarK": 227727,
+        "tutarTLK": 11386368,
+        "tutarNeden": null
+       },
+       {
+        "anahtar": "501|kilo|lama|10|20",
+        "malzemeId": "501",
+        "malzemeAd": "304 Çubuk",
+        "tedarikciId": null,
+        "bicim": "lama",
+        "yontem": "kilo",
+        "kesit": [
+         10,
+         20
+        ],
+        "kesitMetni": "10 × 20",
+        "paraBirimi": "USD",
+        "kur": 50,
+        "parcalar": [
+         {
+          "partId": "5",
+          "ad": "Lama",
+          "adet": 148,
+          "hamKg": 0.1975,
+          "fireliKg": 0.21330000000000002,
+          "fire": 8,
+          "kesimBoyu": 125,
+          "oran": 0.020833333333333332
+         }
+        ],
+        "netKg": 29.23,
+        "fireKg": 2.3384000000000014,
+        "siparisKg": 31.5684,
+        "artanKg": null,
+        "kgNeden": null,
+        "boyAdedi": null,
+        "boyNeden": "Lama ve sacda boy adedi hesaplanmaz (kesit kartta yok); sipariş kilosu net ihtiyaç ile firenin toplamı.",
+        "fireUyarisi": null,
+        "asgariFark": null,
+        "fiyat": 3.2,
+        "bant": null,
+        "tutar": 101.01888000000001,
+        "tutarK": 10102,
+        "tutarTLK": 505094,
+        "tutarNeden": null
+       },
+       {
+        "anahtar": "501|kilo|mil|50",
+        "malzemeId": "501",
+        "malzemeAd": "304 Çubuk",
+        "tedarikciId": null,
+        "bicim": "mil",
+        "yontem": "kilo",
+        "kesit": [
+         50
+        ],
+        "kesitMetni": "Ø50",
+        "paraBirimi": "USD",
+        "kur": 50,
+        "parcalar": [
+         {
+          "partId": "8",
+          "ad": "Karma",
+          "adet": 74,
+          "hamKg": 2.140602694339745,
+          "fireliKg": 2.311850909886925,
+          "fire": 8,
+          "kesimBoyu": 138,
+          "oran": 0.023
+         }
+        ],
+        "netKg": 158.40459938114114,
+        "fireKg": 12.672367950491317,
+        "siparisKg": 186.13936472519526,
+        "artanKg": 27.734765344054125,
+        "kgNeden": null,
+        "boyAdedi": 2,
+        "boyNeden": null,
+        "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+        "asgariFark": null,
+        "fiyat": 2.85,
+        "bant": {
+         "alt": 0,
+         "fiyat": 2.85
+        },
+        "tutar": 530.4971894668065,
+        "tutarK": 53050,
+        "tutarTLK": 2652486,
+        "tutarNeden": null
+       }
+      ],
+      "netKg": 1409.0309771723064,
+      "siparisKg": 1590.5228074464553,
+      "tutarTLK": 23106173,
+      "tutarsiz": 0
+     },
+     {
+      "malzemeId": "503",
+      "ad": "Boru 304",
+      "paraBirimi": "USD",
+      "tedarikciId": null,
+      "kesitler": [
+       {
+        "anahtar": "503|kilo|boru|19|1.5",
+        "malzemeId": "503",
+        "malzemeAd": "Boru 304",
+        "tedarikciId": null,
+        "bicim": "boru",
+        "yontem": "kilo",
+        "kesit": [
+         19,
+         1.5
+        ],
+        "kesitMetni": "Ø19 × 1,5 et",
+        "paraBirimi": "USD",
+        "kur": 50,
+        "parcalar": [
+         {
+          "partId": "4",
+          "ad": "Boru",
+          "adet": 70,
+          "hamKg": 0.11413406110491718,
+          "fireliKg": 0.11413406110491718,
+          "fire": 0,
+          "kesimBoyu": 173,
+          "oran": 0.028833333333333332
+         }
+        ],
+        "netKg": 7.989384277344203,
+        "fireKg": 0,
+        "siparisKg": 11.875220230569418,
+        "artanKg": 3.8858359532252154,
+        "kgNeden": null,
+        "boyAdedi": 3,
+        "boyNeden": null,
+        "fireUyarisi": null,
+        "asgariFark": null,
+        "fiyat": 4.08,
+        "bant": null,
+        "tutar": 48.45089854072323,
+        "tutarK": 4845,
+        "tutarTLK": 242254,
+        "tutarNeden": null
+       }
+      ],
+      "netKg": 7.989384277344203,
+      "siparisKg": 11.875220230569418,
+      "tutarTLK": 242254,
+      "tutarsiz": 0
+     },
+     {
+      "malzemeId": "502",
+      "ad": "Delrin levha",
+      "paraBirimi": "TRY",
+      "tedarikciId": null,
+      "kesitler": [
+       {
+        "anahtar": "502|kilo|sac|30|60",
+        "malzemeId": "502",
+        "malzemeAd": "Delrin levha",
+        "tedarikciId": null,
+        "bicim": "sac",
+        "yontem": "kilo",
+        "kesit": [
+         30,
+         60
+        ],
+        "kesitMetni": "30 × 60",
+        "paraBirimi": "TRY",
+        "kur": 1,
+        "parcalar": [
+         {
+          "partId": "6",
+          "ad": "Levha",
+          "adet": 70,
+          "hamKg": 0.33228,
+          "fireliKg": 0.36550800000000006,
+          "fire": 10,
+          "kesimBoyu": 130,
+          "oran": null
+         }
+        ],
+        "netKg": 23.259600000000002,
+        "fireKg": 2.3259600000000025,
+        "siparisKg": 25.585560000000005,
+        "artanKg": null,
+        "kgNeden": null,
+        "boyAdedi": null,
+        "boyNeden": "Lama ve sacda boy adedi hesaplanmaz (kesit kartta yok); sipariş kilosu net ihtiyaç ile firenin toplamı.",
+        "fireUyarisi": null,
+        "asgariFark": null,
+        "fiyat": 190,
+        "bant": null,
+        "tutar": 4861.256400000001,
+        "tutarK": 486126,
+        "tutarTLK": 486126,
+        "tutarNeden": null
+       }
+      ],
+      "netKg": 23.259600000000002,
+      "siparisKg": 25.585560000000005,
+      "tutarTLK": 486126,
+      "tutarsiz": 0
+     },
+     {
+      "malzemeId": "504",
+      "ad": "Boy fiyatlı",
+      "paraBirimi": "TRY",
+      "tedarikciId": null,
+      "kesitler": [
+       {
+        "anahtar": "504|boy|mil|30",
+        "malzemeId": "504",
+        "malzemeAd": "Boy fiyatlı",
+        "tedarikciId": null,
+        "bicim": "mil",
+        "yontem": "boy",
+        "kesit": [
+         30
+        ],
+        "kesitMetni": "Ø30",
+        "paraBirimi": "TRY",
+        "kur": 1,
+        "parcalar": [
+         {
+          "partId": "7",
+          "ad": "Boy mil",
+          "adet": 70,
+          "hamKg": null,
+          "fireliKg": null,
+          "fire": 5,
+          "kesimBoyu": 400,
+          "oran": 0.06666666666666667
+         }
+        ],
+        "netKg": null,
+        "fireKg": null,
+        "siparisKg": null,
+        "artanKg": null,
+        "kgNeden": "Boy fiyatından hesaplanan parça; kilo hesaplanmaz.",
+        "boyAdedi": 5,
+        "boyNeden": null,
+        "fireUyarisi": "Boy fiyatından hesaplanan parçada boy adedi tüketim oranından gelir; fire bu orana eklendi (maliyetle aynı).",
+        "asgariFark": null,
+        "fiyat": 1600,
+        "tutar": 8000,
+        "tutarK": 800000,
+        "tutarTLK": 800000,
+        "tutarNeden": null
+       }
+      ],
+      "netKg": 0,
+      "siparisKg": 0,
+      "tutarTLK": 800000,
+      "tutarsiz": 0
+     }
+    ],
+    "tutarTLK": 24634553
+   }
+  ],
+  "eksik": {
+   "parca": 0,
+   "malzeme": 0
+  },
+  "hazirSayi": 1,
+  "stokUyarisi": {
+   "stoklu": 0,
+   "toplam": 9
+  },
+  "toplamTLK": 24634553,
+  "bos": false
+ }
+}

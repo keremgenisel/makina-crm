@@ -24,6 +24,8 @@ import { SettingsTakip } from "./settings/SettingsTakip";
 import { SettingsImport } from "./settings/SettingsImport";
 import { SettingsTrash } from "./settings/SettingsTrash";
 import { MalzemeManager } from "./MalzemeManager";
+import { SettingsMalzemeAktar } from "./settings/SettingsMalzemeAktar";
+import { MALZEME_AKTAR_PANEL_ADI } from "../lib/malzemeListesiAktarma";
 import { useBugun } from "../hooks/useBugun";
 import { SettingsSahipsiz } from "./settings/SettingsSahipsiz";
 import { SettingsOptimize } from "./settings/SettingsOptimize";
@@ -59,7 +61,7 @@ const SETTINGS_GROUPS = [
   // görünür (plan K7). Tedarikçi Ayarlar'da DEĞİL, Giderler sekmesinde yaşar (R13).
   { grup: "Giderler", items: [{ id: "gidertur", label: "Gider Türleri", icon: "gider" }, { id: "gidertanim", label: "Tekrarlayan Giderler", icon: "gider" }, { id: "giderayar", label: "Gider Ayarları", icon: "gider" }] },
   { grup: "Evrak & Süreçler", items: [{ id: "kdv", label: "KDV Oranı", icon: "settings" }, { id: "kkkomisyon", label: "Kredi Kartı Komisyonları", icon: "settings" }, { id: "evrak", label: "Teklif/Proforma/Yurt Dışı Fatura", icon: "settings" }, { id: "ceviri", label: "Çeviriler", icon: "settings" }, { id: "takip", label: "Takip Süreleri", icon: "notes" }] },
-  { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "sahipsiz", label: "Sahipsiz Kayıtlar", icon: "search" }] },
+  { grup: "Veri Yönetimi", items: [{ id: "backup", label: "Yedekleme", icon: "download" }, { id: "export", label: "Dışa Aktar", icon: "download" }, { id: "import", label: "İçe Aktar", icon: "box" }, { id: "optimize", label: "Resim Optimize", icon: "settings" }, { id: "trash", label: "Çöp Kutusu", icon: "trash" }, { id: "sahipsiz", label: "Sahipsiz Kayıtlar", icon: "search" }, { id: "malzemeaktar", label: MALZEME_AKTAR_PANEL_ADI, icon: "box" }] },
 ];
 
 export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers, services, dealers, stock = [], setStock, setCustomers, setServices, setDealers, version, appSettings, setAppSettings, customModels, setCustomModels, standardModels, setStandardModels, factory, setFactory, kalipDefs, setKalipDefs, notes = [], setNotes = null, parts = [], setParts = null, partSales = [], setPartSales = null, payments = [], setPayments = null, showToast = () => {},
@@ -102,7 +104,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
   const { lockConflict: ayarKilidi, forceAcquire: ayarKilidiDevral } = useLock("ayar", AYAR_KILITLI[settingsTab] ? settingsTab : null);
   // Spec 0087 R16: Makina Modelleri ile Parça/Yedek Parça panelleri birbirinin bölümünü yazdığı için kayıt anında karşı
   // panelin kilidine anlık bakarlar (tek canlı liste, kendi kilidi engellemez).
-  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
+  const { baskasiKilitli, kilitliIse } = useKilitListesi(aktifKullanici);
   const ayarKilitli = !!(ayarKilidi && AYAR_KILITLI[settingsTab]);
   const ayarKilidiGeriDon = () => {
     const gorunen = visibleGroups.flatMap(g => g.items.map(it => it.id));
@@ -375,6 +377,16 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
           appSettings={appSettings} setAppSettings={setAppSettings}
           flash={flash}
         />
+      )}
+
+      {/* Spec 0139 B: malzeme listesinden parça içe aktarma. Kendi paneli, `ayar:malzemeaktar` kilidi altında; kayıt anında parça ve
+          model panellerinin kilidine anlık bakar (B-R1/2). Yalnız parça kataloğu ve model kitleri yazılır (B-R2). */}
+      {settingsTab === "malzemeaktar" && (
+        <KartBolum title={MALZEME_AKTAR_PANEL_ADI} icon="box">
+          <SettingsMalzemeAktar parts={rawParts.length ? rawParts : parts} setParts={setParts} malzemeler={malzemeler}
+            standardModels={standardModels} setStandardModels={setStandardModels} customModels={customModels} setCustomModels={setCustomModels}
+            kilitliIse={kilitliIse} showToast={showToast} serverPermissions={serverPermissions} />
+        </KartBolum>
       )}
 
       {settingsTab === "sahipsiz" && (

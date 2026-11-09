@@ -59,6 +59,7 @@ export const AYAR_KILITLI = {
   gidertur: "Gider Türleri", gidertanim: "Tekrarlayan Giderler", giderayar: "Gider Ayarları",
   kdv: "KDV Oranı", kkkomisyon: "Kredi Kartı Komisyonları", evrak: "Teklif/Proforma/Yurt Dışı Fatura", ceviri: "Çeviriler", takip: "Takip Süreleri",
   mailsablon: "E-posta Şablonları", security: "Uygulama Şifresi", backup: "Yedekleme", import: "İçe Aktar", optimize: "Resim Optimize", trash: "Çöp Kutusu", sahipsiz: "Sahipsiz Kayıtlar",
+  malzemeaktar: "Malzeme Listesinden Aktar", // spec 0139 B-R1/2 (AC-56)
 };
 // R31: kilitli panelde "Geri Dön" ilk görünen salt okunur panele geçer.
 export const AYAR_SALT_OKUNUR = ["securitystatus", "export", "sentmail", "auditlog", "securitylog"];
@@ -107,6 +108,7 @@ export const AYAR_PANEL_DOSYALARI = [
   "src/components/settings/SettingsDocuments.jsx", "src/components/settings/SettingsTranslations.jsx", "src/components/settings/SettingsTakip.jsx",
   "src/components/settings/SettingsMailTemplates.jsx", "src/components/settings/SettingsSecurity.jsx", "src/components/settings/SettingsBackup.jsx", "src/components/settings/SettingsImport.jsx",
   "src/components/settings/SettingsOptimize.jsx", "src/components/settings/SettingsTrash.jsx", "src/components/settings/SettingsSahipsiz.jsx",
+  "src/components/settings/SettingsMalzemeAktar.jsx", // spec 0139 B-R1/2 (AC-56)
 ];
 
 export const kilitAlaniEtiketi = (alan) => KILIT_ALANLARI[alan]?.etiket || "Kayıt";

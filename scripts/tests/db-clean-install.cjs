@@ -238,6 +238,15 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.malzemeler?.find(m => m.id === 93)?.emniyetPayi === 7 && b.parts.find(p => p.id === 94)?.emniyetPayi === 3);
 }
 
+// Spec 0139 C7: temiz kurulumda malzemenin ek fire tablosu sütunu ilk oturumda yazılır ve okunur.
+{
+  let h = null;
+  const tablo = [{ alt: 0, kg: 0 }, { alt: 50, kg: 0.3 }];
+  try { dbmod.writeBlobToDb({ malzemeler: [{ id: 98, ad: "Tablolu", fireBantlari: tablo }] }); } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0139: temiz kurulumda fireBantlari sütunu var ve yazıldı", h === null && JSON.stringify(b.malzemeler?.find(m => m.id === 98)?.fireBantlari) === JSON.stringify(tablo));
+}
+
 // Spec 0136 AC-43 (C4): temiz kurulumda kapanış maliyet görüntüsü sütunu ilk oturumda yazılır ve okunur.
 {
   let h = null;

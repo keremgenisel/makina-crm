@@ -39,7 +39,8 @@ export const NEDEN_FIYAT_YOK = "Fiyat girilmedi; tutar yazılmaz.";
 export const NEDEN_KUR_YOK = "Kur girilmedi; tutar yazılmaz.";
 export const NEDEN_PARA_BIRIMI = "Para birimi tanınmıyor; tutar TL toplamına katılmadı.";
 export const FIRE_BOY_YONTEMI_UYARISI = "Boy fiyatından hesaplanan parçada boy adedi tüketim oranından gelir; fire bu orana eklendi (maliyetle aynı).";
-export const FIRE_BOY_UYARISI = "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.";
+// Spec 0139 A-R12/2: metin çap bandına göre kilogram fireyi de anar.
+export const FIRE_BOY_UYARISI = "Boy adedi uzunluktan hesaplandığı için fire (yüzde ve çap bandına göre kilogram) sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.";
 export const TEDARIKCISIZ = "Ana tedarikçisi girilmemiş malzemeler";
 export const SILINMIS_TEDARIKCI = "silinmiş tedarikçi";
 export const BULUNAMAYAN_TEDARIKCI = "kaydı bulunamayan tedarikçi";
@@ -201,7 +202,7 @@ export const siparisIhtiyaci = (veri = {}) => {
       if (kalemAdedi == null) { eksikParca.add(k.partId); continue; }
       const anahtar = [m.id, yontem, satir.bicim, ...kesit].join("|");
       if (!kesitler.has(anahtar)) kesitler.set(anahtar, { anahtar, malzemeId: String(m.id), malzeme: m, bicim: satir.bicim, yontem, kesit, hamCap: o.cap ?? null, parcalar: [] });
-      const giris = { partId: k.partId, ad: k.ad, adet: k.siparis * kalemAdedi, hamKg: oz.hamKg, fireliKg: oz.fireliKg, fire: oz.fire || 0, kesimBoyu: o.boy, oran: o.boy / ((Number(m.geldigiBoy) || 0) * 1000) };
+      const giris = { partId: k.partId, ad: k.ad, adet: k.siparis * kalemAdedi, hamKg: oz.hamKg, fireliKg: oz.fireliKg, fire: oz.fire || 0, ekFireKg: oz.ekFireKg || 0, kesimBoyu: o.boy, oran: o.boy / ((Number(m.geldigiBoy) || 0) * 1000) };
       const ayni = kesitler.get(anahtar).parcalar.find(x => x.partId === giris.partId && x.hamKg === giris.hamKg && x.fireliKg === giris.fireliKg && x.fire === giris.fire && x.kesimBoyu === giris.kesimBoyu);
       if (ayni) ayni.adet += giris.adet; else kesitler.get(anahtar).parcalar.push(giris);
     }
@@ -305,7 +306,8 @@ const kesitHesabi = (ks, eksikParca, eksikMalzeme) => {
   if (neden) { eksikMalzeme.add(ks.malzemeId); for (const p of ks.parcalar) eksikParca.add(p.partId); } // R10/2: fiyat ya da kur eksik
   const tutar = neden ? null : siparisKg * fiyat; // R14/2, AC-92: ara değer yuvarlanmaz
   return { ...ortak, netKg, fireKg, siparisKg, artanKg: boyAdedi != null ? siparisKg - netKg - (asgariFark || 0) : null, kgNeden: null, boyAdedi, boyNeden,
-    fireUyarisi: boyAdedi != null && ks.parcalar.some(p => p.fire > 0) ? FIRE_BOY_UYARISI : null, // R17, AC-36
+    // Spec 0139 A-R12/2 (AC-51): "fire var mı" = yüzde YA DA çap bandına göre kilogram.
+    fireUyarisi: boyAdedi != null && ks.parcalar.some(p => p.fire > 0 || p.ekFireKg > 0) ? FIRE_BOY_UYARISI : null, // R17, AC-36
     asgariFark, fiyat, bant, tutar, tutarK: kurusOf(tutar), tutarTLK: tutar == null ? null : kurusOf(tutar * kur), tutarNeden: neden };
 };
 // Bir tam boyun ölçü nesnesi: kesit aynı, boy tam boyla değişir (tamBoyKg değiştirir); satır biçiminde alanlar ham kesitle.

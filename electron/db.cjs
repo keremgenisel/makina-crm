@@ -307,7 +307,7 @@ CREATE TABLE IF NOT EXISTS tedarikciler (
 CREATE TABLE IF NOT EXISTS malzemeler (
   id INTEGER PRIMARY KEY,
   ad TEXT, alasim TEXT, ozgulAgirlik REAL, kiloFiyati REAL, paraBirimi TEXT, kur REAL, bantlar TEXT, boyFiyati REAL, geldigiBoy REAL,
-  tedarikciId INTEGER, asgariSiparis REAL, fire REAL, fiyatGecmisi TEXT, deletedAt TEXT, emniyetPayi REAL
+  tedarikciId INTEGER, asgariSiparis REAL, fire REAL, fiyatGecmisi TEXT, deletedAt TEXT, emniyetPayi REAL, fireBantlari TEXT
 );
 -- Spec 0137 R27: dış işlem kataloğu. Spec 0138 R17, Karar 30: ÖLÜ TABLO. Ne okunur ne yazılır; satırlar yerinde durur (güncellenmemiş
 -- istemci boşaltamasın, geri dönüş yolu açık kalsın). Yalnız bir kerelik göç okur (disIslemGocu).
@@ -581,6 +581,8 @@ const PARTS_MALZEME_SATIRI_COLUMN = [["malzemeSatiri", "TEXT"]];
 const PARTS_MALIYET_KALEMLERI_COLUMN = [["maliyetKalemleri", "TEXT"]];
 // Spec 0134 C4, Karar 28: emniyet payı yüzdesi parçada ve malzemede; boşken gövdeye yazılmaz (AC-58).
 const EMNIYET_PAYI_COLUMN = [["emniyetPayi", "REAL"]];
+// Spec 0139 C7: malzeme kartının çap bandına göre ek fire tablosu (JSON [{ alt, kg }]); boş tablo NULL, okumada gövdeye yazılmaz.
+const MALZEME_FIRE_BANT_COLUMN = [["fireBantlari", "TEXT"]];
 // Spec 0133 C5, C5/2, R1/2: fiyat kipi (yalnız "maliyet" değeri yazılır; elle sabit kip değer olarak saklanmaz) ve parçanın kâr katı;
 // ayar `app_settings.fiyatAyarlari` (JSON, Karar 33). Boş değer okumada gövdeye yazılmaz (AC-47).
 const PARTS_FIYAT_COLUMNS = [["fiyatKipi", "TEXT"], ["karKati", "REAL"]];
@@ -1057,8 +1059,8 @@ function populateAll(conn, data, skip = new Set()) {
   // Spec 0132 C5: malzeme kataloğu.
   if (Array.isArray(data.malzemeler) && !skip.has("malzemeler")) {
     conn.prepare(`DELETE FROM malzemeler`).run();
-    const stmt = conn.prepare(`INSERT INTO malzemeler (id, ad, alasim, ozgulAgirlik, kiloFiyati, paraBirimi, kur, bantlar, boyFiyati, geldigiBoy, tedarikciId, asgariSiparis, fire, fiyatGecmisi, deletedAt, emniyetPayi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const m of data.malzemeler) stmt.run(m.id, m.ad ?? null, m.alasim ?? null, m.ozgulAgirlik ?? null, m.kiloFiyati ?? null, m.paraBirimi ?? null, m.kur ?? null, hammaddeYaz(m.bantlar), m.boyFiyati ?? null, m.geldigiBoy ?? null, m.tedarikciId ?? null, m.asgariSiparis ?? null, m.fire ?? null, hammaddeYaz(m.fiyatGecmisi), m.deletedAt ?? null, m.emniyetPayi ?? null);
+    const stmt = conn.prepare(`INSERT INTO malzemeler (id, ad, alasim, ozgulAgirlik, kiloFiyati, paraBirimi, kur, bantlar, boyFiyati, geldigiBoy, tedarikciId, asgariSiparis, fire, fiyatGecmisi, deletedAt, emniyetPayi, fireBantlari) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const m of data.malzemeler) stmt.run(m.id, m.ad ?? null, m.alasim ?? null, m.ozgulAgirlik ?? null, m.kiloFiyati ?? null, m.paraBirimi ?? null, m.kur ?? null, hammaddeYaz(m.bantlar), m.boyFiyati ?? null, m.geldigiBoy ?? null, m.tedarikciId ?? null, m.asgariSiparis ?? null, m.fire ?? null, hammaddeYaz(m.fiyatGecmisi), m.deletedAt ?? null, m.emniyetPayi ?? null, hammaddeYaz(m.fireBantlari));
   }
   // Spec 0138 R17/2 (AC-32): dış işlem yazma yolu kaldırıldı; gövdede gelse bile ölü tablo boşaltılmaz (0082 emsali).
   // Spec 0082 R6 (B2): standart gider yazma yolu kaldırıldı; gövdede gelse bile tablo boşaltılmaz.
@@ -1193,6 +1195,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "parts", PARTS_MALIYET_KALEMLERI_COLUMN); // spec 0135
   ensureColumns(conn, "parts", EMNIYET_PAYI_COLUMN); // spec 0134
   ensureColumns(conn, "malzemeler", EMNIYET_PAYI_COLUMN); // spec 0134
+  ensureColumns(conn, "malzemeler", MALZEME_FIRE_BANT_COLUMN); // spec 0139
   ensureColumns(conn, "parts", PARTS_FIYAT_COLUMNS); // spec 0133
   ensureColumns(conn, "app_settings", APP_SETTINGS_FIYAT_COLUMN); // spec 0133
   ensureColumns(conn, "tedarikciler", TEDARIKCI_HAMMADDE_COLUMN); // spec 0096
@@ -1735,10 +1738,11 @@ function readBlobFromDb() {
   // `deletedAt: null`'ın gövdeye girmesi bu işte değişmedi (plan P5, spec öncesi gövde fikstürü aynı).
   const tedarikciler = db.prepare(`SELECT * FROM tedarikciler`).all().map(({ notField, hammadde, ...rest }) => ({ ...rest, not: notField, ...(toBool(hammadde) ? { hammadde: true } : {}) }));
   // Spec 0132 C5, AC-61: boş alanlar gövdeye yazılmaz; JSON alanları yalnız doluyken.
-  const malzemeler = db.prepare(`SELECT * FROM malzemeler`).all().map(({ bantlar, fiyatGecmisi, ...rest }) => ({
+  const malzemeler = db.prepare(`SELECT * FROM malzemeler`).all().map(({ bantlar, fiyatGecmisi, fireBantlari, ...rest }) => ({
     ...Object.fromEntries(Object.entries(rest).filter(([, v]) => v != null)),
     ...(() => { const b = parseJsonCol(bantlar, []); return Array.isArray(b) && b.length ? { bantlar: b } : {}; })(),
     ...(() => { const g = parseJsonCol(fiyatGecmisi, []); return Array.isArray(g) && g.length ? { fiyatGecmisi: g } : {}; })(),
+    ...(() => { const f = parseJsonCol(fireBantlari, []); return Array.isArray(f) && f.length ? { fireBantlari: f } : {}; })(), // spec 0139 AC-19
   }));
   // Spec 0078 C4: boş deletedAt blob'a yazılmaz (sunucu karşılaştırması null ile yokluğu ayırır).
   const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, deletedAt, ...rest }) => ({ ...rest, kapali: toBool(kapali), ...bosOlmayan({ deletedAt }) }));

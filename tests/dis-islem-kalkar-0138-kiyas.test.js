@@ -9,6 +9,7 @@
 // yarı YAPISAL olarak bu işten etkilenmez; kıyas onlarda yalnız gerileme bekçisidir ve veri boş geçmesin diye satır üretir.
 import { describe, it, expect } from "vitest";
 import { readFileSync, writeFileSync } from "node:fs";
+import { ayikla0139 } from "./fixtures/0139-ayikla.js"; // spec 0139 ile: uyarı metni ve yeni ekFireKg alanı
 import { parcaMaliyetKurus, parcaMaliyetiVar, setKatalogu, setOzeti, maliyetKaynagi, kalemKaynakMetni, maliyetGecmisiSatirlari, maliyetGecmisiYaz, gecmisliKayit } from "../src/lib/urunAgaci";
 import { malzemeKatalogu, fiyatEtkisi } from "../src/lib/malzeme";
 import { siparisIhtiyaci } from "../src/lib/siparisIhtiyaci";
@@ -59,7 +60,7 @@ describe("Spec 0138 kıyas (C1, C1/2)", () => {
   it("AC-13 / AC-14 / AC-15 / AC-16 / AC-5: katalog bağlı işlem kalemi olmayan veride bütün çıktılar spec öncesi altınla birebir aynıdır", () => {
     const sonuc = temiz(uret());
     if (process.env.YAZ_0138 === "1") { writeFileSync(ALTIN, JSON.stringify(sonuc, null, 1)); return; }
-    expect(sonuc).toEqual(JSON.parse(readFileSync(ALTIN, "utf8")));
+    expect(ayikla0139(sonuc)).toEqual(ayikla0139(JSON.parse(readFileSync(ALTIN, "utf8")))); // spec 0139 ile ayıklandı
   });
   it("C1/2: kıyas boş geçmez (sipariş satırı, rapor satırı, Finans Özeti satırı ve etki satırı üretir)", () => {
     const a = JSON.parse(readFileSync(ALTIN, "utf8"));

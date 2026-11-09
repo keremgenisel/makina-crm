@@ -114,6 +114,10 @@ describe("Spec 0132: malzeme paneli", () => {
     expect(geri).toEqual({ ad: "Sade" });
     fireEvent.click(screen.getByRole("button", { name: "Sade düzenle" }));
     yaz("Geldiği boy", "6"); yaz("Asgari sipariş", "250"); yaz("Varsayılan fire", "8"); kaydet();
+    // Spec 0139 ile (A-R16, AC-53): fire değişince kayıt etki özetini onay olarak gösterir; onaylanınca yazılır.
+    expect(screen.getByTestId("fire-etki-onayi")).toBeTruthy();
+    const kaydetler = screen.getAllByRole("button", { name: /Kaydet/ });
+    fireEvent.click(kaydetler[kaydetler.length - 1]);
     expect(durum.malzemeler[0]).toMatchObject({ ad: "Sade", geldigiBoy: 6, asgariSiparis: 250, fire: 8 });
   });
   it("AC-15 / AC-75 / AC-76: ana tedarikçi canlı tedarikçilerden, hammadde işaretliler başta; yetkisizde alan yok, saklı bağ korunur", () => {

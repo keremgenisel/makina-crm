@@ -1,7 +1,7 @@
 import { Field, Input, Select, Btn, Icon } from "./ui";
 import { HataMetni, Segment } from "./tasarim";
 import { maliyetMetniKurus } from "../lib/urunAgaci";
-import { malzemeSatiriFormu, malzemeCopEtiketi, BICIMLER, BICIM_SIRASI, OLCU_ADLARI, PAY_ALANI, YONTEMLER, kgMetni } from "../lib/malzeme";
+import { malzemeSatiriFormu, malzemeCopEtiketi, BICIMLER, BICIM_SIRASI, OLCU_ADLARI, PAY_ALANI, YONTEMLER, kgMetni, fireBantlariOf, FIRE_KG_BOY_NEDENI } from "../lib/malzeme";
 
 // Spec 0132 R9–R14/2, AC-28–AC-46; spec 0135 R12–R16, R44 (plan turu Karar 44): parçanın TEK malzeme kaleminin satırı. Kalem
 // listesindeki her malzeme kalemi bu bileşenle çizilir; alanlar 0132'nin malzeme satırının alanları artı adet (R12, R13). Ölçü
@@ -21,6 +21,9 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, sira = 1, malzemeler = [],
   const seciliYok = secili && !malzemeler.some(m => String(m.id) === s.malzemeId);
   const hamAd = seciliYok ? (() => { const m = hamMalzemeler.find(x => String(x.id) === s.malzemeId); return m ? `${malzemeCopEtiketi(m)} (${SILINMIS_MALZEME})` : BULUNAMAYAN_MALZEME; })() : null;
   const oz = ozet?.ozet || null;
+  // Spec 0139 A-R13/2 (AC-11, AC-52): boy yönteminde çap bandına göre ek fire uygulanmaz; nedeni yalnız malzemenin tablosu doluyken.
+  const seciliMalzeme = secili ? malzemeler.find(m => String(m.id) === s.malzemeId) : null;
+  const fireKgNedeni = s.yontem === "boy" && fireBantlariOf(seciliMalzeme).length > 0;
   return (
     <div data-testid="malzeme-kalemi" style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px", display: "grid", gap: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -88,6 +91,7 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, sira = 1, malzemeler = [],
               <div>Bir adet: <b data-testid="malzeme-maliyet">{oz.maliyetK == null ? `girilmedi (${oz.eksik.join(", ")})` : maliyetMetniKurus(oz.maliyetK)}</b></div>
             </div>
           )}
+          {fireKgNedeni && <div data-testid="fire-kg-uygulanmadi" style={{ fontSize: 12, color: "var(--n600, #475569)" }}>{FIRE_KG_BOY_NEDENI}</div>}
         </>
       )}
     </div>

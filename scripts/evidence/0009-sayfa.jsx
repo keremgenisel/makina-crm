@@ -55,6 +55,8 @@ import { buildAylikRaporHtml, buildServiceFormHtml } from "../../src/lib/printTe
 import App from "../../src/App";
 import { KayitPerdesi } from "../../src/components/KayitPerdesi";
 import { SettingsTrash } from "../../src/components/settings/SettingsTrash";
+import { SettingsMalzemeAktar } from "../../src/components/settings/SettingsMalzemeAktar";
+import * as K139 from "../../tests/fixtures/0139-kaynak.js";
 import LOGO from "../../src/assets/logo.avif?inline";
 import { UserManager } from "../../src/components/settings/UserManager";
 import { GlobalSearch } from "../../src/components/GlobalSearch";
@@ -223,6 +225,22 @@ const PARCA_0132 = [
   { id: 43, ad: "Konveyör borusu", kod: "KB-19", tip: "Standart", models: [], malzemeSatiri: { malzemeId: 503, bicim: "boru", cap: 19, et: 1.5, boy: 173 } },
   ...PARCA_0087,
 ];
+// Spec 0139: kilogram fire tablolu malzeme (Context'in paslanmaz tablosu) ve ona bağlı mil ile boy yöntemli kalem.
+const MALZEME_0139 = [{ ...MALZEME_0132[0], fireBantlari: K139.KG_TABLOSU }, { id: 504, ad: "Boy fiyatlı 304", boyFiyati: 1600, geldigiBoy: 6, fireBantlari: K139.KG_TABLOSU }, ...MALZEME_0132.slice(1)];
+const PARCA_0139 = [
+  { id: 61, ad: "Tablolu mil", kod: "TM-60", models: [], maliyetKalemleri: [{ tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 60, boy: 175, adet: 1 }] },
+  { id: 62, ad: "Boy yöntemli mil", kod: "BM-30", models: [], maliyetKalemleri: [{ tur: "malzeme", malzemeId: 504, bicim: "mil", yontem: "boy", cap: 30, boy: 400, adet: 1 }] },
+];
+// Spec 0139 B: içe aktarma paneli; görüntü aracında dosya seçilemediği için okunmuş kitapla açılır (`ilkSayfalar`).
+function AktarEkrani({ sayfalar = K139.kaynakSayfalar(), malzemeler = K139.KARTLAR }) {
+  const [parts, setParts] = useState([]);
+  const [standardModels, setStandardModels] = useState(K139.MODELLER);
+  const [customModels, setCustomModels] = useState([]);
+  return <div style={{ maxWidth: 760 }}><SettingsMalzemeAktar ilkSayfalar={sayfalar} parts={parts} setParts={setParts} malzemeler={malzemeler}
+    standardModels={standardModels} setStandardModels={setStandardModels} customModels={customModels} setCustomModels={setCustomModels} /></div>;
+}
+const SAYFALAR_EKSIK_0139 = (() => { const s = K139.kaynakSayfalar(); delete s[K139.SAYFA_ADLARI.P140]; return s; })();
+
 // Spec 0133: maliyete bağlı parçalar (malzemeden, kendi katlı, maliyetsiz), elle sabit ve fiyat ayarı.
 const PARCA_0133 = PARCA_0132.map(p => (p.id === 41 ? { ...p, fiyatKipi: "maliyet", fiyatUSD: 95 } : p.id === 7 ? { ...p, fiyatKipi: "maliyet", karKati: 3 }
   : p.id === 8 ? { ...p, fiyatKipi: "maliyet" } : p));
@@ -1054,6 +1072,19 @@ const EKRANLAR = {
   "ayarlar-fiyat-0133": [ayarlar("fiyat", { appSettings: AYAR_0133() }), []],
   "ayarlar-fiyat-0133-hata": [ayarlar("fiyat", {}), ["doldur:Varsayılan kâr katı=2.400", "dugme:Kaydet"]],
   "ayarlar-fiyat-0133-zarar": [ayarlar("fiyat", {}), ["doldur:Varsayılan kâr katı=0,8"]],
+  // Spec 0139: kilogram fire bölümü (yeni ve düzenleme kipi, sıra hatası, etki onayı), parça kartının fire dahil ve boy nedeni satırı,
+  // içe aktarma paneli (boş, önizleme, ön koşul, hata, sonuç).
+  "katalog-malzeme-0139-yeni": [ayarlar("malzemeler", { malzemeler: MALZEME_0139, rawParts: PARCA_0139 }), ["~Yeni Malzeme", "kaydir:Çap bandına göre ek fire (kg)"]],
+  "katalog-malzeme-0139-duzenle": [ayarlar("malzemeler", { malzemeler: MALZEME_0139.slice(0, 1), rawParts: PARCA_0139 }), ["baslik:Düzenle", "kaydir:Çap bandına göre ek fire (kg)"]],
+  "katalog-malzeme-0139-hata": [ayarlar("malzemeler", { malzemeler: MALZEME_0139.slice(0, 1), rawParts: PARCA_0139 }), ["baslik:Düzenle", "doldur:Fire bandı 3 alt çapı=10", "Kaydet", "kaydir:Çap bandına göre ek fire (kg)"]],
+  "katalog-malzeme-0139-etki": [ayarlar("malzemeler", { malzemeler: MALZEME_0139.slice(0, 1), parts: PARCA_0139, rawParts: PARCA_0139 }), ["baslik:Düzenle", "doldur:Fire bandı 3 kilogramı=0,50", "Kaydet"]],
+  "katalog-parca-0139-fire": [ayarlar("yedekparca", { parts: PARCA_0139.slice(0, 1), malzemeler: MALZEME_0139, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Pay dahil ağırlık"]],
+  "katalog-parca-0139-boy": [ayarlar("yedekparca", { parts: PARCA_0139.slice(1), malzemeler: MALZEME_0139, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Boy fiyatından hesaplanan parçada çap bandına"]],
+  "veri-0139-aktar-bos": [ayarlar("malzemeaktar", { malzemeler: K139.KARTLAR }), []],
+  "veri-0139-aktar-onizleme": [<AktarEkrani />, ["kaydir:Önizleme (henüz"]],
+  "veri-0139-aktar-on-kosul": [<AktarEkrani malzemeler={K139.KARTLAR.filter(k => k.id !== 902 && k.id !== 906)} />, ["kaydir:Önizleme (henüz"]],
+  "veri-0139-aktar-hata": [<AktarEkrani sayfalar={SAYFALAR_EKSIK_0139} />, []],
+  "veri-0139-aktar-sonuc": [<AktarEkrani />, ["dugme:Parçaları ve Kitleri Yaz", "kaydir:Aktarma sonucu"]],
   "katalog-malzeme-0133-fiyat": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, parts: PARCA_0133, rawParts: PARCA_0133, rates: { usd: 42.15, eur: 48.9 }, appSettings: AYAR_0133() }), ["baslik:Fiyatı Güncelle", "doldur:Bant 1 kilo fiyatı=3,40", "kaydir:Etkisi"]],
   "ayarlar-trash-0132": [ayarlar("trash", { rawMalzemeler: [{ ...MALZEME_0132[1], deletedAt: "2026-10-20T09:00:00.000Z" }, { id: 509, ad: "Teflon", deletedAt: "2026-10-21T09:00:00.000Z" }], rawParts: PARCA_0132 }), []],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],

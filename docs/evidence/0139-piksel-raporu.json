@@ -1,0 +1,456 @@
+[
+  {
+    "ad": "ayarlar-backup-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-backup-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-export-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-export-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-import-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-import-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-trash-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-trash-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-sahipsiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-sahipsiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-optimize-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-optimize-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-trash-0123-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-trash-0123-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "katalog-malzeme-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 721195
+  },
+  {
+    "ad": "katalog-malzeme-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 654340
+  },
+  {
+    "ad": "katalog-malzeme-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 494526
+  },
+  {
+    "ad": "katalog-malzeme-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 494522
+  },
+  {
+    "ad": "katalog-malzeme-duzenle-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1837073
+  },
+  {
+    "ad": "katalog-malzeme-duzenle-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1723695
+  },
+  {
+    "ad": "katalog-malzeme-fiyat-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "0 parçanın maliyeti değişecek (1 bağlı parça)."
+    ],
+    "piksel": 96
+  },
+  {
+    "ad": "katalog-malzeme-fiyat-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "0 parçanın maliyeti değişecek (1 bağlı parça)."
+    ],
+    "piksel": 96
+  },
+  {
+    "ad": "katalog-parca-0132-malzeme-aydinlik.png",
+    "boyut": "2880x1852",
+    "seritler": [
+      "3 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 288
+  },
+  {
+    "ad": "katalog-parca-0132-malzeme-karanlik.png",
+    "boyut": "2880x1852",
+    "seritler": [
+      "3 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 288
+  },
+  {
+    "ad": "katalog-malzeme-0139-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-malzeme-0139-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-malzeme-0139-duzenle-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-malzeme-0139-duzenle-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-malzeme-0139-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-malzeme-0139-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-malzeme-0139-etki-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın maliyeti değişecek (1 bağlı parça)."
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-malzeme-0139-etki-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın maliyeti değişecek (1 bağlı parça)."
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0139-fire-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0139-fire-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0139-boy-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-parca-0139-boy-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-onizleme-aydinlik.png",
+    "boyut": "2880x1908",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-onizleme-karanlik.png",
+    "boyut": "2880x1908",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-on-kosul-aydinlik.png",
+    "boyut": "2880x1982",
+    "seritler": [
+      "Önce bu malzeme kartlarını kurun (Ayarlar › Katalog › Malzemeler): PAS"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-on-kosul-karanlik.png",
+    "boyut": "2880x1982",
+    "seritler": [
+      "Önce bu malzeme kartlarını kurun (Ayarlar › Katalog › Malzemeler): PAS"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-sonuc-aydinlik.png",
+    "boyut": "2880x1894",
+    "seritler": [
+      "Beklenen 60 kit satırı, bulunan 60."
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "veri-0139-aktar-sonuc-karanlik.png",
+    "boyut": "2880x1894",
+    "seritler": [
+      "Beklenen 60 kit satırı, bulunan 60."
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "katalog-malzeme-0133-fiyat-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın maliyeti değişecek (1 bağlı parça)."
+    ],
+    "piksel": 96
+  },
+  {
+    "ad": "katalog-malzeme-0133-fiyat-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın maliyeti değişecek (1 bağlı parça)."
+    ],
+    "piksel": 96
+  },
+  {
+    "ad": "ayarlar-trash-0132-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-trash-0132-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "maliyet-siparis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 124612
+  },
+  {
+    "ad": "maliyet-siparis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 124479
+  },
+  {
+    "ad": "maliyet-siparis-tablolar-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 124612
+  },
+  {
+    "ad": "maliyet-siparis-tablolar-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 124479
+  },
+  {
+    "ad": "maliyet-siparis-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 96
+  },
+  {
+    "ad": "maliyet-siparis-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 96
+  },
+  {
+    "ad": "maliyet-siparis-hatali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "1 satır hatalı; hatalı satırlar hesaba girmedi."
+    ],
+    "piksel": 192
+  },
+  {
+    "ad": "maliyet-siparis-hatali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "1 satır hatalı; hatalı satırlar hesaba girmedi."
+    ],
+    "piksel": 192
+  },
+  {
+    "ad": "maliyet-siparis-neden-aydinlik.png",
+    "boyut": "2880x1856 ≠ 2880x1882",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "maliyet-siparis-neden-karanlik.png",
+    "boyut": "2880x1856 ≠ 2880x1882",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": -1
+  },
+  {
+    "ad": "ayarlar-0068-trash-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-0068-trash-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-0068-export-cek-aydinlik.png",
+    "boyut": "2880x2002",
+    "piksel": 10789
+  },
+  {
+    "ad": "ayarlar-0068-export-cek-karanlik.png",
+    "boyut": "2880x2002",
+    "piksel": 10788
+  },
+  {
+    "ad": "kilit-cop-kutusu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "kilit-cop-kutusu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "kilit-geri-yukleme-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10733
+  },
+  {
+    "ad": "kilit-geri-yukleme-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-backup-paketler-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10733
+  },
+  {
+    "ad": "ayarlar-backup-paketler-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-backup-paketler-kasasiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10733
+  },
+  {
+    "ad": "ayarlar-backup-paketler-kasasiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  },
+  {
+    "ad": "ayarlar-backup-paketler-gidersiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10733
+  },
+  {
+    "ad": "ayarlar-backup-paketler-gidersiz-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 10788
+  }
+]

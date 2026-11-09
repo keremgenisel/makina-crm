@@ -252,8 +252,10 @@ describe("Spec 0133: etki hesabı (R16, R16/2)", () => {
     expect(fiyatEtkiMetni(e)).toMatch(/^Satış fiyatı değişecek parça yok/);
   });
   it("AC-74 (kaynak): pencere kendi çarpımını yazmaz, metni motordan alır", () => {
-    const k = yorumsuz(kod("src/components/MalzemeFiyatPenceresi.jsx"));
+    // Spec 0139 ile (karar 43): etki özetinin çizimi tek bileşene (MalzemeEtkiOzeti) taşındı; pencere onu çizer.
+    const k = yorumsuz(kod("src/components/MalzemeFiyatPenceresi.jsx")) + yorumsuz(kod("src/components/MalzemeEtkiOzeti.jsx"));
     expect(k).toMatch(/fiyatEtkiMetni\(/);
+    expect(kod("src/components/MalzemeFiyatPenceresi.jsx")).toMatch(/<MalzemeEtkiOzeti etki=\{etki\} \/>/);
     expect(k).not.toMatch(/karKati|varsayilanKat|\*\s*kat\b/);
   });
 });

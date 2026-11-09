@@ -7,7 +7,10 @@ import {
   PARA_BIRIMLERI, PARA_ADI, dovizMi, malzemeDogrula, malzemeFormu, malzemeEksikleri, eksikMalzemeSayisi, malzemeKullanimi, kullanimMetni,
   fiyatMetni, bantlarOf, bantMetni, fiyatGecmisiSatirlari, kurOnerisi, PANEL_IPUCU, BOS_BASLIK, BOS_METNI, eksikSayiMetni, EKSIK_ROZETI,
   BANT_LAMA_NOTU, kumeOzeti, fiyatKumesi, EMNIYET_PAYI_ETIKETI, EMNIYET_PAYI_IPUCU,
+  fireBantlariOf, fiyatEtkisi, FIRE_KG_BASLIK, FIRE_KG_LAMA_NOTU, FIRE_KG_IPUCU, FIRE_KG_ALT_ETIKETI, FIRE_KG_KG_ETIKETI, FIRE_KG_BANT_EKLE,
+  FIRE_ETKI_BASLIGI, FIRE_ETKI_SORUSU,
 } from "../lib/malzeme";
+import { MalzemeEtkiOzeti } from "./MalzemeEtkiOzeti";
 import { MalzemeFiyatPenceresi } from "./MalzemeFiyatPenceresi";
 import { ornekMalzemeler, ORNEK_DUGMESI, ORNEK_IPUCU } from "../lib/ornekKatalog";
 
@@ -78,12 +81,42 @@ export const FiyatAlanlari = ({ form, set, hatalar = {}, rates, ratesErr }) => {
   );
 };
 
+// Spec 0139 A-R1, A-R1/2 (AC-48): çap bandına göre ek fire tablosu. Fiyat bantlarının düzenleyicisiyle aynı şekil, ama FiyatAlanlari'nın
+// DIŞINDA (fiyat kümesine girmez, A-R10) ve kartın iki kipinde çizilir. İlk bandın alt çapı serbest (A-R9). Metinler malzeme.js'ten.
+export const FireBantlariAlani = ({ form, set, hatalar = {} }) => {
+  const satirlar = form.fireBantlari || [];
+  const bantSet = (i, alan, v) => set("fireBantlari", satirlar.map((b, j) => (j === i ? { ...b, [alan]: v } : b)));
+  return (
+    <div data-testid="fire-kg-bolumu">
+      <BolumBasligi ust>{FIRE_KG_BASLIK}</BolumBasligi>
+      <Ipucu><span data-testid="fire-kg-lama-notu">{FIRE_KG_LAMA_NOTU}</span> {FIRE_KG_IPUCU}</Ipucu>
+      <div data-testid="fire-kg-listesi" style={{ marginTop: 8, marginBottom: 14 }}>
+        {satirlar.map((b, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: "var(--n500, #64748b)", width: 100 }}>{FIRE_KG_ALT_ETIKETI}</span>
+            <div style={{ width: 110 }}><Input value={b.alt} onChange={e => bantSet(i, "alt", e.target.value)} aria-label={`Fire bandı ${i + 1} alt çapı`} /></div>
+            <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>{FIRE_KG_KG_ETIKETI}</span>
+            <div style={{ width: 110 }}><Input value={b.kg} onChange={e => bantSet(i, "kg", e.target.value)} aria-label={`Fire bandı ${i + 1} kilogramı`} /></div>
+            <Btn small variant="ghost" aria-label={`Fire bandı ${i + 1} sil`} onClick={() => set("fireBantlari", satirlar.filter((_, j) => j !== i))}><Icon name="trash" size={13} /></Btn>
+          </div>
+        ))}
+        <Btn small variant="ghost" aria-label="Fire bandı ekle" onClick={() => set("fireBantlari", [...satirlar, { alt: "", kg: "" }])}><Icon name="plus" size={13} /> {FIRE_KG_BANT_EKLE}</Btn>
+        <HataMetni>{hatalar.fireBantlari}</HataMetni>
+      </div>
+    </div>
+  );
+};
+// A-R16 (AC-53): kayıtta fire alanları (yüzde ya da kilogram tablosu) değişti mi? Doğrulanmış kayıt ile eski kart karşılaştırılır.
+const fireDegistiMi = (eski, kayit) => (eski.fire ?? null) !== (kayit.fire ?? null)
+  || JSON.stringify(fireBantlariOf(eski)) !== JSON.stringify(fireBantlariOf(kayit));
+
 export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], tedarikciler = [], giderYetki = false, rates = null, ratesErr = false,
   bugun, showToast = () => {}, serverPermissions = null, fiyatAyarlari = null }) => {
   const [form, setForm] = useState(null); // { ...malzemeFormu, id }
   const [hatalar, setHatalar] = useState({});
   const [sil, setSil] = useState(null);
   const [fiyat, setFiyat] = useState(null); // güncellenen malzeme
+  const [fireOnay, setFireOnay] = useState(null); // spec 0139 A-R16: { kayit, eski, etki }
   const eksikSayi = eksikMalzemeSayisi(malzemeler);
   // C9, R20/2: ana tedarikçi Giderler'in canlı tedarikçilerinden; hammadde işaretliler başta (AC-15). Liste Settings'te gider
   // yetkisiyle kapılı gelir; yetkisizde alan çizilmez, saklı değer formda olduğu gibi taşınır (AC-75).
@@ -99,11 +132,17 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
     const eski = form.id == null ? null : malzemeler.find(m => String(m.id) === String(form.id));
     // Düzenlemede fiyat kümesi formda yoktur; eskisinden taşınır (değişikliği yalnız pencere yapar, R6).
     const kaynak = eski ? { ...form, ...malzemeFormu(eski), ad: form.ad, alasim: form.alasim, ozgulAgirlik: form.ozgulAgirlik, geldigiBoy: form.geldigiBoy,
-      asgariSiparis: form.asgariSiparis, fire: form.fire, emniyetPayi: form.emniyetPayi, tedarikciId: giderYetki ? form.tedarikciId : malzemeFormu(eski).tedarikciId } : form;
+      asgariSiparis: form.asgariSiparis, fire: form.fire, emniyetPayi: form.emniyetPayi, fireBantlari: form.fireBantlari, // spec 0139 A-R1/2, AC-47
+      tedarikciId: giderYetki ? form.tedarikciId : malzemeFormu(eski).tedarikciId } : form;
     const v = malzemeDogrula(kaynak, malzemeler, form.id);
     if (!v.gecerli) { setHatalar(v.hatalar); return; }
     const yeni = form.id == null;
     const kayit = { ...v.kayit, id: yeni ? uid() : eski.id, ...(eski?.fiyatGecmisi?.length ? { fiyatGecmisi: eski.fiyatGecmisi } : {}) };
+    // Spec 0139 A-R16 (AC-53): düzenlemede fire alanları değiştiyse fiyat penceresinin AYNI etki özeti onay olarak gösterilir.
+    if (!yeni && fireDegistiMi(eski, kayit)) { setFireOnay({ kayit, eski, etki: fiyatEtkisi(eski, kayit, parts, malzemeler, { fiyatAyarlari }) }); return; }
+    yaz(kayit, yeni);
+  };
+  const yaz = (kayit, yeni) => {
     setMalzemeler(p => (yeni ? [...p, kayit] : p.map(m => (String(m.id) === String(kayit.id) ? { ...kayit, ...(m.deletedAt ? { deletedAt: m.deletedAt } : {}) } : m))));
     logAction({ serverPermissions, action: yeni ? "olusturuldu" : "duzenlendi", entity: "malzeme", entityId: kayit.id, entityName: kayit.ad });
     setForm(null);
@@ -178,7 +217,7 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
       )}
 
       {form && (
-        <Modal title={form.id == null ? MALZEME_EKLE : "Malzemeyi Düzenle"} onClose={() => setForm(null)} wide
+        <Modal title={form.id == null ? MALZEME_EKLE : "Malzemeyi Düzenle"} onClose={() => { if (!fireOnay) setForm(null); }} wide
           footer={<><Btn variant="ghost" onClick={() => setForm(null)}>Vazgeç</Btn><Btn onClick={kaydet}>Kaydet</Btn></>}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Malzeme adı"><Input value={form.ad} onChange={e => set("ad", e.target.value)} aria-label="Malzeme adı" /><HataMetni>{hatalar.ad}</HataMetni></Field>
@@ -190,6 +229,7 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
             <Field label="Geldiği boy (metre)"><Input value={form.geldigiBoy} onChange={e => set("geldigiBoy", e.target.value)} placeholder="6" aria-label="Geldiği boy" /><HataMetni>{hatalar.geldigiBoy}</HataMetni></Field>
             <Field label="Asgari sipariş (kilogram)"><Input value={form.asgariSiparis} onChange={e => set("asgariSiparis", e.target.value)} aria-label="Asgari sipariş" /><HataMetni>{hatalar.asgariSiparis}</HataMetni></Field>
           </div>
+          <FireBantlariAlani form={form} set={set} hatalar={hatalar} />
           {giderYetki && (
             <Field label="Ana tedarikçi">
               <Select value={form.tedarikciId} onChange={e => set("tedarikciId", e.target.value)} aria-label="Ana tedarikçi">
@@ -214,6 +254,12 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
             <FiyatAlanlari form={form} set={set} hatalar={hatalar} rates={rates} ratesErr={ratesErr} />
           )}
         </Modal>
+      )}
+
+      {fireOnay && (
+        <ConfirmDialog title={FIRE_ETKI_BASLIGI} icon="check" confirmIcon="check" confirmVariant="primary" confirmLabel="Kaydet" onCancel={() => setFireOnay(null)}
+          onConfirm={() => { const { kayit } = fireOnay; setFireOnay(null); yaz(kayit, false); }}
+          message={<div data-testid="fire-etki-onayi"><div style={{ marginBottom: 8 }}>{FIRE_ETKI_SORUSU}</div><MalzemeEtkiOzeti etki={fireOnay.etki} /></div>} />
       )}
 
       {sil && (

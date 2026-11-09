@@ -984,6 +984,23 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0134 AC-60 / AC-58: malzemenin payı geri gelir, paysız malzemede anahtar yok", c.malzemeler.find(m => m.id === 601)?.emniyetPayi === 12.5 && esit(c.malzemeler.find(m => m.id === 602), { id: 602, ad: "Paysız" }));
 }
 
+// ── Spec 0139 C7, AC-19, AC-20: malzemenin çap bandına göre ek fire tablosu kendi JSON sütunu; boş tablo NULL ve gövdede anahtar yok.
+{
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  const tablo = [{ alt: 0, kg: 0 }, { alt: 21, kg: 0.05 }, { alt: 141, kg: 1.75 }];
+  dbmod.writeBlobToDb({ malzemeler: [{ id: 701, ad: "Tablolu", fire: 0, fireBantlari: tablo }, { id: 702, ad: "Tablosuz", fireBantlari: [] }, { id: 703, ad: "Alansız" }] });
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ms = ham.prepare(`SELECT id, fireBantlari FROM malzemeler`).all();
+  ham.close();
+  check("spec 0139 AC-19: boş tablo veritabanına NULL yazılır", ms.find(r => r.id === 702)?.fireBantlari === null && ms.find(r => r.id === 703)?.fireBantlari === null);
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0139 AC-20: kaydedilen tablo birebir geri okunur", esit(c.malzemeler.find(m => m.id === 701)?.fireBantlari, tablo));
+  check("spec 0139 AC-19: boş tablo gövdeye yazılmaz (anahtar yok)", esit(c.malzemeler.find(m => m.id === 702), { id: 702, ad: "Tablosuz" }) && esit(c.malzemeler.find(m => m.id === 703), { id: 703, ad: "Alansız" }));
+}
+
 // ── Spec 0133 C5, C5/2, AC-47, AC-80, AC-94 (Karar 33): fiyat kipi ve parçanın katı `parts`'ta kendi sütunu; elle sabit kip değer
 // olarak saklanmaz ve gövdede anahtar yok; varsayılan kat ile yuvarlama `app_settings.fiyatAyarlari` JSON, boşken NULL ve anahtar yok.
 {

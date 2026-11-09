@@ -17,7 +17,9 @@ const kurMetni = (pb, rates, ratesErr) => {
 const MALZEME_FORMLARI = (usdKur) => [
   { ad: `${ORNEK_ONEKI}St37 lama`, alasim: "St37", ozgulAgirlik: "7,85", kiloFiyati: "42", fire: "3", geldigiBoy: "6", asgariSiparis: "100" },
   { ad: `${ORNEK_ONEKI}8620 mil (çapa göre bantlı fiyat)`, alasim: "8620", ozgulAgirlik: "7,85", kiloFiyati: "70", fire: "5", geldigiBoy: "6",
-    bantlar: [{ alt: "0", fiyat: "68" }, { alt: "50", fiyat: "64" }, { alt: "100", fiyat: "61" }] },
+    bantlar: [{ alt: "0", fiyat: "68" }, { alt: "50", fiyat: "64" }, { alt: "100", fiyat: "61" }],
+    // Spec 0139 A-R15 (AC-54): örnek çap bandına göre ek fire tablosunu da taşır (özelliğin keşfedildiği yer).
+    fireBantlari: [{ alt: "0", kg: "0" }, { alt: "50", kg: "0,30" }] },
   { ad: `${ORNEK_ONEKI}304 paslanmaz boru (boy fiyatlı)`, alasim: "AISI 304", ozgulAgirlik: "7,93", kiloFiyati: "180", boyFiyati: "2150", geldigiBoy: "6" },
   ...(usdKur ? [{ ad: `${ORNEK_ONEKI}6061 alüminyum mil (dolar fiyatlı)`, alasim: "6061", ozgulAgirlik: "2,7", kiloFiyati: "4,2", paraBirimi: "USD", kur: usdKur, fire: "4", geldigiBoy: "3" }] : []),
 ];

@@ -4,7 +4,7 @@
 //
 // Malzeme kaydı (bölüm `malzemeler`, C5/2): { id, ad, alasim, ozgulAgirlik (g/cm³), kiloFiyati, paraBirimi (TRY|USD|EUR), kur
 // (1 birim kaç TL), bantlar: [{ alt, fiyat }], boyFiyati, geldigiBoy (metre, R2/2), tedarikciId, asgariSiparis (kilogram, R2/2),
-// fire (yüzde), fiyatGecmisi: [{ gecerli, kiloFiyati, paraBirimi, kur, bantlar, boyFiyati }], deletedAt }. Boş alan kayda yazılmaz.
+// fire (yüzde), fireBantlari: [{ alt (ham çap, mm), kg }] (spec 0139, fiyat kümesine girmez), fiyatGecmisi: [{ gecerli, kiloFiyati, paraBirimi, kur, bantlar, boyFiyati }], deletedAt }. Boş alan kayda yazılmaz.
 // Parçanın malzeme satırı (Karar 28, tek satır): parts[].malzemeSatiri = { malzemeId, bicim, yontem, cap, et, kalinlik, genislik,
 // en, boy, payCap, payKalinlik, payGenislik, payEn, payBoy, fire }.
 import { tutarCoz, kurus } from "./gider";
@@ -77,6 +77,19 @@ export const bantSec = (bantlar, hamCap) => {
   let sec = null;
   for (const b of bantlar) if (b.alt <= hamCap) sec = b;
   return sec;
+};
+
+// ── Spec 0139: çap bandına göre ek fire (kg) ─────────────────────────────────────────────────────────────────────────
+// A-R1, A-R10: tablo malzeme kartının alanıdır, fiyat kümesine girmez (tarihlenmez). Satır { alt (ham çap, mm), kg }.
+export const fireBantlariOf = (m) => (Array.isArray(m?.fireBantlari) ? m.fireBantlari : [])
+  .filter(b => b && b.alt != null && b.alt !== "" && b.kg != null && b.kg !== "").map(b => ({ alt: Number(b.alt), kg: Number(b.kg) }));
+// C2 (tek yer): kilogram bandının SEÇİMİ ve EKLENMESİ kaynakta yalnız bu fonksiyondadır. A-R5: yalnız çaplı biçimlerde (mil, boru);
+// A-R6: bandı seçen değer ham çaptır (`bantSec`, fiyat bandıyla aynı kural); A-R6/2: en alt bandın altında kalan çapa fire eklenmez;
+// A-R7: kilogram adet başınadır (bir parçanın ham ağırlığına eklenir); A-R4: parçanın kaleminde kilogram alanı yoktur.
+export const ekFireKg = (m, bicim, hamCap) => {
+  if (!BICIMLER[bicim]?.capli || hamCap == null) return 0;
+  const b = bantSec(fireBantlariOf(m), hamCap);
+  return b ? b.kg : 0;
 };
 
 // ── Fiyat kümesi ve tarihli geçmiş (R6, R6/2, Karar 25, C3) ──────────────────────────────────────────────────────────────
@@ -253,16 +266,20 @@ export const malzemeOzeti = (satir, malzemeKat, tarih) => {
   if (!pozitifMi(m.ozgulAgirlik)) eksik.push(EKSIK_OZGUL);
   eksik.push(...kumeEksikleri(k, { capli: b.capli }));
   if (eksik.length) {
+    // Spec 0139 A-R11/2: kilogram fire fiyatı eksik malzemede de ağırlığa girer (iki dal aynı formül).
     const hamKg = o ? agirlikKg(satir.bicim, o, m.ozgulAgirlik) : null;
-    return { maliyetK: null, eksik, hamKg, fireliKg: hamKg == null ? null : hamKg * (1 + fire / 100), fire, yontem };
+    const ekKg = o ? ekFireKg(m, satir.bicim, o.cap) : 0;
+    return { maliyetK: null, eksik, hamKg, fireliKg: hamKg == null ? null : hamKg * (1 + fire / 100) + ekKg, fire, ekFireKg: ekKg, yontem };
   }
   const hamKg = agirlikKg(satir.bicim, o, m.ozgulAgirlik);
-  const fireliKg = hamKg * (1 + fire / 100);
+  // Spec 0139 A-R2, A-R2/2: fire kg = ham kg (işleme payı dahil) × yüzde / 100 + bandın kilogramı; ikisi birlikte uygulanır.
+  const ekKg = ekFireKg(m, satir.bicim, o.cap);
+  const fireliKg = hamKg * (1 + fire / 100) + ekKg;
   const bantlar = k.bantlar || [];
   const bant = b.capli && bantlar.length ? bantSec(bantlar, o.cap) : null;
   const fiyat = bant && bant.fiyat != null ? bant.fiyat : k.kiloFiyati;
   const kur = dovizMi(pb) ? k.kur : 1;
-  return { maliyetK: kurus(fireliKg * fiyat * kur), eksik: [], hamKg, fireliKg, fire, fiyat, bant, kur, paraBirimi: pb, yontem };
+  return { maliyetK: kurus(fireliKg * fiyat * kur), eksik: [], hamKg, fireliKg, fire, ekFireKg: ekKg, fiyat, bant, kur, paraBirimi: pb, yontem };
 };
 export const malzemeParcaKurus = (satir, malzemeKat, tarih) => malzemeOzeti(satir, malzemeKat, tarih).maliyetK;
 
@@ -276,6 +293,18 @@ export const SAYI_HATASI = "Sayı olmalı.";
 export const PARA_HATASI = "Para birimi TL, USD ya da EUR olmalı.";
 export const BANT_SIRA_HATASI = "Bantların alt sınırları artan sırada olmalı; iki bant aynı sınırla başlayamaz.";
 export const BANT_FIYAT_HATASI = "Her bandın kilo fiyatı girilmeli.";
+// Spec 0139 A-R14 (AC-55): kilogram firenin bütün metinleri burada; ekranlar düz metin yazmaz.
+export const FIRE_KG_BASLIK = "Çap bandına göre ek fire (kg)";
+export const FIRE_KG_LAMA_NOTU = "Ek fire yalnız yuvarlak mil ve boruda uygulanır; lama ve sacda yok sayılır.";
+export const FIRE_KG_IPUCU = "Bir parçanın ham ağırlığına (işleme payı dahil) eklenir; yüzde fireyle birlikte uygulanır. Bandı ham çap seçer; en alt bandın altındaki çapa fire eklenmez.";
+export const FIRE_KG_SIRA_HATASI = "Bantların alt çapları artan sırada olmalı; iki bant aynı çapla başlayamaz.";
+export const FIRE_KG_HATASI = "Her bandın kilogramı girilmeli (fire yoksa 0 yazın), negatif olamaz.";
+export const FIRE_KG_BOY_NEDENI = "Boy fiyatından hesaplanan parçada çap bandına göre ek fire uygulanmaz; yalnız yüzde fire orana eklenir.";
+export const FIRE_KG_ALT_ETIKETI = "Alt çap (Ø, mm)";
+export const FIRE_KG_KG_ETIKETI = "Ek fire (kg)";
+export const FIRE_KG_BANT_EKLE = "Bant ekle";
+export const FIRE_ETKI_BASLIGI = "Fire değişikliğinin etkisi";
+export const FIRE_ETKI_SORUSU = "Fire alanları değişti. Kaydedilsin mi?";
 // Ortak sayı alanı denetimi: boş serbest. `pozitif` sıfırı da reddeder.
 const alanDogrula = (ham, { pozitif = false, ust = null, ustHata = FIRE_HATASI } = {}) => {
   if (ham == null || String(ham).trim() === "") return { deger: null, hata: null };
@@ -310,6 +339,22 @@ export const bantlarDogrula = (satirlar = []) => {
   });
   return { kayit, hata };
 };
+// Spec 0139 A-R9 (AC-12–AC-14, AC-44, AC-45): fire bandının doğrulayıcısı AYRIDIR. Alt çaplar serbest (ilk band da yazılır, 0'a
+// sabitlenmez), kesin artan; kilogram zorunlu, negatif olamaz, sıfır geçerli ("bu bantta fire yok"); belirsiz sayı reddedilir.
+export const fireBantlariDogrula = (satirlar = []) => {
+  const dolu = (satirlar || []).filter(b => b && !(String(b.alt ?? "").trim() === "" && String(b.kg ?? "").trim() === ""));
+  const kayit = []; let hata = null;
+  for (const b of dolu) {
+    const alt = alanDogrula(b.alt);
+    const kg = alanDogrula(b.kg);
+    if (alt.hata === BELIRSIZ_HATASI || kg.hata === BELIRSIZ_HATASI) { hata = hata || BELIRSIZ_HATASI; continue; }
+    if (alt.hata || alt.deger == null) { hata = hata || FIRE_KG_SIRA_HATASI; continue; }
+    if (kg.hata || kg.deger == null) { hata = hata || FIRE_KG_HATASI; continue; }
+    if (kayit.length && alt.deger <= kayit[kayit.length - 1].alt) { hata = hata || FIRE_KG_SIRA_HATASI; continue; }
+    kayit.push({ alt: alt.deger, kg: kg.deger });
+  }
+  return { kayit, hata };
+};
 // C7/2, AC-4, AC-93: ad karşılaştırması trLower; kayıtta kullanıcının yazdığı biçim korunur.
 export const adCakisiyorMu = (ad, malzemeler = [], haricId = null) => {
   const a = trLower(String(ad || "").trim());
@@ -335,6 +380,8 @@ export const malzemeDogrula = (form = {}, malzemeler = [], haricId = null) => {
   if (dovizMi(pb)) { const r = alanDogrula(form.kur, { pozitif: true }); if (r.hata) h.kur = r.hata; else if (r.deger != null) k.kur = r.deger; }
   const bant = bantlarDogrula(form.bantlar);
   if (bant.hata) h.bantlar = bant.hata; else if (bant.kayit.length) k.bantlar = bant.kayit;
+  const fb = fireBantlariDogrula(form.fireBantlari); // spec 0139 C7: boş tablo kayda yazılmaz
+  if (fb.hata) h.fireBantlari = fb.hata; else if (fb.kayit.length) k.fireBantlari = fb.kayit;
   const ted = form.tedarikciId == null ? "" : String(form.tedarikciId).trim();
   if (ted) k.tedarikciId = /^\d+$/.test(ted) ? Number(ted) : ted;
   return { kayit: k, hatalar: h, gecerli: Object.keys(h).length === 0 };
@@ -347,6 +394,7 @@ export const malzemeFormu = (m = {}) => ({
   kur: metin(m.kur), boyFiyati: metin(m.boyFiyati), geldigiBoy: metin(m.geldigiBoy), asgariSiparis: metin(m.asgariSiparis), fire: metin(m.fire), emniyetPayi: metin(m.emniyetPayi),
   tedarikciId: m.tedarikciId == null ? "" : String(m.tedarikciId),
   bantlar: bantlarOf(m).map(b => ({ alt: metin(b.alt), fiyat: metin(b.fiyat) })),
+  fireBantlari: fireBantlariOf(m).map(b => ({ alt: metin(b.alt), kg: metin(b.kg) })),
 });
 
 // R10, R10/2, AC-45, AC-46, AC-84: parçanın malzeme satırı. Malzeme seçilmemişse satır yoktur (null). Eksik ölçü kaydı engellemez,

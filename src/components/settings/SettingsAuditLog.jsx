@@ -17,6 +17,7 @@ const ENTITY_LABELS = {
 };
 const ACTION_LABELS = {
   fiyat_kipi_degisti: "Fiyat Kipi Değişti", // spec 0133 R4
+  ice_aktarildi: "İçe Aktarıldı", // spec 0139 B-R12/2 (malzeme listesinden toplu parça)
   olusturuldu: "Oluşturuldu", duzenlendi: "Düzenlendi", silindi: "Silindi", eposta_gonderildi: "E-posta Gönderildi",
   veri_kaydedildi: "Veri Kaydedildi", yuklendi: "Yüklendi", crm_kaydedildi: "CRM'e Kaydedildi",
   yeni_sahip: "Yeni Sahip (Devir)", servis_odendi: "Servis Ödendi", servis_odeme_iptal: "Servis Ödeme İptal",
