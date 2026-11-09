@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, revizyon 2 (Takım Yöneticisi, 2026-11-09; plan onayı, kararlar 33–47) |
+| **Durum** | **Tamamlandı** (2026-11-09, commit `f7812271`; plan `specs/done/0140-uygulama-plani.md`, plan turu kararlar 33–47, triyaj planın §6'sında) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog › Parça/Yedek Parça ve Stok › Parça/Yedek Parça Stoğu (yeni pencere, iki giriş noktası), Makina Maliyeti (Sipariş İhtiyacı görünümü kalkar), parça kartı (yeni alan ve tedarikçi süzgeci), saf motor `siparisIhtiyaci.js`, yazdırma `siparisRaporu.js` ve `rapor/` altındaki düğme, izin tanımları (`serverPermissionDefs.js`, `UserManager.jsx`), `src/lib/kilitAlanlari.js`, `src/lib/merge.js`, `electron/db.cjs`, `App.jsx` prop zinciri, `Stock.jsx` ve `stock/PartStokTab.jsx`, `src/lib/gider.js` (tedarikçi koruma), `settings/SettingsTrash.jsx`, `gider/Tedarikciler.jsx`, `uretimdekiModeller` taramaları ve `URETIM_ISARETI_IPUCU`, `docs/evidence/kanit-eslemesi.json`, `docs/tasarim-sozlugu.md` |
@@ -783,7 +783,7 @@ Takım Yöneticisi planın on beş önerisinin hepsini onayladı (plan `specs/01
       malzemenin bağı da korunuyor.
 - [ ] `docs/evidence/kanit-eslemesi.json`'un dosya yolu anahtarı ve ekran adları güncellendi.
 - [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -850,10 +850,13 @@ adı) ve bir iddia var olan bir metin sabitiyle çeliştiği için yeniden yazı
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `f7812271` | Dal `feat/0140-siparis-listesi`, taban `fcb57633`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (32 bulgu), plan turu (revizyon 2, kararlar 33–47) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: iki orta, üç düşük bulgu |
+| **Bulgu gerçek/gürültü oranı** | 5 / 0 | Kanıt raporları üretilmemişti; kapatılan setin bileşen kesitindeki elle kilo kayboluyordu (D-R5/2 ile AC-86 çarpışması, D-R5/2 öncelikli tutuldu); görünmeyen satırın hatası belgeyi kilitliyor ve "Önerilere dön" hatalı değerde pasif kalıyordu; öneriye eşit kilo "elle" sayılıyordu; çöpteki Ana tedarikçi kartta "Seçilmedi" görünüyordu |
+| **Regresyon sayısı** | 0 | Tam takım 516 dosya, 7223 test, Electron dahil; lint 0 hata |
+| **Kaçan hata** | 4 | Triyaj bulgu 2–5 (bulgu 1 süreç eksiğiydi) |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** 0138'in kimlik taraması önerilen `tedarikciKorumaNedeni` adını, 0099 taraması "Hatalı satır var" ifadesini yasaklıyordu; adlar ve metin değişti. Katalog süzgecinin "girilmemiş" etiketi ve emniyet payı ipucusu eski anlamı/yeri yazıyordu, düzeltildi. Kanıt çekiminde main kodunun iki çekimi kendi arasında 43 ekranda (select okları, Giderler başlığı) farklıydı; gerçek fark iki taraflı tekrarla ayrıldı ve bu işin dışında yalnız Makina Modelleri'nin "Üretimde" ipucusu (metni değişti) gerçek çıktı. Parçalı çekimde parça sınırları iki kodda kaydığı için taban tek klasörde birleştirildi.
+
+**Bu spec'ten çıkarılan ders:** iki kural aynı satırı farklı yöne itiyorsa (burada "elle değer kalır" ile "kapatılan setin malzemesi düşer") spec bunların kesişimini tek örnekle yazmalı; kesişim ancak triyajda ölçüldü. Öneri değeri gibi "düzenlenmemiş hâl" kavramı, düzenlemenin zincirleme etkisi olan her girdiden (burada set adedi) bağımsız hesaplanmalı. Kanıt adımı "sonra yapılır" diye bırakılmamalı; plan notu yapılmamış işi yapılmış gibi okutuyordu.

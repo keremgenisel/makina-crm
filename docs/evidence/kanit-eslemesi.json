@@ -7841,12 +7841,6 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0140-piksel-raporu.json",
-        "ekran": "katalog-model-uretimde",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0140 AC-67"
-      },
-      {
         "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
         "ekran": "katalog-model-uretimde",
         "beklenen": "ayni"
@@ -12012,18 +12006,6 @@
         "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-gelecek-bitis",
         "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0140-piksel-raporu.json",
-        "ekran": "maliyet-modeller",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0140 AC-12"
-      },
-      {
-        "rapor": "docs/evidence/0140-piksel-raporu.json",
-        "ekran": "maliyet-parti",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0140 AC-12"
       },
       {
         "rapor": "docs/evidence/0140-taban-piksel-raporu.json",

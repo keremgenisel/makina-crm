@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0140-tedarikci-odakli-siparis-listesi.md` (Onaylandı, 2026-11-09) |
+| **Spec** | `specs/done/0140-tedarikci-odakli-siparis-listesi.md` (Tamamlandı, 2026-11-09) |
 | **Dal** | `feat/0140-siparis-listesi` (worktree `../wt0140`, `main` `fcb57633` üstünde) |
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-09): on beş önerinin hepsi; spec revizyon 2, kararlar 33–47 |
+| **Durum** | **Tamamlandı** (2026-11-09, commit `f7812271`); onay: Takım Yöneticisi 2026-11-09, on beş önerinin hepsi; spec revizyon 2, kararlar 33–47 |
 
 ---
 
@@ -246,3 +246,7 @@ DoD taramaları: ekran aritmetik yazmaz (S: pencere dosyasında `*`, `+=` ile ad
   - Bulgu 3: belgeyi kilitleyen hata yalnız görünen satırlardan sayılır (`duzen.gorunenHata`). "Önerilere dön" hatalı değeri de geri alır.
   - Bulgu 4: üç ondalıkta öneriye eşit kilo ya da eşit boy adedi düzenleme sayılmaz. Parçaları kapatılmış satırda yazılan değer her zaman elle sayılır.
   - Bulgu 5: çöpteki ya da bulunamayan Ana tedarikçi seçicide ibaresiyle görünür.
+
+## 7. Kapanış
+
+Spec ve plan `specs/done/`'a taşındı, SCORECARD dolduruldu, README'ye satır eklendi, CLAUDE.md plan yolu güncellendi. Kanıt eşlemesinin üç `degisti` kaydı (`MakinaMaliyeti.jsx` iki, `ModelsManager.jsx` bir) kaldırıldı; aynı ekranların `0140-taban-piksel-raporu.json`'daki `ayni` kayıtları (son kodla 0 fark) yerinde. `tests/spec-atiflari.test.js` bekleme listesi boşaltıldı. Triyaj bulgu 2'nin kararı (D-R5/2 öncelikli) uygulandığı hâliyle kapandı.
