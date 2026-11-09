@@ -5629,6 +5629,11 @@
         "rapor": "docs/evidence/0137-taban-piksel-raporu.json",
         "ekran": "giderler-0137-tedarikci-sil",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "giderler-tedarikciler-0140",
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/GiderTurManager.jsx": [
@@ -6262,6 +6267,11 @@
       {
         "rapor": "docs/evidence/0137-taban-piksel-raporu.json",
         "ekran": "ayarlar-trash-0137",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "ayarlar-trash-0140",
         "beklenen": "ayni"
       }
     ],
@@ -7700,6 +7710,11 @@
         "rapor": "docs/evidence/0130-taban-piksel-raporu.json",
         "ekran": "parca-stok-0130-hareket",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "parca-stok-0121-set",
+        "beklenen": "ayni"
       }
     ],
     "src/components/MailCompose.jsx": [
@@ -7823,6 +7838,17 @@
       {
         "rapor": "docs/evidence/0138-taban-piksel-raporu.json",
         "ekran": "katalog-model-0134-parti",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-piksel-raporu.json",
+        "ekran": "katalog-model-uretimde",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0140 AC-67"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "katalog-model-uretimde",
         "beklenen": "ayni"
       }
     ],
@@ -9220,6 +9246,16 @@
       {
         "rapor": "docs/evidence/0138-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0138-liste",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0140-ana",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "ayarlar-yedekparca-0140-suzgec",
         "beklenen": "ayni"
       }
     ],
@@ -11976,6 +12012,28 @@
         "rapor": "docs/evidence/0136-taban-piksel-raporu.json",
         "ekran": "maliyet-0136-gelecek-bitis",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0140 AC-12"
+      },
+      {
+        "rapor": "docs/evidence/0140-piksel-raporu.json",
+        "ekran": "maliyet-parti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0140 AC-12"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "maliyet-modeller",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "maliyet-parti",
+        "beklenen": "ayni"
       }
     ],
     "src/components/maliyet/PayOzeti.jsx": [
@@ -13029,48 +13087,6 @@
         "beklenen": "ayni"
       }
     ],
-    "src/components/maliyet/SiparisIhtiyaci.jsx": [
-      {
-        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
-        "ekran": "maliyet-siparis",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
-        "ekran": "maliyet-siparis-bos",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
-        "ekran": "maliyet-siparis-hatali",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
-        "ekran": "maliyet-siparis-neden",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0134-taban-piksel-raporu.json",
-        "ekran": "maliyet-siparis-tablolar",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0135-taban-piksel-raporu.json",
-        "ekran": "maliyet-siparis",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0135-taban-piksel-raporu.json",
-        "ekran": "maliyet-siparis-tablolar",
-        "beklenen": "ayni"
-      },
-      {
-        "rapor": "docs/evidence/0135-taban-piksel-raporu.json",
-        "ekran": "maliyet-siparis-bos",
-        "beklenen": "ayni"
-      }
-    ],
     "src/components/settings/SettingsFiyat.jsx": [
       {
         "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
@@ -13591,6 +13607,38 @@
       {
         "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "veri-0139-aktar-sonuc",
+        "beklenen": "ayni"
+      }
+    ],
+    "src/components/stock/SiparisPenceresi.jsx": [
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "siparis-0140-pencere",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "siparis-0140-belirtilmemis",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "siparis-0140-parca-ihtiyaci",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "siparis-0140-yetkisiz",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "siparis-0140-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "ekran": "siparis-0140-hatali",
         "beklenen": "ayni"
       }
     ]

@@ -8,14 +8,13 @@ import { ModelMaliyetleri } from "./maliyet/ModelMaliyetleri";
 import { PartiHesabi } from "./maliyet/PartiHesabi";
 import { HesapAyarlari } from "./maliyet/HesapAyarlari";
 import { UretimPartileri } from "./gider/UretimPartileri";
-import { SiparisIhtiyaci } from "./maliyet/SiparisIhtiyaci";
 
 // Spec 0088: Makina Maliyet Hesabı (Mali İşler altında, sekme `maliyet`). Ürün ağacı + genel gider payı × kâr katsayısı;
 // bütün hesap saf motorda (`lib/makinaStandartMaliyet.js`), ekran yalnız gösterir (R25). Spec 0090'dan beri uygulamada tek
 // maliyet modeli budur: Üretim Partileri'nin payı da bu motordan (aylık genel gider havuzu, `partiGenelPaylari`) gelir.
 // R3: dört görünüm bu sırayla. Üretim Partileri yönetimi Giderler'den buraya taşındı (R23); bileşen gider/'de kalır (plan P7).
 // Spec 0134 R1: beşinci görünüm Sipariş İhtiyacı (salt okunur).
-export const GORUNUMLER = [{ value: "modeller", label: "Model Maliyetleri" }, { value: "parti", label: "Parti Hesabı" }, { value: "partiler", label: "Üretim Partileri" }, { value: "ayarlar", label: "Hesap Ayarları" }, { value: "siparis", label: "Sipariş İhtiyacı" }];
+export const GORUNUMLER = [{ value: "modeller", label: "Model Maliyetleri" }, { value: "parti", label: "Parti Hesabı" }, { value: "partiler", label: "Üretim Partileri" }, { value: "ayarlar", label: "Hesap Ayarları" }]; // spec 0140 B-R2: Sipariş İhtiyacı görünümü kalktı (sipariş penceresi)
 const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "modeller");
 // Spec 0097 R19 (AC-30; 0088 R31 bu spec'le yeniden yazıldı): bugünkü ayarlar yalnız Model Maliyetleri ile planlanan adet
 // satırlarını etkiler; üretilmiş makinalar üretim gününün parça maliyeti ve partinin kendi aylarının genel gideriyle hesaplanır.
@@ -26,8 +25,7 @@ export const MakinaMaliyeti = ({
   aktifKullanici = "", giderler = [], giderTurleri = [], setGiderTurleri, tedarikciler = [], stock = [], customers = [], partStockLog = [],
   parts = [], malzemeler = [], standardModels = [], customModels = [], setStandardModels, setCustomModels, uretimPartileri = [], setUretimPartileri,
   appSettings = {}, setAppSettings, rates = null, tumMusteriler = null, serverPermissions = null, showToast = () => {}, baslangicGorunum = "modeller",
-  // Spec 0134 R24, R19/2, C3/2: eldeki parça stoğu (salt okunur) ve yalnız ad çözümü için ham tedarikçi ve parça dizileri.
-  partStock = [], rawTedarikciler = null, rawParts = null, factory = null,
+  // Spec 0140 B-R2: sipariş görünümü kalktığı için parça stoğu, ham tedarikçi ve parça dizileri ve firma bilgisi artık gelmez.
 }) => {
   const [gorunum, setGorunum] = useState(() => gecerliGorunum(baslangicGorunum));
   const bugun = useBugun();
@@ -64,7 +62,6 @@ export const MakinaMaliyeti = ({
     return partiKapanisGoruntusu(veriYeni, parti, bugun, { katalog: parcaKatalogu, modeller, partiPay });
   };
   const ortak = { pay, gercek, modeller, canDo, baskasiKilitli, showToast };
-  const katalogModelleri = useMemo(() => [...standardModels, ...customModels].filter(m => m && !m.deletedAt), [standardModels, customModels]);
 
   return (
     <div>
@@ -78,8 +75,6 @@ export const MakinaMaliyeti = ({
       {gorunum === "partiler" && <UretimPartileri uretimPartileri={uretimPartileri} setUretimPartileri={setUretimPartileri} stock={stock} customers={customers}
         partiSonucu={partiSonucu} kapanisHavuzu={kapanisHavuzu} kapanisGoruntusu={kapanisGoruntusu}
         sapmaGirdisi={sapmaGirdisi} bugun={bugun} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} />}
-      {gorunum === "siparis" && <SiparisIhtiyaci modelSatirlari={modeller} modeller={katalogModelleri} parts={parts} hamParts={rawParts} partStock={partStock}
-        malzemeler={malzemeler} tedarikciler={tedarikciler} hamTedarikciler={rawTedarikciler} uretimPartileri={uretimPartileri} factory={factory} bugun={bugun} />}
       {gorunum === "ayarlar" && <HesapAyarlari {...ortak} ayarlar={ayarlar} setAppSettings={setAppSettings} giderTurleri={giderTurleri} setGiderTurleri={setGiderTurleri} bugun={bugun} />}
     </div>
   );

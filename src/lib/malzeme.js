@@ -323,7 +323,7 @@ export const fireDogrula = (ham) => alanDogrula(ham, { ust: 100 });
 export const EMNIYET_PAYI_HATASI = "Emniyet payı 0 ile 100 arasında olmalı.";
 export const emniyetPayiDogrula = (ham) => alanDogrula(ham, { ust: 100, ustHata: EMNIYET_PAYI_HATASI });
 export const EMNIYET_PAYI_ETIKETI = "Emniyet payı (%)";
-export const EMNIYET_PAYI_IPUCU = "Yalnız sipariş ihtiyacını büyütür (Makina Maliyeti › Sipariş İhtiyacı); maliyete girmez. Parçanın payı varsa malzemeninki okunmaz.";
+export const EMNIYET_PAYI_IPUCU = "Yalnız sipariş ihtiyacını büyütür (Stok › Parça/Yedek Parça Stoğu › Sipariş Listesi); maliyete girmez. Parçanın payı varsa malzemeninki okunmaz.";
 // AC-12, Karar 26: ilk bandın alt sınırı 0'dır; alt sınırlar kesin artan; her bandın fiyatı girilir.
 export const bantlarDogrula = (satirlar = []) => {
   const dolu = (satirlar || []).filter(b => b && !(String(b.alt ?? "").trim() === "" && String(b.fiyat ?? "").trim() === ""));

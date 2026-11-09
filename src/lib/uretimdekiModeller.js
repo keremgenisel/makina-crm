@@ -7,7 +7,7 @@ export const URETIM_ALANI = "uretimdeOlmayanModeller";
 // R28: panelin ipucusu, işaretin kapsamını söyler. Spec 0093 R8/2: işaret planlanan adetler penceresini de süzer; Parti
 // Hesabı'nın tablosu süzülmediği için etkilenmeyenler arasında ayrıca sayılır.
 // Spec 0105 R22/2: üçüncü tüketici müşteri formunun model seçicisi; etkilenmeyen seçiciler "stok ve Evrak" diye daraldı.
-export const URETIM_ISARETI_IPUCU = "\"Üretimde\" işareti Makina Maliyeti › Model Maliyetleri'ni, Parti Hesabı'nın planlanan adetler penceresini ve müşteri formunun model seçicisini süzer; Parti Hesabı'nın model-adet tablosu, stok ve Evrak model seçicileri, Analiz ve makina kayıtları etkilenmez.";
+export const URETIM_ISARETI_IPUCU = "\"Üretimde\" işareti Makina Maliyeti › Model Maliyetleri'ni, Parti Hesabı'nın planlanan adetler penceresini, sipariş listesinin ve müşteri formunun model seçicisini süzer; Parti Hesabı'nın model-adet tablosu, stok ve Evrak model seçicileri, Analiz ve makina kayıtları etkilenmez.";
 // Spec 0093 R12: "üretimde değil" ibaresinin tek tanımı (Model Maliyetleri ve planlanan adetler penceresi buradan okur).
 export const URETIM_DEGIL_IBARESI = "üretimde değil";
 

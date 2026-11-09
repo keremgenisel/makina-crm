@@ -1,3 +1,4 @@
+import { SiparisPenceresi, SIPARIS_DUGMESI } from "./SiparisPenceresi";
 import { useState, useMemo } from "react";
 import { today, fmtTR, uid, mergeAndUpdate, totalMiktar, aramaNormalize } from "../../lib/utils";
 import { logAction } from "../../lib/audit";
@@ -23,7 +24,10 @@ const fiyatSayisi = (part, pb, baglam) => {
 
 const PER_PAGE = 15;
 
-export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null, aktifKullanici = null }) => {
+export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null, aktifKullanici = null,
+  siparisVeri = null, giderYetki = false }) => {
+  // Spec 0140 B-R6 (AC-53, AC-54): sipariş listesinin ikinci giriş noktası; pencere katalog panelinin kilidini almaz.
+  const [siparisAcik, setSiparisAcik] = useState(false);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   // Spec 0065 R18: tutarlılık raporu salt okunurdur. Spec 0121 R25/2: hareket listesi artık setin hazırlamasını geri alabilir
@@ -163,6 +167,7 @@ export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, 
             style={{ padding: "9px 12px 9px 36px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, width: "100%", boxSizing: "border-box", fontSize: 14, background: "var(--n100, #f8fafc)", outline: "none" }} />
         </div>
         <Btn variant="ghost" onClick={() => setTutarlilikAcik(true)}><Icon name="check" size={14} /> Stok Tutarlılığı</Btn>
+        {siparisVeri && canDoStock("stock_siparis_listesi") && <Btn variant="ghost" testId="siparis-listesi-dugmesi" onClick={() => setSiparisAcik(true)}><Icon name="print" size={14} /> {SIPARIS_DUGMESI}</Btn>}
         {canDoStock("stock_parca_add") && <Btn onClick={openEkle}><Icon name="plus" size={14} /> Stoğa Parça Ekle</Btn>}
       </div>
 
@@ -327,6 +332,7 @@ export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, 
           )}
         </Modal>
       )}
+      {siparisAcik && <SiparisPenceresi veri={siparisVeri} giderYetki={giderYetki} onClose={() => setSiparisAcik(false)} />}
     </div>
   );
 };

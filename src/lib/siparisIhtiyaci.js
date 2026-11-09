@@ -9,7 +9,8 @@
 //   4. Her parçada sipariş = ihtiyaç − stok, sıfırın altına inmez (R8).
 //   5. Malzeme kalemi olan parçanın SİPARİŞ adedi (× kalem adedi) her malzeme kaleminin kesit satırına gider (AC-84: pay ikinci kez uygulanmaz).
 import { trLower, totalMiktar } from "./utils";
-import { setMi, setIcerigiOf, kalemAdetiOf } from "./urunAgaci";
+import { setMi, setIcerigiOf, kalemAdetiOf, parcaMaliyetKurus, setKatalogu } from "./urunAgaci";
+import { BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./tutarGirdisi";
 import {
   BICIMLER, PARA_BIRIMLERI, dovizMi, bantSec, bantlarOf, fiyatKumesi, hamOlculer, hamKesit, malzemeOzeti,
   malzemeKatalogu, tamBoyKg, emniyetPayiDogrula, kgMetni,
@@ -45,6 +46,67 @@ export const TEDARIKCISIZ = "Ana tedarikçisi girilmemiş malzemeler";
 export const SILINMIS_TEDARIKCI = "silinmiş tedarikçi";
 export const BULUNAMAYAN_TEDARIKCI = "kaydı bulunamayan tedarikçi";
 export const PARTI_PLAN_YOK = "Bu partide planlanan adet girilmemiş; model satırlarını elle ekleyin.";
+
+// ── Spec 0140: tedarikçi odaklı çıktı ve düzenleme metinleri (C-R12, A-R14 emsali; ekran metin yazmaz) ─────────────────────
+// C-R7/2 (karar 33): malzemeyi ve parçayı birlikte kapsayan başlık; TEDARIKCISIZ parametresiz çağrı için aynen durur (C-R11).
+export const TEDARIKCI_BELIRTILMEMIS = "Tedarikçisi belirtilmemiş";
+export const anasizParcaMetni = (n) => `Ana tedarikçi girilmemiş ${n} parça; Ayarlar › Katalog › Parça/Yedek Parça'dan girin.`;
+export const anasizMalzemeliMetni = (n) => `${n} malzemeli parçanın Ana tedarikçisi yok; malzemesi kendi tedarikçisinin bölümünde.`;
+// C-R12: boş durumların üç nedeni.
+export const BOS_KIT = "Seçilen modellerin kitinde parça yok; sipariş üretmedi.";
+export const BOS_STOK_YETIYOR = "Eldeki stok ihtiyacı karşılıyor; sipariş edilecek satır yok.";
+export const BOS_SECIM = "Seçilen tedarikçilerde bu girdi için satır yok.";
+export const CIFT_SAYIM_DEGIL = "Bir parça hem Ana tedarikçisinin bölümünde (hazır parça) hem malzemesinin tedarikçisinin bölümünde (malzeme) görünebilir; bunlar ayrı siparişlerdir, çift sayım değildir.";
+export const HAMMADDE_SUZGEC_NEDENI = "Listede hammadde işaretli tedarikçiler ve bir parçanın ya da malzemenin Ana tedarikçisi olan firmalar var; kargo, kira gibi tedarikçiler listelenmez.";
+export const GECICI_DUZENLEME = "Düzenlemeler geçicidir: pencere kapanınca kaybolur, hiçbir yere kaydedilmez.";
+export const satirsizSecilenMetni = (n, m) => `Seçilen ${n} firmanın ${m} tanesinde satır yok.`;
+export const duzenlemeSayiMetni = (d) => `${d.duzenlenen} satır düzenlendi · ${d.kapatilan} satır kapatıldı`;
+export const MALZEMESI_ASAGIDA = "malzemesi aşağıda";
+export const MALIYET_YOK = "maliyet girilmedi";
+export const SILINMIS_TEDARIKCI_BELGE = "Tedarikçi çöpte ya da kaydı bulunamıyor; bu firmanın belgesi basılamaz.";
+export const ELLE_KILO_NEDENI = "Sipariş kilosu elle girildi; boy adedi hesaplanmaz.";
+export const ELLE_BOY_NEDENI = "Boy adedi elle girildi.";
+export const PARCALARI_KAPALI = "parçaları kapatıldı, değer elle girildi";
+export const asgariAltiMetni = (asgari) => `Asgari siparişin (${kgMetni(asgari)}) altında.`;
+export const SIPARIS_ADET_UST = 1000000;
+export const SIPARIS_ADET_HATASI = `Sipariş adedi 0 ile ${SIPARIS_ADET_UST.toLocaleString("tr-TR")} arasında tam sayı olmalı.`;
+export const ELLE_KILO_HATASI = "Sipariş kilosu sıfır ya da pozitif bir sayı olmalı.";
+export const ELLE_BOY_HATASI = "Boy adedi 0 ile 1.000.000 arasında tam sayı olmalı.";
+export const BELGE_HATALI = "Geçersiz değer girilmiş bir satır var; belge basılamaz.";
+export const BELGE_BOS = "Basılacak satır yok.";
+
+// D-R1/2 (AC-82): sipariş adedi 0–1.000.000 tam sayı, boş = 0. Belirsiz sayı kuralı burada aranmaz (tam sayı alanı, AC-39).
+export const siparisAdediDogrula = (ham) => {
+  const t = String(ham ?? "").trim();
+  if (t === "") return { deger: 0, hata: null };
+  if (!/^\d+$/.test(t) || Number(t) > SIPARIS_ADET_UST) return { deger: null, hata: SIPARIS_ADET_HATASI };
+  return { deger: Number(t), hata: null };
+};
+// D-R1/2, AC-39: elle kilo; belirsiz yazılmış sayı reddedilir (tek nokta, noktadan sonra üç ve daha çok hane).
+export const elleKiloDogrula = (ham) => {
+  const t = String(ham ?? "").trim();
+  if (t === "") return { deger: null, hata: null };
+  if (BELIRSIZ_DESEN.test(t)) return { deger: null, hata: BELIRSIZ_HATASI };
+  const m = /^(\d+)(?:[.,](\d+))?$/.exec(t);
+  if (!m) return { deger: null, hata: ELLE_KILO_HATASI };
+  return { deger: Number(`${m[1]}.${m[2] || "0"}`), hata: null };
+};
+// C-R3, C-R3/2 (AC-21, AC-76): seçicinin listesi; canlı, hammadde işaretli ya da canlı bir parçanın veya malzemenin Ana tedarikçisi.
+export const tedarikciSecenekleri = ({ tedarikciler = [], parts = [], malzemeler = [] } = {}) => {
+  const kullanilan = new Set([...(parts || []), ...(malzemeler || [])].filter(x => x && !x.deletedAt && x.tedarikciId != null && x.tedarikciId !== "")
+    .map(x => String(x.tedarikciId)));
+  return (tedarikciler || []).filter(t => t && !t.deletedAt && (t.hammadde === true || kullanilan.has(String(t.id))))
+    .sort((a, b) => String(a.ad).localeCompare(String(b.ad), "tr"));
+};
+// C-R12 (AC-28): boş durumun nedeni (tedarikçi odaklı sonuçtan); null = boş değil.
+export const bosDurumNedeni = (sonuc) => {
+  const tb = sonuc?.tedarikciBolumleri;
+  if (!sonuc || sonuc.bos || !tb) return null;
+  if (tb.bolumler.length || tb.belirtilmemis.parcalar.length || tb.belirtilmemis.kesitler.length) return null;
+  if (tb.secimVar && tb.satirsizSecilen.length) return BOS_SECIM;
+  if (sonuc.gecerliSayi > 0 && sonuc.kitBos.length === sonuc.gecerliSayi) return BOS_KIT;
+  return BOS_STOK_YETIYOR;
+};
 
 const ad = (x) => trLower(String(x || "").trim());
 // Kayan nokta artığı (0,114 × 70 = 7,9800000001) yukarı yuvarlamayı şişirmesin: altı ondalığa indirilir.
@@ -97,7 +159,26 @@ export const emniyetPayiOf = (p, malzemeKat) => {
 };
 
 // ── Ana hesap ────────────────────────────────────────────────────────────────────────────────────────────────────────────
-export const siparisIhtiyaci = (veri = {}) => {
+// Spec 0140 C-R11 (AC-93, AC-94): ikinci parametre isteğe bağlıdır. `tedarikciOdakli` verilince yeni `tedarikciBolumleri` alanı
+// döner (bütün yeni çıktılar bu nesnenin içinde; bugünkü alanlar ve TEDARIKCISIZ değişmez). `duzenleme` (D-R1–D-R5/2, C1) ham
+// metinlerle gelir ve burada doğrulanır: { parca: { [partId]: { adet, kapali } }, kesit: { [anahtar]: { deger, kapali } } };
+// sıra D-R4/2: (1) bugünkü hesap, (2) set düzenlemesi, (3) patlatma düzenlenmiş adetle, (4) bileşenler, (5) parça düzenlemesi,
+// (6) kesitler son adetlerden. `secilenTedarikciler` (C-R2): boş ya da yoksa bütün tedarikçiler.
+export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
+  const { tedarikciOdakli = false, duzenleme = null, secilenTedarikciler = null } = secenek || {};
+  const duzParca = duzenleme?.parca || {}; const duzKesit = duzenleme?.kesit || {};
+  // Parça düzenlemesi: geçerli adet ya da kapatma; geçersiz adet düzenleme sayılmaz, hatası kaydedilir (D-R9).
+  const parcaDuzenle = (k) => {
+    k.oneri = k.siparis;
+    const d = duzParca[k.partId];
+    if (!d) return;
+    k.kapali = !!d.kapali;
+    if (d.adet != null) {
+      const v = siparisAdediDogrula(d.adet);
+      if (v.hata) k.hata = v.hata; else if (v.deger !== k.oneri) { k.duzenlendi = true; k.siparis = v.deger; }
+    }
+    if (k.kapali) k.siparis = 0;
+  };
   const { modeller = [], satirlar: hamSatirlar = [], parts = [], hamParts = null, partStock = [], malzemeler = [], tedarikciler = [], hamTedarikciler = null } = veri;
   const satirlar = satirlariDogrula(hamSatirlar, modeller);
   const gecerli = satirlar.filter(s => !s.hata);
@@ -150,13 +231,18 @@ export const siparisIhtiyaci = (veri = {}) => {
   }
   // Setler: stok düşülür, kalan patlatılır (R7, R7/2, AC-13, AC-76–AC-78). Patlatma tek düzeydir (iç içe set yasak, 0121).
   const setler = [...kalemler.values()].filter(k => k.set);
+  // Triyaj (bulgu 2, D-R5/2 > AC-86): öneri geçişi setin DÜZENLENMEMİŞ adediyle patlatır; kapatılan setin bileşen kesitine yazılmış
+  // elle değer satır olarak kalır (parçaları kapatıldı). Asıl hesap (AC-86) değişmez: kapatılan set patlatılmaz.
+  const oneriPatlatma = new Map();
   for (const k of setler) {
     k.siparis = Math.max(0, k.ihtiyac - k.stok);
+    parcaDuzenle(k); // D-R4/2 (2): set düzenlemesi patlatmadan önce; kapatılan set patlatılmaz (AC-86)
     const p = canliParca.get(k.partId);
     const icerik = setIcerigiOf(p);
     const canliBilesen = icerik.filter(b => canliParca.has(String(b.partId)));
     if (!canliBilesen.length) { k.setNeden = SET_ICERIK_BOS; }
     k.patlatildi = k.siparis > 0 && canliBilesen.length > 0;
+    if (k.oneri > 0) for (const b of canliBilesen) oneriPatlatma.set(String(b.partId), (oneriPatlatma.get(String(b.partId)) || 0) + k.oneri * (Number(b.miktar) || 0));
     // Triyaj (bulgu 3), R7/2: bileşen satırı yalnız patlatılan kalandan doğar; stokta yeten setin bileşenleri satır açmaz.
     if (k.siparis <= 0) continue;
     for (const b of icerik) {
@@ -168,8 +254,10 @@ export const siparisIhtiyaci = (veri = {}) => {
   }
   for (const k of kalemler.values()) {
     if (k.set || k.silinmis) continue;
+    k.kitIhtiyac = k.ihtiyac;
     if (k.patlatmaHam > 0) { k.ham += k.patlatmaHam; k.ihtiyac += yukari(k.patlatmaHam * (1 + k.pay / 100)); }
     k.siparis = Math.max(0, k.ihtiyac - k.stok);
+    parcaDuzenle(k); // D-R4/2 (5)
   }
   const parcaSatirlari = [...kalemler.values()].map(k => ({
     partId: k.partId, ad: k.ad, silinmis: k.silinmis, set: k.set, patlatildi: k.patlatildi, setNeden: k.setNeden || null,
@@ -179,14 +267,16 @@ export const siparisIhtiyaci = (veri = {}) => {
   }));
 
   // ── Malzeme ihtiyacı (R12–R18/2) ───────────────────────────────────────────────────────────────────────────────────────
-  const kesitler = new Map();
   const eksikParca = new Set(); const eksikMalzeme = new Set();
   for (const k of kalemler.values()) if (k.silinmis) eksikParca.add(k.partId);
+  // Spec 0140 R4 (karar 39): geçiş bir yardımcıdır; düzenlemede öneri adetleriyle de koşar (bütün parçaları kapatılan kesitin tanımı).
+  const kesitleriKur = (adetOf, eksikParca, eksikMalzeme, kaynak = kalemler.values()) => {
+  const kesitler = new Map();
   // Spec 0135 R28 (AC-49–AC-51): parçanın BÜTÜN malzeme kalemleri okunur; her kalem kendi ham kesitiyle kendi kesit satırına
   // girer ve kalemin adediyle çarpılır (adet = parçanın sipariş adedi × kalem adedi). İşlem kalemi satır üretmez (R30).
   // Plan turu Karar 43: aynı parçanın aynı kesitte eşdeğer iki girişi dökümde tek satırda toplanır (hesap değişmez, C9).
-  for (const k of kalemler.values()) {
-    if (!k.malzemeli || k.siparis <= 0) continue;
+  for (const k of kaynak) {
+    if (!k.malzemeli || !(adetOf(k) > 0)) continue;
     const p = canliParca.get(k.partId);
     for (const satir of malzemeKalemleri(p)) {
       const m = malzemeKat.get(String(satir.malzemeId));
@@ -202,12 +292,36 @@ export const siparisIhtiyaci = (veri = {}) => {
       if (kalemAdedi == null) { eksikParca.add(k.partId); continue; }
       const anahtar = [m.id, yontem, satir.bicim, ...kesit].join("|");
       if (!kesitler.has(anahtar)) kesitler.set(anahtar, { anahtar, malzemeId: String(m.id), malzeme: m, bicim: satir.bicim, yontem, kesit, hamCap: o.cap ?? null, parcalar: [] });
-      const giris = { partId: k.partId, ad: k.ad, adet: k.siparis * kalemAdedi, hamKg: oz.hamKg, fireliKg: oz.fireliKg, fire: oz.fire || 0, ekFireKg: oz.ekFireKg || 0, kesimBoyu: o.boy, oran: o.boy / ((Number(m.geldigiBoy) || 0) * 1000) };
+      const giris = { partId: k.partId, ad: k.ad, adet: adetOf(k) * kalemAdedi, hamKg: oz.hamKg, fireliKg: oz.fireliKg, fire: oz.fire || 0, ekFireKg: oz.ekFireKg || 0, kesimBoyu: o.boy, oran: o.boy / ((Number(m.geldigiBoy) || 0) * 1000) };
       const ayni = kesitler.get(anahtar).parcalar.find(x => x.partId === giris.partId && x.hamKg === giris.hamKg && x.fireliKg === giris.fireliKg && x.fire === giris.fire && x.kesimBoyu === giris.kesimBoyu);
       if (ayni) ayni.adet += giris.adet; else kesitler.get(anahtar).parcalar.push(giris);
     }
   }
-  const kesitSatirlari = [...kesitler.values()].map(ks => kesitHesabi(ks, eksikParca, eksikMalzeme));
+  return kesitler;
+  };
+  const kesitler = kesitleriKur(k => k.siparis, eksikParca, eksikMalzeme);
+  let kesitSatirlari = [...kesitler.values()].map(ks => kesitHesabi(ks, eksikParca, eksikMalzeme));
+  // D-R3/2, D-R5, D-R5/2 (karar 38, 39): kesit düzenlemesi. Bütün parçaları kapatılan kesitin elle değeri öneri geçişinin tanımıyla
+  // (parçasız) satır olarak kalır.
+  if (duzenleme) {
+    // Öneri adedi: kendi düzenlemesi ve setlerin düzenlemesi yok sayılarak (kit ihtiyacı + düzenlenmemiş setlerin patlatması − stok).
+    const oneriKaynak = [...kalemler.values()].filter(k => !k.set && !k.silinmis).map(k => ({ partId: k.partId, ad: k.ad, malzemeli: k.malzemeli,
+      oneriAdet: Math.max(0, (k.kitIhtiyac ?? 0) + (oneriPatlatma.has(k.partId) ? yukari(oneriPatlatma.get(k.partId) * (1 + k.pay / 100)) : 0) - k.stok) }));
+    for (const [id, ham] of oneriPatlatma) {
+      if (kalemler.has(id)) continue;
+      const p = canliParca.get(id);
+      const pay = emniyetPayiOf(p, malzemeKat);
+      oneriKaynak.push({ partId: id, ad: p.ad, malzemeli: !setMi(p) && malzemeKalemleri(p).length > 0, oneriAdet: Math.max(0, yukari(ham * (1 + pay / 100)) - stokOf(id)) });
+    }
+    const oneriKesit = kesitleriKur(k => k.oneriAdet, new Set(), new Set(), oneriKaynak);
+    for (const [anahtar, d] of Object.entries(duzKesit)) {
+      if (kesitler.has(anahtar) || !oneriKesit.has(anahtar)) continue;
+      const v = (oneriKesit.get(anahtar).yontem === "boy" ? siparisAdediDogrula : elleKiloDogrula)(d?.deger);
+      if (v.deger == null || String(d?.deger ?? "").trim() === "") continue;
+      kesitSatirlari.push({ ...kesitHesabi({ ...oneriKesit.get(anahtar), parcalar: [] }, new Set(), new Set()), parcalarKapali: true });
+    }
+    kesitSatirlari = kesitSatirlari.map(r => kesitDuzenle(r, duzKesit[r.anahtar], malzemeKat));
+  }
 
   // Malzeme başlıkları (R12/2, AC-65): yalnız kilo ve tutar toplanır.
   const malzemeGruplari = new Map();
@@ -247,12 +361,102 @@ export const siparisIhtiyaci = (veri = {}) => {
   const stokUyarisi = canliKalemler.length > 0 && stoklu * 20 < canliKalemler.length ? { stoklu, toplam: canliKalemler.length } : null;
   const toplamTLK = tedarikciGruplari.reduce((a, t) => a + (t.tutarTLK ?? 0), 0);
 
-  return {
+  const sonuc = {
     satirlar: satirlar.map(({ kayit: _k, ...s }) => s), hataliSayi: satirlar.filter(s => s.hata).length, gecerliSayi: gecerli.length,
     kitBos, kesisimler, parcalar: parcaSatirlari, kesitler: kesitSatirlari, malzemeGruplari: [...malzemeGruplari.values()], tedarikciGruplari,
     eksik: { parca: eksikParca.size, malzeme: eksikMalzeme.size }, hazirSayi, stokUyarisi, toplamTLK,
     bos: gecerli.length === 0,
   };
+  if (!tedarikciOdakli) return sonuc;
+  sonuc.tedarikciBolumleri = tedarikciBolumleriKur({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, malzemeKat, secilenTedarikciler });
+  return sonuc;
+};
+
+// ── Spec 0140 C-R4–C-R9, C-R5/2: tedarikçi bölümleri ─────────────────────────────────────────────────────────────────────
+// Hazır parça satırı (karar 34, 40): patlatılan set satır açmaz; öneri ya da düzenleme varsa satır (kapatılan ve sıfıra çekilen satır
+// geri açılabilsin diye görünür, belgeye girmez). Tutar yalnız malzemesiz parçada: bugünkü maliyet × adet (C-R5/2). Ana tedarikçisiz
+// malzemesiz parça "belirtilmemiş"e, Ana tedarikçisiz malzemeli parça yalnız sayılır (karar 33).
+const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, malzemeKat, secilenTedarikciler }) => {
+  const setKat = setKatalogu([...canliParca.values()]);
+  const secim = Array.isArray(secilenTedarikciler) && secilenTedarikciler.length ? new Set(secilenTedarikciler.map(String)) : null;
+  const bolumler = new Map();
+  const bolum = (tid) => {
+    if (!bolumler.has(tid)) {
+      const t = canliTed.get(tid); const h = hamTed.get(tid);
+      bolumler.set(tid, { tedarikciId: tid, ad: t ? t.ad : h ? `${h.ad} (${SILINMIS_TEDARIKCI})` : BULUNAMAYAN_TEDARIKCI, silinmis: !t, hazirParcalar: [], malzemeler: [], tutarTLK: null });
+    }
+    return bolumler.get(tid);
+  };
+  const belirtilmemis = { parcalar: [], kesitler: [], anasizMalzemeli: 0 };
+  const parcaDurumu = {};
+  let duzenlenen = 0; let kapatilan = 0; let hata = 0;
+  for (const k of kalemler.values()) {
+    if (k.silinmis) continue;
+    parcaDurumu[k.partId] = { oneri: k.oneri ?? k.siparis, siparis: k.siparis, duzenlendi: !!k.duzenlendi, kapali: !!k.kapali, hata: k.hata || null };
+    if (k.duzenlendi) duzenlenen++; if (k.kapali) kapatilan++; if (k.hata) hata++;
+    const oneri = k.oneri ?? k.siparis;
+    if (!(oneri > 0 || k.duzenlendi || k.kapali || k.hata)) continue;
+    if (k.set && k.patlatildi) continue;
+    const p = canliParca.get(k.partId);
+    const tid = p.tedarikciId == null || p.tedarikciId === "" ? null : String(p.tedarikciId);
+    if (!tid && k.malzemeli) { belirtilmemis.anasizMalzemeli++; continue; }
+    const birimK = k.malzemeli ? null : parcaMaliyetKurus(p, undefined, setKat, malzemeKat);
+    const satir = { partId: k.partId, ad: k.ad, set: k.set, ihtiyac: k.ihtiyac, stok: k.stok, oneri, siparis: k.siparis, duzenlendi: !!k.duzenlendi,
+      kapali: !!k.kapali, hata: k.hata || null, malzemeli: k.malzemeli, birimK,
+      tutarK: k.malzemeli || birimK == null ? null : birimK * k.siparis, tutarNeden: k.malzemeli ? MALZEMESI_ASAGIDA : birimK == null ? MALIYET_YOK : null };
+    if (!tid) belirtilmemis.parcalar.push(satir); else bolum(tid).hazirParcalar.push(satir);
+  }
+  for (const r of kesitSatirlari) {
+    if (r.elle) duzenlenen++; if (r.kapali) kapatilan++; if (r.hata) hata++;
+    const tid = r.tedarikciId == null || r.tedarikciId === "" ? null : String(r.tedarikciId);
+    if (!tid) belirtilmemis.kesitler.push(r); else bolum(tid).malzemeler.push(r);
+  }
+  for (const b of bolumler.values()) {
+    const tutarlar = [...b.hazirParcalar.filter(x => !x.kapali && x.siparis > 0).map(x => x.tutarK), ...b.malzemeler.filter(x => !x.kapali).map(x => x.tutarTLK)].filter(x => x != null);
+    b.tutarTLK = tutarlar.length ? tutarlar.reduce((a, x) => a + x, 0) : null;
+  }
+  const hepsi = [...bolumler.values()].sort((a, b) => String(a.ad).localeCompare(String(b.ad), "tr"));
+  const gorunenBolumler = secim ? hepsi.filter(b => secim.has(b.tedarikciId)) : hepsi;
+  const gorunenBelirtilmemis = secim ? { parcalar: [], kesitler: [], anasizMalzemeli: 0 } : belirtilmemis;
+  // Triyaj (bulgu 3): belgeyi kilitleyen hata yalnız ekranda görünen satırlardan sayılır (seçili bölümler, belirtilmemiş bölümü
+  // ve Parça ihtiyacı tablosundaki set satırları); seçim dışındaki bir tedarikçinin hatası kullanıcıya görünmeden belgeyi kilitlemez.
+  const satirHata = (x) => (x.hata ? 1 : 0);
+  const gorunenHata = gorunenBolumler.reduce((a, b) => a + [...b.hazirParcalar, ...b.malzemeler].reduce((t, x) => t + satirHata(x), 0), 0)
+    + [...gorunenBelirtilmemis.parcalar, ...gorunenBelirtilmemis.kesitler].reduce((t, x) => t + satirHata(x), 0)
+    + [...kalemler.values()].filter(k => k.set && k.hata && !gorunenBolumler.some(b => b.hazirParcalar.some(x => x.partId === k.partId))
+      && !gorunenBelirtilmemis.parcalar.some(x => x.partId === k.partId)).length;
+  return {
+    bolumler: gorunenBolumler, belirtilmemis: gorunenBelirtilmemis,
+    secimVar: !!secim, satirsizSecilen: secim ? [...secim].filter(id => !bolumler.has(id)) : [],
+    duzen: { duzenlenen, kapatilan, hata, gorunenHata }, parcaDurumu,
+  };
+};
+
+// D-R3/2, karar 38 (AC-84, AC-85, AC-88): kesit düzenlemesi. Kilo yolunda tek alan kilo, boy yönteminde boy adedi (tam sayı).
+const kesitDuzenle = (r, d, malzemeKat) => {
+  if (!d) return r;
+  // D-R2/2 (AC-83): öneri değeri (kilo ya da boy) düzenlemeden önceki hesaptır; ekran onu salt okunur sütunda yazar.
+  const out = { ...r, kapali: !!d.kapali, oneriSiparisKg: r.siparisKg, oneriBoyAdedi: r.boyAdedi };
+  const ham = String(d.deger ?? "").trim();
+  if (ham === "") return out;
+  if (r.yontem === "boy") {
+    const v = siparisAdediDogrula(ham);
+    if (v.hata) return { ...out, hata: ELLE_BOY_HATASI };
+    if (!r.parcalarKapali && v.deger === r.boyAdedi) return out; // triyaj (bulgu 4): öneriye eşit değer düzenleme değildir
+    const tutar = r.tutarNeden ? null : v.deger * r.fiyat;
+    return { ...out, elle: true, boyAdedi: v.deger, boyNeden: ELLE_BOY_NEDENI, fireUyarisi: null, tutar, tutarK: kurusOf(tutar), tutarTLK: tutar == null ? null : kurusOf(tutar * r.kur) };
+  }
+  const v = elleKiloDogrula(ham);
+  if (v.hata) return { ...out, hata: v.hata };
+  // Triyaj (bulgu 4): alan öneriyi üç ondalıkla gösterir; üç ondalıkta öneriye eşit kilo düzenleme sayılmaz (parça adediyle aynı kural),
+  // öneri kilosu yuvarlanmadan kalır. Parçaları kapatılmış satırda yazılan değer her zaman elle değerdir (satırı ayakta tutan odur).
+  if (!r.parcalarKapali && r.siparisKg != null && Number(v.deger.toFixed(3)) === Number(Number(r.siparisKg).toFixed(3))) return out;
+  const m = malzemeKat.get(String(r.malzemeId));
+  const asgari = Number(m?.asgariSiparis) > 0 ? Number(m.asgariSiparis) : null;
+  const tutar = r.tutarNeden ? null : v.deger * r.fiyat;
+  return { ...out, elle: true, siparisKg: v.deger, boyAdedi: null, boyNeden: ELLE_KILO_NEDENI, artanKg: null, asgariFark: null, fireUyarisi: null,
+    asgariUyari: asgari != null && v.deger < asgari - 1e-9 ? asgariAltiMetni(asgari) : null,
+    tutar, tutarK: kurusOf(tutar), tutarTLK: tutar == null ? null : kurusOf(tutar * r.kur) };
 };
 
 // Tek kesit satırının hesabı. Kilo yolu: net (fire hariç), fire, sipariş (boy adedinden ya da net + fire), artan, asgari,

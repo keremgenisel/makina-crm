@@ -17,7 +17,9 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 const ALTIN = "tests/fixtures/0136-once.json";
 // Plan turu Karar 39: bu spec'in ekrana eklediği ibareler (spec öncesi kodda yok) karşılaştırmadan önce ayıklanır.
 export const ayikla = (m) => String(m).replace(/Kapanış \d{2}\.\d{2}\.\d{4}/g, "").replace(/dondurulmadı/g, "")
-  .replace(/Bu parti maliyet dondurmasından önce kapandı[^.]*\.[^.]*\./g, "").replace(/Parti kapandı; planlanan adetler kapanmış partide değiştirilmez\./g, "");
+  .replace(/Bu parti maliyet dondurmasından önce kapandı[^.]*\.[^.]*\./g, "").replace(/Parti kapandı; planlanan adetler kapanmış partide değiştirilmez\./g, "")
+  // Spec 0140 ile (B-R2): görünüm çubuğunun "Sipariş İhtiyacı" sekmesi kalktı; iki tarafta da sekme adı ayıklanır.
+  .replace(/Sipariş İhtiyacı/g, "");
 
 const ekran = (gorunum, partiId) => {
   render(<MakinaMaliyeti giderler={V.GIDERLER} giderTurleri={V.TURLER} setGiderTurleri={vi.fn()} tedarikciler={[]} uretimPartileri={V.PARTILER} setUretimPartileri={vi.fn()}

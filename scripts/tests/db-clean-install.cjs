@@ -238,6 +238,14 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.malzemeler?.find(m => m.id === 93)?.emniyetPayi === 7 && b.parts.find(p => p.id === 94)?.emniyetPayi === 3);
 }
 
+// Spec 0140 C6: temiz kurulumda parçanın Ana tedarikçisi sütunu ilk oturumda yazılır ve okunur.
+{
+  let h = null;
+  try { dbmod.writeBlobToDb({ parts: [{ id: 95, ad: "Rulman", models: [], tedarikciId: 12 }] }); } catch (e) { h = e; }
+  const b = dbmod.readBlobFromDb();
+  check("spec 0140: temiz kurulumda parts.tedarikciId sütunu var ve yazıldı", h === null && b.parts.find(p => p.id === 95)?.tedarikciId === 12);
+}
+
 // Spec 0139 C7: temiz kurulumda malzemenin ek fire tablosu sütunu ilk oturumda yazılır ve okunur.
 {
   let h = null;

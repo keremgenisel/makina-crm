@@ -1099,6 +1099,32 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0136 AC-49: görüntüsüz partinin gövdesinde anahtar yok (null da değil)", !("kapanisMaliyeti" in bul(93)) && !("kapanisMaliyeti" in bul(94)));
 }
 
+// ── Spec 0140 A-R1/2, C6, AC-4, AC-5: parçanın Ana tedarikçisi (kök alan) kendi INTEGER sütunu; boş değer NULL ve gövdede anahtar
+// yok; Ana tedarikçisi olmayan parçaların gövdesi spec öncesiyle birebir (0097 altını). Maliyet kalemindeki tedarikciId ayrı kalır.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  check("spec 0140 AC-4: Ana tedarikçisi olmayan parçaların gövdesi spec öncesiyle birebir, tedarikciId anahtarı yok", esit(dbmod.readBlobFromDb().parts, once.parts));
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.parts[0].tedarikciId = 12;
+  girdi.parts[1].tedarikciId = "";
+  girdi.parts[1].maliyetKalemleri = [{ tur: "islem", ad: "Kaplama", tedarikciId: 31, tutar: 5 }];
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ps = ham.prepare(`SELECT id, tedarikciId FROM parts`).all();
+  ham.close();
+  check("spec 0140 C6: Ana tedarikçi INTEGER sütunda, boş değer NULL", ps.find(r => r.id === 7)?.tedarikciId === 12 && ps.filter(r => r.id !== 7).every(r => r.tedarikciId === null));
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0140 AC-5: Ana tedarikçi birebir geri gelir", c.parts.find(p => p.id === 7)?.tedarikciId === 12);
+  check("spec 0140 AC-4 / AC-56: boş Ana tedarikçide anahtar yok; kalem içindeki tedarikçi bağı ayrı ve aynen", !("tedarikciId" in c.parts.find(p => p.id === 8))
+    && c.parts.find(p => p.id === 8)?.maliyetKalemleri?.[0]?.tedarikciId === 31);
+}
+
 // ── Spec 0138 R17, R17/2, R24 (AC-6, AC-33): dış işlem tablosu ölü tablodur. Satırları (çöptekiler dahil) okunmaz, gövdede bölüm
 // gelse de yazılmaz ve tablo boşaltılmaz; kimlik sayacının yedek hesabı bölümü okumaz.
 {

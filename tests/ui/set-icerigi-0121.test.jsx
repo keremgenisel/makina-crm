@@ -206,7 +206,7 @@ describe("Spec 0121 B: maliyet ve fiyat (R2/3, R8, R10, R11)", () => {
     expect(screen.getByTestId("maliyetsiz-parca").textContent).toContain("2 parçanın");
     // Spec 0135 ile (R46): süzgecin adı ve "girilmemiş" seçeneği kalem dilinde; sayı aynı.
     const sec = [...screen.getByLabelText("Tedarikçi süzgeci").options].map(o => o.textContent);
-    expect(sec.at(-1)).toBe("İşlem kaleminde tedarikçi girilmemiş (5)");
+    expect(sec.at(-1)).toBe("Tedarikçi girilmemiş (5)"); // spec 0140 ile (AC-63)
   });
   it("AC-13 / AC-39 (kart yolu): setin kaydında maliyet geçmişi yazılmaz, var olan geçmiş korunur; tarih alanı ve geçmiş listesi çizilmez", () => {
     render(<Katalog />);

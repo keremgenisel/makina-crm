@@ -21,6 +21,8 @@ export const Stock = ({
   appSettings = {}, setAppSettings = () => {},
   customers = [], setCustomers = null,
   copMusteriler = [], uretimPartileri = [], giderYetki = false,
+  // Spec 0140 B-R4/2, B-R6, karar 42: sipariş penceresinin girdisi. Tedarikçi dizileri gider yetkisinden bağımsız iner.
+  tedarikciler = [], rawTedarikciler = null, standardModels = [], customModels = [],
   kasaHesaplari = null, tahsilatHesapVarsayilan = null,
   kalipDefs = [],
   uretimFormlari = [], setUretimFormlari = () => {}, services = [],
@@ -75,7 +77,8 @@ export const Stock = ({
         <PartStokTab fiyatBaglami={fiyatBaglami} parts={parts} rawParts={rawParts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast}
           appSettings={appSettings} setAppSettings={setAppSettings}
-          canDoStock={canDoStock} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} />
+          canDoStock={canDoStock} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} giderYetki={giderYetki}
+          siparisVeri={{ parts, hamParts: rawParts, partStock, malzemeler, tedarikciler, hamTedarikciler: rawTedarikciler, standardModels, customModels, uretimPartileri, appSettings, factory }} />
       )}
       {subTab === "yedeksatis" && (
         <YedekParcaSatisTab fiyatBaglami={fiyatBaglami}

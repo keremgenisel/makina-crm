@@ -221,6 +221,8 @@ export const STOCK_ACTION_GROUPS = [
     { id: "stock_parca_add",  label: "Stoğa parça ekle" },
     { id: "stock_parca_edit", label: "Stok miktarı düzelt" },
     { id: "stock_parca_pin",  label: "Parçayı dashboarda ekle/çıkar" },
+    // Spec 0140 B-R3, karar 41: sipariş listesi penceresi (iki giriş noktası). Salt okunur; sunucuda bölüm kuralı yok.
+    { id: "stock_siparis_listesi", label: "Sipariş listesini aç" },
   ]},
   { grup: "Kalıp Üretim", items: [
     { id: "stock_uretim_add",    label: "Yeni form oluştur" },

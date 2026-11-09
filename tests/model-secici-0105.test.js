@@ -114,7 +114,8 @@ describe("Spec 0105: kaynak taramaları", () => {
     const OKUYAN = /uretimdeOlmayanModeller|\bURETIM_ALANI\b|uretimdeMi\b|uretimdeOlmayanlar\b|uretimIsareti(Degistir|Tasi|Dusur)\b|uretimdeSuzulmusModeller\b/;
     const okuyan = tara("src").filter(x => OKUYAN.test(kod(x))).sort();
     // Bugün okuyanlar (izinli kümenin Settings.jsx'i okuma yapmıyor); bu spec'le eklenen yalnız form.
-    expect(okuyan).toEqual(["src/App.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/ModelsManager.jsx", FORM, "src/lib/uretimdekiModeller.js"].sort());
+    // Spec 0140 ile (B-R7, C9): sipariş penceresi işareti doğrudan okur.
+    expect(okuyan).toEqual(["src/App.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/ModelsManager.jsx", "src/components/stock/SiparisPenceresi.jsx", FORM, "src/lib/uretimdekiModeller.js"].sort());
     for (const t of ["tests/uretimdeki-modeller-0091.test.js", "tests/plan-adetler-0093.test.js"]) {
       const s = oku(t);
       expect(s, t).toContain('"src/components/customers/CustomerAddEditForm.jsx"])');
@@ -141,7 +142,7 @@ describe("Spec 0105: kaynak taramaları", () => {
     expect(sp).toContain("ui/plan-adetler-0093.test.jsx:267-268");
   });
   it("AC-24 (R22/2): ipucu birebir", () => {
-    expect(URETIM_ISARETI_IPUCU).toBe("\"Üretimde\" işareti Makina Maliyeti › Model Maliyetleri'ni, Parti Hesabı'nın planlanan adetler penceresini ve müşteri formunun model seçicisini süzer; Parti Hesabı'nın model-adet tablosu, stok ve Evrak model seçicileri, Analiz ve makina kayıtları etkilenmez.");
+    expect(URETIM_ISARETI_IPUCU).toBe("\"Üretimde\" işareti Makina Maliyeti › Model Maliyetleri'ni, Parti Hesabı'nın planlanan adetler penceresini, sipariş listesinin ve müşteri formunun model seçicisini süzer; Parti Hesabı'nın model-adet tablosu, stok ve Evrak model seçicileri, Analiz ve makina kayıtları etkilenmez.");
   });
   it("AC-20 / AC-21 (R18, X1, X2, Karar 27, 39): stok formu ve Evrak dosyaları işareti okumaz, kütüphaneyi ve sayacı içe almaz", () => {
     const dosyalar = ["src/components/stock/MakinaStokTab.jsx", "src/components/Documents.jsx", ...tara("src/components/documents"), ...tara("src/components/evrak")];

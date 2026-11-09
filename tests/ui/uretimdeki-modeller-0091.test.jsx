@@ -104,7 +104,7 @@ describe("Spec 0091: Makina Modelleri paneli (R1–R5, R28)", () => {
     expect(screen.getByTestId("uretim-isareti-ipucu").textContent).toBe(URETIM_ISARETI_IPUCU);
     // Spec 0093 ile (R8/2): kapsam planlanan adetler penceresini de sayar; ikinci ifade aynen (0093 AC-16'nın "söylemeye devam eder" yarısı).
     // Spec 0105 ile (R22/2, Karar 17): üçüncü tüketici müşteri formunun model seçicisi; etkilenmeyen seçiciler "stok ve Evrak".
-    expect(URETIM_ISARETI_IPUCU).toMatch(/Makina Maliyeti › Model Maliyetleri'ni, Parti Hesabı'nın planlanan adetler penceresini ve müşteri formunun model seçicisini süzer/);
+    expect(URETIM_ISARETI_IPUCU).toMatch(/Makina Maliyeti › Model Maliyetleri'ni, Parti Hesabı'nın planlanan adetler penceresini, sipariş listesinin ve müşteri formunun model seçicisini süzer/); // spec 0140 ile
     expect(URETIM_ISARETI_IPUCU).toMatch(/stok ve Evrak model seçicileri, Analiz/);
   });
 });

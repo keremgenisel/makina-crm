@@ -145,7 +145,7 @@ describe("Spec 0091: taramalar ve değişmeyenler", () => {
   // App.jsx yalnız yükleme yolunda alanı gövdeden taşır (triyaj bulgu 1); süzme ve okuma yapmaz.
   // Spec 0105 ile (C3, Karar 10, 18): müşteri formu işareti kütüphanenin süzme yardımcısıyla okur; liste yalnız formla genişler,
   // desen yardımcının adını da kapsar (aksi hâlde form taramaya hiç girmezdi). Kopyası tests/plan-adetler-0093.test.js'te.
-  const izinli = new Set(["src/lib/uretimdekiModeller.js", "src/components/ModelsManager.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/Settings.jsx", "src/App.jsx", "src/components/customers/CustomerAddEditForm.jsx"]);
+  const izinli = new Set(["src/lib/uretimdekiModeller.js", "src/components/ModelsManager.jsx", "src/components/MakinaMaliyeti.jsx", "src/components/Settings.jsx", "src/App.jsx", "src/components/stock/SiparisPenceresi.jsx", "src/components/customers/CustomerAddEditForm.jsx"]); // spec 0140 ile (C9): sipariş penceresi
   it("AC-33 / AC-34 / AC-35 / AC-36 / AC-37 / AC-43 (R20–R22, R29): işareti yalnız katalog paneli ve maliyet ekranı okur", () => {
     // Spec 0093 ile (R12/2, AC-23): tarama modül yolundan değil işareti OKUYAN adlardan yapılır; iki maliyet görünümü kütüphaneden
     // yalnız "üretimde değil" metin sabitini alır (bu, işaret okumak değildir). PartiHesabi'nin eski "uretimde hiç geçmez" satırı

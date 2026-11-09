@@ -345,7 +345,7 @@ describe("Spec 0136: kaynak taramaları", () => {
     }
   });
   it("AC-41: Makina Maliyeti'nin yazdırma çıktıları görüntüyü okumaz", () => {
-    for (const f of ["src/lib/siparisRaporu.js", "src/components/rapor/SiparisRaporuDugmesi.jsx", "src/components/maliyet/SiparisIhtiyaci.jsx", "src/lib/siparisIhtiyaci.js"]) {
+    for (const f of ["src/lib/siparisRaporu.js", "src/components/rapor/SiparisRaporuDugmesi.jsx", "src/components/stock/SiparisPenceresi.jsx", "src/lib/siparisIhtiyaci.js"]) { // spec 0140 ile: ekran pencereye taşındı
       expect(kod(f), f).not.toMatch(/kapanisMaliyeti|kapanisMaliyetiOf|partiKapanisGoruntusu/);
     }
   });

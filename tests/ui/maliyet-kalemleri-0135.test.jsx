@@ -403,7 +403,7 @@ describe("Spec 0135: fiyat, liste, süzgeç ve sayaç (R39–R47)", () => {
   it("AC-99 / AC-100: tedarikçi süzgeci işlem kalemindeki ve eski kırılımdaki tedarikçiyi süzer; 'girilmemiş' tedarikçisiz parçaları sayar", () => {
     render(<Katalog />);
     const s = screen.getByLabelText("Tedarikçi süzgeci");
-    expect([...s.options].map(o => o.textContent)).toEqual(["Tüm parçalar", "Hammadde A.Ş. (1)", "Kaplama Sanayi (1)", BULUNAMAYAN_TEDARIKCI + " (1)", "Lazer Ltd. (1)", "İşlem kaleminde tedarikçi girilmemiş (4)"]);
+    expect([...s.options].map(o => o.textContent)).toEqual(["Tüm parçalar", "Hammadde A.Ş. (1)", "Kaplama Sanayi (1)", BULUNAMAYAN_TEDARIKCI + " (1)", "Lazer Ltd. (1)", "Tedarikçi girilmemiş (4)"]); // spec 0140 ile (AC-63): etiket Ana tedarikçiyi de kapsar
     fireEvent.change(s, { target: { value: "31" } });
     expect(satir("Kapak")).toBeTruthy();
     expect(screen.queryByText("Gövde")).toBeNull();

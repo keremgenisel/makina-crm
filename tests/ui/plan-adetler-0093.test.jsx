@@ -266,7 +266,7 @@ describe("Spec 0093: Ayarlar'ın kapsam ipucusu (R8)", () => {
     const t = screen.getByTestId("uretim-isareti-ipucu").textContent;
     expect(t).toBe(URETIM_ISARETI_IPUCU);
     // Spec 0105 ile (R22/2, Karar 17): üçüncü tüketici müşteri formu; etkilenmeyen seçiciler "stok ve Evrak" diye daraldı.
-    expect(t).toMatch(/planlanan adetler penceresini ve müşteri formunun model seçicisini süzer/);
+    expect(t).toMatch(/planlanan adetler penceresini, sipariş listesinin ve müşteri formunun model seçicisini süzer/); // spec 0140 ile
     expect(t).toMatch(/stok ve Evrak model seçicileri, Analiz ve makina kayıtları etkilenmez/);
   });
 });

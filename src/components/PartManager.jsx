@@ -7,6 +7,8 @@ import { malzemeKatalogu, emniyetPayiDogrula, sayiMetni } from "../lib/malzeme";
 import { MaliyetKalemleriAlani, MALIYET_KIP_HESAPLA, MALIYET_KIP_ELLE, KIP_ONAY_ELLE, KIP_ONAY_HESAPLA } from "./MaliyetKalemleriAlani";
 import { maliyetKalemleriOf, kalemVarMi, kalemTedarikciIdleri, ESKI_MALIYET_ANAHTARLARI, KALEM_ANAHTARI, KALEM_TUR } from "../lib/maliyetKalemleri";
 import { FiyatListesiDugmesi } from "./rapor/FiyatListesiDugmesi";
+import { SiparisPenceresi, SIPARIS_DUGMESI } from "./stock/SiparisPenceresi";
+import { makeCanDo } from "../lib/permissions";
 import { logAction } from "../lib/audit";
 import {
   fiyatBaglamiKur, fiyatKipiOf, maliyeteBagliMi, parcaSatisFiyati, turetilmisFiyat, turetilmisFiyatSayisi, katDogrula, katMetni, kipYaz,
@@ -264,6 +266,32 @@ const TipSelector = ({ value, onChange, partTypeDefs = [] }) => (
 export const SUZGEC_TUMU = "";
 export const SUZGEC_GIRILMEMIS = "__girilmemis__";
 export const SUZGEC_BOS_METNI = "Bu süzgece uyan parça yok.";
+// Spec 0140 A-R6 (AC-63): "girilmemiş" ölçütü maliyet kalemi ve Ana tedarikçi alanının ikisinin de boş olmasıdır; etiket bunu söyler.
+export const SUZGEC_GIRILMEMIS_ETIKETI = "Tedarikçi girilmemiş";
+// Spec 0140 A-R1, A-R1/2, A-R6 (AC-1, AC-56, AC-62, AC-63): parçanın Ana tedarikçisi (kök alan `tedarikciId`) ve süzgecin okuduğu
+// bütün tedarikçi bağları (maliyet kalemleri ∪ Ana tedarikçi).
+export const ANA_TEDARIKCI_ETIKETI = "Ana tedarikçi";
+export const ANA_TEDARIKCI_IPUCU = "Hazır alınan parçanın (rulman, motor) sipariş edildiği firma; sipariş listesinde parça bu firmanın bölümünde görünür. Maliyete ve fiyata girmez.";
+export const parcaTedarikciIdleri = (p) => {
+  const ana = p?.tedarikciId == null || p.tedarikciId === "" ? [] : [String(p.tedarikciId)];
+  return [...new Set([...kalemTedarikciIdleri(p), ...ana])];
+};
+const AnaTedarikciAlani = ({ value, onChange, tedarikciler }) => {
+  const kayitli = value != null && value !== "" && !(tedarikciler || []).some(t => t && !t.deletedAt && String(t.id) === String(value));
+  const sec = (tedarikciler || []).filter(t => t && !t.deletedAt)
+    .sort((a, b) => (b.hammadde === true) - (a.hammadde === true) || String(a.ad).localeCompare(String(b.ad), "tr"));
+  return (
+    <div style={{ maxWidth: 500 }}><Field label={ANA_TEDARIKCI_ETIKETI}>
+      <Select value={value == null ? "" : String(value)} onChange={e => onChange(e.target.value)} aria-label={ANA_TEDARIKCI_ETIKETI}>
+        <option value="">Seçilmedi</option>
+        {/* Triyaj (bulgu 5): kayıtlı tedarikçi çöpteyse ya da bulunamıyorsa seçici kayıtlı değeri ibaresiyle gösterir (AC-57 bunu mümkün kılar). */}
+        {kayitli && <option value={String(value)}>{tedarikciAdiCoz(value, tedarikciler)}</option>}
+        {sec.map(t => <option key={t.id} value={String(t.id)}>{t.ad}{t.hammadde === true ? " · hammadde" : ""}</option>)}
+      </Select>
+      <Ipucu>{ANA_TEDARIKCI_IPUCU}</Ipucu>
+    </Field></div>
+  );
+};
 export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, standardModels = [], customModels = [],
   setStandardModels = null, setCustomModels = null, partTypeDefs = [], baskasiKilitli = null, rawCustomModels = null, tedarikciler = [], giderYetki = false, rawParts = null, baslangicArama = "",
   // Spec 0132 C1/2: canlı malzeme listesi; harita bir kez kurulur ve tek okuma yolunun dördüncü parametresi olur. `rawMalzemeler`
@@ -272,8 +300,12 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   // Spec 0133 R6, R8, Karar 32: uygulama ayarının fiyat alt nesnesi; bağlam bir kez kurulur.
   fiyatAyarlari = null,
   // Triyaj (bulgu 2, 4): işlem geçmişi istemcide sunucuya gitsin; fiyat listesi firma bilgisiyle basılsın.
-  serverPermissions = null, factory = null }) => {
+  serverPermissions = null, factory = null,
+  // Spec 0140 B-R1, B-R4/2: sipariş penceresinin girdisi (tedarikçi dizileri kapısız; `tedarikciler` prop'u yalnız gider yetkisiyle dolu).
+  siparisVeri = null }) => {
   const allModels = [...standardModels, ...customModels];
+  const canDoStock = makeCanDo(serverPermissions, "stockActions");
+  const [siparisAcik, setSiparisAcik] = useState(false);
   // Spec 0121 R6/2 (AC-40): ad çözümü ham diziden; verilmezse canlı diziye düşülür. R9/2: katalog canlı parçalardan, bir kez.
   const hamParts = Array.isArray(rawParts) && rawParts.length ? rawParts : parts; // verilmemiş ya da boş ham dizi canlıya düşer
   const katalog = useMemo(() => setKatalogu(parts), [parts]);
@@ -289,7 +321,11 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   //   3. Öteki hâllerde (Elle sabit kipi, boş liste, set): kalem alanı ve eski iki alan yazılmaz, elle tutar formdan.
   // Set içeriği dolu kayıtta kalem alanı hiç yazılmaz (R25/3). Geçici iki alan (`_maliyetKipi`, `_maliyetDokunuldu`) kayda girmez.
   const hazirlaTemel = (kayit, eski = null) => {
-    const { maliyet, maliyetKalemleri, _maliyetKipi, _maliyetDokunuldu, maliyetGecmisi: _formKopyasi, setIcerigi, emniyetPayi, fiyatKipi, karKati, ...geri0 } = kayit;
+    const { maliyet, maliyetKalemleri, _maliyetKipi, _maliyetDokunuldu, maliyetGecmisi: _formKopyasi, setIcerigi, emniyetPayi, fiyatKipi, karKati, tedarikciId, ...geri0 } = kayit;
+    // Spec 0140 A-R1/2, A-R2, C6 (AC-3, AC-4): Ana tedarikçi her çağrıda silinir, yalnız doluyken yazılır. Yetkisiz kullanıcıda alan
+    // çizilmez ve form kaydın değerini taşıdığı için bağ aynen geri yazılır.
+    const ted = tedarikciId == null ? "" : String(tedarikciId).trim();
+    const anaTed = ted === "" ? {} : { tedarikciId: /^\d+$/.test(ted) ? Number(ted) : ted };
     const geri = { ...geri0 };
     for (const a of ESKI_MALIYET_ANAHTARLARI) delete geri[a]; // form kopyası (openEdit kaydı yayarak açar) eski kayıttan okunur
     // Spec 0133 R13/2, R1/2 (AC-79, AC-80): kip ve parçanın katı HER çağrıda silinir, yalnız dolu değerle yazılır (elle sabit kip
@@ -311,7 +347,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       maliyetAlanlari = kalemKayit.length ? { [KALEM_ANAHTARI]: kalemKayit } : elle;
     }
     if (icerik.length) delete maliyetAlanlari[KALEM_ANAHTARI]; // R25/3 (AC-108): set dolu kayıtta kalem alanı hiç yazılmaz
-    return { ...geri, ...maliyetAlanlari, ...(icerik.length ? { setIcerigi: icerik } : {}), ...(pay != null ? { emniyetPayi: pay } : {}), ...(kipMaliyet ? { fiyatKipi: KIP_MALIYET } : {}), ...(kat != null ? { karKati: kat } : {}) };
+    return { ...geri, ...anaTed, ...maliyetAlanlari, ...(icerik.length ? { setIcerigi: icerik } : {}), ...(pay != null ? { emniyetPayi: pay } : {}), ...(kipMaliyet ? { fiyatKipi: KIP_MALIYET } : {}), ...(kat != null ? { karKati: kat } : {}) };
   };
   // Spec 0097 R4, C13, C13/2 (tuzak 2, 3, 9): formdan gelen geçmiş kopyası atılır; geçmiş güncelleyicinin içindeki ESKİ kayıttan
   // (`eski`) ve yeni kaydın ÇÖZÜLMÜŞ maliyetinden (kırılım toplamı dahil) tek karar motoruyla yazılır. Tarih ve bugün `ek` ile
@@ -359,7 +395,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     if (kipSuzgec !== "tumu" && fiyatKipiOf(p) !== kipSuzgec) return false;
     if (!giderYetki || suzgec === SUZGEC_TUMU) return true;
     // Spec 0135 R46, R46/2 (AC-99, AC-100): süzgeç türetilmiş kalem listesinin işlem kalemlerinin tedarikçisini okur.
-    const h = kalemTedarikciIdleri(p);
+    const h = parcaTedarikciIdleri(p); // spec 0140 A-R6 (AC-62, AC-63): Ana tedarikçi de
     if (suzgec === SUZGEC_GIRILMEMIS) return h.length === 0;
     return h.includes(suzgec);
   };
@@ -381,10 +417,10 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   };
   const suzgecSecenekleri = (() => {
     const say = new Map();
-    for (const p of parts) for (const k of kalemTedarikciIdleri(p)) say.set(k, (say.get(k) || 0) + 1);
+    for (const p of parts) for (const k of parcaTedarikciIdleri(p)) say.set(k, (say.get(k) || 0) + 1); // spec 0140 A-R6
     return [...say].map(([id, n]) => ({ id, n, ad: tedarikciAdiCoz(id, tedarikciler) })).sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
   })();
-  const girilmemisSayi = parts.filter(p => !kalemTedarikciIdleri(p).length).length;
+  const girilmemisSayi = parts.filter(p => !parcaTedarikciIdleri(p).length).length; // spec 0140 A-R6 (AC-63)
 
   // Spec 0133 R10, R11/2, AC-18, AC-86: hücre tek okuma yolundan. Elle sabit parçada bugünkü biçim (birebir, C4); maliyete bağlı
   // parçanın TL fiyatı kuruşlu tek gösterim yardımcısıyla, türetilemezse "—" ve açıklayıcı başlık (neden).
@@ -517,6 +553,8 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
         {/* Spec 0133 R17/2, AC-92: fiyat listesi süzgeçten geçen canlı parçaları katalog sırasıyla basar (Karar 35). */}
         <FiyatListesiDugmesi parcalar={filtered} baglam={fiyatBaglami} factory={factory} />
+        {/* Spec 0140 B-R1, B-R3 (AC-11, AC-13, AC-14): sipariş listesi; kimlik tanımsızken açık. */}
+        {siparisVeri && canDoStock("stock_siparis_listesi") && <Btn variant="ghost" testId="siparis-listesi-dugmesi" onClick={() => setSiparisAcik(true)}><Icon name="print" size={14} /> {SIPARIS_DUGMESI}</Btn>}
         <Btn onClick={openAdd}><Icon name="plus" size={14} /> Parça/Yedek Parça Ekle</Btn>
       </div>
       {maliyetsizSayi > 0 && (
@@ -542,7 +580,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Select aria-label="Tedarikçi süzgeci" value={suzgec} onChange={e => setSuzgec(e.target.value)}>
             <option value={SUZGEC_TUMU}>Tüm parçalar</option>
             {suzgecSecenekleri.map(o => <option key={o.id} value={o.id}>{`${o.ad} (${o.n})`}</option>)}
-            <option value={SUZGEC_GIRILMEMIS}>{`İşlem kaleminde tedarikçi girilmemiş (${girilmemisSayi})`}</option>
+            <option value={SUZGEC_GIRILMEMIS}>{`${SUZGEC_GIRILMEMIS_ETIKETI} (${girilmemisSayi})`}</option>
           </Select>
         </div>
       )}
@@ -686,6 +724,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             emniyetPayi={form.emniyetPayi} setEmniyetPayi={v => setForm(p => ({ ...p, emniyetPayi: v }))} payHata={hatalar.pay}
             malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler} tedarikciler={tedarikciler} giderYetki={giderYetki}
             hatalar={hatalar.kalem} uyarilar={canliEkle?.kalem?.uyarilar} ozet={canliEkle?.kalem} set={!!canliEkle?.set} kaynak={canliEkle?.kaynak} />
+          {giderYetki && <AnaTedarikciAlani value={form.tedarikciId} onChange={v => setForm(p => ({ ...p, tedarikciId: v }))} tedarikciler={tedarikciler} />}
           <SetIcerigiAlani satirlar={form.setIcerigi || []} setSatirlar={v => setForm(p => ({ ...p, setIcerigi: v }))} parts={parts} hamParts={hamParts} kalemPasif={!!canliEkle?.kalemDolu && !canliEkle?.set}
             hatalar={hatalar.set} genel={hatalar.setGenel} ozet={canliEkle?.set} fiyatPasif={form.fiyatKipi === KIP_MALIYET} onFiyat={() => setForm(p => ({ ...p, fiyatTRY: String(canliEkle.set.fiyatToplam) }))} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -744,6 +783,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             emniyetPayi={editForm.emniyetPayi} setEmniyetPayi={v => setEditForm(p => ({ ...p, emniyetPayi: v }))} payHata={hatalar.pay}
             malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler} tedarikciler={tedarikciler} giderYetki={giderYetki}
             hatalar={hatalar.kalem} uyarilar={canliDuzenle?.kalem?.uyarilar} ozet={canliDuzenle?.kalem} set={!!canliDuzenle?.set} kaynak={canliDuzenle?.kaynak} />
+          {giderYetki && <AnaTedarikciAlani value={editForm.tedarikciId} onChange={v => setEditForm(p => ({ ...p, tedarikciId: v }))} tedarikciler={tedarikciler} />}
           {/* Spec 0121 Karar 42: setin geçerlilik tarihi ve geçmişi çizilmez. Spec 0135 R35–R35/3, Karar 11, 12 (AC-66, AC-82, AC-84, AC-89):
               en az bir malzeme kalemi varken tarih ve geçmiş çizilmez, yerinde kalem listesinin ibaresi durur; yalnız işlem kalemi olan
               parçada ve elle sabit kipinde bugünkü gibi çizilir ve etkindir. Kayıttaki geçmiş silinmez (AC-85). */}
@@ -770,6 +810,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
         </Modal>
       )}
+      {siparisAcik && <SiparisPenceresi veri={siparisVeri} giderYetki={giderYetki} onClose={() => setSiparisAcik(false)} />}
     </div>
   );
 };

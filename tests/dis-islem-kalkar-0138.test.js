@@ -104,17 +104,20 @@ describe("Spec 0138: tedarikçi koruması (R5, R22, X8)", () => {
   const PARTS = [{ id: 1, maliyetKalemleri: [SACK, SERBEST] }, { id: 2, deletedAt: "2026-10-01", maliyetKalemleri: [{ tur: "islem", ad: "K", tedarikciId: 33, tutar: 1 }] }];
   it("AC-17 / AC-19 (motor): kalemde geçen tedarikçi haritada, geçmeyen yok", () => {
     const h = kalemdeGecenTedarikciler(PARTS);
-    expect(h.get("32")).toEqual({ parca: 1, cop: 0 });
-    expect(h.get("33")).toEqual({ parca: 1, cop: 1 });
+    // Spec 0140 ile: değer Ana tedarikçi ve malzeme sayılarını da taşır (A-R5); kalem sayıları aynı.
+    expect(h.get("32")).toMatchObject({ parca: 1, cop: 0, ana: 0, malzeme: 0 });
+    expect(h.get("33")).toMatchObject({ parca: 1, cop: 1, ana: 0, malzeme: 0 });
     expect(h.has("99")).toBe(false);
   });
   it("AC-18 (motor): yalnız bir malzeme kartının Ana tedarikçisi olan tedarikçi haritada değil (bugünkü davranış, X8)", () => {
     expect(kalemdeGecenTedarikciler(PARTS).has("801")).toBe(false);
     expect(kalemdeGecenTedarikciler.length).toBe(0); // tek parametre (varsayılanlı): dış işlem listesi almaz
-    expect(kod("src/lib/gider.js")).toMatch(/export const kalemdeGecenTedarikciler = \(parts = \[\]\) =>/);
+    // Spec 0140 ile (A-R5/2): ikinci parametre malzemeler; verilmezse malzemenin bağı haritada yok (dış işlem listesi yine almaz).
+    expect(kod("src/lib/gider.js")).toMatch(/export const kalemdeGecenTedarikciler = \(parts = \[\], malzemeler = \[\]\) =>/);
   });
   it("AC-20 / AC-51: kullanım nesnesinin dönüşü 0135 şeklinde (işlem alanı yok); ret metni tek adresli", () => {
-    expect(Object.keys(tedarikciKullanim(32, [], [], PARTS)).sort()).toEqual(["cop", "kalem", "parca", "parcaCop", "tanim"]);
+    // Spec 0140 ile: Ana tedarikçi ve malzeme sayıları ve kalem adları eklendi; işlem alanı yine yok.
+    expect(Object.keys(tedarikciKullanim(32, [], [], PARTS)).sort()).toEqual(["ana", "anaCop", "cop", "kalem", "kalemAdlari", "malzeme", "malzemeCop", "parca", "parcaCop", "tanim"]);
     expect(KALEMDE_TEDARIKCI_NEDENI).not.toMatch(/dış işlem|Dış İşlem/i);
     const hepsi = KAYNAK.map(kod).join("\n");
     for (const ad of ["disIslemCopEtiketi", "KALEMDE_ISLEM_NEDENI", "KALEMDE_ISLEM_RED", "kullanilanDisIslemler", "KALEMDE_VE_KATALOGDA_TEDARIKCI_NEDENI", "tedarikciKorumaNedeni"]) {

@@ -1051,17 +1051,43 @@ export const turKullanim = (turId, giderler = [], tanimlar = []) => ({
 // geri alınan parçanın bağı kopmasın); "çöpü boşalt" kalacak parçaları verir.
 // Spec 0135 R32, R32/2, C5, C5/2: türetilmiş kalem listesinin işlem kalemleri okunur (eski kırılım dahil, tek türetme yolundan);
 // aynı tedarikçi bir parçanın birden çok işlem kaleminde geçebildiği için (R15/2) parça bir kez sayılır.
-export const kalemdeGecenTedarikciler = (parts = []) => {
+// Spec 0140 A-R5, A-R5/2 (AC-7–AC-9, AC-57–AC-59): ikinci parametre malzemeler. Değer { parca, cop (maliyet kalemi), ana, anaCop
+// (parçanın Ana tedarikçisi, kök alan), malzeme, malzemeCop (malzemenin Ana tedarikçisi), kalemAdlari, anaAdlari, malzemeAdlari }.
+// Kalıcı silme kapıları `.has()` ile okur (her bağ korur); Tedarikler'in çöpe atma penceresi yalnız `parca`'ya bakar (AC-57).
+// Malzemesiz çağrıda kalem dışı alanlar sıfır ve yalnız kalemde geçen tedarikçi haritada (eski çıktı + yeni sıfır alanlar).
+export const kalemdeGecenTedarikciler = (parts = [], malzemeler = []) => {
   const m = new Map();
-  for (const p of parts || []) for (const k of kalemTedarikciIdleri(p)) {
-    const x = m.get(k) || { parca: 0, cop: 0 };
-    x.parca += 1; if (p?.deletedAt) x.cop += 1;
-    m.set(k, x);
+  const al = (k) => { if (!m.has(k)) m.set(k, { parca: 0, cop: 0, ana: 0, anaCop: 0, malzeme: 0, malzemeCop: 0, kalemAdlari: [], anaAdlari: [], malzemeAdlari: [] }); return m.get(k); };
+  const adOf = (x) => ({ ad: x?.ad || "", cop: !!x?.deletedAt });
+  for (const p of parts || []) {
+    for (const k of kalemTedarikciIdleri(p)) { const x = al(k); x.parca += 1; if (p?.deletedAt) x.cop += 1; x.kalemAdlari.push(adOf(p)); }
+    if (p?.tedarikciId != null && p.tedarikciId !== "") { const x = al(String(p.tedarikciId)); x.ana += 1; if (p.deletedAt) x.anaCop += 1; x.anaAdlari.push(adOf(p)); }
+  }
+  for (const mz of malzemeler || []) {
+    if (mz?.tedarikciId == null || mz.tedarikciId === "") continue;
+    const x = al(String(mz.tedarikciId)); x.malzeme += 1; if (mz.deletedAt) x.malzemeCop += 1; x.malzemeAdlari.push(adOf(mz));
   }
   return m;
 };
+// A-R5/3, karar 35 (AC-61): en çok üç ad + "ve n parça daha"; çöpteki kayıt "(silinmiş parça)" / "(silinmiş malzeme)" ekiyle.
+export const korumaAdListesi = (adlar = [], tur = "parça") => {
+  const yaz = adlar.map(a => (a.cop ? `${a.ad} (silinmiş ${tur})` : a.ad));
+  return yaz.length > 3 ? `${yaz.slice(0, 3).join(", ")} ve ${yaz.length - 3} ${tur} daha` : yaz.join(", ");
+};
 // Çöp Kutusu satırının korunma nedeni (R13/2, AC-37); spec 0135 R32/2 ile kalem dilinde.
 export const KALEMDE_TEDARIKCI_NEDENI = "Bir parçanın maliyet kaleminde geçiyor; önce Ayarlar › Katalog › Parça/Yedek Parça'da kalemden çıkarın.";
+// Spec 0140 A-R5/3, karar 35 (AC-60): kalem bağı yoksa iki yeni sabit cümle; seçici kalem > Ana > malzeme. Bildirimde ad yazılmaz.
+export const ANA_TEDARIKCI_NEDENI = "Bir parçanın Ana tedarikçisi; önce Ayarlar › Katalog › Parça/Yedek Parça'da parça kartından çıkarın.";
+export const MALZEME_TEDARIKCI_NEDENI = "Bir malzemenin Ana tedarikçisi; önce Ayarlar › Katalog › Malzemeler'de malzeme kartından çıkarın.";
+export const tedarikciKorumaCumlesi = (x) => (!x ? null : x.parca > 0 ? KALEMDE_TEDARIKCI_NEDENI : x.ana > 0 ? ANA_TEDARIKCI_NEDENI : x.malzeme > 0 ? MALZEME_TEDARIKCI_NEDENI : null);
+// Çöp Kutusu satırının nedeni (AC-61): sabit cümle + bütün koruyan parçaların (kalem ve Ana) ve malzemelerin adları.
+export const tedarikciKorumaSatiri = (x) => {
+  const neden = tedarikciKorumaCumlesi(x);
+  if (!neden) return null;
+  const parcalar = [...x.kalemAdlari, ...x.anaAdlari.filter(a => !x.kalemAdlari.some(b => b.ad === a.ad && b.cop === a.cop))];
+  const ekler = [parcalar.length ? `Parçalar: ${korumaAdListesi(parcalar, "parça")}.` : "", x.malzemeAdlari.length ? `Malzemeler: ${korumaAdListesi(x.malzemeAdlari, "malzeme")}.` : ""].filter(Boolean);
+  return [neden, ...ekler].join(" ");
+};
 // Spec 0096 R13, R13/3: parça kırılımı da kullanımdır (`parca`, `parcaCop`); dördüncü parametre verilmezse eski çıktı + sıfırlar.
 // Triyaj (bulgu 3): beşinci parametre hazır harita (`kalemdeGecenTedarikciler`); liste onu bir kez kurar, satır başına parça taranmaz.
 export const tedarikciKullanim = (tedId, giderler = [], tanimlar = [], parts = [], harita = null) => {
@@ -1071,6 +1097,8 @@ export const tedarikciKullanim = (tedId, giderler = [], tanimlar = [], parts = [
     cop: giderler.filter(k => String(k.tedarikciId) === String(tedId) && k.deletedAt).length,
     tanim: tanimlar.filter(t => String(t.tedarikciId) === String(tedId)).length,
     parca: p.parca, parcaCop: p.cop,
+    // Spec 0140 (AC-57, AC-58): Ana tedarikçi sayıları yalnız gösterim için; "silinemez" kararı yukarıdaki üç sayıya bakar.
+    ana: p.ana || 0, anaCop: p.anaCop || 0, malzeme: p.malzeme || 0, malzemeCop: p.malzemeCop || 0, kalemAdlari: p.kalemAdlari || [],
   };
 };
 export const tedarikciAdHatasi = (ad, tedarikciler = [], haricId = null) => {

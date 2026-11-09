@@ -74,7 +74,7 @@ describe("tasarim.jsx kuralları", () => {
   });
   it("AC-17: bileşenlerin içinde sabit data-testid yok", () => {
     expect(s).not.toMatch(/data-testid="/);
-    expect(s.match(/data-testid=\{testId\}/g)?.length).toBe(4); // KartBolum (iki varyant), BosDurum, UyariSeridi
+    expect(s.match(/data-testid=\{testId\}/g)?.length).toBe(5); // KartBolum (iki varyant), BosDurum, UyariSeridi; spec 0140 ile CokluSecim
   });
   it("AC-14: yeni stil sistemi yok (CSS module, styled-components, Tailwind, Emotion)", () => {
     const pkg = JSON.parse(oku("package.json"));

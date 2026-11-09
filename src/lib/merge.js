@@ -197,6 +197,8 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null, ta
     ...(c.alacakliId != null && c.alacakliTur === "calisan" ? { alacakliId: remapRef(maps.calisanlar, c.alacakliId) } : {}) }));
   // Spec 0096 R26 (AC-49): parçanın hammadde kırılımı tedarikçiye kimlikle bağlı; yeniden atanan tedarikçi kimliğini izler.
   // Taşınmasa satır eski kimliğe bakardı ve o kimlik sunucuda başka bir tedarikçiye aitse yanlış tedarikçiyi gösterirdi.
+  // Spec 0140 C7 (AC-10): parçanın Ana tedarikçisi (kök alan) yeniden atanan tedarikçi kimliğini izler.
+  adds.parts = adds.parts.map(p => (p?.tedarikciId != null && p.tedarikciId !== "" ? { ...p, tedarikciId: remapGevsek(maps.tedarikciler, p.tedarikciId) } : p));
   adds.parts = adds.parts.map(p => (Array.isArray(p.hammaddeler) && p.hammaddeler.length
     ? { ...p, hammaddeler: p.hammaddeler.map(h => (h?.tedarikciId != null ? { ...h, tedarikciId: remapGevsek(maps.tedarikciler, h.tedarikciId) } : h)) }
     : p))

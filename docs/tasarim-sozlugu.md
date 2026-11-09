@@ -61,7 +61,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 **Örnek:** `src/components/Giderler.jsx:294`
 **Örnek:** `src/components/Documents.jsx:1137`
 **Örnek:** `src/components/Customers.jsx:532` (düğme kipi, içerik genişliği, sayı rozeti)
-**Örnek:** `src/components/Stock.jsx:61` (sekme kipi)
+**Örnek:** `src/components/Stock.jsx:63` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:130` (düğme kipi, eşit genişlik)
 **Örnek:** `src/components/PartSaleForm.jsx:336` (form içi, düğme kipi, eşit genişlik)
 
@@ -221,7 +221,7 @@ notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avansların
 
 **Örnek:** `src/components/Giderler.jsx:329`
 **Örnek:** `src/components/Kasa.jsx:595` (sayfa sonundaki şerit, spec 0083)
-**Örnek:** `src/components/stock/PartStokTab.jsx:154` (hata ailesi)
+**Örnek:** `src/components/stock/PartStokTab.jsx:158` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
 
@@ -331,6 +331,14 @@ taşır; ekran yalnız değeri ve geri çağırımı verir, kutuları yeniden ç
 (ülke, şehir, gerekiyorsa ilçe) ve `KalipCapiFields` ("Makina Kalıp Çapı": Çap × Arka Ölçü × Boy, `{en, yukseklik, boy}`
 nesnesi; müşteri formu ve stok formu çağırır, üç kutu `aria-label` taşır). Boş değeri temizlemek bileşenin değil kayıt
 yolunun işidir (stokta `utils.kalipCapiYaz`). Kaynak taraması: `tests/kalip-capi-0101.test.js`.
+
+## Çoklu seçim listesi (spec 0140)
+
+Bir listeden birden çok kayıt seçtirilen yerde `tasarim.jsx` `CokluSecim` kullanılır: arama kutusu, onay kutulu satırlar,
+"Tümünü seç" (yalnız aramaya uyan satırları ekler) ve "Temizle", seçilenler × ile kaldırılan pillerle; erişilebilir ad `ariaLabel`, arama kutusu
+"<ad> araması". Seçim boşken ne olduğunu çağıran `bosMetni` ile söyler (sipariş listesinde "bütün tedarikçiler"). Tek seçim
+için açılır liste ya da `Segment`; arama gerekip tek seçim olan yerde `SearchPick` kullanılır.
+**Örnek:** `src/components/stock/SiparisPenceresi.jsx:158`
 
 ## Sayfalama (spec 0062)
 

@@ -69,7 +69,7 @@ export const AYAR_SALT_OKUNUR = ["securitystatus", "export", "sentmail", "auditl
 // testi düşürür (yeni bir pencere kilitsiz doğmasın).
 export const KILITSIZ_DOSYALAR = {
   "src/components/maliyet/PayOzeti.jsx": "salt okunur özet (spec 0088)",
-  "src/components/maliyet/SiparisIhtiyaci.jsx": "salt okunur hesap ekranı (spec 0134 C8/2): hiçbir veri bölümüne yazmaz, kilide bakmaz",
+  "src/components/stock/SiparisPenceresi.jsx": "salt okunur sipariş penceresi (spec 0140 B-R5, C4; 0134 C8/2 emsali): düzenlemeler geçicidir, hiçbir veri bölümüne yazmaz, kilit almaz",
   "src/components/gider/DonemRaporu.jsx": "salt okunur rapor görünümü",
   "src/components/gider/AcikKalemler.jsx": "salt okunur liste (spec 0061); \"Ödeme kaydet\" Giderler'in gider kilitli ödeme penceresini açar",
   "src/components/gider/EkstrePenceresi.jsx": "salt okunur ekstre; avans silme çağıranın (CalisanAvanslari) anlık denetiminden geçer",

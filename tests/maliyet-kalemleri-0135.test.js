@@ -219,7 +219,7 @@ describe("Spec 0135: koruma, zam ve birleştirme (R31–R34/2)", () => {
   });
   it("AC-61 / AC-105 (motor): işlem kaleminde geçen tedarikçi korunur ve parça bir kez sayılır", () => {
     const parts = [parca({ id: 1, maliyetKalemleri: [islem("Lazer", 1, 31), islem("Büküm", 2, 31)] }), parca({ id: 2, deletedAt: "x", maliyetKalemleri: [islem("K", 1, 31)] })];
-    expect(kalemdeGecenTedarikciler(parts).get("31")).toEqual({ parca: 2, cop: 1 });
+    expect(kalemdeGecenTedarikciler(parts).get("31")).toMatchObject({ parca: 2, cop: 1 }); // spec 0140 ile: değer Ana tedarikçi sayılarını da taşır
     expect(tedarikciKullanim(31, [], [], parts)).toMatchObject({ parca: 2, parcaCop: 1 });
   });
   it("AC-62 / AC-63: zam önizlemesi malzemeyi ikinci kaleminde kullanan parçayı sayar; maliyet yalnız o kalemin payı kadar artar", () => {

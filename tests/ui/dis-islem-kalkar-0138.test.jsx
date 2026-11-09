@@ -174,7 +174,7 @@ describe("Spec 0138: çöp kutusu ve tedarikçi koruması (R4, R5, R22)", () => 
     let st;
     render(<Cop parts={KALEMLI} t0={[{ id: 32, ad: "Lazer Ltd", deletedAt: COP }, { id: 34, ad: "Boştaki", deletedAt: COP }, { id: 801, ad: "Yalnız malzeme ana tedarikçisi", deletedAt: COP }]} onState={x => { st = x; }} />);
     const r = screen.getAllByText("Lazer Ltd")[0].closest("tr");
-    expect(within(r).getByTestId("cop-neden").textContent).toBe(KALEMDE_TEDARIKCI_NEDENI);
+    expect(within(r).getByTestId("cop-neden").textContent.startsWith(KALEMDE_TEDARIKCI_NEDENI)).toBe(true); // spec 0140 ile (AC-61): cümlenin arkasında parça adları
     expect(KALEMDE_TEDARIKCI_NEDENI).not.toMatch(/dış işlem/i);
     expect(within(r).queryByRole("button", { name: /Kalıcı Sil/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Çöp Kutusunu Boşalt/ }));

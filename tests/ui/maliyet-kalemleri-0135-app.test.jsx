@@ -7,7 +7,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
 import { KALEMDE_MALZEME_NEDENI } from "../../src/lib/malzeme";
 import { KALEMDE_TEDARIKCI_NEDENI } from "../../src/lib/gider";
-import { MALZEME_KALEMI_YOK_METNI } from "../../src/components/maliyet/SiparisIhtiyaci";
+import { MALZEME_KALEMI_YOK_METNI } from "../../src/components/stock/SiparisPenceresi"; // spec 0140 ile: ekran pencereye taşındı
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); delete window.crmStorage; delete window.appServer; });
 const { default: App } = await import("../../src/App");
@@ -55,7 +55,7 @@ describe("Spec 0135 gerçek App", () => {
     await baslat();
     await ayarlar("Veri Yönetimi", "Çöp Kutusu");
     expect(within((await screen.findByText("Eski sac")).closest("tr")).getByTestId("cop-neden").textContent).toBe(KALEMDE_MALZEME_NEDENI);
-    expect(within(screen.getByText("Eski kaplamacı").closest("tr")).getByTestId("cop-neden").textContent).toBe(KALEMDE_TEDARIKCI_NEDENI);
+    expect(within(screen.getByText("Eski kaplamacı").closest("tr")).getByTestId("cop-neden").textContent.startsWith(KALEMDE_TEDARIKCI_NEDENI)).toBe(true); // spec 0140 ile (AC-61): cümlenin arkasında parça adları
     expect(screen.queryByText("Kullanılmayan")).toBeNull();
     expect(screen.queryByText("Boştaki")).toBeNull();
   });
@@ -82,13 +82,16 @@ describe("Spec 0135 gerçek App", () => {
   });
   it("AC-109 / AC-56 (ekran): yalnız işlem kalemli parça Sipariş İhtiyacı'nda 'malzeme kalemi yok' sayacına girer; malzeme tablosu boş durumu kalem dilinde", async () => {
     await baslat();
-    menu("Makina Maliyeti");
-    fireEvent.click(screen.getByRole("radio", { name: "Sipariş İhtiyacı" }));
+    // Spec 0140 ile (B-R6): sipariş listesi Stok › Parça/Yedek Parça Stoğu'ndaki pencereden açılır.
+    menu("Stok");
+    fireEvent.click(screen.getByRole("tab", { name: "Parça/Yedek Parça Stoğu" }));
+    fireEvent.click(screen.getByTestId("siparis-listesi-dugmesi"));
     fireEvent.click(screen.getByRole("button", { name: /Model Satırı Ekle/ }));
     fireEvent.change(screen.getByLabelText("Model 1"), { target: { value: "AK100" } });
     fireEvent.change(screen.getByLabelText("Makina adedi 1"), { target: { value: "5" } });
     expect(screen.getByTestId("siparis-hazir").textContent).toContain("1 parçada malzeme kalemi yok");
     expect(screen.getByTestId("siparis-malzeme-yok").textContent).toBe(MALZEME_KALEMI_YOK_METNI);
+    fireEvent.click(screen.getByRole("button", { name: /^Parça ihtiyacı/ })); // spec 0140 C-R10: katlanabilir bölüm
     expect(screen.getAllByTestId("siparis-parca-satiri").some(r => r.textContent.includes("Kaplamalı pim"))).toBe(true);
   });
 });

@@ -42,7 +42,7 @@ describe("Spec 0096 gerçek App", () => {
     await baslat();
     await ayarlar("Veri Yönetimi", "Çöp Kutusu");
     const satir = (await screen.findByText("Eski Döküm")).closest("tr");
-    expect(within(satir).getByTestId("cop-neden").textContent).toBe(KALEMDE_TEDARIKCI_NEDENI);
+    expect(within(satir).getByTestId("cop-neden").textContent.startsWith(KALEMDE_TEDARIKCI_NEDENI)).toBe(true); // spec 0140 ile (AC-61): cümlenin arkasında parça adları
     expect(screen.queryByText("Kullanılmayan")).toBeNull();
   });
   it("AC-24 / AC-48 (App hattı): Tedarikler ve Ekstre kullanım hücresi parça kırılımını sayar; Katalog'da maliyet kırılımın toplamı", async () => {

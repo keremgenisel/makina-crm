@@ -10,7 +10,7 @@ import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { KartBolum } from "../tasarim";
 import { ciroluTahsilatIdleri, bagliHareketiOlanCekler, BAGLI_HAREKETLI_CEK_NEDENI } from "../../lib/cek";
-import { turHaritasi, kalemdeGecenTedarikciler, KALEMDE_TEDARIKCI_NEDENI } from "../../lib/gider";
+import { turHaritasi, kalemdeGecenTedarikciler, tedarikciKorumaCumlesi, tedarikciKorumaSatiri } from "../../lib/gider";
 import { copHareketGeriAlmaNedeni } from "../../lib/kasa";
 import { makeCanDo } from "../../lib/permissions";
 import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
@@ -219,8 +219,9 @@ export const SettingsTrash = ({
   };
   // Spec 0096 R13/2, R13/5 (AC-37, AC-50): parça hammadde kırılımında geçen tedarikçi kalıcı silinmez (ham parça dizisi: çöpteki
   // parça geri alınırsa bağ kopmasın). "Çöpü boşalt" çöpteki parçaları da kalıcı sildiği için orada kalacak parçalar sayılır.
-  const korunanTedarikciler = kalemdeGecenTedarikciler(rawParts || []);
-  const bosaltmadaKorunanTedarikciler = kalemdeGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt));
+  // Spec 0140 A-R5, A-R5/2 (AC-7–AC-9, AC-59): parçanın Ana tedarikçisi ve malzemenin Ana tedarikçisi de korur.
+  const korunanTedarikciler = kalemdeGecenTedarikciler(rawParts || [], rawMalzemeler || []);
+  const bosaltmadaKorunanTedarikciler = kalemdeGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt), (rawMalzemeler || []).filter(x => !x.deletedAt));
   // Spec 0123 R1/2, R3/6, C2 (Karar 5, 27): iki harita, çizim başına. Kalıcı Sil bütün parçalardan, "çöpü boşalt" kalacaklardan.
   const setteKorunanParcalar = setteGecenParcalar(rawParts || []);
   const bosaltmadaSetteKorunanParcalar = setteGecenParcalar((rawParts || []).filter(x => !x.deletedAt));
@@ -239,7 +240,8 @@ export const SettingsTrash = ({
     setMalzemeler?.(p => p.filter(x => x.id !== m.id)); showToast("Malzeme kalıcı olarak silindi.");
   };
   const purgeTedarikci = (t) => {
-    if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${KALEMDE_TEDARIKCI_NEDENI}`, "err"); return; }
+    // Spec 0140 A-R5/3 (AC-60): bildirimde sabit cümle, ad yok.
+    if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${tedarikciKorumaCumlesi(korunanTedarikciler.get(String(t.id)))}`, "err"); return; }
     setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi.");
   };
   const restoreParti = (u) => {
@@ -385,7 +387,7 @@ export const SettingsTrash = ({
       // Spec 0068 R11, R21: tedarikçi ve üretim partisi; düğmeler silme izniyle (izinsizde satır görünür, düğme yok).
       rawTedarikciler.filter(t => t.deletedAt).forEach(t => items.push({ key: `tedarikci-${t.id}`, type: "Tedarikçi", label: t.ad || "—", deletedAt: t.deletedAt,
         restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki && !korunanTedarikciler.has(String(t.id)) ? () => purgeTedarikci(t) : null,
-        neden: korunanTedarikciler.has(String(t.id)) ? KALEMDE_TEDARIKCI_NEDENI : null }));
+        neden: tedarikciKorumaSatiri(korunanTedarikciler.get(String(t.id))) })); // spec 0140 AC-61
       rawUretimPartileri.filter(u => u.deletedAt).forEach(u => items.push({ key: `parti-${u.id}`, type: "Üretim Partisi", label: `${u.ad || "—"} · ${u.baslangicAy || ""}${u.bitisAy ? " – " + u.bitisAy : " (açık)"}`, deletedAt: u.deletedAt,
         restore: partiYetki ? () => restoreParti(u) : null, purge: partiYetki ? () => purgeParti(u) : null }));
       // Spec 0078 R23, R24: hareket, tekrarlayan tanım ve gider türü (gider yetkisi). Çeke bağlı hareket

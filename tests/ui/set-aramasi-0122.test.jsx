@@ -296,7 +296,7 @@ describe("Spec 0122: kaynak taramaları", () => {
     expect(pm()).toMatch(/import \{[^}]*\bSelect\b[^}]*\} from "\.\/ui"/);
     // Spec 0135 ile (R17/2): hammadde tedarikçisi seçicisi işlem kaleminin satırına (MaliyetKalemleriAlani.jsx) taşındı; panelde
     // yalnız tedarikçi süzgeci kaldı. İddia (set bölümü Select kullanmaz, içe aktarım duruyor) korunur.
-    expect(pm().match(/<Select\b/g)).toHaveLength(1);
+    expect(pm().match(/<Select\b/g)).toHaveLength(2); // spec 0140 ile: parça kartının Ana tedarikçi seçicisi (set bölümü yine Select kullanmaz)
     expect(UA.SET_PARCA_SECILMEDI).toBeTruthy();
     expect(UA.SET_AYNI_PARCA).toBeTruthy();
     expect(pm()).not.toMatch(/SET_AYNI_PARCA/);

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { uid } from "../../lib/utils";
-import { tedarikciAdHatasi, tedarikciKullanim, kalemdeGecenTedarikciler } from "../../lib/gider";
+import { tedarikciAdHatasi, tedarikciKullanim, kalemdeGecenTedarikciler, korumaAdListesi } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
@@ -25,12 +25,15 @@ export const SIL_PARCA_YONLENDIRME = "Silmek için önce Ayarlar › Katalog ›
 export const kullanimMetni = (k) => {
   const gider = k.kalem + k.tanim ? `${k.kalem} kalem${k.cop ? ` (${k.cop}’i çöpte)` : ""}${k.tanim ? ` · ${k.tanim} tanım` : ""}` : "";
   const parca = k.parca ? `${k.parca} parçanın maliyet kaleminde${k.parcaCop ? ` (${k.parcaCop}’i çöpte)` : ""}` : "";
-  return [gider, parca].filter(Boolean).join(" · ") || "Kullanılmıyor";
+  // Spec 0140 A-R5, A-R5/2 (AC-58): Ana tedarikçi bağları ayrı sayılır (çöpe atmayı engellemez, kalıcı silmeyi engeller).
+  const ana = k.ana ? `${k.ana} parçanın Ana tedarikçisi${k.anaCop ? ` (${k.anaCop}’i çöpte)` : ""}` : "";
+  const malzeme = k.malzeme ? `${k.malzeme} malzemenin Ana tedarikçisi${k.malzemeCop ? ` (${k.malzemeCop}’i çöpte)` : ""}` : "";
+  return [gider, parca, ana, malzeme].filter(Boolean).join(" · ") || "Kullanılmıyor";
 };
 
 export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = [], giderTanimlari = [], rapor, canDo = () => true, showToast = () => {}, serverPermissions,
   // Spec 0024 B (R12, B6, B10, B11): tedarikçi ekstresi ve silme uyarısındaki kalan borç. giderler hareketlerden türetilmiş olabilir.
-  hesapHareketleri = null, giderTurleri = [], yururlukAy = null, bugun = null, kasaHesaplari = [],
+  hesapHareketleri = null, giderTurleri = [], yururlukAy = null, bugun = null, kasaHesaplari = [], malzemeler = [],
   // Spec 0096 R13, R13/5: parça kırılımı da kullanımdır; HAM parça dizisi (çöpteki parçalar da sayılır).
   parts = [] }) => {
   const [form, setForm] = useState(null);
@@ -58,7 +61,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
     setForm(null);
     showToast(yeni ? "Tedarikçi eklendi." : "Tedarikçi güncellendi. Bağlı kalemler yeni adla görünür.");
   };
-  const kirilimHaritasi = useMemo(() => kalemdeGecenTedarikciler(parts), [parts]); // triyaj: bir kez kurulur
+  const kirilimHaritasi = useMemo(() => kalemdeGecenTedarikciler(parts, malzemeler), [parts, malzemeler]); // triyaj: bir kez kurulur; spec 0140 malzemeler
   const silAc = (t) => setSil({ t, k: tedarikciKullanim(t.id, giderler, giderTanimlari, parts, kirilimHaritasi) });
   const silOnayla = () => {
     const zaman = new Date().toISOString();
@@ -147,6 +150,8 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
             {/* Spec 0096 R13, R13/4, R13/5; spec 0135 R32/2: parçanın maliyet kalemi de kullanımdır; cümle kalem dilinde. */}
             {sil.k.parca > 0 && <div data-testid="tedarikci-parca-kullanim" style={{ marginTop: sil.k.kalem + sil.k.tanim > 0 ? 8 : 0 }}>
               Bu tedarikçi <b>{sil.k.parca} parçanın</b> maliyet kaleminde geçiyor{sil.k.parcaCop ? <> (<b>{sil.k.parcaCop}’i çöp kutusunda</b>)</> : null}. {SIL_PARCA_YONLENDIRME}
+              {/* Spec 0140 A-R5/3 (AC-61): kalem bağlı parçaların adları, en çok üç. */}
+              <div data-testid="tedarikci-parca-adlari" style={{ marginTop: 4, color: "var(--n600, #475569)" }}>{korumaAdListesi(sil.k.kalemAdlari || [])}</div>
             </div>}
             {(() => { const b = ekstreHesapla(sil.t).bakiye; return b > 0 ? <div data-testid="tedarikci-kalan-borc" style={{ marginTop: 8, color: "var(--red700, #b91c1c)", fontWeight: 700 }}>Bu tedarikçiye {tl2(b)} kalan borç var. Tedarikçi silinse bile borç kapanmaz; silinmiş tedarikçinin ekstresine erişilemez.</div> : null; })()}
           </div>

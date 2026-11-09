@@ -329,9 +329,11 @@ describe("Spec 0134: eksik veri ve stok uyarısı (R10/2, R22, R23/2)", () => {
 
 describe("Spec 0134: yazdırma (R20, R20/2)", () => {
   it("AC-50 / AC-101: liste Türkçe, parça, malzeme ve tedarikçi bölümleri; hücreler kaçışlı; kurucu kendi modülünde", () => {
-    const r = S.siparisIhtiyaci(F.veri({ parts: [F.KESME, { ...F.PUL, ad: "Pul <b>" }, F.SOMUN, F.SET] }));
+    // Spec 0140 ile (C-R10, E-R1): belge tedarikçi bölümlerinden kurulur (opt-in çıktı) ve PARÇA İHTİYACI tablosu belgede yok;
+    // kaçış denetimi için Pul'un Ana tedarikçisi var (hazır parça tablosunda basılsın).
+    const r = S.siparisIhtiyaci(F.veri({ parts: [F.KESME, { ...F.PUL, ad: "Pul <b>", tedarikciId: 13 }, F.SOMUN, F.SET] }), { tedarikciOdakli: true });
     const html = siparisRaporuHtml(r, { bugun: "2026-11-05", factory: { name: "Altuntaş" }, partiAd: "Parti 3" });
-    expect(html).toContain("PARÇA İHTİYACI"); expect(html).toContain("Ana Çelik"); expect(html).toContain("Ø144");
+    expect(html).not.toContain("PARÇA İHTİYACI"); expect(html).toContain("Ana Çelik"); expect(html).toContain("Ø144");
     expect(html).toContain("Pul &lt;b&gt;"); expect(html).not.toContain("Pul <b>");
     expect(html).toContain("Üretim partisi: Parti 3");
     expect(kod("src/lib/printTemplates.js")).not.toMatch(/siparis/i);
@@ -357,15 +359,17 @@ describe("Spec 0134: kaynak taramaları", () => {
     expect(kod("src/components/stock/MakinaStokTab.jsx")).toMatch(/kitStokAdedi\(r\.miktar\)/);
   });
   it("AC-88: ekran eldeki miktarı kendi hesaplamaz; stok motora parametreyle girer", () => {
-    const ekran = kod("src/components/maliyet/SiparisIhtiyaci.jsx");
+    // Spec 0140 ile (B-R1/2): ekran stock/SiparisPenceresi.jsx; stok iki giriş noktasında `siparisVeri` ile iner.
+    const ekran = kod("src/components/stock/SiparisPenceresi.jsx");
     expect(ekran).not.toMatch(/totalMiktar|\.miktar\b/);
     expect(ekran).toMatch(/siparisIhtiyaci\(\{[^}]*partStock/);
-    expect(kod("src/App.jsx")).toMatch(/partStock=\{partStock\} rawTedarikciler=\{tedarikciler\}/);
+    expect(kod("src/components/Stock.jsx")).toMatch(/siparisVeri=\{\{ parts, hamParts: rawParts, partStock,/);
+    expect(kod("src/components/Settings.jsx")).toMatch(/siparisVeri=\{\{ parts, hamParts: rawParts, partStock,/);
   });
   it("AC-61 / C8/2: ekran yazıcı prop'u almaz, kilit almaz; gerekçeli kilitsiz", () => {
-    const ekran = kod("src/components/maliyet/SiparisIhtiyaci.jsx");
+    const ekran = kod("src/components/stock/SiparisPenceresi.jsx"); // spec 0140 ile: pencere
     expect(ekran).not.toMatch(/\bset(Parts|Malzemeler|PartStock|PartStockLog|UretimPartileri|StandardModels|CustomModels)\b|useLock|baskasiKilitli/);
-    expect(kod("src/lib/kilitAlanlari.js")).toMatch(/"src\/components\/maliyet\/SiparisIhtiyaci\.jsx": "salt okunur/);
+    expect(kod("src/lib/kilitAlanlari.js")).toMatch(/"src\/components\/stock\/SiparisPenceresi\.jsx": "salt okunur/);
   });
 });
 
@@ -404,9 +408,12 @@ describe("Spec 0134 triyaj", () => {
     expect(tek([[73, 1]], 10, { parts: [p], malzemeler: [m] }).kesitler[0].fiyat).toBe(3.2);
   });
   it("Bulgu 6: yazdırılan raporda emniyet payı Türkçe ondalıkla (%7,5)", () => {
-    const r = tek([[42, 8]], 70, { parts: [{ ...F.PUL, emniyetPayi: 7.5 }] });
-    const html = siparisRaporuHtml(r, { bugun: "2026-11-05" });
-    expect(html).toContain("%7,5"); expect(html).not.toContain("%7.5");
+    // Spec 0140 ile (C-R10): PARÇA İHTİYACI tablosu belgeden çıktı, pay belgede basılmaz (ekranda Türkçe biçim:
+    // ui/siparis-0140 "pay" testi); İngilizce ondalık hiçbir yerde basılmaz.
+    const v = F.veri({ modeller: [F.model("M1", [[42, 8]])], satirlar: [{ model: "M1", adet: "70" }], parts: [{ ...F.PUL, emniyetPayi: 7.5, tedarikciId: 13 }] });
+    const html = siparisRaporuHtml(S.siparisIhtiyaci(v, { tedarikciOdakli: true }), { bugun: "2026-11-05" });
+    expect(html).toContain("Beta Metal"); // pay uygulanmış adet hazır parça tablosunda
+    expect(html).not.toContain("%7.5");
   });
   it("Bilgi 2: sayı olarak gelen kit adedi de üç ondalık sınırına tabi", () => {
     expect(kitAdediDogrula(0.1143).hata).toBe(KIT_ADET_HATASI);

@@ -127,7 +127,7 @@ describe("Spec 0096: tedarikçi süzgeci (R10, R22, C13, C14)", () => {
     render(<Katalog p0={p0} />);
     const s = screen.getByLabelText("Tedarikçi süzgeci");
     expect(s.tagName).toBe("SELECT");
-    expect([...s.options].map(o => o.textContent)).toEqual(["Tüm parçalar", "Demir Çelik (1)", "Döküm A.Ş. (1)", "Sac Ltd (1)", "İşlem kaleminde tedarikçi girilmemiş (14)"]);
+    expect([...s.options].map(o => o.textContent)).toEqual(["Tüm parçalar", "Demir Çelik (1)", "Döküm A.Ş. (1)", "Sac Ltd (1)", "Tedarikçi girilmemiş (14)"]); // spec 0140 ile (AC-63): etiket Ana tedarikçiyi de kapsar
     suz("32");
     expect(satir("Ayna dişlisi")).toBeTruthy();
     expect(screen.queryByText("Rulman")).toBeNull();
@@ -225,7 +225,7 @@ describe("Spec 0096: Çöp Kutusu kapıları (R13/2, R13/5)", () => {
   it("AC-37: kırılımda geçen çöpteki tedarikçinin Kalıcı Sil'i yok, satırda neden yazar; geçmeyen silinir", () => {
     render(<TrashH t0={[{ id: 32, ad: "Sac Ltd", deletedAt: ZAMAN }, { id: 33, ad: "Döküm", deletedAt: ZAMAN }]} parts={[{ id: 1, ad: "A", hammaddeler: [{ tedarikciId: 32, tutar: 5 }] }]} />);
     const s = screen.getByText("Sac Ltd").closest("tr");
-    expect(within(s).getByTestId("cop-neden").textContent).toBe(KALEMDE_TEDARIKCI_NEDENI); // spec 0135 ile (R32/2)
+    expect(within(s).getByTestId("cop-neden").textContent.startsWith(KALEMDE_TEDARIKCI_NEDENI)).toBe(true); // spec 0140 ile (AC-61): cümlenin arkasında parça adları
     expect(within(s).queryByRole("button", { name: /Kalıcı Sil/ })).toBeNull();
     expect(within(screen.getByText("Döküm").closest("tr")).getByRole("button", { name: /Kalıcı Sil/ })).toBeTruthy();
   });

@@ -60,7 +60,7 @@ describe("Spec 0135: Çöp Kutusu kapıları (C5)", () => {
     let st;
     render(<Cop t0={[{ id: 32, ad: "Büküm Ltd", deletedAt: COP }, { id: 34, ad: "Boştaki", deletedAt: COP }]} onState={x => { st = x; }} />);
     const r = copSatiri("Büküm Ltd");
-    expect(within(r).getByTestId("cop-neden").textContent).toBe(KALEMDE_TEDARIKCI_NEDENI);
+    expect(within(r).getByTestId("cop-neden").textContent.startsWith(KALEMDE_TEDARIKCI_NEDENI)).toBe(true); // spec 0140 ile (AC-61): cümlenin arkasında parça adları
     expect(within(r).queryByRole("button", { name: /Kalıcı Sil/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Çöp Kutusunu Boşalt/ }));
     fireEvent.click(screen.getByRole("button", { name: /Evet, Sil/ }));

@@ -190,3 +190,40 @@ export const HataMetni = ({ children }) => children ? (
 export const Ipucu = ({ children }) => children ? (
   <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 4, lineHeight: 1.45 }}>{children}</div>
 ) : null;
+
+// ── Çoklu seçim listesi (spec 0140 C-R2/2, karar 37) ──────────────────────────────────────────────────────────
+// Arama kutulu onay kutusu listesi; "Tümünü seç" ve "Temizle"; seçilenler pil olarak. Uzun listeden birden çok seçim içindir
+// (Segment çok seçenekte, SearchPick tek seçimde kalır). `secenekler` [{ id, ad }], `secili` kimlik dizisi (metin), `onChange`
+// yeni diziyi alır. Boş seçim "hepsi" anlamına gelebilir; bu anlamı çağıran yazar (`bosMetni`). Kimlik çağırandan (`testId`).
+const cokluPil = { display: "inline-flex", alignItems: "center", gap: 4, padding: "2px 8px", borderRadius: 999, fontSize: 11.5, fontWeight: 600,
+  background: "var(--ambBg3, #fff7ed)", color: "var(--orTx, #c2410c)", border: "1px solid var(--ambBr, #fde68a)" };
+const cokluBaglanti = { border: "none", background: "none", padding: 0, fontSize: 12, fontWeight: 600, color: "var(--blu700, #1d4ed8)", cursor: "pointer" };
+export const CokluSecim = ({ secenekler = [], secili = [], onChange, ariaLabel, aramaYerTutucu = "Ara...", bosMetni = "", testId }) => {
+  const [ara, setAra] = useState("");
+  const q = ara.trim().toLocaleLowerCase("tr-TR");
+  const gorunen = q ? secenekler.filter(s => String(s.ad).toLocaleLowerCase("tr-TR").includes(q)) : secenekler;
+  const set = new Set(secili.map(String));
+  const degistir = (id) => onChange(set.has(String(id)) ? secili.filter(x => String(x) !== String(id)) : [...secili, String(id)]);
+  return (
+    <div data-testid={testId} role="group" aria-label={ariaLabel} style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, padding: 8, background: "var(--surface, #ffffff)" }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 6 }}>
+        <input value={ara} onChange={e => setAra(e.target.value)} placeholder={aramaYerTutucu} aria-label={`${ariaLabel} araması`}
+          style={{ flex: 1, minWidth: 0, padding: "6px 9px", fontSize: 12.5, borderRadius: 6, border: "1px solid var(--n200, #e2e8f0)", background: "var(--n100, #f8fafc)", color: "var(--n900, #0f172a)" }} />
+        <button type="button" style={cokluBaglanti} onClick={() => onChange([...new Set([...secili.map(String), ...gorunen.map(s => String(s.id))])])}>Tümünü seç</button>
+        <button type="button" style={cokluBaglanti} onClick={() => onChange([])}>Temizle</button>
+      </div>
+      <div style={{ maxHeight: 160, overflowY: "auto", display: "grid", gap: 2 }}>
+        {gorunen.map(s => (
+          <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, padding: "3px 4px", cursor: "pointer", color: "var(--n800, #1e293b)" }}>
+            <input type="checkbox" checked={set.has(String(s.id))} onChange={() => degistir(s.id)} aria-label={s.ad} />{s.ad}
+          </label>
+        ))}
+      </div>
+      <div aria-label={`${ariaLabel} seçilenler`} style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6, fontSize: 12, color: "var(--n500, #64748b)" }}>
+        {secili.length === 0 ? bosMetni : secenekler.filter(s => set.has(String(s.id))).map(s => (
+          <span key={s.id} style={cokluPil}>{s.ad}<button type="button" aria-label={`${s.ad} seçimini kaldır`} onClick={() => degistir(s.id)}
+            style={{ border: "none", background: "none", padding: 0, cursor: "pointer", color: "inherit", fontWeight: 800 }}>×</button></span>))}
+      </div>
+    </div>
+  );
+};

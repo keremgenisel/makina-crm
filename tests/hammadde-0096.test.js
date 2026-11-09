@@ -185,7 +185,7 @@ describe("Spec 0096 triyaj", () => {
     expect(tedarikciKullanim(31, [], [], [], harita)).toEqual(tedarikciKullanim(31, [], [], parts));
     const t = kod("src/components/gider/Tedarikciler.jsx");
     expect(t.match(/kalemdeGecenTedarikciler\(/g)).toHaveLength(1);
-    expect(t).toMatch(/useMemo\(\(\) => kalemdeGecenTedarikciler\(parts\), \[parts\]\)/);
+    expect(t).toMatch(/useMemo\(\(\) => kalemdeGecenTedarikciler\(parts, malzemeler\), \[parts, malzemeler\]\)/); // spec 0140 ile: malzemeler de (A-R5/2)
     expect(t.match(/tedarikciKullanim\(t\.id, giderler, giderTanimlari, parts, kirilimHaritasi\)/g)).toHaveLength(2);
   });
 });

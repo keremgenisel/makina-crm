@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
-// Spec 0134: Makina Maliyeti › Sipariş İhtiyacı (gerçek MakinaMaliyeti). Girdi, parti seçici, tablolar, uyarılar, yazdırma ve
-// salt okunurluk (yazıcılar casus; ekran sürülürken hiçbiri çağrılmaz, AC-52, AC-53, AC-61).
+// Spec 0134: sipariş ihtiyacı ekranı. Spec 0140 ile (B-R1/2, B-R2, R14 / karar 45): ekran Makina Maliyeti'nden kalktı, aynı içerik
+// tek pencerede (stock/SiparisPenceresi.jsx); bu dosya hesap ve girdi iddialarını pencere üzerinde aynen ölçer. Ekranın yerine bağlı
+// iddialar (beşinci görünüm, tek toplam satırı, belgede PARÇA İHTİYACI) "spec 0140 ile" notuyla ters çevrildi.
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
-import { MakinaMaliyeti, GORUNUMLER } from "../../src/components/MakinaMaliyeti";
+import { GORUNUMLER } from "../../src/components/MakinaMaliyeti";
 import * as S from "../../src/lib/siparisIhtiyaci";
-import { BOS_BASLIK, ELLE_GIRIS } from "../../src/components/maliyet/SiparisIhtiyaci";
+import { SiparisPenceresi, BOS_BASLIK, ELLE_GIRIS } from "../../src/components/stock/SiparisPenceresi";
+import { kutuAc } from "./kutuAc";
 import * as F from "../fixtures/0134-veri.js";
 
 afterEach(() => { cleanup(); delete window.appPrint; });
@@ -15,23 +17,23 @@ const PARTILER = [
   { id: 802, ad: "Yaz Partisi", baslangicAy: "2026-06", bitisAy: null, planlananAdetler: {} },
   { id: 803, ad: "Güz Partisi", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { "ak100_ds": 70, "YOK_MODEL": 3 } },
 ];
+// Pencere yazıcı prop'u almaz (C4); casuslar veri nesnesine konur ve hiçbiri çağrılmaz (AC-52, AC-53, AC-61).
 const yazicilar = () => ({ setGiderTurleri: vi.fn(), setStandardModels: vi.fn(), setCustomModels: vi.fn(), setUretimPartileri: vi.fn(), setAppSettings: vi.fn() });
 let yaz;
 const Ekran = ({ partiler = PARTILER, parts = F.veri().parts, partStock = [], malzemeler = [F.P304], tedarikciler = F.TED, rawTedarikciler = null, modeller = [F.AK100, AK200] } = {}) => {
   yaz = yazicilar();
-  return <MakinaMaliyeti aktifKullanici="kerem" giderler={[]} giderTurleri={[]} tedarikciler={tedarikciler} stock={[]} customers={[]} partStockLog={[]}
-    parts={parts} malzemeler={malzemeler} standardModels={modeller} customModels={[]} uretimPartileri={partiler} rates={{ usd: 41 }}
-    appSettings={{ giderAyarlari: { yururlukAy: "2026-01" }, uretimdeOlmayanModeller: ["AK200"] }} partStock={partStock} rawTedarikciler={rawTedarikciler}
-    factory={{ name: "Altuntaş" }} baslangicGorunum="siparis" {...yaz} />;
+  return <SiparisPenceresi giderYetki bugun="2026-11-05" onClose={vi.fn()} veri={{ parts, partStock, malzemeler, tedarikciler, hamTedarikciler: rawTedarikciler,
+    standardModels: modeller, customModels: [], uretimPartileri: partiler, appSettings: { uretimdeOlmayanModeller: ["AK200"] }, factory: { name: "Altuntaş" }, ...yaz }} />;
 };
-const parcaSatiri = (ad) => screen.getAllByTestId("siparis-parca-satiri").find(r => within(r).queryByText(ad));
+// Spec 0140 C-R10: "Parça ihtiyacı" tablosu katlanabilir bölümdedir; satır okuyan testler önce açar.
+const parcaSatiri = (ad) => { if (!screen.queryByTestId("siparis-parca-tablosu")) kutuAc("Parça ihtiyacı"); return screen.getAllByTestId("siparis-parca-satiri").find(r => within(r).queryByText(ad)); };
 const hucre = (r) => [...r.querySelectorAll("td")].map(td => td.textContent);
 
 describe("Spec 0134: girdi ve parti seçici", () => {
-  it("R1: Sipariş İhtiyacı Makina Maliyeti'nin beşinci görünümüdür", () => {
-    expect(GORUNUMLER.map(g => g.label)).toEqual(["Model Maliyetleri", "Parti Hesabı", "Üretim Partileri", "Hesap Ayarları", "Sipariş İhtiyacı"]);
+  it("R1 (spec 0140 ile, B-R2): Sipariş İhtiyacı görünümü Makina Maliyeti'nden kalktı; içerik sipariş penceresinde", () => {
+    expect(GORUNUMLER.map(g => g.label)).toEqual(["Model Maliyetleri", "Parti Hesabı", "Üretim Partileri", "Hesap Ayarları"]);
     render(<Ekran />);
-    expect(screen.getByRole("radio", { name: "Sipariş İhtiyacı" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByTestId("siparis-penceresi")).toBeTruthy();
   });
   it("AC-96: açık partiler '(açık)' ekiyle, kapanmış parti listede; varsayılan en son başlayan açık parti", () => {
     render(<Ekran />);
@@ -91,9 +93,11 @@ describe("Spec 0134: girdi ve parti seçici", () => {
 describe("Spec 0134: tablolar ve uyarılar", () => {
   it("AC-18 / AC-14 / AC-79: ihtiyaç, stok, sipariş ayrı sütunlar; set patlatıldı; kesişim uyarısı ve iki kaynak", () => {
     render(<Ekran partStock={[{ partId: 42, miktar: 100 }]} />);
+    const pul = parcaSatiri("Pul");
     const ths = [...screen.getByTestId("siparis-parca-tablosu").querySelectorAll("th")].map(t => t.textContent);
-    expect(ths).toEqual(["Parça", "Ham ihtiyaç", "Emniyet payı", "İhtiyaç", "Stok", "Sipariş"]);
-    expect(hucre(parcaSatiri("Pul")).slice(3)).toEqual(["700", "100", "600"]);
+    // Spec 0140 ile (D-R2/2, karar 34): öneri sütunu ve set satırlarının "sipariş etme" anahtarı eklendi.
+    expect(ths).toEqual(["Parça", "Ham ihtiyaç", "Emniyet payı", "İhtiyaç", "Stok", "Sipariş (öneri)", "Sipariş", "Sipariş etme"]);
+    expect(hucre(pul).slice(3, 7)).toEqual(["700", "100", "600", "600"]);
     expect(within(parcaSatiri("Bağlantı seti")).getByTestId("siparis-patlatildi")).toBeTruthy();
     expect(screen.getByTestId("siparis-kesisim").textContent).toBe(S.KESISIM_UYARISI("Bağlantı seti", "Pul"));
     expect(within(parcaSatiri("Pul")).getByTestId("siparis-iki-kaynak")).toBeTruthy();
@@ -115,14 +119,17 @@ describe("Spec 0134: tablolar ve uyarılar", () => {
     render(<Ekran />);
     const k = screen.getByTestId("siparis-kesit-satiri");
     expect(k.textContent).toContain("Ø144");
-    expect(hucre(k).slice(1)).toEqual(["747,512 kg", "59,801 kg", "771,957 kg", "24,445 kg", "1 boy", "", "2.277,27 $", "113.863,68 ₺"]);
+    // Spec 0140 ile (D-R2/2): öneri sütunu ve düzenlenebilir sipariş hücresi; değerler 0134'teki gibi. Artan kilo sütunu kalktı (belgede de yok).
+    const h = hucre(k);
+    expect([h[1], h[2], h[3], h[5], h[6], h[7], h[8]]).toEqual(["747,512 kg", "59,801 kg", "771,957 kg", "1 boy", "", "2.277,27 $", "113.863,68 ₺"]);
     expect(within(k).getAllByTestId("siparis-kesit-neden").map(e => e.textContent)).toContain(S.FIRE_BOY_UYARISI);
-    expect(screen.getByTestId("siparis-tedarikci").textContent).toBe("Ana Çelik113.863,68 ₺");
-    expect(screen.getByTestId("siparis-toplam").textContent).toBe("Toplam: 113.863,68 ₺");
+    expect(screen.getByTestId("siparis-tedarikci-adi").textContent).toBe("Ana Çelik");
+    expect(screen.getByTestId("siparis-tedarikci-toplam").textContent).toBe("113.863,68 ₺"); // spec 0140 ile: tek toplam satırı yerine tedarikçi toplamı
   });
   it("AC-46 / AC-87: çöpteki tedarikçinin adı ham diziden 'silinmiş' işaretiyle; tutar toplamda", () => {
     render(<Ekran tedarikciler={[]} rawTedarikciler={[{ id: 12, ad: "Ana Çelik", deletedAt: "2026-09-01" }]} />);
-    expect(screen.getByTestId("siparis-tedarikci").textContent).toBe("Ana Çelik (silinmiş tedarikçi)113.863,68 ₺");
+    expect(screen.getByTestId("siparis-tedarikci-adi").textContent).toBe("Ana Çelik (silinmiş tedarikçi)");
+    expect(screen.getByTestId("siparis-tedarikci-toplam").textContent).toBe("113.863,68 ₺");
   });
 });
 
@@ -135,8 +142,9 @@ describe("Spec 0134: yazdırma ve salt okunurluk", () => {
     render(<Ekran />);
     fireEvent.click(screen.getByRole("button", { name: /Yazdır/ }));
     const [html, , ad] = window.appPrint.printHtml.mock.calls[0];
-    expect(html).toContain("SİPARİŞ İHTİYACI"); expect(html).toContain("PARÇA İHTİYACI"); expect(html).toContain("Ana Çelik");
-    expect(ad).toMatch(/^Siparis-Ihtiyaci-/);
+    // Spec 0140 ile (C-R10, E-R1): belgenin adı "Sipariş Listesi", PARÇA İHTİYACI tablosu belgede yok.
+    expect(html).toContain("SİPARİŞ LİSTESİ"); expect(html).not.toContain("PARÇA İHTİYACI"); expect(html).toContain("Ana Çelik");
+    expect(ad).toMatch(/^Siparis-Listesi-/);
   });
   it("AC-52 / AC-53 / AC-61: ekran sürülürken hiçbir yazıcı çağrılmaz", () => {
     render(<Ekran />);
