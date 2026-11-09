@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı, revizyon 2 (Takım Yöneticisi, 2026-11-09; plan onayı) |
+| **Durum** | **Tamamlandı** (2026-11-09, commit `1c61b714`; plan `specs/done/0139-uygulama-plani.md`, plan turu kararlar 30–45, triyaj planın §8'inde) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog › Malzemeler (`MalzemeManager.jsx`), Ayarlar › Veri Yönetimi (yeni araç paneli), parça kartının malzeme kalemi (`MalzemeSatiriAlani.jsx`), saf motorlar (`malzeme.js`, `siparisIhtiyaci.js`, `urunAgaci.js`, `parcaAktarma.js` dokunulmaz), model kitleri (`urunAgaci.kitleriGuncelle`), kilit listesi (`kilitAlanlari.js`), örnek katalog (`ornekKatalog.js`), Ayarlar menüsü (`Settings.jsx`), İşlem Geçmişi etiketleri (`SettingsAuditLog.jsx`), `electron/db.cjs` |
@@ -866,10 +866,13 @@ Ad hücresi boş satır şablondur ve okunmaz. Adedi 0 olan dört satır karar 3
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `1c61b714` | Dal `feat/0139-fire-ice-aktarma`, taban `cba7d828`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (29 bulgu), plan turu (revizyon 2, kararlar 30–45: kaynak ölçümü sütun düzenini ve E sütununu gösterdi), triyaj (AC-43, AC-69 notları) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: iki orta, iki düşük bulgu |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Satır sınırı çeviriden sonra uygulanıyordu (15 KB dosya 35 sn, 1,5 GB); kitsiz parça işaretsiz oluştuğu için kiti Makina Modelleri'nden girilemiyordu; AC-43'ün metni olduğu gibi sağlanmıyordu; geçersiz parti adedi sessizce kitsiz sonuç veriyordu |
+| **Regresyon sayısı** | 0 | Tam takım 509 dosya, 7143 test, Electron dahil; lint 0 hata, uyarı 62 (tabanla aynı) |
+| **Kaçan hata** | 2 | Triyaj bulgu 1 (C5'in satır sınırı ölçülmüş ama dev aralıklı küçük dosya denenmemişti) ve bulgu 2 (B-R3/4'ün işareti yalnız kitli satırda yazılıyordu; parçanın kitinin sonradan nereden girileceği uçtan uca denenmemişti) |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** spec'in AC-23/24/25 metinleri hesap yapan sayfalarda yoktu (ölçü ayrı sütunlarda), plan turunda kaynak salt okunarak ölçüldü ve Ek 3 dolduruldu. Gerçek dosyayla ölçüm (`scripts/olc/0139-kaynak-kiyas.mjs`, kartlar bellekte) 81 parça ve 236 kit satırı üretti; 83 satırlık maliyet karşılaştırmasında eşiği aşan yalnız iki teflon satırı kaldı (kaynak ₺550/kg, Context 10,5 $ × 50 = ₺525; kart değeri, sürüm notunda). Triyajın önerdiği "%0,1 ya da 1 kuruş" okuması iki küçük mili yine kaçırıyordu; doğru okuma toplamsaldır ("artı 1 kuruş"). Dev aralıklı dosyanın kendisinin yazımı 30 sn sürdüğü için fikstür olarak saklandı. Kapanış tabanında görüntü aracının tıklama adımı iki farklı ekranda birer kez kaçtı (pencere açılmadan çekildi); iki doğru çekim (30 görüntü) bayt bayt aynıydı ve taban onlardan kuruldu. Fiyat penceresi ve parça kartı ekranlarındaki 96-288 piksel spec öncesi kodda da çekimden çekime oynuyor; eşlemeye bağlanmadı.
+
+**Bu spec'ten çıkarılan ders:** dış veri içe aktaran bir aracın planı, kaynak dosya salt okunarak ölçülmeden yazılmamalı; spec'in örnek metinleri başka sayfadan alınmış olabilir. Savunma sınırları (satır, boyut) gerçek saldırı biçimiyle (küçük dosya, dev bildirilen aralık) sınanmalı, yalnız "çok satırlı" dosyayla değil. Kayıt sonrası kullanıcının izleyeceği yol (burada: kitsiz parçanın kitini Makina Modelleri'nden girmek) gerçek bileşenle uçtan uca denenmeli.

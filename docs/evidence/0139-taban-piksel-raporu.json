@@ -1,0 +1,170 @@
+[
+  {
+    "ad": "ayarlar-backup-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-backup-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-duzenle-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-duzenle-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-0139-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-0139-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-0139-duzenle-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-0139-duzenle-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-0139-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-0139-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-0139-etki-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın maliyeti değişecek (1 bağlı parça)."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-malzeme-0139-etki-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçanın maliyeti değişecek (1 bağlı parça)."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-0139-fire-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-0139-fire-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-0139-boy-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-0139-boy-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-onizleme-aydinlik.png",
+    "boyut": "2880x1908",
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-onizleme-karanlik.png",
+    "boyut": "2880x1908",
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-on-kosul-aydinlik.png",
+    "boyut": "2880x1982",
+    "seritler": [
+      "Önce bu malzeme kartlarını kurun (Ayarlar › Katalog › Malzemeler): PAS"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-on-kosul-karanlik.png",
+    "boyut": "2880x1982",
+    "seritler": [
+      "Önce bu malzeme kartlarını kurun (Ayarlar › Katalog › Malzemeler): PAS"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-sonuc-aydinlik.png",
+    "boyut": "2880x1894",
+    "seritler": [
+      "Beklenen 60 kit satırı, bulunan 60."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "veri-0139-aktar-sonuc-karanlik.png",
+    "boyut": "2880x1894",
+    "seritler": [
+      "Beklenen 60 kit satırı, bulunan 60."
+    ],
+    "piksel": 0
+  }
+]

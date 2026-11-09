@@ -4,7 +4,7 @@
 |---|---|
 | **Spec** | `specs/0139-fire-kilogram-ve-parca-ice-aktarma.md` (Onaylandı, 2026-11-09) |
 | **Dal** | `feat/0139-fire-ice-aktarma` (worktree `../wt0139`, `main` `cba7d828` üstünde) |
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-09): on altı önerinin hepsi; spec revizyon 2, kararlar 30–45 |
+| **Durum** | **Tamamlandı** (2026-11-09, commit `1c61b714`); onay: Takım Yöneticisi 2026-11-09, on altı önerinin hepsi; spec revizyon 2, kararlar 30–45 |
 
 ---
 
@@ -332,3 +332,10 @@ bağlanmadı. Yeni on bir ekran.
    (kart değeri, sürüm notunda ₺550).
 4. **Parti adedi:** geçersizse (boş, ondalıklı, sıfır) alanın altında `HataMetni` ve yazma düğmesi pasif (`partiGirdiHatalari`,
    metin `urunAgaci.PARTI_BUYUKLUGU_HATASI`); kayıt yolu da aynı denetimi yapar.
+
+## 9. Kapanış (2026-11-09)
+
+Spec ve plan `specs/done/`'a taşındı, SCORECARD dolduruldu, README'ye satır eklendi. Kanıt eşlemesinin on yedi `degisti` kaydı
+`ayni`ye ve `0139-taban-piksel-raporu.json`'a çevrildi (15 ekran × 2 tema). Taban son koddan: görüntü aracının tıklama adımı dört
+çekimin ikisinde birer ekranda kaçtı (katalog-malzeme-yeni, katalog-parca-0139-fire: pencere açılmadan çekildi); doğru iki çekim (t2,
+t3) 30 görüntünün hepsinde bayt bayt aynıydı, taban raporu bu iki çekimden kuruldu (rapordaki pikseller t3'ün t2'ye göre farkı, 0).

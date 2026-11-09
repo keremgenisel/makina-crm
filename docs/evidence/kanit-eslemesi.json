@@ -3400,16 +3400,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "veri-0139-aktar-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 B-R1/2"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "ayarlar-backup",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 B-R1/2"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/DonemRaporu.jsx": [
@@ -12602,46 +12600,39 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-48"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-duzenle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-48"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-48"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-0139-yeni",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-48"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-0139-duzenle",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-48"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-0139-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-12"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-0139-etki",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-53"
+        "beklenen": "ayni"
       }
     ],
     "src/components/MalzemeFiyatPenceresi.jsx": [
@@ -13028,16 +13019,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0139-fire",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-49"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0139-boy",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-52"
+        "beklenen": "ayni"
       }
     ],
     "src/components/maliyet/SiparisIhtiyaci.jsx": [
@@ -13573,42 +13562,36 @@
     ],
     "src/components/MalzemeEtkiOzeti.jsx": [
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-0139-etki",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 A-R16"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsMalzemeAktar.jsx": [
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "veri-0139-aktar-bos",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-21"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "veri-0139-aktar-onizleme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-21"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "veri-0139-aktar-on-kosul",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-21"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "veri-0139-aktar-hata",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-21"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0139-piksel-raporu.json",
+        "rapor": "docs/evidence/0139-taban-piksel-raporu.json",
         "ekran": "veri-0139-aktar-sonuc",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-09 · spec 0139 AC-21"
+        "beklenen": "ayni"
       }
     ]
   }
