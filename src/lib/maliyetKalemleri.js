@@ -50,15 +50,11 @@ export const kalemVarMi = (p) => maliyetKalemleriOf(p).length > 0;
 export const malzemeKalemiVarMi = (p) => maliyetKalemleriOf(p).some(k => k.tur === KALEM_TUR.MALZEME);
 // R31, R33: parçanın malzeme kalemlerinde geçen malzeme kimlikleri (metin, tekilleştirilmiş).
 export const kalemMalzemeIdleri = (p) => [...new Set(malzemeKalemleri(p).filter(k => doluMu(k.malzemeId)).map(k => String(k.malzemeId)))];
-// Spec 0137 R10/2, R27/2: işlem kaleminin iki çeşidi; katalog bağlı kalemin ayırt edicisi `islemId` anahtarının varlığıdır. Üçüncü
-// bir `tur` değeri yoktur (AC-88): güncellenmemiş istemci üçüncü türü tamamen düşürürdü.
-export const katalogIslemMi = (k) => !!k && k.tur === KALEM_TUR.ISLEM && doluMu(k.islemId);
-export const serbestIslemMi = (k) => !!k && k.tur === KALEM_TUR.ISLEM && !doluMu(k.islemId);
-export const katalogIslemVarMi = (p) => maliyetKalemleriOf(p).some(katalogIslemMi);
-// R29, plan turu Karar 40: tarihli okumanın kalem yolu (parçanın kendi maliyet geçmişi ne yazılır ne okunur): en az bir malzeme
-// kalemi YA DA katalog bağlı işlem kalemi.
-export const kalemYoluMu = (p) => maliyetKalemleriOf(p).some(k => k.tur === KALEM_TUR.MALZEME || katalogIslemMi(k));
-// R21, R2/2: parçanın katalog bağlı kalemlerinde geçen işlem kimlikleri (metin, tekilleştirilmiş).
-export const kalemIslemIdleri = (p) => [...new Set(maliyetKalemleriOf(p).filter(katalogIslemMi).map(k => String(k.islemId)))];
-// R32, R46: parçanın SERBEST işlem kalemlerinde geçen tedarikçi kimlikleri (katalog bağlı kalemde tedarikçi yoktur, R10/4).
-export const kalemTedarikciIdleri = (p) => [...new Set(islemKalemleri(p).filter(k => !katalogIslemMi(k) && doluMu(k.tedarikciId)).map(k => String(k.tedarikciId)))];
+// R32, R46: parçanın işlem kalemlerinde geçen tedarikçi kimlikleri (metin, tekilleştirilmiş).
+export const kalemTedarikciIdleri = (p) => [...new Set(islemKalemleri(p).filter(k => doluMu(k.tedarikciId)).map(k => String(k.tedarikciId)))];
+// Spec 0138 R2/2, C3/2, plan turu Karar 27 (B1): kaldırılan dış işlem kataloğunun TEK savunma ayracı. `islemId` taşıyan işlem
+// kalemi 0137'nin katalog bağlı kalemidir; göç (R15) yalnız yerel veritabanı açılışında çalıştığı için istemci PC'de böyle bir
+// kalem kalabilir. Okuma onu ÇÖZÜLEMEYEN sayar (maliyet "girilmedi"); yoksa boş tutarlı serbest kalem gibi okunur ve maliyet
+// sessizce düşerdi (ölçüm C). Kalemin `islemId` alanı kaynakta yalnız burada okunur (C3/2 istisnası, tam yollu tarama).
+export const eskiKatalogKalemi = (k) => !!k && k.tur === KALEM_TUR.ISLEM && doluMu(k.islemId);
+export const eskiKatalogKalemiVarMi = (p) => maliyetKalemleriOf(p).some(eskiKatalogKalemi);

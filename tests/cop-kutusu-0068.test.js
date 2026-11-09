@@ -1,3 +1,4 @@
+// Spec 0138 ile: spec 0137'nin bu dosyaya eklediği dış işlem iddiaları kaldırıldı, dosya 0136 hâline döndü (C7, AC-41, AC-42).
 // Spec 0068: tedarikçi ve üretim partisi çöp kutusunda; çöpteyken motor çıktıları "hiç yokmuş gibi" (R10, R17); kalıcı
 // silme metni tek sabit (R12, R13, R22); çek dışa aktarma satırı (R3–R5); canlı/ham dizi ayrımı ve sunucu değişmezliği.
 import { describe, it, expect } from "vitest";
@@ -134,8 +135,7 @@ describe("Spec 0068 R3–R5: çek dışa aktarma satırı", () => {
     const s = oku("src/components/settings/SettingsExport.jsx");
     // Spec 0132 ile (R21, AC-72): parça şablonunun dışa aktarması malzeme listesini alır (malzeme kaynaklı parçanın çözülmüş
     // maliyeti); iddia (gider/kasa bölümleri okunmaz) aynı.
-    // Spec 0137 ile (R35, AC-113): dış işlem listesi de alınır (katalog bağlı işlem kalemli parçanın maliyeti); iddia aynı.
-    expect(s).toMatch(/yedekParcaSatislar = \[\], malzemeler = \[\], disIslemler = \[\], serverPermissions = null, cekler = null \}\) => \{/);
+    expect(s).toMatch(/yedekParcaSatislar = \[\], malzemeler = \[\], serverPermissions = null, cekler = null \}\) => \{/);
     expect(s).not.toMatch(/tedarikciler|hesapHareketleri|giderler|kasaHesaplari/);
   });
 });

@@ -79,9 +79,7 @@ export const FiyatAlanlari = ({ form, set, hatalar = {}, rates, ratesErr }) => {
 };
 
 export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], tedarikciler = [], giderYetki = false, rates = null, ratesErr = false,
-  bugun, showToast = () => {}, serverPermissions = null, fiyatAyarlari = null,
-  // Spec 0137 R32 (triyaj bulgu 1): dış işlem listesi zam önizlemesine iletilir (karma parça sayılsın).
-  disIslemler = [] }) => {
+  bugun, showToast = () => {}, serverPermissions = null, fiyatAyarlari = null }) => {
   const [form, setForm] = useState(null); // { ...malzemeFormu, id }
   const [hatalar, setHatalar] = useState({});
   const [sil, setSil] = useState(null);
@@ -224,7 +222,7 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
       )}
 
       {fiyat && (
-        <MalzemeFiyatPenceresi malzeme={fiyat} malzemeler={malzemeler} setMalzemeler={setMalzemeler} parts={parts} rates={rates} ratesErr={ratesErr} fiyatAyarlari={fiyatAyarlari} disIslemler={disIslemler}
+        <MalzemeFiyatPenceresi malzeme={fiyat} malzemeler={malzemeler} setMalzemeler={setMalzemeler} parts={parts} rates={rates} ratesErr={ratesErr} fiyatAyarlari={fiyatAyarlari}
           bugun={bugun} onClose={() => setFiyat(null)} showToast={showToast} serverPermissions={serverPermissions} />
       )}
     </div>

@@ -15,7 +15,6 @@ import { gecerliGunMu, gecerlilikTarihiDogrula, tarihteGecerliIndeks } from "./g
 // yalnız çağrı anında kullanılır (modül yüklenirken okunmaz).
 import { parcaMaliyetKurus, setKatalogu } from "./urunAgaci";
 import { kalemMalzemeIdleri } from "./maliyetKalemleri";
-import { disIslemKatalogu } from "./disIslem";
 import { parcaSatisFiyati, fiyatAyariOf } from "./parcaFiyati"; // spec 0133 R16/2 (döngü: çağrı anında okunur)
 
 // ── Sabitler ve biçimler ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -42,7 +41,8 @@ export const YONTEMLER = { kilo: "Kilo fiyatından", boy: "Boy fiyatından" };
 // Triyaj (bulgu 2): `tutarCoz` virgülsüz "2.955"i binlik sayar (2955). Kilo fiyatı ve özgül ağırlık 3-4 ondalıkla yazılır; bu
 // alanlarda tek noktalı ve noktadan sonra üç ya da daha çok haneli virgülsüz metin BELİRSİZDİR ve reddedilir (0087
 // `MALIYET_BELIRSIZ_HATASI` emsali). Kural tutarCoz'a yazılmaz (gider tarafıyla ortak).
-// Spec 0137 Karar 38: belirsiz sayı kuralı döngüsüz `tutarGirdisi.js`'e taşındı (dış işlem motoru da okur); adlar aynen.
+// Spec 0137 Karar 38: belirsiz sayı kuralı döngüsüz `tutarGirdisi.js`'e taşındı; adlar aynen. Spec 0138 R25: taşıma geri alınmaz
+// (geri almak iki modülü yeniden döngüsel içe aktarmaya sokar); tek yer taraması dis-islem-kalkar-0138 testinde.
 export { BELIRSIZ_DESEN, BELIRSIZ_HATASI };
 const belirsizMi = (v) => typeof v === "string" && BELIRSIZ_DESEN.test(v);
 const sayiOf = (v) => {
@@ -266,46 +266,6 @@ export const malzemeOzeti = (satir, malzemeKat, tarih) => {
 };
 export const malzemeParcaKurus = (satir, malzemeKat, tarih) => malzemeOzeti(satir, malzemeKat, tarih).maliyetK;
 
-// Spec 0137 R13, R14, R14/2, R28, AC-37, AC-93–AC-96: işlenmiş ağırlık (biten parçanın ağırlığı: işleme payı ve fire HARİÇ). Ağırlık
-// çarpımları yalnız bu dosyada kalır (0132 C1). Ad "net" değildir: 0134 `netKg`'yi ham ağırlıklar toplamı anlamında kullanıyor
-// (Ölçüm E). Üç çözülemeyen hâlin nedeni ayrı metindir; ağırlık asla sessizce 0 alınmaz.
-export const NEDEN_BOY_AGIRLIK = "boy fiyatından hesaplanan malzemenin ağırlığı yok";
-export const NEDEN_OLCU_EKSIK = "ölçü eksik";
-export const NEDEN_MALZEME_KALEMI_YOK = "parçanın malzeme kalemi yok";
-export const NEDEN_ADET_GECERSIZ = "malzeme kaleminin adedi geçersiz";
-export const netOlculer = (satir) => {
-  const b = BICIMLER[satir?.bicim];
-  if (!b) return null;
-  const o = {};
-  for (const ad of b.olculer) { const v = sayiOf(satir[ad]); if (v == null || v <= 0) return null; o[ad] = v; }
-  return o;
-};
-export const islenmisKg = (satir, malzemeKat) => {
-  if (!(malzemeKat instanceof Map)) return { kg: null, neden: "malzeme listesi verilmedi" };
-  const m = satir ? malzemeKat.get(String(satir.malzemeId)) : null;
-  if (!m) return { kg: null, neden: "malzeme bulunamadı ya da çöpte" };
-  if (!BICIMLER[satir.bicim]) return { kg: null, neden: "biçim seçilmedi" };
-  if (satir.yontem === "boy") return { kg: null, neden: NEDEN_BOY_AGIRLIK };
-  if (!pozitifMi(m.ozgulAgirlik)) return { kg: null, neden: EKSIK_OZGUL };
-  const o = netOlculer(satir);
-  if (!o) return { kg: null, neden: NEDEN_OLCU_EKSIK };
-  return { kg: agirlikKg(satir.bicim, o, m.ozgulAgirlik), neden: null };
-};
-// Parçanın kilo tabanı: malzeme kalemlerinin işlenmiş ağırlığı × kalem adedi (yuvarlanmamış; Karar 35'in üç ondalığı tek yerde, dış işlem
-// motorunda). Bir kalem çözülemezse tamamı çözülemez (R14/2); malzeme kalemi yoksa R14.
-export const parcaIslenmisKg = (malzemeKalemleri = [], malzemeKat) => {
-  if (!(malzemeKalemleri || []).length) return { kg: null, neden: NEDEN_MALZEME_KALEMI_YOK };
-  let toplam = 0;
-  for (const k of malzemeKalemleri) {
-    const adet = Number(k?.adet ?? 1);
-    if (!Number.isInteger(adet) || adet < 1) return { kg: null, neden: NEDEN_ADET_GECERSIZ };
-    const r = islenmisKg(k, malzemeKat);
-    if (r.kg == null) return r;
-    toplam += r.kg * adet;
-  }
-  return { kg: toplam, neden: null };
-};
-
 // ── Doğrulayıcılar ──────────────────────────────────────────────────────────────────────────────────────────────────────
 export const AD_BOS_HATASI = "Malzeme adı boş olamaz.";
 export const AD_AYNI_HATASI = "Bu adda bir malzeme zaten var.";
@@ -455,25 +415,21 @@ export const KALEMDE_MALZEME_RED = "Bu malzeme bir parçanın maliyet kaleminde 
 // Spec 0133 R16, R16/2 (AC-38–AC-40, AC-73, AC-74): beşinci parametre İSTEĞE BAĞLI fiyat ayarı (`{ fiyatAyarlari }`). Verilmezse
 // dönüş birebir aynıdır (altın `0133-etki-once.json`); verilince her satıra eski ve yeni satış fiyatı (`oncekiFiyat`, `yeniFiyat`;
 // TL, türetilmemişse "") ve sonuca fiyatı değişen parça sayısı (`fiyatDegisen`) eklenir. Fiyat tek okuma yolundan; burada çarpım yok.
-// Spec 0137 R32, AC-109, AC-110: seçenek nesnesinin `disIslemler` anahtarı dış işlem kataloğunu verir (konumlu liste büyümez); hem
-// malzeme hem katalog bağlı işlem kalemi taşıyan parça artık iki hâlde de çözülür. Seçeneksiz çıktı birebir eskidir. Anahtar
-// yalnız `disIslemler` ise (fiyat ayarı yok) dönüş yine fiyatsız şekildedir.
 export const fiyatEtkisi = (eski, yeni, parts = [], malzemeler = [], fiyatSecenegi = undefined) => {
   const katEski = malzemeKatalogu(malzemeler.map(m => (String(m.id) === String(eski.id) ? eski : m)));
   const katYeni = malzemeKatalogu(malzemeler.map(m => (String(m.id) === String(eski.id) ? yeni : m)));
   const canli = (parts || []).filter(p => p && !p.deletedAt);
   const setKat = setKatalogu(canli);
-  const islemKat = fiyatSecenegi?.disIslemler ? disIslemKatalogu(fiyatSecenegi.disIslemler) : undefined;
   // Spec 0135 R33 (AC-62): bağlı parça, malzemeyi HERHANGİ bir kaleminde kullanan parçadır.
   const bagli = canli.filter(p => kalemMalzemeIdleri(p).includes(String(eski.id))).length;
   const satirlar = [];
   for (const p of canli) {
-    const once = parcaMaliyetKurus(p, undefined, setKat, katEski, islemKat);
-    const sonra = parcaMaliyetKurus(p, undefined, setKat, katYeni, islemKat);
+    const once = parcaMaliyetKurus(p, undefined, setKat, katEski);
+    const sonra = parcaMaliyetKurus(p, undefined, setKat, katYeni);
     if (once !== sonra) satirlar.push({ id: p.id, ad: p.ad, once, sonra });
   }
-  if (fiyatSecenegi === undefined || (fiyatSecenegi && !("fiyatAyarlari" in fiyatSecenegi))) return { bagli, degisen: satirlar.length, satirlar };
-  const bEski = { setKat, malzemeKat: katEski, islemKat, ayar: fiyatAyariOf(fiyatSecenegi?.fiyatAyarlari) };
+  if (fiyatSecenegi === undefined) return { bagli, degisen: satirlar.length, satirlar };
+  const bEski = { setKat, malzemeKat: katEski, ayar: fiyatAyariOf(fiyatSecenegi?.fiyatAyarlari) };
   const bYeni = { ...bEski, malzemeKat: katYeni };
   const fiyatli = satirlar.map(r => {
     const p = canli.find(x => String(x.id) === String(r.id));

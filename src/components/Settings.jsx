@@ -14,7 +14,6 @@ import { SettingsMusteri } from "./settings/SettingsMusteri";
 import { SettingsFiyat } from "./settings/SettingsFiyat";
 import { SettingsServisPanosu } from "./settings/SettingsServisPanosu";
 import { SettingsBackup } from "./settings/SettingsBackup";
-import { DisIslemManager } from "./DisIslemManager";
 import { SettingsSecurity } from "./settings/SettingsSecurity";
 import { SettingsServer } from "./settings/SettingsServer";
 import { SettingsMail } from "./settings/SettingsMail";
@@ -55,7 +54,7 @@ const SETTINGS_GROUPS = [
   { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "securitystatus", label: "Güvenlik Durumu", icon: "lock" }] },
   { grup: "Sunucu", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
-  { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }, { id: "malzemeler", label: "Malzemeler", icon: "box" }, { id: "disislemler", label: "Dış İşlemler", icon: "parts" }] },
+  { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }, { id: "malzemeler", label: "Malzemeler", icon: "box" }] },
   // Gider kaydı (spec 0001): grup yalnız gider yetkisi (Giderler sekmesi görünen kullanıcı) olanlara
   // görünür (plan K7). Tedarikçi Ayarlar'da DEĞİL, Giderler sekmesinde yaşar (R13).
   { grup: "Giderler", items: [{ id: "gidertur", label: "Gider Türleri", icon: "gider" }, { id: "gidertanim", label: "Tekrarlayan Giderler", icon: "gider" }, { id: "giderayar", label: "Gider Ayarları", icon: "gider" }] },
@@ -78,8 +77,6 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
   giderTurleri = [], setGiderTurleri = null, tedarikciler = [], setTedarikciler = null, uretimPartileri = [], setUretimPartileri = null, kasaHesaplari = [], setKasaHesaplari = null, hesapHareketleri = [], setHesapHareketleri = null, cekler = [], setCekler = null, kasaKapsamDisi = [], setKasaKapsamDisi = null,
   // Spec 0132 C5, R5/2 (Ölçüm M): malzeme kataloğu ve günün kuru (öneri; `rates` null + `!ratesErr` = henüz alınmadı).
   malzemeler = [], setMalzemeler = null, rawMalzemeler = null, rates = null, ratesErr = false,
-  // Spec 0137 R35 (plan turu Karar 33): dış işlem kataloğu; canlı dizi panellere, ham dizi yedeğe ve Çöp Kutusu'na.
-  disIslemler = [], setDisIslemler = null, rawDisIslemler = null,
   appUpd = null, onCheckUpdate = null, onStartUpdate = null,
   initialTab = null, onInitialTabConsumed = null, // genel arama: doğrudan bir bölümü aç (ör. Firma Çalışanları)
 }) => {
@@ -199,7 +196,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
         </div>
 
         {/* SAĞ İÇERİK — İşlem Geçmişi ve Parça/Yedek Parça tabloları geniş, tam görünsün */}
-        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "securitylog" || settingsTab === "yedekparca" || settingsTab === "malzemeler" || settingsTab === "disislemler" || settingsTab === "calisanlar" || settingsTab === "gidertanim") ? 1200 : 760 }}>
+        <div style={{ flex: 1, minWidth: 320, maxWidth: (settingsTab === "auditlog" || settingsTab === "securitylog" || settingsTab === "yedekparca" || settingsTab === "malzemeler" || settingsTab === "calisanlar" || settingsTab === "gidertanim") ? 1200 : 760 }}>
       {msg && (
         <div style={{ maxWidth: 720, marginBottom: 16, padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 600,
           background: msg.type === "ok" ? "var(--grnBg3, #d1fae5)" : "var(--redBg2, #fee2e2)", color: msg.type === "ok" ? "var(--grn800, #065f46)" : "var(--red800, #991b1b)" }}>
@@ -237,7 +234,6 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
           kasaKapsamDisi={kasaKapsamDisi} setKasaKapsamDisi={setKasaKapsamDisi}
           cekler={cekler} setCekler={setCekler}
           malzemeler={rawMalzemeler ?? malzemeler} setMalzemeler={setMalzemeler}
-          disIslemler={rawDisIslemler ?? disIslemler} setDisIslemler={setDisIslemler}
           version={version} appSettings={appSettings} setAppSettings={setAppSettings} flash={flash}
         />
       )}
@@ -291,7 +287,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
             rawCustomModels={rawCustomModels.length >= customModels.length ? rawCustomModels : customModels}
             // Spec 0096 C11 (plan P1): tedarikçi listesi parça paneline gider yetkisiyle kapatılarak verilir; App'ten gelen dizi
             // ham ve kapısız kalır çünkü aynı dizi yedeğe gidiyor (App'te kapatılsa yetkisiz kullanıcının yedeği boş liste taşırdı).
-            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} malzemeler={malzemeler} rawMalzemeler={rawMalzemeler ?? malzemeler} disIslemler={disIslemler} rawDisIslemler={rawDisIslemler ?? disIslemler} fiyatAyarlari={appSettings?.fiyatAyarlari} serverPermissions={serverPermissions} factory={factory} />
+            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} malzemeler={malzemeler} rawMalzemeler={rawMalzemeler ?? malzemeler} fiyatAyarlari={appSettings?.fiyatAyarlari} serverPermissions={serverPermissions} factory={factory} />
         </KartBolum>
       )}
 
@@ -300,17 +296,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
       {settingsTab === "malzemeler" && (
         <KartBolum title="Malzemeler" icon="box" wide>
           <MalzemeManager malzemeler={malzemeler} setMalzemeler={setMalzemeler} parts={rawParts.length ? rawParts : parts} rates={rates} ratesErr={ratesErr}
-            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} bugun={bugun} showToast={showToast} serverPermissions={serverPermissions} fiyatAyarlari={appSettings?.fiyatAyarlari} disIslemler={disIslemler} />
-        </KartBolum>
-      )}
-
-      {/* Spec 0137: dış işlem kataloğu. Panel ve fiyat penceresi `ayar:disislemler` kilidi altında (AYAR_KILITLI, R24, R24/2).
-          Tedarikçi listesi gider yetkisiyle kapılı (R5, 0096 C11 emsali); kullanım ve birim kilidi çöpteki parçaları da sayar. */}
-      {settingsTab === "disislemler" && (
-        <KartBolum title="Dış İşlemler" icon="parts" wide>
-          <DisIslemManager disIslemler={disIslemler} setDisIslemler={setDisIslemler} parts={rawParts.length ? rawParts : parts} rates={rates} ratesErr={ratesErr}
-            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} bugun={bugun} showToast={showToast} serverPermissions={serverPermissions}
-            malzemeler={malzemeler} fiyatAyarlari={appSettings?.fiyatAyarlari} />
+            tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} bugun={bugun} showToast={showToast} serverPermissions={serverPermissions} fiyatAyarlari={appSettings?.fiyatAyarlari} />
         </KartBolum>
       )}
 
@@ -372,12 +358,12 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
           notes={notes} parts={parts} faturalar={faturalar} appSettings={appSettings} factory={factory} flash={flash}
           teklifler={rawTeklifler} uretimFormlari={rawUretimFormlari} partStock={partStock} partStockLog={partStockLog}
          gorusmeler={rawGorusmeler} calisanlar={calisanlar} yedekParcaSatislar={yedekParcaSatislar} serverPermissions={serverPermissions}
-         cekler={kasaVeriYetki && giderYetki ? withoutDeleted(cekler) : null} malzemeler={malzemeler} disIslemler={disIslemler} />
+         cekler={kasaVeriYetki && giderYetki ? withoutDeleted(cekler) : null} malzemeler={malzemeler} />
       )}
 
       {settingsTab === "import" && (
         <SettingsImport customers={customers} setCustomers={setCustomers} setServices={setServices} flash={flash}
-          parts={parts} setParts={setParts} partTypeDefs={partTypeDefs} setPartTypeDefs={setPartTypeDefs} malzemeler={malzemeler} disIslemler={disIslemler} fiyatAyarlari={appSettings?.fiyatAyarlari} />
+          parts={parts} setParts={setParts} partTypeDefs={partTypeDefs} setPartTypeDefs={setPartTypeDefs} malzemeler={malzemeler} fiyatAyarlari={appSettings?.fiyatAyarlari} />
       )}
 
       {settingsTab === "optimize" && (
@@ -420,7 +406,6 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
          setGiderTurleri={setGiderTurleri}
          rawKasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} kasaVeriYetki={kasaVeriYetki} setUretimPartileri={setUretimPartileri}
          rawMalzemeler={rawMalzemeler ?? malzemeler} setMalzemeler={setMalzemeler}
-         rawDisIslemler={rawDisIslemler ?? disIslemler} setDisIslemler={setDisIslemler}
          serverPermissions={serverPermissions}/>
       )}
       </>)}

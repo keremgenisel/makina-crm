@@ -27,7 +27,6 @@ export const SettingsBackup = ({
   cekler = [], setCekler = null,
   // Spec 0132 R22, C5/3: malzeme kataloğu "Tanımlar" paketinde (ham dizi).
   malzemeler = [], setMalzemeler = null,
-  disIslemler = [], setDisIslemler = null, // spec 0137 C4
   // Spec 0052 R19: Kasa sekmesi olmayan kullanıcıda hesap tanımları, virman/avans ve verilen çekler geri yüklenmez.
   kasaVeriYetki = true,
   // Spec 0008 (GEÇİCİ yayın perdesi): ibare giderYetki'den (perdeli), geri yükleme içeriği giderVeriYetki'den
@@ -67,7 +66,7 @@ export const SettingsBackup = ({
       window.appMail?.getConfigForBackup?.() ?? null,
       window.appMail?.getAllLog?.() ?? [],
     ]);
-    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments: odemeleriAyikla(payments), teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, malzemeler, disIslemler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, kasaKapsamDisi, appSettings, mailConfig, mailLog };
+    return { app: BACKUP_APP_TAG, schemaVersion: BACKUP_SCHEMA_VERSION, version, exportDate: today(), customers, services, dealers, stock, customModels, standardModels, factory, kalipDefs, partTypeDefs, calisanlar, notes, parts, partSales, yedekParcaSatislar, payments: odemeleriAyikla(payments), teklifler, faturalar, partStock, partStockLog, uretimFormlari, gorusmeler, dosyalar: rawDosyalar, giderler, giderTanimlari, giderTurleri, tedarikciler, malzemeler, uretimPartileri, kasaHesaplari, hesapHareketleri, cekler, kasaKapsamDisi, appSettings, mailConfig, mailLog };
   };
 
   // ── Yedek Al ──
@@ -241,7 +240,6 @@ export const SettingsBackup = ({
     if (sec("tanim")) setStandardModels(safeStandardModels(restoreData?.standardModels));
     if (sec("tanim") && Array.isArray(restoreData?.parts)) setParts?.(restoreData.parts);
     if (sec("tanim") && Array.isArray(restoreData?.malzemeler) && setMalzemeler) setMalzemeler(restoreData.malzemeler); // spec 0132 AC-87
-    if (sec("tanim") && Array.isArray(restoreData?.disIslemler) && setDisIslemler) setDisIslemler(restoreData.disIslemler); // spec 0137 AC-75
     if (sec("not") && Array.isArray(restoreData?.notes) && setNotes) setNotes(restoreData.notes);
     if (sec("gider") && Array.isArray(restoreData?.giderTurleri) && setGiderTurleri) setGiderTurleri(restoreData.giderTurleri);
     if (sec("gider") && Array.isArray(restoreData?.tedarikciler) && setTedarikciler) setTedarikciler(restoreData.tedarikciler);
@@ -277,7 +275,7 @@ export const SettingsBackup = ({
     // ID sayacını geri yüklenen dizilerin ötesine taşı: seçmeli geri yüklemede eski
     // yedekten gelen büyük ID'ler ile yeni eklenen kayıtların çakışmasını önler.
     bumpId(
-      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri", "cekler", "kasaKapsamDisi", "malzemeler", "disIslemler"]
+      ...["customers", "services", "partSales", "yedekParcaSatislar", "payments", "gorusmeler", "teklifler", "faturalar", "stock", "partStock", "partStockLog", "uretimFormlari", "dealers", "dosyalar", "notes", "parts", "kalipDefs", "customModels", "calisanlar", "giderler", "giderTanimlari", "giderTurleri", "tedarikciler", "uretimPartileri", "kasaHesaplari", "hesapHareketleri", "cekler", "kasaKapsamDisi", "malzemeler"]
         .map(k => Array.isArray(restoreData?.[k]) ? restoreData[k] : [])
     );
     // Spec 0024 triyaj bulgu 1: 0024 öncesi yedekte hareket bölümü yoktur ve ödeme bilgisi kalemdeki işarettedir. Veritabanı

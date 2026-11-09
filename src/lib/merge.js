@@ -41,9 +41,7 @@ export const MERGE_KEYS = ["customers", "teklifler", "partSales", "services", "p
   // bilinçli olarak YOK (X7: soft-delete taşımıyor, tek mutasyonu düzenleme).
   "dealers", "notes", "stock", "parts", "kalipDefs", "partTypeDefs", "customModels",
   // Spec 0132 C5 (AC-59): malzeme kataloğu; bu PC'de eklenen malzeme yeniden yüklemede kaybolmasın.
-  "malzemeler",
-  // Spec 0137 C4 (AC-72): dış işlem kataloğu (aynı gerekçe).
-  "disIslemler"];
+  "malzemeler"];
 
 // Spec 0077 R30 (S3): bölümün kimlik alanı. Özel makina modelinin kimliği adıdır (custom_models.model), `id` yoktur;
 // yeniden kimliklendirilmez (aynı ad aynı modeldir). Diğer bölümler `id`.
@@ -215,14 +213,10 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null, ta
     // üç eşleme kalır: güncellenmemiş istemci hâlâ eski alanlı parça ekler (göç yok, C7). Tür ayırıcısı hangi bağın eşleneceğini söyler.
     .map(p => (Array.isArray(p.maliyetKalemleri) && p.maliyetKalemleri.length
       ? { ...p, maliyetKalemleri: p.maliyetKalemleri.map(k => (k?.tur === "malzeme" && k.malzemeId != null ? { ...k, malzemeId: remapGevsek(maps.malzemeler, k.malzemeId) }
-        // Spec 0137 C4 (AC-73): katalog bağlı işlem kaleminin işlem bağı yeniden atanan işlem kimliğini izler.
-        : k?.tur === "islem" && k.islemId != null && k.islemId !== "" ? { ...k, islemId: remapGevsek(maps.disIslemler, k.islemId) }
         : k?.tur === "islem" && k.tedarikciId != null ? { ...k, tedarikciId: remapGevsek(maps.tedarikciler, k.tedarikciId) } : k)) }
       : p));
   // Spec 0132 C9: malzemenin ana tedarikçisi yeniden atanan tedarikçi kimliğini izler.
   adds.malzemeler = adds.malzemeler.map(m => (m.tedarikciId != null ? { ...m, tedarikciId: remapGevsek(maps.tedarikciler, m.tedarikciId) } : m));
-  // Spec 0137 C4 (AC-74): dış işlemin tedarikçisi yeniden atanan tedarikçi kimliğini izler.
-  adds.disIslemler = adds.disIslemler.map(m => (m.tedarikciId != null ? { ...m, tedarikciId: remapGevsek(maps.tedarikciler, m.tedarikciId) } : m));
   // Spec 0058 R14 (Q3): kapsam dışı girişi kaynağına göre kaydını izler (servis, Extra Kalıp, yedek parça ya da hareket).
   // Bilinen sınır: birleştirme yalnız eklemeleri yeniden uygular; başka PC yazarken yapılan "kapsama al" geri gelebilir.
   const KAPSAM_HARITA = { servis: "services", kalip: "partSales", yedekParca: "yedekParcaSatislar" };

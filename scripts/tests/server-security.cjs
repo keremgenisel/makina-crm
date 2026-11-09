@@ -527,6 +527,29 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     check("spec 0082 AC-17: bu yazımların işlem geçmişinde standart gider bölüm adı yok", satirlar82.length > 0 && satirlar82.every(r => !/Standart/.test(r.entity_name || "")));
   }
 
+  // ── Spec 0138 AC-32, R7, R17/2, C6 (karışık sürüm): güncellenmemiş istemci gövdede dış işlem bölümünü göndermeye devam eder.
+  // Yeni sunucu bölümü tanımaz (ölçüm I, yeni kural yok): Ayarlar sekmesi olmayan kullanıcı da 403 almaz, ölü tablonun satırları
+  // yazımdan sonra aynen durur (ham SQL), işlem geçmişi bölüm adı yazmaz.
+  {
+    const Database = require(path.join(root, "node_modules", "better-sqlite3"));
+    const ham = () => new Database(dbmod.getDbPath());
+    { const c = ham(); c.prepare(`INSERT INTO dis_islemler (id, ad, birim, birimFiyati, tedarikciId) VALUES (8701, 'Isıl işlem', 'adet', 35, NULL), (8702, 'Galvaniz', 'kilo', 18, NULL)`).run(); c.close(); }
+    const satirlar = () => { const c = ham(); const r = c.prepare(`SELECT id, ad, birimFiyati FROM dis_islemler ORDER BY id`).all(); c.close(); return JSON.stringify(r); };
+    const once = satirlar();
+    let g = await gUst(gidTok);
+    check("spec 0138 AC-32: sunucunun verdiği veride dış işlem bölümü yok", !("disIslemler" in g));
+    const r1 = await postData({ ...g, dataVersion: undefined, disIslemler: [] }, g.dataVersion, gidTok);
+    check("spec 0138 AC-32: eski istemci gövdesi (boş dış işlem bölümü) Ayarlar'sız kullanıcıda 403 almaz → 200", r1.status === 200);
+    g = await gUst(gidTok);
+    const r2 = await postData({ ...g, dataVersion: undefined, giderler: [...(g.giderler || []), { id: 9811, tarih: "2026-09-11", turId: 1, tutar: 100, kdvOrani: 0 }],
+      disIslemler: [{ id: 8703, ad: "Yeni", birim: "adet", birimFiyati: 1 }] }, g.dataVersion, gidTok);
+    check("spec 0138 AC-32: eski istemci gövdesi (dolu dış işlem bölümü + meşru kalem) → 200, meşru kalem yazıldı", r2.status === 200 && (await gUst(gidTok)).giderler.some(k => k.id === 9811));
+    check("spec 0138 AC-32, R17/2: ölü tablonun satırları aynı yazımlardan sonra birebir (boşaltılmadı, yazılmadı)", satirlar() === once && JSON.parse(once).length === 2);
+    const a = await (await api("/api/audit?limit=300", {}, adminTok)).json();
+    const iz = (a.rows || []).filter(r => r.action === "veri_kaydedildi" && r.username === "giderci");
+    check("spec 0138 AC-32: işlem geçmişinde dış işlem bölüm adı yok", iz.length > 0 && iz.every(r => !/Dış İşlem/.test(r.entity_name || "")));
+  }
+
   // ── Spec 0132 AC-77, Karar 34 (karışık sürüm): malzeme bölümü. Ayarlar sekmeli kullanıcı yazar, Makina Maliyeti sekmeli
   // kullanıcı 403 alır; malzeme bölümünü göndermeyen (güncellenmemiş) istemcinin yazımı saklı listeyi silmez; işlem geçmişi bölüm
   // adını yazar. Sürüm notu: önce sunucu PC (eski sunucu bölümü tanımaz, yeni istemcinin malzemesini düşürür).

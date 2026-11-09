@@ -1,0 +1,32 @@
+[
+ {
+  "islemId": 701,
+  "miktar": 2,
+  "tutarK": 493000,
+  "cozuldu": true
+ },
+ {
+  "islemId": 702,
+  "miktar": 3,
+  "tutarK": 152724,
+  "cozuldu": true
+ },
+ {
+  "islemId": 703,
+  "miktar": 1,
+  "tutarK": 18750,
+  "cozuldu": true
+ },
+ {
+  "islemId": 708,
+  "miktar": 7,
+  "tutarK": 238,
+  "cozuldu": true
+ },
+ {
+  "islemId": 709,
+  "miktar": 1000,
+  "tutarK": 5774000,
+  "cozuldu": true
+ }
+]

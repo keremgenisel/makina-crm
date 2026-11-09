@@ -229,15 +229,6 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.malzemeler?.find(m => m.id === 91)?.bantlar?.length === 1 && JSON.stringify(b.parts.find(p => p.id === 92)?.malzemeSatiri) === JSON.stringify(satir));
 }
 
-// Spec 0137 C4 (AC-71): temiz kurulumda dış işlem tablosu ilk oturumda yazılır ve okunur.
-{
-  let h = null;
-  try { dbmod.writeBlobToDb({ disIslemler: [{ id: 95, ad: "Galvano", birim: "kilo", birimFiyati: 30, fiyatGecmisi: [{ gecerli: "", birimFiyati: 25, paraBirimi: "TRY" }] }] }); } catch (e) { h = e; }
-  const b = dbmod.readBlobFromDb();
-  check("spec 0137: temiz kurulumda dis_islemler tablosu var ve yazıldı", h === null
-    && b.disIslemler?.find(m => m.id === 95)?.birim === "kilo" && b.disIslemler.find(m => m.id === 95)?.fiyatGecmisi?.length === 1);
-}
-
 // Spec 0134 C4: temiz kurulumda iki emniyet payı sütunu ilk oturumda yazılır.
 {
   let h = null;
@@ -334,6 +325,9 @@ let userHata = null;
 try { dbmod.createUser("admin", "hash", "user", JSON.stringify({ customerActions: [] })); }
 catch (e) { userHata = e; }
 check("permissions sütununa kullanıcı yazımı çökmüyor", userHata === null && dbmod.getUserByUsername("admin")?.permissions === JSON.stringify({ customerActions: [] }));
+
+// Spec 0138 R16/2 (AC-34): temiz kurulumda dış işlem bölümü oluşmaz, göç bayrağı yine yazılır.
+check("spec 0138 AC-34: temiz kurulumda blob'da dış işlem bölümü yok ve göç bayrağı yazıldı", !("disIslemler" in dbmod.readBlobFromDb()) && !!dbmod.getMetaValue("disIslemGocu0138"));
 
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }

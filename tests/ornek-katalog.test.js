@@ -1,9 +1,9 @@
 // Örnek katalog verileri (2026-11-09): kayıtlar kartın doğrulayıcısından geçer, kendiliğinden yazılmaz, uydurma kur yok.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { ornekMalzemeler, ornekDisIslemler, ORNEK_ONEKI } from "../src/lib/ornekKatalog";
+import { ornekMalzemeler, ORNEK_ONEKI, ORNEK_DUGMESI, ORNEK_IPUCU } from "../src/lib/ornekKatalog";
+import * as ornek from "../src/lib/ornekKatalog";
 import { malzemeDogrula, malzemeFormu, malzemeEksikleri, malzemeKatalogu } from "../src/lib/malzeme";
-import { disIslemDogrula, disIslemFormu } from "../src/lib/disIslem";
 
 const sayac = () => { let n = 9000; return () => ++n; };
 const RATES = { usd: 42.15, eur: 48.9 };
@@ -42,27 +42,19 @@ describe("Örnek malzemeler", () => {
   });
 });
 
-describe("Örnek dış işlemler", () => {
-  it("adet ve kilo birimli örnekler, dövizlide günün kuru; hepsi doğrulayıcıdan aynen geçer", () => {
-    const d = ornekDisIslemler({ rates: RATES, yeniId: sayac() });
-    expect(d).toHaveLength(4);
-    expect(new Set(d.map(k => k.birim))).toEqual(new Set(["adet", "kilo"]));
-    expect(d.find(k => k.paraBirimi === "EUR").kur).toBe(48.9);
-    for (const k of d) {
-      expect(k.ad.startsWith(ORNEK_ONEKI)).toBe(true);
-      const { id, ...govde } = k;
-      const v = disIslemDogrula(disIslemFormu(govde), []);
-      expect(v.gecerli).toBe(true);
-      expect(v.kayit).toEqual(govde);
-    }
-  });
-  it("kur yoksa dövizli örnek eklenmez", () => {
-    expect(ornekDisIslemler({ rates: null, yeniId: sayac() }).some(k => k.paraBirimi)).toBe(false);
+// Spec 0138 R9, R9/2 (AC-48): dış işlem örnekleri katalogla birlikte kalktı; malzeme yarısı ve üç sabit aynen kalır.
+describe("Spec 0138: dış işlem örnekleri kalktı", () => {
+  it("AC-48: kitaplıkta yalnız malzeme yarısı ve üç sabit var; dış işlem örnekleri kaynakta yok", () => {
+    expect(Object.keys(ornek).sort()).toEqual(["ORNEK_DUGMESI", "ORNEK_IPUCU", "ORNEK_ONEKI", "ornekMalzemeler"]);
+    expect(ORNEK_DUGMESI).toBe("Örnek verileri ekle");
+    expect(ORNEK_IPUCU.length).toBeGreaterThan(0);
+    const src = readFileSync("src/lib/ornekKatalog.js", "utf8");
+    expect(src).not.toMatch(/ISLEM_FORMLARI|ornekDisIslemler|disIslem/);
   });
 });
 
 describe("Kendiliğinden yazılmaz", () => {
-  it("örnek kitaplığı yalnız iki panelden çağrılır; App, db ve göç onu bilmez", () => {
-    for (const f of ["src/App.jsx", "electron/db.cjs"]) expect(readFileSync(f, "utf8")).not.toMatch(/ornekKatalog|ornekMalzemeler|ornekDisIslemler/);
+  it("örnek kitaplığı yalnız malzeme panelinden çağrılır; App, db ve göç onu bilmez", () => {
+    for (const f of ["src/App.jsx", "electron/db.cjs"]) expect(readFileSync(f, "utf8")).not.toMatch(/ornekKatalog|ornekMalzemeler/);
   });
 });

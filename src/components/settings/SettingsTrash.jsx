@@ -10,15 +10,13 @@ import { Icon, Btn, Pagination, ConfirmDialog } from "../ui";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { KartBolum } from "../tasarim";
 import { ciroluTahsilatIdleri, bagliHareketiOlanCekler, BAGLI_HAREKETLI_CEK_NEDENI } from "../../lib/cek";
-import { turHaritasi, kalemdeGecenTedarikciler, tedarikciKorumaNedeni } from "../../lib/gider";
+import { turHaritasi, kalemdeGecenTedarikciler, KALEMDE_TEDARIKCI_NEDENI } from "../../lib/gider";
 import { copHareketGeriAlmaNedeni } from "../../lib/kasa";
 import { makeCanDo } from "../../lib/permissions";
 import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
 import { uretimFormDonemMetni } from "../stock/uretimFormPrint";
 import { setteGecenParcalar, setteGecenParcaMi, setteBirakilanEki, SETTE_PARCA_NEDENI, SETTE_PARCA_RED_METNI } from "../../lib/urunAgaci";
 import { kullanilanMalzemeler, malzemeCopEtiketi, KALEMDE_MALZEME_NEDENI, KALEMDE_MALZEME_RED } from "../../lib/malzeme";
-import { kullanilanDisIslemler, disIslemCopEtiketi, KALEMDE_ISLEM_NEDENI, KALEMDE_ISLEM_RED } from "../../lib/disIslem";
-import { kalemIslemIdleri } from "../../lib/maliyetKalemleri";
 
 export const SettingsTrash = ({
   rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels,
@@ -38,8 +36,6 @@ export const SettingsTrash = ({
   rawTedarikciler = [], setTedarikciler = null, rawUretimPartileri = [], setUretimPartileri = null, serverPermissions = null,
   // Spec 0132 C7: malzeme kartı (katalog yetkisiyle; gider yetkisi istemez).
   rawMalzemeler = [], setMalzemeler = null,
-  // Spec 0137 R21, R23, R35 (AC-114): dış işlem kartı HAM dizi (çöptekiler çizilsin); katalog yetkisiyle.
-  rawDisIslemler = [], setDisIslemler = null,
   // Spec 0078 R1, R23 (0082 R8 ile beş): kasa/gider bölümleri. Hareket, tanım ve tür gider yetkisiyle; kasa hesabı ve çek kasa
   // yetkisiyle görünür ve boşaltılır. rawHesapHareketleri null ise (bölümü göndermeyen sunucu) hareket satırı yoktur.
   rawHesapHareketleri = null, setHesapHareketleri = null, rawGiderTanimlari = [], setGiderTanimlari = null, setGiderTurleri = null,
@@ -223,23 +219,8 @@ export const SettingsTrash = ({
   };
   // Spec 0096 R13/2, R13/5 (AC-37, AC-50): parça hammadde kırılımında geçen tedarikçi kalıcı silinmez (ham parça dizisi: çöpteki
   // parça geri alınırsa bağ kopmasın). "Çöpü boşalt" çöpteki parçaları da kalıcı sildiği için orada kalacak parçalar sayılır.
-  // Spec 0137 R21, C10 (AC-56–AC-60): dış işlem. Bir parçanın (çöpteki dahil) katalog kaleminde geçen işlem kalıcı silinmez; "çöpü
-  // boşalt" kalacak parçalardan. Kalacak işlemler tedarikçi korumasının da kaynağıdır (R22/2, AC-131).
-  const korunanDisIslemler = kullanilanDisIslemler(rawParts || [], kalemIslemIdleri);
-  const bosaltmadaKorunanDisIslemler = kullanilanDisIslemler((rawParts || []).filter(x => !x.deletedAt), kalemIslemIdleri);
-  const kalacakDisIslemler = (rawDisIslemler || []).filter(x => !x.deletedAt || bosaltmadaKorunanDisIslemler.has(String(x.id)));
-  const korunanTedarikciler = kalemdeGecenTedarikciler(rawParts || [], rawDisIslemler || []);
-  const bosaltmadaKorunanTedarikciler = kalemdeGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt), kalacakDisIslemler);
-  const restoreDisIslem = (m) => {
-    const h = geriAlmaAdCakismasi(m, rawDisIslemler, "dış işlem"); // R23 (AC-61)
-    if (h) { showToast(h, "err"); return; }
-    setDisIslemler?.(p => p.map(x => (x.id === m.id ? { ...x, deletedAt: undefined } : x)));
-    showToast("Dış işlem geri alındı; bağlı parçaların maliyeti yeniden hesaplanır.");
-  };
-  const purgeDisIslem = (m) => {
-    if (korunanDisIslemler.has(String(m.id))) { showToast(KALEMDE_ISLEM_RED, "err"); return; }
-    setDisIslemler?.(p => p.filter(x => x.id !== m.id)); showToast("Dış işlem kalıcı olarak silindi.");
-  };
+  const korunanTedarikciler = kalemdeGecenTedarikciler(rawParts || []);
+  const bosaltmadaKorunanTedarikciler = kalemdeGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt));
   // Spec 0123 R1/2, R3/6, C2 (Karar 5, 27): iki harita, çizim başına. Kalıcı Sil bütün parçalardan, "çöpü boşalt" kalacaklardan.
   const setteKorunanParcalar = setteGecenParcalar(rawParts || []);
   const bosaltmadaSetteKorunanParcalar = setteGecenParcalar((rawParts || []).filter(x => !x.deletedAt));
@@ -258,7 +239,7 @@ export const SettingsTrash = ({
     setMalzemeler?.(p => p.filter(x => x.id !== m.id)); showToast("Malzeme kalıcı olarak silindi.");
   };
   const purgeTedarikci = (t) => {
-    if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${tedarikciKorumaNedeni(korunanTedarikciler.get(String(t.id)))}`, "err"); return; }
+    if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${KALEMDE_TEDARIKCI_NEDENI}`, "err"); return; }
     setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi.");
   };
   const restoreParti = (u) => {
@@ -332,7 +313,6 @@ export const SettingsTrash = ({
     setParts?.(p => p.filter(x => !x.deletedAt || setteGecenParcaMi(x.id, bosaltmadaSetteKorunanParcalar))); // spec 0123 R4, AC-7
     setCustomModels(p => p.filter(x => !x.deletedAt));
     setMalzemeler?.(p => p.filter(x => !x.deletedAt || bosaltmadaKorunanMalzemeler.has(String(x.id)))); // spec 0132 AC-20
-    setDisIslemler?.(p => p.filter(x => !x.deletedAt || bosaltmadaKorunanDisIslemler.has(String(x.id)))); // spec 0137 AC-57
     setTeklifler?.(p => p.filter(x => !x.deletedAt));
     setFaturalar?.(p => p.filter(x => !x.deletedAt));
     setUretimFormlari?.(p => p.filter(x => !x.deletedAt));
@@ -355,10 +335,9 @@ export const SettingsTrash = ({
     if (kasaHesapYetki && rawKasaHesaplari.some(x => x.deletedAt)) setKasaHesaplari(p => p.filter(x => !x.deletedAt));
     // Spec 0123 triyaj bulgu 1 (Karar 46): sette bileşen olduğu için bırakılan parçalar bildirimde sayılır.
     const birakilanParca = (rawParts || []).filter(x => x.deletedAt && setteGecenParcaMi(x.id, bosaltmadaSetteKorunanParcalar)).length;
-    const birakilanIslem = setDisIslemler ? (rawDisIslemler || []).filter(x => x.deletedAt && bosaltmadaKorunanDisIslemler.has(String(x.id))).length : 0;
     showToast((korunanMusteriIdler.size || rawPayments.some(korunanOdeme)
       ? `Çöp kutusu boşaltıldı; ciro edilmiş çeke bağlı ${rawPayments.filter(korunanOdeme).length} tahsilat (ve müşterisi) çöpte bırakıldı. Önce ciroyu iptal edin.`
-      : "Çöp kutusu boşaltıldı.") + setteBirakilanEki(birakilanParca) + (birakilanIslem > 0 ? ` Bir parçanın maliyet kaleminde geçen ${birakilanIslem} dış işlem çöpte bırakıldı.` : "")); // spec 0137 AC-57
+      : "Çöp kutusu boşaltıldı.") + setteBirakilanEki(birakilanParca));
   };
 
   const trashItems = useMemo(() => {
@@ -379,9 +358,6 @@ export const SettingsTrash = ({
       neden: setteGecenParcaMi(p.id, setteKorunanParcalar) ? SETTE_PARCA_NEDENI : null })); // spec 0123 R4/3: düğme kalır, neden satırda
     (rawMalzemeler || []).filter(m => m.deletedAt).forEach(m => items.push({ key: `malzeme-${m.id}`, type: "Malzeme", label: malzemeCopEtiketi(m) || "—", deletedAt: m.deletedAt,
       restore: () => restoreMalzeme(m), purge: () => purgeMalzeme(m), neden: korunanMalzemeler.has(String(m.id)) ? KALEMDE_MALZEME_NEDENI : null })); // spec 0132 AC-19
-    // Spec 0137 R21, R23/2 (AC-56, AC-114, AC-129): etiket "ad · birim" (tedarikçi yazılmaz); korunan satırda düğme kalır, neden satırda.
-    (rawDisIslemler || []).filter(m => m.deletedAt).forEach(m => items.push({ key: `disislem-${m.id}`, type: "Dış İşlem", label: disIslemCopEtiketi(m) || "—", deletedAt: m.deletedAt,
-      restore: () => restoreDisIslem(m), purge: () => purgeDisIslem(m), neden: korunanDisIslemler.has(String(m.id)) ? KALEMDE_ISLEM_NEDENI : null }));
     rawCustomModels.filter(m => m.deletedAt).forEach(m => items.push({ key: `model-${m.model}`, type: "Model", label: m.model || "—", deletedAt: m.deletedAt, restore: () => restoreCustomModel(m), purge: () => purgeCustomModel(m) }));
     rawTeklifler.filter(t => t.deletedAt).forEach(t => items.push({ key: `teklif-${t.id}`, type: t.type === "proforma" ? "Proforma" : "Teklif", label: `${t.no || "—"} · ${t.firma || "—"}`, deletedAt: t.deletedAt, restore: () => restoreTeklif(t), purge: () => purgeTeklif(t) }));
     rawFaturalar.filter(f => f.deletedAt).forEach(f => items.push({ key: `fatura-${f.id}`, type: "Fatura", label: `${f.no || "—"} · ${f.firma || "—"}`, deletedAt: f.deletedAt, restore: () => restoreFatura(f), purge: () => purgeFatura(f) }));
@@ -409,7 +385,7 @@ export const SettingsTrash = ({
       // Spec 0068 R11, R21: tedarikçi ve üretim partisi; düğmeler silme izniyle (izinsizde satır görünür, düğme yok).
       rawTedarikciler.filter(t => t.deletedAt).forEach(t => items.push({ key: `tedarikci-${t.id}`, type: "Tedarikçi", label: t.ad || "—", deletedAt: t.deletedAt,
         restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki && !korunanTedarikciler.has(String(t.id)) ? () => purgeTedarikci(t) : null,
-        neden: korunanTedarikciler.has(String(t.id)) ? tedarikciKorumaNedeni(korunanTedarikciler.get(String(t.id))) : null })); // spec 0137 AC-132
+        neden: korunanTedarikciler.has(String(t.id)) ? KALEMDE_TEDARIKCI_NEDENI : null }));
       rawUretimPartileri.filter(u => u.deletedAt).forEach(u => items.push({ key: `parti-${u.id}`, type: "Üretim Partisi", label: `${u.ad || "—"} · ${u.baslangicAy || ""}${u.bitisAy ? " – " + u.bitisAy : " (açık)"}`, deletedAt: u.deletedAt,
         restore: partiYetki ? () => restoreParti(u) : null, purge: partiYetki ? () => purgeParti(u) : null }));
       // Spec 0078 R23, R24: hareket, tekrarlayan tanım ve gider türü (gider yetkisi). Çeke bağlı hareket
@@ -434,7 +410,7 @@ export const SettingsTrash = ({
         neden: korunanCekler.has(String(c.id)) ? BAGLI_HAREKETLI_CEK_NEDENI : null }));
     }
     return items.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-  }, [rawHesapHareketleri, rawGiderTanimlari, rawKasaHesaplari, cekler, kasaVeriYetki, setHesapHareketleri, setKasaHesaplari, setCekler, rawGiderler, giderTurleri, giderYetki, rawTedarikciler, rawUretimPartileri, rawMalzemeler, rawDisIslemler, tedarikciYetki, partiYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
+  }, [rawHesapHareketleri, rawGiderTanimlari, rawKasaHesaplari, cekler, kasaVeriYetki, setHesapHareketleri, setKasaHesaplari, setCekler, rawGiderler, giderTurleri, giderYetki, rawTedarikciler, rawUretimPartileri, rawMalzemeler, tedarikciYetki, partiYetki, rawCustomers, rawServices, rawPartSales, rawPayments, rawDealers, rawStock, rawNotes, rawKalipDefs, rawParts, rawCustomModels, rawTeklifler, rawFaturalar, rawUretimFormlari, rawGorusmeler, rawDosyalar, rawPartTypeDefs, rawCalisanlar, rawYedekParcaSatislar, partStock, partStockLog]); // spec 0065: geri alma kapanışları güncel stok ve log'u görsün
 
   const { search: trashSearch, setSearch: setTrashSearch, page: trashPage, setPage: setTrashPage, filtered: trashItemsFiltered, paged: trashItemsPaged, perPage: TRASH_PER_PAGE } =
     useFilteredList(trashItems, { searchFields: ["type", "label"], perPage: 10 });

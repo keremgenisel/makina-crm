@@ -1,16 +1,14 @@
-import { Field, Input, Select, Btn, Icon, TutarInput, SearchPick } from "./ui";
+import { Field, Input, Select, Btn, Icon, TutarInput } from "./ui";
 import { HataMetni, Ipucu, BolumBasligi, Segment } from "./tasarim";
 import { MalzemeSatiriAlani } from "./MalzemeSatiriAlani";
 import { KIP_ADLARI, KIP_ELLE } from "../lib/parcaFiyati";
 import { EMNIYET_PAYI_ETIKETI, EMNIYET_PAYI_IPUCU } from "../lib/malzeme";
 import { MALIYET_KALEM_SINIRI } from "../lib/maliyetKalemleri";
-import { BIRIM, BIRIM_ADI, BIRIM_KISA, birimOf, fiyatKumesi, kumeOzeti } from "../lib/disIslem";
 import {
   MALIYET_ETIKETI, MALIYET_IPUCU, maliyetMetniKurus, KAYNAK_ELLE, KAYNAK_ICERIK, kalemKaynakMetni, SET_PASIF_NEDENI,
   tedarikciAdiCoz, islemTedarikciSecenekleri, bosMalzemeKalemi, bosIslemKalemi,
-  KALEM_SINIRI_NEDENI, ISLEM_ZAM_IBARESI, KARMA_TARIH_IBARESI, MALZEME_GECMIS_IBARESI, KALEM_BOS_METNI, MALZEME_KATALOG_BOS_NEDENI,
+  KALEM_SINIRI_NEDENI, ISLEM_ZAM_IBARESI, KARMA_TARIH_IBARESI, MALZEME_GECMIS_IBARESI, KALEM_BOS_METNI, ESKI_KATALOG_KALEMI_NEDENI, MALZEME_KATALOG_BOS_NEDENI,
   KALEM_TOPLAM_ETIKETI, KALEM_BOLUM_BASLIGI, KALEM_SET_PASIF_NEDENI,
-  CESIT, CESIT_ADI, formCesidi, katalogIslemSec, ISLEM_KATALOG_BOS_NEDENI, ISLEM_ARA, KILO_TURET_IPUCU, KALEM_GECMIS_IBARESI,
 } from "../lib/urunAgaci";
 
 // Spec 0135 R1–R6/2 (Karar 30): maliyet kipi saklanmaz, kayıttan türer (C3); seçici 0133'ün "Fiyat kipi" seçicisinin ikizidir.
@@ -38,63 +36,7 @@ const PayAlani = ({ deger, setDeger, hata }) => (
 // R17, R17/2, R18–R21 (AC-32–AC-40, AC-101): işlem kalemi. Ad ve tutar herkese görünür; tedarikçi seçicisi yalnız gider
 // yetkisiyle (R21), bütün canlı tedarikçiler, hammadde işaretliler başta; kaydın kendi tedarikçisinin adı ham diziden ibareyle.
 // Tutar düz metin alanıdır (belirsiz sayı reddedilsin, R19/2; binlik ayracı yazan tutar girdisi "2.400"ü 2400'e çevirirdi).
-// Spec 0137 R10, R17 (AC-26, AC-46, AC-47): kalem çeşidi seçicisi; değişim ebeveynde (silinecek veri varsa onay, R17/2).
-const CesitSecici = ({ cesit, onCesit, sira }) => (
-  <Segment kip="radyo" genislik="icerik" ariaLabel={`İşlem kalemi çeşidi ${sira}`} value={cesit} onChange={onCesit}
-    options={[{ value: CESIT.KATALOG, label: CESIT_ADI[CESIT.KATALOG] }, { value: CESIT.SERBEST, label: CESIT_ADI[CESIT.SERBEST] }]} />
-);
-// Spec 0137 R10/3, R10/4, R11–R14/2, R27/2 (AC-27, AC-28, AC-33, AC-122, AC-123): katalog bağlı kalem. İşlem arama kutusundan seçilir;
-// seçilen işlemin birimi ve birim fiyatı salt okunur görünür, TEDARİKÇİSİ GÖSTERİLMEZ (0135 C6/2). Tutar ve neden ebeveynin tek
-// özetinden (`ozet`); bu bileşen çarpım yapmaz (C3).
-const KatalogIslemSatiri = ({ satir, setSatir, sira, disIslemler = [], hamDisIslemler = [], islemKat, hatalar = {}, ozet = null, onKaldir, onCesit }) => {
-  const islem = (hamDisIslemler || []).find(m => String(m.id) === String(satir.islemId)) || null;
-  const canli = islem && !islem.deletedAt;
-  const birim = islem ? birimOf(islem) : null;
-  const katalogBos = disIslemler.length === 0;
-  return (
-    <div data-testid="katalog-islem-kalemi" style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px", display: "grid", gap: 6 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>{`İşlem kalemi ${sira}`}</span>
-          <CesitSecici cesit={CESIT.KATALOG} onCesit={onCesit} sira={sira} />
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <b data-testid="kalem-tutar" style={{ fontSize: 13, color: "var(--blu700, #1d4ed8)" }}>{ozet?.tutarK == null ? "—" : maliyetMetniKurus(ozet.tutarK)}</b>
-          <Btn small variant="danger" title="Kalemi kaldır" aria-label={`İşlem kalemini kaldır ${sira}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>
-        </span>
-      </div>
-      {katalogBos ? (
-        <div data-testid="islem-katalog-bos" style={{ fontSize: 12, color: "var(--n600, #475569)" }}>{ISLEM_KATALOG_BOS_NEDENI}</div>
-      ) : (
-        <div>
-          <SearchPick items={disIslemler} getLabel={m => m.ad} getKey={m => m.id} placeholder={ISLEM_ARA} onPick={m => setSatir(katalogIslemSec(satir, m.id, islemKat))} />
-        </div>
-      )}
-      <HataMetni>{hatalar.islemId}</HataMetni>
-      {islem && (
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, alignItems: "start" }}>
-          <Field label="İşlem">
-            <div data-testid="katalog-islem-bilgi" style={{ fontSize: 12.5, minHeight: 38, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div><b>{islem.ad}</b>{!canli ? <span style={{ color: "var(--red700, #b91c1c)" }}> (silinmiş işlem)</span> : null}</div>
-              <div style={{ color: "var(--n600, #475569)" }}>Birim: {BIRIM_ADI[birim]} · Birim fiyatı: {kumeOzeti(fiyatKumesi(islem), birim)}</div>
-            </div>
-          </Field>
-          <Field label={birim === BIRIM.KILO ? "Kilo" : "Adet"}>
-            <Input value={satir.miktar ?? ""} inputMode="decimal" onChange={e => setSatir({ ...satir, miktar: e.target.value })}
-              placeholder={birim === BIRIM.KILO ? "Ağırlıktan türet" : "1"} aria-label={`İşlem miktarı ${sira}`} />
-            <HataMetni>{hatalar.miktar}</HataMetni>
-            {birim === BIRIM.KILO && <Ipucu>{KILO_TURET_IPUCU}</Ipucu>}
-            {birim === BIRIM.KILO && ozet?.kgTuretildi && ozet?.kg != null && <div data-testid="kilo-turetilen" style={{ fontSize: 12, color: "var(--n600, #475569)" }}>İşlenmiş ağırlık: {String(ozet.kg).replace(".", ",")} {BIRIM_KISA.kilo}</div>}
-          </Field>
-        </div>
-      )}
-      {ozet && !ozet.hatali && !ozet.cozuldu && ozet.eksik?.length > 0 && satir.islemId !== "" && (
-        <div data-testid="katalog-islem-neden" style={{ fontSize: 12, color: "var(--amb800, #92400e)" }}>Maliyet girilmedi: {ozet.eksik.join(", ")}.</div>
-      )}
-    </div>
-  );
-};
-const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hatalar = {}, uyari = null, ozet = null, onKaldir, onCesit = null }) => {
+const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hatalar = {}, uyari = null, ozet = null, onKaldir }) => {
   const set = (alan, v) => setSatir({ ...satir, [alan]: v });
   const secenekler = islemTedarikciSecenekleri(tedarikciler);
   const id = String(satir.tedarikciId ?? "");
@@ -102,10 +44,7 @@ const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hat
   return (
     <div data-testid="islem-kalemi" style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px", display: "grid", gap: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>{`İşlem kalemi ${sira}`}</span>
-          {onCesit && <CesitSecici cesit={CESIT.SERBEST} onCesit={onCesit} sira={sira} />}
-        </span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>{`İşlem kalemi ${sira}`}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <b data-testid="kalem-tutar" style={{ fontSize: 13, color: "var(--blu700, #1d4ed8)" }}>{ozet?.tutarK == null ? "—" : maliyetMetniKurus(ozet.tutarK)}</b>
           <Btn small variant="danger" title="Kalemi kaldır" aria-label={`İşlem kalemini kaldır ${sira}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>
@@ -130,6 +69,9 @@ const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hat
           <HataMetni>{hatalar.tutar}</HataMetni>
         </Field>
       </div>
+      {satir._eskiKatalog && String(satir.tutar ?? "").trim() === "" && (
+        <div data-testid="eski-katalog-kalemi" role="note" style={{ fontSize: 12, color: "var(--amb800, #92400e)" }}>{ESKI_KATALOG_KALEMI_NEDENI}</div>
+      )}
       {uyari && <div data-testid="islem-tutar-uyarisi" style={{ fontSize: 12, color: "var(--amb800, #92400e)" }}>{uyari}</div>}
     </div>
   );
@@ -140,8 +82,6 @@ const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hat
 export const MaliyetKalemleriAlani = ({
   kip, onKip, kalemler = [], setKalemler, elleDeger, setElleDeger, elleHata = null, emniyetPayi, setEmniyetPayi, payHata = null,
   malzemeler = [], hamMalzemeler = [], tedarikciler = [], giderYetki = false, hatalar = {}, uyarilar = {}, ozet = null, set = false, kaynak = null,
-  // Spec 0137 R10–R10/5, R17, R17/2: dış işlem kataloğu (canlı ve ham) ve çeşit değişimi isteği (ebeveyn onay sorar).
-  disIslemler = [], hamDisIslemler = null, islemKat = null, onCesit = null,
 }) => {
   const hesapla = kip === MALIYET_KIP_HESAPLA;
   const sinirda = kalemler.length >= MALIYET_KALEM_SINIRI; // R9: giriş kuralı
@@ -149,9 +89,7 @@ export const MaliyetKalemleriAlani = ({
   const guncelle = (i, v) => setKalemler(kalemler.map((k, j) => (j === i ? v : k)));
   const kaldir = (i) => setKalemler(kalemler.filter((_, j) => j !== i));
   const malzemeSayi = kalemler.filter(k => k.tur === "malzeme").length;
-  // Spec 0137 R19, R19/2, R19/3: serbest ve katalog işlem kalemleri ayrı sayılır (ibarelerin koşulu yalnız serbest kalemden).
-  const katalogSayi = kalemler.filter(k => k.tur !== "malzeme" && formCesidi(k) === CESIT.KATALOG).length;
-  const serbestSayi = kalemler.length - malzemeSayi - katalogSayi;
+  const islemSayi = kalemler.length - malzemeSayi;
   let malzemeSira = 0, islemSira = 0;
   return (
     <div data-testid="maliyet-bolumu" style={{ marginBottom: 12 }}>
@@ -185,11 +123,8 @@ export const MaliyetKalemleriAlani = ({
               {kalemler.map((k, i) => (k.tur === "malzeme"
                 ? <MalzemeSatiriAlani key={k._anahtar || i} satir={k} setSatir={v => guncelle(i, v)} sira={++malzemeSira} malzemeler={malzemeler} hamMalzemeler={hamMalzemeler}
                     hatalar={hatalar[k._anahtar ?? `#${i}`] || {}} ozet={ozet?.satirlar?.[i] || null} onKaldir={() => kaldir(i)} />
-                : formCesidi(k) === CESIT.KATALOG
-                ? <KatalogIslemSatiri key={k._anahtar || i} satir={k} setSatir={v => guncelle(i, v)} sira={++islemSira} disIslemler={disIslemler} hamDisIslemler={hamDisIslemler || disIslemler}
-                    islemKat={islemKat} hatalar={hatalar[k._anahtar ?? `#${i}`] || {}} ozet={ozet?.satirlar?.[i] || null} onKaldir={() => kaldir(i)} onCesit={c => onCesit?.(i, c)} />
                 : <IslemSatiri key={k._anahtar || i} satir={k} setSatir={v => guncelle(i, v)} sira={++islemSira} tedarikciler={tedarikciler} giderYetki={giderYetki}
-                    hatalar={hatalar[k._anahtar ?? `#${i}`] || {}} uyari={uyarilar[i] || null} ozet={ozet?.satirlar?.[i] || null} onKaldir={() => kaldir(i)} onCesit={onCesit ? c => onCesit(i, c) : null} />))}
+                    hatalar={hatalar[k._anahtar ?? `#${i}`] || {}} uyari={uyarilar[i] || null} ozet={ozet?.satirlar?.[i] || null} onKaldir={() => kaldir(i)} />))}
             </div>
           )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -205,12 +140,9 @@ export const MaliyetKalemleriAlani = ({
               <b data-testid="kalem-toplam-tutar" style={{ color: "var(--blu700, #1d4ed8)" }}>{ozet?.toplamK == null ? "girilmedi" : maliyetMetniKurus(ozet.toplamK)}</b>
             </div>
           )}
-          {/* Spec 0137 R19/2, R19/3 (AC-52, AC-53, AC-120): iki ibare yalnız SERBEST işlem kalemiyle; koşul bugünkü iddianın ikizi. */}
-          {serbestSayi > 0 && <div data-testid="kalem-zam-ibaresi"><Ipucu>{ISLEM_ZAM_IBARESI}</Ipucu></div>}
-          {serbestSayi > 0 && malzemeSayi > 0 && <div data-testid="kalem-karma-ibaresi"><Ipucu>{KARMA_TARIH_IBARESI}</Ipucu></div>}
-          {/* R29 (AC-107): malzeme kalemi varsa 0132'nin ibaresi aynen; yalnız katalog işlem kalemi varsa kendi ibaresi. */}
+          {islemSayi > 0 && <div data-testid="kalem-zam-ibaresi"><Ipucu>{ISLEM_ZAM_IBARESI}</Ipucu></div>}
+          {islemSayi > 0 && malzemeSayi > 0 && <div data-testid="kalem-karma-ibaresi"><Ipucu>{KARMA_TARIH_IBARESI}</Ipucu></div>}
           {malzemeSayi > 0 && <div data-testid="kalem-gecmis-ibaresi"><Ipucu>{MALZEME_GECMIS_IBARESI}</Ipucu></div>}
-          {malzemeSayi === 0 && katalogSayi > 0 && <div data-testid="kalem-gecmis-ibaresi"><Ipucu>{KALEM_GECMIS_IBARESI}</Ipucu></div>}
         </fieldset>
       )}
     </div>

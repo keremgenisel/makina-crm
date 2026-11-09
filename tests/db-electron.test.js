@@ -47,6 +47,12 @@ describe("SQLite katmanı (Electron altında)", () => {
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
   }, 150000);
 
+  it("spec 0138: dış işlem kalemlerinin bir kerelik göçü; üç dal, bayrak, koşullu yedek, ölü tablo yerinde (AC-22..AC-29, AC-33, AC-34, AC-43, AC-44)", () => {
+    const r = runElectron("dis-islem-gocu.cjs");
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+  }, 150000);
+
   it("temiz kurulumda şema tam (ilk oturumda yeni sütunlara yazma çökmez)", () => {
     const r = runElectron("db-clean-install.cjs");
     expect(r.status).toBe(0);

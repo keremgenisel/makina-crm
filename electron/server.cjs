@@ -158,7 +158,7 @@ const BOLUM_ADLARI = {
   customers: "Müşteriler", services: "Servisler", partSales: "Kalıp/Parça Satışları", payments: "Ödemeler",
   dealers: "Bayiler", stock: "Makina Stoğu", notes: "Notlar", parts: "Yedek Parça Tanımları",
   partStock: "Parça Stoğu", partStockLog: "Stok Hareketleri", gorusmeler: "Görüşmeler", dosyalar: "Dosyalar",
-  kalipDefs: "Kalıp Tanımları", standardModels: "Standart Modeller", customModels: "Özel Modeller", malzemeler: "Malzemeler", disIslemler: "Dış İşlemler",
+  kalipDefs: "Kalıp Tanımları", standardModels: "Standart Modeller", customModels: "Özel Modeller", malzemeler: "Malzemeler",
   factory: "Firma Bilgileri", appSettings: "Uygulama Ayarları", teklifler: "Teklifler", faturalar: "Faturalar",
   uretimFormlari: "Üretim Formları", partTypeDefs: "Parça Tipleri", calisanlar: "Firma Çalışanları",
   yedekParcaSatislar: "Yedek Parça Satışları",

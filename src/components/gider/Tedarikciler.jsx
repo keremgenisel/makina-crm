@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { uid } from "../../lib/utils";
-import { tedarikciAdHatasi, tedarikciKullanim, kalemdeGecenTedarikciler, tedarikciKorumaNedeni } from "../../lib/gider";
+import { tedarikciAdHatasi, tedarikciKullanim, kalemdeGecenTedarikciler } from "../../lib/gider";
 import { logAction } from "../../lib/audit";
 import { Icon, Field, Input, Btn, Modal, ConfirmDialog, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
@@ -25,18 +25,14 @@ export const SIL_PARCA_YONLENDIRME = "Silmek için önce Ayarlar › Katalog ›
 export const kullanimMetni = (k) => {
   const gider = k.kalem + k.tanim ? `${k.kalem} kalem${k.cop ? ` (${k.cop}’i çöpte)` : ""}${k.tanim ? ` · ${k.tanim} tanım` : ""}` : "";
   const parca = k.parca ? `${k.parca} parçanın maliyet kaleminde${k.parcaCop ? ` (${k.parcaCop}’i çöpte)` : ""}` : "";
-  // Spec 0137 R22 (AC-62): katalog işlemleri de kullanım sayısına girer (işlemsiz tedarikçide metin aynı).
-  const islem = k.islem ? `${k.islem} dış işlemde${k.islemCop ? ` (${k.islemCop}’i çöpte)` : ""}` : "";
-  return [gider, parca, islem].filter(Boolean).join(" · ") || "Kullanılmıyor";
+  return [gider, parca].filter(Boolean).join(" · ") || "Kullanılmıyor";
 };
 
 export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = [], giderTanimlari = [], rapor, canDo = () => true, showToast = () => {}, serverPermissions,
   // Spec 0024 B (R12, B6, B10, B11): tedarikçi ekstresi ve silme uyarısındaki kalan borç. giderler hareketlerden türetilmiş olabilir.
   hesapHareketleri = null, giderTurleri = [], yururlukAy = null, bugun = null, kasaHesaplari = [],
   // Spec 0096 R13, R13/5: parça kırılımı da kullanımdır; HAM parça dizisi (çöpteki parçalar da sayılır).
-  parts = [],
-  // Spec 0137 R22, R22/2 (Karar 33): HAM dış işlem dizisi (çöptekiler de sayılır, geri alınabilir).
-  disIslemler = [] }) => {
+  parts = [] }) => {
   const [form, setForm] = useState(null);
   const [ekstre, setEkstre] = useState(null);
   const ekstreHesapla = (t, aralik = null) => tedarikciEkstresi(t.id, { giderler, hareketler: hesapHareketleri || [], turler: giderTurleri, yururlukAy, bugun, aralik });
@@ -62,8 +58,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
     setForm(null);
     showToast(yeni ? "Tedarikçi eklendi." : "Tedarikçi güncellendi. Bağlı kalemler yeni adla görünür.");
   };
-  // Spec 0137 R22/2 (AC-62, AC-131, Karar 33): dış işlem kataloğu (ham) aynı haritaya girer; bir kez kurulur.
-  const kirilimHaritasi = useMemo(() => kalemdeGecenTedarikciler(parts, disIslemler), [parts, disIslemler]); // triyaj: bir kez kurulur
+  const kirilimHaritasi = useMemo(() => kalemdeGecenTedarikciler(parts), [parts]); // triyaj: bir kez kurulur
   const silAc = (t) => setSil({ t, k: tedarikciKullanim(t.id, giderler, giderTanimlari, parts, kirilimHaritasi) });
   const silOnayla = () => {
     const zaman = new Date().toISOString();
@@ -142,7 +137,7 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
           <Ipucu>Yalnız ad zorunludur. Aynı ad (büyük ve küçük harf farkı dahil) ikinci kez girilemez.</Ipucu>
         </Modal>
       )}
-      {sil && !kilitli && (sil.k.kalem + sil.k.tanim + sil.k.parca + sil.k.islem > 0 ? (
+      {sil && !kilitli && (sil.k.kalem + sil.k.tanim + sil.k.parca > 0 ? (
         <Modal title={`“${sil.t.ad}” silinemez`} onClose={() => setSil(null)} footer={<Btn onClick={() => setSil(null)}>Tamam</Btn>}>
           <div style={{ fontSize: 13, lineHeight: 1.6 }}>
             {sil.k.kalem + sil.k.tanim > 0 && <>
@@ -152,10 +147,6 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
             {/* Spec 0096 R13, R13/4, R13/5; spec 0135 R32/2: parçanın maliyet kalemi de kullanımdır; cümle kalem dilinde. */}
             {sil.k.parca > 0 && <div data-testid="tedarikci-parca-kullanim" style={{ marginTop: sil.k.kalem + sil.k.tanim > 0 ? 8 : 0 }}>
               Bu tedarikçi <b>{sil.k.parca} parçanın</b> maliyet kaleminde geçiyor{sil.k.parcaCop ? <> (<b>{sil.k.parcaCop}’i çöp kutusunda</b>)</> : null}. {SIL_PARCA_YONLENDIRME}
-            </div>}
-            {/* Spec 0137 R22, R22/2 (AC-62, AC-63, AC-132): dış işlem kataloğunda geçen tedarikçi de silinemez; neden iki adresi söyler. */}
-            {sil.k.islem > 0 && <div data-testid="tedarikci-islem-kullanim" style={{ marginTop: sil.k.kalem + sil.k.tanim + sil.k.parca > 0 ? 8 : 0 }}>
-              Bu tedarikçi <b>{sil.k.islem} dış işlemde</b> geçiyor{sil.k.islemCop ? <> (<b>{sil.k.islemCop}’i çöp kutusunda</b>)</> : null}. {tedarikciKorumaNedeni(sil.k)}
             </div>}
             {(() => { const b = ekstreHesapla(sil.t).bakiye; return b > 0 ? <div data-testid="tedarikci-kalan-borc" style={{ marginTop: 8, color: "var(--red700, #b91c1c)", fontWeight: 700 }}>Bu tedarikçiye {tl2(b)} kalan borç var. Tedarikçi silinse bile borç kapanmaz; silinmiş tedarikçinin ekstresine erişilemez.</div> : null; })()}
           </div>

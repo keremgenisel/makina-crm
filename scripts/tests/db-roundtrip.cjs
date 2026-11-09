@@ -957,41 +957,6 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0132 AC-61: boş nesne olarak yazılan malzeme satırı gövdede yok", !("malzemeSatiri" in c.parts.find(p => p.id === 8)));
 }
 
-// ── Spec 0137 R27, R27/2, C4, C7 (AC-68, AC-69, AC-70, AC-85, AC-86, AC-87): dış işlem kataloğu. Kaydın bütün alanları (fiyat geçmişi
-// JSON) gidiş dönüşte korunur; boş alan gövdeye yazılmaz (null olarak da değil); çöp damgası korunur; boş liste boş dizi okunur
-// (sunucu sahte fark görmez). Parçanın katalog bağlı kalemi var olan maliyetKalemleri JSON'unda taşınır (yeni parts sütunu yok).
-{
-  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
-  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
-  const sirali = (o) => Object.fromEntries(Object.keys(o).sort().map(k => [k, o[k]]));
-  const tam = { id: 701, ad: "Isıl İşlem", birim: "kilo", birimFiyati: 2.4, paraBirimi: "EUR", kur: 48.5, tedarikciId: 31,
-    fiyatGecmisi: [{ gecerli: "", birimFiyati: 2, paraBirimi: "EUR", kur: 45 }, { gecerli: "2026-06-01", birimFiyati: 2.4, paraBirimi: "EUR", kur: 48.5 }] };
-  const sade = { id: 702, ad: "Sade", birim: "adet" };
-  const cop = { id: 703, ad: "Çöpteki", birim: "adet", birimFiyati: 0, deletedAt: "2026-10-01T09:00:00.000Z" };
-  const kalemler = [{ tur: "islem", islemId: 701 }, { tur: "islem", islemId: 702, miktar: 3 }, { tur: "islem", ad: "Büküm", tutar: 5 }];
-  const girdi = structuredClone(GOVDE_GIRDISI);
-  girdi.disIslemler = [tam, sade, cop];
-  girdi.parts[0].maliyetKalemleri = kalemler;
-  dbmod.writeBlobToDb(girdi);
-  const dbYol = dbmod.getDbPath();
-  dbmod.close();
-  const ham = new Database(dbYol);
-  const ds = ham.prepare(`SELECT * FROM dis_islemler WHERE id = 702`).get();
-  const sutunlar = ham.prepare(`PRAGMA table_info(parts)`).all().map(r => r.name);
-  ham.close();
-  check("spec 0137 AC-69: sade işlemin boş alanları NULL yazıldı", ds && ds.birimFiyati === null && ds.paraBirimi === null && ds.kur === null && ds.tedarikciId === null && ds.fiyatGecmisi === null && ds.birim === "adet");
-  check("spec 0137 AC-87: parts tablosunda dış işlem sütunu yok", sutunlar.length > 0 && !sutunlar.some(c => /islem/i.test(c)));
-  dbmod.migrateFromJsonIfNeeded();
-  const c = dbmod.readBlobFromDb();
-  check("spec 0137 AC-68 / AC-85: işlem kaydının bütün alanları birebir geri gelir", esit(sirali(c.disIslemler.find(m => m.id === 701)), sirali(tam)));
-  check("spec 0137 AC-69: sade işlemin gövdesi yalnız id, ad ve birim (boş alan anahtarı yok)", esit(sirali(c.disIslemler.find(m => m.id === 702)), sirali(sade)));
-  check("spec 0137 R23: çöpteki işlemin damgası ve 0 fiyatı korunur", c.disIslemler.find(m => m.id === 703)?.deletedAt === cop.deletedAt && c.disIslemler.find(m => m.id === 703)?.birimFiyati === 0);
-  check("spec 0137 AC-86: katalog bağlı kalem ve serbest kalem maliyetKalemleri JSON'unda birebir", esit(c.parts.find(p => p.id === girdi.parts[0].id)?.maliyetKalemleri, kalemler));
-  dbmod.writeBlobToDb({ ...structuredClone(GOVDE_GIRDISI), disIslemler: [] });
-  const bos = dbmod.readBlobFromDb();
-  check("spec 0137 AC-70: boş katalog boş dizi olarak okunur (gövdede anahtar durur)", Array.isArray(bos.disIslemler) && bos.disIslemler.length === 0);
-}
-
 // ── Spec 0134 C4, AC-58–AC-60 (Karar 28): emniyet payı parçada ve malzemede kendi sütunu; boş pay NULL ve gövdede yok; payı olmayan
 // parça ve malzemenin gövdesi spec öncesiyle birebir (0097 ve 0132 altınları).
 {
@@ -1115,6 +1080,27 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0136 AC-42 / AC-47: görüntünün bütün alanları birebir geri gelir (kuruş, null, neden)", esit(bul(91).kapanisMaliyeti, tam));
   check("spec 0136 AC-48: boş haritalı markörlü görüntü yazılır ve okunur", esit(bul(92).kapanisMaliyeti, bosHarita));
   check("spec 0136 AC-49: görüntüsüz partinin gövdesinde anahtar yok (null da değil)", !("kapanisMaliyeti" in bul(93)) && !("kapanisMaliyeti" in bul(94)));
+}
+
+// ── Spec 0138 R17, R17/2, R24 (AC-6, AC-33): dış işlem tablosu ölü tablodur. Satırları (çöptekiler dahil) okunmaz, gövdede bölüm
+// gelse de yazılmaz ve tablo boşaltılmaz; kimlik sayacının yedek hesabı bölümü okumaz.
+{
+  const dbPath = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbPath);
+  ham.prepare(`INSERT INTO dis_islemler (id, ad, birim, birimFiyati, tedarikciId, deletedAt) VALUES (?, ?, ?, ?, ?, ?)`).run(701, "Isıl işlem", "adet", 35, 801, null);
+  ham.prepare(`INSERT INTO dis_islemler (id, ad, birim, birimFiyati, tedarikciId, deletedAt) VALUES (?, ?, ?, ?, ?, ?)`).run(702, "Çöpteki galvano", "kilo", 18, null, "2026-10-01T10:00:00");
+  ham.close();
+  dbmod.migrateFromJsonIfNeeded();
+  const b = dbmod.readBlobFromDb();
+  check("spec 0138 AC-6 / R17: ölü tablonun satırları (çöpteki dahil) gövdeye okunmaz", !("disIslemler" in b));
+  dbmod.writeBlobToDb({ ...b, disIslemler: [], nextId: undefined }); // güncellenmemiş istemcinin boş listesi
+  dbmod.writeBlobToDb({ ...b, disIslemler: [{ id: 9001, ad: "Yeni", birim: "adet" }] });
+  const ham2 = new Database(dbPath);
+  const satirlar = ham2.prepare(`SELECT id, ad, deletedAt FROM dis_islemler ORDER BY id`).all();
+  ham2.close();
+  check("spec 0138 AC-33 / R17/2: gövdedeki bölüm ölü tabloyu boşaltmaz ve yazmaz; satırlar yerinde", satirlar.length === 2 && satirlar[0].id === 701 && satirlar[1].deletedAt === "2026-10-01T10:00:00");
+  check("spec 0138 AC-33: tablo şemada duruyor (CREATE TABLE kalır, Karar 30)", /CREATE TABLE IF NOT EXISTS dis_islemler/.test(fs.readFileSync(path.join(root, "electron", "db.cjs"), "utf-8")));
 }
 
 fs.rmSync(tmpDir, { recursive: true, force: true });

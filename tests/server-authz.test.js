@@ -1831,29 +1831,16 @@ describe("Spec 0132: malzeme kataloğu sunucuda", () => {
   });
 });
 
-// Spec 0137 C6, R24 (AC-76, AC-77, AC-70): dış işlem kataloğu yeni bir veri bölümüdür ama yeni yetki açmaz (malzemenin ikizi). Grup
-// "settings", sekme yalnız Ayarlar; Makina Maliyeti tek başına yazma hakkı vermez. Boş liste ↔ boş liste sahte değişiklik değildir.
-describe("Spec 0137: dış işlem kataloğu sunucuda", () => {
-  const eski = { disIslemler: [{ id: 701, ad: "Isıl İşlem", birim: "adet", birimFiyati: 20 }] };
-  const yeni = { disIslemler: [{ id: 701, ad: "Isıl İşlem", birim: "adet", birimFiyati: 25 }, { id: 702, ad: "Galvano", birim: "kilo" }] };
-  it("AC-76: Ayarlar sekmesi olmayan kullanıcının dış işlem yazımı reddedilir; Makina Maliyeti sekmesi yazma hakkı vermez", () => {
-    expect(degisenBolumler(eski, yeni)).toEqual(["disIslemler"]);
-    const maliyetci = JSON.stringify({ tabs: ["dashboard", "gider", "maliyet"] });
-    const r = yazmaYetkisiVar(maliyetci, "user", ["disIslemler"], eski, yeni);
-    expect(r.ok).toBe(false);
-    expect(r.reddedilenBolum).toBe("disIslemler");
-    expect(yazmaYetkisiVar(READONLY, "user", ["disIslemler"], eski, yeni).ok).toBe(false);
-  });
-  it("AC-77: Ayarlar sekmeli kullanıcı yeni eylem izni olmadan işlem ekler; kayıt düzeyinde kimlik yok", () => {
-    const ayarci = JSON.stringify({ tabs: ["dashboard", "settings"] });
-    expect(yazmaYetkisiVar(ayarci, "user", ["disIslemler"], eski, yeni).ok).toBe(true);
-    expect(eylemDenetimi(eski, yeni, ayarci, "user").ok).toBe(true);
-    expect(EYLEM_IDLERI.disIslemler).toBeUndefined();
-    expect(ALAN_IZINLERI.disIslemler).toBeUndefined();
-    expect(SECTION_GROUP.disIslemler).toBe("settings");
-    expect(BOLUM_SEKMELERI.disIslemler).toEqual(["settings"]);
-  });
-  it("AC-70: boş katalog yeniden yazıldığında sunucu sahte değişiklik görmez", () => {
-    expect(degisenBolumler({ disIslemler: [] }, { disIslemler: [] })).toEqual([]);
+// Spec 0138 R7, C5, C6, ölçüm I (AC-32 birim yarısı): dış işlem bölümü sunucunun listelerinden çıktı. Güncellenmemiş istemcinin
+// gövdesinde gelse de değişen bölüm sayılmaz (yeni kural yok; bölüm listesinde olmayan anahtar kendiliğinden yok sayılır).
+describe("Spec 0138: dış işlem bölümü sunucuda yok", () => {
+  it("AC-32: BLOB_SECTIONS, SECTION_GROUP ve BOLUM_SEKMELERI dış işlemi tanımaz; gövdedeki bölüm değişen sayılmaz", () => {
+    const sa = require("../electron/serverAuth.cjs");
+    expect(sa.BLOB_SECTIONS).not.toContain("disIslemler");
+    expect(sa.BLOB_SECTIONS).toHaveLength(33);
+    expect(sa.degisenBolumler({ parts: [] }, { parts: [], disIslemler: [{ id: 1, ad: "X" }] })).toEqual([]);
+    const ayarsiz = JSON.stringify({ tabs: ["gider"] });
+    expect(yazmaYetkisiVar(ayarsiz, "user", sa.degisenBolumler({}, { disIslemler: [{ id: 1 }] }), {}, {}).ok).toBe(true);
+    expect(eylemDenetimi({}, { disIslemler: [{ id: 1, ad: "X" }] }, JSON.stringify({ tabs: ["gider"], giderActions: [] }), "user").ok).toBe(true);
   });
 });

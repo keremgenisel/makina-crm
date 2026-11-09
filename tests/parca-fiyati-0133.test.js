@@ -1,3 +1,4 @@
+// Spec 0138 ile: spec 0137'nin bu dosyaya eklediği dış işlem iddiaları kaldırıldı, dosya 0136 hâline döndü (C7, AC-41, AC-42).
 // Spec 0133: satış fiyatının maliyetten türemesi. Saf motor (parcaFiyati.js), etki hesabı, Excel, fiyat listesi ve kaynak taramaları.
 // Ekran testleri: tests/ui/parca-fiyati-0133*.test.jsx; kıyas (C4, AC-45/46/95): tests/parca-fiyati-0133-kiyas.test.jsx.
 import { describe, it, expect, vi } from "vitest";
@@ -154,14 +155,12 @@ describe("Spec 0133: türetme (R2, R2/2, R2/3, R8, R9, R11)", () => {
       turetilmisFiyat(bagli({ id: 1, maliyet: 10 }), bag());
     } catch { /* ES modül casusu bağlanmıyorsa kaynakla ölçülür */ }
     casus.mockRestore();
-    // Spec 0137 ile (R30): beşinci argüman dış işlem kataloğu; iddia (tarih verilmez) aynı.
-    expect(kod("src/lib/parcaFiyati.js")).toMatch(/parcaMaliyetKurus\(p, undefined, baglam\?\.setKat, baglam\?\.malzemeKat, baglam\?\.islemKat\)/);
+    expect(kod("src/lib/parcaFiyati.js")).toMatch(/parcaMaliyetKurus\(p, undefined, baglam\?\.setKat, baglam\?\.malzemeKat\)/);
     expect(yorumsuz(kod("src/lib/parcaFiyati.js"))).not.toMatch(/tarih/);
   });
   it("AC-55: tek imza: parça, para birimi, bağlam (ayar, set kataloğu, malzeme kataloğu); dönüş nedenli", () => {
     const b = bag();
-    // Spec 0137 ile (R30): bağlam dış işlem kataloğunu da taşır (tek kurucu).
-    expect(Object.keys(b).sort()).toEqual(["ayar", "islemKat", "malzemeKat", "setKat"]);
+    expect(Object.keys(b).sort()).toEqual(["ayar", "malzemeKat", "setKat"]);
     expect(Object.keys(parcaSatisFiyati(bagli({ id: 1 }), "TRY", b))).toEqual(expect.arrayContaining(["deger", "kip", "neden", "turetilmis"]));
     expect(kod("src/lib/parcaFiyati.js").match(/export const parcaSatisFiyati/g)).toHaveLength(1);
   });
@@ -176,8 +175,7 @@ describe("Spec 0133: set (R22, R22/2, Karar 30)", () => {
   it("AC-22: elle sabit setin toplamı bileşenlerin yürürlükteki fiyatıyla, tam lira (maliyete bağlı bileşen türetilmiş)", () => {
     const b = bag({ varsayilanKat: 2.4 }, SETLI);
     const set = SETLI.find(p => p.id === 64);
-    // Spec 0137 ile (Karar 34): beşinci parametre dış işlem kataloğu, fiyat okuyucusu altıncı.
-    const oz = setOzeti(set.setIcerigi, setKatalogu(SETLI), undefined, malzemeKatalogu(MALZEMELER), undefined, setFiyatOkuyucu(b));
+    const oz = setOzeti(set.setIcerigi, setKatalogu(SETLI), undefined, malzemeKatalogu(MALZEMELER), setFiyatOkuyucu(b));
     expect(oz.fiyatToplam).toBe(240 * 2 + 1250); // Rulman 100 × 2,4 = 240
     const eski = setOzeti(set.setIcerigi, setKatalogu(PARCALAR), undefined, malzemeKatalogu(MALZEMELER));
     expect(eski.fiyatToplam).toBe(450 * 2 + 1250); // okuyucusuz bugünkü kural
@@ -194,7 +192,7 @@ describe("Spec 0133: set (R22, R22/2, Karar 30)", () => {
   it("AC-72: fiyatsız sayaç maliyete bağlı ama türetilemeyen bileşeni de sayar ve metni iki nedeni söyler", () => {
     const parts = PARCALAR.map(p => (p.id === 62 ? bagli(p) : p)); // Kayış maliyetsiz ve maliyete bağlı
     const set = parts.find(p => p.id === 64);
-    const oz = setOzeti(set.setIcerigi, setKatalogu(parts), undefined, null, undefined, setFiyatOkuyucu(bag({ varsayilanKat: 2 }, parts))); // spec 0137 ile (Karar 34)
+    const oz = setOzeti(set.setIcerigi, setKatalogu(parts), undefined, null, setFiyatOkuyucu(bag({ varsayilanKat: 2 }, parts)));
     expect(oz.fiyatsiz).toBe(1);
     expect(setFiyatsizMetni(1)).toMatch(/girilmemiş ya da maliyetten türetilemiyor/);
   });
@@ -357,8 +355,7 @@ describe("Spec 0133: kaynak taramaları", () => {
   it("AC-96: maliyet motoru fiyat kavramını bilmez; tek okuma yolunun imzası aynı", () => {
     const k = yorumsuz(kod("src/lib/urunAgaci.js"));
     expect(k).not.toMatch(/parcaFiyati|karKati|fiyatKipi|yuvarlama/);
-    // Spec 0137 ile (R30): beşinci parametre dış işlem kataloğu; fiyat kavramı yine yok.
-    expect(k).toMatch(/export const parcaMaliyetKurus = \(p, tarih, katalog, malzemeKat, islemKat\)/);
+    expect(k).toMatch(/export const parcaMaliyetKurus = \(p, tarih, katalog, malzemeKat\)/);
   });
   it("AC-78: katalog listesinde satır seçimi onay kutusu yok", () => {
     const ps = kod("src/components/PartManager.jsx");
