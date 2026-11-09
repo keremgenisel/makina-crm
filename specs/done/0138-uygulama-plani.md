@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0138-dis-islem-katalogu-kalkar.md` (Onaylandı, 2026-11-09) |
+| **Spec** | `specs/done/0138-dis-islem-katalogu-kalkar.md` (Tamamlandı, 2026-11-09) |
 | **Taban** | main `619f6275` (v3.57.0) |
 | **Dal / çalışma yeri** | `feat/0138-dis-islem-kalkar`, worktree `../wt0138` (ana dizinde checkout yok) |
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-09): §3'teki on dört önerinin hepsi kabul edildi, spec'e Karar 27–34 olarak işlendi. Uygulamada. |
+| **Durum** | **Tamamlandı** (2026-11-09, commit `124c3a0a`): §3'teki on dört önerinin hepsi kabul edildi, spec'e Karar 27–34 olarak işlendi; triyaj §8'de. |
 
 Bu iş bir kaldırma işidir; yeni davranış iki yerde var: bir kerelik göç (R15–R16/2) ve eski biçimli
 kalemin savunması (R2/2). Geri kalan her şey 0137'nin eklediği satırların sökülmesi ve 0135/0136'nın
@@ -268,6 +268,8 @@ işlemden etkilenebileceği ya da yapısal olarak etkilenmediği yazılır.
 - **Bilgi:** sürüm notuna bayraktan sonra gelen kalem cümlesi eklendi (§6); JSON göç dalı Electron testinde gerçekten koşuyor; `tutarGirdisi.js`'in bayat yorumu düzeltildi.
 - Kapanışa kalanlar (done adımında): `0138-taban-piksel-raporu.json`, eşlemedeki 129 `degisti` kaydının `ayni`ya çevrilmesi, commit'te bütün yeni dosyaların eklendiği.
 
-## SCORECARD
+## 9. Kapanış (2026-11-09)
 
-(Done'a taşınırken doldurulur.)
+- Kapanış tabanı `0138-taban-piksel-raporu.json` (134 görüntü): son kodla çekilip onaylı görüntülerle karşılaştırıldı, 0 fark. Onaylı görüntüler (`0138-piksel-raporu.json`) triyaj düzeltmesinden sonra son koddan yeniden üretildi (eski kalem ekranında "Tutar girilmedi" uyarısı artık yok).
+- Kanıt eşlemesindeki 129 kayıt `degisti`'den `ayni`ya çevrildi ve kapanış tabanına bağlandı.
+- SCORECARD spec dosyasında.

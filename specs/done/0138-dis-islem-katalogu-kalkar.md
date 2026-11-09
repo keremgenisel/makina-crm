@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-09) |
+| **Durum** | **Tamamlandı** (2026-11-09, commit `124c3a0a`; plan `specs/done/0138-uygulama-plani.md`, plan turu Karar 27–34, triyaj planın §8'inde) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog (Dış İşlemler paneli), parça kartının maliyet kalemleri, tedarikçi silme kapıları, çöp kutusu, yedekleme, sunucu bölüm eşlemeleri, kilit alanları, işlem geçmişi etiketleri, örnek katalog düğmesi, bekçi fikstür zinciri, saf motorlar (`disIslem.js`, `disIslemEtkisi.js`, `urunAgaci.js`, `malzeme.js`, `maliyetKalemleri.js`, `makinaStandartMaliyet.js`, `parcaFiyati.js`, `parcaAktarma.js`, `merge.js`, `kilitAlanlari.js`, `bolumAdlari.js`, `yedekPaketleri.js`, `ornekKatalog.js`), ekranlar (`SettingsExport.jsx`, `SettingsImport.jsx`, `SettingsTrash.jsx`, `SettingsBackup.jsx`, `ServisPencere.jsx`) |
@@ -642,7 +642,7 @@ etkilenen alanlar listesindeki sipariş motoru) ve bunları düzeltti.
 
 ### Plan turu kararları (Takım Yöneticisi, 2026-11-09)
 
-Uygulama planının (`specs/0138-uygulama-plani.md` §3) on dört önerisinin hepsi kabul edildi.
+Uygulama planının (`specs/done/0138-uygulama-plani.md` §3) on dört önerisinin hepsi kabul edildi.
 Spec maddelerini değiştirenler:
 
 27. **Savunma ayracının tek adı `eskiKatalogKalemi`** (B1). R11/4'ün "`katalogIslemMi` kalır"
@@ -708,10 +708,13 @@ silinmez. İki işlemin fiyatı hiç girilmemişti.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `124c3a0a` | Dal `feat/0138-dis-islem-kalkar`, taban `619f6275`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 3 | QA turu (26 bulgu), plan turu (Karar 27–34), triyaj (planın §8'i) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: bir orta bulgu, dört bilgi |
+| **Bulgu gerçek/gürültü oranı** | 1 / 0 | Eski biçimli kalemin tutarı boş kaydedilince maliyet sessizce düşüyordu (R2/2'nin kapatmak istediği durum); bilgi maddelerinden üçü (sürüm notu cümlesi, JSON göç dalının gerçekten koşturulması, bayat yorum) uygulandı, biri kapanış adımıydı |
+| **Regresyon sayısı** | 0 | Tam takım 503 dosya, 7044 test, Electron dahil; lint 0 hata, uyarı 62 (tabanla aynı); vite build temiz |
+| **Kaçan hata** | 1 | Triyaj bulgu 1: AC-39 testi yalnız tutar doldurarak kaydediyordu; "maliyet bölümüne dokunuldu, eski kalemin tutarı boş" dalı ölçülmemişti |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** kaldırma 0137'nin dokunduğu dosyaları 0136 hâline (`5d2f4285`) döndürerek yapıldı, sonraki üç commit'in değişiklikleri yeniden uygulandı ve diff'te dış işlem dışında satır kalmadığı gözle denetlendi. Göçün adet tutarı 0137 motoru silinmeden önce üretilen altınla (`0138-goc-altin.json`) sabitlendi. Kıyas altınına aylık rapor eklenirken raporun bugünün tarihini taşıyan alanı ayıklandı (0127 dersi). Savunmanın iki katmanı (özet satırı, tarihli okuma) ve triyaj düzeltmesi mutasyonla ölçüldü. Kapanış tabanı son kodla iki çekimde 0 fark verdi; ilk "sonra" çekimiyle 71 pikselin katları kadar çekimden çekime oynama ve triyajın eski kalem ekranındaki gerçek değişikliği (uyarı satırı kalktı) görüldü, onaylı görüntüler son koddan yeniden üretildi.
+
+**Bu spec'ten çıkarılan ders:** savunma eklenen her yolun tamamlayıcı testi, kaydın bütün dallarını sayarak yazılmalı (dokunulmadı / dokunuldu ve tutar dolu / dokunuldu ve tutar boş); yalnız "mutlu yolu" kaydeden test savunmanın kapattığı durumu açık bırakabilir. Kaldırma işinde "0137 öncesi hâline döndür" yöntemi hızlıdır ama sonraki commit'lerin dokunduğu dosyalar ayrıca yeniden uygulanmalı ve diff satır satır okunmalıdır.
