@@ -95,8 +95,9 @@ describe("Spec 0141 B: emniyet payı alanları", () => {
   it("AC-13 / AC-14 / AC-20 / AC-48: malzeme kartının iki kipinde emniyet payı yok; ızgara altı alan, sıra aynı; kayıtta anahtar yok", () => {
     render(<Katalog sekme="malzemeler" m0={[{ ...P304, emniyetPayi: 10 }]} />);
     fireEvent.click(screen.getByRole("button", { name: /Yeni Malzeme/ }));
-    const izgara = () => screen.getByLabelText("Malzeme adı").closest("[style*='grid']");
-    const etiketler = () => [...izgara().children].map(c => c.querySelector("label")?.textContent);
+    // Kullanıcı isteği 2026-11-10 ile: Ana tedarikçi alaşımın arkasına geldi, ölçü alanları kendi ızgarasında; altı alan ve
+    // sıraları aynı (Ana tedarikçi aradaki yeni konumunda, gider yetkisiyle).
+    const etiketler = () => ["malzeme-kimlik", "malzeme-olcu-alanlari"].flatMap(id => [...screen.getByTestId(id).children].map(c => c.querySelector("label")?.textContent)).filter(x => x !== "Ana tedarikçi");
     expect(etiketler()).toEqual(["Malzeme adı", "Alaşım / kalite", "Özgül ağırlık (g/cm³)", "Varsayılan fire (%)", "Geldiği boy (metre)", "Asgari sipariş (kilogram)"]);
     expect(screen.queryByLabelText("Malzeme emniyet payı")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /İptal|Vazgeç/ }));

@@ -23,11 +23,36 @@ export const GUNUN_KURU_DUGMESI = "Günün kurunu kullan";
 export const FIYAT_KARTTA_NOTU = "Fiyat, para birimi, kur, bantlar ve boy fiyatı \"Fiyatı Güncelle\" penceresinden değişir; değişiklik tarihli geçmişe yazılır.";
 const BOS_FORM = malzemeFormu({});
 
-// Fiyat kümesinin form alanları (yeni malzemede kartta, düzenlemede pencerede). Pencere de bu bileşeni çizer.
-export const FiyatAlanlari = ({ form, set, hatalar = {}, rates, ratesErr }) => {
-  const oneri = kurOnerisi(form.paraBirimi, rates, ratesErr);
+// Fiyat kümesinin çap bandı tablosu (fiyat kümesine girer). Kartta (yeni malzeme) ek fire tablosunun ALTINDA ayrı çizilir
+// (kullanıcı isteği 2026-11-10: fiyat, ek fire, çap bandı sırası); fiyat penceresi onu FiyatAlanlari'nın içinde çizer.
+export const FiyatBantlariAlani = ({ form, set, hatalar = {} }) => {
   const bantlar = form.bantlar || [];
   const bantSet = (i, alan, v) => set("bantlar", bantlar.map((b, j) => (j === i ? { ...b, [alan]: v } : b)));
+  return (
+    <div data-testid="fiyat-bant-bolumu">
+      <BolumBasligi>Çap bandı (isteğe bağlı)</BolumBasligi>
+      <Ipucu>{BANT_LAMA_NOTU} Bandı girilen çap seçer. İlk bandın alt sınırı 0'dır; en üst bant açık uçludur.</Ipucu>
+      <div data-testid="bant-listesi" style={{ marginTop: 8, marginBottom: 14 }}>
+        {bantlar.map((b, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: "var(--n500, #64748b)", width: 70 }}>Ø alt sınır</span>
+            <div style={{ width: 110 }}><Input value={i === 0 ? "0" : b.alt} disabled={i === 0} onChange={e => bantSet(i, "alt", e.target.value)} aria-label={`Bant ${i + 1} alt sınırı`} /></div>
+            <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>kilo fiyatı</span>
+            <div style={{ width: 120 }}><Input value={b.fiyat} onChange={e => bantSet(i, "fiyat", e.target.value)} aria-label={`Bant ${i + 1} kilo fiyatı`} /></div>
+            <Btn small variant="ghost" aria-label={`Bant ${i + 1} sil`} onClick={() => set("bantlar", bantlar.filter((_, j) => j !== i))}><Icon name="trash" size={13} /></Btn>
+          </div>
+        ))}
+        <Btn small variant="ghost" onClick={() => set("bantlar", [...bantlar, { alt: bantlar.length ? "" : "0", fiyat: "" }])}><Icon name="plus" size={13} /> Bant ekle</Btn>
+        <HataMetni>{hatalar.bantlar}</HataMetni>
+      </div>
+    </div>
+  );
+};
+
+// Fiyat kümesinin form alanları (yeni malzemede kartta, düzenlemede pencerede). Pencere de bu bileşeni çizer. `bantGoster` false ise
+// çap bandı tablosu burada çizilmez (kart onu ek fire tablosunun altına koyar).
+export const FiyatAlanlari = ({ form, set, hatalar = {}, rates, ratesErr, bantGoster = true }) => {
+  const oneri = kurOnerisi(form.paraBirimi, rates, ratesErr);
   return (
     <>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -58,21 +83,7 @@ export const FiyatAlanlari = ({ form, set, hatalar = {}, rates, ratesErr }) => {
                 <Btn small variant="ghost" onClick={() => set("kur", String(oneri.deger).replace(".", ","))}>{GUNUN_KURU_DUGMESI}</Btn>)}</Ipucu>}
         </Field>
       )}
-      <BolumBasligi>Çap bandı (isteğe bağlı)</BolumBasligi>
-      <Ipucu>{BANT_LAMA_NOTU} Bandı girilen çap seçer. İlk bandın alt sınırı 0'dır; en üst bant açık uçludur.</Ipucu>
-      <div data-testid="bant-listesi" style={{ marginTop: 8, marginBottom: 14 }}>
-        {bantlar.map((b, i) => (
-          <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: "var(--n500, #64748b)", width: 70 }}>Ø alt sınır</span>
-            <div style={{ width: 110 }}><Input value={i === 0 ? "0" : b.alt} disabled={i === 0} onChange={e => bantSet(i, "alt", e.target.value)} aria-label={`Bant ${i + 1} alt sınırı`} /></div>
-            <span style={{ fontSize: 12, color: "var(--n500, #64748b)" }}>kilo fiyatı</span>
-            <div style={{ width: 120 }}><Input value={b.fiyat} onChange={e => bantSet(i, "fiyat", e.target.value)} aria-label={`Bant ${i + 1} kilo fiyatı`} /></div>
-            <Btn small variant="ghost" aria-label={`Bant ${i + 1} sil`} onClick={() => set("bantlar", bantlar.filter((_, j) => j !== i))}><Icon name="trash" size={13} /></Btn>
-          </div>
-        ))}
-        <Btn small variant="ghost" onClick={() => set("bantlar", [...bantlar, { alt: bantlar.length ? "" : "0", fiyat: "" }])}><Icon name="plus" size={13} /> Bant ekle</Btn>
-        <HataMetni>{hatalar.bantlar}</HataMetni>
-      </div>
+      {bantGoster && <FiyatBantlariAlani form={form} set={set} hatalar={hatalar} />}
       <Field label="Boy fiyatı (bir boy, KDV hariç; boy yöntemli parçalar için)">
         <Input value={form.boyFiyati} onChange={e => set("boyFiyati", e.target.value)} placeholder="0,00" aria-label="Boy fiyatı" />
         <HataMetni>{hatalar.boyFiyati}</HataMetni>
@@ -219,23 +230,25 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
       {form && (
         <Modal title={form.id == null ? MALZEME_EKLE : "Malzemeyi Düzenle"} onClose={() => { if (!fireOnay) setForm(null); }} wide
           footer={<><Btn variant="ghost" onClick={() => setForm(null)}>Vazgeç</Btn><Btn onClick={kaydet}>Kaydet</Btn></>}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {/* Kullanıcı isteği 2026-11-10: alan sırası ad, alaşım, Ana tedarikçi; ölçü alanları; fiyat; ek fire; çap bandı. */}
+          <div data-testid="malzeme-kimlik" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Malzeme adı"><Input value={form.ad} onChange={e => set("ad", e.target.value)} aria-label="Malzeme adı" /><HataMetni>{hatalar.ad}</HataMetni></Field>
             <Field label="Alaşım / kalite"><Input value={form.alasim} onChange={e => set("alasim", e.target.value)} aria-label="Alaşım" /></Field>
+            {giderYetki && (
+              <Field label="Ana tedarikçi">
+                <Select value={form.tedarikciId} onChange={e => set("tedarikciId", e.target.value)} aria-label="Ana tedarikçi">
+                  <option value="">Seçilmedi</option>
+                  {tedSecenek.map(t => <option key={t.id} value={String(t.id)}>{t.ad}{t.hammadde === true ? " · hammadde" : ""}</option>)}
+                </Select>
+              </Field>
+            )}
+          </div>
+          <div data-testid="malzeme-olcu-alanlari" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
             <Field label="Özgül ağırlık (g/cm³)"><Input value={form.ozgulAgirlik} onChange={e => set("ozgulAgirlik", e.target.value)} placeholder="7,85" aria-label="Özgül ağırlık" /><HataMetni>{hatalar.ozgulAgirlik}</HataMetni></Field>
             <Field label="Varsayılan fire (%)"><Input value={form.fire} onChange={e => set("fire", e.target.value)} placeholder="0" aria-label="Varsayılan fire" /><HataMetni>{hatalar.fire}</HataMetni></Field>
             <Field label="Geldiği boy (metre)"><Input value={form.geldigiBoy} onChange={e => set("geldigiBoy", e.target.value)} placeholder="6" aria-label="Geldiği boy" /><HataMetni>{hatalar.geldigiBoy}</HataMetni></Field>
             <Field label="Asgari sipariş (kilogram)"><Input value={form.asgariSiparis} onChange={e => set("asgariSiparis", e.target.value)} aria-label="Asgari sipariş" /><HataMetni>{hatalar.asgariSiparis}</HataMetni></Field>
           </div>
-          <FireBantlariAlani form={form} set={set} hatalar={hatalar} />
-          {giderYetki && (
-            <Field label="Ana tedarikçi">
-              <Select value={form.tedarikciId} onChange={e => set("tedarikciId", e.target.value)} aria-label="Ana tedarikçi">
-                <option value="">Seçilmedi</option>
-                {tedSecenek.map(t => <option key={t.id} value={String(t.id)}>{t.ad}{t.hammadde === true ? " · hammadde" : ""}</option>)}
-              </Select>
-            </Field>
-          )}
           <BolumBasligi ust>Fiyat</BolumBasligi>
           {eski ? (
             <div data-testid="malzeme-fiyat-ozeti">
@@ -249,8 +262,10 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
               )}
             </div>
           ) : (
-            <FiyatAlanlari form={form} set={set} hatalar={hatalar} rates={rates} ratesErr={ratesErr} />
+            <FiyatAlanlari form={form} set={set} hatalar={hatalar} rates={rates} ratesErr={ratesErr} bantGoster={false} />
           )}
+          <FireBantlariAlani form={form} set={set} hatalar={hatalar} />
+          {!eski && <FiyatBantlariAlani form={form} set={set} hatalar={hatalar} />}
         </Modal>
       )}
 
