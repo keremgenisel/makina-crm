@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { guncellemeHataMetni } from "./lib/guncellemeHatasi";
 import { sonTahsilatHesabi, kapsamDisiTemizle } from "./lib/kasa";
 import LOGO from "./assets/logo.avif?inline";
 import {
@@ -697,7 +698,7 @@ export default function App() {
     const offA = window.appUpdater.onAvailable((v) => setAppUpd(p => ({ ...p, state: "available", latest: v })));
     const offP = window.appUpdater.onProgress((pct) => setAppUpd(p => ({ ...p, state: "downloading", progress: pct })));
     const offD = window.appUpdater.onDownloaded(() => setAppUpd(p => ({ ...p, state: "downloaded" })));
-    const offE = window.appUpdater.onError((m) => setAppUpd(p => ({ ...p, state: "error", error: m })));
+    const offE = window.appUpdater.onError((m) => setAppUpd(p => ({ ...p, state: "error", error: guncellemeHataMetni(m) })));
     return () => { offA?.(); offP?.(); offD?.(); offE?.(); };
   }, []);
 
@@ -731,7 +732,7 @@ export default function App() {
     setAppUpd({ state: "checking", latest: null, progress: 0, error: null });
     const res = await window.appUpdater.check();
     if (res?.error === "dev-mode") setAppUpd(p => ({ ...p, state: "devmode" }));
-    else if (res?.error) setAppUpd(p => ({ ...p, state: "error", error: res.error }));
+    else if (res?.error) setAppUpd(p => ({ ...p, state: "error", error: guncellemeHataMetni(res.error) }));
     else if (res?.latest && surumDahaYeni(res.latest, appVersion)) setAppUpd(p => ({ ...p, state: "available", latest: res.latest }));
     else setAppUpd(p => ({ ...p, state: "uptodate" }));
   };

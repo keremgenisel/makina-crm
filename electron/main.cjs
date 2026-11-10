@@ -214,14 +214,21 @@ ipcMain.handle("updater:check", async () => {
   }
 });
 
+// Kullanıcı isteği 2026-11-10: electron-updater'ın genel "error" olayı denetimde de tetikleniyor (açılıştaki ve altı saatlik sessiz
+// denetim GitHub'dan 504 alınca Ayarlar'daki kutu kendiliğinden kırmızıya dönüyordu). Olay yalnız indirme sürerken iletilir; denetim
+// hatası elle denetimde `updater:check` dönüşüyle gelir, sessiz denetimde yutulur.
+let indirmeSuruyor = false;
 ipcMain.handle("updater:download", async () => {
   if (!autoUpdater || !app.isPackaged) return false;
+  indirmeSuruyor = true;
   try {
     await autoUpdater.downloadUpdate();
     return true;
   } catch (err) {
     console.error("İndirme hatası:", err);
     return false;
+  } finally {
+    indirmeSuruyor = false;
   }
 });
 
@@ -263,6 +270,7 @@ function wireUpdaterEvents() {
     if (mainWin) mainWin.webContents.send("updater:downloaded");
   });
   autoUpdater.on("error", (err) => {
+    if (!indirmeSuruyor) return; // denetim hatası: elle denetim dönüş değeriyle bildirir, sessiz denetim yutar
     if (mainWin) mainWin.webContents.send("updater:error", err?.message || "Bilinmeyen hata");
   });
 }
