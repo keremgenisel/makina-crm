@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0141-isleme-payi-ve-emniyet-payi-kalkar.md` (Onaylandı, revizyon 2, 2026-11-10) |
+| **Spec** | `specs/done/0141-isleme-payi-ve-emniyet-payi-kalkar.md` (Tamamlandı, 2026-11-10) |
 | **Dal** | `feat/0141-pay-kalkar` (worktree `../wt0141`, `main` `74200ea6` üstünde) |
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-10): on önerinin hepsi; spec revizyon 2, kararlar 31–40 |
+| **Durum** | **Tamamlandı** (2026-11-10, commit `3da4bccb`); onay: Takım Yöneticisi 2026-11-10, on önerinin hepsi; spec revizyon 2, kararlar 31–40 |
 
 ---
 
@@ -204,3 +204,11 @@ Malzeme kaleminin işleme payı alanları ve malzeme ile parça kartlarının em
   yeniden çeker. Aynı kod da birçok pencerede 96–480 piksel oynadığı için değişmeyen ekranlardan yalnız 0 farklı olanlar `ayni`
   yazıldı; ötekilerin 0141 farkı aynı kodun tekrar farkına eşit (AC-61 testi bunu sabitler). Eşlemede değişen ekranlar
   `degisti` + onay (C11'in dört dosyası, ayrıca PartManager, MalzemeFiyatPenceresi, MalzemeEtkiOzeti); kapanışta `ayni`ye çevrilir.
+
+## 7. Kapanış
+
+Spec ve plan `specs/done/`'a taşındı, SCORECARD dolduruldu, README'ye satır eklendi, CLAUDE.md plan yolu ve commit güncellendi.
+Kanıt eşlemesinin `degisti` kayıtları (AC-11c) kaldırıldı: değişimin kanıtı `0141-piksel-raporu.json` ve JPEG'lerinde durur; aynı kod
+kendi tekrar çekiminde 96–480 piksel oynadığı için değişen ekranlar taban raporuna `ayni` olarak bağlanamaz (0 fark veren beş ekranın
+`ayni` kaydı yerinde). AC-61 testi kapanış hâlinde: değişen ekranların rapordaki farkı ve değişmeyenlerin aynı-kod oynamasını
+aşmaması. `tests/spec-atiflari.test.js` bekleme listesi boşaltıldı.

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | **Onaylandı**, revizyon 2 (Takım Yöneticisi, 2026-11-10; plan onayı, kararlar 31–40). Geliştirme başlayabilir. |
+| **Durum** | **Tamamlandı** (2026-11-10, commit `3da4bccb`; plan `specs/done/0141-uygulama-plani.md`, plan turu kararlar 31–40, triyaj planın §6'sında) |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Parça kartının maliyet kalemleri (`MaliyetKalemleriAlani.jsx`, `MalzemeSatiriAlani.jsx`, `PartManager.jsx`), Ayarlar › Katalog › Malzemeler (`MalzemeManager.jsx`), Stok › Parça/Yedek Parça Stoğu › Sipariş Listesi (`stock/SiparisPenceresi.jsx`), saf motorlar `malzeme.js` ve `siparisIhtiyaci.js`, form kurucuları `src/lib/urunAgaci.js` (`kalemFormu`) ve `src/lib/maliyetKalemleri.js` (eski alan okuması), `electron/db.cjs` (iki tablo, bir göç) ve yeni `electron/islemePayiGocuSaf.mjs`, kıyas fikstürleri ve altınları, `scripts/tests/db-roundtrip.cjs`, `scripts/tests/db-clean-install.cjs`, `scripts/tests/dis-islem-gocu.cjs`, `scripts/evidence/0009-sayfa.jsx`, `docs/evidence/kanit-eslemesi.json`, silinecek `tests/ui/emniyet-payi-0134.test.jsx`, `CLAUDE.md` |
@@ -660,7 +660,7 @@ Hepsi HEAD'de kodla doğrulandı (0140 uygulandıktan sonraki hâl).
 - [ ] Kanıt eşlemesinde değişen ekranlar `degisti` ve onaylı; kanıt aracının fikstürü katlandı
       (C11, C12).
 - [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
@@ -793,10 +793,13 @@ Satır sayıları ("48 plastik satır") bu spec'in ölçümünde değil, **spec 
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Uygulama commit** | `3da4bccb` | Dal `feat/0141-pay-kalkar`, taban `74200ea6`; kapanış ayrı commit |
+| **Spec revizyon sayısı** | 2 | QA turu (30 bulgu), plan turu (revizyon 2, kararlar 31–40: dokunulmamış kayıt dalı katlamayı atlıyordu) |
+| **Düzeltme turu sayısı** | 1 | Triyaj: bir orta, iki düşük bulgu |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Kanıt raporları ve eşleme üretilmemişti; sabit üç ondalık yuvarlama hassas ölçüde maliyeti kuruşlarca değiştiriyordu; AC-41'in metni uygulanan altın yenilemesiyle çelişiyordu |
+| **Regresyon sayısı** | 0 | Tam takım 519 dosya, 7264 test, Electron dahil; lint 0 hata |
+| **Kaçan hata** | 1 | Triyaj bulgu 2 (yuvarlamanın zararsızlığı yalnız bir ve dört ondalıklı olmayan ölçülerle ölçülmüştü) |
 
-**Bu spec'ten çıkarılan ders:**
+**Uygulamada bulunanlar:** plan turunda ölçülen dokunulmamış kayıt dalı (0135'in "eski alanları aynen kopyala" kuralı) form katlamasını atlıyordu; katlama tek türetmeye ve o dala da kondu. Kıyas fikstürleri birbirini okuduğu için 0138 ve 0140 altınları da eski kodla yenilenmek zorunda kaldı. Tarama kullanıcıya görünen iki eski "işleme payı dahil" metnini yakaladı. AC-5'in "%0,001" iddiası ölçüyle tutmadı (fark %0,00108; Excel'in 6,696'sı üç ondalıklı gösterim). Kanıt aracı aynı kodun iki çekiminde birçok pencerede 96–480 piksel oynuyor; gerçek değişim iki taraflı tekrar çekimle ayrıldı (45 ekran).
+
+**Bu spec'ten çıkarılan ders:** "kayıtta kalmış veri formda dönüştürülür" kuralı, kaydı formdan geçirmeden yazan her yolu da (burada dokunulmamış düzenleme) saymalı; dönüştürmenin asıl yeri tek türetmedir. Yuvarlamanın "zararsız" olduğu iddiası, kuralın varsaydığından hassas girdilerle ölçülmeli. Altın dosyaların "değişmez" iddiası, fikstürlerin birbirini okuyup okumadığı ölçülmeden yazılmamalı.

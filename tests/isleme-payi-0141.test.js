@@ -218,39 +218,32 @@ describe("Spec 0141: kaynak taramaları", () => {
   });
 });
 
-// Triyaj (bulgu 1), AC-61 / C11: kanıt raporları var; dört dosyanın değişen ekranları "degisti" ve onaylı; değişmeyen ekranların
-// 0141 farkı aynı kodun kendi tekrar çekimindeki oynamayı aşmaz (kanıt aracı bazı pencerelerde 96–480 piksel oynuyor; o ekranlar
-// "ayni" yazılamaz, fark taban raporundaki aynı-kod farkıyla sınanır). 0 fark veren değişmeyen ekranlar "ayni" ile taban raporunda.
+// Triyaj (bulgu 1), AC-61 / C11: kanıt raporları var. Spec done'a taşındığı için eşlemede `degisti` kaydı kalmaz (AC-11c); değişim
+// raporun kendisinden okunur: ekranın 0141 farkı, aynı kodun tekrar çekimindeki farkı (taban raporu) gürültü payından fazla aşıyorsa
+// değişmiştir. Kanıt aracı bazı pencerelerde aynı kodda da 96–480 piksel oynuyor; değişmeyen ekranların farkı bu oynamayı aşmaz.
+// 0 fark veren değişmeyen ekranlar taban raporuna "ayni" ile bağlıdır.
 describe("Spec 0141 AC-61: kanıt eşlemesi", () => {
   const oku = (f) => JSON.parse(fs.readFileSync(f, "utf8"));
   const P = "docs/evidence/0141-piksel-raporu.json", T = "docs/evidence/0141-taban-piksel-raporu.json";
-  const DORT = ["src/components/MalzemeSatiriAlani.jsx", "src/components/MaliyetKalemleriAlani.jsx", "src/components/MalzemeManager.jsx", "src/components/stock/SiparisPenceresi.jsx"];
-  it("AC-61: iki rapor var; dört dosyanın değişen ekranları degisti + 'spec 0141' onayıyla; parça kartı iki kip, malzeme kartı iki kip, sipariş tablosu dahil", () => {
+  const rP = Object.fromEntries(oku(P).map(r => [r.ad, r])), rT = Object.fromEntries(oku(T).map(r => [r.ad, r]));
+  const ekranlar = [...new Set(Object.keys(rP).map(a => a.replace(/-(aydinlik|karanlik)\.png$/, "")))];
+  const degisti = (e) => ["aydinlik", "karanlik"].some(t => (rP[`${e}-${t}.png`]?.piksel ?? 0) > (rT[`${e}-${t}.png`]?.piksel ?? 0) + 300);
+  it("AC-61: değişen ekranlar raporda (parça kartı iki kip, malzeme kartı iki kip, sipariş tablosu); spec done olduğu için degisti kaydı yok", () => {
+    for (const e of ["katalog-parca-0135-elle", "katalog-parca-0135-hesapla-bos", "katalog-malzeme-yeni", "katalog-malzeme-duzenle", "siparis-0140-parca-ihtiyaci"]) expect(degisti(e), e).toBe(true);
+    expect(ekranlar.filter(degisti).length).toBe(45);
     const { dosyalar } = oku("docs/evidence/kanit-eslemesi.json");
-    const rP = Object.fromEntries(oku(P).map(r => [r.ad, r])); oku(T);
-    for (const f of DORT) {
-      const deg = dosyalar[f].filter(k => k.rapor === P && k.beklenen === "degisti");
-      expect(deg.length, f).toBeGreaterThan(0);
-      for (const k of deg) {
-        expect(k.onay, f).toMatch(/^Takım Yöneticisi · 2026-11-10 · spec 0141 (A-R1|B-R1|B-R2|B-R4)$/);
-        for (const t of ["aydinlik", "karanlik"]) expect(rP[`${k.ekran}-${t}.png`]?.piksel, `${k.ekran}-${t}`).toBeGreaterThan(0);
-      }
-    }
-    const tumDeg = new Set(DORT.flatMap(f => dosyalar[f].filter(k => k.rapor === P).map(k => k.ekran)));
-    for (const e of ["katalog-parca-0135-elle", "katalog-parca-0135-hesapla-bos", "katalog-malzeme-yeni", "katalog-malzeme-duzenle", "siparis-0140-parca-ihtiyaci"]) expect(tumDeg.has(e), e).toBe(true);
+    expect(Object.values(dosyalar).flat().filter(k => k.rapor === P)).toEqual([]);
   });
   it("AC-61: değişmeyen ekranların farkı aynı kodun kendi tekrar çekimindeki farkı aşmaz; 0 farklı olanlar ayni kaydıyla", () => {
-    const { dosyalar } = oku("docs/evidence/kanit-eslemesi.json");
-    const rP = Object.fromEntries(oku(P).map(r => [r.ad, r])), rT = Object.fromEntries(oku(T).map(r => [r.ad, r]));
-    const degisen = new Set(Object.values(dosyalar).flatMap(v => v.filter(k => k.rapor === P && k.beklenen === "degisti").map(k => k.ekran)));
-    const degismeyen = [...new Set(Object.keys(rP).map(a => a.replace(/-(aydinlik|karanlik)\.png$/, "")))].filter(e => !degisen.has(e));
+    const degismeyen = ekranlar.filter(e => !degisti(e));
     expect(degismeyen.length).toBeGreaterThan(0);
     for (const e of degismeyen) for (const t of ["aydinlik", "karanlik"]) {
       const a = `${e}-${t}.png`;
-      if (!rP[a]?.piksel) continue;
-      expect(rP[a].piksel, a).toBeLessThanOrEqual(rT[a]?.piksel ?? 0);
+      expect(rP[a]?.piksel ?? 0, a).toBeLessThanOrEqual(rT[a]?.piksel ?? 0);
     }
-    for (const f of DORT) for (const k of dosyalar[f].filter(x => x.rapor === T)) expect(k.beklenen, `${f} ${k.ekran}`).toBe("ayni");
+    const { dosyalar } = oku("docs/evidence/kanit-eslemesi.json");
+    const tabanKayitlari = Object.values(dosyalar).flat().filter(k => k.rapor === T);
+    expect(tabanKayitlari.length).toBeGreaterThan(0);
+    for (const k of tabanKayitlari) expect(k.beklenen, k.ekran).toBe("ayni");
   });
 });
-
