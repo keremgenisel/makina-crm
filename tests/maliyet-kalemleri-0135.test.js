@@ -12,22 +12,23 @@ import {
 import { maliyetKalemleriOf, malzemeKalemiVarMi, kalemVarMi, TURETILEN_KALEM_ADI, MALIYET_KALEM_SINIRI } from "../src/lib/maliyetKalemleri";
 import { malzemeKatalogu, malzemeOzeti, kullanilanMalzemeler, malzemeKullanimi, fiyatEtkisi, BELIRSIZ_HATASI } from "../src/lib/malzeme";
 import { kalemdeGecenTedarikciler, tedarikciKullanim } from "../src/lib/gider";
-import { siparisIhtiyaci, emniyetPayiOf } from "../src/lib/siparisIhtiyaci";
+import { siparisIhtiyaci } from "../src/lib/siparisIhtiyaci";
 import { buildMergePlan } from "../src/lib/merge";
 import { uid } from "../src/lib/utils";
 import { parcaDisaAktarmaSatiri, parcaSatirlariniCoz, parcaIceAktarmaUygula, PARCA_AKTARMA_BASLIKLARI } from "../src/lib/parcaAktarma";
 import { topluKipOzeti, fiyatBaglamiKur, KIP_MALIYET } from "../src/lib/parcaFiyati";
 
 const BUGUN = "2026-11-08";
-const P304 = { id: 501, ad: "304 Paslanmaz", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, geldigiBoy: 6, emniyetPayi: 5,
+const P304 = { id: 501, ad: "304 Paslanmaz", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, geldigiBoy: 6,
   fiyatGecmisi: [{ gecerli: "", kiloFiyati: 2.5, paraBirimi: "USD", kur: 40 }, { gecerli: "2026-03-01", kiloFiyati: 2.95, paraBirimi: "USD", kur: 50 }] };
-const SAC = { id: 502, ad: "DKP Sac", ozgulAgirlik: 7.85, kiloFiyati: 38, emniyetPayi: 12 };
+const SAC = { id: 502, ad: "DKP Sac", ozgulAgirlik: 7.85, kiloFiyati: 38 };
 const DOVIZ = { id: 503, ad: "Kursuz", ozgulAgirlik: 7.85, kiloFiyati: 3, paraBirimi: "EUR" };
 const FIYATSIZ = { id: 504, ad: "Fiyatsız", ozgulAgirlik: 7.85 };
 const BOYLU = { id: 505, ad: "Boru", ozgulAgirlik: 7.9, boyFiyati: 600, geldigiBoy: 6 };
 const MALZEMELER = [P304, SAC, DOVIZ, FIYATSIZ, BOYLU];
 const KAT = malzemeKatalogu(MALZEMELER);
-const MIL = { tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5, fire: 8, adet: 1 };
+// Spec 0141 ile (C2): işleme payı ölçüye katlandı (140 + 4, 78 + 5); emniyet payı iki malzemeden silindi.
+const MIL = { tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8, adet: 1 };
 const SACK = { tur: "malzeme", malzemeId: 502, bicim: "sac", kalinlik: 3, en: 200, boy: 300, adet: 1 };
 const islem = (ad, tutar, tedarikciId) => ({ tur: "islem", ad, ...(tedarikciId != null ? { tedarikciId } : {}), tutar });
 const parca = (o = {}) => ({ id: 1, ad: "Parça", models: [], ...o });
@@ -63,7 +64,7 @@ describe("Spec 0135: toplam (R8, R14, R16, R19, R27/2, C10)", () => {
     expect(maliyetKalemleriOzeti([{ ...MIL, adet: 2 }], KAT).toplamK).toBe(2 * bir);
   });
   it("AC-26 / AC-15: aynı malzemeden iki farklı kesit iki kalem; tutarlar ayrı hesaplanıp toplanır", () => {
-    const ikinci = { ...MIL, cap: 60, boy: 40, payCap: 0, payBoy: 0, fire: 0 };
+    const ikinci = { ...MIL, cap: 60, boy: 40, fire: 0 };
     expect(parcaMaliyetKurus(parca({ maliyetKalemleri: [MIL, ikinci] }), undefined, undefined, KAT)).toBe(birim(MIL) + birim(ikinci));
   });
   it("AC-37 / AC-38 / AC-102: karma toplam; yalnız işlem; aynı tedarikçi iki işlem kaleminde, ikisi de toplama girer", () => {
@@ -159,7 +160,7 @@ describe("Spec 0135: sipariş ihtiyacı ve emniyet payı (R28–R30/2, C9/2)", (
   const modeller = (kit) => [{ model: "AK100", defaultParcalar: kit }];
   const sip = (parts, kit, partStock = []) => siparisIhtiyaci({ modeller: modeller(kit), satirlar: [{ model: "AK100", adet: "10" }], parts, partStock, malzemeler: MALZEMELER, tedarikciler: [] });
   it("AC-49 / AC-51: iki malzeme kalemi iki kesit satırı; kalem adedi sipariş adediyle çarpılır", () => {
-    const p = parca({ id: 7, ad: "Gövde", emniyetPayi: 0, maliyetKalemleri: [MIL, { ...SACK, adet: 3 }] });
+    const p = parca({ id: 7, ad: "Gövde", maliyetKalemleri: [MIL, { ...SACK, adet: 3 }] });
     const s = sip([p], [{ partId: 7, miktar: 1 }]);
     expect(s.kesitler).toHaveLength(2);
     const sac = s.kesitler.find(k => k.malzemeId === "502");
@@ -167,25 +168,24 @@ describe("Spec 0135: sipariş ihtiyacı ve emniyet payı (R28–R30/2, C9/2)", (
     expect(s.kesitler.find(k => k.malzemeId === "501").parcalar[0].adet).toBe(10);
   });
   it("AC-50: aynı malzemeden aynı ham kesitte iki ayrı parçanın kalemleri tek satırda toplanır", () => {
-    const a = parca({ id: 7, ad: "A", emniyetPayi: 0, maliyetKalemleri: [SACK] });
-    const b = parca({ id: 8, ad: "B", emniyetPayi: 0, maliyetKalemleri: [{ ...SACK, boy: 500 }, islem("Büküm", 5)] });
+    const a = parca({ id: 7, ad: "A", maliyetKalemleri: [SACK] });
+    const b = parca({ id: 8, ad: "B", maliyetKalemleri: [{ ...SACK, boy: 500 }, islem("Büküm", 5)] });
     const s = sip([a, b], [{ partId: 7, miktar: 1 }, { partId: 8, miktar: 1 }]);
     expect(s.kesitler).toHaveLength(1);
     expect(s.kesitler[0].parcalar.map(x => x.partId)).toEqual(["7", "8"]);
   });
   it("Karar 43: aynı parçanın aynı kesitteki eşdeğer iki kalemi dökümde tek satır (adet toplanır, hesap aynı)", () => {
-    const p = parca({ id: 7, ad: "A", emniyetPayi: 0, maliyetKalemleri: [SACK, { ...SACK, adet: 2 }] });
+    const p = parca({ id: 7, ad: "A", maliyetKalemleri: [SACK, { ...SACK, adet: 2 }] });
     const s = sip([p], [{ partId: 7, miktar: 1 }]);
     expect(s.kesitler[0].parcalar).toEqual([expect.objectContaining({ partId: "7", adet: 30 })]);
   });
-  it("AC-52 / AC-53 / AC-54 / AC-92: pay parçanınki; yoksa malzemelerin paylarının en büyüğü (5 ve 12 → 12); hiçbiri yoksa sıfır", () => {
-    expect(emniyetPayiOf(parca({ emniyetPayi: 3, maliyetKalemleri: [MIL, SACK] }), KAT)).toBe(3);
-    expect(emniyetPayiOf(parca({ maliyetKalemleri: [MIL, SACK] }), KAT)).toBe(12);
-    expect(emniyetPayiOf(parca({ maliyetKalemleri: [{ ...SACK, malzemeId: 503 }] }), KAT)).toBe(0);
+  // Spec 0141 ile ters çevrildi (B-R3, karar 34): emniyet payı kalktı. AC-52–AC-54/92 payın önceliğini sınıyordu; aynı veride
+  // sipariş adedi ihtiyacın yukarı yuvarlanmışıdır (karşılığı tests/isleme-payi-0141.test.js AC-17).
+  it("AC-52 / AC-53 / AC-54 / AC-92 (spec 0141 ile): pay uygulanmaz; iki kalemli parçada ihtiyaç 10, kesit adedi 10, satırda pay yok", () => {
     const s = sip([parca({ id: 7, ad: "A", maliyetKalemleri: [MIL, SACK] })], [{ partId: 7, miktar: 1 }]);
-    expect(s.parcalar[0].pay).toBe(12);
-    expect(s.parcalar[0].ihtiyac).toBe(Math.ceil(10 * 1.12));
-    expect(s.kesitler.find(k => k.malzemeId === "502").parcalar[0].adet).toBe(Math.ceil(10 * 1.12)); // pay kesit tarafına ikinci kez girmez
+    expect(s.parcalar[0]).not.toHaveProperty("pay");
+    expect(s.parcalar[0].ihtiyac).toBe(10);
+    expect(s.kesitler.find(k => k.malzemeId === "502").parcalar[0].adet).toBe(10);
   });
   it("AC-55 / AC-56 / AC-109 (motor): işlem kalemi satır üretmez; yalnız işlem kalemli parça parça tablosunda, malzeme tablosunda yok, hazır sayaca girer", () => {
     const s = sip([parca({ id: 9, ad: "Kaplamalı", maliyetKalemleri: [islem("Kaplama", 10)] })], [{ partId: 9, miktar: 1 }]);
@@ -195,7 +195,7 @@ describe("Spec 0135: sipariş ihtiyacı ve emniyet payı (R28–R30/2, C9/2)", (
   });
   it("Triyaj bulgu 3: geçersiz adet (0, 2,5, -1) maliyette 'girilmedi', siparişte eksik; iki taraf aynı kuralla okur", () => {
     for (const adet of [0, 2.5, -1]) {
-      const p = parca({ id: 7, ad: "A", emniyetPayi: 0, maliyetKalemleri: [{ ...SACK, adet }] });
+      const p = parca({ id: 7, ad: "A", maliyetKalemleri: [{ ...SACK, adet }] });
       expect(parcaMaliyetKurus(p, undefined, undefined, KAT), String(adet)).toBeNull();
       const s = sip([p], [{ partId: 7, miktar: 1 }]);
       expect(s.eksik.parca, String(adet)).toBe(1);
@@ -294,8 +294,9 @@ const geciyor = (desen, kokler = ["src", "electron"]) => kokler.flatMap(tara).fi
 describe("Spec 0135: kaynak taramaları", () => {
   it("AC-110 / C1/2 / R23/2: eski iki alanı doğrudan okuyan yer yalnız türetme modülü ve gerekçeli istisnalar (Karar 40)", () => {
     // Gerekçeli istisnalar: db.cjs (kalıcılık, dört nokta), merge.js (eski üç eşleme, R34/2). Parça kartı eski alanları ortak
-    // sabitten kopyalar (ESKI_MALIYET_ANAHTARLARI), adlarını anmaz.
-    expect(geciyor(/\.malzemeSatiri\b|\.hammaddeler\b/)).toEqual(["electron/db.cjs", "src/lib/maliyetKalemleri.js", "src/lib/merge.js"]);
+    // sabitten kopyalar (ESKI_MALIYET_ANAHTARLARI), adlarını anmaz. Spec 0141 ile (D-R3/2): işleme payı göçünün saf çekirdeği eski
+    // `malzemeSatiri`'ni de katlar.
+    expect(geciyor(/\.malzemeSatiri\b|\.hammaddeler\b/)).toEqual(["electron/db.cjs", "electron/islemePayiGocuSaf.mjs", "src/lib/maliyetKalemleri.js", "src/lib/merge.js"]);
     expect(kod("src/components/PartManager.jsx")).not.toMatch(/malzemeSatiri|hammaddeler/);
     for (const f of ["src/lib/urunAgaci.js", "src/lib/malzeme.js", "src/lib/gider.js", "src/lib/siparisIhtiyaci.js", "src/lib/parcaAktarma.js"]) {
       expect(kod(f), f).toMatch(/maliyetKalemleri/);
@@ -323,7 +324,10 @@ describe("Spec 0135: kaynak taramaları", () => {
     expect(kod("electron/server.cjs")).not.toMatch(/maliyetKalemleri/);
   });
   it("Karar 39: türetme modülü hiçbir lib modülünü içe almaz (döngüsel içe aktarma olmasın)", () => {
-    expect(readFileSync("src/lib/maliyetKalemleri.js", "utf8")).not.toMatch(/^import /m);
+    // Spec 0141 ile (karar 33): tek istisna hiçbir şey içe almayan katlama çekirdeği (electron/islemePayiGocuSaf.mjs).
+    const importlar = readFileSync("src/lib/maliyetKalemleri.js", "utf8").match(/^import .*$/gm) || [];
+    expect(importlar).toEqual(['import { islemePayiKatla } from "../../electron/islemePayiGocuSaf.mjs";']);
+    expect(readFileSync("electron/islemePayiGocuSaf.mjs", "utf8")).not.toMatch(/^import /m);
   });
   it("AC-116 / C7 / C7/2: sürüm notu planda; iki bilinen sonuç ve plan turu Karar 31/32'nin sonucu yazılı", () => {
     const plan = readFileSync(existsSync("specs/done/0135-uygulama-plani.md") ? "specs/done/0135-uygulama-plani.md" : "specs/0135-uygulama-plani.md", "utf8");

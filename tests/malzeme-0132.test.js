@@ -18,6 +18,8 @@ const C8620 = { id: 2, ad: "8620", ozgulAgirlik: 7.85, kiloFiyati: 100 };
 const kat = (...m) => M.malzemeKatalogu(m.length ? m : [P304, C8620]);
 const oz = (s, k = kat()) => M.malzemeOzeti(s, k);
 const MIL = { malzemeId: 1, bicim: "mil", cap: 140, boy: 78 };
+// Spec 0141 ile (C2, karar 34): işleme payı kalktı; eski `MIL + payCap 4, payBoy 5` satırı ölçüye katlanmış hâliyle (Ø144 × 83).
+const MIL144 = { ...MIL, cap: 144, boy: 83 };
 const kod = (f) => readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 const dosyalar = (dir) => readdirSync(dir).flatMap(f => { const p = join(dir, f); return statSync(p).isDirectory() ? (f === "map" ? [] : dosyalar(p)) : /\.(js|jsx)$/.test(f) ? [p] : []; });
 
@@ -185,15 +187,16 @@ describe("Spec 0132: malzemeden ağırlık ve maliyet", () => {
     expect(M.ucOndalik(kg)).toBe(0.393);
     expect(M.kgMetni(0.3925)).toBe("0,393 kg");
   });
-  it("AC-34: işleme payı çapa ve boya ayrı eklenir → 144 × 83, 10,679 kg", () => {
-    const s = { ...MIL, payCap: 4, payBoy: 5 };
+  // Spec 0141 ile (A-R2, karar 34): pay kalktı; girilen ölçü satın alınan ölçüdür, aynı ağırlık katlanmış ölçüyle.
+  it("AC-34: girilen ölçü ham ölçüdür → 144 × 83, 10,679 kg", () => {
+    const s = MIL144;
     expect(M.hamOlculer(s)).toEqual({ cap: 144, boy: 83 });
     expect(M.ucOndalik(oz(s).hamKg)).toBe(10.679);
   });
   it("AC-35 / AC-83: fire pay dahil ağırlığa eklenir → 11,533 kg; fire payın altına uygulanan rakam reddedilir", () => {
-    const s = { ...MIL, payCap: 4, payBoy: 5, fire: 8 };
+    const s = { ...MIL144, fire: 8 }; // spec 0141 ile katlanmış ölçü
     expect(M.ucOndalik(oz(s).fireliKg)).toBe(11.533);
-    const yanlis = oz(MIL).hamKg * 1.08 + (oz({ ...MIL, payCap: 4, payBoy: 5 }).hamKg - oz(MIL).hamKg);
+    const yanlis = oz(MIL).hamKg * 1.08 + (oz(MIL144).hamKg - oz(MIL).hamKg);
     expect(M.ucOndalik(yanlis)).not.toBe(11.533);
   });
   it("AC-36: satırda fire boşsa malzeme kartındaki varsayılan", () => {
@@ -203,15 +206,15 @@ describe("Spec 0132: malzemeden ağırlık ve maliyet", () => {
     const o = oz(MIL); expect(o.fire).toBe(0); expect(o.fireliKg).toBe(o.hamKg); expect(o.maliyetK).toBeGreaterThan(0);
   });
   it("AC-38: ρ 7,90, Ø144 × 83, %8 fire, 2,95 $, kur 50 → 1.701,12 ₺", () => {
-    expect(oz({ ...MIL, payCap: 4, payBoy: 5, fire: 8 }).maliyetK).toBe(170112);
+    expect(oz({ ...MIL144, fire: 8 }).maliyetK).toBe(170112); // spec 0141 ile katlanmış ölçü
   });
   it("AC-39: ara değer yuvarlanmaz; yuvarlanmış ağırlıkla çıkan rakam reddedilir, yuvarlama yalnız kuruşa", () => {
     // AC-38'in girdilerinde iki yol tesadüfen aynı kuruşa düşer (1.701,1235 ve 1.701,1175); fark kilo fiyatı büyüyünce görünür.
-    const o = oz({ ...MIL, payCap: 4, payBoy: 5, fire: 8 });
+    const o = oz({ ...MIL144, fire: 8 }); // spec 0141 ile katlanmış ölçü
     expect(o.fireliKg).not.toBe(M.ucOndalik(o.fireliKg));
     expect(o.maliyetK).toBe(Math.round(o.fireliKg * 2.95 * 50 * 100));
     const k = kat({ id: 9, ad: "Pahalı", ozgulAgirlik: 7.9, kiloFiyati: 1000 });
-    const p = oz({ ...MIL, malzemeId: 9, payCap: 4, payBoy: 5, fire: 8 }, k);
+    const p = oz({ ...MIL144, malzemeId: 9, fire: 8 }, k);
     expect(p.maliyetK).toBe(1153304);
     expect(Math.round(M.ucOndalik(p.fireliKg) * 1000 * 100)).not.toBe(p.maliyetK);
   });
@@ -233,7 +236,7 @@ describe("Spec 0132: malzemeden ağırlık ve maliyet", () => {
   });
   it("AC-44: boy yönteminde maliyet boy fiyatı ve uzunluktan; kilo hesabı yapılmaz", () => {
     const m = { id: 4, ad: "Boru", paraBirimi: "TRY", boyFiyati: 600, geldigiBoy: 6 };
-    const o = oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 173, payBoy: 7, yontem: "boy" }, kat(m));
+    const o = oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" }, kat(m)); // spec 0141 ile katlanmış boy
     expect(o.hamKg).toBeNull();
     expect(o.maliyetK).toBe(Math.round((180 / 6000) * 600 * 100)); // 18,00 ₺
   });
@@ -245,7 +248,7 @@ describe("Spec 0132: malzemeden ağırlık ve maliyet", () => {
   it("AC-46: sıfır ya da negatif ölçü reddedilir", () => {
     expect(M.malzemeSatiriDogrula({ malzemeId: 1, bicim: "mil", cap: "0", boy: "10" }).hatalar.cap).toBe(M.OLCU_HATASI);
     expect(M.malzemeSatiriDogrula({ malzemeId: 1, bicim: "mil", cap: "-3", boy: "10" }).hatalar.cap).toBe(M.OLCU_HATASI);
-    expect(M.malzemeSatiriDogrula({ malzemeId: 1, bicim: "mil", cap: "5", boy: "10", payCap: "-1" }).hatalar.payCap).toBe(M.PAY_HATASI);
+    // Spec 0141 ile (A-R5): pay doğrulaması ve PAY_HATASI kalktı; karşılığı tests/isleme-payi-0141.test.js AC-10.
   });
   it("AC-67: boy yönteminde özgül ağırlık istenmez", () => {
     const m = { id: 4, ad: "Boru", boyFiyati: 600, geldigiBoy: 6 };
@@ -260,9 +263,9 @@ describe("Spec 0132: malzemeden ağırlık ve maliyet", () => {
     const m = { id: 4, ad: "Boru", boyFiyati: 600, geldigiBoy: 6, fire: 10 };
     expect(oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" }, kat(m)).maliyetK).toBe(1980);
   });
-  it("AC-70: bandı ham çap seçer (140 + 4 → 144'ün bandı)", () => {
+  it("AC-70: bandı ham çap seçer (spec 0141 ile girilen çap: 144'ün bandı)", () => {
     const b = { ...P304, bantlar: [{ alt: 0, fiyat: 2.5 }, { alt: 142, fiyat: 3 }] };
-    expect(oz({ ...MIL, payCap: 4 }, kat(b)).fiyat).toBe(3);
+    expect(oz({ ...MIL, cap: 144 }, kat(b)).fiyat).toBe(3);
     expect(oz(MIL, kat(b)).fiyat).toBe(2.5);
   });
   it("AC-71: lama ve sacda bant uygulanmaz, tek kilo fiyatı", () => {
@@ -270,12 +273,12 @@ describe("Spec 0132: malzemeden ağırlık ve maliyet", () => {
     expect(oz({ malzemeId: 2, bicim: "lama", kalinlik: 10, genislik: 20, boy: 125 }, kat(b)).fiyat).toBe(100);
     expect(oz({ malzemeId: 2, bicim: "sac", kalinlik: 10, en: 20, boy: 125 }, kat(b)).fiyat).toBe(100);
   });
-  it("AC-81: lamada pay kalınlığa, genişliğe ve boya ayrı eklenir", () => {
-    expect(M.hamOlculer({ bicim: "lama", kalinlik: 10, genislik: 20, boy: 125, payKalinlik: 1, payGenislik: 2, payBoy: 3 })).toEqual({ kalinlik: 11, genislik: 22, boy: 128 });
-  });
-  it("AC-82: boruda pay çapa ve boya eklenir, et kalınlığına eklenmez", () => {
-    expect(M.hamOlculer({ bicim: "boru", cap: 19, et: 1.5, boy: 173, payCap: 1, payBoy: 2, payKalinlik: 9 })).toEqual({ cap: 20, et: 1.5, boy: 175 });
-    expect(M.malzemeSatiriDogrula({ malzemeId: 1, bicim: "boru", cap: "19", et: "1,5", boy: "173", payKalinlik: "9" }).kayit).not.toHaveProperty("payKalinlik");
+  // Spec 0141 ile ters çevrildi (A-R1, A-R2, karar 34): AC-81 ve AC-82 işleme payının kendisini sınıyordu. Ham ölçü artık girilen
+  // ölçüdür; pay anahtarı motora verilse de okunmaz (katlama tek türetmede, tests/isleme-payi-0141.test.js AC-10, AC-44, AC-64).
+  it("AC-81 / AC-82 (spec 0141 ile): lama ve boruda ham ölçü girilen ölçüdür; pay anahtarı okunmaz, kayda yazılmaz", () => {
+    expect(M.hamOlculer({ bicim: "lama", kalinlik: 10, genislik: 20, boy: 125, payKalinlik: 1, payGenislik: 2, payBoy: 3 })).toEqual({ kalinlik: 10, genislik: 20, boy: 125 });
+    expect(M.hamOlculer({ bicim: "boru", cap: 19, et: 1.5, boy: 173, payCap: 1, payBoy: 2 })).toEqual({ cap: 19, et: 1.5, boy: 173 });
+    expect(M.malzemeSatiriDogrula({ malzemeId: 1, bicim: "boru", cap: "19", et: "1,5", boy: "173", payCap: "9" }).kayit).not.toHaveProperty("payCap");
   });
   it("Karar 27: döviz fiyatlı ve kuru boş malzeme eksik, nedeni kur girilmedi; kayıt engellenmez", () => {
     const m = { ...P304, kur: undefined };

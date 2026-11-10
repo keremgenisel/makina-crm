@@ -6,7 +6,7 @@ export const PARCALAR = [
   { id: 62, ad: "Kayış", kod: "K-62", tip: "Standart", models: [], fiyatTRY: "1250", fiyatEUR: 30 },
   { id: 63, ad: "Pim", kod: "P-63", tip: "Standart", models: [] },
   { id: 64, ad: "Bağlantı seti", kod: "S-64", tip: "Standart", models: [], fiyatTRY: 1000, setIcerigi: [{ partId: 61, miktar: 2 }, { partId: 62, miktar: 1 }] },
-  { id: 65, ad: "Kesme mili", kod: "M-65", tip: "Standart", models: [], fiyatTRY: 4500, malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5, fire: 8 } },
+  { id: 65, ad: "Kesme mili", kod: "M-65", tip: "Standart", models: [], fiyatTRY: 4500, malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8 } },
   { id: 66, ad: "Excel pulu", kod: "E-66", tip: "Standart", models: [], fiyatTRY: 99.5, maliyet: 40 },
 ];
 export const MALZEMELER = [P304];

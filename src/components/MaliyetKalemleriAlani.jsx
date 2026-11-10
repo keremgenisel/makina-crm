@@ -2,7 +2,6 @@ import { Field, Input, Select, Btn, Icon, TutarInput } from "./ui";
 import { HataMetni, Ipucu, BolumBasligi, Segment } from "./tasarim";
 import { MalzemeSatiriAlani } from "./MalzemeSatiriAlani";
 import { KIP_ADLARI, KIP_ELLE } from "../lib/parcaFiyati";
-import { EMNIYET_PAYI_ETIKETI, EMNIYET_PAYI_IPUCU } from "../lib/malzeme";
 import { MALIYET_KALEM_SINIRI } from "../lib/maliyetKalemleri";
 import {
   MALIYET_ETIKETI, MALIYET_IPUCU, maliyetMetniKurus, KAYNAK_ELLE, KAYNAK_ICERIK, kalemKaynakMetni, SET_PASIF_NEDENI,
@@ -21,17 +20,6 @@ export const KIP_SET_PASIF_NEDENI = "Set içeriği dolu: maliyet bileşenlerden 
 export const KIP_ONAY_ELLE = "Elle sabit kipine geçilince maliyet kalemleri listeden kalkar.";
 export const KIP_ONAY_HESAPLA = "Hesapla kipine geçilince elle girilen maliyet temizlenir.";
 const FIELDSET_STILI = { border: 0, padding: 0, margin: 0, minWidth: 0 };
-
-// R6, R6/2 (Karar 42): emniyet payı kipten bağımsız, kip seçicisinin altında; set doluyken pasif.
-const PayAlani = ({ deger, setDeger, hata }) => (
-  <div style={{ maxWidth: 260 }} data-testid="emniyet-payi-alani">
-    <Field label={EMNIYET_PAYI_ETIKETI}>
-      <Input value={deger ?? ""} onChange={e => setDeger(e.target.value)} placeholder="Malzemedeki pay" aria-label="Parça emniyet payı" />
-      <HataMetni>{hata}</HataMetni>
-      <Ipucu>{EMNIYET_PAYI_IPUCU}</Ipucu>
-    </Field>
-  </div>
-);
 
 // R17, R17/2, R18–R21 (AC-32–AC-40, AC-101): işlem kalemi. Ad ve tutar herkese görünür; tedarikçi seçicisi yalnız gider
 // yetkisiyle (R21), bütün canlı tedarikçiler, hammadde işaretliler başta; kaydın kendi tedarikçisinin adı ham diziden ibareyle.
@@ -80,7 +68,7 @@ const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hat
 // R7–R11, R20/2, R35/2, R39, R40–R43: kalem listesi, boş durum, iki ekleme düğmesi, toplam ve koşullu üç ibare. Toplam ve satır
 // tutarları ebeveynin tek canlı özetinden (`ozet`, `urunAgaci.formKalemOzeti`); bu bileşen çarpım ve toplama yapmaz (C2).
 export const MaliyetKalemleriAlani = ({
-  kip, onKip, kalemler = [], setKalemler, elleDeger, setElleDeger, elleHata = null, emniyetPayi, setEmniyetPayi, payHata = null,
+  kip, onKip, kalemler = [], setKalemler, elleDeger, setElleDeger, elleHata = null,
   malzemeler = [], hamMalzemeler = [], tedarikciler = [], giderYetki = false, hatalar = {}, uyarilar = {}, ozet = null, set = false, kaynak = null,
 }) => {
   const hesapla = kip === MALIYET_KIP_HESAPLA;
@@ -99,9 +87,6 @@ export const MaliyetKalemleriAlani = ({
           options={[{ value: MALIYET_KIP_ELLE, label: MALIYET_KIP_ADLARI[MALIYET_KIP_ELLE] }, { value: MALIYET_KIP_HESAPLA, label: MALIYET_KIP_ADLARI[MALIYET_KIP_HESAPLA] }]} />
         {set && <div data-testid="kip-set-pasif" style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{KIP_SET_PASIF_NEDENI}</div>}
       </div>
-      <fieldset disabled={set} style={FIELDSET_STILI}>
-        {setEmniyetPayi && <PayAlani deger={emniyetPayi} setDeger={setEmniyetPayi} hata={payHata} />}
-      </fieldset>
       {kaynak && <div data-testid="maliyet-kaynagi" style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 4 }}>
         {kaynak.tur === "icerik" ? KAYNAK_ICERIK : kaynak.tur === "kalem" ? kalemKaynakMetni(kaynak) : KAYNAK_ELLE}</div>}
       {!hesapla ? (

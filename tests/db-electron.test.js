@@ -53,6 +53,13 @@ describe("SQLite katmanı (Electron altında)", () => {
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
   }, 150000);
 
+  it("spec 0141: işleme payı göçü; iki alan, çöpteki parça, yalnız iki sütun, koşullu yedek, bayraksız ikinci açılış, üç dal (AC-33..AC-37, AC-53..AC-57)", () => {
+    const r = runElectron("isleme-payi-gocu.cjs");
+    if (r.status !== 0) console.error(r.stdout, r.stderr);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+  }, 150000);
+
   it("temiz kurulumda şema tam (ilk oturumda yeni sütunlara yazma çökmez)", () => {
     const r = runElectron("db-clean-install.cjs");
     expect(r.status).toBe(0);

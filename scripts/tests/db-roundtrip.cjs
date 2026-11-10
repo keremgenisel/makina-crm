@@ -932,7 +932,7 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
     fiyatGecmisi: [{ gecerli: "", kiloFiyati: 2.85, paraBirimi: "USD", kur: 48 }, { gecerli: "2026-06-01", kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, bantlar: [{ alt: 0, fiyat: 2.95 }] }] };
   const sade = { id: 502, ad: "Sade" };
   const cop = { id: 503, ad: "Çöpteki", ozgulAgirlik: 7.85, deletedAt: "2026-10-01T09:00:00.000Z" };
-  const satir = { malzemeId: 501, bicim: "mil", yontem: "boy", cap: 140, boy: 78, payCap: 4, payBoy: 5, fire: 8 };
+  const satir = { malzemeId: 501, bicim: "mil", yontem: "boy", cap: 144, boy: 83, fire: 8 }; // spec 0141 ile: pay ölçüye katlandı (göç her açılışta katlar)
   const girdi = structuredClone(GOVDE_GIRDISI);
   girdi.malzemeler = [tam, sade, cop];
   girdi.parts[0].malzemeSatiri = satir;
@@ -957,14 +957,15 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0132 AC-61: boş nesne olarak yazılan malzeme satırı gövdede yok", !("malzemeSatiri" in c.parts.find(p => p.id === 8)));
 }
 
-// ── Spec 0134 C4, AC-58–AC-60 (Karar 28): emniyet payı parçada ve malzemede kendi sütunu; boş pay NULL ve gövdede yok; payı olmayan
-// parça ve malzemenin gövdesi spec öncesiyle birebir (0097 ve 0132 altınları).
+// ── Spec 0134 C4, AC-58–AC-60; spec 0141 ile ters çevrildi (D-R1, D-R1/2, D-R1/3, AC-38, AC-39, AC-58, AC-66): emniyet payı
+// sütunları şemada ölü kalır. Değeri dolu gövde yazılmaz (sütun NULL), okumada gövdeye girmez; payı olmayan gövde spec öncesiyle
+// (0097 altını) birebir. Sütunlar var olan veritabanında durur.
 {
   const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
   const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
   const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
   dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
-  check("spec 0134 AC-58: payı olmayan parçaların gövdesi spec öncesiyle birebir, emniyetPayi anahtarı yok", esit(dbmod.readBlobFromDb().parts, once.parts));
+  check("spec 0134 AC-58 / spec 0141 C1: payı olmayan parçaların gövdesi spec öncesiyle birebir, emniyetPayi anahtarı yok", esit(dbmod.readBlobFromDb().parts, once.parts));
   const girdi = structuredClone(GOVDE_GIRDISI);
   girdi.parts[0].emniyetPayi = 10;
   girdi.parts[1].emniyetPayi = 0;
@@ -975,13 +976,23 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   const ham = new Database(dbYol);
   const ps = ham.prepare(`SELECT id, emniyetPayi FROM parts`).all();
   const ms = ham.prepare(`SELECT id, emniyetPayi FROM malzemeler`).all();
+  const sutun = (t) => ham.prepare(`PRAGMA table_info(${t})`).all().some(c => c.name === "emniyetPayi");
+  check("spec 0141 AC-38 / AC-66: parts ve malzemeler tablolarında emniyetPayi sütunu duruyor", sutun("parts") && sutun("malzemeler"));
   ham.close();
-  check("spec 0134 C4: parça payı REAL sütunda, boş pay NULL", ps.find(r => r.id === 7)?.emniyetPayi === 10 && ps.find(r => r.id === 8)?.emniyetPayi === 0 && ps.filter(r => r.id !== 7 && r.id !== 8).every(r => r.emniyetPayi === null));
-  check("spec 0134 C4: malzeme payı REAL sütunda, boş pay NULL", ms.find(r => r.id === 601)?.emniyetPayi === 12.5 && ms.find(r => r.id === 602)?.emniyetPayi === null);
+  check("spec 0141 AC-39 / D-R1/2: dolu emniyet payı yazılmaz, bütün satırlarda NULL", ps.length > 0 && ps.every(r => r.emniyetPayi === null) && ms.every(r => r.emniyetPayi === null));
   dbmod.migrateFromJsonIfNeeded();
   const c = dbmod.readBlobFromDb();
-  check("spec 0134 AC-59: parçanın payı (sıfır dahil) geri gelir", c.parts.find(p => p.id === 7)?.emniyetPayi === 10 && c.parts.find(p => p.id === 8)?.emniyetPayi === 0);
-  check("spec 0134 AC-60 / AC-58: malzemenin payı geri gelir, paysız malzemede anahtar yok", c.malzemeler.find(m => m.id === 601)?.emniyetPayi === 12.5 && esit(c.malzemeler.find(m => m.id === 602), { id: 602, ad: "Paysız" }));
+  check("spec 0141 AC-39: okumada parçada emniyetPayi anahtarı yok", c.parts.every(p => !("emniyetPayi" in p)));
+  check("spec 0141 AC-58: okumada malzemede emniyetPayi anahtarı yok", esit(c.malzemeler.find(m => m.id === 601), { id: 601, ad: "Paylı" }) && esit(c.malzemeler.find(m => m.id === 602), { id: 602, ad: "Paysız" }));
+  // AC-58'in eski yarısı: ham SQL ile dolu değer yazılmış (eski sürümün bıraktığı) satır da gövdeye girmez.
+  dbmod.close();
+  const ham2 = new Database(dbYol);
+  ham2.prepare(`UPDATE malzemeler SET emniyetPayi = 9 WHERE id = 601`).run();
+  ham2.prepare(`UPDATE parts SET emniyetPayi = 9 WHERE id = 7`).run();
+  ham2.close();
+  dbmod.migrateFromJsonIfNeeded();
+  const c2 = dbmod.readBlobFromDb();
+  check("spec 0141 AC-58: sütunda kalmış değer okumada gövdeye girmez (genel null süzgecinden önce ayıklanır)", !("emniyetPayi" in c2.malzemeler.find(m => m.id === 601)) && !("emniyetPayi" in c2.parts.find(p => p.id === 7)));
 }
 
 // ── Spec 0139 C7, AC-19, AC-20: malzemenin çap bandına göre ek fire tablosu kendi JSON sütunu; boş tablo NULL ve gövdede anahtar yok.
@@ -1048,7 +1059,7 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   const b0 = dbmod.readBlobFromDb();
   check("spec 0135 AC-77: kalemsiz parçaların gövdesi spec öncesiyle birebir, maliyetKalemleri anahtarı yok", esit(b0.parts, once.parts) && b0.parts.every(p => !("maliyetKalemleri" in p)));
   const kalemler = [
-    { tur: "malzeme", malzemeId: 501, bicim: "boru", yontem: "boy", cap: 60, et: 5, boy: 400, payCap: 2, payBoy: 3, fire: 4, adet: 2 },
+    { tur: "malzeme", malzemeId: 501, bicim: "boru", yontem: "boy", cap: 62, et: 5, boy: 403, fire: 4, adet: 2 }, // spec 0141 ile katlandı
     { tur: "islem", ad: "Lazer kesim", tedarikciId: 31, tutar: 125.5 },
     { tur: "islem", ad: "Kaplama", tutar: null },
   ];
@@ -1067,7 +1078,7 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   const okunan = c.parts.find(p => p.id === 7)?.maliyetKalemleri;
   check("spec 0135 AC-78: kalemlerin bütün alanları birebir geri gelir", esit(okunan, kalemler));
   check("spec 0135 AC-90 / AC-91: tür ayırıcısı, düz malzeme alanları, tedarikçisiz kalemde anahtar yok, boş tutar null",
-    okunan?.[0]?.tur === "malzeme" && okunan?.[0]?.cap === 60 && okunan?.[1]?.tur === "islem" && !("tedarikciId" in (okunan?.[2] || {})) && okunan?.[2]?.tutar === null);
+    okunan?.[0]?.tur === "malzeme" && okunan?.[0]?.cap === 62 /* spec 0141 ile katlandı */ && okunan?.[1]?.tur === "islem" && !("tedarikciId" in (okunan?.[2] || {})) && okunan?.[2]?.tutar === null);
   check("spec 0135 AC-77: boş olarak yazılan kalem listesi gövdede yok", !("maliyetKalemleri" in c.parts.find(p => p.id === 8)));
 }
 

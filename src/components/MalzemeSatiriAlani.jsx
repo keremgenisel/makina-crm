@@ -1,13 +1,13 @@
 import { Field, Input, Select, Btn, Icon } from "./ui";
 import { HataMetni, Segment } from "./tasarim";
 import { maliyetMetniKurus } from "../lib/urunAgaci";
-import { malzemeSatiriFormu, malzemeCopEtiketi, BICIMLER, BICIM_SIRASI, OLCU_ADLARI, PAY_ALANI, YONTEMLER, kgMetni, fireBantlariOf, FIRE_KG_BOY_NEDENI } from "../lib/malzeme";
+import { malzemeSatiriFormu, malzemeCopEtiketi, BICIMLER, BICIM_SIRASI, OLCU_ADLARI, YONTEMLER, kgMetni, fireBantlariOf, FIRE_KG_BOY_NEDENI } from "../lib/malzeme";
 
 // Spec 0132 R9–R14/2, AC-28–AC-46; spec 0135 R12–R16, R44 (plan turu Karar 44): parçanın TEK malzeme kaleminin satırı. Kalem
 // listesindeki her malzeme kalemi bu bileşenle çizilir; alanlar 0132'nin malzeme satırının alanları artı adet (R12, R13). Ölçü
-// alanları biçimden gelir (R11); işleme payı biçimin pay listesiyle eşlenir (boruda et kalınlığına pay yok). Canlı ağırlık, satır
-// tutarı ve eksiklik ebeveynin tek canlı özetinden (`ozet`, 0099 C1/2); bu bileşen hesap yapmaz. Erişilebilir adlar satır
-// numarasıyla biter (birden çok kalemde benzersiz). Emniyet payı bu satırda değil, kip seçicisinin altındadır (R6/2).
+// alanları biçimden gelir (R11); spec 0141 ile işleme payı yok, girilen ölçü satın alınan ölçüdür. Canlı ağırlık, satır tutarı ve
+// eksiklik ebeveynin tek canlı özetinden (`ozet`, 0099 C1/2); bu bileşen hesap yapmaz. Erişilebilir adlar satır numarasıyla biter
+// (birden çok kalemde benzersiz).
 export const MALZEME_SEC_SECENEGI = "Malzeme seçin…";
 export const SILINMIS_MALZEME = "silinmiş malzeme";
 export const BULUNAMAYAN_MALZEME = "kaydı bulunamayan malzeme";
@@ -75,19 +75,13 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, sira = 1, malzemeler = [],
                     <Input value={s[ad]} onChange={e => set(ad, e.target.value)} aria-label={`${OLCU_ADLARI[ad]} ${n}`} />
                     <HataMetni>{hatalar[ad]}</HataMetni>
                   </Field>
-                  {b.paylar.includes(ad) && (
-                    <Field label={`${OLCU_ADLARI[ad]} işleme payı (mm)`}>
-                      <Input value={s[PAY_ALANI[ad]]} onChange={e => set(PAY_ALANI[ad], e.target.value)} placeholder="0" aria-label={`${OLCU_ADLARI[ad]} işleme payı ${n}`} />
-                      <HataMetni>{hatalar[PAY_ALANI[ad]]}</HataMetni>
-                    </Field>
-                  )}
                 </div>
               ))}
             </div>
           )}
           {oz && (
             <div data-testid="malzeme-ozeti" style={{ fontSize: 12.5, color: "var(--n700, #334155)", background: "var(--n100, #f8fafc)", borderRadius: 8, padding: "8px 12px" }}>
-              {oz.yontem !== "boy" && <div>Pay dahil ağırlık: <b data-testid="malzeme-ham-kg">{kgMetni(oz.hamKg)}</b> · fire dahil: <b data-testid="malzeme-fireli-kg">{kgMetni(oz.fireliKg)}</b></div>}
+              {oz.yontem !== "boy" && <div>Ağırlık: <b data-testid="malzeme-ham-kg">{kgMetni(oz.hamKg)}</b> · fire dahil: <b data-testid="malzeme-fireli-kg">{kgMetni(oz.fireliKg)}</b></div>}
               <div>Bir adet: <b data-testid="malzeme-maliyet">{oz.maliyetK == null ? `girilmedi (${oz.eksik.join(", ")})` : maliyetMetniKurus(oz.maliyetK)}</b></div>
             </div>
           )}

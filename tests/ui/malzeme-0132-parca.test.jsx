@@ -58,18 +58,19 @@ describe("Spec 0132: parça kartının malzeme satırı", () => {
     expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(BIR_MALZEME);
     expect(screen.queryByText("Hammadde tedarikçileri")).toBeNull();
   });
-  it("AC-29: biçim seçilince istediği ölçüler çizilir; boruda et kalınlığına pay alanı yok (AC-82)", () => {
+  // Spec 0141 ile (A-R1, AC-1–AC-4): işleme payı alanları kalktı; her biçim yalnız ölçülerini çizer.
+  it("AC-29: biçim seçilince istediği ölçüler çizilir (spec 0141 ile: pay alanı hiçbir biçimde yok)", () => {
     render(<Katalog />);
     duzenle("Kesme mili");
     const olculer = () => within(screen.getByTestId("malzeme-olculer")).getAllByRole("textbox").map(e => e.getAttribute("aria-label"));
     const n = (a) => a.map(x => `${x} 1`); // spec 0135 ile: adlar kalemin numarasıyla biter
-    expect(olculer()).toEqual(n(["Çap", "Çap işleme payı", "Boy", "Boy işleme payı"]));
+    expect(olculer()).toEqual(n(["Çap", "Boy"]));
     fireEvent.change(screen.getByLabelText("Biçim 1"), { target: { value: "lama" } });
-    expect(olculer()).toEqual(n(["Kalınlık", "Kalınlık işleme payı", "Genişlik", "Genişlik işleme payı", "Boy", "Boy işleme payı"]));
+    expect(olculer()).toEqual(n(["Kalınlık", "Genişlik", "Boy"]));
     fireEvent.change(screen.getByLabelText("Biçim 1"), { target: { value: "boru" } });
-    expect(olculer()).toEqual(n(["Çap", "Çap işleme payı", "Et kalınlığı", "Boy", "Boy işleme payı"]));
+    expect(olculer()).toEqual(n(["Çap", "Et kalınlığı", "Boy"]));
     fireEvent.change(screen.getByLabelText("Biçim 1"), { target: { value: "sac" } });
-    expect(olculer()).toEqual(n(["Kalınlık", "Kalınlık işleme payı", "En", "En işleme payı", "Boy", "Boy işleme payı"]));
+    expect(olculer()).toEqual(n(["Kalınlık", "En", "Boy"]));
   });
   it("AC-30–AC-38 (ekran): canlı ağırlık üç ondalıkla, maliyet 1.701,12 ₺; ölçü değişince anında güncellenir", () => {
     render(<Katalog />);
@@ -77,7 +78,9 @@ describe("Spec 0132: parça kartının malzeme satırı", () => {
     expect(screen.getByTestId("malzeme-ham-kg").textContent).toBe("10,679 kg");
     expect(screen.getByTestId("malzeme-fireli-kg").textContent).toBe("11,533 kg");
     expect(screen.getByTestId("malzeme-maliyet").textContent).toBe("1.701,12 ₺");
-    yaz("Çap işleme payı 1", ""); yaz("Boy işleme payı 1", ""); yaz("Parça firesi 1", "");
+    // Spec 0141 ile: eski pay forma katlanmış açıldı (Ø144 × 83); eski "payları sil" adımı yerine ölçü 140 × 78'e indirilir.
+    expect(screen.getByLabelText("Çap 1").value).toBe("144");
+    yaz("Çap 1", "140"); yaz("Boy 1", "78"); yaz("Parça firesi 1", "");
     expect(screen.getByTestId("malzeme-ham-kg").textContent).toBe("9,486 kg");
   });
   it("AC-41 (ekran): kilo yönteminde özgül ağırlığı boş malzeme: maliyet girilmedi ve nedeni", () => {
@@ -92,12 +95,12 @@ describe("Spec 0132: parça kartının malzeme satırı", () => {
     yaz("Çap 1", "0"); yaz("Parça firesi 1", "150"); kaydet();
     expect(screen.getByText(M.OLCU_HATASI)).toBeTruthy();
     expect(screen.getByText(M.FIRE_HATASI)).toBeTruthy();
-    expect(kayit(41).malzemeSatiri.cap).toBe(140);
+    expect(kayit(41).malzemeSatiri.cap).toBe(140); // reddedilen kayıt yazılmadı (eski satır yerinde)
     yaz("Çap 1", ""); yaz("Parça firesi 1", "8"); kaydet();
     // Spec 0135 ile (R25): dokunularak kaydedilen parçada malzeme satırı kalem listesine geçer.
     expect(kayit(41)).not.toHaveProperty("malzemeSatiri");
     expect(kayit(41).maliyetKalemleri[0]).not.toHaveProperty("cap");
-    expect(kayit(41).maliyetKalemleri[0].boy).toBe(78);
+    expect(kayit(41).maliyetKalemleri[0].boy).toBe(83); // spec 0141 ile: eski boy payı forma katlandı (78 + 5)
   });
   it("AC-63 / AC-65 / Karar 33: malzeme kaynaklı parça kaydında geçmişe satır yazılmaz, saklı geçmiş ve elle değer durur; kaynak alanı saklanmaz", () => {
     render(<Katalog />);

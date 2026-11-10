@@ -229,13 +229,15 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.malzemeler?.find(m => m.id === 91)?.bantlar?.length === 1 && JSON.stringify(b.parts.find(p => p.id === 92)?.malzemeSatiri) === JSON.stringify(satir));
 }
 
-// Spec 0134 C4: temiz kurulumda iki emniyet payı sütunu ilk oturumda yazılır.
+// Spec 0134 C4; spec 0141 ile ters çevrildi (D-R1/3, AC-66): temiz kurulumda iki emniyet payı sütunu VAR ama yazılmaz ve okunmaz.
 {
   let h = null;
   try { dbmod.writeBlobToDb({ malzemeler: [{ id: 93, ad: "Paylı", emniyetPayi: 7 }], parts: [{ id: 94, ad: "Paylı parça", models: [], emniyetPayi: 3 }] }); } catch (e) { h = e; }
   const b = dbmod.readBlobFromDb();
-  check("spec 0134: temiz kurulumda parça ve malzeme emniyet payı sütunları var ve yazıldı", h === null
-    && b.malzemeler?.find(m => m.id === 93)?.emniyetPayi === 7 && b.parts.find(p => p.id === 94)?.emniyetPayi === 3);
+  check("spec 0141: temiz kurulumda emniyet payı yazılmaz ve okunmaz (kayıt hatasız)", h === null
+    && !("emniyetPayi" in (b.malzemeler?.find(m => m.id === 93) || { emniyetPayi: 1 })) && !("emniyetPayi" in (b.parts.find(p => p.id === 94) || { emniyetPayi: 1 })));
+  const sutunVar = (t) => { try { return new (require(path.join(root, "node_modules", "better-sqlite3")))(dbmod.getDbPath(), { readonly: true }).prepare(`PRAGMA table_info(${t})`).all().some(c => c.name === "emniyetPayi"); } catch { return false; } };
+  check("spec 0141 AC-66: temiz kurulumda parts ve malzemeler tablolarında emniyetPayi sütunu var (ölü sütun)", sutunVar("parts") && sutunVar("malzemeler"));
 }
 
 // Spec 0140 C6: temiz kurulumda parçanın Ana tedarikçisi sütunu ilk oturumda yazılır ve okunur.

@@ -12,7 +12,7 @@ export const PARCALAR = [
   { id: 81, ad: "Yalnız serbest işlem", kod: "S-81", models: [], fiyatTRY: 300, fiyatKipi: "maliyet", maliyetKalemleri: [{ tur: "islem", ad: "Lazer kesim", tedarikciId: 802, tutar: 42.5 }],
     maliyetGecmisi: [{ gecerli: "", kurus: 3000 }, { gecerli: "2026-04-01", kurus: 4250 }] },
   { id: 82, ad: "Karma mil", kod: "K-82", models: [], fiyatTRY: 5000, maliyetKalemleri: [
-    { tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 50, boy: 120, payCap: 2, payBoy: 3, adet: 2 },
+    { tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 52, boy: 123, adet: 2 },
     { tur: "islem", ad: "Isıl işlem", tedarikciId: 803, tutar: 15 },
     { tur: "islem", ad: "Kaplama", tutar: null }] },
   { id: 83, ad: "Boş serbest", kod: "B-83", models: [], maliyetKalemleri: [{ tur: "islem", ad: "Taşlama", tutar: null }] },

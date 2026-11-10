@@ -160,10 +160,12 @@ describe("Spec 0140: pencere", () => {
     render(<Pencere veri={VERI({ standardModels: [F.model("AK100_DS", [])] })} />);
     expect(screen.getByTestId("bos-siparis-tedarikci").textContent).toContain(S.BOS_KIT);
   });
-  it("Bulgu 6 (0134) ekranı: emniyet payı Türkçe ondalıkla", () => {
+  // Spec 0141 ile ters çevrildi (B-R4, AC-23): emniyet payı sütunu kalktı; eski kayıttaki pay hiçbir hücrede basılmaz.
+  it("Bulgu 6 (0134) ekranı (spec 0141 ile): emniyet payı hücresi yok, eski %7,5 hiçbir yerde basılmaz", () => {
     render(<Pencere veri={VERI({ parts: [{ ...F.KESME, tedarikciId: 13 }, { ...F.PUL, emniyetPayi: 7.5, tedarikciId: 13 }, F.SOMUN, F.SET] })} />);
     const pul = within(tablo()).getAllByTestId("siparis-parca-satiri").find(r => r.textContent.includes("Pul"));
-    expect(within(pul).getByTestId("siparis-pay").textContent).toBe("%7,5");
+    expect(within(pul).queryByTestId("siparis-pay")).toBeNull();
+    expect(document.body.textContent).not.toMatch(/%7[,.]5/);
   });
 });
 

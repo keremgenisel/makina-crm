@@ -70,7 +70,7 @@ check("AC-23 / AC-44: adet birimli kalem serbest kaleme; ad, tedarikçi, TL tuta
   esit(p(1).maliyetKalemleri[1], { tur: "islem", ad: "Ayna mahruti dişli takımı", tedarikciId: 801, tutar: 4930 }));
 check("AC-26 / C4: kalem sırası ve öteki kalemler aynı", esit(p(1).maliyetKalemleri[0], MALZEME) && esit(p(1).maliyetKalemleri[2], SERBEST) && p(1).maliyetKalemleri.length === 3);
 const govde = (x) => { const { maliyetKalemleri: _k, ...g } = x; return g; };
-check("AC-26 / C4: bütün parçaların kalem dışı alanları göçten önceki okumayla birebir", gocOncesi.parts.every(x => esit(govde(x), govde(p(x.id)))) && p(1).fiyatTRY === 900 && p(1).emniyetPayi === 5);
+check("AC-26 / C4: bütün parçaların kalem dışı alanları göçten önceki okumayla birebir", gocOncesi.parts.every(x => esit(govde(x), govde(p(x.id)))) && p(1).fiyatTRY === 900 && !("emniyetPayi" in p(1))); // spec 0141 ile (D-R1): ölü sütun okunmaz
 check("AC-25: kilo birimli kalem tutarsız; ad ve tedarikçi korundu", esit(p(2).maliyetKalemleri, [{ tur: "islem", ad: "Isıl işlem", tedarikciId: 803, tutar: null }]));
 check("AC-24 / AC-43: çöpteki ve fiyatsız işlem tutarsız; kayıtsız işlem yer tutucu adla",
   esit(p(3).maliyetKalemleri, [{ tur: "islem", ad: "Çöpteki işlem", tedarikciId: 801, tutar: null }, { tur: "islem", ad: "Tel erezyon", tedarikciId: 802, tutar: null }, { tur: "islem", ad: "Dış işlem", tutar: null }]));

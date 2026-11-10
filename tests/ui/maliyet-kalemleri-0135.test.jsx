@@ -26,6 +26,7 @@ const KAT = malzemeKatalogu(MALZEMELER);
 const SACK = { tur: "malzeme", malzemeId: 502, bicim: "sac", kalinlik: 3, en: 200, boy: 300, adet: 1 };
 const TED = [{ id: 31, ad: "Hammadde A.Ş.", hammadde: true }, { id: 32, ad: "Lazer Ltd." }, { id: 33, ad: "Kaplama Sanayi" }];
 const PARCALAR = [
+  // Spec 0141 ile: bu eski satır işleme payı taşımaya devam eder; artık katlamanın (A-R1/3) eski veri örneğidir.
   { id: 41, ad: "Kesme mili", models: [], maliyet: 12, malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5, fire: 8 } },
   { id: 42, ad: "Pul", models: [], maliyet: 5 },
   { id: 43, ad: "Kapak", models: [], hammaddeler: [{ tedarikciId: 31, tutar: 120 }, { tedarikciId: 999, tutar: 80 }] },
@@ -132,13 +133,12 @@ describe("Spec 0135: kip seçici (R1–R6/2, Karar 30, 36, 37)", () => {
     expect(within(kipGrubu()).getAllByRole("radio").every(r => r.disabled)).toBe(true);
     expect(screen.getByTestId("kip-set-pasif").textContent).toBe(KIP_SET_PASIF_NEDENI);
   });
-  it("AC-12 / R6/2: emniyet payı iki kipte de çizilir ve kip değişimi değerini değiştirmez", () => {
+  // Spec 0141 ile ters çevrildi (B-R2, karar 34): emniyet payı alanı kalktı; karşılığı tests/ui/isleme-payi-0141.test.jsx AC-15/AC-16.
+  it("AC-12 (spec 0141 ile): emniyet payı alanı iki kipte de yok", () => {
     render(<Katalog />); ekleAc();
-    yaz("Parça emniyet payı", "7");
+    expect(screen.queryByLabelText("Parça emniyet payı")).toBeNull();
     kip("Hesapla");
-    expect(screen.getByLabelText("Parça emniyet payı").value).toBe("7");
-    kip("Elle sabit");
-    expect(screen.getByLabelText("Parça emniyet payı").value).toBe("7");
+    expect(screen.queryByLabelText("Parça emniyet payı")).toBeNull();
   });
 });
 
@@ -196,7 +196,8 @@ describe("Spec 0135: kalem listesi (R7–R11, R20/2, R40–R43)", () => {
 describe("Spec 0135: malzeme ve işlem kalemi (R12–R21, R44)", () => {
   it("AC-21 / AC-22: malzeme kaleminin alanları; biçim değişince ölçüler yeniden çizilir", () => {
     render(<Katalog />); duzenle("Kesme mili");
-    for (const ad of ["Malzeme 1", "Biçim 1", "Parça firesi 1", "Malzeme adedi 1", "Çap 1", "Çap işleme payı 1", "Boy 1", "Boy işleme payı 1"]) expect(screen.getByLabelText(ad)).toBeTruthy();
+    for (const ad of ["Malzeme 1", "Biçim 1", "Parça firesi 1", "Malzeme adedi 1", "Çap 1", "Boy 1"]) expect(screen.getByLabelText(ad)).toBeTruthy();
+    for (const ad of ["Çap işleme payı 1", "Boy işleme payı 1"]) expect(screen.queryByLabelText(ad)).toBeNull(); // spec 0141 ile (A-R1)
     expect(screen.getByRole("radiogroup", { name: "Maliyet yöntemi 1" })).toBeTruthy();
     yaz("Biçim 1", "lama");
     expect(screen.getByLabelText("Genişlik 1")).toBeTruthy();
@@ -284,16 +285,19 @@ describe("Spec 0135: eski kayıtlar ve yazım (R22–R26/2)", () => {
     render(<Katalog />); duzenle("Kesme mili");
     yaz("Boy 1", "80"); kaydet();
     const k = kayit(41);
-    expect(k.maliyetKalemleri).toEqual([{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 140, boy: 80, payCap: 4, payBoy: 5, fire: 8, adet: 1 }]);
+    // Spec 0141 ile (A-R1/2): eski pay forma açılışta çapa katlandı (140 + 4); boy kullanıcının yazdığı 80.
+    expect(k.maliyetKalemleri).toEqual([{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 144, boy: 80, fire: 8, adet: 1 }]);
     expect(k).not.toHaveProperty("malzemeSatiri");
     expect(k).not.toHaveProperty("hammaddeler");
   });
-  it("AC-46 / AC-96: kartı açıp hiçbir şeye dokunmadan kaydetmek gövdeyi değiştirmez", () => {
+  // Spec 0141 ile (A-R1/3, karar 31, AC-63): dokunulmamış kayıt eski pay taşıyan satırı katlayarak yazar; öteki parçalar aynen.
+  it("AC-46 / AC-96: kartı açıp hiçbir şeye dokunmadan kaydetmek gövdeyi değiştirmez (spec 0141 ile: payı katlanan satır hariç)", () => {
     render(<Katalog />);
     for (const id of [41, 43, 44, 45]) {
       const once = structuredClone(kayit(id));
       duzenle(once.ad); kaydet();
-      expect(kayit(id)).toEqual(once);
+      const beklenen = id === 41 ? { ...once, malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8 } } : once;
+      expect(kayit(id)).toEqual(beklenen);
     }
   });
   it("AC-47 / AC-94: eski malzeme satırlı parçanın yalnız adı değişince malzemeSatiri aynen durur, maliyetKalemleri oluşmaz", () => {
@@ -301,7 +305,7 @@ describe("Spec 0135: eski kayıtlar ve yazım (R22–R26/2)", () => {
     yaz("Yedek Parça Adı (TR)", "Kesme mili 2"); kaydet();
     const k = kayit(41);
     expect(k.ad).toBe("Kesme mili 2");
-    expect(k.malzemeSatiri).toEqual(PARCALAR[0].malzemeSatiri);
+    expect(k.malzemeSatiri).toEqual({ malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8 }); // spec 0141 ile katlandı (AC-63)
     expect(k.maliyet).toBe(12);
     expect(k).not.toHaveProperty("maliyetKalemleri");
   });

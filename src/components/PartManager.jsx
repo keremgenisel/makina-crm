@@ -3,7 +3,8 @@ import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
 import { CUR_SYM, tipRenk } from "../lib/constants";
 import { Icon, Field, Input, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload, Select, SearchPick } from "./ui";
 import { HataMetni, Ipucu, UyariSeridi, BolumBasligi, Segment } from "./tasarim";
-import { malzemeKatalogu, emniyetPayiDogrula, sayiMetni } from "../lib/malzeme";
+import { malzemeKatalogu } from "../lib/malzeme";
+import { islemePayiParcaKatla } from "../../electron/islemePayiGocuSaf.mjs"; // spec 0141 A-R1/3 (karar 31)
 import { MaliyetKalemleriAlani, MALIYET_KIP_HESAPLA, MALIYET_KIP_ELLE, KIP_ONAY_ELLE, KIP_ONAY_HESAPLA } from "./MaliyetKalemleriAlani";
 import { maliyetKalemleriOf, kalemVarMi, kalemTedarikciIdleri, ESKI_MALIYET_ANAHTARLARI, KALEM_ANAHTARI, KALEM_TUR } from "../lib/maliyetKalemleri";
 import { FiyatListesiDugmesi } from "./rapor/FiyatListesiDugmesi";
@@ -311,7 +312,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   const katalog = useMemo(() => setKatalogu(parts), [parts]);
   const malzemeKat = useMemo(() => malzemeKatalogu(malzemeler), [malzemeler]);
   const fiyatBaglami = useMemo(() => fiyatBaglamiKur({ parts, malzemeler, fiyatAyarlari }), [parts, malzemeler, fiyatAyarlari]);
-  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "", maliyet: "", maliyetKalemleri: [], _maliyetKipi: MALIYET_KIP_ELLE, _maliyetDokunuldu: false, setIcerigi: [], emniyetPayi: "", fiyatKipi: "", karKati: "" };
+  const emptyForm = { ad: "", adEN: "", kod: "", tanim: "", tanimEN: "", fiyatTRY: "", fiyatUSD: "", fiyatEUR: "", models: [], tip: "Standart", resim: "", maliyet: "", maliyetKalemleri: [], _maliyetKipi: MALIYET_KIP_ELLE, _maliyetDokunuldu: false, setIcerigi: [], fiyatKipi: "", karKati: "" };
   // Spec 0087 R4, C4 (plan P4): maliyetin ham metni kayıtta sayıya çevrilir; boşsa alan gövdeye hiç yazılmaz.
   // Spec 0121 R7: içerik HER çağrıda yeniden kurulur ve yalnız doluyken yazılır (boşaltılan içerik eski kayıttan geri gelmesin).
   // Spec 0135 R25, R25/2, R25/3, R26, R26/2 (Karar 35, tuzak 6, 11): maliyet alanları üç yoldan biriyle yazılır.
@@ -321,7 +322,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   //   3. Öteki hâllerde (Elle sabit kipi, boş liste, set): kalem alanı ve eski iki alan yazılmaz, elle tutar formdan.
   // Set içeriği dolu kayıtta kalem alanı hiç yazılmaz (R25/3). Geçici iki alan (`_maliyetKipi`, `_maliyetDokunuldu`) kayda girmez.
   const hazirlaTemel = (kayit, eski = null) => {
-    const { maliyet, maliyetKalemleri, _maliyetKipi, _maliyetDokunuldu, maliyetGecmisi: _formKopyasi, setIcerigi, emniyetPayi, fiyatKipi, karKati, tedarikciId, ...geri0 } = kayit;
+    const { maliyet, maliyetKalemleri, _maliyetKipi, _maliyetDokunuldu, maliyetGecmisi: _formKopyasi, setIcerigi, fiyatKipi, karKati, tedarikciId, ...geri0 } = kayit;
     // Spec 0140 A-R1/2, A-R2, C6 (AC-3, AC-4): Ana tedarikçi her çağrıda silinir, yalnız doluyken yazılır. Yetkisiz kullanıcıda alan
     // çizilmez ve form kaydın değerini taşıdığı için bağ aynen geri yazılır.
     const ted = tedarikciId == null ? "" : String(tedarikciId).trim();
@@ -332,22 +333,23 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     // değer olarak saklanmaz). Kat yalnız maliyete bağlı kipte anlamlıdır.
     const kipMaliyet = fiyatKipi === KIP_MALIYET;
     const kat = kipMaliyet ? katDogrula(karKati).deger : null;
-    // Spec 0134 Karar 28, C4: emniyet payı her çağrıda yeniden kurulur ve yalnız doluyken yazılır (boş değer gövdeye girmez, AC-58).
-    const pay = emniyetPayiDogrula(emniyetPayi).deger;
     const icerik = setIcerigiDogrula(setIcerigi).kayit;
     const d = parcaMaliyetDogrula(maliyet);
     const elle = d.bos || d.hata ? {} : { maliyet: d.deger };
     let maliyetAlanlari;
     if (eski && !_maliyetDokunuldu) {
       maliyetAlanlari = {};
-      for (const a of [...ESKI_MALIYET_ANAHTARLARI, KALEM_ANAHTARI]) if (a in eski) maliyetAlanlari[a] = eski[a];
+      // Spec 0141 A-R1/3 (karar 31, AC-63): kopyalanan iki alanda kalmış işleme payı ölçüye katlanır (göç ve formla aynı fonksiyon);
+      // yoksa pay kayıtta kalır ve motor artık okumadığı için maliyet sessizce düşerdi.
+      const katli = islemePayiParcaKatla(eski);
+      for (const a of [...ESKI_MALIYET_ANAHTARLARI, KALEM_ANAHTARI]) if (a in katli) maliyetAlanlari[a] = katli[a];
       if (!kalemVarMi(eski)) { delete maliyetAlanlari.maliyet; Object.assign(maliyetAlanlari, elle); }
     } else {
       const kalemKayit = !icerik.length && _maliyetKipi === MALIYET_KIP_HESAPLA ? kalemlerDogrula(maliyetKalemleri).kayit : [];
       maliyetAlanlari = kalemKayit.length ? { [KALEM_ANAHTARI]: kalemKayit } : elle;
     }
     if (icerik.length) delete maliyetAlanlari[KALEM_ANAHTARI]; // R25/3 (AC-108): set dolu kayıtta kalem alanı hiç yazılmaz
-    return { ...geri, ...anaTed, ...maliyetAlanlari, ...(icerik.length ? { setIcerigi: icerik } : {}), ...(pay != null ? { emniyetPayi: pay } : {}), ...(kipMaliyet ? { fiyatKipi: KIP_MALIYET } : {}), ...(kat != null ? { karKati: kat } : {}) };
+    return { ...geri, ...anaTed, ...maliyetAlanlari, ...(icerik.length ? { setIcerigi: icerik } : {}), ...(kipMaliyet ? { fiyatKipi: KIP_MALIYET } : {}), ...(kat != null ? { karKati: kat } : {}) };
   };
   // Spec 0097 R4, C13, C13/2 (tuzak 2, 3, 9): formdan gelen geçmiş kopyası atılır; geçmiş güncelleyicinin içindeki ESKİ kayıttan
   // (`eski`) ve yeni kaydın ÇÖZÜLMÜŞ maliyetinden (kırılım toplamı dahil) tek karar motoruyla yazılır. Tarih ve bugün `ek` ile
@@ -455,7 +457,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   // Spec 0132 R18/2 (AC-85): sayaç malzeme listesini alır; malzemesi tam olan malzeme kaynaklı parça sayılmaz.
   const maliyetsizSayi = parts.filter(p => !maliyetGirildiMi(p, undefined, katalog, malzemeKat)).length;
 
-  const bosHatalar = { maliyet: null, adet: {}, kalem: {}, tarih: null, set: {}, setGenel: null, pay: null };
+  const bosHatalar = { maliyet: null, adet: {}, kalem: {}, tarih: null, set: {}, setGenel: null };
   const openAdd = () => { setForm(emptyForm); setAdetler({}); setKittekiler({}); setHatalar(bosHatalar); setAddOpen(true); };
   const openEdit = (k) => {
     const kit = parcaKitAdetleri(k.id, [standardModels, customModels]);
@@ -469,7 +471,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     const { maliyetGecmisi: _g, ...kayit } = k;
     const kalemler = maliyetKalemleriOf(k);
     startEdit({ ...kayit, maliyet: kalemler.length ? "" : elleMaliyetMetni(k), maliyetKalemleri: kalemleriFormu(kalemler), _maliyetKipi: kalemler.length ? MALIYET_KIP_HESAPLA : MALIYET_KIP_ELLE, _maliyetDokunuldu: false,
-      setIcerigi: setIcerigiFormu(k.setIcerigi), emniyetPayi: sayiMetni(k.emniyetPayi), fiyatKipi: maliyeteBagliMi(k) ? KIP_MALIYET : "", karKati: katMetni(k.karKati) });
+      setIcerigi: setIcerigiFormu(k.setIcerigi), fiyatKipi: maliyeteBagliMi(k) ? KIP_MALIYET : "", karKati: katMetni(k.karKati) });
   };
 
   // R7, R14–R16, plan P5: doğrula → karşı bölüme yazılacaksa kilide anlık bak (reddedilirse kayıt bütünüyle yazılmaz) →
@@ -496,12 +498,11 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     // Spec 0121 R7/2, C11 (Karar 43): içeriği olan kayıtta geçmiş motoru çalışmaz; kapı motorun `set` seçeneğidir.
     // Spec 0132 R16/2; spec 0135 R35 (AC-63, AC-67): en az bir malzeme kalemi olan kayıtta geçmiş motoru çalışmaz (dar kapı).
     const tarihHata = temel ? maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel), malzeme: maliyetKalemleriOf(temel).some(x => x.tur === KALEM_TUR.MALZEME) }).hata : null;
-    const pay = emniyetPayiDogrula(f.emniyetPayi); // spec 0134 AC-21
     const kat = f.fiyatKipi === KIP_MALIYET ? katDogrula(f.karKati) : { hata: null }; // spec 0133 AC-6, AC-60–AC-63
     // Karar 38 (triyaj bulgu 1): kalem hataları satırın geçici anahtarına bağlanır; satır kaldırılınca hata komşu satıra kaymaz.
     const kalemHatalari = Object.fromEntries(Object.entries(kd.hatalar).map(([i, h]) => [f.maliyetKalemleri?.[i]?._anahtar ?? `#${i}`, h]));
-    setHatalar({ maliyet: m.hata, adet: adetHata, kalem: kalemHatalari, tarih: tarihHata, set: si.hatalar, setGenel: si.genel, pay: pay.hata, kat: kat.hata });
-    if (m.hata || Object.keys(adetHata).length || !kd.gecerli || !si.gecerli || tarihHata || pay.hata || kat.hata) return;
+    setHatalar({ maliyet: m.hata, adet: adetHata, kalem: kalemHatalari, tarih: tarihHata, set: si.hatalar, setGenel: si.genel, kat: kat.hata });
+    if (m.hata || Object.keys(adetHata).length || !kd.gecerli || !si.gecerli || tarihHata || kat.hata) return;
     const kitGirdisi = { partId: kip === "ekle" ? "__yeni__" : editId, ad: (f.ad || "").trim(), models: f.models || [], eskiModeller: eski?.models || [], adetler: adetMap };
     // Triyaj (bulgu 3): yazma kararı TAM özel model dizisiyle verilir; kit satırı yalnız çöpteki bir modelde duruyorsa ad
     // taşıması da yazılsın (geri alınan model eski adı basmasın). Canlı dizi yalnız ekranda çizilenleri taşır.
@@ -718,10 +719,9 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <Field label="Fiyat (TL / USD / EUR — opsiyonel)">
             <FiyatAlani value={form} onChange={setForm} turetilen={canliEkle?.fiyat} eskiTL={form.fiyatTRY} varsayilanKat={fiyatBaglami.ayar.varsayilanKat} katHata={hatalar.kat} />
           </Field>
-          {/* Spec 0135 R1–R11: tek maliyet bölümü (kip seçici, emniyet payı, kalem listesi ya da elle tutar). */}
+          {/* Spec 0135 R1–R11: tek maliyet bölümü (kip seçici, kalem listesi ya da elle tutar). */}
           <MaliyetKalemleriAlani kip={form._maliyetKipi} onKip={kipDegistir(form, setForm)} kalemler={form.maliyetKalemleri || []} setKalemler={kalemYaz(setForm)}
             elleDeger={form.maliyet} setElleDeger={v => setForm(p => ({ ...p, maliyet: v }))} elleHata={hatalar.maliyet}
-            emniyetPayi={form.emniyetPayi} setEmniyetPayi={v => setForm(p => ({ ...p, emniyetPayi: v }))} payHata={hatalar.pay}
             malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler} tedarikciler={tedarikciler} giderYetki={giderYetki}
             hatalar={hatalar.kalem} uyarilar={canliEkle?.kalem?.uyarilar} ozet={canliEkle?.kalem} set={!!canliEkle?.set} kaynak={canliEkle?.kaynak} />
           {giderYetki && <AnaTedarikciAlani value={form.tedarikciId} onChange={v => setForm(p => ({ ...p, tedarikciId: v }))} tedarikciler={tedarikciler} />}
@@ -780,7 +780,6 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
           <MaliyetKalemleriAlani kip={editForm._maliyetKipi} onKip={kipDegistir(editForm, setEditForm)} kalemler={editForm.maliyetKalemleri || []} setKalemler={kalemYaz(setEditForm)}
             elleDeger={editForm.maliyet} setElleDeger={v => setEditForm(p => ({ ...p, maliyet: v }))} elleHata={hatalar.maliyet}
-            emniyetPayi={editForm.emniyetPayi} setEmniyetPayi={v => setEditForm(p => ({ ...p, emniyetPayi: v }))} payHata={hatalar.pay}
             malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler} tedarikciler={tedarikciler} giderYetki={giderYetki}
             hatalar={hatalar.kalem} uyarilar={canliDuzenle?.kalem?.uyarilar} ozet={canliDuzenle?.kalem} set={!!canliDuzenle?.set} kaynak={canliDuzenle?.kaynak} />
           {giderYetki && <AnaTedarikciAlani value={editForm.tedarikciId} onChange={v => setEditForm(p => ({ ...p, tedarikciId: v }))} tedarikciler={tedarikciler} />}

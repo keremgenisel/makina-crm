@@ -63,7 +63,7 @@ describe("Spec 0134: girdi ve parti seçici", () => {
   it("AC-6 / AC-53 / Karar 39: hazır gelen adet değiştirilir, partiye yazılmaz; parti değişince satırlar yeniden dolar", () => {
     render(<Ekran />);
     fireEvent.change(screen.getByLabelText("Makina adedi 1"), { target: { value: "10" } });
-    expect(hucre(parcaSatiri("Kesme mili"))[3]).toBe("10");
+    expect(hucre(parcaSatiri("Kesme mili"))[2]).toBe("10"); // spec 0141 ile: pay sütunu kalktı, İhtiyaç bir sola
     expect(yaz.setUretimPartileri).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("Üretim partisi"), { target: { value: "801" } });
     expect(screen.getByLabelText("Makina adedi 1").value).toBe("5");
@@ -85,7 +85,7 @@ describe("Spec 0134: girdi ve parti seçici", () => {
     expect(screen.getByText(S.ADET_HATASI)).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Makina adedi 1"), { target: { value: "70" } });
     expect(screen.getByTestId("siparis-hatali-satir").textContent).toBe(S.hataliSatirMetni(1));
-    expect(hucre(parcaSatiri("Kesme mili"))[3]).toBe("70");
+    expect(hucre(parcaSatiri("Kesme mili"))[2]).toBe("70"); // spec 0141 ile
     expect(screen.getByRole("button", { name: /Yazdır/ }).disabled).toBe(true);
   });
 });
@@ -96,8 +96,9 @@ describe("Spec 0134: tablolar ve uyarılar", () => {
     const pul = parcaSatiri("Pul");
     const ths = [...screen.getByTestId("siparis-parca-tablosu").querySelectorAll("th")].map(t => t.textContent);
     // Spec 0140 ile (D-R2/2, karar 34): öneri sütunu ve set satırlarının "sipariş etme" anahtarı eklendi.
-    expect(ths).toEqual(["Parça", "Ham ihtiyaç", "Emniyet payı", "İhtiyaç", "Stok", "Sipariş (öneri)", "Sipariş", "Sipariş etme"]);
-    expect(hucre(pul).slice(3, 7)).toEqual(["700", "100", "600", "600"]);
+    // Spec 0141 ile (B-R4, AC-23): "Emniyet payı" sütunu kalktı, tablo yedi başlık.
+    expect(ths).toEqual(["Parça", "Ham ihtiyaç", "İhtiyaç", "Stok", "Sipariş (öneri)", "Sipariş", "Sipariş etme"]);
+    expect(hucre(pul).slice(2, 6)).toEqual(["700", "100", "600", "600"]);
     expect(within(parcaSatiri("Bağlantı seti")).getByTestId("siparis-patlatildi")).toBeTruthy();
     expect(screen.getByTestId("siparis-kesisim").textContent).toBe(S.KESISIM_UYARISI("Bağlantı seti", "Pul"));
     expect(within(parcaSatiri("Pul")).getByTestId("siparis-iki-kaynak")).toBeTruthy();

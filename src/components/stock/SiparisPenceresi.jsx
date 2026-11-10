@@ -10,6 +10,7 @@ import {
   SILINMIS_PARCA, kgMetni, tlMetni as tl, pbTutarMetni as pbTutar, adetMetni as sayi, tedarikciSecenekleri, bosDurumNedeni,
   TEDARIKCI_BELIRTILMEMIS, anasizParcaMetni, anasizMalzemeliMetni, CIFT_SAYIM_DEGIL, HAMMADDE_SUZGEC_NEDENI, GECICI_DUZENLEME,
   satirsizSecilenMetni, duzenlemeSayiMetni, SILINMIS_TEDARIKCI_BELGE, PARCALARI_KAPALI,
+  HAM_IHTIYAC_IBARESI,
 } from "../../lib/siparisIhtiyaci";
 
 // Spec 0140 B-R1/2, B-R5, B-R6, C4: tedarikçi odaklı, düzenlenebilir sipariş listesi. TEK dosya, iki giriş noktası (Ayarlar › Katalog ›
@@ -202,8 +203,10 @@ export const SiparisPenceresi = ({ veri = {}, giderYetki = false, bugun: bugunPr
               </KartBolum>)}
             {/* C-R10 (AC-79), karar 34: bugünkü tam tablo katlanabilir; yalnız set satırları düzenlenir (adet ve kapatma). */}
             <KartBolum varyant="kart" collapsible title="Parça ihtiyacı" testId="siparis-parca-ihtiyaci" style={{ padding: 0, overflow: "auto" }}>
+              {/* Spec 0141 B-R4/2 (AC-51): iki sütunun farkını açıklayan ibare motorun sabitinden. */}
+              <div style={{ padding: "8px 12px 0" }}><Ipucu><span data-testid="siparis-ham-ibare">{HAM_IHTIYAC_IBARESI}</span></Ipucu></div>
               <table data-testid="siparis-parca-tablosu" style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead><tr><th style={{ ...th, textAlign: "left" }}>Parça</th><th style={th}>Ham ihtiyaç</th><th style={th}>Emniyet payı</th><th style={th}>İhtiyaç</th><th style={th}>Stok</th><th style={th}>Sipariş (öneri)</th><th style={th}>Sipariş</th><th style={th}>Sipariş etme</th></tr></thead>
+                <thead><tr><th style={{ ...th, textAlign: "left" }}>Parça</th><th style={th}>Ham ihtiyaç</th><th style={th}>İhtiyaç</th><th style={th}>Stok</th><th style={th}>Sipariş (öneri)</th><th style={th}>Sipariş</th><th style={th}>Sipariş etme</th></tr></thead>
                 <tbody>{sonuc.parcalar.map(p => {
                   const d = tb.parcaDurumu[p.partId];
                   return (
@@ -215,7 +218,6 @@ export const SiparisPenceresi = ({ veri = {}, giderYetki = false, bugun: bugunPr
                         {p.iki && <div data-testid="siparis-iki-kaynak" style={{ fontSize: 11, color: "var(--amb700, #b45309)" }}>{IKI_KAYNAK}: {p.kaynaklar.map(k => k.metin).join(", ")}</div>}
                       </td>
                       <td style={td}>{sayi(p.ham)}</td>
-                      <td style={td} data-testid="siparis-pay">{p.pay == null ? "" : `%${p.pay.toLocaleString("tr-TR")}`}</td>
                       <td style={{ ...td, fontWeight: 600 }}>{sayi(p.ihtiyac)}</td>
                       <td style={td}>{sayi(p.stok)}</td>
                       <td style={td}>{sayi(d ? d.oneri : p.siparis)}</td>

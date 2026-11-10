@@ -1,7 +1,7 @@
 // Spec 0135: parçanın maliyet kalemleri ve kalem listesinin TEK türetme yolu (R23/2, C1/2).
 //
 // Kalıcı alan (R45, C4/2): `parts[].maliyetKalemleri = [{ tur: "malzeme" | "islem", … }]`.
-//   - Malzeme kalemi: bugünkü malzeme satırının alanları DÜZ durur (malzemeId, bicim, yontem, ölçüler, işleme payları, fire)
+//   - Malzeme kalemi: bugünkü malzeme satırının alanları DÜZ durur (malzemeId, bicim, yontem, ölçüler, fire)
 //     ve yanında `adet` (tam sayı 1..1000). Düz şekil bilinçlidir: 0132'nin satır yardımcıları (malzemeOzeti, hamOlculer,
 //     hamKesit, tamBoyKg) fazladan alanı yok sayar, kalem onlara olduğu gibi verilir (R45/2).
 //   - İşlem kalemi: `ad`, `tedarikciId` (yoksa anahtar yok), `tutar` (TL, KDV hariç; girilmemişse null).
@@ -11,11 +11,15 @@
 // Karar 31: türetme bugünkü önceliği izler; malzeme satırı varsa kırılım türetilmez (0132'de malzeme satırı kırılımı bastırıyordu,
 // C8 ve AC-41 bu yüzden korunur). Karar 32: tutarı girilmemiş kırılım satırı kalem olmaz (bugün de maliyete girmiyordu).
 //
+// Spec 0141 A-R1/3 (karar 31, 33): kayıtta kalmış işleme payı tek türetmede ölçüye katlanır (`islemePayiKatla`, göç ve formla
+// aynı fonksiyon); motorlar pay anahtarını hiç görmez. İçe alınan `electron/islemePayiGocuSaf.mjs` lib modülü değildir ve hiçbir
+// şey içe almaz, döngü doğmaz (karar 33'ün istisnası).
 // Plan turu Karar 39: bu modül hiçbir lib modülünü içe almaz. `gider.js` (tedarikçi koruması), `malzeme.js` (kullanım, zam
 // etkisi) ve `urunAgaci.js` (tek okuma yolu) bunu içe alır; türetme onlardan birine konsa döngüsel içe aktarma doğardı.
 // Kaynak taraması (AC-110): eski iki alanı (`malzemeSatiri`, `hammaddeler`) doğrudan okuyan yer yalnız burası ve gerekçeli
 // istisnalardır (db.cjs, merge.js'in eski eşlemeleri, parça kartının dokunulmamış kopya dalı).
 
+import { islemePayiKatla } from "../../electron/islemePayiGocuSaf.mjs";
 export const KALEM_TUR = Object.freeze({ MALZEME: "malzeme", ISLEM: "islem" });
 // R9, R9/2: giriş kuralıdır, veri kuralı değil; okuma kırpmaz.
 export const MALIYET_KALEM_SINIRI = 20;
@@ -36,8 +40,8 @@ export const kayitliKalemler = (p) => (Array.isArray(p?.[KALEM_ANAHTARI]) ? p[KA
 export const maliyetKalemleriOf = (p) => {
   if (!p) return [];
   const k = kayitliKalemler(p);
-  if (k.length) return k;
-  if (malzemeSatiriDolu(p.malzemeSatiri)) return [{ tur: KALEM_TUR.MALZEME, ...p.malzemeSatiri, adet: 1 }];
+  if (k.length) return k.map(x => (x.tur === KALEM_TUR.MALZEME ? islemePayiKatla(x) : x));
+  if (malzemeSatiriDolu(p.malzemeSatiri)) return [{ tur: KALEM_TUR.MALZEME, ...islemePayiKatla(p.malzemeSatiri), adet: 1 }];
   return (Array.isArray(p.hammaddeler) ? p.hammaddeler : [])
     .filter(h => h && doluMu(h.tutar))
     .map(h => ({ tur: KALEM_TUR.ISLEM, ad: TURETILEN_KALEM_ADI, ...(doluMu(h.tedarikciId) ? { tedarikciId: h.tedarikciId } : {}), tutar: h.tutar }));

@@ -3,17 +3,17 @@
 // canlı ve ham tedarikçiler. Ağırlık 0132'nin malzeme motorundan okunur (C2, Karar 43): bu dosyada özgül ağırlık geçmez.
 //
 // Sıra (R6b, R6b/2, R7/2, R9/2, Karar 32, Karar 33):
-//   1. Model satırı başına: ham ihtiyaç = adet × kit adedi; set dışı parçada (ham × (1 + pay)) yukarı yuvarlanır, sette pay yok.
+//   1. Model satırı başına: ham ihtiyaç = adet × kit adedi, yukarı yuvarlanır (spec 0141: emniyet payı yok).
 //   2. Setin toplam ihtiyacından setin kendi stoğu düşülür; kalan set adedi × bileşen miktarı bileşene eklenir.
-//   3. Bileşende patlatmadan gelen adede (× (1 + pay)) yukarı yuvarlanır, kit satırlarından gelenle toplanır.
+//   3. Bileşende patlatmadan gelen adet yukarı yuvarlanır, kit satırlarından gelenle toplanır.
 //   4. Her parçada sipariş = ihtiyaç − stok, sıfırın altına inmez (R8).
-//   5. Malzeme kalemi olan parçanın SİPARİŞ adedi (× kalem adedi) her malzeme kaleminin kesit satırına gider (AC-84: pay ikinci kez uygulanmaz).
+//   5. Malzeme kalemi olan parçanın SİPARİŞ adedi (× kalem adedi) her malzeme kaleminin kesit satırına gider .
 import { trLower, totalMiktar } from "./utils";
 import { setMi, setIcerigiOf, kalemAdetiOf, parcaMaliyetKurus, setKatalogu } from "./urunAgaci";
 import { BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./tutarGirdisi";
 import {
   BICIMLER, PARA_BIRIMLERI, dovizMi, bantSec, bantlarOf, fiyatKumesi, hamOlculer, hamKesit, malzemeOzeti,
-  malzemeKatalogu, tamBoyKg, emniyetPayiDogrula, kgMetni,
+  malzemeKatalogu, tamBoyKg, kgMetni,
 } from "./malzeme";
 import { malzemeKalemleri } from "./maliyetKalemleri";
 
@@ -147,16 +147,10 @@ export const satirlariDogrula = (satirlar = [], modeller = []) => {
   });
 };
 
-// R9/2, AC-81, AC-82: parçanın payı varsa o, yoksa malzemenin, ikisi de boşsa sıfır (fire önceliğinin ikizi).
-// Spec 0135 R29, R29/2, C9/2 (AC-52–AC-54, AC-92): pay PARÇA düzeyinde kalır; parçanın payı yoksa malzeme kalemlerinin
-// malzemelerinde girili payların EN BÜYÜĞÜ (güvenli taraf), hiçbiri yoksa sıfır. Pay parçanın adedine bir kez uygulanır.
-export const emniyetPayiOf = (p, malzemeKat) => {
-  const kendi = emniyetPayiDogrula(p?.emniyetPayi).deger;
-  if (kendi != null) return kendi;
-  if (!(malzemeKat instanceof Map)) return 0;
-  const paylar = malzemeKalemleri(p).map(k => emniyetPayiDogrula(malzemeKat.get(String(k.malzemeId))?.emniyetPayi).deger).filter(v => v != null);
-  return paylar.length ? Math.max(...paylar) : 0;
-};
+// Spec 0141 B-R3, B-R7 (karar 34): emniyet payı kalktı. Sipariş adedi ihtiyacın yukarı yuvarlanmışıdır; kit satırında, setten
+// patlatılan adette ve öneri adedinin iki yolunda hiçbir yüzde uygulanmaz.
+// B-R4/2, B-R5: "Ham ihtiyaç" ile "İhtiyaç" yalnız setten patlatılan parçada ayrışır (patlatma yuvarlanmadan ham ihtiyaca eklenir).
+export const HAM_IHTIYAC_IBARESI = "Ham ihtiyaç ile İhtiyaç yalnız setten patlatılan parçalarda ayrışır; başka hiçbir pay uygulanmaz.";
 
 // ── Ana hesap ────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // Spec 0140 C-R11 (AC-93, AC-94): ikinci parametre isteğe bağlıdır. `tedarikciOdakli` verilince yeni `tedarikciBolumleri` alanı
@@ -187,7 +181,7 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
   const malzemeKat = malzemeKatalogu(malzemeler);
   const stokOf = (id) => Math.max(0, totalMiktar(partStock || [], id));
 
-  // Parça satırları (kimlik → birikim). `ham` pay öncesi, `ihtiyac` paylı yuvarlanmış.
+  // Parça satırları (kimlik → birikim). `ham` yuvarlanmamış patlatmayı da taşır, `ihtiyac` yukarı yuvarlanmış (spec 0141 B-R5).
   const kalemler = new Map();
   const kalem = (id, adKopyasi) => {
     const k = String(id);
@@ -197,7 +191,7 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
       kalemler.set(k, {
         // R11/2: çöpteki parça kit satırının ad kopyasıyla
         partId: k, ad: p?.ad || adKopyasi || h?.ad || BULUNAMAYAN_PARCA, silinmis: !p, set: !!p && setMi(p), kaynaklar: [],
-        ham: 0, ihtiyac: 0, pay: p ? emniyetPayiOf(p, malzemeKat) : 0, patlatmaHam: 0, stok: p ? stokOf(k) : 0, siparis: 0, patlatildi: false,
+        ham: 0, ihtiyac: 0, patlatmaHam: 0, stok: p ? stokOf(k) : 0, siparis: 0, patlatildi: false,
         malzemeli: !!p && !setMi(p) && malzemeKalemleri(p).length > 0, // spec 0135 R30/2: malzeme kalemi var mı
       });
     }
@@ -219,7 +213,7 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
       if (k.silinmis) continue; // AC-24, AC-104: ihtiyaç üretmez, eksik sayılır
       const ham = s.adet * miktar;
       k.ham += yukari(ham);
-      k.ihtiyac += k.set ? yukari(ham) : yukari(ham * (1 + k.pay / 100));
+      k.ihtiyac += yukari(ham);
       if (k.set) {
         const p = canliParca.get(k.partId);
         for (const b of setIcerigiOf(p)) if (kitIdleri.has(String(b.partId))) {
@@ -255,14 +249,14 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
   for (const k of kalemler.values()) {
     if (k.set || k.silinmis) continue;
     k.kitIhtiyac = k.ihtiyac;
-    if (k.patlatmaHam > 0) { k.ham += k.patlatmaHam; k.ihtiyac += yukari(k.patlatmaHam * (1 + k.pay / 100)); }
+    if (k.patlatmaHam > 0) { k.ham += k.patlatmaHam; k.ihtiyac += yukari(k.patlatmaHam); }
     k.siparis = Math.max(0, k.ihtiyac - k.stok);
     parcaDuzenle(k); // D-R4/2 (5)
   }
   const parcaSatirlari = [...kalemler.values()].map(k => ({
     partId: k.partId, ad: k.ad, silinmis: k.silinmis, set: k.set, patlatildi: k.patlatildi, setNeden: k.setNeden || null,
     kaynaklar: k.kaynaklar, iki: k.kaynaklar.some(x => x.tur === "kit") && k.kaynaklar.some(x => x.tur === "set"),
-    ham: k.silinmis ? null : k.ham, pay: k.silinmis || k.set ? null : (k.pay > 0 ? k.pay : null), ihtiyac: k.silinmis ? null : k.ihtiyac,
+    ham: k.silinmis ? null : k.ham, ihtiyac: k.silinmis ? null : k.ihtiyac,
     stok: k.silinmis ? null : k.stok, siparis: k.silinmis ? null : k.siparis, malzemeli: k.malzemeli,
   }));
 
@@ -306,12 +300,11 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
   if (duzenleme) {
     // Öneri adedi: kendi düzenlemesi ve setlerin düzenlemesi yok sayılarak (kit ihtiyacı + düzenlenmemiş setlerin patlatması − stok).
     const oneriKaynak = [...kalemler.values()].filter(k => !k.set && !k.silinmis).map(k => ({ partId: k.partId, ad: k.ad, malzemeli: k.malzemeli,
-      oneriAdet: Math.max(0, (k.kitIhtiyac ?? 0) + (oneriPatlatma.has(k.partId) ? yukari(oneriPatlatma.get(k.partId) * (1 + k.pay / 100)) : 0) - k.stok) }));
+      oneriAdet: Math.max(0, (k.kitIhtiyac ?? 0) + (oneriPatlatma.has(k.partId) ? yukari(oneriPatlatma.get(k.partId)) : 0) - k.stok) }));
     for (const [id, ham] of oneriPatlatma) {
       if (kalemler.has(id)) continue;
       const p = canliParca.get(id);
-      const pay = emniyetPayiOf(p, malzemeKat);
-      oneriKaynak.push({ partId: id, ad: p.ad, malzemeli: !setMi(p) && malzemeKalemleri(p).length > 0, oneriAdet: Math.max(0, yukari(ham * (1 + pay / 100)) - stokOf(id)) });
+      oneriKaynak.push({ partId: id, ad: p.ad, malzemeli: !setMi(p) && malzemeKalemleri(p).length > 0, oneriAdet: Math.max(0, yukari(ham) - stokOf(id)) });
     }
     const oneriKesit = kesitleriKur(k => k.oneriAdet, new Set(), new Set(), oneriKaynak);
     for (const [anahtar, d] of Object.entries(duzKesit)) {

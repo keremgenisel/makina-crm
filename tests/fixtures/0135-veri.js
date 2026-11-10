@@ -2,13 +2,13 @@
 // koddan üretildi (tests/fixtures/0135-once.json, `YAZ_0135=1`). Dört eski biçim: yalnız malzeme satırı, yalnız hammadde
 // kırılımı (tutarlı ve tutarsız satırla), ikisi birden (Karar 31: malzeme satırı kırılımı bastırır), yalnız elle maliyet;
 // ayrıca set, maliyet geçmişli kırılım ve maliyete bağlı fiyat kipi.
-export const M304 = { id: 501, ad: "304 Paslanmaz", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, geldigiBoy: 6, fire: 8, emniyetPayi: 5,
+export const M304 = { id: 501, ad: "304 Paslanmaz", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, geldigiBoy: 6, fire: 8,
   fiyatGecmisi: [{ gecerli: "", kiloFiyati: 2.5, paraBirimi: "USD", kur: 40 }, { gecerli: "2026-03-01", kiloFiyati: 2.95, paraBirimi: "USD", kur: 50 }] };
-export const MSAC = { id: 502, ad: "DKP Sac", ozgulAgirlik: 7.85, kiloFiyati: 38, paraBirimi: "TRY", emniyetPayi: 12 };
+export const MSAC = { id: 502, ad: "DKP Sac", ozgulAgirlik: 7.85, kiloFiyati: 38, paraBirimi: "TRY" };
 export const MALZEMELER = [M304, MSAC];
 export const TEDARIKCILER = [{ id: 801, ad: "Hammadde A.Ş.", hammadde: true }, { id: 802, ad: "Lazer Ltd." }];
 export const PARCALAR = [
-  { id: 71, ad: "Kesme mili", kod: "M-71", models: [], fiyatTRY: 4500, malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5, fire: 8 } },
+  { id: 71, ad: "Kesme mili", kod: "M-71", models: [], fiyatTRY: 4500, malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8 } },
   { id: 72, ad: "Kapak", kod: "K-72", models: [], fiyatTRY: 900, maliyet: 333, hammaddeler: [{ tedarikciId: 801, tutar: 120.5 }, { tedarikciId: 802, tutar: 80 }, { tedarikciId: 801, tutar: null }],
     maliyetGecmisi: [{ gecerli: "", kurus: 15000 }, { gecerli: "2026-05-01", kurus: 20050 }] },
   { id: 73, ad: "Flanş", kod: "F-73", models: [], fiyatTRY: 700, maliyet: 50, malzemeSatiri: { malzemeId: 502, bicim: "sac", kalinlik: 3, en: 200, boy: 300, fire: 5 }, hammaddeler: [{ tedarikciId: 802, tutar: 45 }] },

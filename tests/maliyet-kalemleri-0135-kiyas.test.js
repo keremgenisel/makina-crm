@@ -10,6 +10,7 @@ import { modelMaliyetleri } from "../src/lib/makinaStandartMaliyet";
 import { parcaSatisFiyati, fiyatBaglamiKur } from "../src/lib/parcaFiyati";
 import { parcaDisaAktarmaSatiri } from "../src/lib/parcaAktarma";
 import { ayikla0139 } from "./fixtures/0139-ayikla.js"; // spec 0139 ile: uyarı metni ve yeni ekFireKg alanı
+import { ayikla0141 } from "./fixtures/0141-ayikla.js"; // spec 0141 ile: sipariş satırının `pay` anahtarı ve kayıt gövdesinin katlaması
 import { PARCALAR, MALZEMELER, TEDARIKCILER, MODELLER, PART_STOCK, FIYAT_AYARLARI, M304 } from "./fixtures/0135-veri.js";
 
 const ALTIN = "tests/fixtures/0135-once.json";
@@ -34,6 +35,6 @@ describe("Spec 0135 kıyas (C8)", () => {
   it("AC-41, AC-42, AC-80: kalem alanı olmayan veride yedi kalem spec öncesi altınla birebir aynıdır", () => {
     const sonuc = temiz(uret());
     if (process.env.YAZ_0135 === "1") { writeFileSync(ALTIN, JSON.stringify(sonuc, null, 1)); return; }
-    expect(ayikla0139(sonuc)).toEqual(ayikla0139(JSON.parse(readFileSync(ALTIN, "utf8")))); // spec 0139 ile ayıklandı
+    expect(ayikla0141(ayikla0139(sonuc))).toEqual(ayikla0141(ayikla0139(JSON.parse(readFileSync(ALTIN, "utf8"))))); // spec 0139 ve 0141 ile ayıklandı
   });
 });

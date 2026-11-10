@@ -1,6 +1,6 @@
 // Spec 0134 ortak veri: Ø140 × 78 örneği (çapta 4, boyda 5 mm pay, ρ 7,90, %8 fire, 2,95 $, kur 50, 6 m boy) ve kit, set.
 export const P304 = { id: 501, ad: "304 Paslanmaz", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, geldigiBoy: 6, fire: 8, tedarikciId: 12 };
-export const MIL140 = { malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5 };
+export const MIL140 = { malzemeId: 501, bicim: "mil", cap: 144, boy: 83 };
 export const KESME = { id: 41, ad: "Kesme mili", models: [], malzemeSatiri: MIL140 };
 export const PUL = { id: 42, ad: "Pul", models: [], maliyet: 5 };
 export const SOMUN = { id: 43, ad: "Somun", models: [], maliyet: 2 };

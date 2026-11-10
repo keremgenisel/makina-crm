@@ -43,7 +43,7 @@ describe("Spec 0134 gerçek App", () => {
     await baslat({ sunucu: { tabs: ["dashboard", "stock"] } });
     pencereAc();
     const satir = within(screen.getByTestId("siparis-parca-tablosu")).getByText("Pul").closest("tr");
-    expect([...satir.querySelectorAll("td")].slice(3, 6).map(td => td.textContent)).toEqual(["560", "100", "460"]);
+    expect([...satir.querySelectorAll("td")].slice(2, 5).map(td => td.textContent)).toEqual(["560", "100", "460"]); // spec 0141 ile: pay sütunu kalktı
   });
   it("AC-52 / AC-53 / AC-61: ekran sürülürken hiçbir kayıt tetiklenmez (stok, hareket, parti, parça, malzeme yazılmaz)", async () => {
     const { kayitlar } = await baslat();

@@ -67,7 +67,8 @@ describe("Spec 0135 gerçek App", () => {
     kaydet();
     await waitFor(() => expect(sonParca(kayitlar, 41, p => p.ad === "Kesme mili B")).toBeTruthy());
     const p = sonParca(kayitlar, 41, x => x.ad === "Kesme mili B");
-    expect(p).toEqual({ ...veri().parts[0], ad: "Kesme mili B" });
+    // Spec 0141 ile (A-R1/3, AC-63): eski satırın işleme payı dokunulmamış kayıtta ölçüye katlanır; elle maliyet aynen.
+    expect(p).toEqual({ ...veri().parts[0], ad: "Kesme mili B", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8 } });
   });
   it("AC-45 / AC-95 / AC-97 (App gövdesi): kalem alanına dokunulunca gövdede maliyetKalemleri, eski iki alan ve elle maliyet yok", async () => {
     const { kayitlar } = await baslat();
@@ -77,7 +78,7 @@ describe("Spec 0135 gerçek App", () => {
     kaydet();
     await waitFor(() => expect(sonParca(kayitlar, 41, p => !!p.maliyetKalemleri)).toBeTruthy());
     const p = sonParca(kayitlar, 41, x => !!x.maliyetKalemleri);
-    expect(p.maliyetKalemleri).toEqual([{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5, fire: 8, adet: 2 }]);
+    expect(p.maliyetKalemleri).toEqual([{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8, adet: 2 }]); // spec 0141 ile katlandı
     for (const a of ["malzemeSatiri", "hammaddeler", "maliyet"]) expect(p).not.toHaveProperty(a);
   });
   it("AC-109 / AC-56 (ekran): yalnız işlem kalemli parça Sipariş İhtiyacı'nda 'malzeme kalemi yok' sayacına girer; malzeme tablosu boş durumu kalem dilinde", async () => {

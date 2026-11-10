@@ -371,10 +371,10 @@
     ],
     "iki": true,
     "ham": 30,
-    "pay": 5,
-    "ihtiyac": 32,
+    "pay": null,
+    "ihtiyac": 30,
     "stok": 3,
-    "siparis": 29,
+    "siparis": 27,
     "malzemeli": true
    },
    {
@@ -413,10 +413,10 @@
     ],
     "iki": false,
     "ham": 30,
-    "pay": 12,
-    "ihtiyac": 34,
+    "pay": null,
+    "ihtiyac": 30,
     "stok": 10,
-    "siparis": 24,
+    "siparis": 20,
     "malzemeli": true
    },
    {
@@ -480,10 +480,10 @@
     ],
     "iki": false,
     "ham": 10,
-    "pay": 5,
-    "ihtiyac": 11,
+    "pay": null,
+    "ihtiyac": 10,
     "stok": 0,
-    "siparis": 11,
+    "siparis": 10,
     "malzemeli": true
    }
   ],
@@ -505,22 +505,23 @@
      {
       "partId": "71",
       "ad": "Kesme mili",
-      "adet": 29,
+      "adet": 27,
       "hamKg": 10.678740898538562,
       "fireliKg": 11.533040170421648,
       "fire": 8,
+      "ekFireKg": 0,
       "kesimBoyu": 83,
       "oran": 0.013833333333333333
      }
     ],
-    "netKg": 309.6834860576183,
-    "fireKg": 24.774678884609493,
+    "netKg": 288.3260042605412,
+    "fireKg": 23.06608034084332,
     "siparisKg": 771.9571733883297,
-    "artanKg": 462.27368733071137,
+    "artanKg": 483.6311691277885,
     "kgNeden": null,
     "boyAdedi": 1,
     "boyNeden": null,
-    "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+    "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire (yüzde ve çap bandına göre kilogram) sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
     "asgariFark": null,
     "fiyat": 2.95,
     "bant": null,
@@ -547,17 +548,18 @@
      {
       "partId": "73",
       "ad": "Flanş",
-      "adet": 24,
+      "adet": 20,
       "hamKg": 1.413,
       "fireliKg": 1.4836500000000001,
       "fire": 5,
+      "ekFireKg": 0,
       "kesimBoyu": 300,
       "oran": null
      }
     ],
-    "netKg": 33.912,
-    "fireKg": 1.6956000000000024,
-    "siparisKg": 35.607600000000005,
+    "netKg": 28.26,
+    "fireKg": 1.413000000000002,
+    "siparisKg": 29.673000000000002,
     "artanKg": null,
     "kgNeden": null,
     "boyAdedi": null,
@@ -566,9 +568,9 @@
     "asgariFark": null,
     "fiyat": 38,
     "bant": null,
-    "tutar": 1353.0888000000002,
-    "tutarK": 135309,
-    "tutarTLK": 135309,
+    "tutar": 1127.574,
+    "tutarK": 112757,
+    "tutarTLK": 112757,
     "tutarNeden": null
    },
    {
@@ -589,10 +591,11 @@
      {
       "partId": "77",
       "ad": "Maliyete bağlı mil",
-      "adet": 11,
+      "adet": 10,
       "hamKg": null,
       "fireliKg": null,
       "fire": 8,
+      "ekFireKg": 0,
       "kesimBoyu": 400,
       "oran": 0.06666666666666667
      }
@@ -637,22 +640,23 @@
        {
         "partId": "71",
         "ad": "Kesme mili",
-        "adet": 29,
+        "adet": 27,
         "hamKg": 10.678740898538562,
         "fireliKg": 11.533040170421648,
         "fire": 8,
+        "ekFireKg": 0,
         "kesimBoyu": 83,
         "oran": 0.013833333333333333
        }
       ],
-      "netKg": 309.6834860576183,
-      "fireKg": 24.774678884609493,
+      "netKg": 288.3260042605412,
+      "fireKg": 23.06608034084332,
       "siparisKg": 771.9571733883297,
-      "artanKg": 462.27368733071137,
+      "artanKg": 483.6311691277885,
       "kgNeden": null,
       "boyAdedi": 1,
       "boyNeden": null,
-      "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+      "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire (yüzde ve çap bandına göre kilogram) sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
       "asgariFark": null,
       "fiyat": 2.95,
       "bant": null,
@@ -679,10 +683,11 @@
        {
         "partId": "77",
         "ad": "Maliyete bağlı mil",
-        "adet": 11,
+        "adet": 10,
         "hamKg": null,
         "fireliKg": null,
         "fire": 8,
+        "ekFireKg": 0,
         "kesimBoyu": 400,
         "oran": 0.06666666666666667
        }
@@ -703,7 +708,7 @@
       "tutarNeden": "Fiyat girilmedi; tutar yazılmaz."
      }
     ],
-    "netKg": 309.6834860576183,
+    "netKg": 288.3260042605412,
     "siparisKg": 771.9571733883297,
     "tutarTLK": 11386368,
     "tutarsiz": 1
@@ -732,17 +737,18 @@
        {
         "partId": "73",
         "ad": "Flanş",
-        "adet": 24,
+        "adet": 20,
         "hamKg": 1.413,
         "fireliKg": 1.4836500000000001,
         "fire": 5,
+        "ekFireKg": 0,
         "kesimBoyu": 300,
         "oran": null
        }
       ],
-      "netKg": 33.912,
-      "fireKg": 1.6956000000000024,
-      "siparisKg": 35.607600000000005,
+      "netKg": 28.26,
+      "fireKg": 1.413000000000002,
+      "siparisKg": 29.673000000000002,
       "artanKg": null,
       "kgNeden": null,
       "boyAdedi": null,
@@ -751,15 +757,15 @@
       "asgariFark": null,
       "fiyat": 38,
       "bant": null,
-      "tutar": 1353.0888000000002,
-      "tutarK": 135309,
-      "tutarTLK": 135309,
+      "tutar": 1127.574,
+      "tutarK": 112757,
+      "tutarTLK": 112757,
       "tutarNeden": null
      }
     ],
-    "netKg": 33.912,
-    "siparisKg": 35.607600000000005,
-    "tutarTLK": 135309,
+    "netKg": 28.26,
+    "siparisKg": 29.673000000000002,
+    "tutarTLK": 112757,
     "tutarsiz": 0
    }
   ],
@@ -768,7 +774,7 @@
    "malzeme": 1
   },
   "hazirSayi": 2,
-  "toplamTLK": 11521677
+  "toplamTLK": 11499125
  },
  "etki": {
   "bagli": 2,

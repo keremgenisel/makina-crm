@@ -6,7 +6,7 @@ import { BosDurum, HataMetni, Ipucu, BolumBasligi, KartBolum } from "./tasarim";
 import {
   PARA_BIRIMLERI, PARA_ADI, dovizMi, malzemeDogrula, malzemeFormu, malzemeEksikleri, eksikMalzemeSayisi, malzemeKullanimi, kullanimMetni,
   fiyatMetni, bantlarOf, bantMetni, fiyatGecmisiSatirlari, kurOnerisi, PANEL_IPUCU, BOS_BASLIK, BOS_METNI, eksikSayiMetni, EKSIK_ROZETI,
-  BANT_LAMA_NOTU, kumeOzeti, fiyatKumesi, EMNIYET_PAYI_ETIKETI, EMNIYET_PAYI_IPUCU,
+  BANT_LAMA_NOTU, kumeOzeti, fiyatKumesi,
   fireBantlariOf, fiyatEtkisi, FIRE_KG_BASLIK, FIRE_KG_LAMA_NOTU, FIRE_KG_IPUCU, FIRE_KG_ALT_ETIKETI, FIRE_KG_KG_ETIKETI, FIRE_KG_BANT_EKLE,
   FIRE_ETKI_BASLIGI, FIRE_ETKI_SORUSU,
 } from "../lib/malzeme";
@@ -59,7 +59,7 @@ export const FiyatAlanlari = ({ form, set, hatalar = {}, rates, ratesErr }) => {
         </Field>
       )}
       <BolumBasligi>Çap bandı (isteğe bağlı)</BolumBasligi>
-      <Ipucu>{BANT_LAMA_NOTU} Bandı ham çap (işleme payı dahil) seçer. İlk bandın alt sınırı 0'dır; en üst bant açık uçludur.</Ipucu>
+      <Ipucu>{BANT_LAMA_NOTU} Bandı girilen çap seçer. İlk bandın alt sınırı 0'dır; en üst bant açık uçludur.</Ipucu>
       <div data-testid="bant-listesi" style={{ marginTop: 8, marginBottom: 14 }}>
         {bantlar.map((b, i) => (
           <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
@@ -132,7 +132,7 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
     const eski = form.id == null ? null : malzemeler.find(m => String(m.id) === String(form.id));
     // Düzenlemede fiyat kümesi formda yoktur; eskisinden taşınır (değişikliği yalnız pencere yapar, R6).
     const kaynak = eski ? { ...form, ...malzemeFormu(eski), ad: form.ad, alasim: form.alasim, ozgulAgirlik: form.ozgulAgirlik, geldigiBoy: form.geldigiBoy,
-      asgariSiparis: form.asgariSiparis, fire: form.fire, emniyetPayi: form.emniyetPayi, fireBantlari: form.fireBantlari, // spec 0139 A-R1/2, AC-47
+      asgariSiparis: form.asgariSiparis, fire: form.fire, fireBantlari: form.fireBantlari, // spec 0139 A-R1/2, AC-47
       tedarikciId: giderYetki ? form.tedarikciId : malzemeFormu(eski).tedarikciId } : form;
     const v = malzemeDogrula(kaynak, malzemeler, form.id);
     if (!v.gecerli) { setHatalar(v.hatalar); return; }
@@ -224,8 +224,6 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
             <Field label="Alaşım / kalite"><Input value={form.alasim} onChange={e => set("alasim", e.target.value)} aria-label="Alaşım" /></Field>
             <Field label="Özgül ağırlık (g/cm³)"><Input value={form.ozgulAgirlik} onChange={e => set("ozgulAgirlik", e.target.value)} placeholder="7,85" aria-label="Özgül ağırlık" /><HataMetni>{hatalar.ozgulAgirlik}</HataMetni></Field>
             <Field label="Varsayılan fire (%)"><Input value={form.fire} onChange={e => set("fire", e.target.value)} placeholder="0" aria-label="Varsayılan fire" /><HataMetni>{hatalar.fire}</HataMetni></Field>
-            {/* Spec 0134 R9, R21/2, AC-60: emniyet payı firenin komşusunda; yalnız siparişi etkiler. */}
-            <Field label={EMNIYET_PAYI_ETIKETI}><Input value={form.emniyetPayi} onChange={e => set("emniyetPayi", e.target.value)} placeholder="0" aria-label="Malzeme emniyet payı" /><HataMetni>{hatalar.emniyetPayi}</HataMetni><Ipucu>{EMNIYET_PAYI_IPUCU}</Ipucu></Field>
             <Field label="Geldiği boy (metre)"><Input value={form.geldigiBoy} onChange={e => set("geldigiBoy", e.target.value)} placeholder="6" aria-label="Geldiği boy" /><HataMetni>{hatalar.geldigiBoy}</HataMetni></Field>
             <Field label="Asgari sipariş (kilogram)"><Input value={form.asgariSiparis} onChange={e => set("asgariSiparis", e.target.value)} aria-label="Asgari sipariş" /><HataMetni>{hatalar.asgariSiparis}</HataMetni></Field>
           </div>

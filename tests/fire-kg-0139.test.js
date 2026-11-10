@@ -32,10 +32,11 @@ describe("Spec 0139 A: kilogram fire motoru", () => {
     const r = oz({ bicim: "mil", cap: 60, boy: 175, fire: 2 }, kart({ fire: 10 }));
     yakin(r.fireliKg, ham("mil", { cap: 60, boy: 175 }) * 1.02 + 0.3);
   });
-  it("AC-5: bandı ham çap seçer; çap payı parçayı üst banda taşıyınca o bandın kilogramı uygulanır", () => {
-    const r = oz({ bicim: "mil", cap: 34, payCap: 2, boy: 100 }, kart()); // ham çap 36 → 0,30 bandı
+  // Spec 0141 ile (C3, karar 35): işleme payı kalktı; ham çap girilen çaptır. Senaryo "üst banda taşıyan pay" yerine girilen çapla.
+  it("AC-5: bandı ham çap seçer; girilen çap üst banttaysa o bandın kilogramı uygulanır", () => {
+    const r = oz({ bicim: "mil", cap: 36, boy: 100 }, kart()); // girilen çap 36 → 0,30 bandı
     yakin(r.fireliKg, ham("mil", { cap: 36, boy: 100 }) + 0.3);
-    const p = oz({ bicim: "mil", cap: 34, boy: 100 }, kart()); // paysız 34 → 0,05 bandı
+    const p = oz({ bicim: "mil", cap: 34, boy: 100 }, kart()); // 34 → 0,05 bandı
     yakin(p.fireliKg, ham("mil", { cap: 34, boy: 100 }) + 0.05);
   });
   it("AC-6 / AC-45: kilogramı 0 olan band geçerlidir; o çapta fire eklenmez", () => {
@@ -53,7 +54,7 @@ describe("Spec 0139 A: kilogram fire motoru", () => {
     yakin(r.fireliKg, r.hamKg);
   });
   it("AC-9: boru biçimli parçada kilogram tablosu ham çapla uygulanır", () => {
-    const r = oz({ bicim: "boru", cap: 100, et: 5, payCap: 2, boy: 200 }, kart()); // ham çap 102 → 1 kg
+    const r = oz({ bicim: "boru", cap: 102, et: 5, boy: 200 }, kart()); // spec 0141 ile girilen çap 102 → 1 kg
     yakin(r.fireliKg, ham("boru", { cap: 102, et: 5, boy: 200 }) + 1);
   });
   it("AC-10: kilogram adet başınadır; adedi 3 olan kalemde maliyet ve fire üç kez sayılır", () => {

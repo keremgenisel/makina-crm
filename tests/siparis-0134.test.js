@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import * as S from "../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml } from "../src/lib/siparisRaporu";
 import { kitAdediDogrula, setAdediDogrula, setIcerigiDogrula, partiAdediCevir, kitStokAdedi, kitAdetMetni, KIT_ADET_HATASI, SET_ADET_HATASI, PARTI_BUYUKLUGU_HATASI } from "../src/lib/urunAgaci";
-import { ucOndalik, emniyetPayiDogrula, EMNIYET_PAYI_HATASI, malzemeDogrula } from "../src/lib/malzeme";
+import { ucOndalik } from "../src/lib/malzeme";
 import { modelMaliyeti } from "../src/lib/makinaStandartMaliyet";
 import { BOLUM_SEKMELERI, SECTION_GROUP } from "../electron/serverAuth.cjs";
 import * as F from "./fixtures/0134-veri.js";
@@ -89,7 +89,8 @@ describe("Spec 0134: parça ihtiyacı (R6–R11/2)", () => {
     expect(parca(r, "Pul").ihtiyac).toBe(140);
     expect(parca(r, "Somun").ihtiyac).toBe(210);
     const set = parca(r, "Bağlantı seti");
-    expect(set).toMatchObject({ set: true, patlatildi: true, ihtiyac: 70, stok: 0, siparis: 70, pay: null });
+    expect(set).toMatchObject({ set: true, patlatildi: true, ihtiyac: 70, stok: 0, siparis: 70 });
+    expect(set).not.toHaveProperty("pay"); // spec 0141 ile (C8): pay alanı satırdan kalktı
   });
   it("AC-76 / AC-77: stoğu 3 olan setin 70 ihtiyacında 67 set patlatılır; A'nın ihtiyacı 134, çift sayım yok", () => {
     const r = tek([[44, 1]], 70, { partStock: [{ partId: 44, miktar: 3 }] });
@@ -122,39 +123,29 @@ describe("Spec 0134: parça ihtiyacı (R6–R11/2)", () => {
     expect(parca(r, "Pul").siparis).toBe(460);
     expect(hesap({ partStock: [{ partId: 42, miktar: 5000 }, { partId: 41, miktar: -3 }] }).parcalar.every(p => p.siparis == null || p.siparis >= 0)).toBe(true);
   });
-  it("AC-19 / AC-20: %10 pay 560'ı 616'ya çıkarır ve sütununda görünür; boş ya da sıfır pay değiştirmez, sütun boş", () => {
+  // Spec 0141 ile ters çevrildi (B-R3, B-R6, karar 34): emniyet payı kalktı. AC-19/20, AC-21, AC-81/82, Karar 32, AC-83 ve AC-84
+  // payın kendisini sınıyordu; aynı veride artık hiçbir yüzde uygulanmaz. Karşılıklar tests/isleme-payi-0141.test.js AC-17–AC-19,
+  // AC-26 ve AC-52'de; doğrulayıcı ve iki kartın alanı kalktığı için AC-21 ve AC-81/82'nin karşılığı taramadır (AC-26).
+  it("AC-19 / AC-20 (spec 0141 ile): eski kayıttaki %10 emniyet payı uygulanmaz; 560 yine 560, satırda pay alanı yok", () => {
     const r = tek([[42, 8]], 70, { parts: [{ ...F.PUL, emniyetPayi: 10 }] });
-    expect(parca(r, "Pul")).toMatchObject({ ham: 560, ihtiyac: 616, pay: 10 });
-    expect(parca(tek([[42, 8]], 70, { parts: [{ ...F.PUL, emniyetPayi: 0 }] }), "Pul")).toMatchObject({ ihtiyac: 560, pay: null });
-    expect(parca(tek([[42, 8]]), "Pul").pay).toBeNull();
+    expect(parca(r, "Pul")).toMatchObject({ ham: 560, ihtiyac: 560 });
+    expect(parca(r, "Pul")).not.toHaveProperty("pay");
   });
-  it("AC-21 (saf): emniyet payı 0 ile 100 arası; tek doğrulayıcı, iki kartta aynı", () => {
-    for (const x of ["-1", "101", "abc"]) expect(emniyetPayiDogrula(x).hata, x).toBeTruthy();
-    expect(emniyetPayiDogrula("101").hata).toBe(EMNIYET_PAYI_HATASI);
-    expect(emniyetPayiDogrula("12,5").deger).toBe(12.5);
-    expect(malzemeDogrula({ ad: "X", emniyetPayi: "150" }, []).hatalar.emniyetPayi).toBe(EMNIYET_PAYI_HATASI);
-  });
-  it("AC-81 / AC-82: parçanın payı varsa malzemeninki okunmaz; ikisi de boşsa sıfır", () => {
-    const kat = new Map([["501", { ...F.P304, emniyetPayi: 20 }]]);
-    expect(S.emniyetPayiOf({ ...F.KESME, emniyetPayi: 5 }, kat)).toBe(5);
-    expect(S.emniyetPayiOf(F.KESME, kat)).toBe(20);
-    expect(S.emniyetPayiOf(F.PUL, kat)).toBe(0);
-  });
-  it("Karar 32: emniyet payı setin kendi satırına uygulanmaz; bileşenin payı patlatılan adede uygulanır", () => {
+  it("Karar 32 (spec 0141 ile): setin bileşeninde de pay uygulanmaz; patlatılan adet yukarı yuvarlanır", () => {
     const r = tek([[44, 1]], 70, { parts: [{ ...F.PUL, emniyetPayi: 10 }, F.SOMUN, { ...F.SET, emniyetPayi: 50 }] });
-    expect(parca(r, "Bağlantı seti")).toMatchObject({ ihtiyac: 70, pay: null });
-    expect(parca(r, "Pul").ihtiyac).toBe(154); // 140 × 1,10
+    expect(parca(r, "Bağlantı seti")).toMatchObject({ ihtiyac: 70 });
+    expect(parca(r, "Pul").ihtiyac).toBe(140);
     expect(parca(r, "Somun").ihtiyac).toBe(210);
   });
-  it("AC-83: 0,114 adet, 70 makina, %10 pay, 2 stok → ihtiyaç 9, sipariş 7", () => {
+  it("AC-83 (spec 0141 ile): 0,114 adet, 70 makina, 2 stok → ihtiyaç 8 (7,98 yukarı), sipariş 6; eski %10 pay okunmaz", () => {
     const r = tek([[42, 0.114]], 70, { parts: [{ ...F.PUL, emniyetPayi: 10 }], partStock: [{ partId: 42, miktar: 2 }] });
-    expect(parca(r, "Pul")).toMatchObject({ ihtiyac: 9, siparis: 7 });
+    expect(parca(r, "Pul")).toMatchObject({ ihtiyac: 8, siparis: 6 });
   });
-  it("AC-84: malzeme tarafında pay ikinci kez uygulanmaz; kilo parçanın sipariş adedinden türer", () => {
+  it("AC-84 (spec 0141 ile): malzemedeki eski pay uygulanmaz; kilo parçanın sipariş adedinden türer", () => {
     const r = tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, emniyetPayi: 10 }] });
-    expect(parca(r, "Kesme mili").siparis).toBe(77);
-    expect(r.kesitler[0].parcalar[0].adet).toBe(77);
-    expect(u3(r.kesitler[0].netKg)).toBe(u3(77 * r.kesitler[0].parcalar[0].hamKg));
+    expect(parca(r, "Kesme mili").siparis).toBe(70);
+    expect(r.kesitler[0].parcalar[0].adet).toBe(70);
+    expect(u3(r.kesitler[0].netKg)).toBe(u3(70 * r.kesitler[0].parcalar[0].hamKg));
   });
   it("AC-22 / AC-23 / AC-99: hazır parça parça tablosunda var, malzeme tablosunda yok, eksik sayılmaz; kiti boş model adıyla", () => {
     const r = hesap({ modeller: [F.AK100, F.model("BOS", [])], satirlar: [{ model: "AK100_DS", adet: "70" }, { model: "BOS", adet: "3" }] });
@@ -375,6 +366,7 @@ describe("Spec 0134: kaynak taramaları", () => {
 
 // Triyaj (2026-11-05): her bulgunun bekçisi. Bulgu 5 ekranda (`ui/kit-ondalik-0134.test.jsx`).
 describe("Spec 0134 triyaj", () => {
+  // Spec 0141 ile: payı taşıyan eski satır tek türetmede katlanır (A-R1/3, A-R2/2); aynı sonuç artık katlamanın üç ondalığından.
   it("Bulgu 1: aynı ham kesit kayan nokta yüzünden iki satıra bölünmez (Ø10,1 + 0,2 = Ø10,3); tek satır, tek boy, asgari bir kez", () => {
     const a = { id: 70, ad: "Paylı", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 10.1, payCap: 0.2, boy: 100 } };
     const b = { id: 71, ad: "Paysız", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 10.3, boy: 100 } };
@@ -402,6 +394,7 @@ describe("Spec 0134 triyaj", () => {
     expect(parca(r, "Bağlantı seti")).toMatchObject({ siparis: 0, patlatildi: false });
     expect(r.hazirSayi).toBe(0);
   });
+  // Spec 0141 ile: eski payCap tek türetmede çapa katlanır (Ø98 + 4 = Ø102); bant girilen (katlanmış) çaptan seçilir.
   it("Bulgu 4 / AC-66: bant ham çapla seçilir (net Ø98 sınırın altında, ham Ø102 üstünde → üst bandın fiyatı)", () => {
     const p = { id: 73, ad: "Sınırda", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 98, payCap: 4, boy: 50 } };
     const m = { ...F.P304, bantlar: [{ alt: 0, fiyat: 2.95 }, { alt: 100, fiyat: 3.2 }] };

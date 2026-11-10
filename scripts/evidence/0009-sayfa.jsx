@@ -221,7 +221,7 @@ const MALZEME_0132 = [
   { id: 503, ad: "Alüminyum", kiloFiyati: 4.1, paraBirimi: "EUR" },
 ];
 const PARCA_0132 = [
-  { id: 41, ad: "Kesme mili", kod: "KM-140", tip: "Standart", fiyatTRY: 4500, models: ["AK100"], malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 78, payCap: 4, payBoy: 5 } },
+  { id: 41, ad: "Kesme mili", kod: "KM-140", tip: "Standart", fiyatTRY: 4500, models: ["AK100"], malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 144, boy: 83 } },
   { id: 42, ad: "Kazan iç çubuğu", kod: "KI-1", tip: "Standart", models: [], malzemeSatiri: { malzemeId: 502, bicim: "lama", kalinlik: 10, genislik: 20, boy: 125 } },
   { id: 43, ad: "Konveyör borusu", kod: "KB-19", tip: "Standart", models: [], malzemeSatiri: { malzemeId: 503, bicim: "boru", cap: 19, et: 1.5, boy: 173 } },
   ...PARCA_0087,

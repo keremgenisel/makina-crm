@@ -5,6 +5,7 @@ import fs from "node:fs";
 import * as S from "../src/lib/siparisIhtiyaci";
 import * as F34 from "./fixtures/0134-veri";
 import * as V139 from "./fixtures/0139-veri";
+import { ayikla0141 } from "./fixtures/0141-ayikla.js"; // spec 0141 ile: sipariş satırının `pay` anahtarı ve kayıt gövdesinin katlaması
 
 const DOSYA = "tests/fixtures/0140-once.json";
 const SENARYOLAR = () => ({
@@ -27,7 +28,7 @@ describe("Spec 0140 kıyas (C2, C-R11)", () => {
     const s = uret();
     if (process.env.YAZ_0140 === "1") { fs.writeFileSync(DOSYA, JSON.stringify({ sonuc: s, TEDARIKCISIZ: S.TEDARIKCISIZ }, null, 1) + "\n"); return; }
     const altin = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
-    expect(s).toEqual(altin.sonuc);
+    expect(ayikla0141(s)).toEqual(ayikla0141(altin.sonuc)); // spec 0141 ile
     expect(S.TEDARIKCISIZ).toBe(altin.TEDARIKCISIZ);
   });
   it("AC-93: tedarikciOdakli verilmeyen çağrıda tedarikciBolumleri alanı hiç yoktur", () => {
@@ -37,7 +38,7 @@ describe("Spec 0140 kıyas (C2, C-R11)", () => {
   it("AC-94: opt-in çağrıda bugünkü alanlar ve metin değişmez", () => {
     if (process.env.YAZ_0140 === "1") return;
     const altin = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
-    expect(uret({ tedarikciOdakli: true })).toEqual(altin.sonuc);
+    expect(ayikla0141(uret({ tedarikciOdakli: true }))).toEqual(ayikla0141(altin.sonuc)); // spec 0141 ile
     for (const v of Object.values(SENARYOLAR())) expect(S.siparisIhtiyaci(v, { tedarikciOdakli: true })).toHaveProperty("tedarikciBolumleri");
   });
 });
