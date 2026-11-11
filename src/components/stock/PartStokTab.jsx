@@ -25,7 +25,7 @@ const fiyatSayisi = (part, pb, baglam) => {
 const PER_PAGE = 15;
 
 export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, partStock = [], setPartStock, partStockLog = [], setPartStockLog, showToast, appSettings = {}, setAppSettings = () => {}, canDoStock = () => true, serverPermissions = null, aktifKullanici = null,
-  siparisVeri = null, giderYetki = false }) => {
+  siparisVeri = null }) => {
   // Spec 0140 B-R6 (AC-53, AC-54): sipariş listesinin ikinci giriş noktası; pencere katalog panelinin kilidini almaz.
   const [siparisAcik, setSiparisAcik] = useState(false);
   const [modal, setModal] = useState(null);
@@ -332,7 +332,7 @@ export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, 
           )}
         </Modal>
       )}
-      {siparisAcik && <SiparisPenceresi veri={siparisVeri} giderYetki={giderYetki} onClose={() => setSiparisAcik(false)} />}
+      {siparisAcik && <SiparisPenceresi veri={siparisVeri} onClose={() => setSiparisAcik(false)} />}
     </div>
   );
 };

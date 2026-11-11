@@ -15,6 +15,7 @@ import { siparisIhtiyaci } from "../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml } from "../src/lib/siparisRaporu";
 import { ayikla0139 } from "./fixtures/0139-ayikla.js";
 import { ayikla0141 } from "./fixtures/0141-ayikla.js";
+import { ayikla0142 } from "./fixtures/0142-ayikla.js"; // spec 0142 ile: parça satırının `olculer` alanı ve tedarikçi bölümlerinin `belge` alanı
 import { MALZEMELER, TABLOLU_MALZEMELER, PARCALAR, MODELLER, TARIHLER } from "./fixtures/0141-veri";
 // 0139-veri'nin fiyat ayarı anahtarı (`karKati`) motorun okuduğu ad değil; kıyas fiyatı gerçekten türetsin diye doğru ad.
 const FIYAT_AYARLARI = { varsayilanKat: 2.77 };
@@ -54,7 +55,9 @@ const ciktilar = () => {
     raporYetkisiz: siparisRaporuHtml(odakli, { bugun: "2026-11-10", factory: { name: "Altuntaş Makina" }, partiAd: null, paraGoster: false }),
   }));
 };
-const ayikla = (x) => ayikla0141(ayikla0139(x));
+// Spec 0142 ile: belge baştan yazıldı (C6: belge HTML'i kıyasa girmez, kendi kriterleriyle ölçülür); iki rapor alanı ve motorun iki
+// yeni alanı karşılaştırmadan önce ayıklanır. Altın dosyası değişmedi (AC-41'in özeti aynı).
+const ayikla = (x) => { const y = ayikla0142(ayikla0141(ayikla0139(x))); delete y.rapor; delete y.raporYetkisiz; return y; };
 
 describe("Spec 0141 kıyas (C1)", () => {
   it("AC-40 / AC-27: payı olmayan veride bütün çıktılar ve yazdırılan sipariş raporu spec öncesi altınla birebir", () => {

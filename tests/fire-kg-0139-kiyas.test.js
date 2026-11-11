@@ -10,6 +10,7 @@ import { modelMaliyetleri, partiHesabi } from "../src/lib/makinaStandartMaliyet"
 import { siparisIhtiyaci } from "../src/lib/siparisIhtiyaci";
 import { ayikla0139 as ayikla } from "./fixtures/0139-ayikla.js";
 import { ayikla0141 } from "./fixtures/0141-ayikla.js"; // spec 0141 ile: sipariş satırının `pay` anahtarı ve kayıt gövdesinin katlaması
+import { ayikla0142 } from "./fixtures/0142-ayikla.js"; // spec 0142 ile: parça satırının `olculer` alanı ve tedarikçi bölümlerinin `belge` alanı
 import { MALZEMELER, TABLOLU_MALZEMELER, PARCALAR, MODELLER, TARIHLER, FIYAT_AYARLARI } from "./fixtures/0139-veri";
 
 const DOSYA = "tests/fixtures/0139-once.json";
@@ -39,7 +40,7 @@ describe("Spec 0139 C1: tablosuz veride çıktılar spec öncesiyle aynı", () =
   it("AC-1 / AC-18: ağırlık, maliyet, fiyat, dışa aktarma, model maliyeti, parti hesabı, sipariş birebir", () => {
     const s = ciktilar(MALZEMELER);
     if (process.env.YAZ_0139 === "1") { fs.writeFileSync(DOSYA, JSON.stringify(s, null, 1) + "\n"); return; }
-    expect(ayikla0141(ayikla(s))).toEqual(ayikla0141(ayikla(JSON.parse(fs.readFileSync(DOSYA, "utf8"))))); // spec 0141 ile
+    expect(ayikla0142(ayikla0141(ayikla(s)))).toEqual(ayikla0142(ayikla0141(ayikla(JSON.parse(fs.readFileSync(DOSYA, "utf8")))))); // spec 0141 ile
   });
   it("AC-50: boy adedi hesaplanan çaplı kesitte sipariş kilosu ve boy adedi tablolu veride de spec öncesiyle aynı", () => {
     if (process.env.YAZ_0139 === "1") return;

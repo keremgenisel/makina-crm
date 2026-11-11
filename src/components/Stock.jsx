@@ -77,7 +77,7 @@ export const Stock = ({
         <PartStokTab fiyatBaglami={fiyatBaglami} parts={parts} rawParts={rawParts} partStock={partStock} setPartStock={setPartStock}
           partStockLog={partStockLog} setPartStockLog={setPartStockLog} showToast={showToast}
           appSettings={appSettings} setAppSettings={setAppSettings}
-          canDoStock={canDoStock} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici} giderYetki={giderYetki}
+          canDoStock={canDoStock} serverPermissions={serverPermissions} aktifKullanici={aktifKullanici}
           siparisVeri={{ parts, hamParts: rawParts, partStock, malzemeler, tedarikciler, hamTedarikciler: rawTedarikciler, standardModels, customModels, uretimPartileri, appSettings, factory }} />
       )}
       {subTab === "yedeksatis" && (

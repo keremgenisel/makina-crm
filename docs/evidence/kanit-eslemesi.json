@@ -13604,33 +13604,48 @@
     ],
     "src/components/stock/SiparisPenceresi.jsx": [
       {
-        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
         "ekran": "siparis-0140-pencere",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
         "ekran": "siparis-0140-belirtilmemis",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
         "ekran": "siparis-0140-parca-ihtiyaci",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
         "ekran": "siparis-0140-yetkisiz",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
         "ekran": "siparis-0140-bos",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
         "ekran": "siparis-0140-hatali",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
+        "ekran": "siparis-0142-pencere",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
+        "ekran": "siparis-0142-bolum",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0142-taban-piksel-raporu.json",
+        "ekran": "siparis-0142-olcu",
         "beklenen": "ayni"
       }
     ]

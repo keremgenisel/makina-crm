@@ -74,6 +74,16 @@ export const ELLE_KILO_HATASI = "Sipariş kilosu sıfır ya da pozitif bir sayı
 export const ELLE_BOY_HATASI = "Boy adedi 0 ile 1.000.000 arasında tam sayı olmalı.";
 export const BELGE_HATALI = "Geçersiz değer girilmiş bir satır var; belge basılamaz.";
 export const BELGE_BOS = "Basılacak satır yok.";
+// Spec 0142 B-R4/2 (AC-41): ölçüsü çözülemeyen kalemin ibaresi; pencere ve belge aynı sabiti basar.
+export const OLCU_GIRILMEMIS = "ölçüsü girilmemiş";
+// Spec 0142 B-R5/2 (AC-45): ölçü sütununun başlığı pencerede ve belgede aynı metin.
+export const OLCU_BASLIGI = "Ölçü";
+// Spec 0142 B-R1/3 (AC-39): parçası açık, kesidi kapatılmış malzeme varsa belge bölümünün sonunda.
+export const KESIT_KAPALI_UYARISI = "Bu bölümde parçası sipariş edilen ama malzeme kesidi \"sipariş etme\" işaretli satır var; o malzeme toplama girmedi.";
+// Spec 0142 B-R5/3 (AC-55): aynı ölçüdeki kalemlerin toplam adedi 1'den büyükse ölçü satırının eki.
+export const parcaBasinaMetni = (n) => ` · parça başına ${n}`;
+// Triyaj (bulgu 1): pencerede Ana tedarikçisinin bölümünde duran ama belgede malzemesinin firmasının bölümünde basılan parçanın ibaresi.
+export const belgeYeriMetni = (adlar, seciliDegil) => `Belgede ${adlar.join(", ")} bölümünde basılır${seciliDegil ? "; bu firma seçimde olmadığı için belgeye girmez" : ""}.`;
 
 // D-R1/2 (AC-82): sipariş adedi 0–1.000.000 tam sayı, boş = 0. Belirsiz sayı kuralı burada aranmaz (tam sayı alanı, AC-39).
 export const siparisAdediDogrula = (ham) => {
@@ -193,6 +203,7 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
         partId: k, ad: p?.ad || adKopyasi || h?.ad || BULUNAMAYAN_PARCA, silinmis: !p, set: !!p && setMi(p), kaynaklar: [],
         ham: 0, ihtiyac: 0, patlatmaHam: 0, stok: p ? stokOf(k) : 0, siparis: 0, patlatildi: false,
         malzemeli: !!p && !setMi(p) && malzemeKalemleri(p).length > 0, // spec 0135 R30/2: malzeme kalemi var mı
+        olculer: p ? parcaOlculeri(p, malzemeKat) : [], // spec 0142 C4: parçanın kendi malzeme kalemlerinden, sipariş adedinden bağımsız
       });
     }
     return kalemler.get(k);
@@ -257,7 +268,7 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
     partId: k.partId, ad: k.ad, silinmis: k.silinmis, set: k.set, patlatildi: k.patlatildi, setNeden: k.setNeden || null,
     kaynaklar: k.kaynaklar, iki: k.kaynaklar.some(x => x.tur === "kit") && k.kaynaklar.some(x => x.tur === "set"),
     ham: k.silinmis ? null : k.ham, ihtiyac: k.silinmis ? null : k.ihtiyac,
-    stok: k.silinmis ? null : k.stok, siparis: k.silinmis ? null : k.siparis, malzemeli: k.malzemeli,
+    stok: k.silinmis ? null : k.stok, siparis: k.silinmis ? null : k.siparis, malzemeli: k.malzemeli, olculer: k.olculer,
   }));
 
   // ── Malzeme ihtiyacı (R12–R18/2) ───────────────────────────────────────────────────────────────────────────────────────
@@ -395,7 +406,7 @@ const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed,
     if (!tid && k.malzemeli) { belirtilmemis.anasizMalzemeli++; continue; }
     const birimK = k.malzemeli ? null : parcaMaliyetKurus(p, undefined, setKat, malzemeKat);
     const satir = { partId: k.partId, ad: k.ad, set: k.set, ihtiyac: k.ihtiyac, stok: k.stok, oneri, siparis: k.siparis, duzenlendi: !!k.duzenlendi,
-      kapali: !!k.kapali, hata: k.hata || null, malzemeli: k.malzemeli, birimK,
+      kapali: !!k.kapali, hata: k.hata || null, malzemeli: k.malzemeli, olculer: k.olculer, birimK,
       tutarK: k.malzemeli || birimK == null ? null : birimK * k.siparis, tutarNeden: k.malzemeli ? MALZEMESI_ASAGIDA : birimK == null ? MALIYET_YOK : null };
     if (!tid) belirtilmemis.parcalar.push(satir); else bolum(tid).hazirParcalar.push(satir);
   }
@@ -418,11 +429,102 @@ const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed,
     + [...gorunenBelirtilmemis.parcalar, ...gorunenBelirtilmemis.kesitler].reduce((t, x) => t + satirHata(x), 0)
     + [...kalemler.values()].filter(k => k.set && k.hata && !gorunenBolumler.some(b => b.hazirParcalar.some(x => x.partId === k.partId))
       && !gorunenBelirtilmemis.parcalar.some(x => x.partId === k.partId)).length;
+  const tumBelge = belgeBolumleriKur({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed });
+  const belge = secim ? tumBelge.filter(b => secim.has(b.tedarikciId)) : tumBelge;
+  // Triyaj (bulgu 1): pencerenin bölümlemesi (Ana tedarikçi) ile belgeninki (malzemenin firması) bilerek farklı; pencerede bu bölümün
+  // belgesine girmeyen ama başka bir bölümün belgesinde basılan satır nerede basıldığını söyler. Seçim dışındaki bölüm ayrıca yazılır.
+  for (const b of gorunenBolumler) for (const x of b.hazirParcalar) {
+    const yer = tumBelge.filter(bb => !bb.silinmis && bb.satirlar.some(s => s.partId === x.partId));
+    if (!yer.length || yer.some(bb => bb.tedarikciId === b.tedarikciId)) continue;
+    x.belgeYeri = belgeYeriMetni(yer.map(bb => bb.ad), !!secim && !yer.some(bb => secim.has(bb.tedarikciId)));
+  }
   return {
-    bolumler: gorunenBolumler, belirtilmemis: gorunenBelirtilmemis,
+    bolumler: gorunenBolumler, belirtilmemis: gorunenBelirtilmemis, belge,
     secimVar: !!secim, satirsizSecilen: secim ? [...secim].filter(id => !bolumler.has(id)) : [],
     duzen: { duzenlenen, kapatilan, hata, gorunenHata }, parcaDurumu,
   };
+};
+
+// ── Spec 0142: belgenin bölümleri (yalnız belge okur; pencerenin bölümlemesi yukarıdaki gibi kalır, C-R3) ───────────────
+// B-R1/2: malzemeden kesilen parça her malzeme kalemiyle o malzemenin tedarikçisinin bölümüne girer (iki firmalı parça iki bölümde,
+// her birinde yalnız o firmanın ölçüleri; tam sipariş adediyle, B-R1/6). B-R2/2: Ana tedarikçisi olmayan malzemeli parça da girer.
+// B-R1/5: tedarikçisi çözülen kalemi olmayan parça (malzemesi çöpte, yok ya da tedarikçisiz) Ana tedarikçisinin bölümünde kalır,
+// Ana tedarikçisi de yoksa girmez. B-R1/3: süzgeç parça satırıdır (kapalı değil, hatasız, sipariş > 0). B-R6, B-R6/2, B-R6/3: önce
+// malzemeyle yerleşen parçalar (o bölümdeki ilk ölçünün malzeme adı, kesit sayıları, parça adı), sonra kalanlar kit sırasında.
+// B-R7/2: toplam bölümün kesit satırlarından (kapalı, hatalı ve sıfır olanlar hariç). B-R1/4: parça ya da toplam satırı olan bölüm basılır.
+const belgeBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed }) => {
+  const map = new Map();
+  const al = (tid) => {
+    if (!map.has(tid)) {
+      const t = canliTed.get(tid); const h = hamTed.get(tid);
+      map.set(tid, { tedarikciId: tid, ad: t ? t.ad : h ? `${h.ad} (${SILINMIS_TEDARIKCI})` : BULUNAMAYAN_TEDARIKCI, silinmis: !t, satirlar: [], toplam: [], kapaliKesitVar: false, hataSayisi: 0 });
+    }
+    return map.get(tid);
+  };
+  const tidOf = (x) => (x == null || x === "" ? null : String(x));
+  let sira = 0;
+  for (const k of kalemler.values()) {
+    if (k.silinmis || (k.set && k.patlatildi)) continue;
+    if (k.kapali || (!k.hata && !(k.siparis > 0))) continue;
+    const p = canliParca.get(k.partId);
+    const yerlesen = k.malzemeli ? k.olculer.filter(o => tidOf(o.tedarikciId)) : [];
+    const ana = tidOf(p?.tedarikciId);
+    // Triyaj (bulgu 2): hatalı adetli parça basılmaz ama düştüğü bölümde sayılır; o bölüm basılacaksa belge kilitlenir (belgeDurumu),
+    // yoksa kesidi öneri kilosuyla toplama girip kâğıtta listede olmayan parçanın malzemesi sipariş edilirdi.
+    if (k.hata) { for (const t of yerlesen.length ? new Set(yerlesen.map(o => tidOf(o.tedarikciId))) : ana ? [ana] : []) al(t).hataSayisi++; continue; }
+    const temel = { partId: k.partId, ad: k.ad, siparis: k.siparis, duzenlendi: !!k.duzenlendi, kitSira: sira++ };
+    if (yerlesen.length) {
+      const gruplar = new Map();
+      for (const o of yerlesen) { const t = tidOf(o.tedarikciId); if (!gruplar.has(t)) gruplar.set(t, []); gruplar.get(t).push(o); }
+      for (const [t, olculer] of gruplar) al(t).satirlar.push({ ...temel, malzemeli: true, olculer, malzemeAdlari: [...new Set(olculer.map(o => o.malzemeAd))] });
+      continue;
+    }
+    if (!ana) continue;
+    const olculer = k.malzemeli ? k.olculer : [];
+    al(ana).satirlar.push({ ...temel, malzemeli: false, olculer, malzemeAdlari: [...new Set(olculer.map(o => o.malzemeAd).filter(Boolean))] });
+  }
+  for (const r of kesitSatirlari) {
+    const t = tidOf(r.tedarikciId);
+    if (!t) continue;
+    if (!r.kapali && !r.hata && (r.siparisKg > 0 || r.boyAdedi > 0)) al(t).toplam.push(r);
+  }
+  for (const b of map.values()) {
+    const basilan = new Set(b.satirlar.map(x => x.partId));
+    b.kapaliKesitVar = kesitSatirlari.some(r => tidOf(r.tedarikciId) === b.tedarikciId && r.kapali && r.parcalar.some(x => basilan.has(x.partId)));
+    const ilk = (x) => x.olculer[0] || {};
+    const kesitKiyas = (a, c) => {
+      const ka = ilk(a).kesit || []; const kc = ilk(c).kesit || [];
+      if (!ka.length !== !kc.length) return ka.length ? -1 : 1;
+      for (let i = 0; i < Math.max(ka.length, kc.length); i++) if ((ka[i] ?? 0) !== (kc[i] ?? 0)) return (ka[i] ?? 0) - (kc[i] ?? 0);
+      return 0;
+    };
+    b.satirlar.sort((a, c) => (a.malzemeli !== c.malzemeli ? (a.malzemeli ? -1 : 1)
+      : !a.malzemeli ? a.kitSira - c.kitSira
+        : String(ilk(a).malzemeAd || "").localeCompare(String(ilk(c).malzemeAd || ""), "tr") || kesitKiyas(a, c) || String(a.ad).localeCompare(String(c.ad), "tr")));
+  }
+  // Seçim çağıranda uygulanır: pencerenin "belgede başka bölümde" ibaresi seçim dışındaki bölümü de bilmeli (triyaj, bulgu 1).
+  return [...map.values()].filter(b => b.satirlar.length || b.toplam.length).sort((a, b) => String(a.ad).localeCompare(String(b.ad), "tr"));
+};
+
+// Spec 0142 C4, B-R5, B-R5/3, D-R2, D-R3: parçanın malzeme kalemlerinden ölçüler. Aynı malzemede aynı ölçü bir kez yazılır ve kalem
+// adetleri toplanır; kesiti aynı boyu farklı kalemler ayrı. Ölçüsü eksik kalem `eksik` işaretiyle (B-R4/2). Set ölçü taşımaz.
+const parcaOlculeri = (p, malzemeKat) => {
+  if (!p || setMi(p)) return [];
+  const gruplar = new Map();
+  for (const satir of malzemeKalemleri(p)) {
+    const m = malzemeKat.get(String(satir.malzemeId)) || null;
+    const o = hamOlculer(satir);
+    const kesit = o ? hamKesit(satir).map(x => Number(Number(x).toFixed(3))) : null;
+    const boy = o ? Number(Number(o.boy).toFixed(3)) : null;
+    const yontem = satir.yontem === "boy" ? "boy" : "kilo";
+    const anahtarOlcu = o ? [satir.bicim, ...kesit, boy].join("|") : `eksik|${gruplar.size}`;
+    const g = `${m ? m.id : "?"}|${anahtarOlcu}`;
+    const adet = kalemAdetiOf(satir) ?? 1;
+    if (gruplar.has(g)) { gruplar.get(g).adet += adet; continue; }
+    gruplar.set(g, { malzemeId: m ? String(m.id) : null, malzemeAd: m ? m.ad : null, tedarikciId: m && m.tedarikciId != null && m.tedarikciId !== "" ? String(m.tedarikciId) : null,
+      anahtar: m && kesit ? [m.id, yontem, satir.bicim, ...kesit].join("|") : null, bicim: satir.bicim, kesit, boy, adet, eksik: !o });
+  }
+  return [...gruplar.values()].map(x => ({ ...x, metin: x.eksik ? "" : olcuMetni(x.bicim, x.kesit, x.boy, x.adet) }));
 };
 
 // D-R3/2, karar 38 (AC-84, AC-85, AC-88): kesit düzenlemesi. Kilo yolunda tek alan kilo, boy yönteminde boy adedi (tam sayı).
@@ -519,6 +621,13 @@ export const kesitMetni = (bicim, kesit) => {
   if (bicim === "mil") return `Ø${sayiHane.format(kesit[0])}`;
   if (bicim === "boru") return `Ø${sayiHane.format(kesit[0])} × ${sayiHane.format(kesit[1])} et`;
   return kesit.map(x => sayiHane.format(x)).join(" × ");
+};
+// Spec 0142 D-R1, D-R1/2, B-R5, B-R5/3 (AC-16–AC-19, AC-44, AC-47, AC-55): parçanın tam ölçüsü. `kesitMetni`'yi çağırır ve sonuna
+// boyu ekler; `Ø` ve biçim sırası tek yerde kalır. Kalem adedi 1'den büyükse "· parça başına n".
+export const olcuMetni = (bicim, kesit, boy, adet = 1) => {
+  const k = kesitMetni(bicim, kesit);
+  if (!k || boy == null) return "";
+  return `${k} × ${sayiHane.format(boy)}${adet > 1 ? parcaBasinaMetni(adet) : ""}`;
 };
 export { kgMetni };
 // Ekran ve çıktı biçimleri (0088 R25: ekran dosyası çarpım ve bölme yazmaz).

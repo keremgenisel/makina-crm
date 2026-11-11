@@ -73,12 +73,15 @@ describe("Spec 0140: pencere", () => {
     expect(screen.getByTestId("siparis-anasiz-parca").textContent).toBe(S.anasizParcaMetni(2));
     expect(screen.getByTestId("siparis-anasiz-malzemeli").textContent).toBe(S.anasizMalzemeliMetni(1));
   });
-  it("AC-73 / AC-74: hazır parçada birim maliyet ve tutar; malzemeli parçada '—' ve neden", () => {
+  // Spec 0142 ile (C1, C7, E-R2/2): 0140 AC-73/AC-74 ters çevrildi; gider yetkili düzenekte de para hücresi ve iki neden metni çizilmez.
+  it("AC-73 / AC-74 (spec 0142 ile): hazır parçada para hücresi yok; malzemeli parçanın neden metni çizilmez", () => {
     render(<Pencere />);
-    expect(within(hazirSatir("Pul")).getByTestId("siparis-hazir-tutar").textContent).toBe("3.500,00 ₺");
-    expect(within(hazirSatir("Kesme mili")).getByTestId("siparis-hazir-tutar").textContent).toBe(S.MALZEMESI_ASAGIDA);
+    expect(screen.queryAllByTestId("siparis-hazir-tutar")).toHaveLength(0);
+    expect(hazirSatir("Kesme mili").textContent).not.toContain(S.MALZEMESI_ASAGIDA);
+    expect(screen.getByTestId("siparis-penceresi").textContent).not.toMatch(/₺|Birim maliyet|Tutar/);
   });
-  it("AC-15 / AC-71: gider yetkisi yoksa fiyat, tutar ve toplam çizilmez; tedarikçi adları görünür", () => {
+  // Spec 0142 ile (C1, C7): AC-15 gider yetkisine bağlı değil; para her kullanıcıda yok (bu test zaten yetkisiz düzenekte).
+  it("AC-15 / AC-71 (spec 0142 ile): fiyat, tutar ve toplam çizilmez; tedarikçi adları görünür", () => {
     render(<Pencere giderYetki={false} />);
     const p = screen.getByTestId("siparis-penceresi");
     expect(p.textContent).not.toMatch(/₺|\$|€|Birim maliyet|Tutar/);
@@ -91,7 +94,7 @@ describe("Spec 0140: pencere", () => {
     fireEvent.change(screen.getByLabelText("Pul sipariş adedi"), { target: { value: "100" } });
     expect(within(hazirSatir("Pul")).getByTestId("siparis-oneri").textContent).toBe("700");
     expect(within(hazirSatir("Pul")).getByTestId("siparis-duzenlendi")).toBeTruthy();
-    expect(within(hazirSatir("Pul")).getByTestId("siparis-hazir-tutar").textContent).toBe("500,00 ₺");
+    expect(within(hazirSatir("Pul")).queryByTestId("siparis-hazir-tutar")).toBeNull(); // spec 0142 ile: para hücresi yok
     fireEvent.click(screen.getByLabelText("Kesme mili sipariş etme"));
     expect(screen.getByTestId("siparis-duzen-sayilari").textContent).toBe("1 satır düzenlendi · 1 satır kapatıldı");
     fireEvent.click(screen.getByRole("button", { name: ONERILERE_DON }));

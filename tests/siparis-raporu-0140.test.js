@@ -1,8 +1,8 @@
 // Spec 0140 E: sipariş listesinin belgesi (`lib/siparisRaporu.js`). Tek belge, tedarikçi başına bölüm ve sayfa sonu, sütunlar tek
-// yerde, para sütunları yalnız gider yetkisiyle, elle düzenlenmiş satır işaretli, kaçış.
+// yerde, elle düzenlenmiş satır işaretli, kaçış. Spec 0142 ile para sütunları kalktı (AC-16, AC-44, AC-45, AC-90 ters çevrildi).
 import { describe, it, expect } from "vitest";
 import * as S from "../src/lib/siparisIhtiyaci";
-import { siparisRaporuHtml, basilacakBolumler, belgeDurumu, BELGE_SUTUNLARI, ELLE_ISARETI } from "../src/lib/siparisRaporu";
+import { siparisRaporuHtml, basilacakBolumler, belgeDurumu, BELGE_SUTUNLARI, ELLE_ISARETI, TOPLAM_BASLIGI } from "../src/lib/siparisRaporu";
 import * as F from "./fixtures/0134-veri";
 
 const parcalar = (ek = {}) => [{ ...F.KESME, ...(ek[41] || {}) }, { ...F.PUL, ...(ek[42] || {}) }, { ...F.SOMUN, ...(ek[43] || {}) }, { ...F.SET, ...(ek[44] || {}) }];
@@ -22,17 +22,20 @@ describe("Spec 0140 E: belge", () => {
     expect(h).toContain("09.11.2026"); expect(h).toContain("Üretim partisi: Güz Partisi");
     expect(html(sonuc(), { partiAd: null })).toContain("Elle girilen model satırları");
   });
-  it("AC-44 / AC-45 / AC-90 / AC-16: sütunlar tek listeden; para sütunları yalnız gider yetkisiyle", () => {
-    const para = html(sonuc(), { paraGoster: true });
-    for (const s of [...BELGE_SUTUNLARI.hazir, ...BELGE_SUTUNLARI.hazirPara, ...BELGE_SUTUNLARI.malzeme, ...BELGE_SUTUNLARI.malzemePara]) expect(para, s).toContain(s);
-    const yetkisiz = html(sonuc(), { paraGoster: false });
-    for (const s of [...BELGE_SUTUNLARI.hazir, ...BELGE_SUTUNLARI.malzeme]) expect(yetkisiz, s).toContain(s);
-    for (const s of ["Birim maliyet", "Birim fiyat", "Tutar"]) expect(yetkisiz, s).not.toContain(s);
-    expect(yetkisiz).not.toMatch(/\d,\d{2} (TL|\$|€)/);
+  // Spec 0142 ile (C1, C7: 0140 B-R4, E-R3/2, E-R4 ve AC-16, AC-44, AC-45, AC-90 ters çevrildi): sütunlar yine tek listeden, ama
+  // para sütunu hiç yok ve eski `paraGoster` seçeneği etkisiz (belge her zaman parasız, 0142 A-R6, A-R6/2).
+  it("AC-44 / AC-45 / AC-90 / AC-16 (spec 0142 ile): sütunlar tek listeden; para sütunu hiçbir seçenekte basılmaz", () => {
+    for (const secenek of [{ paraGoster: true }, { paraGoster: false }, {}]) {
+      const h = html(sonuc(), secenek);
+      for (const s of [...BELGE_SUTUNLARI.parca, ...BELGE_SUTUNLARI.toplam]) expect(h, s).toContain(s);
+      for (const s of ["Birim maliyet", "Birim fiyat", "Tutar"]) expect(h, s).not.toContain(s);
+      expect(h).not.toMatch(/\d,\d{2} (TL|\$|€|₺)/);
+    }
   });
-  it("AC-46: hazır parçası olmayan tedarikçinin belgesinde o tablo basılmaz", () => {
-    const h = html(sonuc({}, { secilenTedarikciler: ["12"] }), { paraGoster: true });
-    expect(h).toContain("Malzemeler"); expect(h).not.toContain("Hazır parçalar");
+  // Spec 0142 ile: belge tek parça tablosu ve toplam tablosudur; "Hazır parçalar" ve "Malzemeler" tabloları yoktur.
+  it("AC-46 (spec 0142 ile): eski iki tablo basılmaz; bölümde parça tablosu ve toplam tablosu vardır", () => {
+    const h = html(sonuc({}, { secilenTedarikciler: ["12"] }));
+    expect(h).toContain(TOPLAM_BASLIGI); expect(h).not.toContain("Hazır parçalar"); expect(h).not.toContain(">Malzemeler<");
   });
   it("AC-30 / AC-31 / AC-47: sıfır adetli ve kapatılan satır basılmaz; elle düzenlenmiş satır işaretli", () => {
     expect(html(sonuc({}, { duzenleme: { parca: { 42: { adet: "0" } } } }))).not.toContain("Pul");
@@ -59,7 +62,7 @@ describe("Spec 0140 E: belge", () => {
   });
   it("AC-76: silinmiş tedarikçinin bölümü belgeye girmez", () => {
     const r = sonuc({ tedarikciler: [F.TED[1]], hamTedarikciler: [{ id: 12, ad: "Ana Çelik", deletedAt: "2026-09-01" }, F.TED[1]] });
-    expect(basilacakBolumler(r).map(x => x.bolum.ad)).toEqual(["Beta Metal"]);
+    expect(basilacakBolumler(r).map(x => x.ad)).toEqual(["Beta Metal"]); // spec 0142 ile: dönüş bölümün kendisi
   });
   it("AC-80 / AC-78: MODELLER kutusu basılır; PARÇA İHTİYACI tablosu ve tedarikçisi belirtilmemiş bölümü basılmaz", () => {
     const h = html(sonuc());

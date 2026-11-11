@@ -118,11 +118,12 @@ describe("Spec 0141 B: sipariş penceresi", () => {
     render(<SiparisPenceresi veri={VERI} giderYetki bugun="2026-11-10" onClose={vi.fn()} />);
     kutuAc("Parça ihtiyacı");
     const ths = [...screen.getByTestId("siparis-parca-tablosu").querySelectorAll("th")].map(t => t.textContent);
-    expect(ths).toEqual(["Parça", "Ham ihtiyaç", "İhtiyaç", "Stok", "Sipariş (öneri)", "Sipariş", "Sipariş etme"]);
+    // Spec 0142 ile (C-R4, AC-28): Parça ile Ham ihtiyaç arasına Ölçü sütunu geldi; hücre sırası bir kaydı.
+    expect(ths).toEqual(["Parça", "Ölçü", "Ham ihtiyaç", "İhtiyaç", "Stok", "Sipariş (öneri)", "Sipariş", "Sipariş etme"]);
     expect(screen.getByTestId("siparis-ham-ibare").textContent).toBe(S.HAM_IHTIYAC_IBARESI);
     const kesme = screen.getAllByTestId("siparis-parca-satiri").find(r => r.textContent.includes("Kesme mili"));
     const h = [...kesme.querySelectorAll("td")].map(td => td.textContent);
-    expect(h[1]).toBe("70"); expect(h[2]).toBe("70"); // eski %10 pay uygulanmaz (77 değil)
+    expect(h[2]).toBe("70"); expect(h[3]).toBe("70"); // spec 0142 ile: Ölçü sütunu // eski %10 pay uygulanmaz (77 değil)
     expect(screen.queryByTestId("siparis-pay")).toBeNull();
   });
   it("AC-25 (ekran): setten patlatılan bileşende iki sütun ayrışır (1,5 × 3 = 4,5 → 5)", () => {
@@ -131,7 +132,7 @@ describe("Spec 0141 B: sipariş penceresi", () => {
     kutuAc("Parça ihtiyacı");
     const pul = screen.getAllByTestId("siparis-parca-satiri").find(r => r.textContent.includes("Pul"));
     const h = [...pul.querySelectorAll("td")].map(td => td.textContent);
-    expect([h[1], h[2]]).toEqual(["4,5", "5"]);
+    expect([h[2], h[3]]).toEqual(["4,5", "5"]); // spec 0142 ile: Ölçü sütunu
   });
   it("AC-47 (ekran): malzeme satırının Net kg'si kalemin ham ağırlığı × adet", () => {
     render(<SiparisPenceresi veri={VERI} giderYetki bugun="2026-11-10" onClose={vi.fn()} />);

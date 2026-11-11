@@ -809,7 +809,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           </Field>
         </Modal>
       )}
-      {siparisAcik && <SiparisPenceresi veri={siparisVeri} giderYetki={giderYetki} onClose={() => setSiparisAcik(false)} />}
+      {siparisAcik && <SiparisPenceresi veri={siparisVeri} onClose={() => setSiparisAcik(false)} />}
     </div>
   );
 };

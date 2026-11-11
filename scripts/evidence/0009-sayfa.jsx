@@ -40,6 +40,9 @@ import * as V97 from "../../tests/fixtures/0097-veri.js";
 import * as V136 from "../../tests/fixtures/0136-veri.js";
 import { partiGenelPaylari as pgp136, partiKapanisGoruntusu as pkg136, modelMaliyetleri as mm136 } from "../../src/lib/makinaStandartMaliyet";
 import * as F34 from "../../tests/fixtures/0134-veri.js";
+import * as V142 from "../../tests/fixtures/0142-veri.js";
+import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
+import { siparisRaporuHtml as siparisRaporuHtml0142 } from "../../src/lib/siparisRaporu";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
 import { odemeleriUygula, turHaritasi, giderKalemDogrula } from "../../src/lib/gider";
 import { cekleriUygula } from "../../src/lib/cek";
@@ -816,9 +819,18 @@ const maliyetEkrani = (o, adimlar = []) => [<MaliyetEkrani {...o} />, adimlar];
 // hazır parçadır ve Ana tedarikçisi Beta Metal'dir; Somun tedarikçisiz kalır (belirtilmemiş bölümü).
 const PARTI_0134 = [{ id: 9, ad: "Güz Partisi", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100_DS: 70 } }];
 const PARCA_0140 = F34.veri().parts.map(p => (p.id === 42 ? { ...p, tedarikciId: 13 } : p));
-function SiparisEkrani({ modeller = [F34.AK100], partiler = PARTI_0134, parts = PARCA_0140, malzemeler = [F34.P304], tedarikciler = F34.TED, hamTed = null, stok = [{ id: 1, partId: 42, miktar: 100 }], giderYetki = true }) {
-  return <SiparisPenceresi giderYetki={giderYetki} bugun="2026-11-09" onClose={bos} veri={{ parts, partStock: stok, malzemeler, tedarikciler, hamTedarikciler: hamTed || tedarikciler,
+function SiparisEkrani({ modeller = [F34.AK100], partiler = PARTI_0134, parts = PARCA_0140, malzemeler = [F34.P304], tedarikciler = F34.TED, hamTed = null, stok = [{ id: 1, partId: 42, miktar: 100 }] }) {
+  // Spec 0142 ile: pencere `giderYetki` almaz (para hiç çizilmez).
+  return <SiparisPenceresi bugun="2026-11-09" onClose={bos} veri={{ parts, partStock: stok, malzemeler, tedarikciler, hamTedarikciler: hamTed || tedarikciler,
     standardModels: modeller, customModels: [], uretimPartileri: partiler, appSettings: {}, factory: { name: "Altuntaş Makina", city: "Konya" } }} />;
+}
+// Spec 0142: parça odaklı belge ve pencerenin Ölçü sütunları; veri tests/fixtures/0142-veri.js (motor, belge ve ekran testleriyle aynı).
+const siparis0142 = () => <SiparisEkrani modeller={V142.MODELLER.standardModels} parts={V142.PARCALAR} malzemeler={V142.MALZEMELER} tedarikciler={V142.TEDARIKCILER} stok={[]} />;
+function SiparisBelgesi0142() {
+  const r = siparisIhtiyaci0142(V142.veri(), { tedarikciOdakli: true });
+  const html = siparisRaporuHtml0142(r, { bugun: "2026-11-11", factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi" });
+  // Belge kendi stiliyle sayfanın içine çizilir (iframe içeriği aracın "boş ekran" ölçüsüne girmiyordu).
+  return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 // Spec 0097: Parti Hesabı'nın tarihli satırları ve dönem kilitli pay; veri tests/fixtures/0097-veri.js (motor ve ekran testleriyle aynı).
 function MaliyetEkrani0097() {
@@ -1188,12 +1200,16 @@ const EKRANLAR = {
   // Spec 0140: sipariş penceresi (eski maliyet-siparis* ekranları 0134 raporunda kalır; görünüm 0140 ile kalktı).
   "siparis-0140-pencere": [<SiparisEkrani />, []],
   "siparis-0140-malzemeler": [<SiparisEkrani />, ["kaydirgenis:Malzeme · kesit"]],
-  "siparis-0140-duzenlendi": [<SiparisEkrani />, ["doldur:Pul sipariş adedi=120", "kaydirgenis:Hazır parça"]],
-  "siparis-0140-hatali": [<SiparisEkrani />, ["doldur:Pul sipariş adedi=-5", "kaydirgenis:Hazır parça"]],
+  "siparis-0140-duzenlendi": [<SiparisEkrani />, ["doldur:Pul sipariş adedi=120", "kaydirgenis:Sipariş adedi"]], // spec 0142 ile: tablo başlığı "Parça" oldu
+  "siparis-0140-hatali": [<SiparisEkrani />, ["doldur:Pul sipariş adedi=-5", "kaydirgenis:Sipariş adedi"]], // spec 0142 ile: tablo başlığı "Parça" oldu
   "siparis-0140-tek-tedarikci": [<SiparisEkrani />, ["tikla:Beta Metal"]],
   "siparis-0140-belirtilmemis": [<SiparisEkrani />, ["~Tedarikçisi belirtilmemiş", "kaydir:Tedarikçisi belirtilmemiş"]],
   "siparis-0140-parca-ihtiyaci": [<SiparisEkrani />, ["~Parça ihtiyacı", "kaydir:Parça ihtiyacı"]],
-  "siparis-0140-yetkisiz": [<SiparisEkrani giderYetki={false} />, []],
+  "siparis-0140-yetkisiz": [<SiparisEkrani />, []], // spec 0142 ile: yetki ayrımı yok, pencere ekranıyla aynı
+  "siparis-0142-pencere": [siparis0142(), []],
+  "siparis-0142-bolum": [siparis0142(), ["kaydirgenis:Beta Plastik"]],
+  "siparis-0142-olcu": [siparis0142(), ["~Parça ihtiyacı", "kaydir:Parça ihtiyacı"]],
+  "siparis-0142-belge": [<SiparisBelgesi0142 />, []],
   "siparis-0140-bos": [<SiparisEkrani partiler={[]} />, []],
   "siparis-0140-model-hatali": [<SiparisEkrani partiler={[{ ...PARTI_0134[0], planlananAdetler: { AK100_DS: 70, YOK_MODEL: 4 } }]} />, []],
   "siparis-0140-silinmis-tedarikci": [<SiparisEkrani malzemeler={[{ ...F34.P304, tedarikciId: 99 }]} hamTed={[...F34.TED, { id: 99, ad: "Eski Döküm", deletedAt: "2026-09-01" }]} />, ["kaydir:Eski Döküm"]],
