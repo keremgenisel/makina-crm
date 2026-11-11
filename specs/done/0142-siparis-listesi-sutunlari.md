@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | **Onaylandı, revizyon 3** (Takım Yöneticisi, 2026-11-11; revizyon 3 plan turunda, on öneri onaylandı). Geliştirme başlayabilir. |
+| **Durum** | **Tamamlandı** (commit `7096acf4`, 2026-11-11). Revizyon 3: plan turunda on öneri Takım Yöneticisi tarafından onaylandı. |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Stok › Parça/Yedek Parça Stoğu › Sipariş Listesi penceresi (`stock/SiparisPenceresi.jsx`), yazdırılan sipariş belgesi (`siparisRaporu.js`), saf motor `siparisIhtiyaci.js` (parça satırına ölçü alanı ve bölümleme), prop zinciri (`stock/PartStokTab.jsx`, `Stock.jsx`, `PartManager.jsx`), yeni kıyas fikstürü ve altını, ters çevrilen 0140 testleri (`tests/siparis-raporu-0140.test.js`, `tests/ui/siparis-0140.test.jsx`), `docs/evidence/kanit-eslemesi.json`, `CLAUDE.md` |
@@ -621,10 +621,12 @@ spec'in kapsamı dışında (X2):
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 3 | Revizyon 3 plan turunda: AC-3 ile AC-48 çelişkisi ve belgede kaybolan kalem adedi dahil on öneri |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-11-11), iki bulgu |
+| **Bulgu gerçek/gürültü oranı** | 2 / 0 | İkisi de gerçek: pencere ile belgenin bölümlemesi farkı ekranda söylenmiyordu; seçim dışı hatalı adet belgede yarım satır bırakıyordu |
+| **Regresyon sayısı** | 0 | Motorun sayıları spec öncesi altınla birebir (`0142-once.json`) |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** iki yüzey (pencere ve belge) bilerek farklı bölümlenince fark iki yerde sızar: ekranda düzenlenen
+satırın kâğıtta nerede olduğu ve pencerenin hata sayımının belgenin bölümlerini görmemesi. İki yüzeyin şekli ayrıştığında her
+yüzeyin kendi kapısı (basılabilirlik) kendi bölümlerinden sayılmalı ve öteki yüzeydeki yeri ekranda yazılmalı.

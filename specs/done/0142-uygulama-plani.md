@@ -5,6 +5,7 @@
 | **Spec** | `specs/0142-siparis-listesi-sutunlari.md` (revizyon 3) |
 | **Onay** | Takım Yöneticisi, 2026-11-11 (on öneri onaylandı, spec'e işlendi) |
 | **Dal** | `feat/0142-siparis-sutunlari` (`de0087dc` üstünde) |
+| **Durum** | Tamamlandı: commit `7096acf4`. Triyaj (2026-11-11): bulgu 1 `belgeYeriMetni` ibaresi, bulgu 2 belge bölümüne göre hata kilidi (`hataSayisi`). |
 
 ## 1. Dosyalar
 
