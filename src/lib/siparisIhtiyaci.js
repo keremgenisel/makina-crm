@@ -32,14 +32,14 @@ export const SET_ICERIK_BOS = "Setin içeriğindeki parçalar listede yok; bile�
 export const PATLATILDI = "patlatıldı";
 export const KESISIM_UYARISI = (setAd, bilesenAd) => `${bilesenAd} hem kitte hem ${setAd} setinin içinde geçiyor; adet iki kaynaktan toplanır.`;
 export const STOK_UYARISI = (stoklu, toplam) => `Parça stoğu sayılmamış görünüyor: hesapta geçen ${toplam} parçanın yalnız ${stoklu} tanesinin stoğu var. Sipariş ihtiyaca yakın çıkar.`;
-export const NEDEN_IKI_BOYUT = "Lama ve sacda boy adedi hesaplanmaz (kesit kartta yok); sipariş kilosu net ihtiyaç ile firenin toplamı.";
-export const NEDEN_BOY_YOK = "Malzemenin geldiği boy girilmedi; boy adedi hesaplanmaz.";
-export const NEDEN_KESIM_BUYUK = "Kesim boyu malzemenin boyundan uzun; boy adedi hesaplanmaz.";
-export const NEDEN_BOY_YONTEMI = "Boy fiyatından hesaplanan parça; kilo hesaplanmaz.";
+// Spec 0143 B-R8, B-R8/2, B-R8/3 (AC-18, AC-49, AC-61): geldiği boy ve lama/sac nedenleri kalktı; uzun parçanın nedeni kalemin çubuk
+// boyuna atıf yapar ve satır kilogramla (net artı fire) sipariş edilir.
+// Spec 0143 B-R5 (triyaj bulgu 1): parça başına giriş toleransı (mm); boy adedinin yuvarlaması toplam uzunlukta bu kadar gevşer.
+export const UZUNLUK_TOLERANSI_MM = 0.005;
+export const NEDEN_KESIM_BUYUK = "Parçanın boyu kalemin çubuk boyundan uzun; boy adedi hesaplanmaz, sipariş kilogramla (net artı fire) verilir.";
 export const NEDEN_FIYAT_YOK = "Fiyat girilmedi; tutar yazılmaz.";
 export const NEDEN_KUR_YOK = "Kur girilmedi; tutar yazılmaz.";
 export const NEDEN_PARA_BIRIMI = "Para birimi tanınmıyor; tutar TL toplamına katılmadı.";
-export const FIRE_BOY_YONTEMI_UYARISI = "Boy fiyatından hesaplanan parçada boy adedi tüketim oranından gelir; fire bu orana eklendi (maliyetle aynı).";
 // Spec 0139 A-R12/2: metin çap bandına göre kilogram fireyi de anar.
 export const FIRE_BOY_UYARISI = "Boy adedi uzunluktan hesaplandığı için fire (yüzde ve çap bandına göre kilogram) sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.";
 export const TEDARIKCISIZ = "Ana tedarikçisi girilmemiş malzemeler";
@@ -121,7 +121,6 @@ export const bosDurumNedeni = (sonuc) => {
 const ad = (x) => trLower(String(x || "").trim());
 // Kayan nokta artığı (0,114 × 70 = 7,9800000001) yukarı yuvarlamayı şişirmesin: altı ondalığa indirilir.
 const yukari = (x) => Math.ceil(Number(Number(x).toFixed(6)));
-const asagi = (x) => Math.floor(Number(Number(x).toFixed(6)));
 const kurusOf = (x) => (x == null ? null : Math.round(Number(Number(x * 100).toFixed(6))));
 
 // ── Girdi ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -285,19 +284,21 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
     const p = canliParca.get(k.partId);
     for (const satir of malzemeKalemleri(p)) {
       const m = malzemeKat.get(String(satir.malzemeId));
-      const yontem = satir.yontem === "boy" ? "boy" : "kilo";
+      // Spec 0143 B-R3/2, C1: işaret ve çubuk boyu anahtara girer (geçersiz çubuk boyu işaretsiz sayılır; kayıt onu zaten reddeder).
+      const cubuk = cubukBoyuOf(satir);
+      const boydan = cubuk != null;
       const oz = malzemeOzeti(satir, malzemeKat); // R22/2, AC-97: tarih verilmez, bugünkü küme
       // Triyaj (bulgu 1): ham ölçü kayan nokta toplamıdır (10,1 + 0,2 = 10,299999…); anahtar ve gösterim üç ondalığa yuvarlanır ki
       // aynı ham kesit iki satıra bölünmesin (Karar 31'in asgari siparişi de tek satıra uygulansın).
       const kesit = hamKesit(satir)?.map(x => Number(Number(x).toFixed(3))) ?? null;
       if (!m || !kesit) { eksikParca.add(k.partId); if (m && !kesit) eksikMalzeme.add(String(m.id)); continue; }
       const o = hamOlculer(satir);
-      if (yontem === "kilo" && oz.hamKg == null) { eksikParca.add(k.partId); eksikMalzeme.add(String(m.id)); continue; } // AC-41
+      if (oz.hamKg == null) { eksikParca.add(k.partId); eksikMalzeme.add(String(m.id)); continue; } // AC-41 (spec 0143: her kalem kilodan)
       const kalemAdedi = kalemAdetiOf(satir); // triyaj (bulgu 3): maliyetle aynı kural; geçersiz adet eksik sayılır
       if (kalemAdedi == null) { eksikParca.add(k.partId); continue; }
-      const anahtar = [m.id, yontem, satir.bicim, ...kesit].join("|");
-      if (!kesitler.has(anahtar)) kesitler.set(anahtar, { anahtar, malzemeId: String(m.id), malzeme: m, bicim: satir.bicim, yontem, kesit, hamCap: o.cap ?? null, parcalar: [] });
-      const giris = { partId: k.partId, ad: k.ad, adet: adetOf(k) * kalemAdedi, hamKg: oz.hamKg, fireliKg: oz.fireliKg, fire: oz.fire || 0, ekFireKg: oz.ekFireKg || 0, kesimBoyu: o.boy, oran: o.boy / ((Number(m.geldigiBoy) || 0) * 1000) };
+      const anahtar = kesitAnahtari(m.id, boydan, cubuk, satir.bicim, kesit);
+      if (!kesitler.has(anahtar)) kesitler.set(anahtar, { anahtar, malzemeId: String(m.id), malzeme: m, bicim: satir.bicim, boydanSiparis: boydan, cubukBoyu: cubuk, kesit, hamCap: o.cap ?? null, parcalar: [] });
+      const giris = { partId: k.partId, ad: k.ad, adet: adetOf(k) * kalemAdedi, hamKg: oz.hamKg, fireliKg: oz.fireliKg, fire: oz.fire || 0, ekFireKg: oz.ekFireKg || 0, kesimBoyu: o.boy };
       const ayni = kesitler.get(anahtar).parcalar.find(x => x.partId === giris.partId && x.hamKg === giris.hamKg && x.fireliKg === giris.fireliKg && x.fire === giris.fire && x.kesimBoyu === giris.kesimBoyu);
       if (ayni) ayni.adet += giris.adet; else kesitler.get(anahtar).parcalar.push(giris);
     }
@@ -320,9 +321,11 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
     const oneriKesit = kesitleriKur(k => k.oneriAdet, new Set(), new Set(), oneriKaynak);
     for (const [anahtar, d] of Object.entries(duzKesit)) {
       if (kesitler.has(anahtar) || !oneriKesit.has(anahtar)) continue;
-      const v = (oneriKesit.get(anahtar).yontem === "boy" ? siparisAdediDogrula : elleKiloDogrula)(d?.deger);
+      // Spec 0143 C-R1/2 (Ölçüm G): doğrulayıcının seçimi işaretten (satır boy cinsindense boy adedi doğrulayıcısı).
+      const sat = kesitHesabi({ ...oneriKesit.get(anahtar), parcalar: [] }, new Set(), new Set());
+      const v = (boyCinsindenMi(sat) ? siparisAdediDogrula : elleKiloDogrula)(d?.deger);
       if (v.deger == null || String(d?.deger ?? "").trim() === "") continue;
-      kesitSatirlari.push({ ...kesitHesabi({ ...oneriKesit.get(anahtar), parcalar: [] }, new Set(), new Set()), parcalarKapali: true });
+      kesitSatirlari.push({ ...sat, parcalarKapali: true });
     }
     kesitSatirlari = kesitSatirlari.map(r => kesitDuzenle(r, duzKesit[r.anahtar], malzemeKat));
   }
@@ -516,30 +519,37 @@ const parcaOlculeri = (p, malzemeKat) => {
     const o = hamOlculer(satir);
     const kesit = o ? hamKesit(satir).map(x => Number(Number(x).toFixed(3))) : null;
     const boy = o ? Number(Number(o.boy).toFixed(3)) : null;
-    const yontem = satir.yontem === "boy" ? "boy" : "kilo";
+    const cubuk = cubukBoyuOf(satir);
     const anahtarOlcu = o ? [satir.bicim, ...kesit, boy].join("|") : `eksik|${gruplar.size}`;
     const g = `${m ? m.id : "?"}|${anahtarOlcu}`;
     const adet = kalemAdetiOf(satir) ?? 1;
     if (gruplar.has(g)) { gruplar.get(g).adet += adet; continue; }
     gruplar.set(g, { malzemeId: m ? String(m.id) : null, malzemeAd: m ? m.ad : null, tedarikciId: m && m.tedarikciId != null && m.tedarikciId !== "" ? String(m.tedarikciId) : null,
-      anahtar: m && kesit ? [m.id, yontem, satir.bicim, ...kesit].join("|") : null, bicim: satir.bicim, kesit, boy, adet, eksik: !o });
+      anahtar: m && kesit ? kesitAnahtari(m.id, cubuk != null, cubuk, satir.bicim, kesit) : null, bicim: satir.bicim, kesit, boy, adet, eksik: !o });
   }
   return [...gruplar.values()].map(x => ({ ...x, metin: x.eksik ? "" : olcuMetni(x.bicim, x.kesit, x.boy, x.adet) }));
 };
 
-// D-R3/2, karar 38 (AC-84, AC-85, AC-88): kesit düzenlemesi. Kilo yolunda tek alan kilo, boy yönteminde boy adedi (tam sayı).
+// D-R3/2, karar 38 (AC-84, AC-85, AC-88): kesit düzenlemesi. Kilo yolunda tek alan kilo, boy cinsinden satırda boy adedi (tam sayı).
+// Spec 0143 C-R1/2, B-R9/2 (AC-22, AC-41): seçim işaretten; elle boy adedinin kilosu tam çubuk ağırlığıyla, tutarı o kilodan.
 const kesitDuzenle = (r, d, malzemeKat) => {
   if (!d) return r;
   // D-R2/2 (AC-83): öneri değeri (kilo ya da boy) düzenlemeden önceki hesaptır; ekran onu salt okunur sütunda yazar.
   const out = { ...r, kapali: !!d.kapali, oneriSiparisKg: r.siparisKg, oneriBoyAdedi: r.boyAdedi };
   const ham = String(d.deger ?? "").trim();
   if (ham === "") return out;
-  if (r.yontem === "boy") {
+  if (boyCinsindenMi(r)) {
     const v = siparisAdediDogrula(ham);
     if (v.hata) return { ...out, hata: ELLE_BOY_HATASI };
     if (!r.parcalarKapali && v.deger === r.boyAdedi) return out; // triyaj (bulgu 4): öneriye eşit değer düzenleme değildir
-    const tutar = r.tutarNeden ? null : v.deger * r.fiyat;
-    return { ...out, elle: true, boyAdedi: v.deger, boyNeden: ELLE_BOY_NEDENI, fireUyarisi: null, tutar, tutarK: kurusOf(tutar), tutarTLK: tutar == null ? null : kurusOf(tutar * r.kur) };
+    const siparisKg = v.deger * r.tamKg;
+    const tutar = r.tutarNeden ? null : siparisKg * r.fiyat;
+    // Triyaj (bulgu 2): elle boy adedinin kilosu da asgari siparişle karşılaştırılır (elle kilo dalıyla aynı uyarı, 0140 AC-84).
+    const mb = malzemeKat.get(String(r.malzemeId));
+    const asgariB = Number(mb?.asgariSiparis) > 0 ? Number(mb.asgariSiparis) : null;
+    return { ...out, elle: true, boyAdedi: v.deger, siparisKg, boyNeden: ELLE_BOY_NEDENI, asgariFark: null, fireUyarisi: null,
+      asgariUyari: asgariB != null && siparisKg < asgariB - 1e-9 ? asgariAltiMetni(asgariB) : null,
+      tutar, tutarK: kurusOf(tutar), tutarTLK: tutar == null ? null : kurusOf(tutar * r.kur) };
   }
   const v = elleKiloDogrula(ham);
   if (v.hata) return { ...out, hata: v.hata };
@@ -549,49 +559,43 @@ const kesitDuzenle = (r, d, malzemeKat) => {
   const m = malzemeKat.get(String(r.malzemeId));
   const asgari = Number(m?.asgariSiparis) > 0 ? Number(m.asgariSiparis) : null;
   const tutar = r.tutarNeden ? null : v.deger * r.fiyat;
-  return { ...out, elle: true, siparisKg: v.deger, boyAdedi: null, boyNeden: ELLE_KILO_NEDENI, artanKg: null, asgariFark: null, fireUyarisi: null,
+  return { ...out, elle: true, siparisKg: v.deger, boyAdedi: null, boyNeden: ELLE_KILO_NEDENI, asgariFark: null, fireUyarisi: null,
     asgariUyari: asgari != null && v.deger < asgari - 1e-9 ? asgariAltiMetni(asgari) : null,
     tutar, tutarK: kurusOf(tutar), tutarTLK: tutar == null ? null : kurusOf(tutar * r.kur) };
 };
 
-// Tek kesit satırının hesabı. Kilo yolu: net (fire hariç), fire, sipariş (boy adedinden ya da net + fire), artan, asgari,
-// tutar. Boy yolu (malzeme satırının yöntemi "boy"): oranların toplamından boy adedi, kilo yok (R12/3).
+// Tek kesit satırının hesabı (spec 0143). Net (fire hariç) ve fire kilosu her satırda. İşaretli (boydan sipariş) satırda boy adedi
+// tüketim oranından: yukarı( üç ondalığa yuvarlanmış Σ(adet × parçanın boyu) ÷ çubuk boyu ) (B-R3, B-R3/2, B-R5; fire girmez, B-R4);
+// sipariş kilosu boy adedi × tam çubuk ağırlığı (B-R9/2). Parça çubuktan uzunsa boy hesaplanmaz, kilogramla (B-R8, B-R8/3).
+// İşaretsiz satırda boy adedi yok, sipariş kilosu net artı fire (B-R6, B-R6/2). Tutar her zaman kilodan.
 const kesitHesabi = (ks, eksikParca, eksikMalzeme) => {
   const m = ks.malzeme;
   const k = fiyatKumesi(m);
   const pb = k.paraBirimi;
   const tanimsizPb = !PARA_BIRIMLERI.includes(pb);
   const kur = tanimsizPb ? null : dovizMi(pb) ? (k.kur > 0 ? k.kur : null) : 1; // Karar 40: kayıtlı kur
-  const ortak = { anahtar: ks.anahtar, malzemeId: ks.malzemeId, malzemeAd: m.ad, tedarikciId: m.tedarikciId ?? null, bicim: ks.bicim, yontem: ks.yontem,
-    kesit: ks.kesit, kesitMetni: kesitMetni(ks.bicim, ks.kesit), paraBirimi: pb, kur, parcalar: ks.parcalar };
+  const boydan = !!ks.boydanSiparis;
+  const ortak = { anahtar: ks.anahtar, malzemeId: ks.malzemeId, malzemeAd: m.ad, tedarikciId: m.tedarikciId ?? null, bicim: ks.bicim,
+    boydanSiparis: boydan, cubukBoyu: ks.cubukBoyu ?? null,
+    kesit: ks.kesit, kesitMetni: kesitSatirMetni(ks.bicim, ks.kesit, boydan ? ks.cubukBoyu : null), paraBirimi: pb, kur, parcalar: ks.parcalar };
   const tutarNedeni = (fiyat) => (tanimsizPb ? NEDEN_PARA_BIRIMI : fiyat == null ? NEDEN_FIYAT_YOK : kur == null ? NEDEN_KUR_YOK : null);
-  if (ks.yontem === "boy") {
-    const boyVar = Number(m.geldigiBoy) > 0;
-    // Triyaj (bulgu 2), Karar 48: boy yönteminde boy adedi parça parça yerleşimden değil tüketim oranından gelir, kesim kaybı
-    // artanda görünmez; bu yüzden fire oranı büyütür (maliyetle aynı: 0132 boy yolu oran × (1 + fire)). R17: fire varsa uyarı.
-    const boyAdedi = boyVar ? yukari(ks.parcalar.reduce((a, p) => a + p.oran * (1 + p.fire / 100) * p.adet, 0)) : null; // AC-68
-    const fiyat = k.boyFiyati ?? null;
-    const neden = tutarNedeni(fiyat);
-    const tutar = boyAdedi != null && !neden ? boyAdedi * fiyat : null; // AC-69
-    if (neden || !boyVar) { eksikMalzeme.add(ks.malzemeId); for (const p of ks.parcalar) eksikParca.add(p.partId); }
-    return { ...ortak, netKg: null, fireKg: null, siparisKg: null, artanKg: null, kgNeden: NEDEN_BOY_YONTEMI, boyAdedi, boyNeden: boyVar ? null : NEDEN_BOY_YOK,
-      fireUyarisi: boyAdedi != null && ks.parcalar.some(p => p.fire > 0) ? FIRE_BOY_YONTEMI_UYARISI : null,
-      asgariFark: null, fiyat, tutar, tutarK: kurusOf(tutar), tutarTLK: tutar == null ? null : kurusOf(tutar * kur), tutarNeden: neden };
-  }
   const netKg = ks.parcalar.reduce((a, p) => a + p.hamKg * p.adet, 0);
   const fireKg = ks.parcalar.reduce((a, p) => a + (p.fireliKg - p.hamKg) * p.adet, 0);
   const capli = !!BICIMLER[ks.bicim]?.capli;
-  const boyM = Number(m.geldigiBoy) > 0 ? Number(m.geldigiBoy) : null;
   let boyNeden = null; let boyAdedi = null; let tamKg = null;
-  if (!capli) boyNeden = NEDEN_IKI_BOYUT; // R13/3, AC-90
-  else if (boyM == null) boyNeden = NEDEN_BOY_YOK; // R15, AC-34
-  else if (ks.parcalar.some(p => p.kesimBoyu > boyM * 1000)) boyNeden = NEDEN_KESIM_BUYUK; // AC-33
-  else {
-    // R13, R13/2, Karar 29: parça başına kesirli boy (adet ÷ bir boydan çıkan adet), toplam bir kez yukarı yuvarlanır.
-    boyAdedi = yukari(ks.parcalar.reduce((a, p) => a + p.adet / asagi((boyM * 1000) / p.kesimBoyu), 0));
-    tamKg = tamBoyKg({ bicim: ks.bicim, ...ornekOlcu(ks) }, m);
+  if (boydan) {
+    if (ks.parcalar.some(p => p.kesimBoyu > ks.cubukBoyu)) boyNeden = NEDEN_KESIM_BUYUK; // B-R8, AC-18
+    else {
+      // B-R5 (triyaj bulgu 1): yuvarlama ORANDA değil UZUNLUKTA. Tolerans giriş hassasiyetidir: parça boyu iki ondalıkla girilir
+      // (14,2857 → 14,29), her parça en çok 0,005 mm fazla yazılır; toplam uzunluktan Σ adet × 0,005 mm düşülür. Oranı üç ondalığa
+      // yuvarlamak toleransı çubuk boyuna bağlıyordu (12 m çubukta 6 mm'ye kadar fazla kesim "1 boy" çıkıyordu). AC-37: toplamda bir kez.
+      const uzunluk = ks.parcalar.reduce((a, p) => a + p.adet * p.kesimBoyu, 0);
+      const tolerans = ks.parcalar.reduce((a, p) => a + p.adet, 0) * UZUNLUK_TOLERANSI_MM;
+      boyAdedi = Math.max(uzunluk > 0 ? 1 : 0, yukari(Math.max(0, uzunluk - tolerans) / ks.cubukBoyu));
+      tamKg = tamBoyKg({ bicim: ks.bicim, ...ornekOlcu(ks), cubukBoyu: ks.cubukBoyu }, m); // AC-42
+    }
   }
-  let siparisKg = boyAdedi != null ? boyAdedi * tamKg : netKg + fireKg; // R16, AC-35, AC-37
+  let siparisKg = boyAdedi != null ? boyAdedi * tamKg : netKg + fireKg; // B-R9/2, B-R6/2, AC-38, AC-39
   // R18, R18/2, Karar 31: asgari sipariş birimiyle (kilo yolunda kiloya, boy yolunda en küçük boy adedine).
   const asgari = Number(m.asgariSiparis) > 0 ? Number(m.asgariSiparis) : null;
   let asgariFark = null;
@@ -604,12 +608,12 @@ const kesitHesabi = (ks, eksikParca, eksikMalzeme) => {
   const neden = tutarNedeni(fiyat);
   if (neden) { eksikMalzeme.add(ks.malzemeId); for (const p of ks.parcalar) eksikParca.add(p.partId); } // R10/2: fiyat ya da kur eksik
   const tutar = neden ? null : siparisKg * fiyat; // R14/2, AC-92: ara değer yuvarlanmaz
-  return { ...ortak, netKg, fireKg, siparisKg, artanKg: boyAdedi != null ? siparisKg - netKg - (asgariFark || 0) : null, kgNeden: null, boyAdedi, boyNeden,
+  return { ...ortak, netKg, fireKg, siparisKg, tamKg, boyAdedi, boyNeden, // spec 0143 X4: artanKg yok
     // Spec 0139 A-R12/2 (AC-51): "fire var mı" = yüzde YA DA çap bandına göre kilogram.
     fireUyarisi: boyAdedi != null && ks.parcalar.some(p => p.fire > 0 || p.ekFireKg > 0) ? FIRE_BOY_UYARISI : null, // R17, AC-36
     asgariFark, fiyat, bant, tutar, tutarK: kurusOf(tutar), tutarTLK: tutar == null ? null : kurusOf(tutar * kur), tutarNeden: neden };
 };
-// Bir tam boyun ölçü nesnesi: kesit aynı, boy tam boyla değişir (tamBoyKg değiştirir); satır biçiminde alanlar ham kesitle.
+// Bir tam çubuğun ölçü nesnesi: kesit aynı, boy çubuk boyuyla değişir (tamBoyKg değiştirir); satır biçiminde alanlar ham kesitle.
 const ornekOlcu = (ks) => {
   const ad2 = BICIMLER[ks.bicim].olculer.filter(x => x !== "boy");
   return { ...Object.fromEntries(ad2.map((x, i) => [x, ks.kesit[i]])), boy: 1 };
@@ -629,6 +633,21 @@ export const olcuMetni = (bicim, kesit, boy, adet = 1) => {
   if (!k || boy == null) return "";
   return `${k} × ${sayiHane.format(boy)}${adet > 1 ? parcaBasinaMetni(adet) : ""}`;
 };
+// Spec 0143 B-R3/2, B-R3/3 (AC-36, AC-62): kesit anahtarı TEK yerde; işaret metin olarak, çubuk boyu üç ondalığa yuvarlanmış
+// (işaretsizde boş): "501|boy|400|mil|30", "501|kilo||mil|30". Kesit satırı ve 0142'nin parça ölçüleri bunu çağırır.
+export const kesitAnahtari = (malzemeId, boydan, cubuk, bicim, kesit) => [malzemeId, boydan ? "boy" : "kilo", boydan && cubuk != null ? cubuk : "", bicim, ...kesit].join("|");
+// Kalemin geçerli çubuk boyu (yalnız işaretliyken; üç ondalık); geçersizse null (işaretsiz sayılır).
+export const cubukBoyuOf = (satir) => {
+  if (satir?.boydanSiparis !== true) return null;
+  const n = Number(satir.cubukBoyu);
+  return Number.isFinite(n) && n > 0 ? Number(n.toFixed(3)) : null;
+};
+// Spec 0143 C-R1, C-R1/2: satırın miktarı boy cinsinden mi (işaretli ve tam çubuk ağırlığı hesaplanmış). Pencere, belge ve düzenleme
+// bu tek ölçütü okur; çubuktan uzun parçalı işaretli satır kilogramla kalır (B-R8/3).
+export const boyCinsindenMi = (r) => !!r?.boydanSiparis && r.tamKg != null;
+// Spec 0143 C-R4 (AC-63): işaretli satırın kesit metni çubuk boyunu da yazar; pencere ve belge aynı metni basar.
+export const cubukEki = (cubuk) => ` · ${sayiHane.format(cubuk)} mm çubuk`;
+export const kesitSatirMetni = (bicim, kesit, cubuk = null) => `${kesitMetni(bicim, kesit)}${cubuk != null ? cubukEki(cubuk) : ""}`;
 export { kgMetni };
 // Ekran ve çıktı biçimleri (0088 R25: ekran dosyası çarpım ve bölme yazmaz).
 const ikiHane = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

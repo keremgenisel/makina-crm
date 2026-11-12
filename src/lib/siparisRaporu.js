@@ -7,7 +7,7 @@
 // toplamı" kendi tablosu (B-R7/2). Stok, ihtiyaç ve para yok (A-R1–A-R6/2). Tek belge, başlık bandı bir kez, ilk bölüm hariç her
 // bölümün üstünde sayfa sonu (0140 E-R8/2). MODELLER tablosu bilinçli olarak kalır (B-R8).
 import { belgeAcilis, bolum, detayTablo, not, gun, sayi } from "./raporSunumu";
-import { kgMetni, kesitMetni, OLCU_BASLIGI, OLCU_GIRILMEMIS, KESIT_KAPALI_UYARISI } from "./siparisIhtiyaci";
+import { kgMetni, kesitMetni, boyCinsindenMi, OLCU_BASLIGI, OLCU_GIRILMEMIS, KESIT_KAPALI_UYARISI } from "./siparisIhtiyaci";
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const n = (x) => (x == null ? "—" : sayi(x));
@@ -52,7 +52,8 @@ const parcaTablo = (satirlar) => {
   }
   return detayTablo("Parçalar", BELGE_SUTUNLARI.parca, rows, ["left", "left", "right"]);
 };
-const alinacak = (k) => `${k.yontem === "boy" || k.siparisKg == null ? `${n(k.boyAdedi)} boy` : esc(kgMetni(k.siparisKg))}${k.elle ? ELLE_ISARETI : ""}`;
+// Spec 0143 C-R2 (AC-24, AC-61): işaretli satır boy, işaretsiz (ve çubuğu kısa işaretli) satır kilogram.
+const alinacak = (k) => `${boyCinsindenMi(k) || k.siparisKg == null ? `${n(k.boyAdedi)} boy` : esc(kgMetni(k.siparisKg))}${k.elle ? ELLE_ISARETI : ""}`;
 const toplamTablo = (kesitler) => detayTablo(TOPLAM_BASLIGI, BELGE_SUTUNLARI.toplam,
   kesitler.map(k => [esc(k.malzemeAd), esc(k.kesitMetni || kesitMetni(k.bicim, k.kesit)), alinacak(k)]), ["left", "left", "right"]);
 

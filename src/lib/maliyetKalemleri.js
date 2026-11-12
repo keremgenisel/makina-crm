@@ -1,7 +1,8 @@
 // Spec 0135: parçanın maliyet kalemleri ve kalem listesinin TEK türetme yolu (R23/2, C1/2).
 //
 // Kalıcı alan (R45, C4/2): `parts[].maliyetKalemleri = [{ tur: "malzeme" | "islem", … }]`.
-//   - Malzeme kalemi: bugünkü malzeme satırının alanları DÜZ durur (malzemeId, bicim, yontem, ölçüler, fire)
+//   - Malzeme kalemi: bugünkü malzeme satırının alanları DÜZ durur (malzemeId, bicim, ölçüler, fire; spec 0143 ile boydanSiparis,
+//     cubukBoyu; eski `yontem` anahtarı göçle çevrilir, tek türetme çalışma anında çevirmez, D-R3/5)
 //     ve yanında `adet` (tam sayı 1..1000). Düz şekil bilinçlidir: 0132'nin satır yardımcıları (malzemeOzeti, hamOlculer,
 //     hamKesit, tamBoyKg) fazladan alanı yok sayar, kalem onlara olduğu gibi verilir (R45/2).
 //   - İşlem kalemi: `ad`, `tedarikciId` (yoksa anahtar yok), `tutar` (TL, KDV hariç; girilmemişse null).

@@ -1,5 +1,6 @@
 // Spec 0134: sipariş ihtiyacı saf motoru (lib/siparisIhtiyaci.js), yazdırma kurucusu, kit doğrulayıcıları ve kaynak taramaları.
-// Rakamlar spec'in Context tablosundan ve Ölçüm S'den (Ø140 × 78, pay 4/5, ρ 7,90, 6 m boy, 2,95 $, kur 50).
+// Rakamlar spec'in Context tablosundan ve Ölçüm S'den (Ø140 × 78, pay 4/5, ρ 7,90, 6 m boy, 2,95 $, kur 50). Spec 0143 ile 6 m boy
+// malzeme kartından kalktı; boy beklentileri işaretli kalemde çubuk boyu 6000 mm ile.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import * as S from "../src/lib/siparisIhtiyaci";
@@ -165,71 +166,79 @@ describe("Spec 0134: parça ihtiyacı (R6–R11/2)", () => {
 
 describe("Spec 0134: malzeme ihtiyacı (R12–R18/2)", () => {
   const k0 = (r) => r.kesitler[0];
+  // Spec 0143 ile (C7): kartın geldiği boyu ve boy fiyatı yöntemi kalktı. Boy adedi yalnız "Sipariş boydan verilir" işaretli kalemde,
+  // kalemin çubuk boyundan ve tüketim oranından (B-R3); işaretsiz kalem kilogramla (net artı fire, B-R6/2). Aşağıdaki boy
+  // beklentileri işaretli kalemle (çubuk 6000 mm, eski "6 m boy") aynı rakamları verir; yerleşim (aşağı(6000 ÷ 83) = 72) ve
+  // artan kilo (X4) kalktı.
+  const ISARETLI = { ...F.KESME, malzemeSatiri: { ...F.MIL140, boydanSiparis: true, cubukBoyu: 6000 } };
+  const isaretli = (adet = 70, o = {}) => tek([[41, 1]], adet, { parts: [ISARETLI, F.PUL, F.SOMUN, F.SET], ...o });
   it("AC-25 / AC-26 / AC-91: ham ağırlık 10,679 kg; 70 adet net 747,512 kg; kesim boyu ham boy (83 mm)", () => {
     const r = tek([[41, 1]]);
     expect(u3(k0(r).parcalar[0].hamKg)).toBe(10.679);
     expect(u3(k0(r).netKg)).toBe(747.512);
     expect(k0(r).parcalar[0].kesimBoyu).toBe(83);
   });
-  it("AC-27 / AC-28 / AC-29 / AC-30: 6000 mm boydan 72 adet; 1 boy; sipariş 771,957 kg; artan 24,445 kg", () => {
-    const k = k0(tek([[41, 1]]));
-    expect(Math.floor(6000 / k.parcalar[0].kesimBoyu)).toBe(72);
+  it("AC-27 / AC-28 / AC-29 / AC-30 (spec 0143 ile): işaretli kalemde 70 × 83 ÷ 6000 → 1 boy; sipariş 771,957 kg; artan kilo yok", () => {
+    const k = k0(isaretli());
     expect(k.boyAdedi).toBe(1);
     expect(u3(k.siparisKg)).toBe(771.957);
-    expect(u3(k.artanKg)).toBe(24.445);
+    expect(k).not.toHaveProperty("artanKg");
   });
-  it("AC-31 / AC-92: 2,95 $ ve kur 50 ile 113.863,68 TL; yuvarlanmamış kilodan (üç ondalıklı kilodan 113.863,66 çıkardı)", () => {
-    const k = k0(tek([[41, 1]]));
+  it("AC-31 / AC-92 (spec 0143 ile): 2,95 $ ve kur 50 ile 113.863,68 TL; yuvarlanmamış kilodan (üç ondalıklı kilodan 113.863,66 çıkardı)", () => {
+    const k = k0(isaretli());
     expect(k.tutarTLK).toBe(11386368);
     expect(Math.round(u3(k.siparisKg) * 2.95 * 50 * 100)).toBe(11386366);
   });
-  it("AC-32: 150 adet için 3 boy", () => { expect(k0(tek([[41, 1]], 150)).boyAdedi).toBe(3); });
-  it("AC-33: kesim boyu boy uzunluğundan büyükse boy hesaplanmaz, nedeni yazar", () => {
-    const k = k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, geldigiBoy: 0.05 }] }));
+  it("AC-32 (spec 0143 ile): 150 adet için 3 boy (150 × 83 ÷ 6000 = 2,075)", () => { expect(k0(isaretli(150)).boyAdedi).toBe(3); });
+  it("AC-33 (spec 0143 ile): parça çubuk boyundan uzunsa boy hesaplanmaz, nedeni yazar ve sipariş kilogramla (0143 B-R8/3)", () => {
+    const kisa = { ...F.KESME, malzemeSatiri: { ...F.MIL140, boydanSiparis: true, cubukBoyu: 50 } };
+    const k = k0(tek([[41, 1]], 70, { parts: [kisa] }));
     expect(k.boyAdedi).toBeNull(); expect(k.boyNeden).toBe(S.NEDEN_KESIM_BUYUK);
+    expect(k.siparisKg).toBeCloseTo(k.netKg + k.fireKg, 9);
   });
-  it("AC-34 / AC-86: boyu girilmemiş ve firesi sıfır malzemede sipariş kilosu net ihtiyaç; net fire hariç, fire kendi sütununda", () => {
-    const k = k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, geldigiBoy: undefined, fire: 0 }] }));
-    expect(k.boyNeden).toBe(S.NEDEN_BOY_YOK);
+  it("AC-34 / AC-86 (spec 0143 ile): işaretsiz ve firesi sıfır malzemede sipariş kilosu net ihtiyaç; boy adedi ve nedeni yok", () => {
+    const k = k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, fire: 0 }] }));
+    expect(k.boyNeden).toBeNull(); expect(k.boyAdedi).toBeNull();
     expect(k.siparisKg).toBe(k.netKg);
-    const f = k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, geldigiBoy: undefined }] }));
+    const f = k0(tek([[41, 1]], 70));
     expect(u3(f.netKg)).toBe(747.512); expect(u3(f.fireKg)).toBe(59.801); expect(u3(f.siparisKg)).toBe(807.313);
   });
-  it("AC-35 / AC-36: firesi olan ve boy hesaplanabilen malzemede fire sipariş kilosuna eklenmez; uyarı rakamların kaybını söyler", () => {
-    const k = k0(tek([[41, 1]]));
+  it("AC-35 / AC-36 (spec 0143 ile): işaretli satırda fire sipariş kilosuna eklenmez; uyarı rakamların kaybını söyler", () => {
+    const k = k0(isaretli());
     expect(u3(k.siparisKg)).toBe(771.957);
     expect(k.fireUyarisi).toBe(S.FIRE_BOY_UYARISI);
-    expect(k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, fire: 0 }] })).fireUyarisi).toBeNull();
+    expect(k0(isaretli(70, { malzemeler: [{ ...F.P304, fire: 0 }] })).fireUyarisi).toBeNull();
   });
   it("AC-37: kiloyla alınan malzemede %8 fire: 747,512 → 807,313 kg", () => {
-    expect(u3(k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, geldigiBoy: undefined }] })).siparisKg)).toBe(807.313);
+    expect(u3(k0(tek([[41, 1]], 70)).siparisKg)).toBe(807.313);
   });
-  it("AC-38 / AC-63 / AC-64 / AC-65 / AC-66: aynı ham kesit tek satır, Ø144 ile Ø60 iki satır; boy ve tutar ayrı; başlıkta boy yok; bant kendi ham çapından", () => {
-    const kisa = { id: 45, ad: "Kısa mil", malzemeSatiri: { ...F.MIL140, boy: 40 } };
-    const ince = { id: 46, ad: "İnce mil", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 56, boy: 100, payCap: 4 } };
+  it("AC-38 / AC-63 / AC-64 / AC-65 / AC-66 (spec 0143 ile): aynı ham kesit tek satır, Ø144 ile Ø60 iki satır; boy ve tutar ayrı; başlıkta boy yok; bant kendi ham çapından", () => {
+    const isa = (ms) => ({ ...ms, boydanSiparis: true, cubukBoyu: 6000 });
+    const kesme = { ...F.KESME, malzemeSatiri: isa(F.MIL140) };
+    const kisa = { id: 45, ad: "Kısa mil", malzemeSatiri: isa({ ...F.MIL140, boy: 40 }) };
+    const ince = { id: 46, ad: "İnce mil", malzemeSatiri: isa({ malzemeId: 501, bicim: "mil", cap: 56, boy: 100, payCap: 4 }) };
     const bantli = { ...F.P304, bantlar: [{ alt: 0, fiyat: 2.95 }, { alt: 100, fiyat: 3.2 }] };
-    const r = tek([[41, 1], [45, 1], [46, 1]], 70, { parts: [F.KESME, kisa, ince], malzemeler: [bantli] });
+    const r = tek([[41, 1], [45, 1], [46, 1]], 70, { parts: [kesme, kisa, ince], malzemeler: [bantli] });
     expect(r.kesitler).toHaveLength(2);
     const k144 = r.kesitler.find(k => k.kesit[0] === 144); const k60 = r.kesitler.find(k => k.kesit[0] === 60);
     expect(k144.parcalar.map(p => p.ad)).toEqual(["Kesme mili", "Kısa mil"]); // AC-38
-    expect(k144.boyAdedi).toBe(2); // 70/72 + 70/133 = 1,49 → 2 (Karar 29)
-    // Karar 29: kesirli boylar toplanıp BİR KEZ yuvarlanır (30/72 + 30/133 = 0,64 → 1 boy; parça başına yuvarlama 2 derdi).
-    const r30 = tek([[41, 1], [45, 1]], 30, { parts: [F.KESME, kisa], malzemeler: [bantli] });
+    expect(k144.boyAdedi).toBe(2); // (70 × 83 + 70 × 40) ÷ 6000 = 1,435 → 2 (tüketim oranı, 0143 B-R3)
+    // Oranların toplamı BİR KEZ yuvarlanır (30 × 83 + 30 × 40 = 3690 ÷ 6000 = 0,615 → 1 boy).
+    const r30 = tek([[41, 1], [45, 1]], 30, { parts: [kesme, kisa], malzemeler: [bantli] });
     expect(r30.kesitler[0].boyAdedi).toBe(1);
-    expect(k60.boyAdedi).toBe(2); // 6000/100 = 60/boy, 70 → 2
+    expect(k60.boyAdedi).toBe(2); // 70 × 100 ÷ 6000 = 1,17 → 2
     expect(k144.fiyat).toBe(3.2); expect(k60.fiyat).toBe(2.95);
     const g = r.malzemeGruplari[0];
     expect(g).not.toHaveProperty("boyAdedi");
     expect(g.tutarTLK).toBe(k144.tutarTLK + k60.tutarTLK);
   });
   it("AC-39: kiloyla alınan malzemede asgari 1000 kg'a yuvarlanır ve fark kendi sütununda", () => {
-    const k = k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, geldigiBoy: undefined, fire: 0, asgariSiparis: 1000 }] }));
+    const k = k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, fire: 0, asgariSiparis: 1000 }] }));
     expect(k.siparisKg).toBe(1000); expect(u3(k.asgariFark)).toBe(u3(1000 - k.netKg));
   });
-  it("AC-40: boyla alınan malzemede asgari 1000 kg → 2 boy (1.543,914 kg), fark 771,957 kg (Karar 31)", () => {
-    const k = k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, asgariSiparis: 1000 }] }));
+  it("AC-40 (spec 0143 ile): boydan alınan malzemede asgari 1000 kg → 2 boy (1.543,914 kg), fark 771,957 kg (Karar 31)", () => {
+    const k = k0(isaretli(70, { malzemeler: [{ ...F.P304, asgariSiparis: 1000 }] }));
     expect(k.boyAdedi).toBe(2); expect(u3(k.siparisKg)).toBe(1543.914); expect(u3(k.asgariFark)).toBe(771.957);
-    expect(u3(k.artanKg)).toBe(24.445);
   });
   it("AC-41 / AC-43: özgül ağırlığı girilmemiş ya da çöpteki malzemeye bağlı kilo parçası eksik, satırı yok, toplam bozulmaz", () => {
     const r = tek([[41, 1], [42, 1]], 70, { malzemeler: [{ ...F.P304, ozgulAgirlik: undefined }] });
@@ -237,40 +246,30 @@ describe("Spec 0134: malzeme ihtiyacı (R12–R18/2)", () => {
     const c = tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, deletedAt: "2026-10-01" }] });
     expect(c.kesitler).toHaveLength(0); expect(c.eksik.parca).toBe(1);
   });
-  it("AC-42: kilo fiyatı girilmemiş malzemede kilo ve boy hesaplanır, tutar yazılmaz", () => {
-    const k = k0(tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, kiloFiyati: undefined }] }));
+  it("AC-42 (spec 0143 ile): kilo fiyatı girilmemiş malzemede kilo ve boy hesaplanır, tutar yazılmaz", () => {
+    const k = k0(isaretli(70, { malzemeler: [{ ...F.P304, kiloFiyati: undefined }] }));
     expect(u3(k.siparisKg)).toBe(771.957); expect(k.boyAdedi).toBe(1); expect(k.tutarTLK).toBeNull(); expect(k.tutarNeden).toBe(S.NEDEN_FIYAT_YOK);
     // R22: hiç tutarı olmayan malzeme ve tedarikçi grubunun toplamı sıfır yazılmaz ("—"); genel toplam bozulmaz.
     const r = tek([[41, 1]], 70, { malzemeler: [{ ...F.P304, kiloFiyati: undefined }] });
     expect(r.malzemeGruplari[0].tutarTLK).toBeNull(); expect(r.tedarikciGruplari[0].tutarTLK).toBeNull(); expect(r.toplamTLK).toBe(0);
   });
-  it("AC-67 / AC-68 / AC-69 / AC-70: boy yöntemli parça: kilo boş ve nedenli, boy oranların toplamından, tutar boy × boy fiyatı × kur, özgül istemez", () => {
-    const boyParca = { ...F.KESME, malzemeSatiri: { ...F.MIL140, yontem: "boy" } };
-    const m = { ...F.P304, ozgulAgirlik: undefined, boyFiyati: 1000 };
-    const r = tek([[41, 1]], 100, { parts: [boyParca], malzemeler: [m] });
-    const k = k0(r);
-    expect(k.siparisKg).toBeNull(); expect(k.kgNeden).toBe(S.NEDEN_BOY_YONTEMI);
-    expect(k.boyAdedi).toBe(2); // 100 × 83/6000 = 1,383 → 2
-    expect(k.tutarTLK).toBe(2 * 1000 * 50 * 100);
-    expect(r.eksik).toEqual({ parca: 0, malzeme: 0 });
-  });
-  it("AC-90: lama ve sacda boy adedi hesaplanmaz, nedeni yazar; sipariş net + fire", () => {
+  // Spec 0143 ile: AC-67–AC-70 (boy fiyatı yöntemi) silindi; yöntem kalktı (0143 A-R1, A-R4), maliyet her zaman kilodan.
+  it("AC-90 (spec 0143 ile): işaretsiz lamada boy adedi ve nedeni yok; sipariş net + fire (0143 B-R1/2: işaretli lamada boy hesaplanır)", () => {
     const lama = { id: 47, ad: "Lama", malzemeSatiri: { malzemeId: 501, bicim: "lama", kalinlik: 10, genislik: 20, boy: 125 } };
     const k = k0(tek([[47, 1]], 70, { parts: [lama] }));
-    expect(k.boyAdedi).toBeNull(); expect(k.boyNeden).toBe(S.NEDEN_IKI_BOYUT);
+    expect(k.boyAdedi).toBeNull(); expect(k.boyNeden).toBeNull();
     expect(k.siparisKg).toBeCloseTo(k.netKg + k.fireKg, 9);
   });
-  it("Karar 30: aynı kesitte kilo ve boy yöntemli parça iki ayrı satır", () => {
-    const boyParca = { ...F.KESME, id: 48, ad: "Boylu", malzemeSatiri: { ...F.MIL140, yontem: "boy" } };
-    const r = tek([[41, 1], [48, 1]], 70, { parts: [F.KESME, boyParca], malzemeler: [{ ...F.P304, boyFiyati: 1000 }] });
-    expect(r.kesitler.map(k => k.yontem).sort()).toEqual(["boy", "kilo"]);
+  it("Karar 30 (spec 0143 ile): aynı kesitte işaretli ve işaretsiz kalem iki ayrı satır", () => {
+    const boyParca = { ...F.KESME, id: 48, ad: "Boylu", malzemeSatiri: { ...F.MIL140, boydanSiparis: true, cubukBoyu: 6000 } };
+    const r = tek([[41, 1], [48, 1]], 70, { parts: [F.KESME, boyParca] });
+    expect(r.kesitler.map(k => k.boydanSiparis).sort()).toEqual([false, true]);
   });
-  it("AC-97: malzemenin fiyat geçmişi okunmaz; bugünkü küme", () => {
+  it("AC-97 (spec 0143 ile): malzemenin fiyat geçmişi okunmaz; bugünkü küme", () => {
     const m = { ...F.P304, fiyatGecmisi: [{ gecerli: "", kiloFiyati: 1, paraBirimi: "USD", kur: 10 }, { gecerli: "2026-06-01", kiloFiyati: 2.95, paraBirimi: "USD", kur: 50 }] };
-    expect(k0(tek([[41, 1]], 70, { malzemeler: [m] })).tutarTLK).toBe(11386368);
+    expect(k0(isaretli(70, { malzemeler: [m] })).tutarTLK).toBe(11386368);
   });
 });
-
 describe("Spec 0134: tedarikçi, para (R19, R19/2, C6)", () => {
   it("AC-44 / AC-45 / AC-46 / AC-87: ana tedarikçiye göre grup ve toplam; tedarikçisiz kendi grubunda; çöpteki ham diziden silinmiş adıyla, tutar toplamda", () => {
     const m2 = { id: 502, ad: "8620", ozgulAgirlik: 7.85, kiloFiyati: 100 };
@@ -367,24 +366,24 @@ describe("Spec 0134: kaynak taramaları", () => {
 // Triyaj (2026-11-05): her bulgunun bekçisi. Bulgu 5 ekranda (`ui/kit-ondalik-0134.test.jsx`).
 describe("Spec 0134 triyaj", () => {
   // Spec 0141 ile: payı taşıyan eski satır tek türetmede katlanır (A-R1/3, A-R2/2); aynı sonuç artık katlamanın üç ondalığından.
-  it("Bulgu 1: aynı ham kesit kayan nokta yüzünden iki satıra bölünmez (Ø10,1 + 0,2 = Ø10,3); tek satır, tek boy, asgari bir kez", () => {
-    const a = { id: 70, ad: "Paylı", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 10.1, payCap: 0.2, boy: 100 } };
-    const b = { id: 71, ad: "Paysız", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 10.3, boy: 100 } };
+  it("Bulgu 1 (spec 0143 ile): aynı ham kesit kayan nokta yüzünden iki satıra bölünmez (Ø10,1 + 0,2 = Ø10,3); tek satır, tek boy, asgari bir kez", () => {
+    const isa = { boydanSiparis: true, cubukBoyu: 6000 };
+    const a = { id: 70, ad: "Paylı", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 10.1, payCap: 0.2, boy: 100, ...isa } };
+    const b = { id: 71, ad: "Paysız", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 10.3, boy: 100, ...isa } };
     const r = tek([[70, 1], [71, 1]], 20, { parts: [a, b], malzemeler: [{ ...F.P304, fire: 0, asgariSiparis: 50 }] });
     expect(r.kesitler).toHaveLength(1);
     expect(r.kesitler[0].kesit).toEqual([10.3]);
-    expect(r.kesitler[0].kesitMetni).toBe("Ø10,3");
+    expect(r.kesitler[0].kesitMetni).toBe("Ø10,3 · 6.000 mm çubuk"); // spec 0143 C-R4: işaretli satırda çubuk boyu
     expect(r.kesitler[0].boyAdedi).toBeGreaterThanOrEqual(1);
     expect(r.kesitler[0].parcalar.map(p => p.ad)).toEqual(["Paylı", "Paysız"]);
   });
-  it("Bulgu 2 / Karar 48 / R17: boy yönteminde fire tüketim oranına eklenir (maliyetle aynı) ve uyarı yazar", () => {
-    const parca = { id: 72, ad: "Boylu", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 600, yontem: "boy" } };
-    const m = { ...F.P304, paraBirimi: undefined, kur: undefined, boyFiyati: 100, fire: 10 };
-    const r = tek([[72, 1]], 10, { parts: [parca], malzemeler: [m] });
-    const k = r.kesitler[0];
-    expect(k.boyAdedi).toBe(2); // 10 × 0,1 × 1,10 = 1,1 → 2 (firesiz 1 boy olurdu)
-    expect(k.tutarTLK).toBe(2 * 100 * 100);
-    expect(k.fireUyarisi).toBe(S.FIRE_BOY_YONTEMI_UYARISI);
+  // Spec 0143 ile (B-R4 ters çevirir): Karar 48'in "boy yönteminde fire orana eklenir" kuralı kalktı; fire boy sayısına girmez.
+  it("Bulgu 2 / R17 (spec 0143 ile): işaretli kalemde fire boy sayısına girmez ve uyarı yazar", () => {
+    const parca = { id: 72, ad: "Boylu", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 140, boy: 600, boydanSiparis: true, cubukBoyu: 6000 } };
+    const m = { ...F.P304, fire: 10 };
+    const k = tek([[72, 1]], 10, { parts: [parca], malzemeler: [m] }).kesitler[0];
+    expect(k.boyAdedi).toBe(1); // 10 × 600 ÷ 6000 = 1 (fire eklenseydi 1,1 → 2)
+    expect(k.fireUyarisi).toBe(S.FIRE_BOY_UYARISI);
     const firesiz = tek([[72, 1]], 10, { parts: [parca], malzemeler: [{ ...m, fire: 0 }] }).kesitler[0];
     expect(firesiz.boyAdedi).toBe(1); expect(firesiz.fireUyarisi).toBeNull();
   });

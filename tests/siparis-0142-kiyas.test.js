@@ -5,9 +5,11 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import * as S from "../src/lib/siparisIhtiyaci";
 import { SENARYOLAR } from "./fixtures/0142-veri.js";
+import { ayikla0143 } from "./fixtures/0143-ayikla.js";
 
 const DOSYA = "tests/fixtures/0142-once.json";
-const ayikla = (x) => JSON.parse(JSON.stringify(x, (k, v) => (k === "olculer" || k === "belge" || k === "belgeYeri" ? undefined : v)));
+// Spec 0143 ile (C2/3): kalkan ve adı değişen alanlar 0143-ayikla ile normalleşir.
+const ayikla = (x) => ayikla0143(JSON.parse(JSON.stringify(x, (k, v) => (k === "olculer" || k === "belge" || k === "belgeYeri" ? undefined : v))));
 const uret = () => Object.fromEntries(Object.entries(SENARYOLAR()).map(([ad, [v, sec]]) => [ad, ayikla(sec === undefined ? S.siparisIhtiyaci(v) : S.siparisIhtiyaci(v, sec))]));
 
 describe("Spec 0142 kıyas (C6)", () => {
@@ -15,7 +17,7 @@ describe("Spec 0142 kıyas (C6)", () => {
     const s = uret();
     if (process.env.YAZ_0142 === "1") { fs.writeFileSync(DOSYA, JSON.stringify(s, null, 1) + "\n"); return; }
     const altin = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
-    expect(s).toEqual(altin);
+    expect(s).toEqual(ayikla0143(altin)); // spec 0143 ile: altın da aynı dar ayıklamadan geçer
   });
   it("AC-33: para alanları yerinde ve dolu", () => {
     if (process.env.YAZ_0142 === "1") return;

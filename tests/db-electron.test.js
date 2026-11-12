@@ -60,6 +60,13 @@ describe("SQLite katmanı (Electron altında)", () => {
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
   }, 150000);
 
+  it("spec 0143: boy fiyatı yönteminin göçü; iki alan, çöpteki parça, yalnız iki sütun, koşullu yedek, bayraksız ikinci açılış, üç dal (AC-27..AC-30, AC-56..AC-59)", () => {
+    const r = runElectron("boy-gocu.cjs");
+    if (r.status !== 0) console.error(r.stdout, r.stderr);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+  }, 150000);
+
   it("temiz kurulumda şema tam (ilk oturumda yeni sütunlara yazma çökmez)", () => {
     const r = runElectron("db-clean-install.cjs");
     expect(r.status).toBe(0);

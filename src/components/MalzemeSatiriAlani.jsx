@@ -1,13 +1,14 @@
 import { Field, Input, Select, Btn, Icon } from "./ui";
-import { HataMetni, Segment } from "./tasarim";
+import { HataMetni, Ipucu } from "./tasarim";
 import { maliyetMetniKurus } from "../lib/urunAgaci";
-import { malzemeSatiriFormu, malzemeCopEtiketi, BICIMLER, BICIM_SIRASI, OLCU_ADLARI, YONTEMLER, kgMetni, fireBantlariOf, FIRE_KG_BOY_NEDENI } from "../lib/malzeme";
+import { malzemeSatiriFormu, malzemeCopEtiketi, BICIMLER, BICIM_SIRASI, OLCU_ADLARI, kgMetni, BOYDAN_SIPARIS_ETIKETI, CUBUK_BOYU_ETIKETI, CUBUK_KISA_UYARISI, cubukKisaMi } from "../lib/malzeme";
 
 // Spec 0132 R9–R14/2, AC-28–AC-46; spec 0135 R12–R16, R44 (plan turu Karar 44): parçanın TEK malzeme kaleminin satırı. Kalem
 // listesindeki her malzeme kalemi bu bileşenle çizilir; alanlar 0132'nin malzeme satırının alanları artı adet (R12, R13). Ölçü
 // alanları biçimden gelir (R11); spec 0141 ile işleme payı yok, girilen ölçü satın alınan ölçüdür. Canlı ağırlık, satır tutarı ve
 // eksiklik ebeveynin tek canlı özetinden (`ozet`, 0099 C1/2); bu bileşen hesap yapmaz. Erişilebilir adlar satır numarasıyla biter
-// (birden çok kalemde benzersiz).
+// (birden çok kalemde benzersiz). Spec 0143 A-R1, B-R1–B-R2/2: "Maliyet yöntemi" seçicisi yok (maliyet her zaman kilodan); dört
+// biçimde de "Sipariş boydan verilir" kutusu, işaretliyken çubuk boyu (zorunlu) ve parça çubuktan uzunsa engellemeyen uyarı.
 export const MALZEME_SEC_SECENEGI = "Malzeme seçin…";
 export const SILINMIS_MALZEME = "silinmiş malzeme";
 export const BULUNAMAYAN_MALZEME = "kaydı bulunamayan malzeme";
@@ -21,9 +22,6 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, sira = 1, malzemeler = [],
   const seciliYok = secili && !malzemeler.some(m => String(m.id) === s.malzemeId);
   const hamAd = seciliYok ? (() => { const m = hamMalzemeler.find(x => String(x.id) === s.malzemeId); return m ? `${malzemeCopEtiketi(m)} (${SILINMIS_MALZEME})` : BULUNAMAYAN_MALZEME; })() : null;
   const oz = ozet?.ozet || null;
-  // Spec 0139 A-R13/2 (AC-11, AC-52): boy yönteminde çap bandına göre ek fire uygulanmaz; nedeni yalnız malzemenin tablosu doluyken.
-  const seciliMalzeme = secili ? malzemeler.find(m => String(m.id) === s.malzemeId) : null;
-  const fireKgNedeni = s.yontem === "boy" && fireBantlariOf(seciliMalzeme).length > 0;
   return (
     <div data-testid="malzeme-kalemi" style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px", display: "grid", gap: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -63,10 +61,20 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, sira = 1, malzemeler = [],
       </div>
       {secili && (
         <>
-          <Field label="Maliyet yöntemi">
-            <Segment kip="radyo" genislik="icerik" ariaLabel={`Maliyet yöntemi ${n}`} value={s.yontem} onChange={v => set("yontem", v)}
-              options={Object.entries(YONTEMLER).map(([value, label]) => ({ value, label }))} />
-          </Field>
+          <div data-testid="boydan-siparis" style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, paddingBottom: 10, cursor: "pointer" }}>
+              <input type="checkbox" checked={s.boydanSiparis === true} onChange={e => set("boydanSiparis", e.target.checked)} aria-label={`${BOYDAN_SIPARIS_ETIKETI} ${n}`} />
+              {BOYDAN_SIPARIS_ETIKETI}
+            </label>
+            {s.boydanSiparis === true && (
+              <div style={{ minWidth: 160 }}>
+                <Field label={CUBUK_BOYU_ETIKETI}>
+                  <Input value={s.cubukBoyu ?? ""} onChange={e => set("cubukBoyu", e.target.value)} placeholder="6000" aria-label={`Çubuk boyu ${n}`} />
+                  <HataMetni>{hatalar.cubukBoyu}</HataMetni>
+                </Field>
+              </div>
+            )}
+          </div>
           {b && (
             <div data-testid="malzeme-olculer" style={{ display: "grid", gridTemplateColumns: `repeat(${b.olculer.length}, 1fr)`, gap: 12 }}>
               {b.olculer.map(ad => (
@@ -81,11 +89,11 @@ export const MalzemeSatiriAlani = ({ satir, setSatir, sira = 1, malzemeler = [],
           )}
           {oz && (
             <div data-testid="malzeme-ozeti" style={{ fontSize: 12.5, color: "var(--n700, #334155)", background: "var(--n100, #f8fafc)", borderRadius: 8, padding: "8px 12px" }}>
-              {oz.yontem !== "boy" && <div>Ağırlık: <b data-testid="malzeme-ham-kg">{kgMetni(oz.hamKg)}</b> · fire dahil: <b data-testid="malzeme-fireli-kg">{kgMetni(oz.fireliKg)}</b></div>}
+              <div>Ağırlık: <b data-testid="malzeme-ham-kg">{kgMetni(oz.hamKg)}</b> · fire dahil: <b data-testid="malzeme-fireli-kg">{kgMetni(oz.fireliKg)}</b></div>
               <div>Bir adet: <b data-testid="malzeme-maliyet">{oz.maliyetK == null ? `girilmedi (${oz.eksik.join(", ")})` : maliyetMetniKurus(oz.maliyetK)}</b></div>
             </div>
           )}
-          {fireKgNedeni && <div data-testid="fire-kg-uygulanmadi" style={{ fontSize: 12, color: "var(--n600, #475569)" }}>{FIRE_KG_BOY_NEDENI}</div>}
+          {cubukKisaMi(s) && <Ipucu><span data-testid="cubuk-kisa-uyarisi">{CUBUK_KISA_UYARISI}</span></Ipucu>}
         </>
       )}
     </div>

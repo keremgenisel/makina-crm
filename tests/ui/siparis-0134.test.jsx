@@ -124,9 +124,10 @@ describe("Spec 0134: tablolar ve uyarılar", () => {
     // Spec 0140 ile (D-R2/2): öneri sütunu ve düzenlenebilir sipariş hücresi; değerler 0134'teki gibi. Artan kilo sütunu kalktı (belgede de yok).
     const h = hucre(k);
     // Spec 0142 ile (C-R1, AC-30): Tutar ve TL sütunları ve tedarikçi toplamı kalktı (para pencereden kalkar).
-    expect([h[1], h[2], h[3], h[5], h[6]]).toEqual(["747,512 kg", "59,801 kg", "771,957 kg", "1 boy", ""]);
+    // Spec 0143 ile (B-R6/2): kartın geldiği boyu kalktı; işaretsiz satır kilogramla (net artı fire 807,313), boy ve fire uyarısı yok.
+    expect([h[1], h[2], h[3], h[5], h[6]]).toEqual(["747,512 kg", "59,801 kg", "807,313 kg", "—", ""]);
     expect(h).not.toContain("2.277,27 $"); expect(k.textContent).not.toMatch(/₺|\$|€/);
-    expect(within(k).getAllByTestId("siparis-kesit-neden").map(e => e.textContent)).toContain(S.FIRE_BOY_UYARISI);
+    expect(within(k).queryAllByTestId("siparis-kesit-neden").map(e => e.textContent)).not.toContain(S.FIRE_BOY_UYARISI);
     expect(screen.getByTestId("siparis-tedarikci-adi").textContent).toBe("Ana Çelik");
     expect(screen.queryByTestId("siparis-tedarikci-toplam")).toBeNull(); // spec 0142 ile (C-R1): bölüm başlığında toplam yok
   });

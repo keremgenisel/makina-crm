@@ -198,7 +198,9 @@ describe("Spec 0135: malzeme ve işlem kalemi (R12–R21, R44)", () => {
     render(<Katalog />); duzenle("Kesme mili");
     for (const ad of ["Malzeme 1", "Biçim 1", "Parça firesi 1", "Malzeme adedi 1", "Çap 1", "Boy 1"]) expect(screen.getByLabelText(ad)).toBeTruthy();
     for (const ad of ["Çap işleme payı 1", "Boy işleme payı 1"]) expect(screen.queryByLabelText(ad)).toBeNull(); // spec 0141 ile (A-R1)
-    expect(screen.getByRole("radiogroup", { name: "Maliyet yöntemi 1" })).toBeTruthy();
+    // Spec 0143 ile (A-R1, AC-1): "Maliyet yöntemi" seçicisi kalktı; yerine "Sipariş boydan verilir" kutusu.
+    expect(screen.queryByRole("radiogroup", { name: "Maliyet yöntemi 1" })).toBeNull();
+    expect(screen.getByLabelText("Sipariş boydan verilir 1")).toBeTruthy();
     yaz("Biçim 1", "lama");
     expect(screen.getByLabelText("Genişlik 1")).toBeTruthy();
     expect(screen.queryByLabelText("Çap 1")).toBeNull();

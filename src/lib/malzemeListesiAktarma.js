@@ -327,7 +327,7 @@ export const aktarmaPlani = ({ sayfalar, malzemeler = [], parts = [], standardMo
     // adedi olan modellere yazılır (`kitleriGuncelle` adedi olmayan işaretli modelde kit satırı açmaz).
     const isaret = [...new Set(a.satirlar.flatMap(r => r.hedef || []))];
     parcalar.push({ id, ad: a.ad, models: isaret,
-      maliyetKalemleri: [{ tur: "malzeme", malzemeId: r0.malzemeId, bicim: r0.bicim, yontem: "kilo", ...r0.olculer, adet: 1 }] });
+      maliyetKalemleri: [{ tur: "malzeme", malzemeId: r0.malzemeId, bicim: r0.bicim, ...r0.olculer, adet: 1 }] }); // spec 0143 A-R6: yontem yazılmaz
     if (modelAdlari.length) kitler.push({ partId: id, ad: a.ad, adetler: { ...adetler } });
     canliAdlar.add(trLower(a.ad));
   }

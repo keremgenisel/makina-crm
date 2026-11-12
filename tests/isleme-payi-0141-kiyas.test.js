@@ -16,7 +16,9 @@ import { siparisRaporuHtml } from "../src/lib/siparisRaporu";
 import { ayikla0139 } from "./fixtures/0139-ayikla.js";
 import { ayikla0141 } from "./fixtures/0141-ayikla.js";
 import { ayikla0142 } from "./fixtures/0142-ayikla.js"; // spec 0142 ile: parça satırının `olculer` alanı ve tedarikçi bölümlerinin `belge` alanı
+import { ayikla0143 } from "./fixtures/0143-ayikla.js"; // spec 0143 ile (C2/3): kalkan ve adı değişen alanlar normalleşir, sayılar dokunulmaz
 import { MALZEMELER, TABLOLU_MALZEMELER, PARCALAR, MODELLER, TARIHLER } from "./fixtures/0141-veri";
+const ayikla0142v0143 = (x) => ayikla0143(ayikla0142(x));
 // 0139-veri'nin fiyat ayarı anahtarı (`karKati`) motorun okuduğu ad değil; kıyas fiyatı gerçekten türetsin diye doğru ad.
 const FIYAT_AYARLARI = { varsayilanKat: 2.77 };
 
@@ -57,7 +59,7 @@ const ciktilar = () => {
 };
 // Spec 0142 ile: belge baştan yazıldı (C6: belge HTML'i kıyasa girmez, kendi kriterleriyle ölçülür); iki rapor alanı ve motorun iki
 // yeni alanı karşılaştırmadan önce ayıklanır. Altın dosyası değişmedi (AC-41'in özeti aynı).
-const ayikla = (x) => { const y = ayikla0142(ayikla0141(ayikla0139(x))); delete y.rapor; delete y.raporYetkisiz; return y; };
+const ayikla = (x) => { const y = ayikla0142v0143(ayikla0141(ayikla0139(x))); delete y.rapor; delete y.raporYetkisiz; return y; };
 
 describe("Spec 0141 kıyas (C1)", () => {
   it("AC-40 / AC-27: payı olmayan veride bütün çıktılar ve yazdırılan sipariş raporu spec öncesi altınla birebir", () => {
@@ -81,17 +83,19 @@ describe("Spec 0141 kıyas (C1)", () => {
 
 // Triyaj (bulgu 3), AC-41: altınların kaderi dosya dosya, özetle sabit. 0133 spec öncesi main'deki baytlarla aynı (dokunulmadı);
 // 0135, 0138, 0139 ve 0140 hazırlık adımında (kaldırmadan ÖNCE) eski kodla yeniden üretildi ve kaldırmadan sonra değişmedi; 0141 yeni.
+// Spec 0143 ile (C2/3, AC-34): beş altın (0135, 0138, 0139, 0140, 0141) 0143'ün hazırlık adımında (geldiği boy ve boy fiyatı
+// fikstürden kalktı, boy kalemi kiloya çevrildi) yine KALDIRMADAN ÖNCE eski kodla yenilendi; özetler o hâli sabitler.
 // Özet değişirse altın yeniden yazılmış demektir: kaldırma sonrası koddan üretilmiş altın "davranış değişmedi" iddiasını boşa düşürür.
 describe("Spec 0141 AC-41: altınların kaderi", () => {
   const ozet = (f) => createHash("sha256").update(fs.readFileSync(`tests/fixtures/${f}-once.json`)).digest("hex");
   it("AC-41: 0133 bayt bayt spec öncesiyle aynı; dört altın hazırlık adımında yenilendi ve sonra değişmedi; 0141 yeni altın", () => {
     expect(ozet("0133")).toBe("07957f06ef18fde9575e3d23cb8c94dfac64dc4f75cc76bcb502ee4f26de9660"); // main 74200ea6 ile aynı
     expect({ "0135": ozet("0135"), "0138": ozet("0138"), "0139": ozet("0139"), "0140": ozet("0140"), "0141": ozet("0141") }).toEqual({
-      "0135": "76ee07796b23f87109f7cf9a89566bd987e22587cccc614643294ac7de2b6b9d",
-      "0138": "c1240f3b7ad9b8494dafcafc9bb542a20964b855ff80c89cf14b27a3829e2680",
-      "0139": "6d90f168e224615867ca8763d4e7e4ea559391fe277d02091626abdc42e74630",
-      "0140": "4ed92b2e8434b1d0d35a5c044bbfb05cc021c9dae196cac95e1298e63da3caa1",
-      "0141": "518cfdae013fdc10c0be48954ab2eb79939a68adc4c347ecf80b7e21d8fc512c",
+      "0135": "b08198c7bf7b6248ad7e1ea24b77592b8195d00e5a291c05ad4a56b3429e5647",
+      "0138": "b2a2ae7bf6450e4c83daed10deb23592b89644d3bfecaa8989c7c0e443037512",
+      "0139": "b0b2995b45b8a1e0df3aa3101f01bc3b7d004702b8796313eae895a5f256269a",
+      "0140": "aabc19089dd7dd71a18c3b61d6f6366a180b3b0e95145218968b196cc646238d",
+      "0141": "6d8f548c7fa823ad16b3c5b7495ed010fb8edb00b500d96d090c60b93dc4fa62",
     });
   });
   it("AC-41: yenilenen dört altında emniyet payı izi yok (eski kodla, paysız fikstürle üretildi: hiçbir satırda sıfırdan büyük pay)", () => {

@@ -1061,8 +1061,10 @@ function populateAll(conn, data, skip = new Set()) {
   // Spec 0132 C5: malzeme kataloğu.
   if (Array.isArray(data.malzemeler) && !skip.has("malzemeler")) {
     conn.prepare(`DELETE FROM malzemeler`).run();
-    const stmt = conn.prepare(`INSERT INTO malzemeler (id, ad, alasim, ozgulAgirlik, kiloFiyati, paraBirimi, kur, bantlar, boyFiyati, geldigiBoy, tedarikciId, asgariSiparis, fire, fiyatGecmisi, deletedAt, fireBantlari) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`); // spec 0141 D-R1: emniyetPayi ölü sütun
-    for (const m of data.malzemeler) stmt.run(m.id, m.ad ?? null, m.alasim ?? null, m.ozgulAgirlik ?? null, m.kiloFiyati ?? null, m.paraBirimi ?? null, m.kur ?? null, hammaddeYaz(m.bantlar), m.boyFiyati ?? null, m.geldigiBoy ?? null, m.tedarikciId ?? null, m.asgariSiparis ?? null, m.fire ?? null, hammaddeYaz(m.fiyatGecmisi), m.deletedAt ?? null, hammaddeYaz(m.fireBantlari));
+    // Spec 0141 D-R1: emniyetPayi ölü sütun. Spec 0143 D-R2, D-R2/2: boyFiyati ve geldigiBoy de ölü sütun (şemada kalır, yazılmaz;
+    // tablo her kayıtta silinip yeniden yazıldığı için ilk kayıttan sonra iki sütun bütün satırlarda NULL olur).
+    const stmt = conn.prepare(`INSERT INTO malzemeler (id, ad, alasim, ozgulAgirlik, kiloFiyati, paraBirimi, kur, bantlar, tedarikciId, asgariSiparis, fire, fiyatGecmisi, deletedAt, fireBantlari) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    for (const m of data.malzemeler) stmt.run(m.id, m.ad ?? null, m.alasim ?? null, m.ozgulAgirlik ?? null, m.kiloFiyati ?? null, m.paraBirimi ?? null, m.kur ?? null, hammaddeYaz(m.bantlar), m.tedarikciId ?? null, m.asgariSiparis ?? null, m.fire ?? null, hammaddeYaz(m.fiyatGecmisi), m.deletedAt ?? null, hammaddeYaz(m.fireBantlari));
   }
   // Spec 0138 R17/2 (AC-32): dış işlem yazma yolu kaldırıldı; gövdede gelse bile ölü tablo boşaltılmaz (0082 emsali).
   // Spec 0082 R6 (B2): standart gider yazma yolu kaldırıldı; gövdede gelse bile tablo boşaltılmaz.
@@ -1394,6 +1396,32 @@ function islemePayiGocu(conn, dbPath = null) {
   return { degisen: plan.length };
 }
 
+// Spec 0143 D-R3–D-R4/2, C4: kaldırılan boy fiyatı yönteminin göçü. Plan saf çekirdekte (electron/boyGocuSaf.mjs; yedekten geri
+// yükleme aynı çekirdeği çağırır). Bayrak TAŞIMAZ, her yerel açılışta çalışır (0141 emsali). Yalnız `parts`'ın iki JSON sütununu
+// `UPDATE` eder; blob yolunu kullanmaz. Kartın geldiği boyu `malzemeler.geldigiBoy` ölü sütunundan okunur (açılışta, ilk kayıttan
+// önce hâlâ doludur); JSON'dan aktarma dalında harita gövdeden verilir (D-R3/4). Çevrilecek kalem yoksa hiçbir şey yazmaz ve yedek
+// almaz; varsa önce `data.db.boy-gocu-<zaman>.bak` (yalnız dosya yolu verilen dalda, D-R4/2).
+const { boyGocPlani } = require("./boyGocuSaf.mjs");
+function boyGocu(conn, dbPath = null, harita = null) {
+  const satirlar = conn.prepare(`SELECT id, maliyetKalemleri, malzemeSatiri FROM parts WHERE maliyetKalemleri IS NOT NULL OR malzemeSatiri IS NOT NULL`).all();
+  const h = harita || new Map(conn.prepare(`SELECT id, geldigiBoy FROM malzemeler WHERE geldigiBoy IS NOT NULL`).all().map(r => [String(r.id), r.geldigiBoy]));
+  const plan = boyGocPlani(satirlar, h);
+  if (!plan.length) return { degisen: 0 };
+  if (dbPath && fs.existsSync(dbPath)) {
+    try { conn.pragma("wal_checkpoint(FULL)"); } catch { /* WAL değilse yoksay */ }
+    fs.copyFileSync(dbPath, `${dbPath}.boy-gocu-${new Date().toISOString().replace(/[:.]/g, "-")}.bak`);
+  }
+  const kalem = conn.prepare(`UPDATE parts SET maliyetKalemleri = ? WHERE id = ?`);
+  const satir = conn.prepare(`UPDATE parts SET malzemeSatiri = ? WHERE id = ?`);
+  conn.transaction(() => {
+    for (const p of plan) {
+      if (p.maliyetKalemleri !== undefined) kalem.run(p.maliyetKalemleri, p.id);
+      if (p.malzemeSatiri !== undefined) satir.run(p.malzemeSatiri, p.id);
+    }
+  })();
+  return { degisen: plan.length };
+}
+
 function migrateFromJsonIfNeeded() {
   if (!Database) return; // native modül yüklenemedi, eski JSON modunda kal
 
@@ -1412,6 +1440,7 @@ function migrateFromJsonIfNeeded() {
       kalipTamiriGocu(db);
       disIslemGocu(db, dbPath);
       islemePayiGocu(db, dbPath); // spec 0141 D-R4/2
+      boyGocu(db, dbPath); // spec 0143 D-R3/3
       pruneAuditLog(db);
       pruneSecurityLog(db);
       active = true;
@@ -1442,6 +1471,7 @@ function migrateFromJsonIfNeeded() {
     kalipTamiriGocu(conn); // tip listesi yok: hiçbir şey yazmaz, ikinci açılışta denenir (R4/2)
     disIslemGocu(conn); // spec 0138 R16/2: taşınacak kalem yok, yalnız bayrak yazılır (AC-34)
     islemePayiGocu(conn); // spec 0141 D-R4/2: temiz kurulumda katlanacak kalem yok, hiçbir şey yazmaz
+    boyGocu(conn); // spec 0143 D-R3/3: temiz kurulumda çevrilecek kalem yok, hiçbir şey yazmaz
     db = conn;
     active = true;
     return;
@@ -1484,6 +1514,7 @@ function migrateFromJsonIfNeeded() {
     kalipTamiriGocu(conn);
     disIslemGocu(conn); // data.json yedeği zaten kalıyor (migrated backup)
     islemePayiGocu(conn); // spec 0141 D-R4/2: data.json'dan gelen pay da katlanır
+    boyGocu(conn, null, new Map((Array.isArray(parsed?.malzemeler) ? parsed.malzemeler : []).filter(m => m && m.geldigiBoy != null).map(m => [String(m.id), m.geldigiBoy]))); // spec 0143 D-R3/4: harita gövdeden
     conn.close();
 
     fs.renameSync(tmpPath, dbPath);
@@ -1770,7 +1801,8 @@ function readBlobFromDb() {
   const tedarikciler = db.prepare(`SELECT * FROM tedarikciler`).all().map(({ notField, hammadde, ...rest }) => ({ ...rest, not: notField, ...(toBool(hammadde) ? { hammadde: true } : {}) }));
   // Spec 0132 C5, AC-61: boş alanlar gövdeye yazılmaz; JSON alanları yalnız doluyken.
   // Spec 0141 D-R1, AC-58: ölü `emniyetPayi` sütunu ayıklanır (genel null süzgeci dolu değeri gövdeye taşırdı).
-  const malzemeler = db.prepare(`SELECT * FROM malzemeler`).all().map(({ bantlar, fiyatGecmisi, fireBantlari, emniyetPayi: _oluSutun, ...rest }) => ({
+  // Spec 0143 D-R2/2 (AC-54): iki ölü sütun açık ayıklamayla gövdeye girmez (0141 emniyetPayi emsali).
+  const malzemeler = db.prepare(`SELECT * FROM malzemeler`).all().map(({ bantlar, fiyatGecmisi, fireBantlari, emniyetPayi: _oluSutun, boyFiyati: _oluBoyFiyati, geldigiBoy: _oluGeldigiBoy, ...rest }) => ({
     ...Object.fromEntries(Object.entries(rest).filter(([, v]) => v != null)),
     ...(() => { const b = parseJsonCol(bantlar, []); return Array.isArray(b) && b.length ? { bantlar: b } : {}; })(),
     ...(() => { const g = parseJsonCol(fiyatGecmisi, []); return Array.isArray(g) && g.length ? { fiyatGecmisi: g } : {}; })(),
@@ -2077,7 +2109,7 @@ function getAuditLog({ limit = 100, offset = 0, username, entity, dateFrom, date
 }
 
 module.exports = {
-  migrateFromJsonIfNeeded, kasaGocu, kasaSekmeGocu, kalipTamiriGocu, disIslemGocu, islemePayiGocu, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
+  migrateFromJsonIfNeeded, kasaGocu, kasaSekmeGocu, kalipTamiriGocu, disIslemGocu, islemePayiGocu, boyGocu, isActive, close, dbEncryptionStatus, readBlobFromDb, writeBlobToDb, getDbPath, getJsonPath,
   getMetaValue, setMetaValue, getDataVersion, bumpDataVersion,
   getRateBucket, setRateBucket, deleteRateBucket, pruneRateBuckets,
   getUserByUsername, getUserById, getAllUsers, createUser, updateUser, deleteUser, hasAnyUser,

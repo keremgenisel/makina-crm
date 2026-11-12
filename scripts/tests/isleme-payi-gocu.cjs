@@ -3,6 +3,7 @@
 // alanda, çöpteki parça dahil) yerel açılışta katlanır, maliyet kuruşuna aynı; yalnız iki JSON sütunu UPDATE edilir; yedek yalnız
 // değişecek kalem varken alınır; ikinci açılış hiçbir şeyi değiştirmez ve bayrak yoktur (sonradan gelen pay da katlanır); üç açılış
 // dalında çağrılır, JSON dalında da koşar.
+// Spec 0143 ile (triyaj bulgu 3): boy göçü `yontem` anahtarını her değerde sildiği için bu betiğin kalemlerinden `yontem: "kilo"` çıkarıldı.
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
@@ -35,14 +36,14 @@ const esit = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check("AC-55 / AC-56: temiz kurulumda göç çalıştı, yedek alınmadı", yedekler().length === 0);
 
   // 2) Pay taşıyan veritabanı (sürüm arası pencerede güncellenmemiş bir bilgisayarın yazdığı satırlar ham SQL ile).
-  const KALEM = { tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 96, payCap: 4, boy: 100, payBoy: 2, adet: 1 };
+  const KALEM = { tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 96, payCap: 4, boy: 100, payBoy: 2, adet: 1 };
   const SATIR = { malzemeId: 501, bicim: "mil", cap: 140, payCap: 4, boy: 78, payBoy: 5, fire: 8 };
   const ISLEM = { tur: "islem", ad: "Torna", tutar: 40 };
   dbmod.writeBlobToDb({ parts: [
-    { id: 1, ad: "Kalemli", kod: "K1", fiyatTRY: 900, models: ["AK100"], maliyetKalemleri: [{ tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 1, boy: 1, adet: 1 }, ISLEM] },
+    { id: 1, ad: "Kalemli", kod: "K1", fiyatTRY: 900, models: ["AK100"], maliyetKalemleri: [{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 1, boy: 1, adet: 1 }, ISLEM] },
     { id: 2, ad: "Eski satırlı", maliyet: 12, malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 1, boy: 1 } },
     { id: 3, ad: "Çöpteki", deletedAt: "2026-10-01T10:00:00", malzemeSatiri: { malzemeId: 501, bicim: "mil", cap: 1, boy: 1 } },
-    { id: 4, ad: "Paysız", maliyetKalemleri: [{ tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 50, boy: 50, adet: 1 }] },
+    { id: 4, ad: "Paysız", maliyetKalemleri: [{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 50, boy: 50, adet: 1 }] },
   ], malzemeler: [{ id: 501, ad: "304" }] });
   dbmod.close();
   {
@@ -57,11 +58,11 @@ const esit = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const b = dbmod.readBlobFromDb();
   const p = (id) => b.parts.find(x => x.id === id);
   check("AC-33: kalem listesindeki pay ölçüye eklendi, pay anahtarı silindi; işlem kalemi aynen",
-    esit(p(1).maliyetKalemleri, [{ tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 100, boy: 102, adet: 1 }, ISLEM]));
+    esit(p(1).maliyetKalemleri, [{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 100, boy: 102, adet: 1 }, ISLEM]));
   check("AC-33 / AC-53: eski malzemeSatiri alanındaki pay da katlandı", esit(p(2).malzemeSatiri, { malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8 }));
   check("AC-37: çöpteki parçanın alanı da göçten geçti", esit(p(3).malzemeSatiri, { malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8 }) && !!p(3).deletedAt);
   check("AC-34: göçün yazdığı ölçü ham ölçünün aynısı (140 + 4, 78 + 5); maliyet eşitliği saf testte", p(2).malzemeSatiri.cap === SATIR.cap + SATIR.payCap && p(2).malzemeSatiri.boy === SATIR.boy + SATIR.payBoy);
-  check("AC-35: paysız parça değişmedi", esit(p(4).maliyetKalemleri, [{ tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 50, boy: 50, adet: 1 }]));
+  check("AC-35: paysız parça değişmedi", esit(p(4).maliyetKalemleri, [{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 50, boy: 50, adet: 1 }]));
   check("AC-56: değişecek kalem varken göçten önce bir yedek alındı", yedekler().length === 1);
   const sutunlarSonra = (() => { const c = new Database(dbPath); const r = c.prepare(`SELECT id, ad, kod, fiyatTRY, models, maliyet, deletedAt, tip FROM parts ORDER BY id`).all(); const m = c.prepare(`SELECT * FROM malzemeler`).all(); c.close(); return { r, m }; })();
   check("AC-54: göç yalnız iki JSON sütununu yazdı; parçanın öteki sütunları ve malzemeler tablosu aynı", esit(sutunlarOnce, sutunlarSonra));

@@ -1,0 +1,866 @@
+{
+ "ozet": [
+  [
+   {
+    "maliyetK": 69612,
+    "eksik": [],
+    "hamKg": 4.245416993488327,
+    "fireliKg": 4.885050352967393,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 65948,
+    "eksik": [],
+    "hamKg": 4.245416993488327,
+    "fireliKg": 4.885050352967393,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 3,
+    "bant": null,
+    "kur": 45,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 69612,
+    "eksik": [],
+    "hamKg": 4.245416993488327,
+    "fireliKg": 4.885050352967393,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   }
+  ],
+  [
+   {
+    "maliyetK": 5745,
+    "eksik": [],
+    "hamKg": 0.37327147272892486,
+    "fireliKg": 0.4031331905472389,
+    "fire": 8,
+    "ekFireKg": 0,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 5442,
+    "eksik": [],
+    "hamKg": 0.37327147272892486,
+    "fireliKg": 0.4031331905472389,
+    "fire": 8,
+    "ekFireKg": 0,
+    "fiyat": 3,
+    "bant": null,
+    "kur": 45,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 5745,
+    "eksik": [],
+    "hamKg": 0.37327147272892486,
+    "fireliKg": 0.4031331905472389,
+    "fire": 8,
+    "ekFireKg": 0,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   }
+  ],
+  [
+   {
+    "maliyetK": 155408,
+    "eksik": [],
+    "hamKg": 10.035443254048285,
+    "fireliKg": 10.536152119129252,
+    "fire": 2,
+    "ekFireKg": 0.3,
+    "fiyat": 2.95,
+    "bant": {
+     "alt": 101,
+     "fiyat": 2.95
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 142238,
+    "eksik": [],
+    "hamKg": 10.035443254048285,
+    "fireliKg": 10.536152119129252,
+    "fire": 2,
+    "ekFireKg": 0.3,
+    "fiyat": 3,
+    "bant": null,
+    "kur": 45,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 155408,
+    "eksik": [],
+    "hamKg": 10.035443254048285,
+    "fireliKg": 10.536152119129252,
+    "fire": 2,
+    "ekFireKg": 0.3,
+    "fiyat": 2.95,
+    "bant": {
+     "alt": 101,
+     "fiyat": 2.95
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   }
+  ],
+  [
+   {
+    "maliyetK": 2328,
+    "eksik": [],
+    "hamKg": 0.11413406110491718,
+    "fireliKg": 0.11413406110491718,
+    "fire": 0,
+    "ekFireKg": 0,
+    "fiyat": 4.08,
+    "bant": null,
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 2328,
+    "eksik": [],
+    "hamKg": 0.11413406110491718,
+    "fireliKg": 0.11413406110491718,
+    "fire": 0,
+    "ekFireKg": 0,
+    "fiyat": 4.08,
+    "bant": null,
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 2328,
+    "eksik": [],
+    "hamKg": 0.11413406110491718,
+    "fireliKg": 0.11413406110491718,
+    "fire": 0,
+    "ekFireKg": 0,
+    "fiyat": 4.08,
+    "bant": null,
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   }
+  ],
+  [
+   {
+    "maliyetK": 3413,
+    "eksik": [],
+    "hamKg": 0.1975,
+    "fireliKg": 0.21330000000000002,
+    "fire": 8,
+    "ekFireKg": 0,
+    "fiyat": 3.2,
+    "bant": null,
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 2880,
+    "eksik": [],
+    "hamKg": 0.1975,
+    "fireliKg": 0.21330000000000002,
+    "fire": 8,
+    "ekFireKg": 0,
+    "fiyat": 3,
+    "bant": null,
+    "kur": 45,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 3413,
+    "eksik": [],
+    "hamKg": 0.1975,
+    "fireliKg": 0.21330000000000002,
+    "fire": 8,
+    "ekFireKg": 0,
+    "fiyat": 3.2,
+    "bant": null,
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   }
+  ],
+  [
+   {
+    "maliyetK": 6945,
+    "eksik": [],
+    "hamKg": 0.33228,
+    "fireliKg": 0.36550800000000006,
+    "fire": 10,
+    "ekFireKg": 0,
+    "fiyat": 190,
+    "bant": null,
+    "kur": 1,
+    "paraBirimi": "TRY",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 6945,
+    "eksik": [],
+    "hamKg": 0.33228,
+    "fireliKg": 0.36550800000000006,
+    "fire": 10,
+    "ekFireKg": 0,
+    "fiyat": 190,
+    "bant": null,
+    "kur": 1,
+    "paraBirimi": "TRY",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 6945,
+    "eksik": [],
+    "hamKg": 0.33228,
+    "fireliKg": 0.36550800000000006,
+    "fire": 10,
+    "ekFireKg": 0,
+    "fiyat": 190,
+    "bant": null,
+    "kur": 1,
+    "paraBirimi": "TRY",
+    "yontem": "kilo"
+   }
+  ],
+  [
+   {
+    "maliyetK": 37219,
+    "eksik": [],
+    "hamKg": 2.140602694339745,
+    "fireliKg": 2.611850909886925,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 35260,
+    "eksik": [],
+    "hamKg": 2.140602694339745,
+    "fireliKg": 2.611850909886925,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 3,
+    "bant": null,
+    "kur": 45,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 37219,
+    "eksik": [],
+    "hamKg": 2.140602694339745,
+    "fireliKg": 2.611850909886925,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   }
+  ],
+  [
+   {
+    "maliyetK": 18025,
+    "eksik": [],
+    "hamKg": 0.8934689506809372,
+    "fireliKg": 1.2649464667354122,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 17077,
+    "eksik": [],
+    "hamKg": 0.8934689506809372,
+    "fireliKg": 1.2649464667354122,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 3,
+    "bant": null,
+    "kur": 45,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   },
+   {
+    "maliyetK": 18025,
+    "eksik": [],
+    "hamKg": 0.8934689506809372,
+    "fireliKg": 1.2649464667354122,
+    "fire": 8,
+    "ekFireKg": 0.3,
+    "fiyat": 2.85,
+    "bant": {
+     "alt": 0,
+     "fiyat": 2.85
+    },
+    "kur": 50,
+    "paraBirimi": "USD",
+    "yontem": "kilo"
+   }
+  ]
+ ],
+ "maliyet": [
+  [
+   69612,
+   65948,
+   69612
+  ],
+  [
+   17235,
+   16326,
+   17235
+  ],
+  [
+   155408,
+   142238,
+   155408
+  ],
+  [
+   2328,
+   2328,
+   2328
+  ],
+  [
+   6826,
+   5760,
+   6826
+  ],
+  [
+   6945,
+   6945,
+   6945
+  ],
+  [
+   41219,
+   39260,
+   41219
+  ],
+  [
+   1500,
+   1500,
+   1500
+  ],
+  [
+   18025,
+   17077,
+   18025
+  ],
+  [
+   9826,
+   8760,
+   9826
+  ]
+ ],
+ "fiyat": [
+  [
+   {
+    "deger": 1928.25,
+    "kip": "maliyet",
+    "neden": null,
+    "turetilmis": true,
+    "kat": 2.77
+   },
+   {
+    "deger": "",
+    "kip": "maliyet",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   },
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": 4304.8,
+    "kip": "maliyet",
+    "neden": null,
+    "turetilmis": true,
+    "kat": 2.77
+   },
+   {
+    "deger": "",
+    "kip": "maliyet",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   },
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   },
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": 192.38,
+    "kip": "maliyet",
+    "neden": null,
+    "turetilmis": true,
+    "kat": 2.77
+   },
+   {
+    "deger": "",
+    "kip": "maliyet",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   },
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   },
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   },
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   }
+  ],
+  [
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   },
+   {
+    "deger": "",
+    "kip": "elle",
+    "neden": null,
+    "turetilmis": false
+   }
+  ]
+ ],
+ "disa": [
+  [
+   "Kalın mil",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   1928.25,
+   "",
+   "",
+   696.12,
+   ""
+  ],
+  [
+   "İnce mil",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   172.35,
+   ""
+  ],
+  [
+   "Yatak",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   4304.8,
+   "",
+   "",
+   1554.08,
+   ""
+  ],
+  [
+   "Boru",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   23.28,
+   ""
+  ],
+  [
+   "Lama",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   68.26,
+   ""
+  ],
+  [
+   "Levha",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   192.38,
+   "",
+   "",
+   69.45,
+   ""
+  ],
+  [
+   "Karma",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   412.19,
+   ""
+  ],
+  [
+   "Elle",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   15,
+   ""
+  ],
+  [
+   "Eski satırlı",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   180.25,
+   ""
+  ],
+  [
+   "Bağlantı seti",
+   "",
+   "",
+   "Standart",
+   "",
+   "",
+   "",
+   "",
+   "",
+   98.26,
+   "Lama x 1; Elle x 2"
+  ]
+ ],
+ "modeller": [
+  {
+   "model": "AK100_DS",
+   "kit": [
+    {
+     "partId": "1",
+     "ad": "Kalın mil",
+     "adet": 1,
+     "birimK": 69612,
+     "satirK": 69612,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "2",
+     "ad": "İnce mil",
+     "adet": 2,
+     "birimK": 17235,
+     "satirK": 34470,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "3",
+     "ad": "Yatak",
+     "adet": 1,
+     "birimK": 155408,
+     "satirK": 155408,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "4",
+     "ad": "Boru",
+     "adet": 1,
+     "birimK": 2328,
+     "satirK": 2328,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "5",
+     "ad": "Lama",
+     "adet": 1,
+     "birimK": 6826,
+     "satirK": 6826,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "6",
+     "ad": "Levha",
+     "adet": 1,
+     "birimK": 6945,
+     "satirK": 6945,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "7",
+     "ad": "Karma",
+     "adet": 1,
+     "birimK": 41219,
+     "satirK": 41219,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "8",
+     "ad": "Elle",
+     "adet": 1,
+     "birimK": 1500,
+     "satirK": 1500,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "9",
+     "ad": "Eski satırlı",
+     "adet": 1,
+     "birimK": 18025,
+     "satirK": 18025,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "10",
+     "ad": "Bağlantı seti",
+     "adet": 1,
+     "birimK": 9826,
+     "satirK": 9826,
+     "eksik": false,
+     "neden": null
+    }
+   ],
+   "ek": [],
+   "setKesisimleri": [
+    {
+     "setAd": "Bağlantı seti",
+     "bilesenAd": "Lama"
+    },
+    {
+     "setAd": "Bağlantı seti",
+     "bilesenAd": "Elle"
+    }
+   ],
+   "kitBos": false,
+   "eksikSayisi": 0,
+   "direktK": 346159,
+   "payK": 12345,
+   "toplamK": 358504,
+   "katsayi": 2.77,
+   "oneriK": 993056,
+   "kalipListeK": null
+  }
+ ],
+ "parti": {
+  "satirlar": [
+   {
+    "model": "AK100_DS",
+    "turetilenAdet": 1,
+    "katsayi": 2.77,
+    "anahtar": "AK100_DS",
+    "adet": 10,
+    "planlanan": true,
+    "direktK": 346159,
+    "eksikSayisi": 0,
+    "payK": 1000,
+    "payKaynak": "ayarlar",
+    "payNeden": null,
+    "payToplamK": 10000,
+    "ayAraligi": null,
+    "tarihsiz": false,
+    "toplamK": 347159,
+    "oneriK": 961630,
+    "toplamMaliyetK": 3471590,
+    "oneriCiroK": 9616304
+   }
+  ],
+  "bulunamayan": [],
+  "bos": false,
+  "payDurumu": null,
+  "ozet": {
+   "toplamStandartK": 3471590,
+   "onerilenCiroK": 9616304,
+   "katsayisiz": 0,
+   "satisK": 0,
+   "oneriyeGoreKarK": 6144714,
+   "gercegeGoreKarK": 0,
+   "satilmisStandartK": 0,
+   "kirilim": {
+    "satilmis": 0,
+    "stokta": 1,
+    "bedelsiz": 0,
+    "kursuz": 0,
+    "modelYok": 0
+   },
+   "kurDurumlari": {
+    "kayitli": 0,
+    "yaklasik": 0
+   }
+  },
+  "tedarik": {
+   "donem": {
+    "bas": "2026-01",
+    "bit": "2026-11"
+   },
+   "baslamadi": false,
+   "yururlukOncesi": false,
+   "tedarikK": 0,
+   "standartDirektK": 3461590,
+   "farkK": -3461590,
+   "paylasanParti": 0
+  }
+ }
+}

@@ -78,10 +78,12 @@ describe("Spec 0135: toplam (R8, R14, R16, R19, R27/2, C10)", () => {
     }
     expect(formKalemOzeti([{ tur: "malzeme", malzemeId: "", adet: "1" }, { tur: "islem", ad: "Lazer", tutar: "100" }], KAT).toplamK).toBeNull();
   });
-  it("AC-31: boy yönteminde kalemin tutarı 0132'nin boy kuralıyla, adetle çarpılır", () => {
+  // Spec 0143 ile (C7): boy yöntemi kalktı; aynı kalem kilodan hesaplanır, boy fiyatı okunmaz (kilo fiyatı olmayan kartta girilmedi).
+  it("AC-31 (spec 0143 ile): eski boy kalemin tutarı kilodan, adetle çarpılır; boy fiyatı okunmaz", () => {
     const k = { tur: "malzeme", malzemeId: 505, bicim: "boru", yontem: "boy", cap: 60, et: 5, boy: 400, adet: 3 };
-    expect(maliyetKalemleriOzeti([k], KAT).toplamK).toBe(3 * birim(k));
-    expect(birim(k)).toBe(Math.round((400 / 6000) * 600 * 100));
+    expect(maliyetKalemleriOzeti([k], KAT).toplamK).toBeNull();
+    const kat2 = new Map([...KAT, ["505", { ...BOYLU, kiloFiyati: 40 }]]);
+    expect(maliyetKalemleriOzeti([k], kat2).toplamK).toBe(3 * maliyetKalemleriOzeti([{ ...k, adet: 1 }], kat2).toplamK);
   });
   it("AC-35 / AC-98 / R27/2: tutarı boş işlem kalemi toplama girmez; hepsi boşsa maliyet girilmedi ve eski elle tutar okunmaz", () => {
     expect(parcaMaliyetKurus(parca({ maliyetKalemleri: [islem("Lazer", 50), islem("Kaplama", null)] }))).toBe(5000);
@@ -296,7 +298,7 @@ describe("Spec 0135: kaynak taramaları", () => {
     // Gerekçeli istisnalar: db.cjs (kalıcılık, dört nokta), merge.js (eski üç eşleme, R34/2). Parça kartı eski alanları ortak
     // sabitten kopyalar (ESKI_MALIYET_ANAHTARLARI), adlarını anmaz. Spec 0141 ile (D-R3/2): işleme payı göçünün saf çekirdeği eski
     // `malzemeSatiri`'ni de katlar.
-    expect(geciyor(/\.malzemeSatiri\b|\.hammaddeler\b/)).toEqual(["electron/db.cjs", "electron/islemePayiGocuSaf.mjs", "src/lib/maliyetKalemleri.js", "src/lib/merge.js"]);
+    expect(geciyor(/\.malzemeSatiri\b|\.hammaddeler\b/)).toEqual(["electron/boyGocuSaf.mjs", "electron/db.cjs", "electron/islemePayiGocuSaf.mjs", "src/lib/maliyetKalemleri.js", "src/lib/merge.js"]); // spec 0143 ile: boy göçü eski alanı da çevirir (D-R3/2)
     expect(kod("src/components/PartManager.jsx")).not.toMatch(/malzemeSatiri|hammaddeler/);
     for (const f of ["src/lib/urunAgaci.js", "src/lib/malzeme.js", "src/lib/gider.js", "src/lib/siparisIhtiyaci.js", "src/lib/parcaAktarma.js"]) {
       expect(kod(f), f).toMatch(/maliyetKalemleri/);

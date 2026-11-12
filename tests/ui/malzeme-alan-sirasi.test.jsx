@@ -32,11 +32,13 @@ describe("Malzeme kartının alan sırası (kullanıcı isteği 2026-11-10)", ()
     fireEvent.click(screen.getByRole("button", { name: /Yeni Malzeme/ }));
     fireEvent.change(screen.getByLabelText("Fiyatın para birimi"), { target: { value: "USD" } });
     const el = [screen.getByLabelText("Malzeme adı"), screen.getByLabelText("Alaşım"), screen.getByLabelText("Ana tedarikçi"),
-      screen.getByLabelText("Özgül ağırlık"), screen.getByLabelText("Varsayılan fire"), screen.getByLabelText("Geldiği boy"), screen.getByLabelText("Asgari sipariş"),
-      screen.getByLabelText("Fiyatın para birimi"), screen.getByLabelText("Kilo fiyatı"), screen.getByLabelText("Kur"), screen.getByLabelText("Boy fiyatı"),
+      // Spec 0143 ile (A-R2, A-R3): geldiği boy ve boy fiyatı alanları kalktı; öteki sıra aynı.
+      screen.getByLabelText("Özgül ağırlık"), screen.getByLabelText("Varsayılan fire"), screen.getByLabelText("Asgari sipariş"),
+      screen.getByLabelText("Fiyatın para birimi"), screen.getByLabelText("Kilo fiyatı"), screen.getByLabelText("Kur"),
       screen.getByTestId("fire-kg-bolumu"), screen.getByTestId("fiyat-bant-bolumu")];
     expect(sirali(el)).toBe(true);
     expect(screen.getAllByTestId("bant-listesi")).toHaveLength(1); // çap bandı tek yerde
+    expect(screen.queryByLabelText("Geldiği boy")).toBeNull(); expect(screen.queryByLabelText("Boy fiyatı")).toBeNull(); // spec 0143 AC-2, AC-3
   });
   it("gider yetkisi olmadan Ana tedarikçi yok, öteki sıra aynı", () => {
     render(<Panel giderYetki={false} />);
@@ -44,10 +46,10 @@ describe("Malzeme kartının alan sırası (kullanıcı isteği 2026-11-10)", ()
     expect(screen.queryByLabelText("Ana tedarikçi")).toBeNull();
     expect(sirali([screen.getByLabelText("Alaşım"), screen.getByLabelText("Özgül ağırlık"), screen.getByLabelText("Kilo fiyatı"), screen.getByTestId("fire-kg-bolumu"), screen.getByTestId("fiyat-bant-bolumu")])).toBe(true);
   });
-  it("düzenleme: Ana tedarikçi alaşımın arkasında; fiyat özeti geldiği boydan sonra, ek fire en sonda; çap bandı düzenleyicisi kartta yok", () => {
+  it("düzenleme (spec 0143 ile): Ana tedarikçi alaşımın arkasında; fiyat özeti asgari siparişten sonra, ek fire en sonda; çap bandı düzenleyicisi kartta yok", () => {
     render(<Panel />);
     fireEvent.click(screen.getByRole("button", { name: "304 Paslanmaz düzenle" }));
-    expect(sirali([screen.getByLabelText("Alaşım"), screen.getByLabelText("Ana tedarikçi"), screen.getByLabelText("Geldiği boy"),
+    expect(sirali([screen.getByLabelText("Alaşım"), screen.getByLabelText("Ana tedarikçi"), screen.getByLabelText("Asgari sipariş"),
       screen.getByTestId("malzeme-fiyat-ozeti"), screen.getByTestId("fire-kg-bolumu")])).toBe(true);
     expect(screen.queryByTestId("fiyat-bant-bolumu")).toBeNull();
   });

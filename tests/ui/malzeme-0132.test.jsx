@@ -105,7 +105,8 @@ describe("Spec 0132: malzeme paneli", () => {
     yaz("Bant 2 alt sınırı", "151"); kaydet();
     expect(durum.malzemeler.find(m => m.ad === "Bantlı").bantlar).toEqual([{ alt: 0, fiyat: 2.8 }, { alt: 151, fiyat: 3 }]);
   });
-  it("AC-14 / AC-61: boş bırakılan alanlar kayda yazılmaz; geldiği boy, asgari sipariş ve fire saklanır", () => {
+  // Spec 0143 ile (A-R3): geldiği boy alanı kalktı; asgari sipariş ve fire aynen.
+  it("AC-14 / AC-61 (spec 0143 ile): boş bırakılan alanlar kayda yazılmaz; asgari sipariş ve fire saklanır", () => {
     render(<Panel m0={[]} />);
     fireEvent.click(screen.getByRole("button", { name: /Yeni Malzeme/ }));
     yaz("Malzeme adı", "Sade"); kaydet();
@@ -113,12 +114,14 @@ describe("Spec 0132: malzeme paneli", () => {
     expect(typeof id).toBe("number");
     expect(geri).toEqual({ ad: "Sade" });
     fireEvent.click(screen.getByRole("button", { name: "Sade düzenle" }));
-    yaz("Geldiği boy", "6"); yaz("Asgari sipariş", "250"); yaz("Varsayılan fire", "8"); kaydet();
+    expect(screen.queryByLabelText("Geldiği boy")).toBeNull();
+    yaz("Asgari sipariş", "250"); yaz("Varsayılan fire", "8"); kaydet();
     // Spec 0139 ile (A-R16, AC-53): fire değişince kayıt etki özetini onay olarak gösterir; onaylanınca yazılır.
     expect(screen.getByTestId("fire-etki-onayi")).toBeTruthy();
     const kaydetler = screen.getAllByRole("button", { name: /Kaydet/ });
     fireEvent.click(kaydetler[kaydetler.length - 1]);
-    expect(durum.malzemeler[0]).toMatchObject({ ad: "Sade", geldigiBoy: 6, asgariSiparis: 250, fire: 8 });
+    expect(durum.malzemeler[0]).toMatchObject({ ad: "Sade", asgariSiparis: 250, fire: 8 });
+    expect(durum.malzemeler[0]).not.toHaveProperty("geldigiBoy");
   });
   it("AC-15 / AC-75 / AC-76: ana tedarikçi canlı tedarikçilerden, hammadde işaretliler başta; yetkisizde alan yok, saklı bağ korunur", () => {
     render(<Panel />);

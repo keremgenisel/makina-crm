@@ -832,6 +832,15 @@ function SiparisBelgesi0142() {
   // Belge kendi stiliyle sayfanın içine çizilir (iframe içeriği aracın "boş ekran" ölçüsüne girmiyordu).
   return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
+// Spec 0143: boydan sipariş işareti (parça kartı, sipariş penceresi, belge). Ø35 dayama 70 × 45,71 mm, 400 mm çubuk → 8 boy.
+const DAYAMA_0143 = (o = {}) => ({ id: 70, ad: "Dayama", kod: "DY-35", models: [], maliyetKalemleri: [{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 35, boy: 45.71, adet: 1, boydanSiparis: true, cubukBoyu: 400, ...o }] });
+const KILOLU_0143 = { id: 71, ad: "Kapak mili", kod: "KM-40", models: [], maliyetKalemleri: [{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 40, boy: 120, adet: 1 }] };
+const VERI_0143 = { modeller: [{ model: "AK100_DS", defaultParcalar: [{ partId: "70", miktar: 1 }, { partId: "71", miktar: 1 }] }], parts: [DAYAMA_0143(), KILOLU_0143], malzemeler: MALZEME_0132, tedarikciler: [{ id: 11, ad: "Ana Çelik", hammadde: true }] };
+const siparis0143 = () => <SiparisEkrani modeller={VERI_0143.modeller} parts={VERI_0143.parts} malzemeler={VERI_0143.malzemeler} tedarikciler={VERI_0143.tedarikciler} stok={[]} />;
+function SiparisBelgesi0143() {
+  const r = siparisIhtiyaci0142({ modeller: VERI_0143.modeller, satirlar: [{ model: "AK100_DS", adet: "70" }], parts: VERI_0143.parts, partStock: [], malzemeler: VERI_0143.malzemeler, tedarikciler: VERI_0143.tedarikciler }, { tedarikciOdakli: true });
+  return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: siparisRaporuHtml0142(r, { bugun: "2026-11-12", factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi" }) }} />;
+}
 // Spec 0097: Parti Hesabı'nın tarihli satırları ve dönem kilitli pay; veri tests/fixtures/0097-veri.js (motor ve ekran testleriyle aynı).
 function MaliyetEkrani0097() {
   const [uretimPartileri, setUretimPartileri] = useState(V97.PARTILER);
@@ -1091,8 +1100,8 @@ const EKRANLAR = {
   "katalog-malzeme-0139-duzenle": [ayarlar("malzemeler", { malzemeler: MALZEME_0139.slice(0, 1), rawParts: PARCA_0139 }), ["baslik:Düzenle", "kaydir:Çap bandına göre ek fire (kg)"]],
   "katalog-malzeme-0139-hata": [ayarlar("malzemeler", { malzemeler: MALZEME_0139.slice(0, 1), rawParts: PARCA_0139 }), ["baslik:Düzenle", "doldur:Fire bandı 3 alt çapı=10", "Kaydet", "kaydir:Çap bandına göre ek fire (kg)"]],
   "katalog-malzeme-0139-etki": [ayarlar("malzemeler", { malzemeler: MALZEME_0139.slice(0, 1), parts: PARCA_0139, rawParts: PARCA_0139 }), ["baslik:Düzenle", "doldur:Fire bandı 3 kilogramı=0,50", "Kaydet"]],
-  "katalog-parca-0139-fire": [ayarlar("yedekparca", { parts: PARCA_0139.slice(0, 1), malzemeler: MALZEME_0139, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Pay dahil ağırlık"]],
-  "katalog-parca-0139-boy": [ayarlar("yedekparca", { parts: PARCA_0139.slice(1), malzemeler: MALZEME_0139, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Boy fiyatından hesaplanan parçada çap bandına"]],
+  "katalog-parca-0139-fire": [ayarlar("yedekparca", { parts: PARCA_0139.slice(0, 1), malzemeler: MALZEME_0139, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Sipariş boydan verilir"]], // spec 0143 ile: 0141 sonrası kalmış "Pay dahil ağırlık" adımı bulunamıyordu
+  "katalog-parca-0139-boy": [ayarlar("yedekparca", { parts: PARCA_0139.slice(1), malzemeler: MALZEME_0139, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Sipariş boydan verilir"]], // spec 0143 ile: boy yöntemi ve "uygulanmadı" satırı kalktı
   "veri-0139-aktar-bos": [ayarlar("malzemeaktar", { malzemeler: K139.KARTLAR }), []],
   "veri-0139-aktar-onizleme": [<AktarEkrani />, ["kaydir:Önizleme (henüz"]],
   "veri-0139-aktar-on-kosul": [<AktarEkrani malzemeler={K139.KARTLAR.filter(k => k.id !== 902 && k.id !== 906)} />, ["kaydir:Önizleme (henüz"]],
@@ -1210,6 +1219,11 @@ const EKRANLAR = {
   "siparis-0142-bolum": [siparis0142(), ["kaydirgenis:Beta Plastik"]],
   "siparis-0142-olcu": [siparis0142(), ["~Parça ihtiyacı", "kaydir:Parça ihtiyacı"]],
   "siparis-0142-belge": [<SiparisBelgesi0142 />, []],
+  "katalog-parca-0143-boydan": [ayarlar("yedekparca", { parts: [DAYAMA_0143()], malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Sipariş boydan verilir"]],
+  "katalog-parca-0143-uyari": [ayarlar("yedekparca", { parts: [DAYAMA_0143({ cubukBoyu: 40 })], malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Sipariş boydan verilir"]],
+  "katalog-parca-0143-kilo": [ayarlar("yedekparca", { parts: [KILOLU_0143], malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Sipariş boydan verilir"]],
+  "siparis-0143-pencere": [siparis0143(), ["kaydirgenis:Malzeme · kesit"]],
+  "siparis-0143-belge": [<SiparisBelgesi0143 />, []],
   "siparis-0140-bos": [<SiparisEkrani partiler={[]} />, []],
   "siparis-0140-model-hatali": [<SiparisEkrani partiler={[{ ...PARTI_0134[0], planlananAdetler: { AK100_DS: 70, YOK_MODEL: 4 } }]} />, []],
   "siparis-0140-silinmis-tedarikci": [<SiparisEkrani malzemeler={[{ ...F34.P304, tedarikciId: 99 }]} hamTed={[...F34.TED, { id: 99, ad: "Eski Döküm", deletedAt: "2026-09-01" }]} />, ["kaydir:Eski Döküm"]],

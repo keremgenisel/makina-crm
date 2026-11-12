@@ -90,7 +90,7 @@ describe("Spec 0142 F: belgenin bölümleri", () => {
     expect(belge(r).flatMap(b => b.satirlar.map(x => x.ad))).not.toContain("Elle");
   });
   it("AC-39 / AC-49 (motor): kapatılmış ya da hatalı kesit toplama girmez; parçası açıksa uyarı işareti", () => {
-    const r = odakli({}, { duzenleme: { parca: {}, kesit: { "501|kilo|mil|50": { kapali: true }, "501|kilo|mil|40": { deger: "abc" } } } });
+    const r = odakli({}, { duzenleme: { parca: {}, kesit: { "501|kilo||mil|50": { kapali: true }, "501|kilo||mil|40": { deger: "abc" } } } });
     const alfa = bolumu(r, "Alfa Çelik");
     expect(alfa.toplam.map(k => k.kesitMetni)).not.toContain("Ø50");
     expect(alfa.toplam.map(k => k.kesitMetni)).not.toContain("Ø40");
@@ -114,7 +114,7 @@ describe("Spec 0142 F: belgenin bölümleri", () => {
     expect(gama.satirlar.map(x => x.ad)).toEqual(["Boru", "Boy mil", "Elle", "Çöpteki malzemeli"]);
   });
   it("AC-56: bütün parçaları kapatılmış, kesidine elle kilo yazılmış bölüm toplamıyla kalır", () => {
-    const r = odakli({}, { duzenleme: { parca: { 6: { kapali: true }, 11: { kapali: true } }, kesit: { "502|kilo|sac|30|60": { deger: "40" } } } });
+    const r = odakli({}, { duzenleme: { parca: { 6: { kapali: true }, 11: { kapali: true } }, kesit: { "502|kilo||sac|30|60": { deger: "40" } } } });
     const beta = bolumu(r, "Beta Plastik");
     expect(beta.satirlar.filter(x => x.ad !== "Kalın mil")).toEqual([]);
     expect(beta.toplam.map(k => [k.kesitMetni, k.siparisKg, k.elle])).toEqual([["30 × 60", 40, true]]);
@@ -125,11 +125,12 @@ describe("Spec 0142 F: belgenin bölümleri", () => {
     expect(x).toBeTruthy(); expect(x.malzemeAdlari).toEqual([]);
     expect(belge(r).flatMap(b => b.satirlar.map(s => s.ad))).not.toContain("Malzemesi yok");
   });
-  it("AC-13 / AC-14 / AC-15 (motor): toplam bölümün kesit satırlarından; boy yönteminde boy adedi; malzeme satırı yoksa toplam yok", () => {
-    const r = odakli();
+  // Spec 0143 ile: boy fiyatı yöntemi kalktı; boy adedi "Sipariş boydan verilir" işaretli kalemden (çubuk 6000 mm: 70 × 400 ÷ 6000 = 4,67 → 5).
+  it("AC-13 / AC-14 / AC-15 (motor, spec 0143 ile): toplam bölümün kesit satırlarından; işaretli kalemde boy adedi; malzeme satırı yoksa toplam yok", () => {
+    const r = odakli({ parts: PARCALAR.map(p => (p.id === 7 ? { ...p, maliyetKalemleri: p.maliyetKalemleri.map(k => ({ ...k, boydanSiparis: true, cubukBoyu: 6000 })) } : p)) });
     expect(bolumu(r, "Alfa Çelik").toplam.length).toBe(7);
-    const boy = bolumu(r, "Gama Boru").toplam.find(k => k.yontem === "boy");
-    expect(boy.boyAdedi).toBe(5); expect(boy.siparisKg).toBeNull();
+    const boy = bolumu(r, "Gama Boru").toplam.find(k => k.boydanSiparis);
+    expect(boy.boyAdedi).toBe(5); expect(boy.siparisKg).toBeCloseTo(5 * boy.tamKg, 9);
     expect(bolumu(r, "Delta Hırdavat").toplam).toEqual([]);
   });
   it("seçim belgeye de uygulanır", () => {

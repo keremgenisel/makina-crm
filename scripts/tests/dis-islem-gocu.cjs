@@ -3,6 +3,7 @@
 // kurulumda bayrak yazılır, yedek alınmaz; katalog bağlı kalem serbest kaleme çevrilir (adet tutarlı, kilo/çöp/fiyatsız/kayıtsız
 // tutarsız, yer tutucu ad); kalem sırası ve parçanın öteki alanları değişmez; değişecek parça varken yedek alınır, yokken alınmaz;
 // ikinci açılışta göç çalışmaz; ölü tablo satırları yerinde kalır.
+// Spec 0143 ile (triyaj bulgu 3): boy göçü `yontem` anahtarını her değerde sildiği için bu betiğin kalemlerinden `yontem: "kilo"` çıkarıldı.
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
@@ -35,7 +36,7 @@ check("AC-34: temiz kurulumda blob'da dış işlem bölümü yok, tablo şemada 
 check("AC-28: temiz kurulumda yedek alınmadı", yedekler().length === 0);
 
 // 2) Bu sürümden önce başka bir bilgisayarda katalog bağlı kalem eklenmiş veritabanı (bayrak yok).
-const MALZEME = { tur: "malzeme", malzemeId: 501, bicim: "mil", yontem: "kilo", cap: 50, boy: 120, adet: 2 };
+const MALZEME = { tur: "malzeme", malzemeId: 501, bicim: "mil", cap: 50, boy: 120, adet: 2 };
 const SERBEST = { tur: "islem", ad: "Lazer kesim", tedarikciId: 802, tutar: 42.5 };
 const PARTS = [
   { id: 1, ad: "Karma", kod: "K1", fiyatTRY: 900, models: ["AK100"], emniyetPayi: 5, maliyetKalemleri: [MALZEME, { tur: "islem", islemId: 701, miktar: 2 }, SERBEST] },

@@ -20,7 +20,7 @@ import { ornekMalzemeler, ORNEK_DUGMESI, ORNEK_IPUCU } from "../lib/ornekKatalog
 export const MALZEME_EKLE = "Yeni Malzeme";
 export const FIYAT_GUNCELLE = "Fiyatı Güncelle";
 export const GUNUN_KURU_DUGMESI = "Günün kurunu kullan";
-export const FIYAT_KARTTA_NOTU = "Fiyat, para birimi, kur, bantlar ve boy fiyatı \"Fiyatı Güncelle\" penceresinden değişir; değişiklik tarihli geçmişe yazılır.";
+export const FIYAT_KARTTA_NOTU = "Fiyat, para birimi, kur ve bantlar \"Fiyatı Güncelle\" penceresinden değişir; değişiklik tarihli geçmişe yazılır."; // spec 0143: boy fiyatı yok
 const BOS_FORM = malzemeFormu({});
 
 // Fiyat kümesinin çap bandı tablosu (fiyat kümesine girer). Kartta (yeni malzeme) ek fire tablosunun ALTINDA ayrı çizilir
@@ -84,10 +84,7 @@ export const FiyatAlanlari = ({ form, set, hatalar = {}, rates, ratesErr, bantGo
         </Field>
       )}
       {bantGoster && <FiyatBantlariAlani form={form} set={set} hatalar={hatalar} />}
-      <Field label="Boy fiyatı (bir boy, KDV hariç; boy yöntemli parçalar için)">
-        <Input value={form.boyFiyati} onChange={e => set("boyFiyati", e.target.value)} placeholder="0,00" aria-label="Boy fiyatı" />
-        <HataMetni>{hatalar.boyFiyati}</HataMetni>
-      </Field>
+      {/* Spec 0143 A-R2, AC-2, AC-4: boy fiyatı alanı yok (maliyet her zaman kilodan; boy başına fiyat kilo fiyatına çevrilip girilir). */}
     </>
   );
 };
@@ -142,7 +139,7 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
   const kaydet = () => {
     const eski = form.id == null ? null : malzemeler.find(m => String(m.id) === String(form.id));
     // Düzenlemede fiyat kümesi formda yoktur; eskisinden taşınır (değişikliği yalnız pencere yapar, R6).
-    const kaynak = eski ? { ...form, ...malzemeFormu(eski), ad: form.ad, alasim: form.alasim, ozgulAgirlik: form.ozgulAgirlik, geldigiBoy: form.geldigiBoy,
+    const kaynak = eski ? { ...form, ...malzemeFormu(eski), ad: form.ad, alasim: form.alasim, ozgulAgirlik: form.ozgulAgirlik,
       asgariSiparis: form.asgariSiparis, fire: form.fire, fireBantlari: form.fireBantlari, // spec 0139 A-R1/2, AC-47
       tedarikciId: giderYetki ? form.tedarikciId : malzemeFormu(eski).tedarikciId } : form;
     const v = malzemeDogrula(kaynak, malzemeler, form.id);
@@ -246,7 +243,7 @@ export const MalzemeManager = ({ malzemeler = [], setMalzemeler, parts = [], ted
           <div data-testid="malzeme-olcu-alanlari" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
             <Field label="Özgül ağırlık (g/cm³)"><Input value={form.ozgulAgirlik} onChange={e => set("ozgulAgirlik", e.target.value)} placeholder="7,85" aria-label="Özgül ağırlık" /><HataMetni>{hatalar.ozgulAgirlik}</HataMetni></Field>
             <Field label="Varsayılan fire (%)"><Input value={form.fire} onChange={e => set("fire", e.target.value)} placeholder="0" aria-label="Varsayılan fire" /><HataMetni>{hatalar.fire}</HataMetni></Field>
-            <Field label="Geldiği boy (metre)"><Input value={form.geldigiBoy} onChange={e => set("geldigiBoy", e.target.value)} placeholder="6" aria-label="Geldiği boy" /><HataMetni>{hatalar.geldigiBoy}</HataMetni></Field>
+            {/* Spec 0143 A-R3, AC-3: geldiği boy alanı yok; çubuk boyu parçanın malzeme kaleminde ("Sipariş boydan verilir"). */}
             <Field label="Asgari sipariş (kilogram)"><Input value={form.asgariSiparis} onChange={e => set("asgariSiparis", e.target.value)} aria-label="Asgari sipariş" /><HataMetni>{hatalar.asgariSiparis}</HataMetni></Field>
           </div>
           <BolumBasligi ust>Fiyat</BolumBasligi>

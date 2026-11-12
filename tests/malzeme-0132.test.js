@@ -151,11 +151,12 @@ describe("Spec 0132: fiyat geçmişi", () => {
     const r = M.fiyatGecmisiYaz(P304, { ...P304, kur: 51 }, { tarih: B, bugun: B });
     expect(r.gecmis).toHaveLength(2); expect(r.gecmis[1].kur).toBe(51); expect(r.gecmis[0].kur).toBe(50);
   });
-  it("AC-80: yalnız bir bandın fiyatı değişince yeni satır doğar (Karar 25: boy fiyatı da kümede)", () => {
+  // Spec 0143 ile (A-R2/2): boy fiyatı kümeden kalktı; yalnız onun değişmesi geçmiş doğurmaz.
+  it("AC-80 (spec 0143 ile): yalnız bir bandın fiyatı değişince yeni satır doğar; boy fiyatı kümede değil", () => {
     const b = { ...P304, bantlar: [{ alt: 0, fiyat: 2.9 }, { alt: 151, fiyat: 3.1 }] };
     const r = M.fiyatGecmisiYaz(b, { ...b, bantlar: [{ alt: 0, fiyat: 2.9 }, { alt: 151, fiyat: 3.3 }] }, { tarih: B, bugun: B });
     expect(r.gecmis).toHaveLength(2); expect(r.gecmis[1].bantlar[1].fiyat).toBe(3.3);
-    expect(M.fiyatGecmisiYaz(b, { ...b, boyFiyati: 900 }, { tarih: B, bugun: B }).gecmis).toHaveLength(2);
+    expect(M.fiyatGecmisiYaz(b, { ...b, boyFiyati: 900 }, { tarih: B, bugun: B }).gecmis).toEqual([]);
     // Fiyatla ilgisiz alan (ad, özgül ağırlık) geçmiş doğurmaz.
     expect(M.fiyatGecmisiYaz(b, { ...b, ad: "Yeni ad", ozgulAgirlik: 8 }, { tarih: B, bugun: B }).gecmis).toEqual([]);
   });
@@ -234,11 +235,14 @@ describe("Spec 0132: malzemeden ağırlık ve maliyet", () => {
     expect(parcaMaliyetKurus(p, undefined, undefined, k)).toBeNull();
     expect(maliyetGirildiMi(p, undefined, undefined, k)).toBe(false);
   });
-  it("AC-44: boy yönteminde maliyet boy fiyatı ve uzunluktan; kilo hesabı yapılmaz", () => {
-    const m = { id: 4, ad: "Boru", paraBirimi: "TRY", boyFiyati: 600, geldigiBoy: 6 };
-    const o = oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" }, kat(m)); // spec 0141 ile katlanmış boy
-    expect(o.hamKg).toBeNull();
-    expect(o.maliyetK).toBe(Math.round((180 / 6000) * 600 * 100)); // 18,00 ₺
+  // Spec 0143 ile (C7): boy fiyatı yöntemini ölçen AC-44, AC-67, AC-68 ve AC-69 silindi; yerine yöntemin artık okunmadığı ölçülür.
+  it("AC-44 (spec 0143 ile): eski `yontem: \"boy\"` kalemin maliyeti kilodan; boy fiyatı ve geldiği boy okunmaz", () => {
+    const m = { id: 4, ad: "Boru", paraBirimi: "TRY", ozgulAgirlik: 8, kiloFiyati: 200, boyFiyati: 600, geldigiBoy: 6 };
+    const eski = oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" }, kat(m));
+    const kilo = oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180 }, kat(m));
+    expect(eski).toEqual(kilo); expect(eski.hamKg).toBeGreaterThan(0);
+    expect(eski).not.toHaveProperty("yontem"); expect(eski).not.toHaveProperty("oran");
+    expect(oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" }, kat({ id: 4, ad: "B", boyFiyati: 600, geldigiBoy: 6 })).maliyetK).toBeNull();
   });
   it("AC-45: ölçüsü eksik satır kaydedilir ama girilmedi döner", () => {
     const v = M.malzemeSatiriDogrula({ malzemeId: "1", bicim: "mil", cap: "140", boy: "" });
@@ -249,19 +253,6 @@ describe("Spec 0132: malzemeden ağırlık ve maliyet", () => {
     expect(M.malzemeSatiriDogrula({ malzemeId: 1, bicim: "mil", cap: "0", boy: "10" }).hatalar.cap).toBe(M.OLCU_HATASI);
     expect(M.malzemeSatiriDogrula({ malzemeId: 1, bicim: "mil", cap: "-3", boy: "10" }).hatalar.cap).toBe(M.OLCU_HATASI);
     // Spec 0141 ile (A-R5): pay doğrulaması ve PAY_HATASI kalktı; karşılığı tests/isleme-payi-0141.test.js AC-10.
-  });
-  it("AC-67: boy yönteminde özgül ağırlık istenmez", () => {
-    const m = { id: 4, ad: "Boru", boyFiyati: 600, geldigiBoy: 6 };
-    expect(oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" }, kat(m)).maliyetK).toBe(1800);
-  });
-  it("AC-68: boy yönteminde geldiği boy ya da boy fiyatı boşsa girilmedi", () => {
-    const s = { malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" };
-    expect(oz(s, kat({ id: 4, ad: "B", boyFiyati: 600 })).maliyetK).toBeNull();
-    expect(oz(s, kat({ id: 4, ad: "B", geldigiBoy: 6 })).maliyetK).toBeNull();
-  });
-  it("AC-69: boy yönteminde fire uzunluk oranına aynı yüzdeyle uygulanır", () => {
-    const m = { id: 4, ad: "Boru", boyFiyati: 600, geldigiBoy: 6, fire: 10 };
-    expect(oz({ malzemeId: 4, bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" }, kat(m)).maliyetK).toBe(1980);
   });
   it("AC-70: bandı ham çap seçer (spec 0141 ile girilen çap: 144'ün bandı)", () => {
     const b = { ...P304, bantlar: [{ alt: 0, fiyat: 2.5 }, { alt: 142, fiyat: 3 }] };

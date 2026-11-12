@@ -122,10 +122,11 @@ describe("Spec 0141 C: kalanlar", () => {
     expect(r.kesitler[0].siparisKg).toBe(20);
     expect(r.kesitler[0].asgariFark).toBeGreaterThan(0);
   });
-  it("AC-32: boy yöntemli kalemin oranı ve boy fiyatı davranışı değişmez (180 / 6000 × 600 TL)", () => {
+  // Spec 0143 ile (C7): boy fiyatı yöntemi kalktı; boy fiyatlı, özgül ağırlıksız kartta eski boy kalemi artık "girilmedi".
+  it("AC-32 (spec 0143 ile): eski boy yöntemli kalem kilodan hesaplanır; boy fiyatı okunmaz", () => {
     const r = oz({ bicim: "boru", cap: 19, et: 1.5, boy: 180, yontem: "boy" }, { id: 4, ad: "Boru", boyFiyati: 600, geldigiBoy: 6 });
-    expect(r.maliyetK).toBe(1800);
-    expect(r.hamKg).toBeNull();
+    expect(r.maliyetK).toBeNull();
+    expect(r.eksik).toContain(M.EKSIK_OZGUL);
   });
 });
 

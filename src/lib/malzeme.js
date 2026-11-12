@@ -3,10 +3,14 @@
 // `urunAgaci.parcaMaliyetKurus` kalır; o, malzeme satırı olan parçada `malzemeParcaKurus`'u çağırır.
 //
 // Malzeme kaydı (bölüm `malzemeler`, C5/2): { id, ad, alasim, ozgulAgirlik (g/cm³), kiloFiyati, paraBirimi (TRY|USD|EUR), kur
-// (1 birim kaç TL), bantlar: [{ alt, fiyat }], boyFiyati, geldigiBoy (metre, R2/2), tedarikciId, asgariSiparis (kilogram, R2/2),
-// fire (yüzde), fireBantlari: [{ alt (ham çap, mm), kg }] (spec 0139, fiyat kümesine girmez), fiyatGecmisi: [{ gecerli, kiloFiyati, paraBirimi, kur, bantlar, boyFiyati }], deletedAt }. Boş alan kayda yazılmaz.
-// Parçanın malzeme satırı (Karar 28, tek satır): parts[].malzemeSatiri = { malzemeId, bicim, yontem, cap, et, kalinlik, genislik,
-// en, boy, fire }. Spec 0141 ile işleme payı alanları kalktı: girilen ölçü satın alınan ölçüdür; kayıtta kalmış pay form açılışında
+// (1 birim kaç TL), bantlar: [{ alt, fiyat }], tedarikciId, asgariSiparis (kilogram, R2/2), fire (yüzde), fireBantlari: [{ alt
+// (ham çap, mm), kg }] (spec 0139, fiyat kümesine girmez), fiyatGecmisi: [{ gecerli, kiloFiyati, paraBirimi, kur, bantlar }], deletedAt }.
+// Boş alan kayda yazılmaz. Spec 0143 A-R2, A-R3: boy fiyatı ve geldiği boy kalktı (iki sütun şemada ölü; eski geçmiş satırlarındaki
+// boy fiyatı okunmaz).
+// Parçanın malzeme satırı (Karar 28, tek satır): parts[].malzemeSatiri = { malzemeId, bicim, cap, et, kalinlik, genislik,
+// en, boy, fire, boydanSiparis, cubukBoyu (mm) }. Spec 0143: maliyet her zaman kilodan; "Sipariş boydan verilir" yalnız siparişi
+// etkiler (B-R1), eski `yontem` anahtarı `electron/boyGocuSaf.mjs` ile çevrilir.
+// Spec 0141 ile işleme payı alanları kalktı: girilen ölçü satın alınan ölçüdür; kayıtta kalmış pay form açılışında
 // ve tek türetmede (`maliyetKalemleriOf`) `electron/islemePayiGocuSaf.mjs` ile ölçüye katlanır.
 import { tutarCoz, kurus } from "./gider";
 import { islemePayiKatla } from "../../electron/islemePayiGocuSaf.mjs"; // spec 0141 A-R1/2, karar 33
@@ -35,7 +39,11 @@ export const BICIMLER = {
   sac: { ad: "Sac", olculer: ["kalinlik", "en", "boy"], capli: false },
 };
 export const BICIM_SIRASI = ["mil", "boru", "lama", "sac"];
-export const YONTEMLER = { kilo: "Kilo fiyatından", boy: "Boy fiyatından" };
+// Spec 0143 B-R1, B-R2, B-R2/2, B-R8: boydan sipariş işaretinin metinleri.
+export const BOYDAN_SIPARIS_ETIKETI = "Sipariş boydan verilir";
+export const CUBUK_BOYU_ETIKETI = "Çubuk boyu (mm)";
+export const CUBUK_BOYU_HATASI = "Sipariş boydan verilirken çubuk boyu girilmeli; sıfırdan büyük bir sayı olmalı.";
+export const CUBUK_KISA_UYARISI = "Parçanın boyu çubuk boyundan uzun; sipariş listesinde bu kalemin boy adedi hesaplanmaz.";
 
 // ── Sayı yardımcıları ───────────────────────────────────────────────────────────────────────────────────────────────────
 // Triyaj (bulgu 2): `tutarCoz` virgülsüz "2.955"i binlik sayar (2955). Kilo fiyatı ve özgül ağırlık 3-4 ondalıkla yazılır; bu
@@ -94,18 +102,18 @@ export const ekFireKg = (m, bicim, hamCap) => {
 
 // ── Fiyat kümesi ve tarihli geçmiş (R6, R6/2, Karar 25, C3) ──────────────────────────────────────────────────────────────
 // Kümenin alanları; geçmişin bir satırı bu alanların anlık görüntüsüdür.
-export const FIYAT_ALANLARI = ["kiloFiyati", "paraBirimi", "kur", "bantlar", "boyFiyati"];
+// Spec 0143 A-R2/2: boy fiyatı kümeden kalktı; eski geçmiş satırındaki anlık görüntü okunmaz.
+export const FIYAT_ALANLARI = ["kiloFiyati", "paraBirimi", "kur", "bantlar"];
 export const fiyatKumesi = (m) => {
   const k = {};
   if (sayiOf(m?.kiloFiyati) != null) k.kiloFiyati = sayiOf(m.kiloFiyati);
   k.paraBirimi = paraOf(m);
   if (sayiOf(m?.kur) != null) k.kur = sayiOf(m.kur);
   const b = bantlarOf(m); if (b.length) k.bantlar = b;
-  if (sayiOf(m?.boyFiyati) != null) k.boyFiyati = sayiOf(m.boyFiyati);
   return k;
 };
-const kumeAnahtari = (k) => JSON.stringify([k.kiloFiyati ?? null, k.paraBirimi || "TRY", k.kur ?? null, k.bantlar || [], k.boyFiyati ?? null]);
-const kumeBosMu = (k) => k.kiloFiyati == null && !(k.bantlar && k.bantlar.length) && k.boyFiyati == null;
+const kumeAnahtari = (k) => JSON.stringify([k.kiloFiyati ?? null, k.paraBirimi || "TRY", k.kur ?? null, k.bantlar || []]);
+const kumeBosMu = (k) => k.kiloFiyati == null && !(k.bantlar && k.bantlar.length);
 export const fiyatGecmisiOf = (m) => (Array.isArray(m?.fiyatGecmisi) ? m.fiyatGecmisi : [])
   .map(x => ({ ...fiyatKumesi(x), gecerli: x?.gecerli || "" }))
   .sort((a, b) => (a.gecerli < b.gecerli ? -1 : a.gecerli > b.gecerli ? 1 : 0));
@@ -151,7 +159,6 @@ export const kumeOzeti = (k) => {
   const parcalar = [];
   if (k.kiloFiyati != null) parcalar.push(`${fiyatMetni(k.kiloFiyati, pb)}/kg`);
   if (k.bantlar?.length) parcalar.push(`${k.bantlar.length} bant`);
-  if (k.boyFiyati != null) parcalar.push(`boy ${fiyatMetni(k.boyFiyati, pb)}`);
   if (dovizMi(pb)) parcalar.push(k.kur != null ? `kur ${fmtSayi(k.kur)}` : "kur girilmedi");
   return parcalar.length ? parcalar.join(" · ") : "fiyat girilmedi";
 };
@@ -161,8 +168,6 @@ export const EKSIK_OZGUL = "özgül ağırlık girilmedi";
 export const EKSIK_KILO = "kilo fiyatı girilmedi";
 export const EKSIK_KUR = "kur girilmedi";
 export const EKSIK_PARA = "para birimi tanınmıyor";
-export const EKSIK_BOY_FIYATI = "boy fiyatı girilmedi";
-export const EKSIK_BOY = "malzemenin geldiği boy girilmedi";
 // Triyaj (bulgu 4, Karar 44): bant varken çaplı biçim tek kilo fiyatına bakmaz (her ham çap bir banda düşer, Karar 26); tek fiyat
 // yalnız bantsız malzemede ya da lama ve sacda gerekir. Rozet bu durumda dar metni yazar.
 export const EKSIK_KILO_LAMA = "lama ve sac için tek kilo fiyatı girilmedi";
@@ -223,13 +228,19 @@ export const agirlikKg = (bicim, olculer, ozgulAgirlik) => {
   return h == null || ro == null || ro <= 0 ? null : (h * ro) / 1e6;
 };
 
-// Spec 0134 C2/2, Karar 43: bir tam boyun ağırlığı AYNI ağırlık fonksiyonuyla; ölçü nesnesinin boyu malzemenin geldiği boyuyla
-// (metre → mm) değiştirilir. Sipariş motoru özgül ağırlığa dokunmaz, bu yardımcıyı çağırır. Eksik veride null.
+// Spec 0134 C2/2, Karar 43: bir tam çubuğun ağırlığı AYNI ağırlık fonksiyonuyla; ölçü nesnesinin boyu çubuk boyuyla değiştirilir.
+// Spec 0143 B-R9/2 (AC-42): çubuk boyu KALEMDEN okunur (mm); malzeme yalnız özgül ağırlığı verir. Eksik veride null.
 export const tamBoyKg = (satir, malzeme) => {
   const o = hamOlculer(satir);
-  const boyM = sayiOf(malzeme?.geldigiBoy);
-  if (!o || boyM == null || boyM <= 0) return null;
-  return agirlikKg(satir.bicim, { ...o, boy: boyM * 1000 }, malzeme?.ozgulAgirlik);
+  const cubuk = sayiOf(satir?.cubukBoyu);
+  if (!o || cubuk == null || cubuk <= 0) return null;
+  return agirlikKg(satir.bicim, { ...o, boy: cubuk }, malzeme?.ozgulAgirlik);
+};
+// Spec 0143 B-R2/2, B-R8: parçanın boyu çubuk boyundan uzun mu (yalnız işaretli kalemde anlamlı; uyarı engellemez).
+export const cubukKisaMi = (satir) => {
+  if (!satir?.boydanSiparis) return false;
+  const o = hamOlculer(satir); const c = sayiOf(satir.cubukBoyu);
+  return !!o && c != null && c > 0 && o.boy > c;
 };
 // Spec 0134 R12/2: satırın kesit anahtarı için ham ölçüler (boy hariç) biçimin sırasıyla.
 export const hamKesit = (satir) => {
@@ -237,7 +248,8 @@ export const hamKesit = (satir) => {
   return b && o ? b.olculer.filter(ad => ad !== "boy").map(ad => o[ad]) : null;
 };
 // R12/2, R14/2, AC-38, AC-44: TEK hesap. Dönüş: { maliyetK, eksik (neden dizisi), hamKg, fireliKg, fire, fiyat, bant, kur,
-// paraBirimi, yontem, oran }. maliyetK null = "girilmedi" (asla sıfır, R7). Ara değerler yuvarlanmaz; yalnız kuruşa (Karar 30).
+// paraBirimi }. Spec 0143 A-R1, A-R4, A-R4/3: boy dalı ve dönüşün `yontem`/`oran` alanları kalktı; maliyet her zaman kilodan.
+// maliyetK null = "girilmedi" (asla sıfır, R7). Ara değerler yuvarlanmaz; yalnız kuruşa (Karar 30).
 export const malzemeOzeti = (satir, malzemeKat, tarih) => {
   const bos = (eksik) => ({ maliyetK: null, eksik, hamKg: null, fireliKg: null });
   if (!(malzemeKat instanceof Map)) return bos(["malzeme listesi verilmedi"]);
@@ -246,29 +258,18 @@ export const malzemeOzeti = (satir, malzemeKat, tarih) => {
   const b = BICIMLER[satir.bicim];
   if (!b) return bos(["biçim seçilmedi"]);
   const o = hamOlculer(satir);
-  const yontem = satir.yontem === "boy" ? "boy" : "kilo";
   const fire = fireOf(satir, m);
   const k = fiyatKumesiTarihte(m, tarih);
   const pb = k.paraBirimi;
   const eksik = [];
   if (!o) eksik.push("ölçü eksik");
-  if (yontem === "boy") {
-    eksik.push(...kumeEksikleri(k, { kilo: false }));
-    if (k.boyFiyati == null) eksik.push(EKSIK_BOY_FIYATI);
-    if (!pozitifMi(m.geldigiBoy)) eksik.push(EKSIK_BOY);
-    if (eksik.length) return { ...bos(eksik), yontem, fire };
-    const kur = dovizMi(pb) ? k.kur : 1;
-    const oran = o.boy / (sayiOf(m.geldigiBoy) * 1000);
-    const tl = oran * (1 + fire / 100) * k.boyFiyati * kur;
-    return { maliyetK: kurus(tl), eksik: [], hamKg: null, fireliKg: null, fire, oran, fiyat: k.boyFiyati, kur, paraBirimi: pb, yontem };
-  }
   if (!pozitifMi(m.ozgulAgirlik)) eksik.push(EKSIK_OZGUL);
   eksik.push(...kumeEksikleri(k, { capli: b.capli }));
   if (eksik.length) {
     // Spec 0139 A-R11/2: kilogram fire fiyatı eksik malzemede de ağırlığa girer (iki dal aynı formül).
     const hamKg = o ? agirlikKg(satir.bicim, o, m.ozgulAgirlik) : null;
     const ekKg = o ? ekFireKg(m, satir.bicim, o.cap) : 0;
-    return { maliyetK: null, eksik, hamKg, fireliKg: hamKg == null ? null : hamKg * (1 + fire / 100) + ekKg, fire, ekFireKg: ekKg, yontem };
+    return { maliyetK: null, eksik, hamKg, fireliKg: hamKg == null ? null : hamKg * (1 + fire / 100) + ekKg, fire, ekFireKg: ekKg };
   }
   const hamKg = agirlikKg(satir.bicim, o, m.ozgulAgirlik);
   // Spec 0139 A-R2, A-R2/2: fire kg = ham kg (spec 0141 ile girilen ölçünün ağırlığı) × yüzde / 100 + bandın kilogramı; ikisi birlikte uygulanır.
@@ -278,7 +279,7 @@ export const malzemeOzeti = (satir, malzemeKat, tarih) => {
   const bant = b.capli && bantlar.length ? bantSec(bantlar, o.cap) : null;
   const fiyat = bant && bant.fiyat != null ? bant.fiyat : k.kiloFiyati;
   const kur = dovizMi(pb) ? k.kur : 1;
-  return { maliyetK: kurus(fireliKg * fiyat * kur), eksik: [], hamKg, fireliKg, fire, ekFireKg: ekKg, fiyat, bant, kur, paraBirimi: pb, yontem };
+  return { maliyetK: kurus(fireliKg * fiyat * kur), eksik: [], hamKg, fireliKg, fire, ekFireKg: ekKg, fiyat, bant, kur, paraBirimi: pb };
 };
 export const malzemeParcaKurus = (satir, malzemeKat, tarih) => malzemeOzeti(satir, malzemeKat, tarih).maliyetK;
 
@@ -298,7 +299,6 @@ export const FIRE_KG_LAMA_NOTU = "Ek fire yalnız yuvarlak mil ve boruda uygulan
 export const FIRE_KG_IPUCU = "Bir parçanın ağırlığına eklenir; yüzde fireyle birlikte uygulanır. Bandı girilen çap seçer; en alt bandın altındaki çapa fire eklenmez.";
 export const FIRE_KG_SIRA_HATASI = "Bantların alt çapları artan sırada olmalı; iki bant aynı çapla başlayamaz.";
 export const FIRE_KG_HATASI = "Her bandın kilogramı girilmeli (fire yoksa 0 yazın), negatif olamaz.";
-export const FIRE_KG_BOY_NEDENI = "Boy fiyatından hesaplanan parçada çap bandına göre ek fire uygulanmaz; yalnız yüzde fire orana eklenir.";
 export const FIRE_KG_ALT_ETIKETI = "Alt çap (Ø, mm)";
 export const FIRE_KG_KG_ETIKETI = "Ek fire (kg)";
 export const FIRE_KG_BANT_EKLE = "Bant ekle";
@@ -363,8 +363,7 @@ export const malzemeDogrula = (form = {}, malzemeler = [], haricId = null) => {
   const pb = form.paraBirimi == null || form.paraBirimi === "" ? "TRY" : form.paraBirimi;
   if (!PARA_BIRIMLERI.includes(pb)) h.paraBirimi = PARA_HATASI; else if (pb !== "TRY") k.paraBirimi = pb;
   const alanlar = [
-    ["ozgulAgirlik", { pozitif: true }], ["kiloFiyati", {}], ["boyFiyati", {}], ["geldigiBoy", { pozitif: true }],
-    ["asgariSiparis", {}], ["fire", { ust: 100 }],
+    ["ozgulAgirlik", { pozitif: true }], ["kiloFiyati", {}], ["asgariSiparis", {}], ["fire", { ust: 100 }], // spec 0143: boy fiyatı ve geldiği boy yok
   ];
   for (const [ad2, o] of alanlar) {
     const r = alanDogrula(form[ad2], o);
@@ -384,7 +383,7 @@ const metin = (v) => (v == null ? "" : String(v).replace(".", ","));
 export const sayiMetni = metin;
 export const malzemeFormu = (m = {}) => ({
   ad: m.ad || "", alasim: m.alasim || "", ozgulAgirlik: metin(m.ozgulAgirlik), kiloFiyati: metin(m.kiloFiyati), paraBirimi: m.paraBirimi || "TRY",
-  kur: metin(m.kur), boyFiyati: metin(m.boyFiyati), geldigiBoy: metin(m.geldigiBoy), asgariSiparis: metin(m.asgariSiparis), fire: metin(m.fire),
+  kur: metin(m.kur), asgariSiparis: metin(m.asgariSiparis), fire: metin(m.fire),
   tedarikciId: m.tedarikciId == null ? "" : String(m.tedarikciId),
   bantlar: bantlarOf(m).map(b => ({ alt: metin(b.alt), fiyat: metin(b.fiyat) })),
   fireBantlari: fireBantlariOf(m).map(b => ({ alt: metin(b.alt), kg: metin(b.kg) })),
@@ -402,7 +401,6 @@ export const malzemeSatiriDogrula = (form) => {
   const k = { malzemeId: /^\d+$/.test(id) ? Number(id) : id };
   const b = BICIMLER[form.bicim];
   if (!b) h.bicim = BICIM_HATASI; else k.bicim = form.bicim;
-  if (form.yontem === "boy") k.yontem = "boy";
   if (b) {
     for (const ad of b.olculer) {
       const r = alanDogrula(form[ad], { pozitif: true });
@@ -412,13 +410,21 @@ export const malzemeSatiriDogrula = (form) => {
   }
   const f = fireDogrula(form.fire);
   if (f.hata) h.fire = f.hata; else if (f.deger != null) k.fire = f.deger;
+  // Spec 0143 B-R1, B-R2, B-R2/2, AC-9, AC-10, AC-44: işaretliyken çubuk boyu zorunlu (ölçü alanının kuralı); işaretsizken yazılmaz.
+  // Eski `yontem` anahtarı kayda yazılmaz (AC-26). Parçanın boyu çubuktan uzunsa kayıt geçer (B-R8; uyarı `cubukKisaMi`).
+  if (form.boydanSiparis === true) {
+    const c = alanDogrula(form.cubukBoyu, { pozitif: true });
+    if (c.hata === BELIRSIZ_HATASI || c.hata === SAYI_HATASI) h.cubukBoyu = c.hata;
+    else if (c.hata || c.deger == null) h.cubukBoyu = CUBUK_BOYU_HATASI;
+    else { k.boydanSiparis = true; k.cubukBoyu = c.deger; }
+  }
   return { kayit: k, hatalar: h, gecerli: Object.keys(h).length === 0 };
 };
-const SATIR_ALANLARI = ["cap", "et", "kalinlik", "genislik", "en", "boy", "fire"];
+const SATIR_ALANLARI = ["cap", "et", "kalinlik", "genislik", "en", "boy", "fire", "cubukBoyu"];
 // Spec 0141 A-R1/2: kayıtta kalmış işleme payı forma açılışta ölçüye katlanır (göçle aynı fonksiyon); pay anahtarı forma girmez.
 export const malzemeSatiriFormu = (s0) => {
   const s = islemePayiKatla(s0);
-  const f = { malzemeId: s?.malzemeId == null ? "" : String(s.malzemeId), bicim: s?.bicim || "mil", yontem: s?.yontem === "boy" ? "boy" : "kilo" };
+  const f = { malzemeId: s?.malzemeId == null ? "" : String(s.malzemeId), bicim: s?.bicim || "mil", boydanSiparis: s?.boydanSiparis === true };
   for (const a of SATIR_ALANLARI) f[a] = metin(s?.[a]);
   return f;
 };

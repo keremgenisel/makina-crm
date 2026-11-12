@@ -201,6 +201,26 @@ export interface Part {
   deletedAt?: ISODate | null;
   /** Spec 0087 R1: alış maliyeti, TL, KDV hariç (matrah); girilmemişse alan yok. fiyatTRY/USD/EUR satış fiyatıdır. */
   maliyet?: number;
+  /** Spec 0135: parçanın maliyet kalemleri (malzeme ve işlem). */
+  maliyetKalemleri?: Array<MalzemeKalemi | IslemKalemi>;
+}
+
+/** Spec 0135 malzeme kalemi. Spec 0143 A-R7: `yontem` yok (maliyet her zaman kilodan); boydan sipariş işareti ve çubuk boyu (mm). */
+export interface MalzemeKalemi {
+  tur: "malzeme";
+  malzemeId: ID;
+  bicim: "mil" | "boru" | "lama" | "sac";
+  cap?: number; et?: number; kalinlik?: number; genislik?: number; en?: number; boy?: number;
+  fire?: number;
+  adet?: number;
+  boydanSiparis?: boolean;
+  cubukBoyu?: number;
+}
+export interface IslemKalemi {
+  tur: "islem";
+  ad: string;
+  tedarikciId?: ID;
+  tutar: number | null;
 }
 
 /** Spec 0087: makina kiti satırı (stok düşümünün kaynağı, adetin tek kaynağı). */

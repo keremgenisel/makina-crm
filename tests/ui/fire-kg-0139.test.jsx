@@ -134,11 +134,12 @@ describe("Spec 0139 A: parça kartının malzeme kalemi", () => {
     expect(screen.getByTestId("malzeme-fireli-kg").textContent).toBe(M.kgMetni(ham + 0.3));
     expect(screen.getByTestId("malzeme-maliyet").textContent).toMatch(/^girilmedi/);
   });
-  it("AC-11 / AC-52: boy yöntemli kalemde neden satırı yalnız malzemenin tablosu doluyken çizilir", () => {
+  // Spec 0143 ile (A-R4/2, AC-46): 0139 A-R13/2 ters çevrildi; "uygulanmadı" satırı hiç çizilmez, kilogram fire her kalemde uygulanır.
+  it("AC-11 / AC-52 (spec 0143 ile): eski boy yöntemli kalemde de neden satırı yok; ağırlık ve fire dahil kilo yazar", () => {
     render(<Kap sekme="yedekparca" />);
     ac("Boy mil");
-    expect(screen.getByTestId("fire-kg-uygulanmadi").textContent).toBe(M.FIRE_KG_BOY_NEDENI);
-    expect(screen.queryByTestId("malzeme-fireli-kg")).toBeNull();
+    expect(screen.queryByTestId("fire-kg-uygulanmadi")).toBeNull();
+    expect(screen.getByTestId("malzeme-fireli-kg")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "İptal" }));
     ac("Tablosuz boy mil");
     expect(screen.queryByTestId("fire-kg-uygulanmadi")).toBeNull();

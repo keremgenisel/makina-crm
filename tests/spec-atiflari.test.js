@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 
 const KOK = path.join(__dirname, "..");
-const TASINACAK = [];
+const TASINACAK = ["0143-uygulama-plani.md"]; // spec 0143 done'a taşınınca çıkarılır
 
 const gez = (d) => readdirSync(path.join(KOK, d)).flatMap(ad => {
   const f = path.join(d, ad);

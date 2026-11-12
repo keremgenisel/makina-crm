@@ -10,7 +10,7 @@ import {
   SILINMIS_PARCA, kgMetni, adetMetni as sayi, OLCU_BASLIGI, OLCU_GIRILMEMIS, tedarikciSecenekleri, bosDurumNedeni,
   TEDARIKCI_BELIRTILMEMIS, anasizParcaMetni, anasizMalzemeliMetni, CIFT_SAYIM_DEGIL, HAMMADDE_SUZGEC_NEDENI, GECICI_DUZENLEME,
   satirsizSecilenMetni, duzenlemeSayiMetni, SILINMIS_TEDARIKCI_BELGE, PARCALARI_KAPALI,
-  HAM_IHTIYAC_IBARESI,
+  HAM_IHTIYAC_IBARESI, boyCinsindenMi,
 } from "../../lib/siparisIhtiyaci";
 
 // Spec 0140 B-R1/2, B-R5, B-R6, C4: tedarikçi odaklı, düzenlenebilir sipariş listesi. TEK dosya, iki giriş noktası (Ayarlar › Katalog ›
@@ -74,7 +74,7 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
   const parcaYaz = (id, alan, v) => setDuzen(d => ({ ...d, parca: { ...d.parca, [id]: { ...d.parca[id], [alan]: v } } }));
   const kesitYaz = (an, alan, v) => setDuzen(d => ({ ...d, kesit: { ...d.kesit, [an]: { ...d.kesit[an], [alan]: v } } }));
   const parcaAdet = (id, oneri) => duzen.parca[id]?.adet ?? String(oneri ?? 0);
-  const kesitDeger = (k) => duzen.kesit[k.anahtar]?.deger ?? (k.yontem === "boy" ? String(k.oneriBoyAdedi ?? k.boyAdedi ?? "") : (k.oneriSiparisKg ?? k.siparisKg) == null ? "" : String(Number((k.oneriSiparisKg ?? k.siparisKg).toFixed(3))).replace(".", ","));
+  const kesitDeger = (k) => duzen.kesit[k.anahtar]?.deger ?? (boyCinsindenMi(k) ? String(k.oneriBoyAdedi ?? k.boyAdedi ?? "") : (k.oneriSiparisKg ?? k.siparisKg) == null ? "" : String(Number((k.oneriSiparisKg ?? k.siparisKg).toFixed(3))).replace(".", ","));
   const bosNeden = bosDurumNedeni(sonuc);
   // Triyaj (bulgu 3, D-R7): hatalı değer de bir düzenlemedir; "Önerilere dön" onu da geri alır.
   const duzenVar = tb && (tb.duzen.duzenlenen > 0 || tb.duzen.kapatilan > 0 || tb.duzen.hata > 0);
@@ -106,13 +106,13 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
         const oneriBoy = k.oneriBoyAdedi !== undefined ? k.oneriBoyAdedi : k.boyAdedi;
         return (
           <tr key={k.anahtar} data-testid="siparis-kesit-satiri" data-kapali={k.kapali ? "1" : "0"} style={k.kapali ? { opacity: 0.55 } : undefined}>
-            <td style={{ ...td, textAlign: "left", whiteSpace: "normal", minWidth: 260 }}><b>{k.malzemeAd}</b> · {k.kesitMetni}{k.yontem === "boy" ? " · boy fiyatından" : ""}
+            <td style={{ ...td, textAlign: "left", whiteSpace: "normal", minWidth: 260 }}><b>{k.malzemeAd}</b> · {k.kesitMetni}
               {k.elle && <span data-testid="siparis-elle" style={elleIsaret}>ELLE</span>}
               {k.parcalarKapali && <div data-testid="siparis-parcalari-kapali" style={kucuk}>{PARCALARI_KAPALI}</div>}
               {[k.kgNeden, k.boyNeden, k.fireUyarisi, k.asgariUyari].filter(Boolean).map(x => <div key={x} data-testid="siparis-kesit-neden" style={kucuk}>{x}</div>)}</td>
             <td style={td}>{k.netKg == null ? "—" : kgMetni(k.netKg)}</td>
             <td style={td}>{k.fireKg == null ? "—" : kgMetni(k.fireKg)}</td>
-            <td style={td} data-testid="siparis-kesit-oneri">{k.yontem === "boy" ? `${sayi(oneriBoy)} boy` : oneriKg == null ? "—" : kgMetni(oneriKg)}</td>
+            <td style={td} data-testid="siparis-kesit-oneri">{boyCinsindenMi(k) ? `${sayi(oneriBoy)} boy` : oneriKg == null ? "—" : kgMetni(oneriKg)}</td>
             <td style={td}><div style={girdiStil}><Input value={kesitDeger(k)} onChange={e => kesitYaz(k.anahtar, "deger", e.target.value)} aria-label={`${k.malzemeAd} ${k.kesitMetni} sipariş`} disabled={k.kapali} /></div>
               <HataMetni>{k.hata}</HataMetni></td>
             <td style={td} data-testid="siparis-boy">{k.boyAdedi == null ? "—" : `${k.boyAdedi} boy`}</td>

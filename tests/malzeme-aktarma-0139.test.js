@@ -38,7 +38,8 @@ describe("Spec 0139 B: ayrıştırma ve biçim (Ek 3, karar 30)", () => {
     for (const x of p.parcalar) {
       expect(x.maliyetKalemleri).toHaveLength(1);
       const k = x.maliyetKalemleri[0];
-      expect(k).toMatchObject({ tur: "malzeme", yontem: "kilo", adet: 1 });
+      expect(k).toMatchObject({ tur: "malzeme", adet: 1 });
+      expect(k).not.toHaveProperty("yontem"); // spec 0143 ile (A-R6, AC-51): aktarma aracı yöntem yazmaz
       for (const a of ["payCap", "payKalinlik", "payGenislik", "payEn", "payBoy", "fire"]) expect(k).not.toHaveProperty(a);
       expect(x).not.toHaveProperty("malzemeSatiri");
     }

@@ -69,12 +69,12 @@
   {
    "id": 77,
    "k": [
-    null,
-    null,
-    null,
-    null
+    43490,
+    29484,
+    43490,
+    43490
    ],
-   "var": false,
+   "var": true,
    "listesiz": null
   },
   {
@@ -238,9 +238,9 @@
   {
    "id": 77,
    "f": {
-    "deger": "",
+    "deger": 1090,
     "kip": "maliyet",
-    "neden": "Maliyeti girilmediği için fiyat türetilemedi.",
+    "neden": null,
     "turetilmis": true,
     "kat": 2.5
    },
@@ -430,10 +430,10 @@
    "Standart",
    "",
    "",
+   1090,
    "",
    "",
-   "",
-   "",
+   434.9,
    ""
   ],
   [
@@ -783,10 +783,10 @@
      "partId": 77,
      "ad": "Maliyete bağlı mil",
      "adet": 1,
-     "birimK": null,
-     "satirK": 0,
-     "eksik": true,
-     "neden": "maliyetYok"
+     "birimK": 43490,
+     "satirK": 43490,
+     "eksik": false,
+     "neden": null
     },
     {
      "partId": 81,
@@ -845,10 +845,10 @@
     }
    ],
    "kitBos": false,
-   "eksikSayisi": 1,
-   "direktK": 765472,
+   "eksikSayisi": 0,
+   "direktK": 808962,
    "payK": 5000,
-   "toplamK": 770472,
+   "toplamK": 813962,
    "katsayi": null,
    "oneriK": null,
    "kalipListeK": null
@@ -864,8 +864,8 @@
      "anahtar": "AK100#1",
      "adet": 3,
      "planlanan": false,
-     "direktK": 535482,
-     "eksikSayisi": 1,
+     "direktK": 564966,
+     "eksikSayisi": 0,
      "payK": 150000,
      "payKaynak": "parti",
      "payNeden": null,
@@ -875,9 +875,9 @@
       "son": "2026-02"
      },
      "tarihsiz": false,
-     "toplamK": 685482,
+     "toplamK": 714966,
      "oneriK": null,
-     "toplamMaliyetK": 2056447,
+     "toplamMaliyetK": 2144899,
      "oneriCiroK": null
     },
     {
@@ -887,17 +887,17 @@
      "anahtar": "AK100#2",
      "adet": 1,
      "planlanan": false,
-     "direktK": 765472,
-     "eksikSayisi": 1,
+     "direktK": 808962,
+     "eksikSayisi": 0,
      "payK": 150000,
      "payKaynak": "parti",
      "payNeden": null,
      "payToplamK": 150000,
      "ayAraligi": null,
      "tarihsiz": true,
-     "toplamK": 915472,
+     "toplamK": 958962,
      "oneriK": null,
-     "toplamMaliyetK": 915472,
+     "toplamMaliyetK": 958962,
      "oneriCiroK": null
     },
     {
@@ -925,13 +925,13 @@
    "bos": false,
    "payDurumu": null,
    "ozet": {
-    "toplamStandartK": 3421919,
+    "toplamStandartK": 3553861,
     "onerilenCiroK": 900000,
     "katsayisiz": 2,
     "satisK": 1000000,
-    "oneriyeGoreKarK": -2521919,
-    "gercegeGoreKarK": 314518,
-    "satilmisStandartK": 685482,
+    "oneriyeGoreKarK": -2653861,
+    "gercegeGoreKarK": 285034,
+    "satilmisStandartK": 714966,
     "kirilim": {
      "satilmis": 1,
      "stokta": 3,
@@ -952,8 +952,8 @@
     "baslamadi": false,
     "yururlukOncesi": false,
     "tedarikK": 0,
-    "standartDirektK": 2371918,
-    "farkK": -2371918,
+    "standartDirektK": 2503860,
+    "farkK": -2503860,
     "paylasanParti": 0
    }
   },
@@ -966,8 +966,8 @@
      "anahtar": "AK100",
      "adet": 1,
      "planlanan": false,
-     "direktK": 765472,
-     "eksikSayisi": 1,
+     "direktK": 808962,
+     "eksikSayisi": 0,
      "payK": 25000,
      "payKaynak": "parti",
      "payNeden": null,
@@ -977,9 +977,9 @@
       "son": "2026-05"
      },
      "tarihsiz": false,
-     "toplamK": 790472,
+     "toplamK": 833962,
      "oneriK": null,
-     "toplamMaliyetK": 790472,
+     "toplamMaliyetK": 833962,
      "oneriCiroK": null
     },
     {
@@ -1007,11 +1007,11 @@
    "bos": false,
    "payDurumu": null,
    "ozet": {
-    "toplamStandartK": 920472,
+    "toplamStandartK": 963962,
     "onerilenCiroK": 260000,
     "katsayisiz": 1,
     "satisK": 0,
-    "oneriyeGoreKarK": -660472,
+    "oneriyeGoreKarK": -703962,
     "gercegeGoreKarK": 0,
     "satilmisStandartK": 0,
     "kirilim": {
@@ -1034,8 +1034,8 @@
     "baslamadi": false,
     "yururlukOncesi": false,
     "tedarikK": 0,
-    "standartDirektK": 765472,
-    "farkK": -765472,
+    "standartDirektK": 808962,
+    "farkK": -808962,
     "paylasanParti": 0
    }
   },
@@ -1048,8 +1048,8 @@
      "anahtar": "AK100",
      "adet": 1,
      "planlanan": false,
-     "direktK": 765472,
-     "eksikSayisi": 1,
+     "direktK": 808962,
+     "eksikSayisi": 0,
      "payK": null,
      "payKaynak": "parti",
      "payNeden": null,
@@ -1059,9 +1059,9 @@
       "son": "2026-06"
      },
      "tarihsiz": false,
-     "toplamK": 765472,
+     "toplamK": 808962,
      "oneriK": null,
-     "toplamMaliyetK": 765472,
+     "toplamMaliyetK": 808962,
      "oneriCiroK": null
     },
     {
@@ -1092,11 +1092,11 @@
     "neden": "Parti henüz başlamadı; havuz başlangıç ayından itibaren oluşur."
    },
    "ozet": {
-    "toplamStandartK": 1090472,
+    "toplamStandartK": 1133962,
     "onerilenCiroK": 650000,
     "katsayisiz": 1,
     "satisK": 0,
-    "oneriyeGoreKarK": -440472,
+    "oneriyeGoreKarK": -483962,
     "gercegeGoreKarK": 0,
     "satilmisStandartK": 0,
     "kirilim": {
@@ -1119,8 +1119,8 @@
     "baslamadi": true,
     "yururlukOncesi": false,
     "tedarikK": 0,
-    "standartDirektK": 765472,
-    "farkK": -765472,
+    "standartDirektK": 808962,
+    "farkK": -808962,
     "paylasanParti": 0
    }
   },
@@ -1211,11 +1211,26 @@
     ],
     "iki": true,
     "ham": 30,
-    "pay": null,
     "ihtiyac": 30,
     "stok": 3,
     "siparis": 27,
-    "malzemeli": true
+    "malzemeli": true,
+    "olculer": [
+     {
+      "malzemeId": "501",
+      "malzemeAd": "304 Paslanmaz",
+      "tedarikciId": null,
+      "anahtar": "501|kilo|mil|144",
+      "bicim": "mil",
+      "kesit": [
+       144
+      ],
+      "boy": 83,
+      "adet": 1,
+      "eksik": false,
+      "metin": "Ø144 × 83"
+     }
+    ]
    },
    {
     "partId": "72",
@@ -1232,11 +1247,11 @@
     ],
     "iki": false,
     "ham": 10,
-    "pay": null,
     "ihtiyac": 10,
     "stok": 0,
     "siparis": 10,
-    "malzemeli": false
+    "malzemeli": false,
+    "olculer": []
    },
    {
     "partId": "73",
@@ -1253,11 +1268,27 @@
     ],
     "iki": false,
     "ham": 30,
-    "pay": null,
     "ihtiyac": 30,
     "stok": 10,
     "siparis": 20,
-    "malzemeli": true
+    "malzemeli": true,
+    "olculer": [
+     {
+      "malzemeId": "502",
+      "malzemeAd": "DKP Sac",
+      "tedarikciId": null,
+      "anahtar": "502|kilo|sac|3|200",
+      "bicim": "sac",
+      "kesit": [
+       3,
+       200
+      ],
+      "boy": 300,
+      "adet": 1,
+      "eksik": false,
+      "metin": "3 × 200 × 300"
+     }
+    ]
    },
    {
     "partId": "74",
@@ -1278,11 +1309,11 @@
     ],
     "iki": true,
     "ham": 60,
-    "pay": null,
     "ihtiyac": 60,
     "stok": 0,
     "siparis": 60,
-    "malzemeli": false
+    "malzemeli": false,
+    "olculer": []
    },
    {
     "partId": "76",
@@ -1299,11 +1330,11 @@
     ],
     "iki": false,
     "ham": 10,
-    "pay": null,
     "ihtiyac": 10,
     "stok": 0,
     "siparis": 10,
-    "malzemeli": false
+    "malzemeli": false,
+    "olculer": []
    },
    {
     "partId": "77",
@@ -1320,11 +1351,27 @@
     ],
     "iki": false,
     "ham": 10,
-    "pay": null,
     "ihtiyac": 10,
     "stok": 0,
     "siparis": 10,
-    "malzemeli": true
+    "malzemeli": true,
+    "olculer": [
+     {
+      "malzemeId": "501",
+      "malzemeAd": "304 Paslanmaz",
+      "tedarikciId": null,
+      "anahtar": "501|kilo|boru|60|5",
+      "bicim": "boru",
+      "kesit": [
+       60,
+       5
+      ],
+      "boy": 400,
+      "adet": 1,
+      "eksik": false,
+      "metin": "Ø60 × 5 et × 400"
+     }
+    ]
    },
    {
     "partId": "81",
@@ -1345,11 +1392,11 @@
     ],
     "iki": true,
     "ham": 50,
-    "pay": null,
     "ihtiyac": 50,
     "stok": 0,
     "siparis": 50,
-    "malzemeli": false
+    "malzemeli": false,
+    "olculer": []
    },
    {
     "partId": "82",
@@ -1370,11 +1417,26 @@
     ],
     "iki": true,
     "ham": 20,
-    "pay": null,
     "ihtiyac": 20,
     "stok": 0,
     "siparis": 20,
-    "malzemeli": true
+    "malzemeli": true,
+    "olculer": [
+     {
+      "malzemeId": "501",
+      "malzemeAd": "304 Paslanmaz",
+      "tedarikciId": null,
+      "anahtar": "501|kilo|mil|52",
+      "bicim": "mil",
+      "kesit": [
+       52
+      ],
+      "boy": 123,
+      "adet": 2,
+      "eksik": false,
+      "metin": "Ø52 × 123 · parça başına 2"
+     }
+    ]
    },
    {
     "partId": "84",
@@ -1391,11 +1453,27 @@
     ],
     "iki": false,
     "ham": 15,
-    "pay": null,
     "ihtiyac": 15,
     "stok": 0,
     "siparis": 15,
-    "malzemeli": true
+    "malzemeli": true,
+    "olculer": [
+     {
+      "malzemeId": "502",
+      "malzemeAd": "DKP Sac",
+      "tedarikciId": null,
+      "anahtar": "502|kilo|sac|2|100",
+      "bicim": "sac",
+      "kesit": [
+       2,
+       100
+      ],
+      "boy": 150,
+      "adet": 1,
+      "eksik": false,
+      "metin": "2 × 100 × 150"
+     }
+    ]
    },
    {
     "partId": "85",
@@ -1412,11 +1490,11 @@
     ],
     "iki": false,
     "ham": 10,
-    "pay": null,
     "ihtiyac": 10,
     "stok": 0,
     "siparis": 10,
-    "malzemeli": false
+    "malzemeli": false,
+    "olculer": []
    }
   ],
   "kesitler": [
@@ -1443,23 +1521,23 @@
       "fire": 8,
       "ekFireKg": 0,
       "kesimBoyu": 83,
-      "oran": 0.013833333333333333
+      "oran": null
      }
     ],
     "netKg": 288.3260042605412,
     "fireKg": 23.06608034084332,
-    "siparisKg": 771.9571733883297,
-    "artanKg": 483.6311691277885,
+    "siparisKg": 311.3920846013845,
+    "artanKg": null,
     "kgNeden": null,
-    "boyAdedi": 1,
-    "boyNeden": null,
-    "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire (yüzde ve çap bandına göre kilogram) sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+    "boyAdedi": null,
+    "boyNeden": "Malzemenin geldiği boy girilmedi; boy adedi hesaplanmaz.",
+    "fireUyarisi": null,
     "asgariFark": null,
     "fiyat": 2.95,
     "bant": null,
-    "tutar": 2277.273661495573,
-    "tutarK": 227727,
-    "tutarTLK": 11386368,
+    "tutar": 918.6066495740844,
+    "tutarK": 91861,
+    "tutarTLK": 4593033,
     "tutarNeden": null
    },
    {
@@ -1506,12 +1584,12 @@
     "tutarNeden": null
    },
    {
-    "anahtar": "501|boy|boru|60|5",
+    "anahtar": "501|kilo|boru|60|5",
     "malzemeId": "501",
     "malzemeAd": "304 Paslanmaz",
     "tedarikciId": null,
     "bicim": "boru",
-    "yontem": "boy",
+    "yontem": "kilo",
     "kesit": [
      60,
      5
@@ -1524,28 +1602,29 @@
       "partId": "77",
       "ad": "Maliyete bağlı mil",
       "adet": 10,
-      "hamKg": null,
-      "fireliKg": null,
+      "hamKg": 2.73004401596953,
+      "fireliKg": 2.948447537247093,
       "fire": 8,
       "ekFireKg": 0,
       "kesimBoyu": 400,
-      "oran": 0.06666666666666667
+      "oran": null
      }
     ],
-    "netKg": null,
-    "fireKg": null,
-    "siparisKg": null,
+    "netKg": 27.3004401596953,
+    "fireKg": 2.184035212775628,
+    "siparisKg": 29.484475372470925,
     "artanKg": null,
-    "kgNeden": "Boy fiyatından hesaplanan parça; kilo hesaplanmaz.",
-    "boyAdedi": 1,
-    "boyNeden": null,
-    "fireUyarisi": "Boy fiyatından hesaplanan parçada boy adedi tüketim oranından gelir; fire bu orana eklendi (maliyetle aynı).",
+    "kgNeden": null,
+    "boyAdedi": null,
+    "boyNeden": "Malzemenin geldiği boy girilmedi; boy adedi hesaplanmaz.",
+    "fireUyarisi": null,
     "asgariFark": null,
-    "fiyat": null,
-    "tutar": null,
-    "tutarK": null,
-    "tutarTLK": null,
-    "tutarNeden": "Fiyat girilmedi; tutar yazılmaz."
+    "fiyat": 2.95,
+    "bant": null,
+    "tutar": 86.97920234878923,
+    "tutarK": 8698,
+    "tutarTLK": 434896,
+    "tutarNeden": null
    },
    {
     "anahtar": "501|kilo|mil|52",
@@ -1570,23 +1649,23 @@
       "fire": 8,
       "ekFireKg": 0,
       "kesimBoyu": 123,
-      "oran": 0.0205
+      "oran": null
      }
     ],
     "netKg": 82.54461812357619,
     "fireKg": 6.603569449886102,
-    "siparisKg": 100.6641684433856,
-    "artanKg": 18.11955031980942,
+    "siparisKg": 89.14818757346228,
+    "artanKg": null,
     "kgNeden": null,
-    "boyAdedi": 1,
-    "boyNeden": null,
-    "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire (yüzde ve çap bandına göre kilogram) sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+    "boyAdedi": null,
+    "boyNeden": "Malzemenin geldiği boy girilmedi; boy adedi hesaplanmaz.",
+    "fireUyarisi": null,
     "asgariFark": null,
     "fiyat": 2.95,
     "bant": null,
-    "tutar": 296.95929690798755,
-    "tutarK": 29696,
-    "tutarTLK": 1484796,
+    "tutar": 262.98715334171374,
+    "tutarK": 26299,
+    "tutarTLK": 1314936,
     "tutarNeden": null
    },
    {
@@ -1663,32 +1742,32 @@
         "fire": 8,
         "ekFireKg": 0,
         "kesimBoyu": 83,
-        "oran": 0.013833333333333333
+        "oran": null
        }
       ],
       "netKg": 288.3260042605412,
       "fireKg": 23.06608034084332,
-      "siparisKg": 771.9571733883297,
-      "artanKg": 483.6311691277885,
+      "siparisKg": 311.3920846013845,
+      "artanKg": null,
       "kgNeden": null,
-      "boyAdedi": 1,
-      "boyNeden": null,
-      "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire (yüzde ve çap bandına göre kilogram) sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+      "boyAdedi": null,
+      "boyNeden": "Malzemenin geldiği boy girilmedi; boy adedi hesaplanmaz.",
+      "fireUyarisi": null,
       "asgariFark": null,
       "fiyat": 2.95,
       "bant": null,
-      "tutar": 2277.273661495573,
-      "tutarK": 227727,
-      "tutarTLK": 11386368,
+      "tutar": 918.6066495740844,
+      "tutarK": 91861,
+      "tutarTLK": 4593033,
       "tutarNeden": null
      },
      {
-      "anahtar": "501|boy|boru|60|5",
+      "anahtar": "501|kilo|boru|60|5",
       "malzemeId": "501",
       "malzemeAd": "304 Paslanmaz",
       "tedarikciId": null,
       "bicim": "boru",
-      "yontem": "boy",
+      "yontem": "kilo",
       "kesit": [
        60,
        5
@@ -1701,28 +1780,29 @@
         "partId": "77",
         "ad": "Maliyete bağlı mil",
         "adet": 10,
-        "hamKg": null,
-        "fireliKg": null,
+        "hamKg": 2.73004401596953,
+        "fireliKg": 2.948447537247093,
         "fire": 8,
         "ekFireKg": 0,
         "kesimBoyu": 400,
-        "oran": 0.06666666666666667
+        "oran": null
        }
       ],
-      "netKg": null,
-      "fireKg": null,
-      "siparisKg": null,
+      "netKg": 27.3004401596953,
+      "fireKg": 2.184035212775628,
+      "siparisKg": 29.484475372470925,
       "artanKg": null,
-      "kgNeden": "Boy fiyatından hesaplanan parça; kilo hesaplanmaz.",
-      "boyAdedi": 1,
-      "boyNeden": null,
-      "fireUyarisi": "Boy fiyatından hesaplanan parçada boy adedi tüketim oranından gelir; fire bu orana eklendi (maliyetle aynı).",
+      "kgNeden": null,
+      "boyAdedi": null,
+      "boyNeden": "Malzemenin geldiği boy girilmedi; boy adedi hesaplanmaz.",
+      "fireUyarisi": null,
       "asgariFark": null,
-      "fiyat": null,
-      "tutar": null,
-      "tutarK": null,
-      "tutarTLK": null,
-      "tutarNeden": "Fiyat girilmedi; tutar yazılmaz."
+      "fiyat": 2.95,
+      "bant": null,
+      "tutar": 86.97920234878923,
+      "tutarK": 8698,
+      "tutarTLK": 434896,
+      "tutarNeden": null
      },
      {
       "anahtar": "501|kilo|mil|52",
@@ -1747,30 +1827,30 @@
         "fire": 8,
         "ekFireKg": 0,
         "kesimBoyu": 123,
-        "oran": 0.0205
+        "oran": null
        }
       ],
       "netKg": 82.54461812357619,
       "fireKg": 6.603569449886102,
-      "siparisKg": 100.6641684433856,
-      "artanKg": 18.11955031980942,
+      "siparisKg": 89.14818757346228,
+      "artanKg": null,
       "kgNeden": null,
-      "boyAdedi": 1,
-      "boyNeden": null,
-      "fireUyarisi": "Boy adedi uzunluktan hesaplandığı için fire (yüzde ve çap bandına göre kilogram) sipariş kilosuna eklenmedi: kesim kaybı artan kiloda, talaş işleme payında.",
+      "boyAdedi": null,
+      "boyNeden": "Malzemenin geldiği boy girilmedi; boy adedi hesaplanmaz.",
+      "fireUyarisi": null,
       "asgariFark": null,
       "fiyat": 2.95,
       "bant": null,
-      "tutar": 296.95929690798755,
-      "tutarK": 29696,
-      "tutarTLK": 1484796,
+      "tutar": 262.98715334171374,
+      "tutarK": 26299,
+      "tutarTLK": 1314936,
       "tutarNeden": null
      }
     ],
-    "netKg": 370.8706223841174,
-    "siparisKg": 872.6213418317153,
-    "tutarTLK": 12871164,
-    "tutarsiz": 1
+    "netKg": 398.1710625438127,
+    "siparisKg": 430.0247475473177,
+    "tutarTLK": 6342865,
+    "tutarsiz": 0
    },
    {
     "malzemeId": "502",
@@ -1872,11 +1952,11 @@
    }
   ],
   "eksik": {
-   "parca": 1,
-   "malzeme": 1
+   "parca": 0,
+   "malzeme": 0
   },
   "hazirSayi": 3,
-  "toplamTLK": 12997345
+  "toplamTLK": 6469046
  },
  "etki": {
   "bagli": 3,
@@ -1901,10 +1981,10 @@
    {
     "id": 77,
     "ad": "Maliyete bağlı mil",
-    "once": null,
-    "sonra": 324000,
-    "oncekiFiyat": "",
-    "yeniFiyat": 8100
+    "once": 43490,
+    "sonra": 50124,
+    "oncekiFiyat": 1090,
+    "yeniFiyat": 1260
    },
    {
     "id": 82,
@@ -1944,8 +2024,8 @@
    {
     "id": 77,
     "ad": "Maliyete bağlı mil",
-    "once": null,
-    "sonra": 324000
+    "once": 43490,
+    "sonra": 50124
    },
    {
     "id": 82,
@@ -2163,8 +2243,7 @@
     "bicim": "boru",
     "cap": 60,
     "et": 5,
-    "boy": 400,
-    "yontem": "boy"
+    "boy": 400
    }
   },
   {

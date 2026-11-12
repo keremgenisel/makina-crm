@@ -26,7 +26,8 @@ export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler,
   const set = (alan, v) => setForm(f => ({ ...f, [alan]: v }));
   const v = useMemo(() => malzemeDogrula(form, malzemeler, malzeme.id), [form, malzemeler, malzeme.id]);
   // `v` forma bağlı önbellekte; `yeni` ve etki ondan türer (eski hâldeki satır içi eslint susturması kalktı, triyaj bulgu 9).
-  const yeni = useMemo(() => (v.gecerli ? tanimsizSiz({ ...malzeme, ...fiyatAlanlari(v.kayit) }) : null), [v, malzeme]);
+  // Spec 0143 D-R2: eski kartta kalmış iki ölü alan (boy fiyatı, geldiği boy) kayda taşınmaz.
+  const yeni = useMemo(() => { if (!v.gecerli) return null; const { boyFiyati: _b, geldigiBoy: _g, ...temiz } = malzeme; return tanimsizSiz({ ...temiz, ...fiyatAlanlari(v.kayit) }); }, [v, malzeme]);
   const etki = useMemo(() => (yeni ? fiyatEtkisi(malzeme, yeni, parts, malzemeler, { fiyatAyarlari }) : null), [yeni, malzeme, parts, malzemeler, fiyatAyarlari]);
 
   const kaydet = () => {
@@ -60,7 +61,8 @@ export const MalzemeFiyatPenceresi = ({ malzeme, malzemeler = [], setMalzemeler,
 };
 
 // Doğrulanmış kayıttan yalnız fiyat kümesinin alanları (öteki kart alanları pencerede değişmez). Boş alan anahtar taşımaz.
-const FIYAT_ANAHTARLARI = ["kiloFiyati", "paraBirimi", "kur", "bantlar", "boyFiyati"];
+// Spec 0143 A-R2/2: boy fiyatı kümeden kalktı (`malzeme.js` FIYAT_ALANLARI ile aynı liste).
+const FIYAT_ANAHTARLARI = ["kiloFiyati", "paraBirimi", "kur", "bantlar"];
 const fiyatAlanlari = (k) => {
   const o = {};
   for (const a of FIYAT_ANAHTARLARI) o[a] = k[a];

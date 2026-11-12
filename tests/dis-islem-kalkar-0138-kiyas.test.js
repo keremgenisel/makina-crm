@@ -12,6 +12,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { ayikla0139 } from "./fixtures/0139-ayikla.js"; // spec 0139 ile: uyarı metni ve yeni ekFireKg alanı
 import { ayikla0141 } from "./fixtures/0141-ayikla.js"; // spec 0141 ile: sipariş satırının `pay` anahtarı ve kayıt gövdesinin katlaması
 import { ayikla0142 } from "./fixtures/0142-ayikla.js"; // spec 0142 ile: parça satırının `olculer` alanı ve tedarikçi bölümlerinin `belge` alanı
+import { ayikla0143 } from "./fixtures/0143-ayikla.js"; // spec 0143 ile (C2/3): kalkan ve adı değişen alanlar normalleşir, sayılar dokunulmaz
 import { parcaMaliyetKurus, parcaMaliyetiVar, setKatalogu, setOzeti, maliyetKaynagi, kalemKaynakMetni, maliyetGecmisiSatirlari, maliyetGecmisiYaz, gecmisliKayit } from "../src/lib/urunAgaci";
 import { malzemeKatalogu, fiyatEtkisi } from "../src/lib/malzeme";
 import { siparisIhtiyaci } from "../src/lib/siparisIhtiyaci";
@@ -22,6 +23,7 @@ import { hesaplaAylikRapor } from "../src/lib/aylikRapor";
 import { finansOzetiHesapla, finansOzetiSatirlari } from "../src/components/settings/SettingsExport";
 import { PARCALAR, MALZEMELER, TEDARIKCILER, MODELLER, PART_STOCK, FIYAT_AYARLARI, M304, RAPOR_VERI, RAPOR_AYI } from "./fixtures/0138-veri.js";
 import * as V36 from "./fixtures/0136-veri.js";
+const ayikla0142v0143 = (x) => ayikla0143(ayikla0142(x));
 
 const ALTIN = "tests/fixtures/0138-once.json";
 const TARIHLER = [undefined, "2026-01-15", "2026-04-15", "2026-06-15"];
@@ -62,7 +64,7 @@ describe("Spec 0138 kıyas (C1, C1/2)", () => {
   it("AC-13 / AC-14 / AC-15 / AC-16 / AC-5: katalog bağlı işlem kalemi olmayan veride bütün çıktılar spec öncesi altınla birebir aynıdır", () => {
     const sonuc = temiz(uret());
     if (process.env.YAZ_0138 === "1") { writeFileSync(ALTIN, JSON.stringify(sonuc, null, 1)); return; }
-    expect(ayikla0142(ayikla0141(ayikla0139(sonuc)))).toEqual(ayikla0142(ayikla0141(ayikla0139(JSON.parse(readFileSync(ALTIN, "utf8")))))); // spec 0139 ve 0141 ile ayıklandı (C2/3)
+    expect(ayikla0142v0143(ayikla0141(ayikla0139(sonuc)))).toEqual(ayikla0142v0143(ayikla0141(ayikla0139(JSON.parse(readFileSync(ALTIN, "utf8")))))); // spec 0139 ve 0141 ile ayıklandı (C2/3)
   });
   it("C1/2: kıyas boş geçmez (sipariş satırı, rapor satırı, Finans Özeti satırı ve etki satırı üretir)", () => {
     const a = JSON.parse(readFileSync(ALTIN, "utf8"));

@@ -932,7 +932,9 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
     fiyatGecmisi: [{ gecerli: "", kiloFiyati: 2.85, paraBirimi: "USD", kur: 48 }, { gecerli: "2026-06-01", kiloFiyati: 2.95, paraBirimi: "USD", kur: 50, bantlar: [{ alt: 0, fiyat: 2.95 }] }] };
   const sade = { id: 502, ad: "Sade" };
   const cop = { id: 503, ad: "Çöpteki", ozgulAgirlik: 7.85, deletedAt: "2026-10-01T09:00:00.000Z" };
-  const satir = { malzemeId: 501, bicim: "mil", yontem: "boy", cap: 144, boy: 83, fire: 8 }; // spec 0141 ile: pay ölçüye katlandı (göç her açılışta katlar)
+  // Spec 0141 ile: pay ölçüye katlandı (göç her açılışta katlar). Spec 0143 ile: eski `yontem: "boy"` göçle çevrilir (aşağıdaki
+  // 0143 bloğu); bu blok yöntemsiz satırla gidiş dönüşü ölçer, kartın iki ölü alanı (boy fiyatı, geldiği boy) geri gelmez.
+  const satir = { malzemeId: 501, bicim: "mil", cap: 144, boy: 83, fire: 8, boydanSiparis: true, cubukBoyu: 6000 };
   const girdi = structuredClone(GOVDE_GIRDISI);
   girdi.malzemeler = [tam, sade, cop];
   girdi.parts[0].malzemeSatiri = satir;
@@ -950,11 +952,38 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   const c = dbmod.readBlobFromDb();
   // Anahtar sırası JSON sütunlarında farklıdır (sunucunun karşılaştırması sıradan bağımsız, stableStringify); içerik birebir.
   const sirali = (o) => Object.fromEntries(Object.keys(o).sort().map(k => [k, o[k]]));
-  check("spec 0132 AC-87: malzeme kaydının bütün alanları birebir geri gelir", esit(sirali(c.malzemeler.find(m => m.id === 501)), sirali(tam)));
+  const { boyFiyati: _bf, geldigiBoy: _gb, ...tamCanli } = tam; // spec 0143 ile (D-R2): iki ölü alan geri gelmez
+  check("spec 0132 AC-87 (spec 0143 ile): malzeme kaydının alanları birebir geri gelir, boy fiyatı ve geldiği boy hariç", esit(sirali(c.malzemeler.find(m => m.id === 501)), sirali(tamCanli)));
   check("spec 0132 AC-61: sade malzemenin gövdesi yalnız id ve ad (boş alan anahtarı yok)", esit(c.malzemeler.find(m => m.id === 502), sade));
   check("spec 0132 C7: çöpteki malzemenin damgası korunur", c.malzemeler.find(m => m.id === 503)?.deletedAt === cop.deletedAt);
-  check("spec 0132 C5: parçanın malzeme satırı birebir geri gelir", esit(c.parts.find(p => p.id === 7)?.malzemeSatiri, satir));
+  check("spec 0132 C5 / spec 0143 AC-25: parçanın malzeme satırı (işaret ve çubuk boyu dahil) birebir geri gelir", esit(c.parts.find(p => p.id === 7)?.malzemeSatiri, satir));
   check("spec 0132 AC-61: boş nesne olarak yazılan malzeme satırı gövdede yok", !("malzemeSatiri" in c.parts.find(p => p.id === 8)));
+}
+
+// ── Spec 0143 D-R2, D-R2/2 (AC-31, AC-32, AC-54, AC-55): malzemeler.boyFiyati ve geldigiBoy ölü sütun. Dolu gövde yazılmaz (sütun
+// NULL), okumada gövdeye girmez (ham SQL ile yazılmış eski değer de); sütunlar ve satırlar durur. Kalemin işaret ve çubuk boyu
+// maliyetKalemleri JSON'unda gidiş dönüşte korunur.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  girdi.malzemeler = [{ id: 701, ad: "Boylu kart", ozgulAgirlik: 7.9, kiloFiyati: 200, boyFiyati: 900, geldigiBoy: 6 }, { id: 702, ad: "Sade" }];
+  const kalem = { tur: "malzeme", malzemeId: 701, bicim: "mil", cap: 30, boy: 400, adet: 1, boydanSiparis: true, cubukBoyu: 3000 };
+  girdi.parts[0].maliyetKalemleri = [kalem];
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ms = ham.prepare(`SELECT id, boyFiyati, geldigiBoy FROM malzemeler ORDER BY id`).all();
+  const sutun = (ad) => ham.prepare(`PRAGMA table_info(malzemeler)`).all().some(c => c.name === ad);
+  check("spec 0143 AC-31: malzemeler tablosunda boyFiyati ve geldigiBoy sütunları duruyor", sutun("boyFiyati") && sutun("geldigiBoy"));
+  check("spec 0143 AC-32 / AC-55: dolu boy fiyatı ve geldiği boy yazılmaz, satırlar silinmedi", ms.length === 2 && ms.every(r => r.boyFiyati === null && r.geldigiBoy === null));
+  ham.prepare(`UPDATE malzemeler SET boyFiyati = 1200, geldigiBoy = 6 WHERE id = 701`).run(); // eski sürümün bıraktığı değer
+  ham.close();
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  check("spec 0143 AC-54: okumada iki ölü sütun gövdeye girmez (ham SQL ile yazılmış eski değer de)", esit(c.malzemeler.find(m => m.id === 701), { id: 701, ad: "Boylu kart", ozgulAgirlik: 7.9, kiloFiyati: 200 }));
+  check("spec 0143 AC-25: kalemin boydanSiparis ve cubukBoyu alanları gidiş dönüşte korunur", esit(c.parts.find(p => p.id === girdi.parts[0].id)?.maliyetKalemleri, [kalem]));
 }
 
 // ── Spec 0134 C4, AC-58–AC-60; spec 0141 ile ters çevrildi (D-R1, D-R1/2, D-R1/3, AC-38, AC-39, AC-58, AC-66): emniyet payı
@@ -1059,7 +1088,8 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   const b0 = dbmod.readBlobFromDb();
   check("spec 0135 AC-77: kalemsiz parçaların gövdesi spec öncesiyle birebir, maliyetKalemleri anahtarı yok", esit(b0.parts, once.parts) && b0.parts.every(p => !("maliyetKalemleri" in p)));
   const kalemler = [
-    { tur: "malzeme", malzemeId: 501, bicim: "boru", yontem: "boy", cap: 62, et: 5, boy: 403, fire: 4, adet: 2 }, // spec 0141 ile katlandı
+    // Spec 0141 ile katlandı. Spec 0143 ile: eski `yontem: "boy"` yerine işaret ve çubuk boyu (açılış göçü boy kalemini çevirirdi).
+    { tur: "malzeme", malzemeId: 501, bicim: "boru", cap: 62, et: 5, boy: 403, fire: 4, adet: 2, boydanSiparis: true, cubukBoyu: 6000 },
     { tur: "islem", ad: "Lazer kesim", tedarikciId: 31, tutar: 125.5 },
     { tur: "islem", ad: "Kaplama", tutar: null },
   ];

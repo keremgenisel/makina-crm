@@ -127,7 +127,8 @@ describe("Spec 0140 D: düzenleme (girdi motora)", () => {
     const an = S.siparisIhtiyaci(o).kesitler[0].anahtar;
     const r = S.siparisIhtiyaci(o, { tedarikciOdakli: true, duzenleme: { kesit: { [an]: { deger: "500,5" } }, parca: { 41: { adet: "10" } } } });
     const k = r.kesitler[0];
-    expect(k).toMatchObject({ elle: true, siparisKg: 500.5, boyAdedi: null, artanKg: null, asgariFark: null, boyNeden: S.ELLE_KILO_NEDENI });
+    expect(k).toMatchObject({ elle: true, siparisKg: 500.5, boyAdedi: null, asgariFark: null, boyNeden: S.ELLE_KILO_NEDENI });
+    expect(k).not.toHaveProperty("artanKg"); // spec 0143 ile (X4): alan kalktı
     expect(k.asgariUyari).toBe(S.asgariAltiMetni(2000));
     expect(k.tutarTLK).toBe(Math.round(500.5 * 2.95 * 50 * 100));
     expect(k.oneriSiparisKg).toBeGreaterThan(0);

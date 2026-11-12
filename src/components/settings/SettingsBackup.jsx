@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { BACKUP_SCHEMA_VERSION, BACKUP_APP_TAG, BACKUP_ENC_MARKER } from "../../lib/constants";
 import { today, looksLikeBackup, safeStandardModels, parseMoney, bumpId, uid, disAppSettingsSuz } from "../../lib/utils";
 import { kasaGocuHareketleri } from "../../../electron/kasaGocuSaf.mjs";
+import { boyParcaCevir, geldigiBoyHaritasi } from "../../../electron/boyGocuSaf.mjs";
 import { odemeleriAyikla } from "../../lib/cek";
 import { kasaKayitlariniKoru, kasaHareketiMi, kasaCekiMi } from "../../lib/yedekKasa";
 import { Icon, Btn, Modal, PasswordInput } from "../ui";
@@ -238,7 +239,9 @@ export const SettingsBackup = ({
     if (sec("tanim") && Array.isArray(restoreData?.calisanlar) && setCalisanlar) setCalisanlar(restoreData.calisanlar);
     if (sec("tanim") && Array.isArray(restoreData?.customModels)) setCustomModels(restoreData.customModels);
     if (sec("tanim")) setStandardModels(safeStandardModels(restoreData?.standardModels));
-    if (sec("tanim") && Array.isArray(restoreData?.parts)) setParts?.(restoreData.parts);
+    // Spec 0143 D-R3/4 (AC-64): yedekteki boy yöntemli kalem, veritabanı göçüyle aynı saf çekirdekle çevrilir; kartın geldiği boyu
+    // yedeğin kendi malzemelerinden okunur (ölü sütun kayıtta düştüğü için açılış göçü onu artık bulamazdı).
+    if (sec("tanim") && Array.isArray(restoreData?.parts)) { const h = geldigiBoyHaritasi(restoreData.malzemeler); setParts?.(restoreData.parts.map(p => boyParcaCevir(p, h))); }
     if (sec("tanim") && Array.isArray(restoreData?.malzemeler) && setMalzemeler) setMalzemeler(restoreData.malzemeler); // spec 0132 AC-87
     if (sec("not") && Array.isArray(restoreData?.notes) && setNotes) setNotes(restoreData.notes);
     if (sec("gider") && Array.isArray(restoreData?.giderTurleri) && setGiderTurleri) setGiderTurleri(restoreData.giderTurleri);

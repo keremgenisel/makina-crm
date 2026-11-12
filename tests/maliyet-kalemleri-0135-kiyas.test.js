@@ -12,7 +12,9 @@ import { parcaDisaAktarmaSatiri } from "../src/lib/parcaAktarma";
 import { ayikla0139 } from "./fixtures/0139-ayikla.js"; // spec 0139 ile: uyarı metni ve yeni ekFireKg alanı
 import { ayikla0141 } from "./fixtures/0141-ayikla.js"; // spec 0141 ile: sipariş satırının `pay` anahtarı ve kayıt gövdesinin katlaması
 import { ayikla0142 } from "./fixtures/0142-ayikla.js"; // spec 0142 ile: parça satırının `olculer` alanı ve tedarikçi bölümlerinin `belge` alanı
+import { ayikla0143 } from "./fixtures/0143-ayikla.js"; // spec 0143 ile (C2/3): kalkan ve adı değişen alanlar normalleşir, sayılar dokunulmaz
 import { PARCALAR, MALZEMELER, TEDARIKCILER, MODELLER, PART_STOCK, FIYAT_AYARLARI, M304 } from "./fixtures/0135-veri.js";
+const ayikla0142v0143 = (x) => ayikla0143(ayikla0142(x));
 
 const ALTIN = "tests/fixtures/0135-once.json";
 const TARIHLER = [undefined, "2026-01-15", "2026-04-15", "2026-06-15"];
@@ -36,6 +38,6 @@ describe("Spec 0135 kıyas (C8)", () => {
   it("AC-41, AC-42, AC-80: kalem alanı olmayan veride yedi kalem spec öncesi altınla birebir aynıdır", () => {
     const sonuc = temiz(uret());
     if (process.env.YAZ_0135 === "1") { writeFileSync(ALTIN, JSON.stringify(sonuc, null, 1)); return; }
-    expect(ayikla0142(ayikla0141(ayikla0139(sonuc)))).toEqual(ayikla0142(ayikla0141(ayikla0139(JSON.parse(readFileSync(ALTIN, "utf8")))))); // spec 0139 ve 0141 ile ayıklandı
+    expect(ayikla0142v0143(ayikla0141(ayikla0139(sonuc)))).toEqual(ayikla0142v0143(ayikla0141(ayikla0139(JSON.parse(readFileSync(ALTIN, "utf8")))))); // spec 0139 ve 0141 ile ayıklandı
   });
 });

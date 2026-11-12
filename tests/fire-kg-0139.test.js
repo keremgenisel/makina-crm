@@ -65,11 +65,14 @@ describe("Spec 0139 A: kilogram fire motoru", () => {
     const s = siparisIhtiyaci({ modeller: [{ model: "X", defaultParcalar: [{ partId: "1", miktar: 1 }] }], satirlar: [{ model: "X", adet: "1" }], parts: [p], partStock: [], malzemeler: [m], tedarikciler: [] });
     yakin(s.kesitler[0].fireKg, 0.9);
   });
-  it("AC-11: boy yönteminde kilogram tablosu uygulanmaz (oran yalnız yüzdeyle büyür)", () => {
-    const m = kart({ boyFiyati: 600, geldigiBoy: 6, fire: 5 });
+  // Spec 0143 ile (A-R4/2): boy yöntemi kalktı; kilogram fire her kalemde uygulanır, eski `yontem: "boy"` okunmaz.
+  it("AC-11 (spec 0143 ile): eski boy yöntemli kalemde de kilogram tablosu uygulanır ve maliyet kilodan", () => {
+    const m = kart({ fire: 5 });
     const r = oz({ bicim: "mil", yontem: "boy", cap: 60, boy: 300 }, m);
-    expect(r.fireliKg).toBeNull();
-    expect(r.maliyetK).toBe(kurus((300 / 6000) * 1.05 * 600));
+    const kilo = oz({ bicim: "mil", cap: 60, boy: 300 }, m);
+    expect(r.fireliKg).toBeCloseTo(r.hamKg * 1.05 + M.ekFireKg(m, "mil", 60), 9);
+    expect(M.ekFireKg(m, "mil", 60)).toBeGreaterThan(0);
+    expect(r).toEqual(kilo);
   });
   it("AC-46 / A-R6/2: en alt bandın alt sınırının altındaki ham çapa fire eklenmez", () => {
     const r = oz({ bicim: "mil", cap: 4, boy: 100 }, kart({ fireBantlari: [{ alt: 5, kg: 0.2 }] }));
@@ -132,11 +135,13 @@ describe("Spec 0139 A-R12: sipariş ihtiyacı", () => {
     const s = sip(kart(), p(60, 175)).kesitler[0];
     yakin(s.fireKg, 0.3 * 10);
   });
-  it("AC-51: yüzdesi boş, yalnız kilogram tablosu olan malzemede boy adedi hesaplanınca fire uyarısı çizilir", () => {
-    const tablolu = sip(kart({ geldigiBoy: 6 }), p(60, 175)).kesitler[0];
+  // Spec 0143 ile: boy adedi kartın geldiği boyundan değil, işaretli kalemin çubuk boyundan.
+  const pIsaretli = (cap, boy) => ({ id: 1, ad: "Mil", maliyetKalemleri: [{ tur: "malzeme", malzemeId: 501, bicim: "mil", cap, boy, adet: 1, boydanSiparis: true, cubukBoyu: 6000 }] });
+  it("AC-51 (spec 0143 ile): yüzdesi boş, yalnız kilogram tablosu olan malzemede işaretli satır boy hesaplayınca fire uyarısı çizilir", () => {
+    const tablolu = sip(kart(), pIsaretli(60, 175)).kesitler[0];
     expect(tablolu.boyAdedi).not.toBeNull();
     expect(tablolu.fireUyarisi).toBe(FIRE_BOY_UYARISI);
-    const tablosuz = sip(kart({ geldigiBoy: 6, fireBantlari: undefined }), p(60, 175)).kesitler[0];
+    const tablosuz = sip(kart({ fireBantlari: undefined }), pIsaretli(60, 175)).kesitler[0];
     expect(tablosuz.fireUyarisi).toBeNull();
     expect(FIRE_BOY_UYARISI).toMatch(/kilogram/);
   });
@@ -173,7 +178,7 @@ describe("Spec 0139 A-R15, A-R14, C2: örnek ve taramalar", () => {
       // Düzenleyici (MalzemeManager) bandın kilogramını yalnız giriş alanının değeri olarak okur; aritmetikte okunması yasak.
       expect(/\.kg\b\s*[-+*/]|[-+*/]\s*[\w.]*\.kg\b/.test(k), `${d}: band kilogramıyla hesap`).toBe(false);
     }
-    // 0134 Karar 48: yüzdenin boy yolundaki kopyası tam yolla istisna (kaldırılmaz).
-    expect(fs.readFileSync("src/lib/siparisIhtiyaci.js", "utf8")).toMatch(/p\.oran \* \(1 \+ p\.fire \/ 100\)/);
+    // Spec 0143 ile (B-R4): 0134 Karar 48'in yüzdeyi boy yoluna ekleyen kopyası kalktı; fire boy sayısına girmez.
+    expect(fs.readFileSync("src/lib/siparisIhtiyaci.js", "utf8")).not.toMatch(/p\.oran \* \(1 \+ p\.fire \/ 100\)/);
   });
 });

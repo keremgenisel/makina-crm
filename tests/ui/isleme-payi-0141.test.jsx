@@ -98,12 +98,12 @@ describe("Spec 0141 B: emniyet payı alanları", () => {
     // Kullanıcı isteği 2026-11-10 ile: Ana tedarikçi alaşımın arkasına geldi, ölçü alanları kendi ızgarasında; altı alan ve
     // sıraları aynı (Ana tedarikçi aradaki yeni konumunda, gider yetkisiyle).
     const etiketler = () => ["malzeme-kimlik", "malzeme-olcu-alanlari"].flatMap(id => [...screen.getByTestId(id).children].map(c => c.querySelector("label")?.textContent)).filter(x => x !== "Ana tedarikçi");
-    expect(etiketler()).toEqual(["Malzeme adı", "Alaşım / kalite", "Özgül ağırlık (g/cm³)", "Varsayılan fire (%)", "Geldiği boy (metre)", "Asgari sipariş (kilogram)"]);
+    expect(etiketler()).toEqual(["Malzeme adı", "Alaşım / kalite", "Özgül ağırlık (g/cm³)", "Varsayılan fire (%)", "Asgari sipariş (kilogram)"]); // spec 0143 ile: geldiği boy kalktı
     expect(screen.queryByLabelText("Malzeme emniyet payı")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /İptal|Vazgeç/ }));
     fireEvent.click(screen.getByRole("button", { name: "304 Paslanmaz düzenle" }));
     expect(screen.queryByLabelText("Malzeme emniyet payı")).toBeNull();
-    expect(etiketler()).toHaveLength(6);
+    expect(etiketler()).toHaveLength(5); // spec 0143 ile: geldiği boy kalktı
     yaz("Asgari sipariş", "25"); kaydet(); // fire değişseydi 0139'un etki onayı sorulurdu
     expect(durum.malzemeler[0]).not.toHaveProperty("emniyetPayi");
     expect(durum.malzemeler[0].asgariSiparis).toBe(25);

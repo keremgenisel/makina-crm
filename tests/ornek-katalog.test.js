@@ -21,11 +21,12 @@ describe("Örnek malzemeler", () => {
       expect(v.kayit).toEqual(govde);
     }
   });
-  it("örneklerde eksik bilgi yok (eksik rozeti çıkmaz) ve bantlı, boy fiyatlı, dövizli örnek var", () => {
+  // Spec 0143 ile (A-R5, AC-50): "boy fiyatlı örnek var" iddiası ters çevrildi; hiçbir örnek geldiği boy ya da boy fiyatı taşımaz.
+  it("AC-50 (spec 0143 ile): örneklerde eksik bilgi yok, bantlı ve dövizli örnek var; geldiği boy ve boy fiyatı yok", () => {
     const m = ornekMalzemeler({ rates: RATES, yeniId: sayac() });
     for (const k of m) expect(malzemeEksikleri(k)).toEqual([]);
     expect(m.some(k => k.bantlar?.length === 3)).toBe(true);
-    expect(m.some(k => k.boyFiyati > 0)).toBe(true);
+    for (const k of m) { expect(k).not.toHaveProperty("boyFiyati"); expect(k).not.toHaveProperty("geldigiBoy"); }
     const usd = m.find(k => k.paraBirimi === "USD");
     expect(usd.kur).toBe(42.15);
     expect(malzemeKatalogu(m).size).toBe(4);
