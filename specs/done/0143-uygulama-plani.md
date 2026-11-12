@@ -5,6 +5,7 @@
 | **Spec** | `specs/0143-boydan-siparis.md` (revizyon 2) |
 | **Onay** | Takım Yöneticisi, 2026-11-12 (dokuz öneri onaylandı, spec'e işlendi) |
 | **Dal** | `feat/0143-boydan-siparis` (`d771e776` üstünde) |
+| **Durum** | Tamamlandı: commit `02d9428d`. Triyaj (2026-11-12): uzunlukta yuvarlama (`UZUNLUK_TOLERANSI_MM`), elle boy adedinde asgari uyarısı, göç `yontem`'i her değerde siler. |
 
 ## 1. Dosyalar
 

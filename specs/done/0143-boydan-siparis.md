@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | **Onaylandı, revizyon 2** (Takım Yöneticisi, 2026-11-12; revizyon 2 plan turunda, dokuz öneri onaylandı). Geliştirme başlayabilir. |
+| **Durum** | **Tamamlandı** (commit `02d9428d`, 2026-11-12). Revizyon 2: plan turunda dokuz öneri onaylandı; triyajda üç madde (B-R5/2, B-R9/3, D-R3/6). |
 | **Sahip** | Analist |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Parça kartının malzeme kalemi (`MalzemeSatiriAlani.jsx`), Ayarlar › Katalog › Malzemeler (`MalzemeManager.jsx`, `MalzemeFiyatPenceresi.jsx`), saf motorlar `malzeme.js` ve `siparisIhtiyaci.js`, sipariş penceresi (`stock/SiparisPenceresi.jsx`) ve belgesi (`siparisRaporu.js`), `electron/db.cjs` (iki ölü sütun, bir göç) ve yeni `electron/boyGocuSaf.mjs`, örnek katalog, içe aktarma aracı (`malzemeListesiAktarma.js`), `src/types.d.ts`, kıyas fikstürleri ve beş altın, `scripts/tests/db-roundtrip.cjs`, `tests/ornek-katalog.test.js`, ters çevrilen dokuz test dosyası, `docs/evidence/kanit-eslemesi.json`, `CLAUDE.md` |
@@ -677,10 +677,12 @@ tamamlandı (sayılar birebir, yalnız kalkan alanlar normalleşir).
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 2 | Revizyon 2 plan turunda: altıncı altın (0140) ve "ayıklamasız kıyas" kararının dar ayıklamayla tamamlanması dahil dokuz öneri |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-11-12), üç bulgu |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 | Oranın üç ondalık yuvarlaması uzun çubukta eksik sipariş veriyordu; elle boy adedinde asgari uyarısı yoktu; göç `yontem: "kilo"`'yu bırakıyordu |
+| **Regresyon sayısı** | 0 | Maliyet zinciri, fiyat, model, parti ve Excel spec öncesi altınla birebir; altı eski altın bayt bayt aynı |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** bir toleransı "oranı üç ondalığa yuvarla" diye yazmak toleransı bölene (çubuk boyuna) bağlar; tolerans
+giriş hassasiyetinden geliyorsa birimi de girişin birimi (milimetre, parça başına) olmalı. Ayrıca spec'in "etkilenen altın" sayımı
+anahtar aramasıyla (`"yontem": "boy"`) yapılmıştı; değer değişimini (kilo yolundaki boy adedi) aramak altıncı altını gösterdi.
