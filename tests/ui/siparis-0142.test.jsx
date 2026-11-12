@@ -94,6 +94,7 @@ describe("Spec 0142 A: gerçek giriş noktasından basılan belge", () => {
     render(<Katalog />);
     fireEvent.click(screen.getByTestId("siparis-listesi-dugmesi"));
     fireEvent.click(screen.getByTestId("siparis-yazdir"));
+    fireEvent.click(screen.getByTestId("nusha-fiyatsiz")); // spec 0144 ile (B-R1): Yazdır önce nüshayı sorar
     expect(printHtml).toHaveBeenCalledTimes(1);
     const html = printHtml.mock.calls[0][0];
     expect(html).toContain("Ø62 × 178"); expect(html).toContain("Alınacak malzeme toplamı");

@@ -167,13 +167,16 @@ describe("Spec 0142 taramalar", () => {
   });
   it("AC-50: belge modülünde para iskeleti yok", () => {
     const k = kodSatirlari("src/lib/siparisRaporu.js");
-    for (const ad of ["paraGoster", "hazirPara", "malzemePara", "tutarPb", "birimPb", "tutarTLK", "tutarK", "birimK"]) expect(k, ad).not.toContain(ad);
+    // Spec 0144 ile (B-R3, Karar 35): fiyatlı nüsha motorun `tutarK` ve `birimK` alanlarını okur; 0140 iskeleti yine yok.
+    for (const ad of ["paraGoster", "hazirPara", "malzemePara", "tutarPb", "birimPb", "tutarTLK"]) expect(k, ad).not.toContain(ad);
     expect(k).not.toMatch(/const tl\b/);
   });
   it("AC-52 / AC-60 (kaynak): para neden sabitleri motorda durur ama ekranda ve belgede okunmaz", () => {
     for (const ad of ["MALZEMESI_ASAGIDA", "MALIYET_YOK", "NEDEN_FIYAT_YOK", "NEDEN_KUR_YOK", "NEDEN_PARA_BIRIMI"]) expect(typeof S[ad], ad).toBe("string");
     const ekran = [...tumDosyalar("src/components"), "src/lib/siparisRaporu.js"].map(kodSatirlari).join("\n");
-    for (const ad of ["MALZEMESI_ASAGIDA", "MALIYET_YOK", "NEDEN_FIYAT_YOK", "NEDEN_KUR_YOK", "NEDEN_PARA_BIRIMI", "tutarNeden"]) expect(ekran, ad).not.toContain(ad);
+    for (const ad of ["MALZEMESI_ASAGIDA", "MALIYET_YOK", "NEDEN_FIYAT_YOK", "NEDEN_KUR_YOK", "NEDEN_PARA_BIRIMI"]) expect(ekran, ad).not.toContain(ad);
+    // Spec 0144 ile (B-R8): fiyatlı nüsha tutarı yazılamayan hücreye motorun nedenini basar; ekran yine okumaz.
+    expect(tumDosyalar("src/components").map(kodSatirlari).join("\n")).not.toContain("tutarNeden");
   });
   it("AC-54: ters çevrilen 0140 kriterleri 'spec 0142 ile' notu taşır", () => {
     const rapor = fs.readFileSync("tests/siparis-raporu-0140.test.js", "utf8").split("\n");

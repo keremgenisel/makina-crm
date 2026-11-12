@@ -32,7 +32,7 @@ const tablo = () => { const d = screen.getByRole("button", { name: /^Parça ihti
 
 describe("Spec 0140: pencere", () => {
   it("AC-65: pencere wide açılır ve gerekçeli kilitsiz dosyalardadır", () => {
-    expect(fs.readFileSync("src/components/stock/SiparisPenceresi.jsx", "utf8")).toMatch(/<Modal title=\{SIPARIS_PENCERE_BASLIGI\} onClose=\{onClose\} wide>/);
+    expect(fs.readFileSync("src/components/stock/SiparisPenceresi.jsx", "utf8")).toMatch(/<Modal title=\{SIPARIS_PENCERE_BASLIGI\} onClose=\{soruAcik \? NOOP : onClose\} wide>/); // spec 0144 ile (B-R1/3, triyaj bulgu 1)
     expect(fs.readFileSync("src/lib/kilitAlanlari.js", "utf8")).toMatch(/"src\/components\/stock\/SiparisPenceresi\.jsx": "salt okunur/);
   });
   it("AC-19 / AC-22 / AC-24 / AC-25: seçim yokken bütün tedarikçiler, iki alt bölüm; çift sayım açıklaması", () => {

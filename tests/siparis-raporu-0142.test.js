@@ -36,10 +36,11 @@ describe("Spec 0142 B: belgenin yeni düzeni", () => {
     expect(BELGE_SUTUNLARI.parca).toEqual(["Parça", "Ölçü", "Sipariş adedi"]);
     expect(h).not.toContain("Hazır parçalar");
   });
-  it("AC-8: malzemeden kesilen parçanın hemen altında malzemenin adı; malzeme satırı ölçü ve adet yazmaz", () => {
+  // Spec 0144 ile (A-R1, A-R1/3): malzeme satırı artık kesidi Ölçü hücresine, o parçanın payını Sipariş adedi hücresine yazar.
+  it("AC-8 (spec 0144 ile): malzemeden kesilen parçanın hemen altında malzemenin adı, kesidi ve payı", () => {
     const { r, alt } = parcaSatiri(h, "Alfa Çelik", "Kalın mil");
     expect(r[1]).toBe("Ø62 × 178"); expect(r[2]).toBe("70");
-    expect(alt[0]).toContain(`${MALZEME_ETIKETI} · 304 Çubuk`); expect(alt[1]).toBe(""); expect(alt[2]).toBe("");
+    expect(alt[0]).toContain(`${MALZEME_ETIKETI} · 304 Çubuk`); expect(alt[1]).toBe("Ø62"); expect(alt[2]).toMatch(/ kg$/);
   });
   it("AC-9 / AC-10: hazır parçanın ölçü hücresi boş, altında malzeme satırı yok", () => {
     const { r, alt } = parcaSatiri(h, "Delta Hırdavat", "Elle");
@@ -59,7 +60,8 @@ describe("Spec 0142 B: belgenin yeni düzeni", () => {
     const r = sonuc().tedarikciBolumleri.belge.find(b => b.ad === "Alfa Çelik").toplam.find(k => k.kesitMetni === "Ø62");
     expect(satirlar(t)).toContainEqual(["304 Çubuk", "Ø62", S.kgMetni(r.siparisKg)]);
     expect(bolumHtml(h, "Alfa Çelik").indexOf(TOPLAM_BASLIGI)).toBeGreaterThan(bolumHtml(h, "Alfa Çelik").indexOf("Kalın mil"));
-    for (const r2 of satirlar(parcaTablosu(h, "Alfa Çelik"))) expect(r2[2]).not.toMatch(/kg|boy/);
+    // Spec 0144 ile: yalnız parça satırları (malzeme satırının miktarı payı yazar, A-R1/3).
+    for (const r2 of satirlar(parcaTablosu(h, "Alfa Çelik")).filter(x => satirAdi(x))) expect(r2[2]).not.toMatch(/kg|boy/);
   });
   // Spec 0143 ile: boy fiyatı yöntemi kalktı; işaretli (boydan sipariş) kalemin toplamı boy adedi ve çubuk boyunu yazar (0143 C-R2, C-R4).
   it("AC-14 (spec 0143 ile): boydan sipariş edilen malzemenin toplamı boy adedi yazar", () => {

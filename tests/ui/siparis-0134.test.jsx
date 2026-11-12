@@ -147,6 +147,7 @@ describe("Spec 0134: yazdırma ve salt okunurluk", () => {
     cleanup();
     render(<Ekran />);
     fireEvent.click(screen.getByRole("button", { name: /Yazdır/ }));
+    fireEvent.click(screen.getByTestId("nusha-fiyatsiz")); // spec 0144 ile (B-R1): Yazdır önce nüshayı sorar
     const [html, , ad] = window.appPrint.printHtml.mock.calls[0];
     // Spec 0140 ile (C-R10, E-R1): belgenin adı "Sipariş Listesi", PARÇA İHTİYACI tablosu belgede yok.
     expect(html).toContain("SİPARİŞ LİSTESİ"); expect(html).not.toContain("PARÇA İHTİYACI"); expect(html).toContain("Ana Çelik");

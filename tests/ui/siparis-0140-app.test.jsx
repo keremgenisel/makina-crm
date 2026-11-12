@@ -68,6 +68,7 @@ describe("Spec 0140 gerçek App", () => {
     expect(p.textContent).not.toMatch(/₺|\$|€/);
     expect([...screen.getByLabelText("Üretim partisi").options].map(o => o.textContent)).not.toContain("Çöpteki Parti");
     fireEvent.click(screen.getByTestId("siparis-yazdir"));
+    fireEvent.click(screen.getByTestId("nusha-fiyatsiz")); // spec 0144 ile (B-R1): Yazdır önce nüshayı sorar
     const [html] = window.appPrint.printHtml.mock.calls[0];
     expect(html).toContain("Ana Çelik"); expect(html).not.toMatch(/Birim (maliyet|fiyat)|Tutar|\d,\d{2} (TL|\$|€)/);
   });

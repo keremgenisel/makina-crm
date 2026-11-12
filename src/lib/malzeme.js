@@ -70,6 +70,8 @@ const ucHane = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 3, maximu
 export const kgMetni = (kg) => (kg == null ? "—" : `${ucHane.format(ucOndalik(kg))} kg`);
 const ikiHane = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 export const fiyatMetni = (fiyat, pb) => (fiyat == null || fiyat === "" ? "—" : `${ikiHane.format(Number(fiyat))} ${PARA_SIMGE[pb] || pb}`);
+// Spec 0144 C5/3: kilo fiyatının `/kg` eki tek yerde (malzeme kartının küme özeti ve sipariş belgesi).
+export const kiloFiyatMetni = (fiyat, pb) => (fiyat == null || fiyat === "" ? "" : `${fiyatMetni(fiyat, pb)}/kg`);
 
 // ── Bantlar (R3, R3/2, Karar 26) ────────────────────────────────────────────────────────────────────────────────────────
 export const bantlarOf = (m) => (Array.isArray(m?.bantlar) ? m.bantlar : [])
@@ -157,7 +159,7 @@ export const fiyatGecmisiSatirlari = (m) => {
 export const kumeOzeti = (k) => {
   const pb = k.paraBirimi || "TRY";
   const parcalar = [];
-  if (k.kiloFiyati != null) parcalar.push(`${fiyatMetni(k.kiloFiyati, pb)}/kg`);
+  if (k.kiloFiyati != null) parcalar.push(kiloFiyatMetni(k.kiloFiyati, pb));
   if (k.bantlar?.length) parcalar.push(`${k.bantlar.length} bant`);
   if (dovizMi(pb)) parcalar.push(k.kur != null ? `kur ${fmtSayi(k.kur)}` : "kur girilmedi");
   return parcalar.length ? parcalar.join(" · ") : "fiyat girilmedi";

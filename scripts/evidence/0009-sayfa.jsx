@@ -41,6 +41,7 @@ import * as V136 from "../../tests/fixtures/0136-veri.js";
 import { partiGenelPaylari as pgp136, partiKapanisGoruntusu as pkg136, modelMaliyetleri as mm136 } from "../../src/lib/makinaStandartMaliyet";
 import * as F34 from "../../tests/fixtures/0134-veri.js";
 import * as V142 from "../../tests/fixtures/0142-veri.js";
+import * as V144 from "../../tests/fixtures/0144-veri.js";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml as siparisRaporuHtml0142 } from "../../src/lib/siparisRaporu";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
@@ -841,6 +842,13 @@ function SiparisBelgesi0143() {
   const r = siparisIhtiyaci0142({ modeller: VERI_0143.modeller, satirlar: [{ model: "AK100_DS", adet: "70" }], parts: VERI_0143.parts, partStock: [], malzemeler: VERI_0143.malzemeler, tedarikciler: VERI_0143.tedarikciler }, { tedarikciOdakli: true });
   return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: siparisRaporuHtml0142(r, { bugun: "2026-11-12", factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi" }) }} />;
 }
+// Spec 0144: parça altı malzeme satırları ve fiyatlı nüsha; veri tests/fixtures/0144-veri.js (motor, belge ve kıyas testleriyle aynı).
+const siparis0144 = () => <SiparisEkrani modeller={V144.MODELLER.standardModels} parts={V144.PARCALAR} malzemeler={V144.MALZEMELER} tedarikciler={V144.TEDARIKCILER} stok={[]} />;
+function SiparisBelgesi0144({ fiyatli = false, senaryo = "odakli" }) {
+  const [v, sec] = V144.SENARYOLAR()[senaryo];
+  const html = siparisRaporuHtml0142(siparisIhtiyaci0142(v, sec), { bugun: V144.BUGUN, factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi", fiyatli });
+  return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
+}
 // Spec 0097: Parti Hesabı'nın tarihli satırları ve dönem kilitli pay; veri tests/fixtures/0097-veri.js (motor ve ekran testleriyle aynı).
 function MaliyetEkrani0097() {
   const [uretimPartileri, setUretimPartileri] = useState(V97.PARTILER);
@@ -1224,6 +1232,10 @@ const EKRANLAR = {
   "katalog-parca-0143-kilo": [ayarlar("yedekparca", { parts: [KILOLU_0143], malzemeler: MALZEME_0132, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Sipariş boydan verilir"]],
   "siparis-0143-pencere": [siparis0143(), ["kaydirgenis:Malzeme · kesit"]],
   "siparis-0143-belge": [<SiparisBelgesi0143 />, []],
+  "siparis-0144-soru": [siparis0144(), ["baslik:Sipariş listesini yazdır/PDF kaydet"]],
+  "siparis-0144-belge-fiyatsiz": [<SiparisBelgesi0144 />, []],
+  "siparis-0144-belge-fiyatli": [<SiparisBelgesi0144 fiyatli />, []],
+  "siparis-0144-belge-duzenleme": [<SiparisBelgesi0144 fiyatli senaryo="duzenleme" />, []],
   "siparis-0140-bos": [<SiparisEkrani partiler={[]} />, []],
   "siparis-0140-model-hatali": [<SiparisEkrani partiler={[{ ...PARTI_0134[0], planlananAdetler: { AK100_DS: 70, YOK_MODEL: 4 } }]} />, []],
   "siparis-0140-silinmis-tedarikci": [<SiparisEkrani malzemeler={[{ ...F34.P304, tedarikciId: 99 }]} hamTed={[...F34.TED, { id: 99, ad: "Eski Döküm", deletedAt: "2026-09-01" }]} />, ["kaydir:Eski Döküm"]],

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { belgeDurumu } from "../../lib/siparisRaporu";
 import { Field, Input, Select, Btn, Icon, Modal } from "../ui";
 import { SiparisRaporuDugmesi } from "../rapor/SiparisRaporuDugmesi";
 import { BosDurum, UyariSeridi, Ipucu, HataMetni, KartBolum, CokluSecim } from "../tasarim";
@@ -44,6 +45,7 @@ const OlcuHucresi = ({ olculer = [] }) => <td style={{ ...td, textAlign: "left",
   {olculer.filter(o => !o.eksik).map((o, i) => <div key={i} data-testid="siparis-olcu">{o.metin}</div>)}</td>;
 const OlcuEksik = ({ olculer = [] }) => (olculer.some(o => o.eksik) ? <div data-testid="siparis-olcu-eksik" style={kucuk}>{OLCU_GIRILMEMIS}</div> : null);
 
+const NOOP = () => {};
 export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }) => {
   const bugunYerel = useBugun(); // belgenin tarihi yerel gün (0003 dersi; today() UTC değil)
   const bugun = bugunProp || bugunYerel;
@@ -58,6 +60,9 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
   const [satirlar, setSatirlar] = useState(() => ilk.satirlar);
   const [secim, setSecim] = useState([]);
   const [duzen, setDuzen] = useState({ parca: {}, kesit: {} });
+  // Spec 0144 B-R1/3 (AC-41, AC-73): nüsha sorusunun durumu burada; soru açıkken bu pencerenin onClose'u hiçbir şey yapmaz
+  // (0126'nın iç içe pencere kuralı: Modal Escape'i window'da dinler, yoksa Escape geçici düzenlemeleri de silerdi).
+  const [nushaSoru, setNushaSoru] = useState(false);
   const partiSec = (id) => {
     setPartiId(id);
     const p = partiler.find(x => String(x.id) === String(id));
@@ -123,8 +128,13 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
     </table>
   );
 
+  // Triyaj (bulgu 1): soru penceresi yalnız belge basılabilirken çizilir; koruma ve çizim aynı yüklemden geçer, yoksa soru açıkken
+  // veri belgeyi basılamaz yapınca soru kaybolur ama pencere kapatılamaz kalırdı. Basılamaz olunca soru durumu da düşer.
+  const belgeEtkin = belgeDurumu(sonuc).etkin;
+  const soruAcik = nushaSoru && belgeEtkin;
+  useEffect(() => { if (!belgeEtkin) setNushaSoru(false); }, [belgeEtkin]);
   return (
-    <Modal title={SIPARIS_PENCERE_BASLIGI} onClose={onClose} wide>
+    <Modal title={SIPARIS_PENCERE_BASLIGI} onClose={soruAcik ? NOOP : onClose} wide>
       <div data-testid="siparis-penceresi">
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap", marginBottom: 8 }}>
           <div style={{ minWidth: 240 }}>
@@ -138,7 +148,8 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
           <div style={{ marginLeft: "auto", display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
             <Btn variant="ghost" onClick={() => setSatirlar(p => [...p, { model: "", adet: "" }])}><Icon name="plus" size={13} /> Model Satırı Ekle</Btn>
             <Btn variant="ghost" onClick={() => setDuzen({ parca: {}, kesit: {} })} disabled={!duzenVar}>{ONERILERE_DON}</Btn>
-            <SiparisRaporuDugmesi sonuc={sonuc} bugun={bugun} factory={factory} partiAd={parti?.ad || null} />
+            <SiparisRaporuDugmesi sonuc={sonuc} bugun={bugun} factory={factory} partiAd={parti?.ad || null}
+              soruAcik={soruAcik} onSoruAc={() => setNushaSoru(true)} onSoruKapat={() => setNushaSoru(false)} />
           </div>
         </div>
         {parti && ilk.bos && <Ipucu><span data-testid="siparis-parti-plan-yok">{PARTI_PLAN_YOK}</span></Ipucu>}
