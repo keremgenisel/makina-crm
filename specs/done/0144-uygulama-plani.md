@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0144-siparis-belgesi-parca-alti-ve-fiyatli-nusha.md` (revizyon 2) |
+| **Spec** | `specs/done/0144-siparis-belgesi-parca-alti-ve-fiyatli-nusha.md` (revizyon 2) |
 | **Onay** | Takım Yöneticisi, 2026-11-12 (on bir öneri onaylandı, spec'e Karar 34–44 olarak işlendi) |
 | **Dal** | `feat/0144-siparis-fiyatli` (`15dda61d` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor (2026-11-12). Tam takım yeşil (Electron dışı 7430, Electron 25), lint 0 hata, tip denetimi temiz. Kanıt `0144-piksel-raporu.json`: 17 eski pencere ve katalog ekranı 0 piksel, iki eski belge ekranı bilinçli değişti (eşlemede kaydı yok, işaretleme gerekmedi), dört yeni ekran; aynı kodla ikinci çekim 0 fark. Mutasyon ölçümü AC-48'in eksik testini buldu (iki boylu tek parça kesidi), eklendi. Uygulamada `payBoy` adı 0141'in kaldırılan işleme payı alanıyla çakıştığı için `kesirliBoy` oldu. |
+| **Durum** | Tamamlandı: commit `c4a08686` (2026-11-12). Triyaj: soru koruması belgenin basılabilirliğine bağlandı, ölçüsüz kalem parça tutarında nedenli ve sayılır (B-R5/7), AC-44 taraması genişledi, tedarikçisiz karışık kalem açık bulgu. Tam takım yeşil (Electron dışı 7430, Electron 25), lint 0 hata, tip denetimi temiz. Kanıt `0144-piksel-raporu.json`: 17 eski pencere ve katalog ekranı 0 piksel, iki eski belge ekranı bilinçli değişti (eşlemede kaydı yok, işaretleme gerekmedi), dört yeni ekran; aynı kodla ikinci çekim 0 fark. Mutasyon ölçümü AC-48'in eksik testini buldu (iki boylu tek parça kesidi), eklendi. Uygulamada `payBoy` adı 0141'in kaldırılan işleme payı alanıyla çakıştığı için `kesirliBoy` oldu. |
 
 ## 1. Dosyalar
 

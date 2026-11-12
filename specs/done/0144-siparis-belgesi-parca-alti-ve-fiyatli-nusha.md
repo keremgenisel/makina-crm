@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-12; yedi karar ve mockup turunun A-R5 netleştirmesi dâhil). Revizyon 2: plan turunun on bir kararı işlendi (Karar 34–44); uygulama planı `specs/0144-uygulama-plani.md` |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-12; yedi karar ve mockup turunun A-R5 netleştirmesi dâhil). Revizyon 2: plan turunun on bir kararı işlendi (Karar 34–44); triyajda B-R5/7. **Tamamlandı:** commit `c4a08686`, plan `specs/done/0144-uygulama-plani.md` |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Sipariş Listesi penceresinin yazdırma çıktısı (`siparisRaporu.js`), yazdırma düğmesi ve yeni nüsha soru penceresi (`rapor/`), sipariş penceresinin soru durumu (`stock/SiparisPenceresi.jsx`), saf motor `siparisIhtiyaci.js`'in belge bölümleri, para biçimi yardımcıları (`malzeme.js`, `siparisIhtiyaci.js`), kanıt aracının belge ekranı, altı kıyas altınının ayıklaması |
@@ -434,10 +434,13 @@ Uygulama planının on bir önerisi Takım Yöneticisi tarafından onaylandı.
 
 | Ölçüt | Değer | Not |
 |---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| **Spec revizyon sayısı** | 2 | Revizyon 2 plan turunda: on bir öneri (C4 ile A-R6 çelişkisi, `fiyatli` adı, tedarikçisiz ve kapalı satırın tutarı, elle küçültülen toplam dahil) |
+| **Düzeltme turu sayısı** | 1 | Triyaj (2026-11-12), dört bulgu |
+| **Bulgu gerçek/gürültü oranı** | 4 / 0 | Soru açıkken belge basılamaz olunca pencere kapanamıyordu; ölçüsüz kalem parça tutarını sessizce eksik bırakıyordu; karışık parçanın tedarikçisiz kalemi (0142'den beri, açık bulgu); AC-44 taraması boşluksuz aritmetiği kaçırıyordu. Ara mesajdaki birim fiyat bulgusu analist tarafından geri çekildi |
+| **Regresyon sayısı** | 0 | Fiyatsız nüsha malzeme satırları ayıklanınca spec öncesi belgeyle birebir; altı kıyas ayıklamasız yeşil; 17 pencere ve katalog ekranı 0 piksel |
+| **Kaçan hata** | 0 | |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** iki ayrı yerde yazılmış aynı koşul (soruyu çizen `soruAcik && d.etkin`, koruyan yalnız `nushaSoru`)
+yalnız verinin dışarıdan değiştiği yolda ayrışır ve o yol testlerde yoktur; çizim ile korumayı aynı yüklemden türetmek gerekir. Ayrıca
+mutasyon denemesi, kıyas ve senaryo verisinin "iki boylu tek parça" hâlini taşımadığını gösterdi: ölçütü (farklı parça sayısı) giriş
+sayısından ayıran tek veri o hâldi.
