@@ -461,9 +461,13 @@ function registerDataHandlers(ipcMain, app, dialog, sqliteDb) {
       if (res.status === 401) { broadcast("server:sessionExpired"); return false; }
       if (!res.ok) return false;
       const body = await res.json();
-      saveServerConfig(app, { ...cfg, token: body.token });
+      // Spec 0145 B-R1/2, B-R1/6 (AC-26): sunucunun doğruladığı güncel izin (rol ve izin listesi) de ayara yazılır ve döner; eskiden
+      // yalnız jeton saklanıyor, izin atılıyordu ve yerel ayardaki izin bir sonraki girişe kadar bayat kalıyordu.
+      const role = body.user?.role ?? cfg.role;
+      const permissions = body.user ? (body.user.permissions ?? null) : (cfg.permissions ?? null);
+      saveServerConfig(app, { ...cfg, token: body.token, role, permissions });
       flushSecurityQueue(app, cfg.serverUrl, body.token); // bağlantı doğrulandı — bekleyen app-lock kayıtlarını gönder
-      return true;
+      return { ok: true, role, permissions };
     } catch { return false; }
   });
 

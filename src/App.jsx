@@ -27,7 +27,7 @@ import { yerelServisMi } from "./lib/yerelServis";
 import { bildirimCal } from "./lib/bildirimSes";
 import { kilidiAc } from "./lib/alarmSes";
 import { setAuditUsername, logAction } from "./lib/audit";
-import { READONLY_SERVER_PERMISSIONS, gorunurSekmeler, makeCanDo } from "./lib/permissions";
+import { READONLY_SERVER_PERMISSIONS, gorunurSekmeler, makeCanDo, kargoKapisi, kalipKargoKapisi, IZIN_BEKLEME_MS } from "./lib/permissions";
 import { tahsilatHesapKapisi } from "./components/settings/serverPermissionDefs";
 import { Icon, ConfirmDialog } from "./components/ui";
 import { LockScreen } from "./components/LockScreen";
@@ -173,6 +173,9 @@ export default function App() {
   // ── Sunucu modu: null=kontrol bekleniyor | "none"=yerel mod | "login"=giriş gerekli | "active"=giriş yapıldı ──
   const [serverMode, setServerMode] = useState(null);
   const [serverPermissions, setServerPermissions] = useState(null); // { role, permissions (JSON string | null) }
+  // Spec 0145 B-R3/2 (QA kararı 4): "izin yerleşti" ayrı bayraktır; iznin boşluğu ölçüt olamaz (admin ve kısıtsız kullanıcıda izin null).
+  // Yalnız istemci kipinde ve ilk tazeleme sürerken false olur; yerel mod, sunucu PC ve köprüsüz ortamda hiç düşmez (B-R2/3, B-R3).
+  const [izinYerlesti, setIzinYerlesti] = useState(true);
 
   // ── Salt okunur mod: istemci sunucuya ulaşamıyorsa (evde/bağlantı koptu) düzenleme kilitlenir ──
   // Veri önbellekten veya son yüklemeden görüntülenmeye devam eder; bağlantı dönünce kendiliğinden açılır.
@@ -207,11 +210,12 @@ export default function App() {
   const kasaSekmesi = useMemo(() => gorunurSekmeler(TABS, serverMode, serverPermissions).some(t => t.id === "kasa"), [serverMode, serverPermissions]);
   // Kargo panosu (Servis Panosu içindeki "Kargo" görünümü) yalnız Stok erişimi olanlara açılır —
   // servis-katı kiosk kullanıcısı (tabs:["servis"]) görmez, böylece kargo yönetimi ofiste kalır.
-  const kargoYetki = useMemo(() => visibleTabs.some(t => t.id === "stock"), [visibleTabs]);
+  const kargoYetki = useMemo(() => kargoKapisi(visibleTabs), [visibleTabs]);
   // Spec 0115 R27/2: panonun "kalıpları da bitti işaretle" düğmesi Stok sekmesini ister (kargoYetki kardeşi).
   const uretimYetki = kargoYetki;
-  // Extra Kalıp kargo kartları müşteri tabına erişimi olanlarda panoda görünür (kalıp müşteri altında).
-  const kalipYetki = useMemo(() => visibleTabs.some(t => t.id === "customers"), [visibleTabs]);
+  // Spec 0145 A-R2 (Karar 1, QA kararı 1): Extra Kalıp kargo kartları Stok YA DA Müşteriler sekmesiyle; tanım permissions.js'te
+  // tek yerde, altı okuyucu (pano üç liste ve alarm, uygulama bildirimi, ayrı pencere görüntüsü) bu bayrağı okur (A-R3/2).
+  const kalipYetki = useMemo(() => kalipKargoKapisi(visibleTabs), [visibleTabs]);
   // Yetki dışı sekmeye HER geçişi geri çevir: menüde gizlemek yetmez, tab state'i
   // genel arama ve anasayfa kısayolları gibi yerlerden de set ediliyor. Render daima
   // activeTab üzerinden yapılır, izinsiz hedefe tek kare bile içerik çizilmez.
@@ -244,6 +248,19 @@ export default function App() {
       const active = cfg.isActive ? "active" : "login";
       setServerMode(active);
       if (cfg.isActive) setServerPermissions({ role: cfg.role, permissions: cfg.permissions ?? null });
+      // Spec 0145 B-R1/2, B-R1/3, B-R2/2 (AC-27, AC-28): ilk çizim açılıştaki jeton tazelemesinin sonucuna bağlı (yeni ağ turu yok:
+      // tazeleme zaten açılışta atılıyordu). En çok IZIN_BEKLEME_MS beklenir; süre dolarsa ya da hata dönerse yerel ayardaki izinle
+      // çizilir ve geç gelen cevap izni yine yerleştirir (B-R2/4). Bekleme ham izni bekler, salt okunur modu değil (B-R4/2).
+      if (cfg.isActive && window.appServer.refreshToken) {
+        setIzinYerlesti(false);
+        let bitti = false;
+        const yerles = () => { if (!bitti) { bitti = true; setIzinYerlesti(true); } };
+        const sure = setTimeout(yerles, IZIN_BEKLEME_MS);
+        Promise.resolve().then(() => window.appServer.refreshToken()).then(r => {
+          if (r && r.ok) setServerPermissions(p => (p?.role === r.role && p?.permissions === (r.permissions ?? null)) ? p : { role: r.role, permissions: r.permissions ?? null });
+          clearTimeout(sure); yerles();
+        }).catch(() => { clearTimeout(sure); yerles(); });
+      }
       // Son çalışan adres LAN ise rozeti baştan "Yerel Ağ" göster (checkLan bitene kadar "Tailscale"
       // flaşı olmasın). checkLan birazdan doğrular/günceller.
       if (cfg.isActive && cfg.lastGoodUrl && !isTailscaleServerUrl(cfg.lastGoodUrl)) setSameLan(true);
@@ -489,7 +506,7 @@ export default function App() {
   // 401 → sessionExpired zaten devreye girer.)
   useEffect(() => {
     if (serverMode !== "active" || !window.appServer?.refreshToken) return;
-    window.appServer.refreshToken();
+    // Spec 0145 B-R1/3: açılıştaki ilk tazeleme sunucu ayarı okunurken (izin beklemesiyle) atılır; burada yalnız günlük aralık.
     const id = setInterval(() => window.appServer.refreshToken(), 24 * 60 * 60 * 1000);
     return () => clearInterval(id);
   }, [serverMode]);
@@ -497,7 +514,8 @@ export default function App() {
   // ── İstemci PC polling: veri sync + izin güncelleme + devre dışı bırakma + offline/online ──
   useEffect(() => {
     if (serverMode !== "active" || !window.appServer?.apiRequest) return;
-    const id = setInterval(async () => {
+    // Spec 0145 B-R1/4, B-R1/5 (AC-32): ilk tur beklemeden bir kez çalışır; ilk yükleme veri sürümünü yerleştirmeden veri yüklemez.
+    const tur = async (ilk) => {
       try {
         const result = await window.appServer.apiRequest({ method: "GET", path: "/api/version" });
         // 401 → kullanıcı pasif yapıldı veya token süresi doldu → giriş ekranına gönder
@@ -506,7 +524,8 @@ export default function App() {
           return;
         }
         if (!result?.ok) {
-          if (serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
+          // Spec 0145 B-R1/5: ilk tur çevrimdışı işaretlemez (ilk yükleme ve sonraki turlar bunu zaten yapar); yalnız izni hızlandırır.
+          if (!ilk && serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
           return;
         }
         // Sunucu tekrar erişilebilir — yeniden bağlan
@@ -536,7 +555,7 @@ export default function App() {
         }
         // Veri versiyonu değiştiyse state'i yenile. Spec 0077 R8, R10, R13: tek kapı (bekleyen / yoldaki kayıt, bastırma
         // penceresi); atlanan turda izin, rol ve çevrimiçi denetimi yukarıda yapılmış olur, pendingSave'e dokunulmaz.
-        if (typeof sv === "number" && sv !== dataVersionRef.current && yenilemeSerbestMi()) {
+        if (typeof sv === "number" && (!ilk || dataVersionRef.current != null) && sv !== dataVersionRef.current && yenilemeSerbestMi()) {
           clearTimeout(saveTimer.current);
           const myPending = pendingSave.current;
           pendingSave.current = null;
@@ -545,9 +564,11 @@ export default function App() {
         }
       } catch {
         // Network error — sunucu erişilemiyor
-        if (serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
+        if (!ilk && serverOnlineRef.current) { serverOnlineRef.current = false; setServerOnline(false); }
       }
-    }, 10000);
+    };
+    tur(true);
+    const id = setInterval(() => tur(false), 10000);
     return () => clearInterval(id);
   }, [serverMode]);
 
@@ -1442,6 +1463,9 @@ export default function App() {
   if (!unlocked) return <LockScreen onUnlock={() => setUnlocked(true)} />;
 
   if (serverMode === null) return null; // sunucu durumu kontrol edilirken bekle
+  // Spec 0145 B-R1, B-R2 (Karar 2, AC-9–AC-11, AC-25): istemci kipinde izin yerleşene kadar aynı boş dal; kiosk kararı da yerleşmiş
+  // izinden hesaplanır.
+  if (serverMode === "active" && !izinYerlesti) return null;
   if (serverMode === "login") return <ServerLogin onLogin={() => window.location.reload()} initialUrl={savedServerUrl} initialUsername={savedUsername} />;
 
   // ── Tam kiosk (yalnız Servis Panosu görünür kullanıcı): kabuk yok, pano tam ekran ──

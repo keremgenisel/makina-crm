@@ -67,3 +67,16 @@ export const READONLY_SERVER_PERMISSIONS = {
     settings: ["server"],
   }),
 };
+
+// Spec 0145 A-R2, A-R2/2, A-R2/3: Servis ve Kargo Panosu'ndaki kargo kartlarının kapıları TEK yerde. Yedek parça kargosu yalnız
+// Stok sekmesiyle; Extra Kalıp kargosu Stok YA DA Müşteriler sekmesiyle (birleşim: bugün kartları gören Müşteriler sekmeli kullanıcı
+// kaybetmez). Girdi görünür sekme listesidir (`gorunurSekmeler`'in sonucu). Kiosk (yalnız pano) iki kapıyı da kapalı görür (A-R6).
+/** @param {Array<{id: string}> | null | undefined} sekmeler @param {string} id */
+const sekmeVar = (sekmeler, id) => (sekmeler || []).some((/** @type {{id: string}} */ t) => t?.id === id);
+/** @param {Array<{id: string}> | null | undefined} sekmeler */
+export const kargoKapisi = (sekmeler) => sekmeVar(sekmeler, "stock");
+/** @param {Array<{id: string}> | null | undefined} sekmeler */
+export const kalipKargoKapisi = (sekmeler) => sekmeVar(sekmeler, "stock") || sekmeVar(sekmeler, "customers");
+
+// Spec 0145 B-R2/2: istemci açılışında ilk izin tazelemesinin beklenme üst sınırı (ms). Süre dolarsa yerel ayardaki izinle çizilir.
+export const IZIN_BEKLEME_MS = 1500;

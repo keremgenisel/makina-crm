@@ -168,7 +168,8 @@ export const ServisPanosu = ({
   // Kargo/kalıp detay modalları eşzamanlı düzenleme kilidi (Stok'taki yedek parça düzenlemesiyle
   // aynı "yedek_parca" alanını paylaşır → iki kullanıcı aynı satışı aynı anda düzenleyemez).
   const { lockConflict: kargoLock, forceAcquire: forceKargoLock } = useLock("yedek_parca", kargoDetayId);
-  const { lockConflict: kalipLock, forceAcquire: forceKalipLock } = useLock("part_sale", kalipDetayId);
+  // Spec 0145 A-R5/2 (QA kararı 8): salt okunur açılış kilit almaz; yoksa her bakış müşteri detayındaki Extra Kalıp formunu (0128) kapatırdı.
+  const { lockConflict: kalipLock, forceAcquire: forceKalipLock } = useLock("part_sale", canKalipDuzenle ? kalipDetayId : null);
 
   // ── Canlı saat & tarih (Anasayfa ile aynı) ──
   const [now, setNow] = useState(new Date());

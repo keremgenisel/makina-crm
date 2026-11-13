@@ -107,7 +107,10 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
 
   // ── Oturum yenileme, çıkış, kısıtlı kullanıcı ──
   const oncekiJeton = ayar().token;
-  check("oturum yenilenir (GET /auth/me), jeton saklanır", (await ipc("server:refreshToken")) === true && !!ayar().token && typeof oncekiJeton === "string");
+  // Spec 0145 ile (B-R1/2, B-R1/6, AC-26): tazeleme sunucunun güncel iznini ayara yazar ve döndürür (eskiden yalnız `true`).
+  const taze = await ipc("server:refreshToken");
+  check("oturum yenilenir (GET /auth/me), jeton saklanır (spec 0145 ile: dönüş nesne)", taze?.ok === true && !!ayar().token && typeof oncekiJeton === "string", taze);
+  check("spec 0145 AC-26: tazeleme rol ve izni ayara yazar ve döndürür", taze?.role === "admin" && ayar().role === "admin" && "permissions" in taze && ayar().permissions === taze.permissions, { taze, ayar: { role: ayar().role, permissions: ayar().permissions } });
   check("çıkış: sunucuya bildirilir, jeton silinir, adres kalır", (await ipc("server:logout")) === true && !ayar().token && !!ayar().serverUrl);
   check("çıkış sunucu güvenlik günlüğüne düştü", dbmod.getSecurityLog({ limit: 20, action: "cikis" }).rows.some(r => r.actor === "admin"));
   const ikinci = await ipc("server:login", { serverUrl: adres, username: "okur", password: "okur1234" });
@@ -117,6 +120,12 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   check("müşteri ekleme izni olmayan kullanıcının kaydı → sebep 'yetki'", yetkisiz.ok === false && yetkisiz.sebep === "yetki", yetkisiz);
   check("yetkisiz kayıt veriyi değiştirmedi", !(await ipc("crm:load")).customers.some(c => c.name === "Yetkisiz"));
   check("admin olmayan kullanıcı kullanıcı listesini alamaz (403)", (await ipc("server:apiRequest", { method: "GET", path: "/api/users" })).status === 403);
+  // Spec 0145 AC-26, AC-27: yönetici izni değiştirince tazeleme yeni izni ayara yazar (bayat yerel izin bir sonraki girişe kadar kalmaz).
+  const yeniIzin = JSON.stringify({ tabs: ["servis", "stock"], customerActions: [] });
+  dbmod.updateUser(dbmod.getUserByUsername("okur").id, { permissions: yeniIzin });
+  check("spec 0145 ön koşul: ayardaki izin henüz eski", ayar().permissions !== yeniIzin);
+  const tazeOkur = await ipc("server:refreshToken");
+  check("spec 0145 AC-27: tazeleme değişen izni ayara yazar ve döndürür", tazeOkur?.ok === true && tazeOkur.permissions === yeniIzin && ayar().permissions === yeniIzin && ayar().role === "user", { tazeOkur, ayar: ayar().permissions });
 
   await server.stop();
   for (const d of [sunucuDizin, istemciDizin]) fs.rmSync(d, { recursive: true, force: true });

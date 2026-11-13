@@ -87,6 +87,9 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("kioskEdit",   bcrypt.hashSync("kiosk123", 10), "user", KIOSK_EDIT);
   dbmod.createUser("stokNoEdit",  bcrypt.hashSync("stok123", 10), "user", STOK_NOEDIT);
   dbmod.createUser("stokEdit",    bcrypt.hashSync("stok123", 10), "user", STOK_EDIT);
+  // Spec 0145 AC-6, C1: Stok ve pano sekmeli, Müşteriler'siz kullanıcı Extra Kalıp kargosunu sürükler (izinle 200, izinsiz 403).
+  dbmod.createUser("stokKalipci", bcrypt.hashSync("stok123", 10), "user", JSON.stringify({ tabs: ["servis", "stock"], customerActions: ["cust_kalip_edit"] }));
+  dbmod.createUser("stokKalipsiz", bcrypt.hashSync("stok123", 10), "user", JSON.stringify({ tabs: ["servis", "stock"], customerActions: ["kalip_pano_kaldir"] }));
   dbmod.createUser("silici",      bcrypt.hashSync("sil123", 10), "user", SILICI);
   dbmod.createUser("siliciStoksuz", bcrypt.hashSync("sil123", 10), "user", SILICI_STOKSUZ);
   dbmod.createUser("bayiSilici",  bcrypt.hashSync("sil123", 10), "user", BAYI_SILICI);
@@ -248,6 +251,17 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ yedekParcaSatislar: [{ id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Kargoya Verildi" }] }, await curVer(stokNoTok), stokNoTok)).status === 403);
   check("kargo durum sürükleme: yedek_parca_edit VAR → 200",
     (await postData({ yedekParcaSatislar: [{ id: 8, aliciTipi: "bayi", dealerId: 2, partId: "1", miktar: 1, birimFiyat: 10, currency: "TL", kargoDurum: "Kargoya Verildi" }] }, await curVer(stokYesTok), stokYesTok)).status === 200);
+  // Spec 0145 AC-6, AC-15 (C1): sunucu kuralı değişmedi; Müşteriler sekmesi olmayan ama cust_kalip_edit'li kullanıcının Extra Kalıp
+  // kargo sürüklemesi kabul edilir, izni olmayanınki reddedilir.
+  const veri0145 = async (tok) => (await api("/api/data", {}, tok)).json(); // gUst aşağıda tanımlı
+  const pAd = (await veri0145(adminTok)).partSales || [];
+  await postData({ partSales: [...pAd.filter(x => x.id !== 9045), { id: 9045, customerId: 1, tur: "Kalıp", ad: "Kargo kalıbı", kargoDurum: "Hazırlanıyor" }] }, await curVer(adminTok), adminTok);
+  const kalipTasi = async (tok) => { const g = await veri0145(tok); return postData({ partSales: g.partSales.map(x => (x.id === 9045 ? { ...x, kargoDurum: "Kargoya Verildi" } : x)) }, g.dataVersion, tok); };
+  check("spec 0145 AC-6: Müşteriler'siz, cust_kalip_edit'li Stok kullanıcısı Extra Kalıp kargosunu taşır → 200",
+    (await kalipTasi((await login("stokKalipci", "stok123")).body.token)).status === 200);
+  await postData({ partSales: (await veri0145(adminTok)).partSales.map(x => (x.id === 9045 ? { ...x, kargoDurum: "Hazırlanıyor" } : x)) }, await curVer(adminTok), adminTok);
+  check("spec 0145 AC-15: aynı kullanıcı cust_kalip_edit'siz → 403",
+    (await kalipTasi((await login("stokKalipsiz", "stok123")).body.token)).status === 403);
 
   // ── Müşteri silme kaskadı uçtan uca: yalnız cust_delete taşıyan kullanıcı, müşteriyle birlikte
   // aynı yazımda damgalanan servis/yedek parça/görüşme/dosyayı da yazabilmeli (çocuk silme izinleri

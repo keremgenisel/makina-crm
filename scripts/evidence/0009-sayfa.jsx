@@ -22,6 +22,7 @@ import { CalisanManager } from "../../src/components/CalisanManager";
 import { GiderForm } from "../../src/components/GiderForm";
 import { Dashboard } from "../../src/components/Dashboard";
 import { ServisPanosu } from "../../src/components/ServisPanosu";
+import { kalipKargoKapisi, kargoKapisi } from "../../src/lib/permissions";
 import { ServisPencere } from "../../src/components/ServisPencere";
 import { KAYDEDILDI_MESAJI, kayitMesaji } from "../../src/lib/kayitDurumu";
 import { ServiceForm } from "../../src/components/ServiceForm";
@@ -586,6 +587,8 @@ const detay = (id, o = {}) => <Customers customers={[DETAY_MAKINA, DETAY_IKINCI,
 const KK_ODEME = [{ id: 701, customerId: 500, tarih: "2026-09-20", tutar: "50000", yontem: "Kredi Kartı", currency: "TRY", kartKomisyonu: { blokajGun: 40, hesabaGecis: "2030-01-01" } }];
 const DIS_FIRMA_YP = [{ id: 711, aliciTipi: "bayi", disFirma: true, disFirmaAd: "Usta Servis", partId: 7, miktar: 3, birimFiyat: 350, currency: "TRY", tarih: "2026-09-10", faturaTipi: "Faturasız Yurtiçi", odendi: false, tahsisler: [] }];
 const PANO_KALIP = [{ id: 721, tur: "Kalıp", customerId: 500, ad: "Köfte Kalıbı", tarih: "2026-09-18", ucret: 500, currency: "TRY", odendi: false, faturaTipi: "Faturasız Yurtiçi", kargoDurum: "Hazırlanıyor", olusturmaZamani: "2026-09-18T09:00:00" }];
+const SEKME_0145 = [{ id: "servis" }, { id: "stock" }];
+const IZIN_0145 = { role: "user", permissions: JSON.stringify({ tabs: ["servis", "stock"], customerActions: ["kalip_pano_kaldir", "kalip_pano_arsiv"] }) };
 const PANO_YP = [{ id: 731, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 2, birimFiyat: 350, currency: "TRY", tarih: "2026-09-19", faturaTipi: "Faturasız Yurtiçi", odendi: false, tahsisler: [],
   kargoDurum: "Hazırlanıyor", teslimatFarkli: true, teslimatAd: "Şube Deposu", teslimatSehir: "İzmir", teslimatIlce: "Bornova" }];
 const TAHSIS_YP = [
@@ -1320,6 +1323,13 @@ const EKRANLAR = {
     factory={{ name: "Altuntaş Makina" }} />, ["*Kutu Gıda", "*Ücret henüz tahsil edilmedi", "kaydir:Ücret tahsil edildi"]],
   "servis-pano-kalip": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
     partSales={PANO_KALIP} setPartSales={bos} kalipYetki yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],
+  // Spec 0145 A: Stok sekmeli, Müşteriler'siz ve kalıp düzenleme izni olmayan kullanıcı; kapı tek tanımdan, detay salt okunur.
+  "servis-pano-0145-stok": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
+    partSales={PANO_KALIP} setPartSales={bos} kalipYetki={kalipKargoKapisi(SEKME_0145)} yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki={kargoKapisi(SEKME_0145)}
+    serverPermissions={IZIN_0145} factory={{ name: "Altuntaş Makina" }} />, []],
+  "servis-pano-0145-salt-okunur": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={[{ id: 7, ad: "Rulman" }]} calisanlar={CAL}
+    partSales={PANO_KALIP} setPartSales={bos} kalipYetki={kalipKargoKapisi(SEKME_0145)} yedekParcaSatislar={PANO_YP} setYedekParcaSatislar={bos} kargoYetki={kargoKapisi(SEKME_0145)}
+    serverPermissions={IZIN_0145} factory={{ name: "Altuntaş Makina" }} />, ["tikla:Köfte Kalıbı"]],
   "stok-tahsis-modali": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={[{ id: 7, ad: "Rulman" }]}
     dealers={DEALERS} yedekParcaSatislar={DIS_FIRMA_YP} setYedekParcaSatislar={bos} defaultSubTab="yedeksatis" showToast={bos} />, ["*Makinaya tahsis et"]],
   "servis-formu-odendi": [<FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle"
