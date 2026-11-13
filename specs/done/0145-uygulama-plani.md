@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0145-pano-kalip-kargo-yetkisi-ve-izin-yarisi.md` (revizyon 2) |
+| **Spec** | `specs/done/0145-pano-kalip-kargo-yetkisi-ve-izin-yarisi.md` (revizyon 2) |
 | **Onay** | Takım Yöneticisi, 2026-11-13 (sekiz öneri onaylandı, spec'e Plan kararı 27–34 olarak işlendi) |
 | **Dal** | `feat/0145-pano-kalip-kargo` (`4321ab3d` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor (2026-11-13). Tam takım yeşil (Electron dışı 7461, Electron 14 dosya), lint 0 hata, tip denetimi temiz. Kanıt `0145-piksel-raporu.json`: 12 eski pano ve pencere ekranı 0 piksel, iki yeni ekran, aynı kodla ikinci çekim 0 fark. Mutasyon: kapı, çizim kapısı, ilk tur ve kilit testlerle yakalandı; ilk turun veri sürümü koruması ölçülemedi: triyajda bastırma bittikten sonra dönen, sürümsüz yüklemeli ilk tur denendi; açılıştaki bekleyen kayıt yenilemeyi ayrıca engellediği için koruma yine sınanamadı (README açık bulgu). Uygulamada ilk turun cevapsız hâli çevrimdışı işaretlemeyecek biçimde daraltıldı (B-R1/5 güncellendi). |
+| **Durum** | Tamamlandı: commit `0a7e8a75` (2026-11-13). Tam takım yeşil (Electron dışı 7461, Electron 14 dosya), lint 0 hata, tip denetimi temiz. Kanıt `0145-piksel-raporu.json`: 12 eski pano ve pencere ekranı 0 piksel, iki yeni ekran, aynı kodla ikinci çekim 0 fark. Mutasyon: kapı, çizim kapısı, ilk tur ve kilit testlerle yakalandı; ilk turun veri sürümü koruması ölçülemedi: triyajda bastırma bittikten sonra dönen, sürümsüz yüklemeli ilk tur denendi; açılıştaki bekleyen kayıt yenilemeyi ayrıca engellediği için koruma yine sınanamadı (README açık bulgu). Uygulamada ilk turun cevapsız hâli çevrimdışı işaretlemeyecek biçimde daraltıldı (B-R1/5 güncellendi). |
 
 ## 1. Dosyalar
 

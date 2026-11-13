@@ -27,7 +27,7 @@ describe("Spec 0145 A: kapının tek tanımı", () => {
     const yorum = s.indexOf("// Spec 0145 A-R2"); const fonk = s.indexOf("const sekmeVar"); const sabit = s.indexOf("export const IZIN_BEKLEME_MS");
     expect(s.slice(yorum, fonk)).not.toMatch(/IZIN_BEKLEME_MS|B-R2\/2/);
     expect(sabit).toBeGreaterThan(s.indexOf("export const kalipKargoKapisi"));
-    const spec = fs.readFileSync("specs/0145-pano-kalip-kargo-yetkisi-ve-izin-yarisi.md", "utf8");
+    const spec = fs.readFileSync("specs/done/0145-pano-kalip-kargo-yetkisi-ve-izin-yarisi.md", "utf8");
     expect(spec.indexOf("**X6.**")).toBeLessThan(spec.indexOf("**X7.**"));
   });
 });

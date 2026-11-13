@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-13; üç kararın üçü de analistin önerisi yönünde kapandı). Revizyon 2: plan turunun sekiz kararı işlendi (Plan kararı 27–34); uygulama planı `specs/0145-uygulama-plani.md` |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-13; üç kararın üçü de analistin önerisi yönünde kapandı). Revizyon 2: plan turunun sekiz kararı işlendi (Plan kararı 27–34); **Tamamlandı:** commit `0a7e8a75`, plan `specs/done/0145-uygulama-plani.md` |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Panonun Extra Kalıp kargo kapısı (`App.jsx` yetki satırları; altı okuyucu: `ServisPanosu.jsx` üç liste ve alarm efekti, `App.jsx` uygulama geneli bildirim ve ayrı pencere anlık görüntüsü), Extra Kalıp kargo detay penceresinin kaydı kilitlemesi, uygulamanın açılış dalları (`App.jsx` çizim kapısı), istemcinin izin tazelemesi (`electron/ipc/data.cjs` `server:refreshToken`), yoklamanın ilk turu |
@@ -314,7 +314,16 @@ Uygulama planının sekiz önerisi Takım Yöneticisi tarafından onaylandı.
 
 | | |
 |---|---|
-| **Uygulama** | — |
-| **Plan** | — |
-| **Kanıt** | — |
-| **Notlar** | — |
+| **Uygulama** | Commit `0a7e8a75` (dal `feat/0145-pano-kalip-kargo`) |
+| **Plan** | `specs/done/0145-uygulama-plani.md`; sekiz öneri onaylandı (Plan kararı 27–34) |
+| **Kanıt** | `docs/evidence/0145-piksel-raporu.json`: 12 eski pano ve pencere ekranı 0 piksel, iki yeni ekran, ikinci çekim 0 fark |
+| **Spec revizyon sayısı** | 2 (plan turu; uygulamada B-R1/5 daraltıldı) |
+| **Düzeltme turu sayısı** | 1 (triyaj, üç bilgi bulgusu) |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 (sınanamayan savunma kayda geçti, saha ölçümü bekliyor, yorum ve madde sırası düzeltildi) |
+| **Regresyon sayısı** | 0 (ilk taslakta hemen çalışan ilk tur 10 App testini salt okunur moda düşürdü; uygulamada yakalandı, sürüme girmedi) |
+| **Kaçan hata** | 0 |
+| **Notlar** | QA kararı 17'nin iki ön ölçümü ve AC-27'nin gerçek veri boyutundaki süresi Takım Yöneticisi'nde (README açık bulgu) |
+
+**Bu spec'ten çıkarılan ders:** "bir kez hemen çalıştır" gibi zamanlama değişiklikleri, eskiden yalnız on saniye sonra koşan kodun
+yan etkilerini (çevrimdışı işaretleme) açılışa taşır; tur gövdesini olduğu gibi öne çekmek yerine ilk turun yapacağı işi daraltmak
+gerekir. Ayrıca bir savunmanın sınanabilirliği, önündeki öteki kapılar (bastırma, bekleyen kayıt) ölçülmeden iddia edilmemeli.
