@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
+// Geçmiş: Parça ihtiyacı ve kesit tablosunu okuyan bloklar önce spec 0141 ile ve spec 0143 ile ters çevrilmişti (pay sütunu, emniyet payı, kartın geldiği boyu);
+// 2026-11-15 isteğiyle iki tablo ekrandan kalktı ve o bloklar yeniden yazıldı.
 // Spec 0134: sipariş ihtiyacı ekranı. Spec 0140 ile (B-R1/2, B-R2, R14 / karar 45): ekran Makina Maliyeti'nden kalktı, aynı içerik
 // tek pencerede (stock/SiparisPenceresi.jsx); bu dosya hesap ve girdi iddialarını pencere üzerinde aynen ölçer. Ekranın yerine bağlı
 // iddialar (beşinci görünüm, tek toplam satırı, belgede PARÇA İHTİYACI) "spec 0140 ile" notuyla ters çevrildi.
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { GORUNUMLER } from "../../src/components/MakinaMaliyeti";
 import * as S from "../../src/lib/siparisIhtiyaci";
 import { SiparisPenceresi, BOS_BASLIK, ELLE_GIRIS } from "../../src/components/stock/SiparisPenceresi";
@@ -26,8 +28,10 @@ const Ekran = ({ partiler = PARTILER, parts = F.veri().parts, partStock = [], ma
     standardModels: modeller, customModels: [], uretimPartileri: partiler, appSettings: { uretimdeOlmayanModeller: ["AK200"] }, factory: { name: "Altuntaş" }, ...yaz }} />;
 };
 // Spec 0140 C-R10: "Parça ihtiyacı" tablosu katlanabilir bölümdedir; satır okuyan testler önce açar.
-const parcaSatiri = (ad) => { if (!screen.queryByTestId("siparis-parca-tablosu")) kutuAc("Parça ihtiyacı"); return screen.getAllByTestId("siparis-parca-satiri").find(r => within(r).queryByText(ad)); };
-const hucre = (r) => [...r.querySelectorAll("td")].map(td => td.textContent);
+// 2026-11-15 isteğiyle: "Parça ihtiyacı" tablosu ve kesit tabloları ekrandan kalktı. Bu fikstürde parçaların Ana tedarikçisi yok, yani hazır parçalar
+// "Tedarikçisi belirtilmemiş" kutusunda; tablo değerlerini okuyan iddialar oradaki sipariş önerisine çevrildi, motorun sayıları
+// siparis-0134.test.js'te.
+const pulOneri = () => { if (!screen.queryByLabelText("Pul sipariş adedi")) kutuAc(S.TEDARIKCI_BELIRTILMEMIS); return screen.getByLabelText("Pul sipariş adedi").value; };
 
 describe("Spec 0134: girdi ve parti seçici", () => {
   it("R1 (spec 0140 ile, B-R2): Sipariş İhtiyacı görünümü Makina Maliyeti'nden kalktı; içerik sipariş penceresinde", () => {
@@ -60,10 +64,11 @@ describe("Spec 0134: girdi ve parti seçici", () => {
     expect(screen.getByTestId("bos-siparis")).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
   });
-  it("AC-6 / AC-53 / Karar 39: hazır gelen adet değiştirilir, partiye yazılmaz; parti değişince satırlar yeniden dolar", () => {
+  it("AC-6 / AC-53 / Karar 39 (2026-11-15 isteğiyle): hazır gelen adet değiştirilir, partiye yazılmaz; parti değişince satırlar yeniden dolar", () => {
     render(<Ekran />);
+    const once = Number(pulOneri());
     fireEvent.change(screen.getByLabelText("Makina adedi 1"), { target: { value: "10" } });
-    expect(hucre(parcaSatiri("Kesme mili"))[2]).toBe("10"); // spec 0141 ile: pay sütunu kalktı, İhtiyaç bir sola
+    expect(Number(pulOneri())).toBeLessThan(once); // 70'ten 10 makinaya
     expect(yaz.setUretimPartileri).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("Üretim partisi"), { target: { value: "801" } });
     expect(screen.getByLabelText("Makina adedi 1").value).toBe("5");
@@ -85,31 +90,22 @@ describe("Spec 0134: girdi ve parti seçici", () => {
     expect(screen.getByText(S.ADET_HATASI)).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Makina adedi 1"), { target: { value: "70" } });
     expect(screen.getByTestId("siparis-hatali-satir").textContent).toBe(S.hataliSatirMetni(1));
-    expect(hucre(parcaSatiri("Kesme mili"))[2]).toBe("70"); // spec 0141 ile
+    expect(Number(pulOneri())).toBeGreaterThan(0); // 2026-11-15 isteğiyle: öteki satırlar hesaplanır (Parça ihtiyacı tablosu yok)
     expect(screen.getByRole("button", { name: /Yazdır/ }).disabled).toBe(true);
   });
 });
 
 describe("Spec 0134: tablolar ve uyarılar", () => {
-  it("AC-18 / AC-14 / AC-79: ihtiyaç, stok, sipariş ayrı sütunlar; set patlatıldı; kesişim uyarısı ve iki kaynak", () => {
+  it("AC-18 / AC-14 / AC-79 (2026-11-15 isteğiyle): kesişim uyarısı kalır; Parça ihtiyacı tablosu ekranda yok", () => {
     render(<Ekran partStock={[{ partId: 42, miktar: 100 }]} />);
-    const pul = parcaSatiri("Pul");
-    const ths = [...screen.getByTestId("siparis-parca-tablosu").querySelectorAll("th")].map(t => t.textContent);
-    // Spec 0140 ile (D-R2/2, karar 34): öneri sütunu ve set satırlarının "sipariş etme" anahtarı eklendi.
-    // Spec 0141 ile (B-R4, AC-23): "Emniyet payı" sütunu kalktı, tablo yedi başlık.
-    // Spec 0142 ile (C-R4, AC-28): Parça ile Ham ihtiyaç arasına Ölçü sütunu geldi; hücre sırası bir kaydı.
-    expect(ths).toEqual(["Parça", "Ölçü", "Ham ihtiyaç", "İhtiyaç", "Stok", "Sipariş (öneri)", "Sipariş", "Sipariş etme"]);
-    expect(hucre(pul).slice(3, 7)).toEqual(["700", "100", "600", "600"]);
-    expect(within(parcaSatiri("Bağlantı seti")).getByTestId("siparis-patlatildi")).toBeTruthy();
     expect(screen.getByTestId("siparis-kesisim").textContent).toBe(S.KESISIM_UYARISI("Bağlantı seti", "Pul"));
-    expect(within(parcaSatiri("Pul")).getByTestId("siparis-iki-kaynak")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /^Parça ihtiyacı/ })).toBeNull(); expect(screen.queryByTestId("siparis-parca-tablosu")).toBeNull();
   });
   it("AC-23 / AC-24 / AC-104: kiti boş model adıyla yazar; çöpteki parça ad kopyası ve silinmiş işaretiyle", () => {
     const bos = F.model("BOS", []);
     const eski = F.model("AK100_DS", [[41, 1], [49, 2, "Eski burç"]]);
     render(<Ekran modeller={[eski, bos]} partiler={[{ id: 9, ad: "P", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100_DS: 70, BOS: 2 } }]} />);
     expect(screen.getByTestId("siparis-kit-bos").textContent).toBe(S.KIT_BOS_METNI("BOS"));
-    expect(within(parcaSatiri("Eski burç")).getByTestId("siparis-silinmis")).toBeTruthy();
     expect(screen.getByTestId("siparis-eksik").textContent).toMatch(/^1 parçanın/);
   });
   it("AC-55 / AC-85: stok sayılmamışsa uyarı iki sayıyla; AC-99: hazır parçalar nötr sayıyla", () => {
@@ -117,23 +113,16 @@ describe("Spec 0134: tablolar ve uyarılar", () => {
     expect(screen.getByTestId("siparis-stok-uyarisi").textContent).toBe(S.STOK_UYARISI(0, 4));
     expect(screen.getByTestId("siparis-hazir").textContent).toContain("2 parçada malzeme kalemi yok"); // spec 0135 ile (R30/2): kalem dili
   });
-  it("AC-26 / AC-29 / AC-31 / AC-36 (ekran): kesit satırı net, sipariş, boy, TL ve fire uyarısı; tedarikçi toplamı", () => {
+  it("AC-26 / AC-29 / AC-31 / AC-36 (ekran, 2026-11-15 isteğiyle): kesit satırı ve yalnız malzemesi olan tedarikçinin kartı çizilmez; para yok", () => {
     render(<Ekran />);
-    const k = screen.getByTestId("siparis-kesit-satiri");
-    expect(k.textContent).toContain("Ø144");
-    // Spec 0140 ile (D-R2/2): öneri sütunu ve düzenlenebilir sipariş hücresi; değerler 0134'teki gibi. Artan kilo sütunu kalktı (belgede de yok).
-    const h = hucre(k);
-    // Spec 0142 ile (C-R1, AC-30): Tutar ve TL sütunları ve tedarikçi toplamı kalktı (para pencereden kalkar).
-    // Spec 0143 ile (B-R6/2): kartın geldiği boyu kalktı; işaretsiz satır kilogramla (net artı fire 807,313), boy ve fire uyarısı yok.
-    expect([h[1], h[2], h[3], h[5], h[6]]).toEqual(["747,512 kg", "59,801 kg", "807,313 kg", "—", ""]);
-    expect(h).not.toContain("2.277,27 $"); expect(k.textContent).not.toMatch(/₺|\$|€/);
-    expect(within(k).queryAllByTestId("siparis-kesit-neden").map(e => e.textContent)).not.toContain(S.FIRE_BOY_UYARISI);
-    expect(screen.getByTestId("siparis-tedarikci-adi").textContent).toBe("Ana Çelik");
-    expect(screen.queryByTestId("siparis-tedarikci-toplam")).toBeNull(); // spec 0142 ile (C-R1): bölüm başlığında toplam yok
+    expect(screen.queryByTestId("siparis-kesit-satiri")).toBeNull(); expect(screen.queryByTestId("siparis-malzeme-tablosu")).toBeNull();
+    expect(screen.queryAllByTestId("siparis-tedarikci-adi").map(e => e.textContent)).not.toContain("Ana Çelik"); // yalnız malzeme taşıyordu
+    expect(screen.getByTestId("siparis-penceresi").textContent).not.toMatch(/₺|\$|€/);
   });
   // Spec 0142 ile (C-R1): tutarın toplamda görünmesi yarısı kalktı; ad yarısı aynen.
-  it("AC-46 / AC-87 (spec 0142 ile): çöpteki tedarikçinin adı ham diziden 'silinmiş' işaretiyle; toplam çizilmez", () => {
-    render(<Ekran tedarikciler={[]} rawTedarikciler={[{ id: 12, ad: "Ana Çelik", deletedAt: "2026-09-01" }]} />);
+  it("AC-46 / AC-87 (spec 0142 ile, 2026-11-15 isteğiyle): çöpteki tedarikçinin adı ham diziden 'silinmiş' işaretiyle; toplam çizilmez", () => {
+    // 2026-11-15 isteğiyle: bölüm yalnız hazır parça satırıyla çizilir; çöpteki tedarikçiye Pul'un Ana tedarikçisi olarak bağlanır.
+    render(<Ekran parts={F.veri().parts.map(p => (p.id === 42 ? { ...p, tedarikciId: 12 } : p))} tedarikciler={[]} rawTedarikciler={[{ id: 12, ad: "Ana Çelik", deletedAt: "2026-09-01" }]} />);
     expect(screen.getByTestId("siparis-tedarikci-adi").textContent).toBe("Ana Çelik (silinmiş tedarikçi)");
     expect(screen.queryByTestId("siparis-tedarikci-toplam")).toBeNull();
   });

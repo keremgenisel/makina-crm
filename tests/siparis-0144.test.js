@@ -203,7 +203,11 @@ describe("Spec 0144 kıyas ve taramalar", () => {
   it("AC-45 / AC-64 / C5: para metni tek yerden; belge kendi biçimini yazmaz; /kg eki tek yardımcıda", () => {
     const k = kodSatirlari("src/lib/siparisRaporu.js");
     for (const yasak of ["Intl.NumberFormat", "toLocaleString(", "toFixed", "fmtCur", "PARA_SIMGE", "ikiHane", "₺", "€", "/kg", "/adet"]) expect(k, yasak).not.toContain(yasak);
-    for (const ad of ["pbTutarMetni", "pbToplamMetni", "tlMetni", "kiloFiyatMetni", "adetFiyatMetni"]) expect(k).toContain(ad);
+    // 2026-11-15 isteğiyle: malzeme satırı ve toplam tablosu basılmadığı için belge `/kg` birim fiyatı yazmaz (kiloFiyatMetni okunmaz).
+    // 2026-11-15 isteğiyle "Birim fiyat" sütunu kalktı: belge `adetFiyatMetni`'ni de okumaz (yardımcı motorda durur).
+    for (const ad of ["pbTutarMetni", "pbToplamMetni", "tlMetni"]) expect(k).toContain(ad);
+    expect(k).not.toContain("adetFiyatMetni");
+    expect(k).not.toContain("kiloFiyatMetni");
     expect((kodSatirlari("src/lib/malzeme.js").match(/\/kg`/g) || []).length).toBe(1);
     expect(M.kiloFiyatMetni(2.8534, "USD")).toBe("2,8534 $/kg"); expect(M.kiloFiyatMetni(null, "USD")).toBe("");
     expect(S.adetFiyatMetni(1500)).toBe("15,00 ₺/adet");

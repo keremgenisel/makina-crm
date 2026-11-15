@@ -292,18 +292,19 @@ describe("Spec 0133: dışa ve içe aktarma (R18, R19, R19/2)", () => {
 
 describe("Spec 0133: fiyat listesi (R17, R17/2)", () => {
   const PARTS = [bagli(MILI), { ...PARCALAR[0] }, bagli({ id: 70, ad: "Boş <b>", kod: "B&1" }), { id: 71, ad: "Silik", deletedAt: "x", fiyatTRY: 5 }];
-  it("AC-41 / AC-91: Türkçe, sütunlar ad/kod/kip/kat/fiyat, canlı parçalar katalog sırasıyla", () => {
-    expect(FIYAT_LISTESI_SUTUNLARI).toEqual(["Parça", "Kod", "Kip", "Kâr katı", "Fiyat (TL)"]);
+  // 2026-11-15 isteğiyle: "Kip" ve "Kâr katı" sütunları kalktı (AC-91'in kip/kat yarısı ters çevrildi).
+  it("AC-41 / AC-91 (2026-11-15 isteğiyle): Türkçe, sütunlar ad/kod/fiyat, canlı parçalar katalog sırasıyla", () => {
+    expect(FIYAT_LISTESI_SUTUNLARI).toEqual(["Parça", "Kod", "Fiyat (TL)"]);
     const html = fiyatListesiHtml(PARTS, bag({ varsayilanKat: 2.4 }, PARTS), { bugun: "2026-11-08" });
     expect(html).toMatch(/FİYAT LİSTESİ/);
     expect(html.indexOf("Kesme mili")).toBeLessThan(html.indexOf("Rulman"));
     expect(html).not.toMatch(/Silik/);
     expect(html).toMatch(/4\.082,69 ₺/);
-    expect(html).toMatch(/Maliyete bağlı/);
-    expect(html).toMatch(/Elle sabit/);
+    expect(html).not.toMatch(/>Kip<|>Kâr katı<|>Elle sabit<|>Maliyete bağlı</); // sütun ve hücreleri yok
+    expect(html).not.toMatch(/>2,4</);
   });
   it("AC-25: türetilemeyen satır 'fiyat türetilemedi'", () => {
-    expect(fiyatListesiSatiri(bagli({ id: 70, ad: "X" }), bag())[4]).toBe(TURETILEMEDI);
+    expect(fiyatListesiSatiri(bagli({ id: 70, ad: "X" }), bag())[2]).toBe(TURETILEMEDI); // 2026-11-15 isteğiyle üç sütun
   });
   it("AC-90: hücreler kaçışlı, sunum dili ortak modülden", () => {
     const html = fiyatListesiHtml(PARTS, bag({}, PARTS), { bugun: "2026-11-08" });

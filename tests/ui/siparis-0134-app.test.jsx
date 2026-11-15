@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
+// Geçmiş: Parça ihtiyacı ve kesit tablosunu okuyan bloklar önce spec 0141 ile ters çevrilmişti (pay sütunu, emniyet payı, kartın geldiği boyu);
+// 2026-11-15 isteğiyle iki tablo ekrandan kalktı ve o bloklar yeniden yazıldı.
 // Spec 0134 gerçek App: eldeki parça stoğu App'ten ekrana iner (R24, AC-88) ve ekran sürülürken kaydedilen gövdede hiçbir bölüm
 // değişmez (AC-52, AC-53, AC-61). Spec 0140 ile (B-R1, B-R3, B-R6): ekran Stok › Parça/Yedek Parça Stoğu'ndaki pencereden açılır ve
 // kapısı yeni eylem kimliğidir (Makina Maliyeti sekmesi artık gerekmez; AC-54 ters çevrildi).
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, cleanup, waitFor, screen, fireEvent, within } from "@testing-library/react";
+import { render, cleanup, waitFor, screen, fireEvent } from "@testing-library/react";
 
 const { default: App } = await import("../../src/App");
 afterEach(() => { cleanup(); delete window.crmStorage; delete window.appServer; vi.unstubAllGlobals(); localStorage.clear(); });
@@ -35,15 +37,17 @@ const pencereAc = () => {
   menu("Stok");
   fireEvent.click(screen.getByRole("tab", { name: "Parça/Yedek Parça Stoğu" }));
   fireEvent.click(screen.getByTestId("siparis-listesi-dugmesi"));
-  if (!screen.queryByTestId("siparis-parca-tablosu")) fireEvent.click(screen.getByRole("button", { name: /^Parça ihtiyacı/ }));
+  // 2026-11-15 isteğiyle: Parça ihtiyacı tablosu kalktı; Ana tedarikçisi olmayan Pul "Tedarikçisi belirtilmemiş" kutusunda.
+  const kutu = screen.getByRole("button", { name: /^Tedarikçisi belirtilmemiş/ });
+  if (kutu.getAttribute("aria-expanded") !== "true") fireEvent.click(kutu);
 };
 
 describe("Spec 0134 gerçek App", () => {
   it("AC-54 (spec 0140 ile) / AC-88: Stok sekmeli kullanıcı (eylem kimliği tanımsız) açar; stok App'ten iner", async () => {
     await baslat({ sunucu: { tabs: ["dashboard", "stock"] } });
     pencereAc();
-    const satir = within(screen.getByTestId("siparis-parca-tablosu")).getByText("Pul").closest("tr");
-    expect([...satir.querySelectorAll("td")].slice(3, 6).map(td => td.textContent)).toEqual(["560", "100", "460"]); // spec 0141 ile: pay sütunu kalktı; spec 0142 ile: Ölçü sütunu
+    const satir = screen.getByLabelText("Pul sipariş adedi").closest("tr");
+    expect([...satir.querySelectorAll("td")].slice(2, 5).map(td => td.textContent)).toEqual(["560", "100", "460"]); // 2026-11-15 isteğiyle: hazır parça satırından (ihtiyaç, stok, öneri)
   });
   it("AC-52 / AC-53 / AC-61: ekran sürülürken hiçbir kayıt tetiklenmez (stok, hareket, parti, parça, malzeme yazılmaz)", async () => {
     const { kayitlar } = await baslat();

@@ -83,9 +83,7 @@ describe("Spec 0143 C: boy adedi", () => {
     const k = hesap([parca(1, "Uzun", isaretli({ boy: 500 }))], { malzemeler: [{ ...KART, fire: 10 }] }).kesitler[0];
     expect(k.boyAdedi).toBeNull(); expect(k.boyNeden).toBe(S.NEDEN_KESIM_BUYUK); expect(S.NEDEN_KESIM_BUYUK).toMatch(/çubuk boyu/);
     expect(k.siparisKg).toBeCloseTo(k.netKg + k.fireKg, 9); expect(S.boyCinsindenMi(k)).toBe(false);
-    const r = hesap([parca(1, "Uzun", isaretli({ boy: 500 }))], { sec: { tedarikciOdakli: true } });
-    const html = siparisRaporuHtml(r, { bugun: "2026-11-12" });
-    expect(html).toContain(`>${S.kgMetni(r.kesitler[0].siparisKg)}<`); expect(html).not.toMatch(/\d+ boy</); // belgede kilogramla
+    // 2026-11-15 isteğiyle: belgede malzeme toplamı yok; satırın kilogramla kaldığı motorda ölçülür (yukarıda).
   });
   it("AC-19 / AC-38: işaretsiz satırda boy adedi yok, sipariş kilosu net artı fire, artan kilo alanı yok", () => {
     const k = hesap([parca(1, "A", kalem())], { malzemeler: [{ ...KART, fire: 8 }] }).kesitler[0];
@@ -142,14 +140,13 @@ describe("Spec 0143 C: boy adedi", () => {
   it("AC-63: işaretli satırın kesit metni çubuk boyunu yazar; pencere ve belge aynı metni basar", () => {
     const r = hesap([parca(1, "D", isaretli())], { sec: { tedarikciOdakli: true } });
     expect(r.kesitler[0].kesitMetni).toBe("Ø35 · 400 mm çubuk");
-    expect(siparisRaporuHtml(r, { bugun: "2026-11-12" })).toContain("Ø35 · 400 mm çubuk");
+    // 2026-11-15 isteğiyle: belgede malzeme satırı ve toplamı yok, kesit metni yalnız pencerede.
+    expect(siparisRaporuHtml(r, { bugun: "2026-11-12" })).not.toContain("Ø35 · 400 mm çubuk");
   });
-  it("AC-24: belgenin malzeme toplamında işaretli malzeme N boy, işaretsiz kilogram", () => {
+  // 2026-11-15 isteğiyle ters çevrildi: belgede "Alınacak malzeme toplamı" yok (fiyatlı ve fiyatsız).
+  it("AC-24 (2026-11-15 isteğiyle): belgede malzeme toplamı basılmaz", () => {
     const r = hesap([parca(1, "A", isaretli()), parca(2, "B", kalem({ cap: 40 }))], { sec: { tedarikciOdakli: true } });
-    const h = siparisRaporuHtml(r, { bugun: "2026-11-12" });
-    expect(h).toMatch(/Ø35 · 400 mm çubuk<\/td><td[^>]*>8 boy</);
-    const kilo = r.kesitler.find(k => !k.boydanSiparis);
-    expect(h).toContain(`Ø40</td><td style="text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;">${S.kgMetni(kilo.siparisKg)}`);
+    for (const fiyatli of [false, true]) { const h = siparisRaporuHtml(r, { bugun: "2026-11-12", fiyatli }); expect(h).not.toMatch(/\d boy</); expect(h).not.toContain("Alınacak malzeme toplamı"); }
   });
 });
 

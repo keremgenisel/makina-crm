@@ -28,20 +28,19 @@ const VERI = (o = {}) => ({ parts: PARCALAR, partStock: [], malzemeler: [F.P304]
 const Pencere = ({ veri = VERI(), giderYetki = true }) => <SiparisPenceresi veri={veri} giderYetki={giderYetki} bugun="2026-11-09" onClose={vi.fn()} />;
 const bolum = (ad) => screen.getAllByTestId("siparis-tedarikci-bolumu").find(b => within(b).getByTestId("siparis-tedarikci-adi").textContent === ad);
 const hazirSatir = (ad) => screen.getAllByTestId("siparis-hazir-satiri").find(r => r.textContent.includes(ad));
-const tablo = () => { const d = screen.getByRole("button", { name: /^Parça ihtiyacı/ }); if (d.getAttribute("aria-expanded") !== "true") fireEvent.click(d); return screen.getByTestId("siparis-parca-tablosu"); };
+// 2026-11-15 isteğiyle: "Parça ihtiyacı" tablosu ve kesit (malzeme) tabloları ekrandan kalktı; yalnız malzemesi olan tedarikçinin kartı çizilmez.
 
 describe("Spec 0140: pencere", () => {
   it("AC-65: pencere wide açılır ve gerekçeli kilitsiz dosyalardadır", () => {
     expect(fs.readFileSync("src/components/stock/SiparisPenceresi.jsx", "utf8")).toMatch(/<Modal title=\{SIPARIS_PENCERE_BASLIGI\} onClose=\{soruAcik \? NOOP : onClose\} wide>/); // spec 0144 ile (B-R1/3, triyaj bulgu 1)
     expect(fs.readFileSync("src/lib/kilitAlanlari.js", "utf8")).toMatch(/"src\/components\/stock\/SiparisPenceresi\.jsx": "salt okunur/);
   });
-  it("AC-19 / AC-22 / AC-24 / AC-25: seçim yokken bütün tedarikçiler, iki alt bölüm; çift sayım açıklaması", () => {
+  it("AC-19 / AC-22 / AC-24 / AC-25 (2026-11-15 isteğiyle): seçim yokken hazır parçalı tedarikçiler; malzeme tablosu ve çift sayım açıklaması yok", () => {
     render(<Pencere />);
-    expect(screen.getAllByTestId("siparis-tedarikci-adi").map(e => e.textContent)).toEqual(["Ana Çelik", "Beta Metal"]);
+    expect(screen.getAllByTestId("siparis-tedarikci-adi").map(e => e.textContent)).toEqual(["Beta Metal"]);
     expect(within(bolum("Beta Metal")).getByTestId("siparis-hazir-tablosu")).toBeTruthy();
-    expect(within(bolum("Ana Çelik")).getByTestId("siparis-malzeme-tablosu")).toBeTruthy();
-    expect(within(bolum("Ana Çelik")).queryByTestId("siparis-hazir-tablosu")).toBeNull();
-    expect(screen.getByTestId("siparis-cift-sayim").textContent).toBe(S.CIFT_SAYIM_DEGIL);
+    expect(screen.queryByTestId("siparis-malzeme-tablosu")).toBeNull();
+    expect(screen.queryByTestId("siparis-cift-sayim")).toBeNull(); // 2026-11-15 kararı: ekranda malzeme bölümü yok, cümle kalktı
     expect(screen.getByTestId("siparis-tedarikci-secici").textContent).toContain(BUTUN_TEDARIKCILER);
   });
   it("AC-20 / AC-21 / AC-76 / AC-77 / AC-75: çoklu seçim listesi (kargo ve çöpteki yok); Tümünü seç, Temizle, pil; satırsız seçim sayılır", () => {
@@ -52,7 +51,7 @@ describe("Spec 0140: pencere", () => {
     expect(screen.getAllByTestId("siparis-tedarikci-adi").map(e => e.textContent)).toEqual(["Beta Metal"]);
     expect(within(sec).getByRole("button", { name: "Beta Metal seçimini kaldır" })).toBeTruthy();
     fireEvent.click(within(sec).getByRole("button", { name: "Tümünü seç" }));
-    expect(screen.getAllByTestId("siparis-tedarikci-adi")).toHaveLength(2);
+    expect(screen.getAllByTestId("siparis-tedarikci-adi")).toHaveLength(1); // 2026-11-15 isteğiyle: Ana Çelik yalnız malzeme taşıyor, kartı yok
     fireEvent.change(within(sec).getByLabelText("Tedarikçi seçimi araması"), { target: { value: "beta" } });
     expect(within(sec).getAllByRole("checkbox")).toHaveLength(1);
     fireEvent.click(within(sec).getByRole("button", { name: "Temizle" }));
@@ -86,7 +85,7 @@ describe("Spec 0140: pencere", () => {
     const p = screen.getByTestId("siparis-penceresi");
     expect(p.textContent).not.toMatch(/₺|\$|€|Birim maliyet|Tutar/);
     expect(screen.queryAllByTestId("siparis-tedarikci-toplam")).toHaveLength(0);
-    expect(screen.getAllByTestId("siparis-tedarikci-adi").map(e => e.textContent)).toEqual(["Ana Çelik", "Beta Metal"]);
+    expect(screen.getAllByTestId("siparis-tedarikci-adi").map(e => e.textContent)).toEqual(["Beta Metal"]); // 2026-11-15 isteğiyle
     expect(p.textContent).not.toContain(S.BULUNAMAYAN_TEDARIKCI);
   });
   it("AC-29 / AC-83 / AC-41 / AC-35: adet düzenlenir, öneri salt okunur, satır işaretlenir, başlıkta sayı; Önerilere dön", () => {
@@ -126,29 +125,22 @@ describe("Spec 0140: pencere", () => {
     expect(screen.queryByText(S.SIPARIS_ADET_HATASI)).toBeNull();
     expect(screen.getByTestId("siparis-yazdir").disabled).toBe(false);
   });
-  it("AC-32 / AC-34 / AC-88: parça kapatılınca kesiti düşer; elle kilo korunur ve işaretli, bütün parçaları kapalıysa satır kalır", () => {
+  it("AC-32 / AC-34 / AC-88 (2026-11-15 isteğiyle): kesit düzenleme alanı ekranda yok; parça kapatma çalışır", () => {
     render(<Pencere />);
-    const kesitAd = screen.getByTestId("siparis-kesit-satiri").querySelector("input[aria-label$='sipariş']").getAttribute("aria-label");
-    fireEvent.change(screen.getByLabelText(kesitAd), { target: { value: "300" } });
-    expect(within(screen.getByTestId("siparis-kesit-satiri")).getByTestId("siparis-elle")).toBeTruthy();
+    expect(screen.queryByTestId("siparis-kesit-satiri")).toBeNull();
+    expect(screen.queryByLabelText(/^304 .* sipariş$/)).toBeNull();
     fireEvent.click(screen.getByLabelText("Kesme mili sipariş etme"));
-    expect(within(screen.getByTestId("siparis-kesit-satiri")).getByTestId("siparis-parcalari-kapali").textContent).toBe(S.PARCALARI_KAPALI);
-    expect(screen.getByLabelText(kesitAd).value).toBe("300");
+    expect(hazirSatir("Kesme mili").getAttribute("data-kapali")).toBe("1");
   });
-  it("AC-39: belirsiz yazılmış elle kilo reddedilir", () => {
+  it("AC-39 (2026-11-15 isteğiyle): elle kilo alanı ekranda yok; belirsiz kilo kuralı motorda", () => {
     render(<Pencere />);
-    const input = screen.getByTestId("siparis-kesit-satiri").querySelector("input[aria-label$='sipariş']");
-    fireEvent.change(input, { target: { value: "1.250" } });
-    expect(within(screen.getByTestId("siparis-kesit-satiri")).getByRole("alert").textContent).toMatch(/Belirsiz/);
+    expect(screen.queryByTestId("siparis-kesit-satiri")).toBeNull();
+    expect(S.elleKiloDogrula("1.250").hata).toMatch(/Belirsiz/);
   });
-  it("AC-79 / AC-23 / AC-86: parça ihtiyacı tablosu katlanabilir; sıfır adetli parça satırıyla; set satırı düzenlenir ve kapatılır", () => {
+  it("AC-79 / AC-23 / AC-86 (2026-11-15 isteğiyle): Parça ihtiyacı tablosu ve set satırı düzenlemesi ekranda yok", () => {
     render(<Pencere veri={VERI({ partStock: [{ id: 1, partId: 43, miktar: 100000 }] })} />);
-    expect(screen.getByRole("button", { name: /^Parça ihtiyacı/ }).getAttribute("aria-expanded")).toBe("false");
-    const t = tablo();
-    const somun = within(t).getAllByTestId("siparis-parca-satiri").find(r => r.textContent.includes("Somun"));
-    expect(within(somun).getByTestId("siparis-siparis").textContent).toBe("0");
-    fireEvent.click(screen.getByLabelText("Bağlantı seti set sipariş etme"));
-    expect(within(t).getAllByTestId("siparis-parca-satiri").find(r => r.textContent.includes("Bağlantı seti")).querySelector("[data-testid=siparis-patlatildi]")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Parça ihtiyacı/ })).toBeNull();
+    expect(screen.queryByLabelText("Bağlantı seti set sipariş etme")).toBeNull();
   });
   it("AC-67 / AC-68 / AC-72: model seçicisi üretimde olmayanı listelemez ama satırın kendi modeli korunur; çöpteki parti yok", () => {
     render(<Pencere />);
@@ -164,10 +156,9 @@ describe("Spec 0140: pencere", () => {
     expect(screen.getByTestId("bos-siparis-tedarikci").textContent).toContain(S.BOS_KIT);
   });
   // Spec 0141 ile ters çevrildi (B-R4, AC-23): emniyet payı sütunu kalktı; eski kayıttaki pay hiçbir hücrede basılmaz.
-  it("Bulgu 6 (0134) ekranı (spec 0141 ile): emniyet payı hücresi yok, eski %7,5 hiçbir yerde basılmaz", () => {
+  it("Bulgu 6 (0134) ekranı (spec 0141 ile, 2026-11-15 isteğiyle): emniyet payı hiçbir yerde basılmaz", () => {
     render(<Pencere veri={VERI({ parts: [{ ...F.KESME, tedarikciId: 13 }, { ...F.PUL, emniyetPayi: 7.5, tedarikciId: 13 }, F.SOMUN, F.SET] })} />);
-    const pul = within(tablo()).getAllByTestId("siparis-parca-satiri").find(r => r.textContent.includes("Pul"));
-    expect(within(pul).queryByTestId("siparis-pay")).toBeNull();
+    expect(screen.queryByTestId("siparis-pay")).toBeNull();
     expect(document.body.textContent).not.toMatch(/%7[,.]5/);
   });
 });

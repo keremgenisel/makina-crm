@@ -92,7 +92,10 @@ describe("Spec 0135 gerçek App", () => {
     fireEvent.change(screen.getByLabelText("Makina adedi 1"), { target: { value: "5" } });
     expect(screen.getByTestId("siparis-hazir").textContent).toContain("1 parçada malzeme kalemi yok");
     expect(screen.getByTestId("siparis-malzeme-yok").textContent).toBe(MALZEME_KALEMI_YOK_METNI);
-    fireEvent.click(screen.getByRole("button", { name: /^Parça ihtiyacı/ })); // spec 0140 C-R10: katlanabilir bölüm
-    expect(screen.getAllByTestId("siparis-parca-satiri").some(r => r.textContent.includes("Kaplamalı pim"))).toBe(true);
+    // 2026-11-15 isteğiyle: Parça ihtiyacı tablosu kalktı; Ana tedarikçisi olmayan hazır parça "Tedarikçisi belirtilmemiş" kutusunda.
+    expect(screen.queryByRole("button", { name: /^Parça ihtiyacı/ })).toBeNull();
+    const kutu = screen.getByRole("button", { name: /^Tedarikçisi belirtilmemiş/ });
+    if (kutu.getAttribute("aria-expanded") !== "true") fireEvent.click(kutu);
+    expect(screen.getByLabelText("Kaplamalı pim sipariş adedi")).toBeTruthy();
   });
 });

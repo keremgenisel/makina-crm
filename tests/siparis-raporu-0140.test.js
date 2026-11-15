@@ -27,15 +27,16 @@ describe("Spec 0140 E: belge", () => {
   it("AC-44 / AC-45 / AC-90 / AC-16 (spec 0142 ile): sütunlar tek listeden; para sütunu hiçbir seçenekte basılmaz", () => {
     for (const secenek of [{ paraGoster: true }, { paraGoster: false }, {}]) {
       const h = html(sonuc(), secenek);
-      for (const s of [...BELGE_SUTUNLARI.parca, ...BELGE_SUTUNLARI.toplam]) expect(h, s).toContain(s);
+      for (const s of BELGE_SUTUNLARI.parca) expect(h, s).toContain(s); // 2026-11-15 isteğiyle: toplam tablosu basılmaz
+      expect(h).not.toContain(TOPLAM_BASLIGI);
       for (const s of ["Birim maliyet", "Birim fiyat", "Tutar"]) expect(h, s).not.toContain(s);
       expect(h).not.toMatch(/\d,\d{2} (TL|\$|€|₺)/);
     }
   });
   // Spec 0142 ile: belge tek parça tablosu ve toplam tablosudur; "Hazır parçalar" ve "Malzemeler" tabloları yoktur.
-  it("AC-46 (spec 0142 ile): eski iki tablo basılmaz; bölümde parça tablosu ve toplam tablosu vardır", () => {
+  it("AC-46 (spec 0142 ile, 2026-11-15 isteğiyle): eski iki tablo basılmaz; bölümde yalnız parça tablosu vardır", () => {
     const h = html(sonuc({}, { secilenTedarikciler: ["12"] }));
-    expect(h).toContain(TOPLAM_BASLIGI); expect(h).not.toContain("Hazır parçalar"); expect(h).not.toContain(">Malzemeler<");
+    expect(h).not.toContain(TOPLAM_BASLIGI); expect(h).not.toContain("Hazır parçalar"); expect(h).not.toContain(">Malzemeler<");
   });
   it("AC-30 / AC-31 / AC-47: sıfır adetli ve kapatılan satır basılmaz; elle düzenlenmiş satır işaretli", () => {
     expect(html(sonuc({}, { duzenleme: { parca: { 42: { adet: "0" } } } }))).not.toContain("Pul");

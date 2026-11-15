@@ -64,7 +64,8 @@ describe("Spec 0140 gerçek App", () => {
     await baslat({ sunucu: { tabs: ["dashboard", "stock"] } });
     stoktanAc();
     const p = screen.getByTestId("siparis-penceresi");
-    expect(screen.getAllByTestId("siparis-tedarikci-adi").map(e => e.textContent)).toEqual(["Ana Çelik", "Beta Metal"]);
+    // 2026-11-15 isteğiyle: yalnız malzemesi olan tedarikçinin (Ana Çelik) ekran kartı çizilmez; belgede bölümü durur.
+    expect(screen.getAllByTestId("siparis-tedarikci-adi").map(e => e.textContent)).toEqual(["Beta Metal"]);
     expect(p.textContent).not.toMatch(/₺|\$|€/);
     expect([...screen.getByLabelText("Üretim partisi").options].map(o => o.textContent)).not.toContain("Çöpteki Parti");
     fireEvent.click(screen.getByTestId("siparis-yazdir"));
@@ -77,7 +78,7 @@ describe("Spec 0140 gerçek App", () => {
     stoktanAc();
     const once = kayitlar.length;
     fireEvent.change(screen.getByLabelText("Pul sipariş adedi"), { target: { value: "5" } });
-    fireEvent.click(screen.getByLabelText(/^304 Paslanmaz .* sipariş etme$/));
+    fireEvent.click(screen.getByLabelText("Pul sipariş etme")); // 2026-11-15 isteğiyle: kesit "sipariş etme" ekrandan kalktı
     fireEvent.change(screen.getByLabelText("Makina adedi 1"), { target: { value: "12" } });
     await new Promise(r => setTimeout(r, 800));
     expect(kayitlar.length).toBe(once);

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import * as S from "../src/lib/siparisIhtiyaci";
 import * as R from "../src/lib/siparisRaporu";
 import { SENARYOLAR, BUGUN, FACTORY } from "./fixtures/0144-veri.js";
-import { ayikla0144, MALZEME_SATIRI } from "./fixtures/0144-ayikla.js";
+import { ayikla0144, MALZEME_SATIRI, TOPLAM_TABLOSU } from "./fixtures/0144-ayikla.js";
 
 const DOSYA = "tests/fixtures/0144-belge-once.json";
 const uret = () => Object.fromEntries(Object.entries(SENARYOLAR()).map(([ad, [v, sec, ops]]) =>
@@ -18,6 +18,10 @@ describe("Spec 0144 kıyas (C4)", () => {
     const altin = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
     const not = R.PAY_FARK_NOTU;
     for (const ad of Object.keys(altin)) expect(ayikla0144(s[ad], not)).toBe(ayikla0144(altin[ad]));
+  });
+  it("2026-11-15 isteğiyle: yeni belgede malzeme satırı ve toplam tablosu yok; ayıklama bunları altından düşer", () => {
+    const s = uret(); const altin = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
+    for (const ad of Object.keys(s)) { expect(s[ad]).not.toMatch(MALZEME_SATIRI); expect(s[ad]).not.toMatch(TOPLAM_TABLOSU); expect(altin[ad]).toMatch(TOPLAM_TABLOSU); }
   });
   it("altın gerçekten malzeme satırları ve bölümler içerir (kıyas boş değil)", () => {
     const altin = JSON.parse(fs.readFileSync(DOSYA, "utf8"));

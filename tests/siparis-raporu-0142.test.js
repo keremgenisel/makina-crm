@@ -37,10 +37,11 @@ describe("Spec 0142 B: belgenin yeni düzeni", () => {
     expect(h).not.toContain("Hazır parçalar");
   });
   // Spec 0144 ile (A-R1, A-R1/3): malzeme satırı artık kesidi Ölçü hücresine, o parçanın payını Sipariş adedi hücresine yazar.
-  it("AC-8 (spec 0144 ile): malzemeden kesilen parçanın hemen altında malzemenin adı, kesidi ve payı", () => {
+  // 2026-11-15 isteğiyle (0142 B-R3 ve 0144 A ters çevrildi): parçanın altında malzeme satırı yok.
+  it("AC-8 (2026-11-15 isteğiyle): malzemeden kesilen parçanın altında malzeme satırı basılmaz", () => {
     const { r, alt } = parcaSatiri(h, "Alfa Çelik", "Kalın mil");
     expect(r[1]).toBe("Ø62 × 178"); expect(r[2]).toBe("70");
-    expect(alt[0]).toContain(`${MALZEME_ETIKETI} · 304 Çubuk`); expect(alt[1]).toBe("Ø62"); expect(alt[2]).toMatch(/ kg$/);
+    expect(alt ? satirAdi(alt) : "x").not.toBe(""); expect(h).not.toContain(`${MALZEME_ETIKETI} · `);
   });
   it("AC-9 / AC-10: hazır parçanın ölçü hücresi boş, altında malzeme satırı yok", () => {
     const { r, alt } = parcaSatiri(h, "Delta Hırdavat", "Elle");
@@ -53,20 +54,14 @@ describe("Spec 0142 B: belgenin yeni düzeni", () => {
     const g = satirlar(parcaTablosu(html(sonuc({ parts })), "Gama Boru")).map(satirAdi).filter(Boolean); // malzeme satırlarının adı boş
     expect(g.at(-1)).toBe("Elle");
   });
-  it("AC-13 / AC-48: bölüm sonunda 'Alınacak malzeme toplamı' kendi tablosu, malzeme ve kesit başına sipariş kilosu", () => {
-    const t = toplamTablosu(h, "Alfa Çelik");
-    expect(bolumHtml(h, "Alfa Çelik")).toContain(TOPLAM_BASLIGI);
-    expect(basliklar(t)).toEqual(["Malzeme", "Kesit", "Alınacak"]);
-    const r = sonuc().tedarikciBolumleri.belge.find(b => b.ad === "Alfa Çelik").toplam.find(k => k.kesitMetni === "Ø62");
-    expect(satirlar(t)).toContainEqual(["304 Çubuk", "Ø62", S.kgMetni(r.siparisKg)]);
-    expect(bolumHtml(h, "Alfa Çelik").indexOf(TOPLAM_BASLIGI)).toBeGreaterThan(bolumHtml(h, "Alfa Çelik").indexOf("Kalın mil"));
-    // Spec 0144 ile: yalnız parça satırları (malzeme satırının miktarı payı yazar, A-R1/3).
-    for (const r2 of satirlar(parcaTablosu(h, "Alfa Çelik")).filter(x => satirAdi(x))) expect(r2[2]).not.toMatch(/kg|boy/);
+  it("AC-13 / AC-48 (2026-11-15 isteğiyle): bölüm sonunda malzeme toplamı tablosu basılmaz; parça satırları kilo ya da boy yazmaz", () => {
+    expect(h).not.toContain(TOPLAM_BASLIGI); expect(toplamTablosu(h, "Alfa Çelik")).toBeUndefined();
+    for (const r2 of satirlar(parcaTablosu(h, "Alfa Çelik"))) expect(r2[2]).not.toMatch(/kg|boy/);
   });
   // Spec 0143 ile: boy fiyatı yöntemi kalktı; işaretli (boydan sipariş) kalemin toplamı boy adedi ve çubuk boyunu yazar (0143 C-R2, C-R4).
-  it("AC-14 (spec 0143 ile): boydan sipariş edilen malzemenin toplamı boy adedi yazar", () => {
+  it("AC-14 (2026-11-15 isteğiyle): boydan sipariş edilen malzemenin toplamı belgede basılmaz", () => {
     const parts = PARCALAR.map(p => (p.id === 7 ? { ...p, maliyetKalemleri: p.maliyetKalemleri.map(k => ({ ...k, boydanSiparis: true, cubukBoyu: 6000 })) } : p));
-    expect(satirlar(toplamTablosu(html(sonuc({ parts })), "Gama Boru"))).toContainEqual(["St37 mil", "Ø30 · 6.000 mm çubuk", "5 boy"]);
+    expect(toplamTablosu(html(sonuc({ parts })), "Gama Boru")).toBeUndefined();
   });
   it("AC-15: malzeme satırı olmayan tedarikçide toplam tablosu çizilmez", () => {
     expect(bolumHtml(h, "Delta Hırdavat")).not.toContain(TOPLAM_BASLIGI);
@@ -86,18 +81,19 @@ describe("Spec 0142 F: bölümleme, süzgeç ve ölçü hücresi (belge)", () =>
   });
   it("AC-36 / AC-58: iki firmalı parça iki bölümde, yalnız o firmanın malzemesiyle ve aynı adetle; çift sayım cümlesi yok", () => {
     const a = parcaSatiri(h, "Alfa Çelik", "Çift malzemeli"); const b = parcaSatiri(h, "Beta Plastik", "Çift malzemeli");
-    expect([a.r[1], a.r[2]]).toEqual(["Ø40 × 90", "70"]); expect(a.alt[0]).toContain("304 Çubuk"); expect(a.alt[0]).not.toContain("Delrin");
-    expect([b.r[1], b.r[2]]).toEqual(["10 × 100 × 200", "70"]); expect(b.alt[0]).toContain("Delrin levha");
+    // 2026-11-15 isteğiyle: altında malzeme satırı yok; firmayı ölçü hücresi gösterir (yalnız o firmanın malzemesinin ölçüsü).
+    expect([a.r[1], a.r[2]]).toEqual(["Ø40 × 90", "70"]); expect([b.r[1], b.r[2]]).toEqual(["10 × 100 × 200", "70"]);
     expect(h).not.toContain(S.CIFT_SAYIM_DEGIL);
   });
   it("AC-38: kapatılmış ya da hatalı parça ve altındaki malzeme satırı basılmaz", () => {
     const d = html(sonuc({}, { duzenleme: { parca: { 6: { kapali: true }, 9: { adet: "x" } }, kesit: {} } }));
     expect(d).not.toContain(">Levha<"); expect(d).not.toMatch(/>Elle</);
-    expect(satirlar(parcaTablosu(d, "Beta Plastik")).filter(r => r[0].includes("Delrin levha"))).toHaveLength(1); // yalnız Çift malzemeli'nin
+    expect(satirlar(parcaTablosu(d, "Beta Plastik")).map(satirAdi)).toEqual(["Çift malzemeli"]); // 2026-11-15 isteğiyle: malzeme satırı yok
   });
   it("AC-39 / AC-49: kapatılmış ve hatalı kesit toplama girmez; parçası açıksa uyarı yazar", () => {
     const d = html(sonuc({}, { duzenleme: { parca: {}, kesit: { "501|kilo||mil|50": { kapali: true }, "501|kilo||mil|40": { deger: "abc" } } } }));
-    const t = satirlar(toplamTablosu(d, "Alfa Çelik")).map(r => r[1]);
+    // 2026-11-15 isteğiyle: toplam tablosu basılmıyor; kapalı ve hatalı kesidin toplama girmediği motorda (`belge.toplam`) ölçülür.
+    const t = sonuc({}, { duzenleme: { parca: {}, kesit: { "501|kilo||mil|50": { kapali: true }, "501|kilo||mil|40": { deger: "abc" } } } }).tedarikciBolumleri.belge.find(b => b.ad === "Alfa Çelik").toplam.map(r => r.kesitMetni);
     expect(t).not.toContain("Ø50"); expect(t).not.toContain("Ø40"); expect(t).toContain("Ø62");
     expect(bolumHtml(d, "Alfa Çelik")).toContain(S.KESIT_KAPALI_UYARISI.replace(/"/g, "&quot;"));
     expect(h).not.toContain("sipariş etme&quot; işaretli");
@@ -120,11 +116,10 @@ describe("Spec 0142 F: bölümleme, süzgeç ve ölçü hücresi (belge)", () =>
   it("AC-55 (belge): kalem adedi ölçü satırının sonunda", () => {
     expect(parcaSatiri(h, "Alfa Çelik", "Lama").r[1]).toBe("10 × 20 × 125 · parça başına 2");
   });
-  it("AC-56: parçaları kapatılmış ama kesidine elle kilo yazılmış bölüm toplamıyla basılır", () => {
+  // 2026-11-15 isteğiyle ters çevrildi: toplam tablosu basılmadığı için yalnız toplamı olan bölüm basılmaz.
+  it("AC-56 (2026-11-15 isteğiyle): parçaları kapatılmış ama kesidine elle kilo yazılmış bölüm basılmaz", () => {
     const d = html(sonuc({ parts: PARCALAR.map(p => (p.id === 1 ? { ...p, tedarikciId: 11 } : p)) }, { duzenleme: { parca: { 6: { kapali: true }, 11: { kapali: true } }, kesit: { "502|kilo||sac|30|60": { deger: "40" } } } }));
-    const b = bolumHtml(d, "Beta Plastik");
-    expect(b).toContain(TOPLAM_BASLIGI); expect(parcaTablosu(d, "Beta Plastik")).toBeUndefined();
-    expect(satirlar(toplamTablosu(d, "Beta Plastik"))).toEqual([["Delrin levha", "30 × 60", `40,000 kg${ELLE_ISARETI}`]]);
+    expect(bolumHtml(d, "Beta Plastik")).toBe("");
   });
   it("AC-57: malzemesi çöpte olan parça Ana tedarikçisinde; malzemesi bulunamayan Ana'sız parça basılmaz", () => {
     expect(parcaSatiri(h, "Delta Hırdavat", "Çöpteki malzemeli").r[1]).toBe("Ø20 × 40");

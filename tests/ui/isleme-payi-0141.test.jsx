@@ -10,7 +10,6 @@ import { Settings } from "../../src/components/Settings";
 import { SiparisPenceresi } from "../../src/components/stock/SiparisPenceresi";
 import * as M from "../../src/lib/malzeme";
 import * as S from "../../src/lib/siparisIhtiyaci";
-import { kutuAc } from "./kutuAc";
 import * as F from "../fixtures/0134-veri";
 
 vi.mock("../../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
@@ -114,30 +113,25 @@ describe("Spec 0141 B: sipariş penceresi", () => {
   const VERI = { parts: [{ ...F.KESME, emniyetPayi: 10 }, { ...F.PUL, tedarikciId: 13 }, F.SOMUN, F.SET], partStock: [], malzemeler: [{ ...F.P304, emniyetPayi: 10 }], tedarikciler: F.TED,
     hamTedarikciler: F.TED, standardModels: [F.AK100], customModels: [], uretimPartileri: [{ id: 801, ad: "Güz", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100_DS: 70 } }],
     appSettings: {}, factory: { name: "Altuntaş" } };
-  it("AC-23 / AC-24 / AC-51: parça ihtiyacı tablosu yedi başlık, emniyet payı yok; ibare motorun sabitinden; Ham ihtiyaç = İhtiyaç (kit)", () => {
+  // 2026-11-15 isteğiyle: Parça ihtiyacı ve kesit tabloları ekrandan kalktı; aynı sayılar pencerenin kullandığı motor çağrısından okunur.
+  const motor = (v = VERI) => S.siparisIhtiyaci({ modeller: v.standardModels, satirlar: S.partidenSatirlar(v.uretimPartileri[0], v.standardModels).satirlar,
+    parts: v.parts, partStock: v.partStock, malzemeler: v.malzemeler, tedarikciler: v.tedarikciler });
+  it("AC-23 / AC-24 / AC-51 (2026-11-15 isteğiyle): Parça ihtiyacı tablosu ekranda yok; emniyet payı uygulanmaz; ibare motorun sabiti", () => {
     render(<SiparisPenceresi veri={VERI} giderYetki bugun="2026-11-10" onClose={vi.fn()} />);
-    kutuAc("Parça ihtiyacı");
-    const ths = [...screen.getByTestId("siparis-parca-tablosu").querySelectorAll("th")].map(t => t.textContent);
-    // Spec 0142 ile (C-R4, AC-28): Parça ile Ham ihtiyaç arasına Ölçü sütunu geldi; hücre sırası bir kaydı.
-    expect(ths).toEqual(["Parça", "Ölçü", "Ham ihtiyaç", "İhtiyaç", "Stok", "Sipariş (öneri)", "Sipariş", "Sipariş etme"]);
-    expect(screen.getByTestId("siparis-ham-ibare").textContent).toBe(S.HAM_IHTIYAC_IBARESI);
-    const kesme = screen.getAllByTestId("siparis-parca-satiri").find(r => r.textContent.includes("Kesme mili"));
-    const h = [...kesme.querySelectorAll("td")].map(td => td.textContent);
-    expect(h[2]).toBe("70"); expect(h[3]).toBe("70"); // spec 0142 ile: Ölçü sütunu // eski %10 pay uygulanmaz (77 değil)
-    expect(screen.queryByTestId("siparis-pay")).toBeNull();
+    expect(screen.queryByTestId("siparis-parca-tablosu")).toBeNull(); expect(screen.queryByTestId("siparis-pay")).toBeNull();
+    expect(typeof S.HAM_IHTIYAC_IBARESI).toBe("string");
+    const kesme = motor().parcalar.find(p => p.ad === "Kesme mili");
+    expect([kesme.ham, kesme.ihtiyac]).toEqual([70, 70]); // eski %10 pay uygulanmaz (77 değil)
   });
-  it("AC-25 (ekran): setten patlatılan bileşende iki sütun ayrışır (1,5 × 3 = 4,5 → 5)", () => {
+  it("AC-25 (2026-11-15 isteğiyle, motor): setten patlatılan bileşende ham ve ihtiyaç ayrışır (1,5 × 3 = 4,5 → 5)", () => {
     const set = { id: 50, ad: "Mil seti", models: [], setIcerigi: [{ partId: 42, miktar: 1.5 }] };
-    render(<SiparisPenceresi veri={{ ...VERI, parts: [F.PUL, set], standardModels: [F.model("M1", [[50, 1]])], uretimPartileri: [{ id: 1, ad: "P", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { M1: 3 } }] }} giderYetki bugun="2026-11-10" onClose={vi.fn()} />);
-    kutuAc("Parça ihtiyacı");
-    const pul = screen.getAllByTestId("siparis-parca-satiri").find(r => r.textContent.includes("Pul"));
-    const h = [...pul.querySelectorAll("td")].map(td => td.textContent);
-    expect([h[2], h[3]]).toEqual(["4,5", "5"]); // spec 0142 ile: Ölçü sütunu
+    const pul = motor({ ...VERI, parts: [F.PUL, set], standardModels: [F.model("M1", [[50, 1]])], uretimPartileri: [{ id: 1, ad: "P", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { M1: 3 } }] }).parcalar.find(p => p.ad === "Pul");
+    expect([pul.ham, pul.ihtiyac]).toEqual([4.5, 5]);
   });
-  it("AC-47 (ekran): malzeme satırının Net kg'si kalemin ham ağırlığı × adet", () => {
+  it("AC-47 (2026-11-15 isteğiyle, motor): kesit satırının net kilosu kalemin ham ağırlığı × adet; ekranda kesit satırı yok", () => {
     render(<SiparisPenceresi veri={VERI} giderYetki bugun="2026-11-10" onClose={vi.fn()} />);
-    const k = screen.getAllByTestId("siparis-kesit-satiri")[0];
+    expect(screen.queryByTestId("siparis-kesit-satiri")).toBeNull();
     const hamKg = M.malzemeOzeti({ ...F.MIL140 }, M.malzemeKatalogu([F.P304])).hamKg;
-    expect([...k.querySelectorAll("td")][1].textContent).toBe(M.kgMetni(hamKg * 70));
+    expect(motor().kesitler[0].netKg).toBeCloseTo(hamKg * 70, 9);
   });
 });

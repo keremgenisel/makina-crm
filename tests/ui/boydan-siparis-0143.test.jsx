@@ -9,6 +9,7 @@ import { Settings } from "../../src/components/Settings";
 import { SiparisPenceresi } from "../../src/components/stock/SiparisPenceresi";
 import { FIYAT_GUNCELLE } from "../../src/components/MalzemeManager";
 import * as M from "../../src/lib/malzeme";
+import * as S from "../../src/lib/siparisIhtiyaci";
 
 vi.mock("../../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
 afterEach(() => { cleanup(); });
@@ -120,28 +121,35 @@ describe("Spec 0143: sipariş penceresi", () => {
   const VERI = (kalemler) => ({ parts: [{ id: 50, ad: "Dayama", maliyetKalemleri: kalemler }], partStock: [], malzemeler: [KART], tedarikciler: TED, hamTedarikciler: TED,
     standardModels: [{ model: "AK100", defaultParcalar: [{ partId: "50", miktar: 1 }] }], customModels: [], uretimPartileri: [{ id: 1, ad: "Güz", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100: 70 } }],
     appSettings: {}, factory: { name: "Altuntaş" } });
-  const kesitSatiri = () => screen.getByTestId("siparis-kesit-satiri");
-  const hucre = (r) => [...r.querySelectorAll("td")].map(td => td.textContent);
-  it("AC-21 / AC-23 / AC-63: işaretli satırın miktarı N boy; net ve fire kilosu yazar; kesit metninde çubuk boyu", () => {
-    render(<SiparisPenceresi veri={VERI([{ ...DAYAMA, boydanSiparis: true, cubukBoyu: 400 }])} bugun="2026-11-12" onClose={vi.fn()} />);
-    const h = hucre(kesitSatiri());
-    expect(h[0]).toContain("Ø35 · 400 mm çubuk");
-    expect(within(kesitSatiri()).getByTestId("siparis-kesit-oneri").textContent).toBe("8 boy");
-    expect(within(kesitSatiri()).getByTestId("siparis-boy").textContent).toBe("8 boy");
-    expect(h[1]).toMatch(/kg$/); expect(h[2]).toMatch(/kg$/); expect(h[1]).not.toBe("—");
+  // 2026-11-15 isteğiyle: kesit (malzeme) tablosu ve düzenleme alanı ekrandan kalktı; satırın değerleri pencerenin kullandığı motor çağrısından okunur.
+  const motor = (v, duzenleme = null) => S.siparisIhtiyaci({ modeller: v.standardModels, satirlar: [{ model: "AK100", adet: "70" }], parts: v.parts,
+    partStock: v.partStock, malzemeler: v.malzemeler, tedarikciler: v.tedarikciler }, duzenleme ? { tedarikciOdakli: true, duzenleme } : undefined).kesitler[0];
+  const ekranBos = (v) => { render(<SiparisPenceresi veri={v} bugun="2026-11-12" onClose={vi.fn()} />); expect(screen.queryByTestId("siparis-kesit-satiri")).toBeNull(); };
+  it("AC-21 / AC-23 / AC-63 (2026-11-15 isteğiyle): işaretli satır N boy; net ve fire kilosu; kesit metninde çubuk boyu (motor); ekranda kesit satırı yok", () => {
+    const v = VERI([{ ...DAYAMA, boydanSiparis: true, cubukBoyu: 400 }]);
+    ekranBos(v);
+    const k = motor(v);
+    expect(k.kesitMetni).toBe("Ø35 · 400 mm çubuk"); expect(k.boyAdedi).toBe(8); expect(k.netKg).toBeGreaterThan(0); expect(k.fireKg).toBeGreaterThan(0);
   });
-  it("AC-22: düzenleme alanına girilen değer boy sayısıdır", () => {
-    render(<SiparisPenceresi veri={VERI([{ ...DAYAMA, boydanSiparis: true, cubukBoyu: 400 }])} bugun="2026-11-12" onClose={vi.fn()} />);
-    const alan = within(kesitSatiri()).getByRole("textbox");
-    expect(alan.value).toBe("8");
-    fireEvent.change(alan, { target: { value: "10" } });
-    expect(within(kesitSatiri()).getByTestId("siparis-boy").textContent).toBe("10 boy");
-    fireEvent.change(alan, { target: { value: "8,5" } });
-    expect(kesitSatiri().textContent).toMatch(/Boy adedi 0 ile 1\.000\.000 arasında tam sayı olmalı/);
+  it("AC-22 (2026-11-15 isteğiyle, motor): düzenleme değeri boy sayısıdır; kesirli boy reddedilir", () => {
+    const v = VERI([{ ...DAYAMA, boydanSiparis: true, cubukBoyu: 400 }]);
+    const an = motor(v).anahtar;
+    expect(motor(v, { parca: {}, kesit: { [an]: { deger: "10" } } }).boyAdedi).toBe(10);
+    expect(motor(v, { parca: {}, kesit: { [an]: { deger: "8,5" } } }).hata).toBe(S.ELLE_BOY_HATASI);
   });
-  it("AC-19 (ekran): işaretsiz satırın miktarı kilogram, boy hücresi boş", () => {
-    render(<SiparisPenceresi veri={VERI([DAYAMA])} bugun="2026-11-12" onClose={vi.fn()} />);
-    expect(within(kesitSatiri()).getByTestId("siparis-kesit-oneri").textContent).toMatch(/kg$/);
-    expect(within(kesitSatiri()).getByTestId("siparis-boy").textContent).toBe("—");
+  it("2026-11-15 kararı: kesidin nedeni (parça çubuktan uzun, kilogramla sipariş) pencerenin parça satırında yazar", () => {
+    const v = VERI([{ ...DAYAMA, boy: 500, boydanSiparis: true, cubukBoyu: 400 }]);
+    render(<SiparisPenceresi veri={{ ...v, parts: v.parts.map(p => ({ ...p, tedarikciId: 11 })) }} bugun="2026-11-12" onClose={vi.fn()} />);
+    const satir = screen.getAllByTestId("siparis-hazir-satiri").find(r => r.textContent.includes("Dayama"));
+    expect(within(satir).getAllByTestId("siparis-kesit-neden").map(e => e.textContent)).toContain(S.NEDEN_KESIM_BUYUK);
+    cleanup();
+    render(<SiparisPenceresi veri={{ ...VERI([DAYAMA]), parts: VERI([DAYAMA]).parts.map(p => ({ ...p, tedarikciId: 11 })) }} bugun="2026-11-12" onClose={vi.fn()} />);
+    expect(screen.queryAllByTestId("siparis-kesit-neden")).toHaveLength(0); // nedensiz kesitte ibare yok
+  });
+  it("AC-19 (2026-11-15 isteğiyle, motor): işaretsiz satırın miktarı kilogram, boy adedi yok", () => {
+    const v = VERI([DAYAMA]);
+    ekranBos(v);
+    const k = motor(v);
+    expect(k.boyAdedi).toBeNull(); expect(k.siparisKg).toBeGreaterThan(0);
   });
 });

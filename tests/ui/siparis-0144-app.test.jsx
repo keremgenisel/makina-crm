@@ -41,7 +41,9 @@ describe("Spec 0144 gerçek App", () => {
     fireEvent.click(screen.getByTestId("nusha-fiyatli"));
     const [html, , ad] = window.appPrint.printHtml.mock.calls[0];
     expect(ad).toMatch(/-Fiyatli\.pdf$/);
-    expect(html).toContain("Fiyatlı nüsha"); expect(html).toContain("2,95 $/kg"); expect(html).toContain("5,00 ₺/adet");
+    expect(html).toContain("Fiyatlı nüsha"); expect(html).toContain("2.800,00 ₺"); expect(html).not.toContain("/adet"); // 2026-11-15 isteğiyle birim fiyat yok; Pul 560 × 5 ₺
+    // 2026-11-15 isteğiyle: malzeme satırı ve toplam tablosu yok; malzemeli parçanın tutarı parça satırında, $ ile.
+    expect(html).not.toContain("$/kg"); expect(html).not.toContain("Alınacak malzeme toplamı"); expect(html).toMatch(/\d,\d{2} \$/);
     await new Promise(r => setTimeout(r, 700));
     expect(kayitlar.length).toBe(once);
   });

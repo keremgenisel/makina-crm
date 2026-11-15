@@ -21,8 +21,7 @@ const VERI = (o = {}) => ({ parts: PARCALAR, partStock: [], malzemeler: MALZEMEL
 const Pencere = ({ veri = VERI() }) => <SiparisPenceresi veri={veri} bugun="2026-11-11" onClose={vi.fn()} />;
 const bolum = (ad) => screen.getAllByTestId("siparis-tedarikci-bolumu").find(b => within(b).getByTestId("siparis-tedarikci-adi").textContent === ad);
 const ths = (t) => [...t.querySelectorAll("th")].map(x => x.textContent);
-const ihtiyac = () => { const d = screen.getByRole("button", { name: /^Parça ihtiyacı/ }); if (d.getAttribute("aria-expanded") !== "true") fireEvent.click(d); return screen.getByTestId("siparis-parca-tablosu"); };
-const ihtiyacSatiri = (ad) => [...ihtiyac().querySelectorAll("[data-testid=siparis-parca-satiri]")].find(r => r.querySelector("b").textContent === ad);
+// 2026-11-15 isteğiyle: "Parça ihtiyacı" ve kesit tabloları ekrandan kalktı; ölçü yalnız hazır parça tablosunda.
 const hazirSatiri = (b, ad) => within(bolum(b)).getAllByTestId("siparis-hazir-satiri").find(r => r.querySelector("b").textContent === ad);
 const olcu = (r) => within(r).queryAllByTestId("siparis-olcu").map(e => e.textContent);
 
@@ -35,30 +34,27 @@ describe("Spec 0142 D: pencere", () => {
     expect(within(hazirSatiri("Delta Hırdavat", "Elle")).getByTestId("siparis-olcu-hucresi").textContent).toBe("");
     expect(olcu(hazirSatiri("Beta Plastik", "Kalın mil"))).toEqual(["Ø62 × 178"]); // malzemeli parça pencerede Ana tedarikçisinde ve ölçülü
   });
-  it("AC-26 / AC-28 / AC-45: Parça ihtiyacı tablosunda Stok ve Ölçü; ölçü başlığı pencerede ve belgede aynı metin", () => {
+  it("AC-26 / AC-28 / AC-45 (2026-11-15 isteğiyle): Parça ihtiyacı tablosu yok; hazır parça tablosunda Stok ve Ölçü; ölçü başlığı pencerede ve belgede aynı", () => {
     render(<Pencere />);
-    const h = ths(ihtiyac());
+    expect(screen.queryByTestId("siparis-parca-tablosu")).toBeNull();
+    const h = ths(within(bolum("Beta Plastik")).getByTestId("siparis-hazir-tablosu"));
     expect(h).toContain("Stok"); expect(h).toContain("İhtiyaç"); expect(h[1]).toBe(S.OLCU_BASLIGI);
     expect(BELGE_SUTUNLARI.parca[1]).toBe(S.OLCU_BASLIGI);
-    expect(ths(within(bolum("Alfa Çelik")).queryByTestId("siparis-hazir-tablosu") || within(bolum("Beta Plastik")).getByTestId("siparis-hazir-tablosu"))[1]).toBe(S.OLCU_BASLIGI);
   });
-  it("AC-23: stokta yeten (sipariş 0) parçanın satırında da ölçü yazar", () => {
+  it("AC-23 (2026-11-15 isteğiyle): stokta yeten (sipariş 0) parça ekranda satır açmaz; ölçüsü motorda durur", () => {
     render(<Pencere veri={VERI({ partStock: [{ id: 1, partId: 1, miktar: 500 }] })} />);
-    const r = ihtiyacSatiri("Kalın mil");
-    expect(within(r).getByTestId("siparis-siparis").textContent).toBe("0");
-    expect(olcu(r)).toEqual(["Ø62 × 178"]);
+    expect(screen.queryAllByTestId("siparis-hazir-satiri").map(r => r.querySelector("b").textContent)).not.toContain("Kalın mil");
+    const v = VERI({ partStock: [{ id: 1, partId: 1, miktar: 500 }] });
+    const p = S.siparisIhtiyaci({ modeller: v.standardModels, satirlar: [{ model: "AK100_DS", adet: "70" }], parts: v.parts, partStock: v.partStock, malzemeler: v.malzemeler, tedarikciler: v.tedarikciler }).parcalar.find(x => x.ad === "Kalın mil");
+    expect(p.siparis).toBe(0); expect(p.olculer.map(o => o.metin)).toEqual(["Ø62 × 178"]);
   });
-  it("AC-27: malzeme tablosu kesiti yazar, boyu yazmaz", () => {
+  it("AC-27 (2026-11-15 isteğiyle): malzeme (kesit) tablosu ekranda yok", () => {
     render(<Pencere />);
-    const t = within(bolum("Alfa Çelik")).getByTestId("siparis-malzeme-tablosu");
-    expect(ths(t)[0]).toBe("Malzeme · kesit");
-    const r = within(t).getAllByTestId("siparis-kesit-satiri").find(x => x.textContent.includes("Ø62"));
-    expect(r.querySelector("td").textContent).not.toMatch(/× 178|× 50|× 75/);
+    expect(screen.queryByTestId("siparis-malzeme-tablosu")).toBeNull(); expect(screen.queryByTestId("siparis-kesit-satiri")).toBeNull();
   });
   it("AC-30 / AC-60: hiçbir para sütunu, toplamı ya da para nedeni çizilmez; eksik sayacının metni tutar demez", () => {
     const malzemeler = MALZEMELER.map(m => (m.id === 502 ? { ...m, kiloFiyati: undefined } : m.id === 503 ? { ...m, kur: undefined } : m));
     render(<Pencere veri={VERI({ malzemeler })} />);
-    ihtiyac();
     const p = screen.getByTestId("siparis-penceresi").textContent;
     expect(p).not.toMatch(/₺|\$|€|Birim maliyet|Tutar|\bTL\b/);
     for (const m of [S.NEDEN_FIYAT_YOK, S.NEDEN_KUR_YOK, S.MALZEMESI_ASAGIDA, S.MALIYET_YOK]) expect(p).not.toContain(m);
@@ -66,14 +62,15 @@ describe("Spec 0142 D: pencere", () => {
     expect(screen.getByTestId("siparis-eksik").textContent).not.toMatch(/tutar/i);
     expect(screen.getByTestId("siparis-eksik").textContent).toMatch(/bilgisi eksik/);
   });
-  it("AC-41 / AC-42 / AC-43 (ekran): ölçüsü eksik parçada ibare ve boş hücre; set satırı ölçüsüz; iki ölçü ayrı satırlarda", () => {
-    render(<Pencere />);
-    const eksik = ihtiyacSatiri("Boyu eksik");
+  it("AC-41 / AC-42 / AC-43 (ekran, 2026-11-15 isteğiyle): ölçüsü eksik parçada ibare ve boş hücre; iki ölçü ayrı satırlarda (hazır parça tablosu)", () => {
+    // 2026-11-15 isteğiyle: Parça ihtiyacı tablosu yok; ölçü ancak Ana tedarikçisi olan parçada (hazır parça tablosu) görünür, bu yüzden üç parçaya Ana tedarikçi verildi.
+    const ANA = { 14: 14, 13: 14, 5: 14 };
+    render(<Pencere veri={VERI({ parts: PARCALAR.map(p => (ANA[p.id] ? { ...p, tedarikciId: ANA[p.id] } : p)) })} />);
+    const eksik = hazirSatiri("Delta Hırdavat", "Boyu eksik");
     expect(within(eksik).getByTestId("siparis-olcu-eksik").textContent).toBe(S.OLCU_GIRILMEMIS);
     expect(olcu(eksik)).toEqual([]);
-    expect(olcu(ihtiyacSatiri("Bağlantı seti"))).toEqual([]);
-    expect(olcu(ihtiyacSatiri("Aynı kesit farklı boy"))).toEqual(["Ø62 × 50", "Ø62 × 75"]);
-    expect(olcu(ihtiyacSatiri("Lama"))).toEqual(["10 × 20 × 125 · parça başına 2"]);
+    expect(olcu(hazirSatiri("Delta Hırdavat", "Aynı kesit farklı boy"))).toEqual(["Ø62 × 50", "Ø62 × 75"]);
+    expect(olcu(hazirSatiri("Delta Hırdavat", "Lama"))).toEqual(["10 × 20 × 125 · parça başına 2"]);
   });
 });
 
@@ -97,7 +94,7 @@ describe("Spec 0142 A: gerçek giriş noktasından basılan belge", () => {
     fireEvent.click(screen.getByTestId("nusha-fiyatsiz")); // spec 0144 ile (B-R1): Yazdır önce nüshayı sorar
     expect(printHtml).toHaveBeenCalledTimes(1);
     const html = printHtml.mock.calls[0][0];
-    expect(html).toContain("Ø62 × 178"); expect(html).toContain("Alınacak malzeme toplamı");
+    expect(html).toContain("Ø62 × 178"); expect(html).not.toContain("Alınacak malzeme toplamı"); // 2026-11-15 isteğiyle toplam tablosu yok
     expect(html).not.toMatch(/Birim maliyet|Birim fiyat|Tutar|\d,\d{2} (TL|\$|€|₺)/);
   });
 });

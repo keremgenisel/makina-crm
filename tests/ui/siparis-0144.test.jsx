@@ -50,7 +50,7 @@ describe("Spec 0144 B: nüsha sorusu", () => {
     expect(adFsz).toBe(siparisDosyaAdi("2026-11-12", false)); expect(adFli).toBe(siparisDosyaAdi("2026-11-12", true));
     expect(adFsz).toBe("Siparis-Listesi-2026-11-12.pdf"); expect(adFli).toBe("Siparis-Listesi-2026-11-12-Fiyatli.pdf");
     expect(fsz).not.toContain(FIYATLI_NUSHA); expect(fsz).not.toMatch(/Tutar|Birim fiyat|[₺$€]/);
-    expect(fli).toContain(FIYATLI_NUSHA); expect(fli).toContain("Birim fiyat");
+    expect(fli).toContain(FIYATLI_NUSHA); expect(fli).toContain("Tutar"); expect(fli).not.toContain("Birim fiyat"); // 2026-11-15 isteğiyle
   });
   it("AC-41: soru açıkken Escape sipariş penceresini kapatmaz, yalnız soruyu; geçici düzenleme korunur", () => {
     const { onClose } = kur();
