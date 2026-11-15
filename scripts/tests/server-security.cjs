@@ -90,6 +90,9 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   // Spec 0145 AC-6, C1: Stok ve pano sekmeli, Müşteriler'siz kullanıcı Extra Kalıp kargosunu sürükler (izinle 200, izinsiz 403).
   dbmod.createUser("stokKalipci", bcrypt.hashSync("stok123", 10), "user", JSON.stringify({ tabs: ["servis", "stock"], customerActions: ["cust_kalip_edit"] }));
   dbmod.createUser("stokKalipsiz", bcrypt.hashSync("stok123", 10), "user", JSON.stringify({ tabs: ["servis", "stock"], customerActions: ["kalip_pano_kaldir"] }));
+  // Spec 0146 AC-22, C2/2: müşteri kalıbının durumu bölüm düzeyinde güvenilir; iki uç (sekme + grup kapısı birlikte).
+  dbmod.createUser("kalipDurumcu", bcrypt.hashSync("kalip123", 10), "user", JSON.stringify({ tabs: ["customers"], customerActions: ["cust_detail_edit"] }));
+  dbmod.createUser("kalipDurumsuz", bcrypt.hashSync("kalip123", 10), "user", JSON.stringify({ tabs: ["customers"], customerActions: [] }));
   dbmod.createUser("silici",      bcrypt.hashSync("sil123", 10), "user", SILICI);
   dbmod.createUser("siliciStoksuz", bcrypt.hashSync("sil123", 10), "user", SILICI_STOKSUZ);
   dbmod.createUser("bayiSilici",  bcrypt.hashSync("sil123", 10), "user", BAYI_SILICI);
@@ -262,6 +265,16 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   await postData({ partSales: (await veri0145(adminTok)).partSales.map(x => (x.id === 9045 ? { ...x, kargoDurum: "Hazırlanıyor" } : x)) }, await curVer(adminTok), adminTok);
   check("spec 0145 AC-15: aynı kullanıcı cust_kalip_edit'siz → 403",
     (await kalipTasi((await login("stokKalipsiz", "stok123")).body.token)).status === 403);
+  // Spec 0146 AC-22 (C2/2): detayın kalıp durumları penceresinin yazımı (customers[].kaliplar[i].kalipDurumu).
+  const cAd = (await veri0145(adminTok)).customers || [];
+  await postData({ customers: [...cAd.filter(x => x.id !== 9146), { id: 9146, name: "Kalıp Durumu AŞ", model: "AK100", kaliplar: [{ ad: "Y55", olcu: "55" }, { ad: "Y60", olcu: "60" }] }] }, await curVer(adminTok), adminTok);
+  const kalipDurumuYaz = async (tok, deger) => { const g = await veri0145(tok); return postData({ customers: g.customers.map(x => (x.id === 9146 ? { ...x, kaliplar: x.kaliplar.map((k, i) => (i === 1 ? { ...k, kalipDurumu: deger } : k)) } : x)) }, g.dataVersion, tok); };
+  check("spec 0146 AC-22: tabs customers + cust_detail_edit kullanıcısı kalıp durumu yazar → 200",
+    (await kalipDurumuYaz((await login("kalipDurumcu", "kalip123")).body.token, "teslim")).status === 200);
+  check("spec 0146 AC-22: yazılan kalıp durumu saklandı",
+    (await veri0145(adminTok)).customers.find(x => x.id === 9146)?.kaliplar?.[1]?.kalipDurumu === "teslim");
+  check("spec 0146 AC-22: aynı yazım customerActions [] kullanıcısında → 403",
+    (await kalipDurumuYaz((await login("kalipDurumsuz", "kalip123")).body.token, "hazir")).status === 403);
 
   // ── Müşteri silme kaskadı uçtan uca: yalnız cust_delete taşıyan kullanıcı, müşteriyle birlikte
   // aynı yazımda damgalanan servis/yedek parça/görüşme/dosyayı da yazabilmeli (çocuk silme izinleri

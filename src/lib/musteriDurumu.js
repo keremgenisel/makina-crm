@@ -193,3 +193,52 @@ export const satirDurumu = (musteri, { harita, grup, borclu = false } = {}) => {
 };
 // R23: süzgeç ölçütü (makina hazır ya da en az bir kalıp hazır).
 export const teslimBekliyorMu = (musteri, baglam) => satirDurumu(musteri, baglam).teslimBekliyor;
+
+// Spec 0146: kalıp durumları penceresi ve makina teslimiyle toplu teslim. Detay penceresinin dört okuyucusu (kartın çizimi,
+// özet, pencere listesi, onay sayısı) aşağıdaki yardımcıları çağırır; ekran durum dizesi yazmaz (0106 C4, 0146 B-R1/2).
+export const KALIP_DURUMLARI_BASLIGI = "Kalıp Durumları";
+// A-R5/2, Plan kararı 27: pencerede listelenmeyen Extra Kalıp satışlarının adresi ve süzgeç farkı (Tuzak T7).
+export const extraKalipListeIbaresi = (n) => `${n} Extra Kalıp satışı bu listede ve özette yoktur; durumları Makina Geçmişi'ndeki satırından yönetilir ve Teslim Bekleyenler süzgecine girer.`;
+// B-R2/2, Plan kararı 28: teslim onayının metinleri (ConfirmDialog varsayılanları bir silme onayınındır).
+export const TESLIM_ONAYI = Object.freeze({
+  baslik: "Kalıplar da teslim edilsin mi?",
+  metin: (n) => `Makina teslim edildi olarak işaretlenecek. Hazır bekleyen ${n} kalıp da teslim edildi sayılsın mı?`,
+  onay: "Evet, İşaretle",
+  iptal: "Yalnız makina",
+});
+
+// A-R8, Karar 1: "bu satır Extra Kalıp satışından mı geldi" sorusunun tek cevabı, kartın ölçütü: `partSaleId` dolu ya da satır
+// o müşterinin Extra Kalıp satış sayısı kadar sondaki satırlardan biri. (0106'nın `aynaSatirMi`'si kimliğe bakar ve ayrı kalır.)
+export const extraSatistanMi = (k, i, uzunluk, satisAdedi) => k?.partSaleId != null || i >= uzunluk - (Number(satisAdedi) || 0);
+
+// A-R5, A-R6/2: makinayla verilen kalıplar. `i` `kaliplar` dizisindeki konumdur (kalipIdx), süzülmüş sıra değil.
+export const makinaKaliplari = (musteri, { satisAdedi = 0, harita } = {}) => {
+  const liste = Array.isArray(musteri?.kaliplar) ? musteri.kaliplar : [];
+  const sonuc = [];
+  liste.forEach((kalip, i) => {
+    if (extraSatistanMi(kalip, i, liste.length, satisAdedi)) return;
+    const anahtar = musteriKalipAnahtari(musteri.id, i);
+    sonuc.push({ i, kalip, turetilen: kalipDurumuTuret(kalip, anahtar, harita), durum: kalipDurumuOf(kalip, anahtar, harita) });
+  });
+  return sonuc;
+};
+
+// A-R3, A-R3/2: bütün durumlar (teslim dahil) en geriden en ileriye, ad harfi harfine, orta nokta ayraç, sayı her zaman.
+export const kalipOzetMetni = (liste) => {
+  const durumlar = (Array.isArray(liste) ? liste : []).map(x => x.durum);
+  if (!durumlar.length) return null;
+  return KALIP_SIRASI.map(d => [d, durumlar.filter(x => x === d).length])
+    .filter(([, n]) => n > 0)
+    .map(([d, n]) => `${n} ${KALIP_DURUM_ADLARI[d]}`)
+    .join(" · ");
+};
+
+// B-R1/2, B-R3–B-R7, Plan kararı 25: makina teslim edilince hazır kalıplar. Yeni değer teslim değilse ya da hazır kalıp yoksa null;
+// aksi hâlde kapsanan sayı ve yeni `kaliplar` dizisi (yalnız hazır olanlara `teslim` yazılır, öteki satırlar aynı nesne).
+export const teslimToplamaPlani = (musteri, yeniDeger, { satisAdedi = 0, harita } = {}) => {
+  if (yeniDeger !== MAKINA_DURUMU.TESLIM) return null;
+  const hazir = new Set(makinaKaliplari(musteri, { satisAdedi, harita }).filter(x => x.durum === KALIP_DURUMU.HAZIR).map(x => x.i));
+  if (!hazir.size) return null;
+  const kaliplar = musteri.kaliplar.map((k, i) => (hazir.has(i) ? durumYaz(k, "kalipDurumu", KALIP_DURUMU.TESLIM) : k));
+  return { sayi: hazir.size, kaliplar };
+};

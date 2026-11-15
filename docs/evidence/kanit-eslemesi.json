@@ -7141,6 +7141,29 @@
         "rapor": "docs/evidence/0131-taban-piksel-raporu.json",
         "ekran": "musteri-0131-pencere-cek",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0146-piksel-raporu.json",
+        "ekran": "musteri-detay",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0146-piksel-raporu.json",
+        "ekran": "musteri-detay-0110-kalip",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0146 A-R1"
+      },
+      {
+        "rapor": "docs/evidence/0146-piksel-raporu.json",
+        "ekran": "musteri-detay-0115",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0146 A-R1"
+      },
+      {
+        "rapor": "docs/evidence/0146-piksel-raporu.json",
+        "ekran": "musteri-detay-0146-satir",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0146 A-R1"
       }
     ],
     "src/components/ServiceForm.jsx": [
@@ -13667,6 +13690,32 @@
         "rapor": "docs/evidence/0143-taban-piksel-raporu.json",
         "ekran": "siparis-0143-pencere",
         "beklenen": "ayni"
+      }
+    ],
+    "src/components/customers/detail/KalipDurumlari.jsx": [
+      {
+        "rapor": "docs/evidence/0146-piksel-raporu.json",
+        "ekran": "musteri-detay-0146-satir",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0146 A-R1"
+      },
+      {
+        "rapor": "docs/evidence/0146-piksel-raporu.json",
+        "ekran": "musteri-detay-0146-pencere",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0146 A-R1"
+      },
+      {
+        "rapor": "docs/evidence/0146-piksel-raporu.json",
+        "ekran": "musteri-detay-0146-pencere-15",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0146 A-R1"
+      },
+      {
+        "rapor": "docs/evidence/0146-piksel-raporu.json",
+        "ekran": "musteri-detay-0146-onay",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0146 A-R1"
       }
     ]
   }

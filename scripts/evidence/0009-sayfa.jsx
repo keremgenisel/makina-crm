@@ -514,6 +514,17 @@ const FORM_0106 = [{ id: 870, baslangicTarihi: "2026-10-01", satirlar: [
 const PS_0106 = [{ id: 872, customerId: 862, tur: "Kalıp", ad: "Y45", olcu: "45x110", ucret: 18000, currency: "TRY", tarih: "2026-10-12", faturaTipi: "Faturalı Yurtiçi", odendi: true, uretimFormId: 870 }];
 const musteri0106 = (ek = {}) => <Customers customers={MUSTERI_0106} setCustomers={bos} partSales={PS_0106} setPartSales={bos} services={[]} payments={[]} dealers={DEALERS}
   stock={[]} setStock={bos} uretimFormlari={FORM_0106} kalipDefs={["Y45", "Y50", "Y55", "Y60", "K40", "O70"].map((ad, i) => ({ id: i + 1, ad }))} {...ek} />;
+// Spec 0146: kalıp durumu satırı, penceresi ve teslim onayı. UFUK MAKİNA (hazır makina): iki elle hazır, bir türetilmiş hazır (form
+// 870'in tamamlanmış satırı yerine elle), bir üretimde, bir teslim ve sonda Extra Kalıp aynası (satış 873). On beş kalıplı kayıt AC-9/2 için.
+const MUSTERI_0146 = [
+  { id: 891, name: "UFUK MAKİNA", model: "AK140_DSC", serialNo: "F04234777", currency: "TRY", installDate: "2026-10-02", warrantyEnd: "2028-10-02", makinaDurumu: "hazir",
+    kaliplar: [k0106("Y55", "55x125", { kalipDurumu: "hazir" }), k0106("Y60", "60x125", { kalipDurumu: "hazir" }), k0106("K40", "40x40", { kalipDurumu: "uretimde" }),
+      k0106("O70", "70x140", { kalipDurumu: "teslim" }), k0106("Y45", "45x110", { partSaleId: 873 })] },
+  { id: 892, name: "ON BEŞ KALIP", model: "AK120_DS", serialNo: "F04234999", currency: "TRY", installDate: "2026-10-02", warrantyEnd: "2028-10-02", makinaDurumu: "montaj",
+    kaliplar: Array.from({ length: 15 }, (_, i) => k0106(["Y45", "Y50", "Y55", "Y60", "K40"][i % 5], `${40 + i}x${100 + i}`, i % 3 === 0 ? { kalipDurumu: "hazir" } : {})) },
+];
+const PS_0146 = [{ id: 873, customerId: 891, tur: "Kalıp", ad: "Y45", olcu: "45x110", ucret: 18000, currency: "TRY", tarih: "2026-10-12", faturaTipi: "Faturalı Yurtiçi", odendi: true, kalipDurumu: "hazir" }];
+const musteri0146 = (ek = {}) => musteri0106({ customers: MUSTERI_0146, partSales: PS_0146, uretimFormlari: [], ...ek });
 // Spec 0108: iki kalıbı (müşteri kalıbı + Extra Kalıp) damgalı form ve yalnız elle eklenmiş satırlı form.
 const FORM_0108_DOLU = { id: 880, baslangicTarihi: "2026-10-01", bitisTarihi: "2026-10-31", not: "Ekim partisi", kapali: false, satirlar: [
   { id: 1, kaynakTip: "musteri", kaynakId: 867, kalipIdx: 0, kalipAdi: "Y55", musteriAdi: "OX CO Sp. z o.o." },
@@ -1831,6 +1842,11 @@ const EKRANLAR = {
   // damgasız: seçiciler "Otomatik (Teslim edildi)". Çizelge için ANKARA DÖNER'in Extra Kalıp'ı damgasız ve işaretsiz.
   "musteri-formu-0110-teslim": [musteri0106({ initialDetailId: 863 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
   "musteri-detay-0110-cizelge": [musteri0106({ initialDetailId: 862, partSales: [{ ...PS_0106[0], uretimFormId: undefined }] }), ["kaydir:Kalıp Verildi"]],
+  // Spec 0146: makina durumunun altındaki kalıp durumu satırı, pencere (beş ve on beş kalıp) ve makina teslim onayı.
+  "musteri-detay-0146-satir": [musteri0146({ initialDetailId: 891 }), ["kaydir:Kalıplar (5)"]],
+  "musteri-detay-0146-pencere": [musteri0146({ initialDetailId: 891 }), ["dugme:Kalıp Durumları"]],
+  "musteri-detay-0146-pencere-15": [musteri0146({ initialDetailId: 892 }), ["dugme:Kalıp Durumları"]],
+  "musteri-detay-0146-onay": [musteri0146({ initialDetailId: 891 }), ["sec:Makina durumu=teslim"]],
   // Spec 0108: silme onayı dönecek kalıp sayısını yazar (satırlı form) ve dönecek kalıbı olmayan formda cümle yok; Çöp Kutusu'nda
   // üretim formu dönem metni ve notuyla. Liste en yeni formu üstte çizer; "satir-son-dugme:n" n. satırın silme düğmesine basar.
   "uretim-formu-0108-sil-onay": [uretim0108([FORM_0108_DOLU, FORM_0108_BOS]), ["satir-son-dugme:1"]],

@@ -188,7 +188,8 @@ describe("Spec 0106: pil (R14–R21/2)", () => {
 
 describe("Spec 0106: kaynak taramaları", () => {
   const EKRANLAR = ["src/components/Customers.jsx", "src/components/customers/CustomerAddEditForm.jsx", "src/components/customers/CustomerDetailModal.jsx",
-    "src/components/customers/detail/MachineTimeline.jsx", "src/components/customers/DurumPili.jsx", "src/components/customers/DurumSecici.jsx"];
+    "src/components/customers/detail/MachineTimeline.jsx", "src/components/customers/DurumPili.jsx", "src/components/customers/DurumSecici.jsx",
+    "src/components/customers/detail/KalipDurumlari.jsx"]; // spec 0146 ile eklendi (A-R1/3: yeni ekran dosyası taramaya girer)
   it("AC-28 / AC-41 (C4, C4/2, R27): src/components'te durum dizesi yalnız üç gerekçeli istisnada; pil metni ve rengi yalnız kütüphanede", () => {
     const DIZE = /["'`](montaj|hazir|teslim|bekliyor|gonderildi|uretimde)["'`]/g;
     // Gerekçeli istisnalar (başka kavramlar, ölçüm 27): tahsis durumu anahtarı, teklif durumu, pano sütun anahtarı.

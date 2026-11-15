@@ -46,10 +46,13 @@ import { PaymentSection } from "./detail/PaymentSection";
 import { OwnershipSection } from "./detail/OwnershipSection";
 import { MachineTimeline } from "./detail/MachineTimeline";
 import { kalipSatisOrtak, kalipKartHesabi, kalipSatisiEkle, kalipGuncelle } from "../../lib/kalipSatisi";
-import { durumYaz, makinaDurumuOf, MAKINA_DURUM_ADLARI, MAKINA_DURUMU_ETIKETI } from "../../lib/musteriDurumu";
+import { durumYaz, makinaDurumuOf, MAKINA_DURUM_ADLARI, MAKINA_DURUMU_ETIKETI, extraSatistanMi, makinaKaliplari, kalipOzetMetni, teslimToplamaPlani } from "../../lib/musteriDurumu";
 import { MakinaDurumuSecici } from "./DurumSecici";
+import { KalipDurumuSatiri, KalipDurumlariPenceresi, TeslimOnayi } from "./detail/KalipDurumlari";
 import { tamirDogrula, tamirListesiKur, tamirYaz, tamirSevkKur, tamirListesi } from "../../lib/kalipTamiri";
 import { DilSecPenceresi } from "../DilSecPenceresi";
+// Spec 0146 A-R10/2: üstteki pencere açıkken detayın iki kapanma yolu (Modal onClose ve "Kapat") bu sabiti alır.
+const KAPANMAZ = () => {};
 
 export const CustomerDetailModal = ({ fiyatBaglami = null,
   detailView,
@@ -113,9 +116,14 @@ export const CustomerDetailModal = ({ fiyatBaglami = null,
   const [confirmDeleteYedekParca, setConfirmDeleteYedekParca] = useState(null);
   const [printLangModal, setPrintLangModal] = useState(null);
   const [sandikModal, setSandikModal] = useState(null);
+  // Spec 0146 B-R7/2: kalıp durumları penceresi ve teslim onayı tek durumda: null | "liste" | { onay: n } (ikisi aynı anda açılamaz).
+  const [kalipPenceresi, setKalipPenceresi] = useState(null);
+  useEffect(() => { setKalipPenceresi(null); }, [detailView?.id]);
   const { mailDraft, setMailDraft, mailSendState, setMailSendState, sendMail } = useMailSender(serverPermissions);
 
   const { lockConflict: detailLock, forceAcquire: forceDetailLock } = useLock("customer", detailView?.id ?? null);
+  // Triyaj bulgu 2: kayıt kilidi başka kullanıcıya geçince (gövde LockConflict'e döner) pencere ve onay kapanır, yazım sürmez.
+  useEffect(() => { if (detailLock) setKalipPenceresi(null); }, [detailLock]);
   // Yedek parça (kargo) satışı DÜZENLERKEN "yedek_parca" kilidi al — Stok sekmesi ve Servis/Kargo
   // Panosu ile aynı alanı paylaşır, aynı satış aynı anda iki yerden düzenlenemez.
   // Spec 0111 R21: toplu düzenleme partinin birincil kaydının kilidini alır (`_kilitId`).
@@ -950,9 +958,28 @@ export const CustomerDetailModal = ({ fiyatBaglami = null,
   const firmMachines = isCustomer ? customers.filter(c => trLower(c.name) === trLower(detailView.name)) : [];
   const hasMultiple = firmMachines.length > 1;
 
+  // Spec 0146: makinayla verilen kalıplar, özet ve toplu teslim aynı yardımcılardan (A-R8, Tuzak T5); harita durumBaglami'ndan.
+  const kalipBaglami = { satisAdedi: detailKalipSatisAdedi, harita: durumBaglami?.harita };
+  const detayMakinaKaliplari = makinaKaliplari(detailView, kalipBaglami);
+  const detayKalipOzeti = kalipOzetMetni(detayMakinaKaliplari);
+  const detayKapat = kalipPenceresi ? KAPANMAZ : onClose;
+  const kaydaYaz = (donustur) => setCustomers(p => p.map(c => (c.id === detailView.id ? donustur(c) : c)));
+  // B-R2: makina durumu seçim anında yazılır, sonra (gerekirse) onay açılır; onay yalnız sayıyı taşır.
+  const makinaDurumuDegis = (v) => {
+    kaydaYaz(c => durumYaz(c, "makinaDurumu", v));
+    const plan = teslimToplamaPlani(detailView, v, kalipBaglami);
+    if (plan) setKalipPenceresi({ onay: plan.sayi });
+  };
+  // B-R2, AC-30, AC-32: kabulde plan o anın kaydıyla yeniden hesaplanır, kalıplar tek setCustomers çağrısında yazılır.
+  const teslimKabul = () => {
+    kaydaYaz(c => { const plan = teslimToplamaPlani(c, makinaDurumuOf(c), kalipBaglami); return plan ? { ...c, kaliplar: plan.kaliplar } : c; });
+    setKalipPenceresi(null);
+  };
+  const kalipDurumuDegis = (i, v) => kaydaYaz(c => ({ ...c, kaliplar: c.kaliplar.map((k, j) => (j === i ? durumYaz(k, "kalipDurumu", v) : k)) }));
+
   return (
     <>
-      <Modal wide maxWidth={1080} title={detailView.name} onClose={onClose} footer={detailLock ? null : (<Btn variant="ghost" onClick={onClose}>Kapat</Btn>)}>
+      <Modal wide maxWidth={1080} title={detailView.name} onClose={detayKapat} footer={detailLock ? null : (<Btn variant="ghost" onClick={detayKapat}>Kapat</Btn>)}>
         {detailLock ? (
           <LockConflict lockedBy={detailLock.lockedBy} lockedAt={detailLock.lockedAt}
             onForce={forceDetailLock} onCancel={onClose} />
@@ -1146,16 +1173,20 @@ export const CustomerDetailModal = ({ fiyatBaglami = null,
               <div data-testid="detay-makina-durumu" style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--n700, #334155)" }}>{MAKINA_DURUMU_ETIKETI}</span>
                 {canDo("cust_detail_edit")
-                  ? <div style={{ minWidth: 200 }}><MakinaDurumuSecici value={detailView.makinaDurumu} onChange={v => setCustomers(p => p.map(c => c.id === detailView.id ? durumYaz(c, "makinaDurumu", v) : c))} /></div>
+                  ? <div style={{ minWidth: 200 }}><MakinaDurumuSecici value={detailView.makinaDurumu} onChange={makinaDurumuDegis} /></div>
                   : <span style={{ fontSize: 13, color: "var(--n600, #475569)" }}>{MAKINA_DURUM_ADLARI[makinaDurumuOf(detailView)] || "—"}</span>}
               </div>
+            )}
+            {/* Spec 0146 A-R1–A-R4: kalıp durumu özeti ve penceresi makina durumunun altında; kart (aşağıda) değişmez (A-R2). */}
+            {isCustomer && (
+              <KalipDurumuSatiri ozet={detayKalipOzeti} duzenleyebilir={canDo("cust_detail_edit")} onAc={() => setKalipPenceresi("liste")} />
             )}
             {Array.isArray(detailView.kaliplar) && detailView.kaliplar.length > 0 && (
               <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={10} style={{ marginBottom: 16 }} title={`Kalıplar (${detailView.kaliplar.length})`}>
                 {/* Spec 0110 R13, R19: 0106 öncesi sade kart; kalıp durumu detayda gösterilmez (yazma yolu form ve zaman çizelgesi). */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {detailView.kaliplar.map((k, i) => {
-                    const extraSatistan = k.partSaleId != null || i >= detailView.kaliplar.length - detailKalipSatisAdedi;
+                    const extraSatistan = extraSatistanMi(k, i, detailView.kaliplar.length, detailKalipSatisAdedi);
                     return (
                       <span key={i} title={extraSatistan ? "Extra Kalıp Satışı'ndan" : ""}
                         style={{ fontSize: 12, fontWeight: 700, background: extraSatistan ? "var(--redBg2, #fee2e2)" : "var(--ambBg3, #fff7ed)", color: extraSatistan ? "var(--red800, #991b1b)" : "var(--orTx, #c2410c)", border: `1px solid ${extraSatistan ? "#fca5a5" : "var(--ambBr3, #fed7aa)"}`, borderRadius: 8, padding: "6px 12px" }}>
@@ -1243,6 +1274,15 @@ export const CustomerDetailModal = ({ fiyatBaglami = null,
         )}
 
       </Modal>
+
+      {/* Spec 0146 T9: detay Modal'ından sonra kardeş, yani üstte; Escape yalnız bunu kapatır (A-R10). */}
+      {kalipPenceresi === "liste" && (
+        <KalipDurumlariPenceresi liste={detayMakinaKaliplari} extraSayisi={detailKalipSatisAdedi}
+          onDegis={kalipDurumuDegis} onClose={() => setKalipPenceresi(null)} />
+      )}
+      {kalipPenceresi?.onay != null && (
+        <TeslimOnayi sayi={kalipPenceresi.onay} onKabul={teslimKabul} onRet={() => setKalipPenceresi(null)} />
+      )}
 
       {newOwnerForm && (
         <Modal wide title="Yeni Sahip Ekle (2. El Devir)" onClose={() => setNewOwnerForm(null)}>
