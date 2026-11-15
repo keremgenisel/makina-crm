@@ -8,6 +8,14 @@ import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { Segment } from "../../src/components/tasarim";
 
 afterEach(cleanup);
+// jsdom 31 ile: stil değerlerinin yazımı (renk, gölge sırası) jsdom sürümüne bağlı. Sabitlenen metin ve bugünkü çıktı aynı
+// jsdom'un stil ayrıştırıcısından geçirilip karşılaştırılır: yapı, öznitelikler ve stil anlamı birebir aynı kalmalı.
+const stilNormal = (html) => {
+  const kap = document.createElement("div");
+  kap.innerHTML = html;
+  for (const e of kap.querySelectorAll("[style]")) e.setAttribute("style", e.style.cssText);
+  return kap.innerHTML;
+};
 const O = [{ value: "a", label: "Birinci" }, { value: "b", label: "İkinci" }];
 const ONCE_HTML = {
   "varsayilan": "<div role=\"radiogroup\" aria-label=\"Seçim\" style=\"display: flex; gap: 2px; background: var(--n150, #f1f5f9); border: 1px solid var(--n200, #e2e8f0); border-radius: 8px; padding: 3px; flex-wrap: wrap;\"><button type=\"button\" role=\"radio\" aria-checked=\"false\" style=\"flex: 1 1 0px; border: medium; border-radius: 6px; padding: 7px 10px; font-size: 12.5px; cursor: pointer; white-space: nowrap; background: transparent; color: var(--n500, #64748b); font-weight: 600; box-shadow: none;\">Birinci</button><button type=\"button\" role=\"radio\" aria-checked=\"true\" style=\"flex: 1 1 0px; border: medium; border-radius: 6px; padding: 7px 10px; font-size: 12.5px; cursor: pointer; white-space: nowrap; background: var(--surface, #ffffff); color: var(--orTx, #c2410c); font-weight: 700; box-shadow: 0 1px 2px rgba(15,23,42,.12);\">İkinci</button></div>",
@@ -20,7 +28,7 @@ describe("Segment: bugünkü çıktı korunur", () => {
   const d = { varsayilan: {}, dugme: { kip: "dugme" }, cerceve: { kip: "dugme", gorunum: "cerceve" }, devreDisi: { disabled: true } };
   it.each(Object.keys(d))("R9/Z3: %s çıktısı değişiklik öncesiyle birebir aynı (varsayılan genişlik eşit)", (k) => {
     const { container } = render(<Segment options={O} value="b" onChange={() => {}} ariaLabel="Seçim" {...d[k]} />);
-    expect(container.innerHTML).toBe(ONCE_HTML[k]);
+    expect(stilNormal(container.innerHTML)).toBe(stilNormal(ONCE_HTML[k]));
   });
 });
 

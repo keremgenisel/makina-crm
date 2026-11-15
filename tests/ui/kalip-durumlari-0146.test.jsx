@@ -123,7 +123,9 @@ describe("Spec 0146 A: kalıp durumları penceresi", () => {
     kur({ customers: [HAZIRLI], partSales: [EXTRA_HAZIR] });
     detayAc("Hazır AŞ");
     pencereAc();
-    const kap = screen.getAllByTestId("kalip-durum-satiri")[0].closest('div[style*="max-width"]');
+    // Pencere kabı: satırın, maxWidth taşıyan ilk atası (öznitelik metnine bakılmaz; jsdom 31 stil özniteliğini farklı yazar).
+    let kap = screen.getAllByTestId("kalip-durum-satiri")[0];
+    while (kap && !kap.style?.maxWidth) kap = kap.parentElement;
     expect(kap.style.maxWidth).toBe("560px");
     expect(kap.style.maxHeight).toBe("90vh");
     expect(kap.style.overflowY).toBe("auto");

@@ -50,7 +50,9 @@ describe("KartBolum", () => {
   it("AC-9: varsayılan ayar varyantı Ayarlar bölümünün görünümünü taşır (gölge, 24 dolgu, 720 sınır, ikonlu başlık)", () => {
     const { container } = render(<KartBolum title="Firma Bilgileri" icon="settings"><p>içerik</p></KartBolum>);
     const kap = container.firstChild;
-    expect(kap.style.boxShadow).toBe("0 1px 4px rgba(0,0,0,.08)");
+    // jsdom 31 ile: gölgenin yazımı jsdom'a bağlı; beklenen değer aynı ayrıştırıcıdan geçirilir.
+    const beklenen = document.createElement("div"); beklenen.style.boxShadow = "0 1px 4px rgba(0,0,0,.08)";
+    expect(kap.style.boxShadow).toBe(beklenen.style.boxShadow);
     expect(kap.style.padding).toBe("24px");
     expect(kap.style.maxWidth).toBe("720px");
     expect(kap.querySelector("svg")).toBeTruthy();
