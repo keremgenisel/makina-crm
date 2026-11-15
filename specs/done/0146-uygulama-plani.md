@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0146-musteri-detayinda-kalip-teslimi.md` (revizyon 4) |
+| **Spec** | `specs/done/0146-musteri-detayinda-kalip-teslimi.md` (revizyon 4) |
 | **Onay** | Takım Yöneticisi, 2026-11-16 (bütün öneriler onaylandı, spec'e Plan kararı 25–28 olarak işlendi) |
 | **Dal** | `feat/0146-kalip-durumlari` (`bd433d59` üstünde; sipariş belgesi sadeleştirmesi önce commit edilip main'e alındı) |
-| **Durum** | Uygulandı, commit bekliyor (2026-11-16). Kanıt `0146-piksel-raporu.json`: 45 müşteri ekranından yalnız makina kalıbı olan iki detay ekranı (`musteri-detay-0110-kalip`, `musteri-detay-0115`) bilinçli değişti, dört yeni ekran (`musteri-detay-0146-*`), öteki ekranlar 0 piksel. Taban turunda iki aydınlık kare (`musteri-detay`, `musteri-detay-0111-toplu-fabrika`) açılış adımı uygulanmadan çekilmişti (karanlıkları doğru); ikisi eski kodla yeniden çekildi ve 0 fark verdi. Mutasyon: kapanma kapısı (iki yol), bayat plan, ayna ölçütü, hazır kapsamı ve özetin teslimi gizlemesi testlerle yakalandı; bayat plan mutasyonu ilk turda kaçtı, AC-30 testi güncelleyicinin gördüğü kayıtla sınanacak biçimde daraltıldı. |
+| **Durum** | Tamamlandı: commit `02bae06f` (2026-11-16). Kanıt `0146-piksel-raporu.json`: 45 müşteri ekranından yalnız makina kalıbı olan iki detay ekranı (`musteri-detay-0110-kalip`, `musteri-detay-0115`) bilinçli değişti, dört yeni ekran (`musteri-detay-0146-*`), öteki ekranlar 0 piksel. Taban turunda iki aydınlık kare (`musteri-detay`, `musteri-detay-0111-toplu-fabrika`) açılış adımı uygulanmadan çekilmişti (karanlıkları doğru); ikisi eski kodla yeniden çekildi ve 0 fark verdi. Mutasyon: kapanma kapısı (iki yol), bayat plan, ayna ölçütü, hazır kapsamı ve özetin teslimi gizlemesi testlerle yakalandı; bayat plan mutasyonu ilk turda kaçtı, AC-30 testi güncelleyicinin gördüğü kayıtla sınanacak biçimde daraltıldı. |
 
 ## 1. Dosyalar
 

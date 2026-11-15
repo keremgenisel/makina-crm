@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-15; üç kararın üçü de analistin önerisi yönünde kapandı). **Revizyon 2 (2026-11-15):** A parçası Takım Yöneticisi'nin ikinci turuyla değişti; kalıp kartı bugünkü hâlinde kalır, durumlar makina durumunun yanından açılan ayrı pencereye taşınır. **Revizyon 3 (2026-11-16):** QA turunun 24 bulgusu Takım Yöneticisi tarafından olduğu gibi onaylandı ve spec'e işlendi (QA kararı 1..24). **Revizyon 4 (2026-11-16, plan turu):** beş düzeltilen iddia (Plan kararı 25–27, 29, 30) ve sabitlerin toplanması (Plan kararı 28) Takım Yöneticisi tarafından onaylandı |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-15; üç kararın üçü de analistin önerisi yönünde kapandı). **Revizyon 2 (2026-11-15):** A parçası Takım Yöneticisi'nin ikinci turuyla değişti; kalıp kartı bugünkü hâlinde kalır, durumlar makina durumunun yanından açılan ayrı pencereye taşınır. **Revizyon 3 (2026-11-16):** QA turunun 24 bulgusu Takım Yöneticisi tarafından olduğu gibi onaylandı ve spec'e işlendi (QA kararı 1..24). **Revizyon 4 (2026-11-16, plan turu):** beş düzeltilen iddia (Plan kararı 25–27, 29, 30) ve sabitlerin toplanması (Plan kararı 28) Takım Yöneticisi tarafından onaylandı. **Tamamlandı:** commit `02bae06f`, plan `specs/done/0146-uygulama-plani.md` |
 | **Sahip** | Analist (spec) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Müşteri detay penceresinin makina durumu satırının `onChange`'i (`CustomerDetailModal.jsx`), yeni dosya `src/components/customers/detail/KalipDurumlari.jsx` (özet satırı, kalıp durumları penceresi ve teslim onayı birlikte; QA kararı 11), kalıp durumu kütüphanesine dört saf yardımcı ve üç metin sabiti (`src/lib/musteriDurumu.js`) |
@@ -217,7 +217,7 @@ Hepsi analistin önerisi yönünde ve Takım Yöneticisi tarafından olduğu gib
 
 ### Plan turunda verilen kararlar (2026-11-16)
 
-Hepsi uygulayıcının önerisi yönünde ve Takım Yöneticisi tarafından onaylandı (plan `specs/0146-uygulama-plani.md` §3).
+Hepsi uygulayıcının önerisi yönünde ve Takım Yöneticisi tarafından onaylandı (plan `specs/done/0146-uygulama-plani.md` §3).
 
 25. **`teslimToplamaPlani` haritayı da alır: `{ satisAdedi, harita }`** (B-R1/2). — *neden:* haritasız fonksiyon türetilmiş "Hazır"ı göremez ve B-R4 düşer; parametre adı AC-18 gereği ekran değişkeninin adını taşımaz.
 26. **AC-32 "kalıpların hepsi tek çağrıda" diye okunur** (AC-32). — *neden:* B-R2 ve AC-29 makina durumunun onaydan önce yazılmasını istiyor, bu ayrı bir çağrıdır.
@@ -317,4 +317,16 @@ Kartta konum tahmini (`partSaleId` dolu ya da sondaki n satır) ve kütüphanede
 
 ## SCORECARD
 
-<!-- Uygulama bitince doldurulur. -->
+| | |
+|---|---|
+| **Uygulama** | Commit `02bae06f` (dal `feat/0146-kalip-durumlari`) |
+| **Plan** | `specs/done/0146-uygulama-plani.md`; dört öneri onaylandı, uygulamada iki çelişki bulundu (Plan kararı 25–30) |
+| **Kanıt** | `docs/evidence/0146-piksel-raporu.json`: 45 müşteri ekranından makina kalıbı olan iki detay ekranı bilinçli değişti, dört yeni ekran, öteki ekranlar 0 piksel; kapanış tabanı `0146-taban-piksel-raporu.json` 14/14 sıfır fark |
+| **Spec revizyon sayısı** | 4 (ikinci tur, QA turu, plan turu; uygulamada özet örnekleri ve AC-28) |
+| **Düzeltme turu sayısı** | 1 (triyaj, üç bulgu) |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 (ibare satır sayıyordu, kilit kaybında pencere açık kalıyordu, sabitin yeri) |
+| **Regresyon sayısı** | 0 |
+| **Kaçan hata** | 0 |
+| **Notlar** | Taban turunda iki aydınlık kare açılış adımı uygulanmadan çekildi; eski kodla yeniden çekilince 0 fark verdi. Bayat plan mutasyonu ilk turda kaçtı, AC-30 testi güncelleyicinin gördüğü kayıtla sınanacak biçimde daraltıldı |
+
+**Bu spec'ten çıkarılan ders:** spec'in örnekleri kuralıyla çelişebilir (özet sırası); örnek değil kural uygulanır ve çelişki spec'e işlenir. Bir kriterin kullanıcıya görünen sonucu, ekranın gerçekte hangi diziyi aldığı ölçülmeden yazılmamalı (AC-28: App canlı satışları veriyor). Kanıtta fark görünce önce taban karesine bakılmalı.
