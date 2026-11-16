@@ -183,12 +183,20 @@ const kumeEksikleri = (k, { kilo = true, capli = null } = {}) => {
   if (dovizMi(k.paraBirimi) && !(k.kur > 0)) e.push(EKSIK_KUR);
   return e;
 };
-// Listede "eksik" rozeti: kilo yönteminin ihtiyaçları (R7 malzemenin kendi eksiği).
+// Spec 0148 R1: fiyatı hiç girilmemiş küme (ne kilo fiyatı ne bant). Fabrika bazı malzemelerin fiyatını bilerek girmiyor; bu
+// bir yarım giriş değil, listede uyarı almaz. Yarım fiyat girişi (bant var tek kilo fiyatı yok, fiyat var kur yok) uyarır (R2).
+export const fiyatGirilmemisMi = (k) => !k || (k.kiloFiyati == null && !(k.bantlar && k.bantlar.length));
+// Listede "eksik" rozeti: kilo yönteminin ihtiyaçları (R7 malzemenin kendi eksiği). Spec 0148: fiyatı hiç girilmemiş malzemede fiyat
+// nedenleri (kilo fiyatı, kur) yazılmaz; özgül ağırlık (R3) ve tanınmayan para birimi (AC-9) her hâlde yazılır. Yalnız listenin
+// rozetidir: parça maliyeti ve sipariş nedenleri `kumeEksikleri`'ni doğrudan okur ve değişmez (C1).
 export const malzemeEksikleri = (m) => {
   if (!m) return [EKSIK_KILO];
   const e = [];
   if (!pozitifMi(m.ozgulAgirlik)) e.push(EKSIK_OZGUL);
-  return [...e, ...kumeEksikleri(fiyatKumesi(m))];
+  const k = fiyatKumesi(m);
+  const fiyat = kumeEksikleri(k);
+  if (fiyatGirilmemisMi(k)) return [...e, ...fiyat.filter(x => x === EKSIK_PARA)];
+  return [...e, ...fiyat];
 };
 export const malzemeEksikMi = (m) => malzemeEksikleri(m).length > 0;
 export const eksikMalzemeSayisi = (malzemeler = []) => (malzemeler || []).filter(m => m && !m.deletedAt && malzemeEksikMi(m)).length;

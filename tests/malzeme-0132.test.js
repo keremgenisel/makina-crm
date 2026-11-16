@@ -452,8 +452,10 @@ describe("Spec 0132 triyaj", () => {
     const lama = M.malzemeOzeti({ malzemeId: 7, bicim: "lama", kalinlik: 10, genislik: 20, boy: 125 }, k);
     expect(lama.maliyetK).toBeNull(); expect(lama.eksik).toEqual([M.EKSIK_KILO_LAMA]);
     expect(M.malzemeEksikleri(B)).toEqual([M.EKSIK_KILO_LAMA]);
-    // Bantsız malzemede eski metin aynen.
-    expect(M.malzemeEksikleri({ id: 8, ad: "Y", ozgulAgirlik: 7.85 })).toEqual([M.EKSIK_KILO]);
+    // Spec 0148 ile (R1): fiyatı hiç girilmemiş bantsız malzeme listede eksik sayılmaz; kilo fiyatı olmayan ama kuru olan dövizli
+    // bantsız kayıt da fiyatsızdır. Parça kaleminin maliyet nedeni (kumeEksikleri) eski metni yazmayı sürdürür.
+    expect(M.malzemeEksikleri({ id: 8, ad: "Y", ozgulAgirlik: 7.85 })).toEqual([]);
+    expect(M.malzemeOzeti({ malzemeId: 8, bicim: "mil", cap: 20, boy: 40 }, M.malzemeKatalogu([{ id: 8, ad: "Y", ozgulAgirlik: 7.85 }])).eksik).toEqual([M.EKSIK_KILO]);
   });
   it("Bulgu 5: bileşeni malzemeden hesaplanan set dışa aktarılıp aynen geri yüklenince bildirim yok", () => {
     const b = { id: 10, ad: "Bilesen", malzemeSatiri: MIL };

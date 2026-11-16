@@ -43,6 +43,7 @@ import { partiGenelPaylari as pgp136, partiKapanisGoruntusu as pkg136, modelMali
 import * as F34 from "../../tests/fixtures/0134-veri.js";
 import * as V142 from "../../tests/fixtures/0142-veri.js";
 import * as V144 from "../../tests/fixtures/0144-veri.js";
+import * as V148 from "../../tests/fixtures/0148-veri.js";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml as siparisRaporuHtml0142 } from "../../src/lib/siparisRaporu";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
@@ -1129,6 +1130,10 @@ const EKRANLAR = {
   "veri-0139-aktar-on-kosul": [<AktarEkrani malzemeler={K139.KARTLAR.filter(k => k.id !== 902 && k.id !== 906)} />, ["kaydir:Önizleme (henüz"]],
   "veri-0139-aktar-hata": [<AktarEkrani sayfalar={SAYFALAR_EKSIK_0139} />, []],
   "veri-0139-aktar-sonuc": [<AktarEkrani />, ["dugme:Parçaları ve Kitleri Yaz", "kaydir:Aktarma sonucu"]],
+  // Spec 0148: fiyatı hiç girilmemiş malzeme (TL ve dövizli) rozet almaz; özgülsüz, kursuz, bantlı lama eksikli ve tanınmayan para
+  // birimli kayıt uyarır. Veri tests/fixtures/0148-veri.js.
+  "katalog-malzeme-0148": [ayarlar("malzemeler", { malzemeler: [V148.FIYATSIZ, V148.FIYATSIZ_OZGULSUZ, V148.DOVIZ_FIYATSIZ, V148.BANT_LAMASIZ, V148.KURSUZ, V148.GBP, V148.TAM], rawParts: [] }), []],
+  "katalog-malzeme-0148-hepsi-fiyatsiz": [ayarlar("malzemeler", { malzemeler: [V148.FIYATSIZ, V148.DOVIZ_FIYATSIZ, V148.TAM], rawParts: [] }), []],
   "katalog-malzeme-0133-fiyat": [ayarlar("malzemeler", { malzemeler: MALZEME_0132, parts: PARCA_0133, rawParts: PARCA_0133, rates: { usd: 42.15, eur: 48.9 }, appSettings: AYAR_0133() }), ["baslik:Fiyatı Güncelle", "doldur:Bant 1 kilo fiyatı=3,40", "kaydir:Etkisi"]],
   "ayarlar-trash-0132": [ayarlar("trash", { rawMalzemeler: [{ ...MALZEME_0132[1], deletedAt: "2026-10-20T09:00:00.000Z" }, { id: 509, ad: "Teflon", deletedAt: "2026-10-21T09:00:00.000Z" }], rawParts: PARCA_0132 }), []],
   "ayarlar-yedekparca-maliyetsiz": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), []],

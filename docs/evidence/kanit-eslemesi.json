@@ -12703,6 +12703,18 @@
         "rapor": "docs/evidence/0141-taban-piksel-raporu.json",
         "ekran": "katalog-malzeme-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0148-piksel-raporu.json",
+        "ekran": "katalog-malzeme-0148",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0148 R1"
+      },
+      {
+        "rapor": "docs/evidence/0148-piksel-raporu.json",
+        "ekran": "katalog-malzeme-0148-hepsi-fiyatsiz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-16 · spec 0148 R1"
       }
     ],
     "src/components/MalzemeFiyatPenceresi.jsx": [
