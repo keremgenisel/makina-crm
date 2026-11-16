@@ -15,34 +15,35 @@ const metinler = (x) => x.olculer.filter(o => !o.eksik).map(o => o.metin);
 const kodSatirlari = (dosya) => fs.readFileSync(dosya, "utf8").split("\n").filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l)).map(l => l.replace(/\s\/\/.*$/, "")).join("\n");
 
 describe("Spec 0142 C: ölçü metni", () => {
-  it("AC-16: yuvarlak mil Ø100 × 108", () => { expect(S.olcuMetni("mil", [100], 108)).toBe("Ø100 × 108"); });
+  // Spec 0147 ile (R7, AC-13, AC-14): ölçü metni birimini taşır, boyun sonuna " mm"; "parça başına" ibaresi mm'den sonra.
+  it("AC-16: yuvarlak mil Ø100 × 108", () => { expect(S.olcuMetni("mil", [100], 108)).toBe("Ø100 × 108 mm"); });
   it("AC-17: boru Ø19 × 1,5 et × 173", () => {
-    expect(S.olcuMetni("boru", [19, 1.5], 173)).toBe("Ø19 × 1,5 et × 173");
-    expect(metinler(parca(odakli(), "Boru"))).toEqual(["Ø19 × 1,5 et × 173"]);
+    expect(S.olcuMetni("boru", [19, 1.5], 173)).toBe("Ø19 × 1,5 et × 173 mm");
+    expect(metinler(parca(odakli(), "Boru"))).toEqual(["Ø19 × 1,5 et × 173 mm"]);
   });
-  it("AC-18: lama 10 × 20 × 125", () => { expect(S.olcuMetni("lama", [10, 20], 125)).toBe("10 × 20 × 125"); });
+  it("AC-18: lama 10 × 20 × 125", () => { expect(S.olcuMetni("lama", [10, 20], 125)).toBe("10 × 20 × 125 mm"); });
   it("AC-19: sac kalınlık, en, boy sırasıyla 10 × 100 × 200", () => {
-    expect(S.olcuMetni("sac", [10, 100], 200)).toBe("10 × 100 × 200");
-    expect(metinler(parca(odakli(), "Çift malzemeli"))).toContain("10 × 100 × 200");
+    expect(S.olcuMetni("sac", [10, 100], 200)).toBe("10 × 100 × 200 mm");
+    expect(metinler(parca(odakli(), "Çift malzemeli"))).toContain("10 × 100 × 200 mm");
   });
   it("AC-20: iki ayrı ölçüde malzeme kalemi olan parçada iki ölçü", () => {
-    expect(metinler(parca(odakli(), "Çift malzemeli"))).toEqual(["Ø40 × 90", "10 × 100 × 200"]);
+    expect(metinler(parca(odakli(), "Çift malzemeli"))).toEqual(["Ø40 × 90 mm", "10 × 100 × 200 mm"]);
   });
   it("AC-21 / AC-55: birebir aynı iki kalem bir kez yazılır ve adetleri toplanır", () => {
     const r = odakli();
-    expect(metinler(parca(r, "Aynı ölçülü"))).toEqual(["Ø25,5 × 60 · parça başına 2"]);
-    expect(metinler(parca(r, "Lama"))).toEqual(["10 × 20 × 125 · parça başına 2"]); // kalem adedi 2
-    expect(metinler(parca(r, "İnce mil"))).toEqual(["Ø16 × 235 · parça başına 3"]);
-    expect(metinler(parca(r, "Kalın mil"))).toEqual(["Ø62 × 178"]); // adet 1: ek yok
+    expect(metinler(parca(r, "Aynı ölçülü"))).toEqual(["Ø25,5 × 60 mm · parça başına 2"]);
+    expect(metinler(parca(r, "Lama"))).toEqual(["10 × 20 × 125 mm · parça başına 2"]); // kalem adedi 2
+    expect(metinler(parca(r, "İnce mil"))).toEqual(["Ø16 × 235 mm · parça başına 3"]);
+    expect(metinler(parca(r, "Kalın mil"))).toEqual(["Ø62 × 178 mm"]); // adet 1: ek yok
     expect(S.parcaBasinaMetni(2)).toBe(" · parça başına 2");
   });
   it("AC-22: kesiti aynı boyu farklı iki kalem ayrı ayrı yazılır", () => {
-    expect(metinler(parca(odakli(), "Aynı kesit farklı boy"))).toEqual(["Ø62 × 50", "Ø62 × 75"]);
+    expect(metinler(parca(odakli(), "Aynı kesit farklı boy"))).toEqual(["Ø62 × 50 mm", "Ø62 × 75 mm"]);
   });
   it("AC-23 (motor) / D-R4: stokta yeten parçanın ölçüsü sipariş adedinden bağımsız okunur", () => {
     const r = odakli({ partStock: [{ id: 1, partId: 1, miktar: 500 }] });
     expect(parca(r, "Kalın mil").siparis).toBe(0);
-    expect(metinler(parca(r, "Kalın mil"))).toEqual(["Ø62 × 178"]);
+    expect(metinler(parca(r, "Kalın mil"))).toEqual(["Ø62 × 178 mm"]);
   });
   it("AC-41 (motor): boyu girilmemiş kalem eksik işaretli, metni boş", () => {
     const o = parca(odakli(), "Boyu eksik").olculer;
@@ -54,7 +55,7 @@ describe("Spec 0142 C: ölçü metni", () => {
     expect(parca(r, "Elle").olculer).toEqual([]);
   });
   it("AC-44: ondalıklı ölçü kesitMetni'nin biçimiyle (virgül, en çok üç ondalık)", () => {
-    expect(S.olcuMetni("mil", [25.5], 60.1234)).toBe("Ø25,5 × 60,123");
+    expect(S.olcuMetni("mil", [25.5], 60.1234)).toBe("Ø25,5 × 60,123 mm");
     expect(S.olcuMetni("mil", [25.5], 60).startsWith(S.kesitMetni("mil", [25.5]))).toBe(true);
   });
 });
@@ -76,8 +77,8 @@ describe("Spec 0142 F: belgenin bölümleri", () => {
   it("AC-36 / AC-58: iki firmalı parça iki bölümde de, her birinde yalnız o firmanın ölçüsü ve tam sipariş adediyle", () => {
     const r = odakli();
     const a = satiri(bolumu(r, "Alfa Çelik"), "Çift malzemeli"); const b = satiri(bolumu(r, "Beta Plastik"), "Çift malzemeli");
-    expect(metinler(a)).toEqual(["Ø40 × 90"]); expect(a.malzemeAdlari).toEqual(["304 Çubuk"]);
-    expect(metinler(b)).toEqual(["10 × 100 × 200"]); expect(b.malzemeAdlari).toEqual(["Delrin levha"]);
+    expect(metinler(a)).toEqual(["Ø40 × 90 mm"]); expect(a.malzemeAdlari).toEqual(["304 Çubuk"]);
+    expect(metinler(b)).toEqual(["10 × 100 × 200 mm"]); expect(b.malzemeAdlari).toEqual(["Delrin levha"]);
     expect(a.siparis).toBe(70); expect(b.siparis).toBe(70);
   });
   it("AC-37: hazır parça kendi Ana tedarikçisinin bölümünde, malzeme adı yok", () => {
@@ -111,7 +112,8 @@ describe("Spec 0142 F: belgenin bölümleri", () => {
   it("AC-12 / AC-59: hazır parçalar bölümün sonunda ve kit sırasında", () => {
     const parts = PARCALAR.map(p => (p.id === 9 ? { ...p, tedarikciId: 13 } : p.id === 15 ? { ...p, tedarikciId: 13 } : p));
     const gama = bolumu(odakli({ parts }), "Gama Boru");
-    expect(gama.satirlar.map(x => x.ad)).toEqual(["Boru", "Boy mil", "Elle", "Çöpteki malzemeli"]);
+    // Spec 0147 ile (R3, AC-10): malzemesi çözülemeyen parça ("Malzemesi belirtilmemiş") hazır parçalardan önce gelir.
+    expect(gama.satirlar.map(x => x.ad)).toEqual(["Boru", "Boy mil", "Çöpteki malzemeli", "Elle"]);
   });
   it("AC-56: bütün parçaları kapatılmış, kesidine elle kilo yazılmış bölüm toplamıyla kalır", () => {
     const r = odakli({}, { duzenleme: { parca: { 6: { kapali: true }, 11: { kapali: true } }, kesit: { "502|kilo||sac|30|60": { deger: "40" } } } });

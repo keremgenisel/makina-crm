@@ -12,6 +12,8 @@ const satir = (r, b, ad) => bolum(r, b).satirlar.find(x => x.ad === ad);
 const toplam = (r, b, anahtar) => bolum(r, b).toplam.find(k => k.anahtar === anahtar);
 const kesit = (r, anahtar) => r.kesitler.find(k => k.anahtar === anahtar);
 const e = (r, b, ad, i = 0) => satir(r, b, ad).malzemeSatirlari[i];
+// Spec 0147 ile (R4): iki hammaddeli parça bölümde hammadde başına bir satır; bölünmüş satırların hepsi.
+const satirlari = (r, b, ad) => bolum(r, b).satirlar.filter(x => x.ad === ad);
 const yakin = (a, b) => expect(Math.abs(a - b)).toBeLessThan(1e-9);
 const kodSatirlari = (dosya) => fs.readFileSync(dosya, "utf8").split("\n").filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l)).map(l => l.replace(/\s\/\/.*$/, "")).join("\n");
 
@@ -113,8 +115,9 @@ describe("Spec 0144 A: parça payı (motor)", () => {
     const x = satir(r, "Alfa Çelik", "Boyu eksik");
     expect(x.malzemeSatirlari).toEqual([{ malzemeAd: x.malzemeAdlari[0], payYok: true }]);
   });
-  it("AC-57: malzeme satırları kalem sırasıyla", () => {
-    expect(satir(r, "Alfa Çelik", "İki paralı").malzemeSatirlari.map(m => m.malzemeAd)).toEqual(["304 Çubuk", "EUR pirinç"]);
+  // Spec 0147 ile (R4): iki hammaddeli parça iki satıra bölünür, her satırın malzeme satırı yalnız kendi hammaddesi (grup sırasıyla).
+  it("AC-57 (spec 0147 ile): bölünmüş satırların her biri yalnız kendi hammaddesinin malzeme satırını taşır", () => {
+    expect(satirlari(r, "Alfa Çelik", "İki paralı").map(x => x.malzemeSatirlari.map(m => m.malzemeAd))).toEqual([["304 Çubuk"], ["EUR pirinç"]]);
   });
 });
 
@@ -131,24 +134,29 @@ describe("Spec 0144 B: tutarlar (motor)", () => {
   });
   it("AC-26 / AC-61: parça satırının tutarı malzeme satırlarının para birimi başına toplamı", () => {
     expect(satir(r, "Alfa Çelik", "İnce mil").parcaTutarlari).toEqual([{ pb: "USD", k: e(r, "Alfa Çelik", "İnce mil").tutarK }]);
-    expect(satir(r, "Alfa Çelik", "İki paralı").parcaTutarlari.map(t => t.pb)).toEqual(["USD", "EUR"]);
+    // Spec 0147 ile (R8, AC-19): iki para birimli parça iki satırda, her satır kendi para biriminin tutarı.
+    expect(satirlari(r, "Alfa Çelik", "İki paralı").map(x => x.parcaTutarlari.map(t => t.pb))).toEqual([["USD"], ["EUR"]]);
   });
   it("AC-62: bir satırın tutarı yoksa çözülen satırların toplamı", () => {
     const parts = [...PARCALAR, { id: 40, ad: "Yarım fiyatlı", maliyetKalemleri: [{ tur: "malzeme", adet: 1, malzemeId: 507, bicim: "mil", cap: 33, boy: 10 }, { tur: "malzeme", adet: 1, malzemeId: 501, bicim: "mil", cap: 33, boy: 10 }] }];
     const v = veri({ parts, modeller: [{ model: "AK100_DS", defaultParcalar: parts.map(p => ({ partId: String(p.id), miktar: 1 })) }] });
     const d = S.siparisIhtiyaci(v, { tedarikciOdakli: true });
-    const x = satir(d, "Alfa Çelik", "Yarım fiyatlı");
-    expect(x.malzemeSatirlari.map(m => m.tutarK == null)).toEqual([true, false]);
-    expect(x.parcaTutarlari).toEqual([{ pb: "USD", k: x.malzemeSatirlari[1].tutarK }]);
+    // Spec 0147 ile (R8, AC-21): satır hammaddeye bölünür; fiyatsız hammaddenin satırı tutarsız ve nedenli, öteki tam tutarlı ve nedensiz.
+    const [fiyatsiz, fiyatli] = satirlari(d, "Alfa Çelik", "Yarım fiyatlı").sort((a, b) => (a.parcaTutarlari.length - b.parcaTutarlari.length));
+    expect(fiyatsiz.malzemeSatirlari.map(m => m.tutarK == null)).toEqual([true]); expect(fiyatsiz.parcaTutarlari).toEqual([]); expect(fiyatsiz.tutarNeden).toBeTruthy();
+    expect(fiyatli.parcaTutarlari).toEqual([{ pb: "USD", k: fiyatli.malzemeSatirlari[0].tutarK }]); expect(fiyatli.tutarNeden).toBeNull();
   });
   it("Triyaj bulgu 2 / B-R5/7: pay taşıyan satırın yanında ölçüsüz kalem parça satırına neden yazar ve sayaca girer", () => {
     const parts = [...PARCALAR, { id: 42, ad: "Yarım ölçülü", maliyetKalemleri: [{ tur: "malzeme", adet: 1, malzemeId: 501, bicim: "mil", cap: 34, boy: 10 }, { tur: "malzeme", adet: 1, malzemeId: 509, bicim: "mil", cap: 34 }] }];
     const v = veri({ parts, modeller: [{ model: "AK100_DS", defaultParcalar: parts.map(p => ({ partId: String(p.id), miktar: 1 })) }] });
     const once = bolum(S.siparisIhtiyaci(veri({ modeller: v.modeller, parts: PARCALAR }), { tedarikciOdakli: true }), "Alfa Çelik").tutarsizSayi;
     const d = S.siparisIhtiyaci(v, { tedarikciOdakli: true });
-    const x = satir(d, "Alfa Çelik", "Yarım ölçülü");
-    expect(x.parcaTutarlari).toHaveLength(1); expect(x.tutarNeden).toBe(S.KALEM_TUTARA_GIRMEDI);
-    // Ölçüsüz kalemin kendi satırı ve tutarı yok; tutarsız sayısı ölçülü kalemin tutarsız toplam satırı olmadığı için yalnız bir artar.
+    // Spec 0147 ile (R4, AC-21): ölçüsüz kalem başka hammaddedeyse kendi satırına bölünür; ölçülü hammaddenin satırı tam tutarlı ve
+    // nedensiz, ölçüsüz satır tutarsız ve nedenli. Tutarsız sayısı yine yalnız bir artar (ölçüsüz satır).
+    const xs = satirlari(d, "Alfa Çelik", "Yarım ölçülü");
+    expect(xs).toHaveLength(2);
+    const olculu = xs.find(x => x.parcaTutarlari.length); const olcusuz = xs.find(x => !x.parcaTutarlari.length);
+    expect(olculu.tutarNeden).toBeNull(); expect(olcusuz.tutarNeden).toBe(S.MALZEME_COZULEMEDI);
     expect(bolum(d, "Alfa Çelik").tutarsizSayi).toBe(once + 1);
     expect(satir(r, "Alfa Çelik", "İnce mil").tutarNeden).toBeNull(); // payYok satırı olmayan parça neden almaz
   });

@@ -1,0 +1,250 @@
+{
+ "odakli": {
+  "bolumler": [
+   {
+    "ad": "Alfa Çelik",
+    "toplamlar": [
+     {
+      "pb": "USD",
+      "k": 521144
+     },
+     {
+      "pb": "EUR",
+      "k": 60000
+     }
+    ],
+    "toplamTLK": 29357148,
+    "dovizVar": true,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Beta Plastik",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 901618
+     }
+    ],
+    "toplamTLK": 901618,
+    "dovizVar": false,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Delta Hırdavat",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 315000
+     }
+    ],
+    "toplamTLK": 315000,
+    "dovizVar": false,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Gama Boru",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 1871807
+     },
+     {
+      "pb": "USD",
+      "k": 5692
+     }
+    ],
+    "toplamTLK": 2156401,
+    "dovizVar": true,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   }
+  ],
+  "dip": [
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 5.211,44 $ + 600,00 € · kayıtlı kurla 293.571,48 ₺ · 3 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 9.016,18 ₺ · 1 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 3.150,00 ₺ · 2 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 18.718,07 ₺ + 56,92 $ · kayıtlı kurla 21.564,01 ₺</div>"
+  ]
+ },
+ "parti": {
+  "bolumler": [
+   {
+    "ad": "Alfa Çelik",
+    "toplamlar": [
+     {
+      "pb": "USD",
+      "k": 521144
+     },
+     {
+      "pb": "EUR",
+      "k": 60000
+     }
+    ],
+    "toplamTLK": 29357148,
+    "dovizVar": true,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Beta Plastik",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 901618
+     }
+    ],
+    "toplamTLK": 901618,
+    "dovizVar": false,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Delta Hırdavat",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 315000
+     }
+    ],
+    "toplamTLK": 315000,
+    "dovizVar": false,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Gama Boru",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 1871807
+     },
+     {
+      "pb": "USD",
+      "k": 5692
+     }
+    ],
+    "toplamTLK": 2156401,
+    "dovizVar": true,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   }
+  ],
+  "dip": [
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 5.211,44 $ + 600,00 € · kayıtlı kurla 293.571,48 ₺ · 3 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 9.016,18 ₺ · 1 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 3.150,00 ₺ · 2 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 18.718,07 ₺ + 56,92 $ · kayıtlı kurla 21.564,01 ₺</div>"
+  ]
+ },
+ "duzenleme": {
+  "bolumler": [
+   {
+    "ad": "Alfa Çelik",
+    "toplamlar": [
+     {
+      "pb": "USD",
+      "k": 294420
+     },
+     {
+      "pb": "EUR",
+      "k": 60000
+     }
+    ],
+    "toplamTLK": 18020962,
+    "dovizVar": true,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Beta Plastik",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 486126
+     }
+    ],
+    "toplamTLK": 486126,
+    "dovizVar": false,
+    "hataSayisi": 0,
+    "kapaliKesitVar": true
+   },
+   {
+    "ad": "Delta Hırdavat",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 315000
+     }
+    ],
+    "toplamTLK": 315000,
+    "dovizVar": false,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Gama Boru",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 1871807
+     },
+     {
+      "pb": "USD",
+      "k": 5692
+     }
+    ],
+    "toplamTLK": 2156401,
+    "dovizVar": true,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   }
+  ],
+  "dip": [
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 2.944,20 $ + 600,00 € · kayıtlı kurla 180.209,62 ₺ · 3 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 4.861,26 ₺ · 1 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 3.150,00 ₺ · 2 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 18.718,07 ₺ + 56,92 $ · kayıtlı kurla 21.564,01 ₺</div>"
+  ]
+ },
+ "secim": {
+  "bolumler": [
+   {
+    "ad": "Alfa Çelik",
+    "toplamlar": [
+     {
+      "pb": "USD",
+      "k": 521144
+     },
+     {
+      "pb": "EUR",
+      "k": 60000
+     }
+    ],
+    "toplamTLK": 29357148,
+    "dovizVar": true,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   },
+   {
+    "ad": "Delta Hırdavat",
+    "toplamlar": [
+     {
+      "pb": "TRY",
+      "k": 315000
+     }
+    ],
+    "toplamTLK": 315000,
+    "dovizVar": false,
+    "hataSayisi": 0,
+    "kapaliKesitVar": false
+   }
+  ],
+  "dip": [
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 5.211,44 $ + 600,00 € · kayıtlı kurla 293.571,48 ₺ · 3 satırın tutarı hesaplanamadı; toplama girmedi.</div>",
+   "<div data-bolum-toplami style=\"font-size:11px;margin-top:8px;\"><b>Bölüm toplamı:</b> 3.150,00 ₺ · 2 satırın tutarı hesaplanamadı; toplama girmedi.</div>"
+  ]
+ }
+}

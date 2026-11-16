@@ -13,6 +13,9 @@
 // satırı ve "Alınacak malzeme toplamı" tablosu yok (fiyatlı ve fiyatsız). Fiyatlı nüshanın bölüm toplamı yine alınacak malzemenin
 // (yuvarlanmış, asgari, elle) tutarı + hazır parçalardır; kapsam cümlesi parça tutarlarının toplamının ondan küçük kalabileceğini söyler.
 // Motorun alanları (`malzemeSatirlari`, `toplam`, `payFarkKg`) yerinde: parça tutarı ve bölüm toplamı onlardan okunur.
+// Spec 0147: bölümün içinde parçalar hammaddeye göre gruplanır (motorun `gruplar` alanı; gruplama, sıralama ve satırın bölünmesi
+// motorda, C1); grup başına bir tablo, başlığı yalnız grubun adı (R1, R2). Sayfa sonu yalnız bölümler arasında (R6), notlar grupların
+// altında bir kez (R9). Ölçü metni birimini motordan taşır (R7, C4).
 import { belgeAcilis, bolum, detayTablo, not, gun, sayi } from "./raporSunumu";
 import {
   OLCU_BASLIGI, OLCU_GIRILMEMIS, KESIT_KAPALI_UYARISI, PAY_FARK_NOTU, TOPLAM_KAPSAM_CUMLESI, BOLUM_TOPLAMI, FIYATLI_NUSHA, tutarsizMetni,
@@ -76,15 +79,21 @@ const parcaFiyatHucreleri = (x) => (x.malzemeKalemli
 const siparisHucresi = (x) => (x.boySiparisleri?.length
   ? `${x.boySiparisleri.map(b => `${esc(boySiparisMetni(b))}${b.elle ? ELLE_ISARETI : ""}`).join("<br>")}${kucuk(esc(parcaAdetMetni(x.siparis)))}`
   : x.boyKalemiVar ? esc(parcaAdetMetni(x.siparis)) : n(x.siparis)); // triyaj (qa2 bulgu 3): boy yazılamayan boydan parçada birimli
-const parcaTablo = (satirlar, fiyatli) => {
+const parcaTablo = (baslik, satirlar, fiyatli) => {
   const rows = [];
   for (const x of satirlar) {
     const eksik = x.olculer.some(o => o.eksik);
     const satir = [`${esc(x.ad)}${x.duzenlendi ? ELLE_ISARETI : ""}${eksik ? kucuk(esc(OLCU_GIRILMEMIS)) : ""}`, olcuHucresi(x.olculer), siparisHucresi(x)];
     rows.push(fiyatli ? [...satir, ...parcaFiyatHucreleri(x)] : satir); // 2026-11-15: altında malzeme satırı yok
   }
-  return detayTablo("Parçalar", belgeSutunlari({ fiyatli }).parca, rows, HIZA);
+  return detayTablo(esc(baslik), belgeSutunlari({ fiyatli }).parca, rows, HIZA);
 };
+// Spec 0147: grup tabloları alt alta durduğu için sütunlar bütün gruplarda aynı genişlikte (otomatik genişlik her tabloda başka
+// hizalanıyordu). Yalnız tedarikçi bölümlerinin tabloları; MODELLER ve ortak sunum modülü etkilenmez.
+export const GRUP_TABLO_STILI = (fiyatli) => `.siparis-bolum table{table-layout:fixed;}${(fiyatli ? [26, 28, 22, 24] : [34, 38, 28])
+  .map((w, i) => `.siparis-bolum th:nth-child(${i + 1}){width:${w}%;}`).join("")}`;
+// Spec 0147 R1, R3: grup başına tablo (boş grup motorda yoktur).
+const grupTablolari = (b, fiyatli) => (b.gruplar || []).map(g => parcaTablo(g.baslik, g.satirlar, fiyatli)).join("");
 // 2026-11-15 kararı: parça satırlarından okunamayan sipariş miktarı (yuvarlama, asgari, elle) bölümün sonunda kesit başına satır.
 const siparisFarkNotu = (b) => (b.siparisFarklari?.length
   ? `<div data-siparis-farki style="font-size:10.5px;margin-top:8px;"><b>${esc(SIPARIS_FARK_BASLIGI)}</b>${b.siparisFarklari.map(f => `<div>${esc(f.metin)}</div>`).join("")}</div>` : "");
@@ -96,13 +105,13 @@ export const siparisRaporuHtml = (sonuc, { bugun, factory = null, partiAd = null
   const girdi = partiAd ? `Üretim partisi: ${esc(partiAd)}` : "Elle girilen model satırları";
   const modeller = detayTablo("Model satırları", ["Model", "Makina adedi"], sonuc.satirlar.filter(s => !s.hata).map(s => [esc(s.model), n(s.adet)]), ["left", "right"]);
   const bolumler = basilacakBolumler(sonuc).map((b, i) => `<div class="siparis-bolum"${i > 0 ? " style=\"page-break-before:always;break-before:page;\"" : ""}>
-  ${bolum(`${esc(b.ad)} · ${girdi}`, "", [parcaTablo(b.satirlar, fiyatli), siparisFarkNotu(b), fiyatli ? bolumToplami(b) : "",
+  ${bolum(`${esc(b.ad)} · ${girdi}`, "", [grupTablolari(b, fiyatli), siparisFarkNotu(b), fiyatli ? bolumToplami(b) : "",
     b.kapaliKesitVar ? not(esc(KESIT_KAPALI_UYARISI)) : "",
     // Triyaj (qa2 bulgu 2): hücreye basılan elle boy adedi de notu doğurur.
     // Triyaj (qa2): fark notundaki elle kesit değeri de notu doğurur.
     b.satirlar.some(x => x.duzenlendi || x.boySiparisleri?.some(y => y.elle)) || b.siparisFarklari?.some(f => f.elle) ? not(esc(ELLE_NOTU)) : ""].join(""))}
 </div>`).join("");
-  return `${belgeAcilis({ title: SIPARIS_RAPOR_BASLIGI, baslik: SIPARIS_RAPOR_BASLIGI.toLocaleUpperCase("tr-TR"), ust: fiyatli ? `${girdi} · ${FIYATLI_NUSHA}` : girdi, donem: gun(bugun), factory })}
+  return `${belgeAcilis({ title: SIPARIS_RAPOR_BASLIGI, baslik: SIPARIS_RAPOR_BASLIGI.toLocaleUpperCase("tr-TR"), ust: fiyatli ? `${girdi} · ${FIYATLI_NUSHA}` : girdi, donem: gun(bugun), factory, ekStil: GRUP_TABLO_STILI(fiyatli) })}
   ${bolum("MODELLER", "", modeller)}
   ${bolumler}
 </body></html>`;

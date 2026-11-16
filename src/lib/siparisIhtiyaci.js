@@ -78,6 +78,10 @@ export const BELGE_BOS = "Basılacak satır yok.";
 export const OLCU_GIRILMEMIS = "ölçüsü girilmemiş";
 // Spec 0142 B-R5/2 (AC-45): ölçü sütununun başlığı pencerede ve belgede aynı metin.
 export const OLCU_BASLIGI = "Ölçü";
+// Spec 0147 R3, AC-7, AC-10: belgenin malzemesiz ve malzemesi çözülemeyen grup başlıkları (hammadde grubunun başlığı malzemenin adıdır).
+export const HAZIR_PARCALAR_BASLIGI = "Hazır parçalar";
+export const MALZEMESI_BELIRTILMEMIS_BASLIGI = "Malzemesi belirtilmemiş";
+export const GRUP_TURU = Object.freeze({ HAMMADDE: "hammadde", COZULEMEYEN: "cozulemeyen", HAZIR: "hazir" });
 // Spec 0142 B-R1/3 (AC-39): parçası açık, kesidi kapatılmış malzeme varsa belge bölümünün sonunda.
 export const KESIT_KAPALI_UYARISI = "Bu bölümde parçası sipariş edilen ama malzeme kesidi \"sipariş etme\" işaretli satır var; o malzeme toplama girmedi.";
 // Spec 0142 B-R5/3 (AC-55): aynı ölçüdeki kalemlerin toplam adedi 1'den büyükse ölçü satırının eki.
@@ -503,15 +507,33 @@ const belgeBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, ham
     if (k.hata) { for (const t of yerlesen.length ? new Set(yerlesen.map(o => tidOf(o.tedarikciId))) : ana ? [ana] : []) al(t).hataSayisi++; continue; }
     // Spec 0144 B-R5/3: birim fiyat ve tutar kuralı parçanın malzeme KALEMİNE bakar (`malzemeKalemli`), yerleşim bayrağına değil.
     const temel = { partId: k.partId, ad: k.ad, siparis: k.siparis, duzenlendi: !!k.duzenlendi, kitSira: sira++, malzemeKalemli: !!k.malzemeli };
+    // Spec 0147 R4, P1: satır bölümde hammadde başına bölünür (iki firmalı parçanın 0142 kuralı, tedarikçinin içindeki hammaddelere);
+    // her satır yalnız o hammaddenin ölçüleri ve tam sipariş adediyle. Bölme tutar kurucusundan önce yapılır, satırın tutarı, boy
+    // hücresi, nedeni ve tutarsız sayacı satır başına kendiliğinden kurulur (R8, AC-18–AC-22).
+    const satirEkle = (t, olculer, malzemeli) => {
+      const mid = olculer[0]?.malzemeId ?? null;
+      const grup = !temel.malzemeKalemli ? { tur: GRUP_TURU.HAZIR, malzemeId: null, ad: HAZIR_PARCALAR_BASLIGI }
+        : mid == null ? { tur: GRUP_TURU.COZULEMEYEN, malzemeId: null, ad: MALZEMESI_BELIRTILMEMIS_BASLIGI }
+          : { tur: GRUP_TURU.HAMMADDE, malzemeId: String(mid), ad: olculer[0].malzemeAd };
+      al(t).satirlar.push({ ...temel, malzemeli, olculer, malzemeAdlari: [...new Set(olculer.map(o => o.malzemeAd).filter(Boolean))], grup });
+    };
+    const malzemeyeBol = (olculer) => {
+      const g = new Map();
+      for (const o of olculer) { const m = o.malzemeId == null ? "" : String(o.malzemeId); if (!g.has(m)) g.set(m, []); g.get(m).push(o); }
+      return [...g.values()];
+    };
     if (yerlesen.length) {
       const gruplar = new Map();
       for (const o of yerlesen) { const t = tidOf(o.tedarikciId); if (!gruplar.has(t)) gruplar.set(t, []); gruplar.get(t).push(o); }
-      for (const [t, olculer] of gruplar) al(t).satirlar.push({ ...temel, malzemeli: true, olculer, malzemeAdlari: [...new Set(olculer.map(o => o.malzemeAd))] });
+      for (const [t, olculer] of gruplar) for (const parca of malzemeyeBol(olculer)) satirEkle(t, parca, true);
       continue;
     }
     if (!ana) continue;
     const olculer = k.malzemeli ? k.olculer : [];
-    al(ana).satirlar.push({ ...temel, malzemeli: false, olculer, malzemeAdlari: [...new Set(olculer.map(o => o.malzemeAd).filter(Boolean))] });
+    // P2: Ana tedarikçide kalan parçanın malzemesi çözülmüş (tedarikçisiz) ölçüsü kendi hammadde başlığına; kaydı bulunamayan malzemenin
+    // ölçüsü "Malzemesi belirtilmemiş"e (AC-10); hazır parça tek satır.
+    const parcalar = olculer.length ? malzemeyeBol(olculer) : [[]];
+    for (const parca of parcalar) satirEkle(ana, parca, false);
   }
   for (const r of kesitSatirlari) {
     const t = tidOf(r.tedarikciId);
@@ -528,9 +550,19 @@ const belgeBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, ham
       for (let i = 0; i < Math.max(ka.length, kc.length); i++) if ((ka[i] ?? 0) !== (kc[i] ?? 0)) return (ka[i] ?? 0) - (kc[i] ?? 0);
       return 0;
     };
-    b.satirlar.sort((a, c) => (a.malzemeli !== c.malzemeli ? (a.malzemeli ? -1 : 1)
-      : !a.malzemeli ? a.kitSira - c.kitSira
-        : String(ilk(a).malzemeAd || "").localeCompare(String(ilk(c).malzemeAd || ""), "tr") || kesitKiyas(a, c) || String(a.ad).localeCompare(String(c.ad), "tr")));
+    // Spec 0147 R3, AC-3, AC-4, AC-7, AC-10: gruplar hammadde adına göre Türkçe alfabe sırasıyla (eşitlikte malzeme kimliği), sonra
+    // malzemesi çözülemeyenler, sonra hazır parçalar; hammadde grubunda kesit sonra parça adı, öteki iki grupta kit sırası. Boş grup yok.
+    const TUR_SIRA = { [GRUP_TURU.HAMMADDE]: 0, [GRUP_TURU.COZULEMEYEN]: 1, [GRUP_TURU.HAZIR]: 2 };
+    const gruplar = new Map();
+    for (const x of b.satirlar) {
+      const anahtar = `${x.grup.tur}|${x.grup.malzemeId ?? ""}`;
+      if (!gruplar.has(anahtar)) gruplar.set(anahtar, { tur: x.grup.tur, malzemeId: x.grup.malzemeId, baslik: x.grup.ad, satirlar: [] });
+      gruplar.get(anahtar).satirlar.push(x);
+    }
+    b.gruplar = [...gruplar.values()].sort((a, c) => TUR_SIRA[a.tur] - TUR_SIRA[c.tur]
+      || String(a.baslik || "").localeCompare(String(c.baslik || ""), "tr") || String(a.malzemeId ?? "").localeCompare(String(c.malzemeId ?? "")));
+    for (const g of b.gruplar) g.satirlar.sort((a, c) => (g.tur === GRUP_TURU.HAMMADDE ? kesitKiyas(a, c) || String(a.ad).localeCompare(String(c.ad), "tr") : a.kitSira - c.kitSira));
+    b.satirlar = b.gruplar.flatMap(g => g.satirlar); // sıra grupların sırası; ibare ve basılabilirlik bu düz listeyi okur (C7)
   }
   // Spec 0144: parça altı malzeme satırları (pay) ve fiyatlı nüshanın tutarları. Yalnız belge satırlarına yazılır (C2/2).
   const kesitMap = new Map(kesitSatirlari.map(r => [r.anahtar, r]));
@@ -752,11 +784,12 @@ export const kesitMetni = (bicim, kesit) => {
   return kesit.map(x => sayiHane.format(x)).join(" × ");
 };
 // Spec 0142 D-R1, D-R1/2, B-R5, B-R5/3 (AC-16–AC-19, AC-44, AC-47, AC-55): parçanın tam ölçüsü. `kesitMetni`'yi çağırır ve sonuna
-// boyu ekler; `Ø` ve biçim sırası tek yerde kalır. Kalem adedi 1'den büyükse "· parça başına n".
+// boyu ekler; `Ø` ve biçim sırası tek yerde kalır. Kalem adedi 1'den büyükse "· parça başına n". Spec 0147 R7, C4: ölçü metni birimini
+// (mm) taşır; belge ve pencere bu tek metni basar. Kesit metni (sipariş farkı satırı, çubuk eki) birimsiz kalır (X3).
 export const olcuMetni = (bicim, kesit, boy, adet = 1) => {
   const k = kesitMetni(bicim, kesit);
   if (!k || boy == null) return "";
-  return `${k} × ${sayiHane.format(boy)}${adet > 1 ? parcaBasinaMetni(adet) : ""}`;
+  return `${k} × ${sayiHane.format(boy)} mm${adet > 1 ? parcaBasinaMetni(adet) : ""}`; // spec 0147 R7: birim boydan sonra, "parça başına" ondan sonra
 };
 // Spec 0143 B-R3/2, B-R3/3 (AC-36, AC-62): kesit anahtarı TEK yerde; işaret metin olarak, çubuk boyu üç ondalığa yuvarlanmış
 // (işaretsizde boş): "501|boy|400|mil|30", "501|kilo||mil|30". Kesit satırı ve 0142'nin parça ölçüleri bunu çağırır.

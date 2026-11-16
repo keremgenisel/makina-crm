@@ -1250,6 +1250,11 @@ const EKRANLAR = {
   "siparis-0144-belge-fiyatsiz": [<SiparisBelgesi0144 />, []],
   "siparis-0144-belge-fiyatli": [<SiparisBelgesi0144 fiyatli />, []],
   "siparis-0144-belge-duzenleme": [<SiparisBelgesi0144 fiyatli senaryo="duzenleme" />, []],
+  // Spec 0147: belgede hammadde başlıkları ve ölçüde mm (aynı 0144 verisi; Alfa Çelik dört hammadde, Delta Hırdavat hazır parçalarla).
+  "siparis-0147-belge-fiyatsiz": [<SiparisBelgesi0144 />, []],
+  "siparis-0147-belge-fiyatli": [<SiparisBelgesi0144 fiyatli />, []],
+  "siparis-0147-cok-hammadde": [<SiparisBelgesi0144 />, ["kaydir:EUR pirinç"]],
+  "siparis-0147-hazir": [<SiparisBelgesi0144 />, ["kaydir:Hazır parçalar"]],
   "siparis-0140-bos": [<SiparisEkrani partiler={[]} />, []],
   "siparis-0140-model-hatali": [<SiparisEkrani partiler={[{ ...PARTI_0134[0], planlananAdetler: { AK100_DS: 70, YOK_MODEL: 4 } }]} />, []],
   "siparis-0140-silinmis-tedarikci": [<SiparisEkrani malzemeler={[{ ...F34.P304, tedarikciId: 99 }]} hamTed={[...F34.TED, { id: 99, ad: "Eski Döküm", deletedAt: "2026-09-01" }]} />, ["kaydir:Eski Döküm"]],
