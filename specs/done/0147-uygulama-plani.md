@@ -5,7 +5,7 @@
 | **Spec** | `specs/0147-siparis-belgesinde-hammadde-gruplamasi.md` (Onaylandı, 2026-11-16) |
 | **Onay** | Takım Yöneticisi, 2026-11-16 ("planı yaz ve uygula") |
 | **Dal** | `feat/0147-hammadde-gruplamasi` (main `cd6f7186` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor |
+| **Durum** | Tamamlandı: commit `20765f61` |
 
 ## 1. Dosyalar
 

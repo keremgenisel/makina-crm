@@ -204,36 +204,40 @@ kuralı, `MERGE_KEYS`, çöp kutusu simetrisi ve `serverAuth` bölüm eşlemesi 
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Gruplama ve bölünmüş satırın tutarı React'sız saf motorda (`siparisIhtiyaci.js` belge kurucusu)
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Gruplama ve bölünmüş satırın tutarı React'sız saf motorda (`siparisIhtiyaci.js` belge kurucusu)
       yazıldı ve kendi testi var; yazdırma kurucusu yalnız gösteriyor (C1 taraması).
-- [ ] Belge ile sipariş penceresi aynı ölçü metnini tek kaynaktan okuyor (C4 taraması).
-- [ ] Yeni kalıcı alan yok; dört nokta kuralı gündeme gelmedi (spec'te yazılı).
-- [ ] Yeni veri bölümü yok; `BLOB_SECTIONS` / `MERGE_KEYS` zinciri değişmedi.
-- [ ] Yeni eylem izni yok; belge salt okunur olduğu için izin eklenmediği açıkça yazıldı.
-- [ ] Soft-delete ve çöp kutusu bu işte gündeme gelmedi (çöpteki malzemenin hâli AC-10 ile yazılı).
-- [ ] Kullanıcıya görünen tüm metinler Türkçe; belge yalnız Türkçe olduğu için çeviri anahtarı
+- [x] Belge ile sipariş penceresi aynı ölçü metnini tek kaynaktan okuyor (C4 taraması).
+- [x] Yeni kalıcı alan yok; dört nokta kuralı gündeme gelmedi (spec'te yazılı).
+- [x] Yeni veri bölümü yok; `BLOB_SECTIONS` / `MERGE_KEYS` zinciri değişmedi.
+- [x] Yeni eylem izni yok; belge salt okunur olduğu için izin eklenmediği açıkça yazıldı.
+- [x] Soft-delete ve çöp kutusu bu işte gündeme gelmedi (çöpteki malzemenin hâli AC-10 ile yazılı).
+- [x] Kullanıcıya görünen tüm metinler Türkçe; belge yalnız Türkçe olduğu için çeviri anahtarı
       eklenmedi (X6).
-- [ ] Fiyatlı nüshanın para kuralı korundu; bilinmeyen para birimi AC-19 ile tanımlı.
-- [ ] Görsel kanıt eklendi (`0147-piksel-raporu.json`): fiyatsız ve fiyatlı nüsha, çok hammaddeli
+- [x] Fiyatlı nüshanın para kuralı korundu; bilinmeyen para birimi AC-19 ile tanımlı.
+- [x] Görsel kanıt eklendi (`0147-piksel-raporu.json`): fiyatsız ve fiyatlı nüsha, çok hammaddeli
       bölüm, yalnız hazır parçalı bölüm.
-- [ ] Kıyas altınları ve ayıklama dosyaları güncellendi; dokunulan her altın için neden yazıldı.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin sipariş belgesi bölümü güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Kıyas altınları ve ayıklama dosyaları güncellendi; dokunulan her altın için neden yazıldı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin sipariş belgesi bölümü güncellendi.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
 ## SCORECARD
 
-| Ölçüt | Değer | Not |
-|---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| | |
+|---|---|
+| **Uygulama** | Commit `20765f61` (dal `feat/0147-hammadde-gruplamasi`) |
+| **Plan** | `specs/done/0147-uygulama-plani.md`; beş plan kararı (P1–P5), uygulamada üç karar (P6 sütun hizası, P7 var olan testler, P8 kanıt) |
+| **Kanıt** | `docs/evidence/0147-piksel-raporu.json`: 0142/0143/0144 pencere ve belge ekranları mm ile bilinçli değişti, dört yeni 0147 ekranı; kapanış tabanı `0147-taban-piksel-raporu.json` belge ekranlarında 0 fark, üç pencere ekranında çalıştırmalar arası 192 piksellik bilinen oynama |
+| **Spec revizyon sayısı** | 1 (plan onayı) |
+| **Düzeltme turu sayısı** | 0 |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 |
+| **Regresyon sayısı** | 0 |
+| **Kaçan hata** | 0 |
+| **Notlar** | İlk kanıt çekiminde grup tabloları kendi sütun genişliğini seçiyordu; sabit genişlikli stil eklendi (P6). Sipariş penceresi ekranları (0140, 0142 pencere, 0144 soru) aynı kodla çalıştırmadan çalıştırmaya 0–192 piksel oynuyor; eski kodun iki taze çekimi 0 fark verdi |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** satırı bölen bir değişiklik tutar kurucusundan önce yapılırsa satır başına bütün türetilmiş alanlar ikinci bir hesap yazmadan doğru kurulur. Tek tablodan çok tabloya geçişte otomatik sütun genişliği tablolar arasında hizayı bozar; görüntüye bakılmadan fark edilmez. Kıyas altını yenilemek yerine düzeni kanonik biçime indiren ayıklama, rakamların değişmediğini kanıtlamaya yeter; ayıklamanın boş olmadığı bir bozma denemesiyle ölçülmeli.

@@ -1,0 +1,180 @@
+[
+  {
+    "ad": "siparis-0142-pencere-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "piksel": 192
+  },
+  {
+    "ad": "siparis-0142-pencere-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "piksel": 192
+  },
+  {
+    "ad": "siparis-0142-bolum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-bolum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-olcu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "adimUyarilari": [
+      "tıklanamadı: ~Parça ihtiyacı",
+      "kaydırılamadı: kaydir:Parça ihtiyacı"
+    ],
+    "piksel": 192
+  },
+  {
+    "ad": "siparis-0142-olcu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "adimUyarilari": [
+      "tıklanamadı: ~Parça ihtiyacı",
+      "kaydırılamadı: kaydir:Parça ihtiyacı"
+    ],
+    "piksel": 192
+  },
+  {
+    "ad": "siparis-0142-belge-aydinlik.png",
+    "boyut": "2880x2064",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-belge-karanlik.png",
+    "boyut": "2880x2064",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0143-belge-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0143-belge-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-soru-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 29 parçanın yalnız 0 t"
+    ],
+    "piksel": 192
+  },
+  {
+    "ad": "siparis-0144-soru-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 29 parçanın yalnız 0 t"
+    ],
+    "piksel": 192
+  },
+  {
+    "ad": "siparis-0144-belge-fiyatsiz-aydinlik.png",
+    "boyut": "2880x3306",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-fiyatsiz-karanlik.png",
+    "boyut": "2880x3306",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-fiyatli-aydinlik.png",
+    "boyut": "2880x3782",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-fiyatli-karanlik.png",
+    "boyut": "2880x3782",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-duzenleme-aydinlik.png",
+    "boyut": "2880x3860",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-duzenleme-karanlik.png",
+    "boyut": "2880x3860",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-belge-fiyatsiz-aydinlik.png",
+    "boyut": "2880x3306",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-belge-fiyatsiz-karanlik.png",
+    "boyut": "2880x3306",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-belge-fiyatli-aydinlik.png",
+    "boyut": "2880x3782",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-belge-fiyatli-karanlik.png",
+    "boyut": "2880x3782",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-cok-hammadde-aydinlik.png",
+    "boyut": "2880x3306",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-cok-hammadde-karanlik.png",
+    "boyut": "2880x3306",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-hazir-aydinlik.png",
+    "boyut": "2880x3306",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-hazir-karanlik.png",
+    "boyut": "2880x3306",
+    "piksel": 0
+  }
+]
