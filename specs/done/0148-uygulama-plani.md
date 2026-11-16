@@ -5,7 +5,7 @@
 | **Spec** | `specs/0148-fiyatsiz-malzeme-eksik-sayilmaz.md` (Onaylandı, 2026-11-16) |
 | **Onay** | Takım Yöneticisi, 2026-11-16 ("planı yaz ve uygula") |
 | **Dal** | `feat/0148-fiyatsiz-malzeme` (main `14a4b07b` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor |
+| **Durum** | Tamamlandı: commit `446d58bd` |
 
 ## 1. Dosyalar
 

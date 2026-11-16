@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-16); uygulandı, commit bekliyor |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-16) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog › Malzemeler listesi; malzeme motorunun eksiklik kuralı |
@@ -135,29 +135,33 @@ kuralı, `MERGE_KEYS`, çöp kutusu simetrisi ve yedek paketleri bu spec'te gün
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Eksiklik kuralı saf motorda tek yerde; liste kendi ölçütünü yazmıyor (kaynak taraması).
-- [ ] Maliyet ve sipariş tarafının değişmediği çapraz testle gösterildi (AC-11, AC-12).
-- [ ] Yeni kalıcı alan yok; dört nokta kuralı gündeme gelmedi (spec'te yazılı).
-- [ ] Yeni veri bölümü, eylem izni ve sunucu kuralı yok; salt gösterim olduğu açıkça yazıldı.
-- [ ] Kullanıcıya görünen metinler Türkçe; yazdırma çıktısı yok.
-- [ ] Görsel kanıt eklendi: rozetli ve rozetsiz malzeme listesi.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] Gerekiyorsa `CLAUDE.md`'nin malzeme bölümü güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Eksiklik kuralı saf motorda tek yerde; liste kendi ölçütünü yazmıyor (kaynak taraması).
+- [x] Maliyet ve sipariş tarafının değişmediği çapraz testle gösterildi (AC-11, AC-12).
+- [x] Yeni kalıcı alan yok; dört nokta kuralı gündeme gelmedi (spec'te yazılı).
+- [x] Yeni veri bölümü, eylem izni ve sunucu kuralı yok; salt gösterim olduğu açıkça yazıldı.
+- [x] Kullanıcıya görünen metinler Türkçe; yazdırma çıktısı yok.
+- [x] Görsel kanıt eklendi: rozetli ve rozetsiz malzeme listesi.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] Gerekiyorsa `CLAUDE.md`'nin malzeme bölümü güncellendi.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
 ## SCORECARD
 
-| Ölçüt | Değer | Not |
-|---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| | |
+|---|---|
+| **Uygulama** | Commit `446d58bd` (dal `feat/0148-fiyatsiz-malzeme`) |
+| **Plan** | `specs/done/0148-uygulama-plani.md`; dört plan kararı (P1 ölçüt `malzemeEksikleri`'nde, P2 tanınmayan para birimi fiyatsız da olsa uyarır, P3 Fiyat hücresi değişmez, P4 kanıt eşlemesi) |
+| **Kanıt** | `docs/evidence/0148-piksel-raporu.json`: iki yeni Malzemeler ekranı bilinçli değişti (başlık 6 → 4 eksik; yalnız fiyatsızlarda "3 malzeme"), var olan 11 malzeme ekranı 0 piksel; kapanış tabanı `0148-taban-piksel-raporu.json` 4/4 sıfır fark |
+| **Spec revizyon sayısı** | 1 (plan onayı) |
+| **Düzeltme turu sayısı** | 0 |
+| **Bulgu gerçek/gürültü oranı** | 0 / 0 |
+| **Regresyon sayısı** | 0 |
+| **Kaçan hata** | 0 |
+| **Notlar** | Değişiklik geri alınınca 11 test kırıldı. Spec dosyasının "Taslak" durum satırını `spec-durumlari` bekçisi yakaladı |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** gösterim ölçütü hesap ölçütüyle aynı fonksiyonu paylaşmıyorsa (rozet `malzemeEksikleri`, maliyet `kumeEksikleri`), daraltma yalnız gösterimde yapılır ve hesabın değişmediği çapraz testle sabitlenir. Plan yazılınca spec'in başlığındaki durum satırı da güncellenmeli.
