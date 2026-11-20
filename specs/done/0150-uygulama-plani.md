@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0150-siparis-listesinde-islemler.md` (Onaylandı, 2026-11-20) |
+| **Spec** | `specs/done/0150-siparis-listesinde-islemler.md` (Onaylandı, 2026-11-20) |
 | **Onay** | Takım Yöneticisi, 2026-11-20 ("tüm önerilerini onaylıyorum, spece işle, planı yaz ve uygula") |
 | **Dal** | `feat/0150-siparis-islemler` (main `e9dfbb4a` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor |
+| **Durum** | Tamamlandı: commit `e6df52f8` |
 
 ## 1. Dosyalar
 

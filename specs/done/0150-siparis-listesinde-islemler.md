@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-20); uygulandı, commit bekliyor |
-| **Revizyon** | 3 (2026-11-20 plan onayı: R3/5, R5/3, R9/4, R10/2; plan `specs/0150-uygulama-plani.md`) |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-20) |
+| **Revizyon** | 3 (2026-11-20 plan onayı: R3/5, R5/3, R9/4, R10/2; plan `specs/done/0150-uygulama-plani.md`) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | **A:** sipariş motoru (`lib/siparisIhtiyaci.js`: iki bölüm yapısı, tedarikçi seçicisi, yeni metin sabitleri), belge kurucusu (`lib/siparisRaporu.js`: `BELGE_SUTUNLARI`, işlemler tablosu, basılacak bölümler) ve pencere (`stock/SiparisPenceresi.jsx`). **B:** `components/PartManager.jsx`'in toplu kip bloğu, kanıt aracının bir ekranı ve `docs/evidence/kanit-eslemesi.json`'un etkilenen kayıtları |
@@ -363,7 +363,7 @@ Takım Yöneticisi 26 bulgunun hepsini onayladı. Metinde "QA kararı n" bu list
 
 ### Plan turunda verilen kararlar (2026-11-20)
 
-Takım Yöneticisi planın on önerisini onayladı (plan `specs/0150-uygulama-plani.md` §3): P1 hiçbir set
+Takım Yöneticisi planın on önerisini onayladı (plan `specs/done/0150-uygulama-plani.md` §3): P1 hiçbir set
 işlem satırı üretmez (R3/5), P2 hatalı parçanın işlemi pencerede çizilmez, P3 düzenlenmiş parçanın işlem
 satırı rozet taşır (R10/2), P4 seçici kümesi (R5/3), P5 tutarsız sayacının metni ve P6 bölüm toplamının
 ölçütü (R9/4), P7 "Karma" fikstürü (AC-19 b; `siparis-0143-pencere` bilinçli değişir), P8 kanıtta yalnız
@@ -502,48 +502,52 @@ gerçekten değişen kayıtlar "değişti" olur, P9 onay satırının biçimi (C
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] İşlem satırlarının seçimi, yerleşimi, adedi ve tutarı React'sız saf motorda; belge ve pencere
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] İşlem satırlarının seçimi, yerleşimi, adedi ve tutarı React'sız saf motorda; belge ve pencere
       yalnız gösteriyor (kaynak taraması).
-- [ ] Ekran ile belge aynı motor sonucunu okuyor; iki ayrı işlem listesi türetilmiyor.
-- [ ] Tedarikçi seçicisi fason firmayı listeliyor ve ibaresi bunu söylüyor (R5/2).
-- [ ] "Yalnız işlem" dalı üç kapıda da açık: pencerenin bölüm süzgeci, `basilacakBolumler` ve belge
+- [x] Ekran ile belge aynı motor sonucunu okuyor; iki ayrı işlem listesi türetilmiyor.
+- [x] Tedarikçi seçicisi fason firmayı listeliyor ve ibaresi bunu söylüyor (R5/2).
+- [x] "Yalnız işlem" dalı üç kapıda da açık: pencerenin bölüm süzgeci, `basilacakBolumler` ve belge
       bölümü (R8/2).
-- [ ] Yeni metin sabitleri (tablo başlığı, sütunlar, tutar nedeni, belirtilmemiş ibaresi) tek yerde;
+- [x] Yeni metin sabitleri (tablo başlığı, sütunlar, tutar nedeni, belirtilmemiş ibaresi) tek yerde;
       ekran ve belge metin yazmıyor.
-- [ ] Yeni kalıcı alan yok; dört nokta kuralı gündeme gelmedi (spec'te yazılı).
-- [ ] Yeni veri bölümü ve eylem izni yok; salt okunur olduğu açıkça yazıldı.
-- [ ] Kullanıcıya görünen metinler Türkçe; sipariş belgesi bilerek yalnız Türkçe.
-- [ ] Fiyatlı nüshanın para kuralı korundu; tutarı çözülemeyen satır tanımlı biçimde ele alınıyor.
-- [ ] Kıyas iki ayaklı yapıldı (AC-19): işlem kalemsiz veride birebir aynı, tedarikçisiz işlem
+- [x] Yeni kalıcı alan yok; dört nokta kuralı gündeme gelmedi (spec'te yazılı).
+- [x] Yeni veri bölümü ve eylem izni yok; salt okunur olduğu açıkça yazıldı.
+- [x] Kullanıcıya görünen metinler Türkçe; sipariş belgesi bilerek yalnız Türkçe.
+- [x] Fiyatlı nüshanın para kuralı korundu; tutarı çözülemeyen satır tanımlı biçimde ele alınıyor.
+- [x] Kıyas iki ayaklı yapıldı (AC-19): işlem kalemsiz veride birebir aynı, tedarikçisiz işlem
       kalemi taşıyan var olan fikstürlerde belge çıktısı değişmedi.
-- [ ] Görsel kanıt eklendi: işlemli tedarikçi kartı, yalnız işlemli kart, iki nüsha, toplu kipsiz
+- [x] Görsel kanıt eklendi: işlemli tedarikçi kartı, yalnız işlemli kart, iki nüsha, toplu kipsiz
       parça listesi. Sipariş penceresi ekranlarının çalıştırmadan çalıştırmaya 0 ile 192 piksel
       oynadığı (spec 0147'de rapora alınmadığı) spec'te yazılı; yeni ekranların adımlarının hedefini
       bulduğu doğrulandı (araç bulunamayan adımı yalnız uyarıyla geçiyor, `siparis-0143-pencere`
       bugün bu durumda olan bilinen borçtur).
-- [ ] B parçasının kanıt kayıtları `beklenen: "degisti"` + TY onay satırıyla işaretlendi ve spec
+- [x] B parçasının kanıt kayıtları `beklenen: "degisti"` + TY onay satırıyla işaretlendi ve spec
       `done`'a taşınırken `ayni`ye çevrildi; `katalog-parca-0133-toplu` ekranı araçtan ve eşleme
       dosyasından silindi (C7).
-- [ ] Toplu kip metinlerinin ve testid'lerinin kaynakta geçmediği taramayla sabitlendi (C8); bileşende
+- [x] Toplu kip metinlerinin ve testid'lerinin kaynakta geçmediği taramayla sabitlendi (C8); bileşende
       ölü kod kalmadı (R11/3).
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin sipariş listesi, 0133 ve 0149 bölümleri güncellendi; ters çevrilen 0133 ve
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin sipariş listesi, 0133 ve 0149 bölümleri güncellendi; ters çevrilen 0133 ve
       0149 (R10, C5/2, AC-33) kriterleri "spec 0150 ile" notuyla işaretlendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
 ## SCORECARD
 
-| Ölçüt | Değer | Not |
-|---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| | |
+|---|---|
+| **Uygulama** | Commit `e6df52f8` (dal `feat/0150-siparis-islemler`) |
+| **Plan** | `specs/done/0150-uygulama-plani.md`; on plan kararı (P1–P10) ve dokuz uygulama kararı (P11–P19) |
+| **Kanıt** | `docs/evidence/0150-piksel-raporu.json`: 136 görüntü bilinçli değişti (toplu kip bloğu kalktı, seçici ibaresi uzadı, yeni işlem ekranları); var olan sipariş belgesi ekranları 0 piksel; eski kodun iki çekimi 0 fark. Kapanış tabanı `0150-taban-piksel-raporu.json` 136/136 sıfır. Uzun çekimlerde Chromium açılır listenin (`select`) ok simgesini çekimden çekime farklı boyutta çiziyor (71–575 piksel, kodla ilgisiz); taban, sekiz çekim arasından her ekran için birebir aynı bir çiftle kuruldu |
+| **Spec revizyon sayısı** | 4 (QA turu, plan onayı: R3/5, R5/3, R9/4, R10/2; triyaj: R10/3, AC-45) |
+| **Düzeltme turu sayısı** | 1 (triyaj) |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 (seçimde görünmeyen hata belgeyi kilitliyordu; kanıt ekranı seçim yapmıyordu; AC-42 ve AC-44 adlı test yoktu) |
+| **Regresyon sayısı** | 0 (ters çevrilen beş test dosyası "spec 0150 ile" notlu) |
+| **Kaçan hata** | 0 |
+| **Notlar** | AC-8 ve AC-19 (b) ilk yazımda aynı veriyi işlemsiz hâliyle karşılaştırıyordu; işlem kalemi hazır parçanın maliyetini de değiştirdiği için yanlıştı, spec öncesi altınla ölçüldü. Eski `PartManager` geri konunca B testlerinin dördü, motorda set ve eski katalog süzgeci kaldırılınca A testlerinin sekizi kırıldı. Yedek Parça Satışı sekmesi `customers` verilmeden açılırsa aramada döngüye girer (0149'dan açık bulgu). `siparis-0140-tek-tedarikci` aynı `tikla:` adımını kullanıyor, seçim yapmıyor olabilir (açık bulgu) |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** pencere ile belgenin bölümlemesi farklıysa, belgeyi kilitleyen her sayaç pencerede görünür bir karşılık ister; yoksa seçim kilidin nedenini gizler. Kanıt aracında bir adımın uyarısız geçmesi doğru öğeye tıklandığını kanıtlamaz: denetimli girişler `aria-label` ile seçilir.
