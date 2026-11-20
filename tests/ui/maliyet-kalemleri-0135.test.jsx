@@ -13,7 +13,6 @@ import {
 } from "../../src/lib/urunAgaci";
 import { malzemeKatalogu, malzemeOzeti, BELIRSIZ_HATASI } from "../../src/lib/malzeme";
 import { TURETILEN_KALEM_ADI } from "../../src/lib/maliyetKalemleri";
-import { maliyetsizUyariMetni } from "../../src/lib/parcaFiyati";
 import { KIP_SET_PASIF_NEDENI, KIP_ONAY_ELLE, KIP_ONAY_HESAPLA } from "../../src/components/MaliyetKalemleriAlani";
 
 vi.mock("../../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
@@ -416,12 +415,11 @@ describe("Spec 0135: fiyat, liste, süzgeç ve sayaç (R39–R47)", () => {
     fireEvent.change(s, { target: { value: "32" } });
     expect(satir("Gövde")).toBeTruthy();
   });
-  it("AC-76 / AC-118: maliyetsiz sayacı çözülemeyen kalem listesini sayar; toplu kip onayı aynı rakamı yazar", () => {
+  // Spec 0150 ile (R11): toplu kip onayı kalktı; AC-118'in ekran yarısı (onayın rakamı) düştü, sayaç yarısı ve motor testi kalır.
+  it("AC-76: maliyetsiz sayacı çözülemeyen kalem listesini sayar", () => {
     const p0 = [{ id: 70, ad: "Boş kalemli", models: [], maliyetKalemleri: [{ tur: "islem", ad: "Kaplama", tutar: null }] },
       { id: 71, ad: "Fiyatsız malzemeli", models: [], maliyetKalemleri: [{ ...SACK, malzemeId: 999 }] }, { id: 72, ad: "Elle", models: [], maliyet: 3 }];
     render(<Katalog p0={p0} fiyatAyarlari={{ varsayilanKat: 2 }} />);
     expect(screen.getByTestId("maliyetsiz-parca").textContent).toMatch(/^2 parçanın/);
-    fireEvent.click(screen.getByRole("button", { name: /maliyete bağla/ }));
-    expect(screen.getByTestId("toplu-kip-onay").textContent).toContain(maliyetsizUyariMetni(2));
   });
 });

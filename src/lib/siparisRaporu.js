@@ -20,6 +20,7 @@ import { belgeAcilis, bolum, detayTablo, not, gun, sayi } from "./raporSunumu";
 import {
   OLCU_BASLIGI, OLCU_GIRILMEMIS, KESIT_KAPALI_UYARISI, PAY_FARK_NOTU, TOPLAM_KAPSAM_CUMLESI, BOLUM_TOPLAMI, FIYATLI_NUSHA, tutarsizMetni,
   pbTutarMetni, pbToplamMetni, tlMetni, boySiparisMetni, parcaAdetMetni, SIPARIS_FARK_BASLIGI,
+  ISLEMLER_BASLIGI, ISLEMLER_TOPLAMI,
 } from "./siparisIhtiyaci";
 
 // PAY_FARK_NOTU 2026-11-15'ten beri basılmıyor; kıyas (0144-ayikla) ve "basılmaz" testleri buradan okur, bilerek dışa veriliyor.
@@ -39,11 +40,13 @@ export const BELGE_SUTUNLARI = Object.freeze({
   parca: ["Parça", OLCU_BASLIGI, "Sipariş adedi"],
   toplam: ["Malzeme", "Kesit", "Alınacak"],
   fiyat: ["Tutar"], // spec 0144 B-R3: yalnız fiyatlı nüshada; 2026-11-15 isteğiyle "Birim fiyat" sütunu kalktı
+  islem: ["Parça", "İşlem", "Sipariş adedi"], // spec 0150 R2/2: komşu parça tablosuyla aynı "Sipariş adedi"
 });
 // Spec 0144 AC-43: iki hâl tek yerden.
 export const belgeSutunlari = ({ fiyatli = false } = {}) => ({
   parca: fiyatli ? [...BELGE_SUTUNLARI.parca, ...BELGE_SUTUNLARI.fiyat] : BELGE_SUTUNLARI.parca,
   toplam: fiyatli ? [...BELGE_SUTUNLARI.toplam, ...BELGE_SUTUNLARI.fiyat] : BELGE_SUTUNLARI.toplam,
+  islem: fiyatli ? [...BELGE_SUTUNLARI.islem, ...BELGE_SUTUNLARI.fiyat] : BELGE_SUTUNLARI.islem,
 });
 const HIZA = ["left", "left", "right", "right"];
 export const ELLE_ISARETI = " (elle)";
@@ -52,7 +55,8 @@ export const ELLE_NOTU = "\"(elle)\" işaretli satırın adedi ya da kilosu öne
 // Basılacak bölümler (B-R1/3, B-R1/4, AC-38, AC-56): motor süzgeçten geçirmiş satırları verir; silinmiş ya da bulunamayan
 // tedarikçinin bölümü basılmaz (0140 AC-76). Parça ya da toplam satırı olan bölüm basılır.
 // 2026-11-15: toplam tablosu basılmadığı için yalnız parça satırı olan bölüm basılır.
-export const basilacakBolumler = (sonuc) => (sonuc?.tedarikciBolumleri?.belge || []).filter(b => !b.silinmis && b.satirlar.length);
+// Spec 0150 R8/2: yalnız işlem satırı olan bölüm de basılır.
+export const basilacakBolumler = (sonuc) => (sonuc?.tedarikciBolumleri?.belge || []).filter(b => !b.silinmis && (b.satirlar.length || b.islemler?.length));
 
 // Belgenin basılabilirliği ve nedeni (0140 AC-40, AC-49): hatalı satır varsa ya da basılacak satır yoksa basılamaz.
 export const belgeDurumu = (sonuc, { hata = "Geçersiz değerli satır var.", bos = "Basılacak satır yok." } = {}) => {
@@ -94,6 +98,18 @@ export const GRUP_TABLO_STILI = (fiyatli) => `.siparis-bolum table{table-layout:
   .map((w, i) => `.siparis-bolum th:nth-child(${i + 1}){width:${w}%;}`).join("")}`;
 // Spec 0147 R1, R3: grup başına tablo (boş grup motorda yoktur).
 const grupTablolari = (b, fiyatli) => (b.gruplar || []).map(g => parcaTablo(g.baslik, g.satirlar, fiyatli)).join("");
+// Spec 0150 R1/3, R2, R2/3, R3/2, R4, R9, R9/2, C1/2: işlemler tablosu (adet her zaman parça adedi, ad kaçışlı) ve fiyatlı nüshada
+// hemen altında kendi toplamı ve kendi tutarsız sayacı. Sıra ve tutar motordan; burada aritmetik yok (C1).
+const islemTablosu = (b, fiyatli) => {
+  if (!b.islemler?.length) return "";
+  const rows = b.islemler.map(x => {
+    const satir = [`${esc(x.parca)}${x.duzenlendi ? ELLE_ISARETI : ""}`, esc(x.ad), n(x.siparis)]; // işaret parça tablosundaki gibi adın yanında
+    return fiyatli ? [...satir, tutarHucresi(x.tutarK, "TRY", x.tutarNeden)] : satir;
+  });
+  const toplam = fiyatli ? `<div data-islem-toplami style="font-size:11px;margin-top:6px;"><b>${esc(ISLEMLER_TOPLAMI)}:</b> ${esc(tlMetni(b.islemToplamK))}${
+    b.islemTutarsizSayi ? ` · ${esc(tutarsizMetni(b.islemTutarsizSayi))}` : ""}</div>` : "";
+  return `<div data-islemler>${detayTablo(esc(ISLEMLER_BASLIGI), belgeSutunlari({ fiyatli }).islem, rows, HIZA)}${toplam}</div>`;
+};
 // 2026-11-15 kararı: parça satırlarından okunamayan sipariş miktarı (yuvarlama, asgari, elle) bölümün sonunda kesit başına satır.
 const siparisFarkNotu = (b) => (b.siparisFarklari?.length
   ? `<div data-siparis-farki style="font-size:10.5px;margin-top:8px;"><b>${esc(SIPARIS_FARK_BASLIGI)}</b>${b.siparisFarklari.map(f => `<div>${esc(f.metin)}</div>`).join("")}</div>` : "");
@@ -105,11 +121,13 @@ export const siparisRaporuHtml = (sonuc, { bugun, factory = null, partiAd = null
   const girdi = partiAd ? `Üretim partisi: ${esc(partiAd)}` : "Elle girilen model satırları";
   const modeller = detayTablo("Model satırları", ["Model", "Makina adedi"], sonuc.satirlar.filter(s => !s.hata).map(s => [esc(s.model), n(s.adet)]), ["left", "right"]);
   const bolumler = basilacakBolumler(sonuc).map((b, i) => `<div class="siparis-bolum"${i > 0 ? " style=\"page-break-before:always;break-before:page;\"" : ""}>
-  ${bolum(`${esc(b.ad)} · ${girdi}`, "", [grupTablolari(b, fiyatli), siparisFarkNotu(b), fiyatli ? bolumToplami(b) : "",
+  ${bolum(`${esc(b.ad)} · ${girdi}`, "", [grupTablolari(b, fiyatli), islemTablosu(b, fiyatli), siparisFarkNotu(b),
+    fiyatli && b.satirlar.length ? bolumToplami(b) : "", // spec 0150 R9/3, R9/4: parça satırı olmayan bölümde bölüm toplamı yok
     b.kapaliKesitVar ? not(esc(KESIT_KAPALI_UYARISI)) : "",
     // Triyaj (qa2 bulgu 2): hücreye basılan elle boy adedi de notu doğurur.
     // Triyaj (qa2): fark notundaki elle kesit değeri de notu doğurur.
-    b.satirlar.some(x => x.duzenlendi || x.boySiparisleri?.some(y => y.elle)) || b.siparisFarklari?.some(f => f.elle) ? not(esc(ELLE_NOTU)) : ""].join(""))}
+    // Spec 0150 R3/2: elle düzenlenmiş parçanın işlem satırı da notu doğurur (işlem başka bölümde basılabilir).
+    b.satirlar.some(x => x.duzenlendi || x.boySiparisleri?.some(y => y.elle)) || b.siparisFarklari?.some(f => f.elle) || b.islemler?.some(x => x.duzenlendi) ? not(esc(ELLE_NOTU)) : ""].join(""))}
 </div>`).join("");
   return `${belgeAcilis({ title: SIPARIS_RAPOR_BASLIGI, baslik: SIPARIS_RAPOR_BASLIGI.toLocaleUpperCase("tr-TR"), ust: fiyatli ? `${girdi} · ${FIYATLI_NUSHA}` : girdi, donem: gun(bugun), factory, ekStil: GRUP_TABLO_STILI(fiyatli) })}
   ${bolum("MODELLER", "", modeller)}

@@ -5,8 +5,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";
 import { Settings } from "../../src/components/Settings";
-import { NEDEN_MALIYET_YOK, NEDEN_KAT_YOK, DOVIZ_NOTU, ZARAR_UYARISI, KAT_UST_HATASI, KAT_POZITIF_HATASI,
-  maliyetsizUyariMetni, TOPLU_KAT_YOK_NEDENI } from "../../src/lib/parcaFiyati";
+import { NEDEN_MALIYET_YOK, NEDEN_KAT_YOK, DOVIZ_NOTU, ZARAR_UYARISI, KAT_UST_HATASI, KAT_POZITIF_HATASI } from "../../src/lib/parcaFiyati";
 import { FIYAT_KIPI_ETIKETI, KAT_ETIKETI, SET_FIYAT_MALIYET_NEDENI } from "../../src/components/PartManager";
 import { SettingsFiyat, FIYAT_AYAR_IPUCU, VARSAYILAN_KAT_ETIKETI, KAT_ONERI_METNI } from "../../src/components/settings/SettingsFiyat";
 import { SET_FIYAT_DUGMESI } from "../../src/lib/urunAgaci";
@@ -130,6 +129,8 @@ describe("Spec 0133: parça kartının fiyat bölümü", () => {
 });
 
 describe("Spec 0133: katalog listesi, süzgeç ve toplu kip", () => {
+  // Spec 0150 ile (R11, R11/2): toplu fiyat kipi düğmeleri, onayı ve "kat yok" açıklaması kalktı; AC-29, AC-49, AC-50, AC-77,
+  // AC-80'in toplu yarısı ve triyaj bulgu 1, 2, 3, 5'in testleri düştü. Kipin iki yolu (kart, süzgeç) aşağıda ve 0150 testinde.
   it("AC-18 / AC-86 (liste): türetilmiş fiyat listede; türetilemeyende '—' ve açıklayıcı başlık", () => {
     render(<Katalog />);
     expect(within(satir("Kesme mili")).getByTestId("parca-fiyat-turetilen").textContent).toMatch(/^₺4\.082,69/);
@@ -147,46 +148,6 @@ describe("Spec 0133: katalog listesi, süzgeç ve toplu kip", () => {
     fireEvent.click(within(g).getByRole("button", { name: "Elle sabit (4)" }));
     expect(screen.queryByText("Kesme mili")).toBeNull();
   });
-  it("AC-29 / AC-49 / AC-77 / AC-50: toplu işlem süzülmüş listenin bütününe; maliyetsiz uyarısı; yine uygulanır", () => {
-    render(<Katalog />);
-    fireEvent.click(within(screen.getByRole("group", { name: "Fiyat kipi süzgeci" })).getByRole("button", { name: "Elle sabit (4)" }));
-    fireEvent.click(screen.getByRole("button", { name: "Listedeki 4 parçayı maliyete bağla" }));
-    const onay = screen.getByTestId("toplu-kip-onay").textContent;
-    expect(onay).toMatch(/Listedeki 4 parçanın 4 tanesinin/);
-    expect(onay).toMatch(new RegExp(maliyetsizUyariMetni(2).replace(/[.;]/g, ".")));
-    fireEvent.click(screen.getByRole("button", { name: "Uygula" }));
-    expect([61, 62, 64, 66].map(id => kayit(id).fiyatKipi)).toEqual(["maliyet", "maliyet", "maliyet", "maliyet"]);
-    expect(kayit(62).fiyatTRY).toBe("1250"); // AC-26: elle değer silinmez
-    expect(logs.at(-1)).toMatchObject({ action: "fiyat_kipi_degisti", entity: "parca_tanimi" });
-    fireEvent.click(within(screen.getByRole("group", { name: "Fiyat kipi süzgeci" })).getByRole("button", { name: /^Tümü/ }));
-    const kayis = within(satir("Kayış")).getByTestId("parca-fiyat-turetilen");
-    expect(kayis.textContent).toMatch(/^—/);
-    expect(kayis.getAttribute("title")).toBe(NEDEN_MALIYET_YOK);
-  });
-  it("AC-80 (toplu) / triyaj bulgu 5: elle sabite toplu dönüşte kip ve parçanın katı gövdeden silinir (kartla aynı kural)", () => {
-    render(<Katalog p0={BAGLI.map(p => (p.id === 65 ? { ...p, karKati: 2.5 } : p))} />);
-    fireEvent.click(screen.getByRole("button", { name: "Listedeki 6 parçayı elle sabite al" }));
-    fireEvent.click(screen.getByRole("button", { name: "Uygula" }));
-    expect(durum.parts.some(p => "fiyatKipi" in p)).toBe(false);
-    expect("karKati" in kayit(65)).toBe(false);
-  });
-  it("Triyaj bulgu 1: varsayılan kat boşken toplu 'maliyete bağla' pasif ve nedenli; elle sabite al etkin kalır", () => {
-    render(<Katalog p0={PARCALAR} ayar={{}} />);
-    expect(screen.getByRole("button", { name: "Listedeki 6 parçayı maliyete bağla" }).disabled).toBe(true);
-    expect(screen.getByTestId("toplu-kat-yok").textContent).toBe(TOPLU_KAT_YOK_NEDENI);
-    cleanup();
-    render(<Katalog p0={PARCALAR} />);
-    expect(screen.queryByTestId("toplu-kat-yok")).toBeNull();
-    expect(screen.getByRole("button", { name: "Listedeki 6 parçayı maliyete bağla" }).disabled).toBe(false);
-  });
-  it("Triyaj bulgu 3 (AC-77): toplu işlem sayfa dışındaki parçalara da yazılır (14 parça, sayfa boyu 10)", () => {
-    const cok = Array.from({ length: 14 }, (_, i) => ({ id: 200 + i, ad: `Parça ${String(i + 1).padStart(2, "0")}`, models: [], maliyet: 10, fiyatTRY: 30 }));
-    render(<Katalog p0={cok} />);
-    expect(screen.queryByText("Parça 14")).toBeNull(); // ikinci sayfada
-    fireEvent.click(screen.getByRole("button", { name: "Listedeki 14 parçayı maliyete bağla" }));
-    fireEvent.click(screen.getByRole("button", { name: "Uygula" }));
-    expect(durum.parts.filter(p => p.fiyatKipi === "maliyet")).toHaveLength(14);
-  });
   it("Triyaj bulgu 4 (R17/2): fiyat listesi firma bilgisiyle basılır", () => {
     const printHtml = vi.fn();
     window.appPrint = { printHtml };
@@ -197,13 +158,6 @@ describe("Spec 0133: katalog listesi, süzgeç ve toplu kip", () => {
       expect(html).toContain("Deneme Makina A.Ş.");
       expect(html).toContain("Organize Sanayi 5. Cadde");
     } finally { delete window.appPrint; }
-  });
-  it("Triyaj bulgu 2: toplu kip işlem geçmişi kaydı serverPermissions taşır (istemcide /api/audit'e gider)", () => {
-    const izin = JSON.stringify({ tabs: ["settings"] });
-    render(<Katalog serverPermissions={izin} />);
-    fireEvent.click(screen.getByRole("button", { name: "Listedeki 6 parçayı elle sabite al" }));
-    fireEvent.click(screen.getByRole("button", { name: "Uygula" }));
-    expect(logs.at(-1)).toMatchObject({ action: "fiyat_kipi_degisti", serverPermissions: izin });
   });
   it("AC-78: liste satırlarında onay kutusu yok", () => {
     render(<Katalog />);

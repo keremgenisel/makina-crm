@@ -3,7 +3,7 @@
 // müşteri listesi, seçiciler (SearchPick, SearchSelect, Evrak seçim penceresi, CokluSecim), kırpma düzeltmesi yapılan üç ekran,
 // kendi normalleştiricisiyle giren kutular (Notlar) ve sunucuda aranan iki günlük ekranı.
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup, within, waitFor, renderHook } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor, renderHook } from "@testing-library/react";
 import { useState } from "react";
 import { PartManager } from "../../src/components/PartManager";
 import { Customers } from "../../src/components/Customers";
@@ -48,13 +48,12 @@ describe("Spec 0149: parça kataloğu (useFilteredList, searchFields)", () => {
     yaz("Yedek parça ara...", "m t"); expect(gorunen()).toEqual([1, 3]);
     yaz("Yedek parça ara...", "ayna d"); expect(gorunen()).toEqual([1]);
   });
-  it("AC-33 / R10: toplu fiyat kipinin sayısı ve onayı süzülmüş kümeyi söyler; Fiyat Listesi aynı kümeyi basar", () => {
+  // Spec 0150 ile (R11/2): toplu fiyat kipi kalktı; AC-33'ün toplu kip yarısı düştü, Fiyat Listesi yarısı kalır.
+  it("AC-33 / R10 / spec 0150 AC-44: Fiyat Listesi süzülmüş kümeyi basar (toplu kip yarısı spec 0150 ile düştü)", () => {
     const yazdir = vi.fn();
     window.appPrint = { printHtml: yazdir };
     ciz({ appSettings: { fiyatAyarlari: { karKati: 2 } } });
     yaz("Yedek parça ara...", "ayna dişlisi");
-    const kip = within(screen.getByTestId("toplu-kip"));
-    expect(kip.getByText("Listedeki 1 parçayı elle sabite al")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Fiyat Listesi/ }));
     const html = yazdir.mock.calls[0][0];
     expect(html).toContain("AYNA MAHRUTİ DİŞLİSİ"); expect(html).not.toContain("AYNA RULMANI"); expect(html).not.toContain("KONVEYÖR");

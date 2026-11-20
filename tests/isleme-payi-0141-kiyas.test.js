@@ -3,6 +3,7 @@
 // raporu spec öncesi kodla birebir. Altın `tests/fixtures/0141-once.json` spec ÖNCESİ koddan `YAZ_0141=1` ile üretildi; veri
 // `tests/fixtures/0141-veri.js` (`0139-veri.js`'in paysız kopyası ve bir set). Fark yalnız sipariş parça satırının `pay`
 // anahtarıdır (C8), `0141-ayikla.js` ile iki taraftan ayıklanır. Çıktıda bugünün tarihi yoktur.
+import { ayikla0150 } from "./fixtures/0150-ayikla.js";
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import { createHash } from "node:crypto";
@@ -59,7 +60,8 @@ const ciktilar = () => {
 };
 // Spec 0142 ile: belge baştan yazıldı (C6: belge HTML'i kıyasa girmez, kendi kriterleriyle ölçülür); iki rapor alanı ve motorun iki
 // yeni alanı karşılaştırmadan önce ayıklanır. Altın dosyası değişmedi (AC-41'in özeti aynı).
-const ayikla = (x) => { const y = ayikla0142v0143(ayikla0141(ayikla0139(x))); delete y.rapor; delete y.raporYetkisiz; return y; };
+// Spec 0150 ile (AC-19): işlem alanları 0150-ayikla ile düşer ("Karma" parçasının tedarikçisiz "Torna" kalemi).
+const ayikla = (x) => { const y = ayikla0150(ayikla0142v0143(ayikla0141(ayikla0139(x)))); delete y.rapor; delete y.raporYetkisiz; return y; };
 
 describe("Spec 0141 kıyas (C1)", () => {
   it("AC-40 / AC-27: payı olmayan veride bütün çıktılar ve yazdırılan sipariş raporu spec öncesi altınla birebir", () => {

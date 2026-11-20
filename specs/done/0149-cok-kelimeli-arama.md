@@ -117,7 +117,7 @@ değişmeyecek.
   az bir kelimesi iki karakter olmalıdır, yoksa sonuç çizilmez. "a b" sonuç vermez, "ayna b"
   çalışır. Liste ekranlarına ve form seçicilerine kapı **eklenmez** (orada daralan süzgeç
   zararsızdır).
-- **R10.** Süzülmüş liste iki yerde yazmayı ve yazdırmayı besler: parça kataloğunun toplu fiyat kipi
+- **R10.** (Spec 0150 ile: toplu fiyat kipi kalktı, süzülmüş liste yalnız Fiyat Listesi çıktısını besler.) Süzülmüş liste iki yerde yazmayı ve yazdırmayı besler: parça kataloğunun toplu fiyat kipi
   (`PartManager.jsx:593`) ve Fiyat Listesi çıktısı (`PartManager.jsx:556`) `filtered` kümesini okur.
   Kelime kuralı bu kümeyi genişletir; onay penceresinin "Listedeki n parça" sayısı bugünkü gibi aynı
   kümeden geldiği için ek bir değişiklik gerekmez. Yeni bir çıktı eklenmez.
@@ -145,7 +145,7 @@ değişmeyecek.
   grup başına sonuç sınırı yoktur (`GlobalSearch.jsx:79`) ve bütün kelimeleri tek harf olan sorgu
   binlerce satır çizdirebilir.
 - **C5.** Yeni kalıcı alan, veri bölümü, izin ve sunucu kuralı yoktur; arama salt okunurdur.
-- **C5/2.** Aramanın kendisi salt okunurdur ama süzülmüş liste R10'daki iki yeri besler: toplu fiyat
+- **C5/2.** (Spec 0150 ile: yazma kalktı, yalnız Fiyat Listesi çıktısı kalır.) Aramanın kendisi salt okunurdur ama süzülmüş liste R10'daki iki yeri besler: toplu fiyat
   kipi bir yazmadır, Fiyat Listesi bir çıktıdır. Kullanıcı arama kutusuyla bu ikisinin kapsamını
   değiştirdiğini bilmelidir.
 - **C6.** Kaynak taraması **eski deseni** yasaklar: `src` altında arama çağrı yerlerinde
@@ -472,7 +472,7 @@ Takım Yöneticisi 22 bulgunun hepsini onayladı. Metinde "QA kararı n" bu list
 
 **Beslediği yazma, ölçüm, triyaj ve kanıt**
 
-- **AC-33.** Parça kataloğunda iki kelimeli arama yapılınca toplu fiyat kipi düğmesinin ve onay
+- **AC-33.** (Spec 0150 ile: toplu kip yarısı düştü, Fiyat Listesi yarısı yeşil.) Parça kataloğunda iki kelimeli arama yapılınca toplu fiyat kipi düğmesinin ve onay
   penceresinin sayısı süzülmüş kümeyi söyler; Fiyat Listesi çıktısı aynı kümeyi basar (R10).
 - **AC-34.** Genel arama ölçümü: gerçekçi veri kümesiyle `genelAramaSonuclari` tek çağrısı testte
   yazılı mutlak eşiğin altında (iki kelimeli sorgu, R2 kayıt düzeyine çevrildikten sonra).

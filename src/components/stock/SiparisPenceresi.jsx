@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { belgeDurumu } from "../../lib/siparisRaporu";
+import { belgeDurumu, BELGE_SUTUNLARI } from "../../lib/siparisRaporu";
 import { Field, Input, Select, Btn, Icon, Modal } from "../ui";
 import { SiparisRaporuDugmesi } from "../rapor/SiparisRaporuDugmesi";
 import { BosDurum, UyariSeridi, Ipucu, HataMetni, KartBolum, CokluSecim } from "../tasarim";
@@ -10,7 +10,7 @@ import {
   siparisIhtiyaci, partidenSatirlar, hataliSatirMetni, KIT_BOS_METNI, KESISIM_UYARISI, STOK_UYARISI, PARTI_PLAN_YOK,
   adetMetni as sayi, OLCU_BASLIGI, OLCU_GIRILMEMIS, tedarikciSecenekleri, bosDurumNedeni,
   TEDARIKCI_BELIRTILMEMIS, anasizParcaMetni, anasizMalzemeliMetni, HAMMADDE_SUZGEC_NEDENI, GECICI_DUZENLEME,
-  satirsizSecilenMetni, duzenlemeSayiMetni, SILINMIS_TEDARIKCI_BELGE,
+  satirsizSecilenMetni, duzenlemeSayiMetni, SILINMIS_TEDARIKCI_BELGE, ISLEMLER_BASLIGI, tedarikcisizIslemMetni,
 } from "../../lib/siparisIhtiyaci";
 
 // Spec 0140 B-R1/2, B-R5, B-R6, C4: tedarikçi odaklı, düzenlenebilir sipariş listesi. TEK dosya, iki giriş noktası (Ayarlar › Katalog ›
@@ -100,6 +100,22 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
     </table>
   );
 
+  // Spec 0150 R1, R2, R2/4, R10, R10/2: işlemler tablosu salt okunur, para yok; sütunlar belgeyle aynı üçlü. Satırlar motordan sıralı.
+  const islemTablo = (rows) => (
+    <div data-testid="siparis-islemler" style={{ borderTop: "1px solid var(--n150, #f1f5f9)" }}>
+      <div style={{ padding: "8px 12px 2px", fontSize: 11.5, fontWeight: 700, color: "var(--n600, #475569)" }}>{ISLEMLER_BASLIGI}</div>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead><tr>{BELGE_SUTUNLARI.islem.map((b, i) => <th key={b} style={i < 2 ? { ...th, textAlign: "left" } : th}>{b}</th>)}</tr></thead>
+        <tbody>{rows.map(x => (
+          <tr key={`${x.partId}-${x.sira}`} data-testid="siparis-islem-satiri">
+            <td style={{ ...td, textAlign: "left", whiteSpace: "normal" }}><b>{x.parca}</b>{x.duzenlendi && <span data-testid="siparis-islem-duzenlendi" style={elleIsaret}>DÜZENLENDİ</span>}</td>
+            <td style={{ ...td, textAlign: "left", whiteSpace: "normal" }}>{x.ad}</td>
+            <td style={td}>{sayi(x.siparis)}</td>
+          </tr>))}</tbody>
+      </table>
+    </div>
+  );
+
   // Triyaj (bulgu 1): soru penceresi yalnız belge basılabilirken çizilir; koruma ve çizim aynı yüklemden geçer, yoksa soru açıkken
   // veri belgeyi basılamaz yapınca soru kaybolur ama pencere kapatılamaz kalırdı. Basılamaz olunca soru durumu da düşer.
   const belgeEtkin = belgeDurumu(sonuc).etkin;
@@ -154,6 +170,8 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
         </div>
 
         {sonuc.hataliSayi > 0 && <UyariSeridi aile="hata" testId="siparis-hatali-satir">{hataliSatirMetni(sonuc.hataliSayi)}</UyariSeridi>}
+        {/* Spec 0150 R10/3 (triyaj bulgu 1): seçim yüzünden görünmeyen ama belgeyi kilitleyen hatalı parça adıyla söylenir. */}
+        {(tb?.gizliHatalar || []).map(g => <UyariSeridi key={g.partId} aile="hata" testId="siparis-gizli-hata">{g.metin}</UyariSeridi>)}
         {satirlar.length === 0 ? (
           <BosDurum testId="bos-siparis" baslik={BOS_BASLIK} metin={BOS_METNI} />
         ) : sonuc.gecerliSayi > 0 && (
@@ -174,19 +192,24 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
               {/* 2026-11-15 kararı: ekranda malzeme bölümü kalmadığı için "çift sayım değildir" cümlesi kalktı. */}
             </div>
             {bosNeden && <BosDurum testId="bos-siparis-tedarikci" baslik="Sipariş edilecek satır yok" metin={bosNeden} />}
-            {tb.bolumler.filter(b => b.hazirParcalar.length > 0).map(b => (
+            {/* Spec 0150 R8, R8/2: yalnız işlem satırı olan tedarikçinin de kartı çizilir. */}
+            {tb.bolumler.filter(b => b.hazirParcalar.length > 0 || b.islemler?.length > 0).map(b => (
               <KartBolum key={b.tedarikciId} varyant="kart" style={{ padding: 0, overflow: "auto", marginBottom: 10 }} testId="siparis-tedarikci-bolumu">
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 12px", fontWeight: 700, fontSize: 13 }}>
                   <span data-testid="siparis-tedarikci-adi">{b.ad}</span>
                 </div>
                 {b.silinmis && <div style={{ padding: "0 12px 6px" }}><span data-testid="siparis-silinmis-tedarikci" style={kucuk}>{SILINMIS_TEDARIKCI_BELGE}</span></div>}
                 {b.hazirParcalar.length > 0 && hazirTablo(b.hazirParcalar)}
+                {b.islemler?.length > 0 && islemTablo(b.islemler)}
               </KartBolum>))}
-            {!tb.secimVar && (tb.belirtilmemis.parcalar.length > 0 || tb.belirtilmemis.anasizMalzemeli > 0) && (
+            {!tb.secimVar && (tb.belirtilmemis.parcalar.length > 0 || tb.belirtilmemis.anasizMalzemeli > 0 || tb.belirtilmemis.islemler?.length > 0) && (
               <KartBolum varyant="kart" collapsible title={`${TEDARIKCI_BELIRTILMEMIS} (${tb.belirtilmemis.parcalar.length})`} testId="siparis-belirtilmemis" style={{ marginBottom: 10 }}>
                 {tb.belirtilmemis.parcalar.length > 0 && <Ipucu><span data-testid="siparis-anasiz-parca">{anasizParcaMetni(tb.belirtilmemis.parcalar.length)}</span></Ipucu>}
                 {tb.belirtilmemis.anasizMalzemeli > 0 && <Ipucu><span data-testid="siparis-anasiz-malzemeli">{anasizMalzemeliMetni(tb.belirtilmemis.anasizMalzemeli)}</span></Ipucu>}
                 {tb.belirtilmemis.parcalar.length > 0 && hazirTablo(tb.belirtilmemis.parcalar)}
+                {/* Spec 0150 R6, R6/2: başlıktaki sayı parça sayısı kalır; tedarikçisiz işlemler kendi ibaresi ve tablosuyla. */}
+                {tb.belirtilmemis.islemler?.length > 0 && <Ipucu><span data-testid="siparis-tedarikcisiz-islem">{tedarikcisizIslemMetni(tb.belirtilmemis.islemler.length)}</span></Ipucu>}
+                {tb.belirtilmemis.islemler?.length > 0 && islemTablo(tb.belirtilmemis.islemler)}
               </KartBolum>)}
             {/* 2026-11-15 Takım Yöneticisi isteği: "Parça ihtiyacı" tablosu ve tedarikçi bölümlerinin malzeme (kesit) tabloları ekrandan
                 kalktı; kesit ve set düzenlemesi de onlarla gitti (motor alanları yerinde, belge ve bölüm sonu notu motordan). */}

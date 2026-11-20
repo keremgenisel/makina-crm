@@ -4,13 +4,12 @@
 // canlı malzeme listesini ve fiyat ayarını taşır (AC-56, AC-58).
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
-import { render, screen, fireEvent, cleanup, waitFor, within, act } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor, act } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); delete window.crmStorage; delete window.appServer; delete window.appServisPano; delete window.auditLog; localStorage.clear(); });
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
 const { default: App } = await import("../../src/App");
-const { Settings } = await import("../../src/components/Settings");
 
 const veri = (o = {}) => ({
   malzemeler: [{ id: 501, ad: "304 Paslanmaz", ozgulAgirlik: 7.9, kiloFiyati: 2.95, paraBirimi: "USD", kur: 50 }],
@@ -76,22 +75,8 @@ describe("Spec 0133 gerçek App", () => {
     expect(son.malzemeler.map(m => m.id)).toEqual([501]); // canlı liste (çöpteki yok)
     expect(son.appSettings.fiyatAyarlari).toEqual({ varsayilanKat: 2.4 });
   });
-  it("Triyaj bulgu 2: istemci bilgisayarda toplu kip değişikliği işlem geçmişine /api/audit ile sunucuya yazılır", async () => {
-    const apiRequest = vi.fn(async () => ({ ok: true }));
-    const yerel = vi.fn();
-    window.appServer = { apiRequest };
-    window.auditLog = { log: yerel };
-    const v = veri();
-    render(<Settings customers={[]} services={[]} dealers={[]} stock={[]} setStock={vi.fn()} setCustomers={vi.fn()} setServices={vi.fn()} setDealers={vi.fn()} version="1"
-      appSettings={v.appSettings} setAppSettings={vi.fn()} factory={{ name: "A" }} setFactory={vi.fn()} kalipDefs={[]} setKalipDefs={vi.fn()} calisanlar={[]} setCalisanlar={vi.fn()}
-      partTypeDefs={[]} setPartTypeDefs={vi.fn()} onInitialTabConsumed={vi.fn()} aktifKullanici="u" standardModels={[]} setStandardModels={vi.fn()} customModels={[]}
-      setCustomModels={vi.fn()} rawCustomModels={[]} tedarikciler={[]} setTedarikciler={vi.fn()} initialTab="yedekparca" parts={v.parts} setParts={vi.fn()} rawParts={v.parts}
-      malzemeler={v.malzemeler} serverPermissions={JSON.stringify({ tabs: ["settings"] })} />);
-    fireEvent.click(screen.getByRole("button", { name: "Listedeki 2 parçayı elle sabite al" }));
-    fireEvent.click(screen.getByRole("button", { name: "Uygula" }));
-    expect(apiRequest).toHaveBeenCalledWith(expect.objectContaining({ method: "POST", path: "/api/audit", body: expect.objectContaining({ action: "fiyat_kipi_degisti", entity: "parca_tanimi" }) }));
-    expect(yerel).not.toHaveBeenCalled();
-  });
+  // Spec 0150 ile (R11, R11/4): toplu kip kalktığı için "fiyat_kipi_degisti" iz kaydı artık yazılmıyor; triyaj bulgu 2'nin testi düştü
+  // (etiket haritada kalır, eski kayıtlar on iki ay görünür).
   it("AC-56 (App kaynağı): canlı malzeme listesi Müşteriler, Stok, Evrak, bayi ve pano çağrılarına iner", () => {
     const app = readFileSync("src/App.jsx", "utf8");
     for (const ad of ["<Customers", "<Stock", "<Documents", "<SimpleDealers", "<ServisPanosu"]) {

@@ -10,10 +10,9 @@ import { maliyetKalemleriOf, kalemVarMi, kalemTedarikciIdleri, ESKI_MALIYET_ANAH
 import { FiyatListesiDugmesi } from "./rapor/FiyatListesiDugmesi";
 import { SiparisPenceresi, SIPARIS_DUGMESI } from "./stock/SiparisPenceresi";
 import { makeCanDo } from "../lib/permissions";
-import { logAction } from "../lib/audit";
 import {
-  fiyatBaglamiKur, fiyatKipiOf, maliyeteBagliMi, parcaSatisFiyati, turetilmisFiyat, turetilmisFiyatSayisi, katDogrula, katMetni, kipYaz,
-  topluKipOzeti, topluKipMetni, maliyetsizUyariMetni, katsizUyariMetni, TOPLU_KAT_YOK_NEDENI, farkMetni, setFiyatOkuyucu, KIP_MALIYET, KIP_ELLE, KIP_ADLARI, DOVIZ_NOTU, ZARAR_UYARISI,
+  fiyatBaglamiKur, fiyatKipiOf, maliyeteBagliMi, parcaSatisFiyati, turetilmisFiyat, turetilmisFiyatSayisi, katDogrula, katMetni,
+  farkMetni, setFiyatOkuyucu, KIP_MALIYET, KIP_ELLE, KIP_ADLARI, DOVIZ_NOTU, ZARAR_UYARISI,
 } from "../lib/parcaFiyati";
 import { kalipAdDeseni, parcaKalipIsiMi, PARCA_TIP_IPUCU } from "../lib/kalipTamiri";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
@@ -405,18 +404,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   const setSuzgec = (v) => { setSuzgecRaw(v); setPage(1); };
   const setKipSuzgec = (v) => { setKipSuzgecRaw(v); setPage(1); };
   const kipSayisi = (k) => parts.filter(p => fiyatKipiOf(p) === k).length;
-  // Spec 0133 R4/2, X10 (AC-29, AC-49, AC-77, Karar 34, 35): toplu kip değiştirme süzgeçten geçen listenin BÜTÜNÜNDE (sayfaya bakmaz,
-  // satır seçimi yok). Onay sayıları yazar; maliyetsiz parçalar sayılır ama işlem yine uygulanabilir (AC-50).
-  const [topluKip, setTopluKip] = useState(null);
-  const katYok = fiyatBaglami.ayar.varsayilanKat == null; // triyaj (bulgu 1)
-  const topluOzet = (kip) => topluKipOzeti(filtered, kip, fiyatBaglami);
-  const topluUygula = () => {
-    const oz = topluOzet(topluKip); const idler = new Set(oz.idler);
-    setParts(p => p.map(x => (idler.has(String(x.id)) ? kipYaz(x, topluKip) : x)));
-    logAction({ serverPermissions, action: "fiyat_kipi_degisti", entity: "parca_tanimi", entityName: `${oz.degisecek} parça`, detail: { kip: topluKip, adet: oz.degisecek } });
-    showToast(`${oz.degisecek} parçanın fiyat kipi değişti.`);
-    setTopluKip(null);
-  };
+  // Spec 0150 R11, R11/3: toplu fiyat kipi düğmeleri, onayı ve ölü kodu kalktı; kip parça kartından ve süzgeçten (R12).
   const suzgecSecenekleri = (() => {
     const say = new Map();
     for (const p of parts) for (const k of parcaTedarikciIdleri(p)) say.set(k, (say.get(k) || 0) + 1); // spec 0140 A-R6
@@ -587,17 +575,6 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       )}
       </div>
 
-      {filtered.length > 0 && (
-        <div data-testid="toplu-kip" style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-          {[KIP_MALIYET, KIP_ELLE].map(k => (
-            <Btn key={k} small variant="ghost" disabled={topluOzet(k).degisecek === 0 || (k === KIP_MALIYET && katYok)} onClick={() => setTopluKip(k)}>{topluKipMetni(filtered.length, k)}</Btn>))}
-          {katYok && <span data-testid="toplu-kat-yok" style={{ fontSize: 12, color: "var(--n600, #475569)", alignSelf: "center" }}>{TOPLU_KAT_YOK_NEDENI}</span>}
-        </div>
-      )}
-      {topluKip && (() => { const oz = topluOzet(topluKip); return (
-        <ConfirmDialog title="Fiyat kipini değiştir" icon="check" onCancel={() => setTopluKip(null)} onConfirm={topluUygula} confirmLabel="Uygula" confirmIcon="check" confirmVariant="primary"
-          message={<span data-testid="toplu-kip-onay">{`Listedeki ${oz.toplam} parçanın ${oz.degisecek} tanesinin fiyat kipi "${KIP_ADLARI[topluKip]}" olacak.`}{oz.maliyetsiz > 0 && <><br />{maliyetsizUyariMetni(oz.maliyetsiz)}</>}{oz.katsiz > 0 && <><br />{katsizUyariMetni(oz.katsiz)}</>}</span>} />
-      ); })()}
       <div style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, overflow: "auto" }}>
         {filtered.length === 0 ? (
           <div style={{ padding: 24, textAlign: "center", color: "var(--n400, #94a3b8)", fontSize: 13 }}>

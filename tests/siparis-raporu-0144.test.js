@@ -140,7 +140,8 @@ describe("Spec 0144 B: fiyatlı ve fiyatsız nüsha", () => {
     expect(fli).not.toContain("Birim fiyat");
     expect(toplamTablosu(fli, "Alfa Çelik")).toBeUndefined(); // 2026-11-15 isteğiyle
     expect(belgeSutunlari({ fiyatli: true }).parca).toEqual([...BELGE_SUTUNLARI.parca, ...BELGE_SUTUNLARI.fiyat]);
-    expect(belgeSutunlari()).toEqual({ parca: BELGE_SUTUNLARI.parca, toplam: BELGE_SUTUNLARI.toplam });
+    // Spec 0150 ile (R2/2): işlemler tablosunun sütunları da aynı tek yerden.
+    expect(belgeSutunlari()).toEqual({ parca: BELGE_SUTUNLARI.parca, toplam: BELGE_SUTUNLARI.toplam, islem: BELGE_SUTUNLARI.islem });
     expect(basliklar(tablolar(fli)[0])).toEqual(["Model", "Makina adedi"]);
   });
   it("AC-24 / AC-64 (2026-11-15 isteğiyle): parça satırının tutarı malzeme payının tutarı, kendi para biriminde", () => {

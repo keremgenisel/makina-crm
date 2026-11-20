@@ -43,6 +43,7 @@ import { partiGenelPaylari as pgp136, partiKapanisGoruntusu as pkg136, modelMali
 import * as F34 from "../../tests/fixtures/0134-veri.js";
 import * as V142 from "../../tests/fixtures/0142-veri.js";
 import * as V144 from "../../tests/fixtures/0144-veri.js";
+import * as V150 from "../../tests/fixtures/0150-veri.js";
 import * as V148 from "../../tests/fixtures/0148-veri.js";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml as siparisRaporuHtml0142 } from "../../src/lib/siparisRaporu";
@@ -864,6 +865,14 @@ function SiparisBelgesi0144({ fiyatli = false, senaryo = "odakli" }) {
   const html = siparisRaporuHtml0142(siparisIhtiyaci0142(v, sec), { bugun: V144.BUGUN, factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi", fiyatli });
   return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
+// Spec 0150: sipariş listesinde işlem kalemleri; veri tests/fixtures/0150-veri.js (motor, belge ve ekran testleriyle aynı).
+const PARTI_0150 = [{ id: 901, ad: "Güz Partisi", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100: 10 } }];
+const siparis0150 = () => <SiparisEkrani modeller={V150.MODELLER} partiler={PARTI_0150} parts={V150.PARCALAR.filter(p => !p.deletedAt)} malzemeler={V150.MALZEMELER}
+  tedarikciler={V150.TEDARIKCILER.filter(t => !t.deletedAt)} hamTed={V150.TEDARIKCILER} stok={V150.STOK} />;
+function SiparisBelgesi0150({ fiyatli = false }) {
+  const r = siparisIhtiyaci0142(V150.veri(), { tedarikciOdakli: true });
+  return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: siparisRaporuHtml0142(r, { bugun: "2026-11-20", factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi", fiyatli }) }} />;
+}
 // Spec 0097: Parti Hesabı'nın tarihli satırları ve dönem kilitli pay; veri tests/fixtures/0097-veri.js (motor ve ekran testleriyle aynı).
 function MaliyetEkrani0097() {
   const [uretimPartileri, setUretimPartileri] = useState(V97.PARTILER);
@@ -1118,7 +1127,6 @@ const EKRANLAR = {
   // set düğmesinin pasifliği; Fiyat Ayarları paneli; zam penceresinin fiyat etkisi.
   "katalog-parca-0133-liste": [ayarlar("yedekparca", { parts: PARCA_0133, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), []],
   "katalog-parca-0133-suzgec": [ayarlar("yedekparca", { parts: PARCA_0133, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["etiket:Maliyete bağlı (3)"]],
-  "katalog-parca-0133-toplu": [ayarlar("yedekparca", { parts: PARCA_0133, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["etiket:Elle sabit (4)", "dugme:Listedeki 4 parçayı maliyete bağla"]],
   "katalog-parca-0133-kart": [ayarlar("yedekparca", { parts: PARCA_0133.filter(p => p.id === 41), malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["baslik:Düzenle", "kaydir:Fiyat (TL"]],
   "katalog-parca-0133-neden": [ayarlar("yedekparca", { parts: PARCA_0133.filter(p => p.id === 8), standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["baslik:Düzenle", "kaydir:Fiyat (TL"]],
   "katalog-parca-0133-fark": [ayarlar("yedekparca", { parts: PARCA_0087.filter(p => p.id === 7), standardModels: MODELLER_0087, appSettings: AYAR_0133() }), ["baslik:Düzenle", "dugme:Maliyete bağlı", "kaydir:Fiyat (TL"]],
@@ -1264,6 +1272,15 @@ const EKRANLAR = {
   "siparis-0143-belge": [<SiparisBelgesi0143 />, []],
   "siparis-0144-soru": [siparis0144(), ["baslik:Sipariş listesini yazdır/PDF kaydet"]],
   "siparis-0144-belge-fiyatsiz": [<SiparisBelgesi0144 />, []],
+  // Spec 0150: işlemli kart, yalnız işlemli kart (seçimle), belirtilmemiş kutusundaki tedarikçisiz işlem, iki nüsha; toplu kipsiz liste.
+  "siparis-0150-pencere": [siparis0150(), ["kaydir:Kaplamacı"]],
+  // Triyaj (bulgu 2): CokluSecim'in etiketi onay kutusunu çocuk olarak taşır, `tikla:` onu bulamaz ve uyarısız kart başlığına tıklardı;
+  // seçim onay kutusunun aria-label'ıyla yapılır.
+  "siparis-0150-tek-tedarikci": [siparis0150(), ["etiket:Kaplamacı"]],
+  "siparis-0150-belirtilmemis": [siparis0150(), ["~Tedarikçisi belirtilmemiş", "kaydir:Tedarikçisi belirtilmemiş"]],
+  "siparis-0150-belge-fiyatsiz": [<SiparisBelgesi0150 />, []],
+  "siparis-0150-belge-fiyatli": [<SiparisBelgesi0150 fiyatli />, []],
+  "katalog-0150-kat-yok": [ayarlar("yedekparca", { parts: PARCA_0133, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, appSettings: {} }), []],
   "siparis-0144-belge-fiyatli": [<SiparisBelgesi0144 fiyatli />, []],
   "siparis-0144-belge-duzenleme": [<SiparisBelgesi0144 fiyatli senaryo="duzenleme" />, []],
   // Spec 0147: belgede hammadde başlıkları ve ölçüde mm (aynı 0144 verisi; Alfa Çelik dört hammadde, Delta Hırdavat hazır parçalarla).
