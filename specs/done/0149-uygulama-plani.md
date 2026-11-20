@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0149-cok-kelimeli-arama.md` (Onaylandı, 2026-11-20) |
+| **Spec** | `specs/done/0149-cok-kelimeli-arama.md` (Onaylandı, 2026-11-20) |
 | **Onay** | Takım Yöneticisi, 2026-11-20 ("tüm önerilerini onaylıyorum, spece işle, planı yaz ve uygula") |
 | **Dal** | `feat/0149-cok-kelimeli-arama` (main `ff1a8612` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor |
+| **Durum** | Tamamlandı: commit `fbf0c56f` |
 
 ## 1. Dosyalar
 

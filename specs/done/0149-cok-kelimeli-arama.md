@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-20); uygulandı, commit bekliyor |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-20) |
 | **Revizyon** | 2 (2026-11-20 QA turu kararları işlendi) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
@@ -486,40 +486,44 @@ Takım Yöneticisi 22 bulgunun hepsini onayladı. Metinde "QA kararı n" bu list
 
 ## Definition of Done
 
-- [ ] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
-- [ ] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
-- [ ] Eşleştirme kuralı React'sız saf yardımcıda ve tek yerde; yardımcı normalleştiriciyi parametre
+- [x] Tüm kabul kriterleri karşılandı; kriter → test eşlemesi tabloyla gösterildi.
+- [x] Her kriterin testi var ve test adı `AC-<n>: <metin>` taşıyor.
+- [x] Eşleştirme kuralı React'sız saf yardımcıda ve tek yerde; yardımcı normalleştiriciyi parametre
       alıyor (C1/2) ve kaynak taraması iki yönlü (ikinci kopya yok, eski desen de yok).
-- [ ] Aynı soruyu cevaplayan iki arama (genel arama ve liste araması) aynı yardımcıyı kullanıyor.
-- [ ] R6'nın envanteri tam: on dokuz kutunun hepsi kelime kuralını kullanıyor, kapsam dışı iki
+- [x] Aynı soruyu cevaplayan iki arama (genel arama ve liste araması) aynı yardımcıyı kullanıyor.
+- [x] R6'nın envanteri tam: on dokuz kutunun hepsi kelime kuralını kullanıyor, kapsam dışı iki
       günlük ekranı ve normalleştiricisi değişmeyen beş kutu spec'te yazılı.
-- [ ] "Neden çıktı?" satırlarının kuralı R2/2 ile yazılı ve genel arama ile gider tarafında ölçüldü.
-- [ ] `searchFn` sözleşmesi ayrıştırılmış nesne; kelime üretimi döngü dışında (casusla ölçüldü).
-- [ ] Üst küme değişmezi ölçüldü: hiçbir aramada sonuç daralmadı.
-- [ ] İki ölçüm (saf yardımcı ve genel arama) mutlak eşiklerle yazılı ve yeşil.
-- [ ] Yeni kalıcı alan yok; dört nokta kuralı gündeme gelmedi (spec'te yazılı).
-- [ ] Yeni veri bölümü ve eylem izni yok; arama salt okunur olduğu için izin eklenmediği açıkça
+- [x] "Neden çıktı?" satırlarının kuralı R2/2 ile yazılı ve genel arama ile gider tarafında ölçüldü.
+- [x] `searchFn` sözleşmesi ayrıştırılmış nesne; kelime üretimi döngü dışında (casusla ölçüldü).
+- [x] Üst küme değişmezi ölçüldü: hiçbir aramada sonuç daralmadı.
+- [x] İki ölçüm (saf yardımcı ve genel arama) mutlak eşiklerle yazılı ve yeşil.
+- [x] Yeni kalıcı alan yok; dört nokta kuralı gündeme gelmedi (spec'te yazılı).
+- [x] Yeni veri bölümü ve eylem izni yok; arama salt okunur olduğu için izin eklenmediği açıkça
       yazıldı.
-- [ ] Kullanıcıya görünen metinler Türkçe; yeni yazdırma çıktısı yok, ama Fiyat Listesi çıktısının
+- [x] Kullanıcıya görünen metinler Türkçe; yeni yazdırma çıktısı yok, ama Fiyat Listesi çıktısının
       ve toplu fiyat kipinin satır kümesi aramaya bağlı olduğu spec'te yazılı (R10).
-- [ ] Genişleyen eşleşme yüzünden değişen eski test beklentileri tek tek gerekçelendirildi.
-- [ ] Görsel kanıt eklendi: parça kataloğu, müşteri listesi ve genel arama paleti (boş sorgu, tek
+- [x] Genişleyen eşleşme yüzünden değişen eski test beklentileri tek tek gerekçelendirildi.
+- [x] Görsel kanıt eklendi: parça kataloğu, müşteri listesi ve genel arama paleti (boş sorgu, tek
       kelime, iki kelime); var olan beş `arama-*` ekranı 0 piksel.
-- [ ] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
-- [ ] `CLAUDE.md`'nin arama bölümü güncellendi.
-- [ ] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
-- [ ] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
+- [x] `npm test` yeşil (çıktısıyla), `npm run lint` hata sayısı sıfır.
+- [x] `CLAUDE.md`'nin arama bölümü güncellendi.
+- [x] Takım Yöneticisi onayladı. **Commit ve sürüm yayını yalnız açık talimatla yapılır.**
+- [x] **SCORECARD dolduruldu** ve spec `specs/done/` klasörüne taşındı.
 
 ---
 
 ## SCORECARD
 
-| Ölçüt | Değer | Not |
-|---|---|---|
-| **Spec revizyon sayısı** | | |
-| **Düzeltme turu sayısı** | | |
-| **Bulgu gerçek/gürültü oranı** | / | |
-| **Regresyon sayısı** | | |
-| **Kaçan hata** | | |
+| | |
+|---|---|
+| **Uygulama** | Commit `fbf0c56f` (dal `feat/0149-cok-kelimeli-arama`) |
+| **Plan** | `specs/done/0149-uygulama-plani.md`; dokuz plan kararı (P1–P9) ve dört uygulama kararı (P10–P13) |
+| **Kanıt** | `docs/evidence/0149-piksel-raporu.json`: dokuz yeni ekran (boş ve tek kelime 0 piksel, iki kelime bilinçli değişti) ve `katalog-parca-0125-suzgec` bilinçli değişti (başlangıç araması set parçasını da buluyor); kapanış tabanı `0149-taban-piksel-raporu.json` 6/6 sıfır |
+| **Spec revizyon sayısı** | 3 (QA turu, plan onayı: R2/3, R6/2 `CokluSecim`, R7/3) |
+| **Düzeltme turu sayısı** | 1 (triyaj) |
+| **Bulgu gerçek/gürültü oranı** | 3 / 0 (AC-23'ün ekran başına yarısı yalnız taramadaydı, AC-24'ün Kullanıcı Geçmişi yarısı yoktu, `aramaSorgusu.metin` ölü alandı) |
+| **Regresyon sayısı** | 0 (hiçbir eski test kırılmadı; yalnız sözlükte üç satır atfı kaydı) |
+| **Kaçan hata** | 0 |
+| **Notlar** | Kural eski tek parça davranışa çevrilince 25 test, ekran alan listelerinden biri düşürülünce 10 test, kelime üretimi kayıt başına yapılınca casus testi kırıldı. Yedek Parça Satışı sekmesi `customers` verilmeden açılırsa aramada sonsuz döngüye giriyor (varsayılan `[]` her çizimde yeni dizi, satır 118'deki efekt); uygulamada Stok her zaman verdiği için etkisiz, açık bulgu |
 
-**Bu spec'ten çıkarılan ders:**
+**Bu spec'ten çıkarılan ders:** kaynak taraması "eski desen kalmadı"yı kanıtlar ama "yeni desen doğru alanlarla yazıldı"yı kanıtlamaz; mekanik bir çevirinin güvencesi her çağrı yerinde ayrı alanlara dağılmış kelimelerle yazılan bir davranış testi ve bir alanı düşüren mutasyondur.
