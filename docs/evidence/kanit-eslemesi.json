@@ -6290,10 +6290,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "cop-kutusu-0152",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/settings/SettingsTwoFactor.jsx": [
@@ -10841,34 +10840,29 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "kasa-virman",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "kasa-0152-bozdurma",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "kasa-0152-iki-doviz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "kasa-0152-dolar-hareketler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "kasa-0152-ziraat-hareketler",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/gider/OdemeKayitPenceresi.jsx": [
@@ -12030,22 +12024,19 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "giderler-0152-doviz-odeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "giderler-0152-kur-yok",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0152-piksel-raporu.json",
+        "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "giderler-0152-cek-doviz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0152 P11"
+        "beklenen": "ayni"
       }
     ],
     "src/components/cek/CekEklePenceresi.jsx": [

@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-20); uygulandı, commit bekliyor |
-| **Revizyon** | 3 (2026-11-20 plan onayı: P1–P11; plan `specs/0152-uygulama-plani.md`) |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-20) |
+| **Revizyon** | 3 (2026-11-20 plan onayı: P1–P11; plan `specs/done/0152-uygulama-plani.md`) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kasa (hesap listesi, hesap hareketleri, virman ve bozdurma penceresi), gider ödeme penceresi ve gider formunun ödeme bölümü, Anasayfa'nın ödeme penceresi, çöp kutusu, işlem geçmişi, Aylık Gider ve Kasa Raporu |

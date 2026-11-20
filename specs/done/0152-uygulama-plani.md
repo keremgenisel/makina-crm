@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0152-kasa-doviz-odeme-ve-bozdurma.md` (Onaylandı, 2026-11-20) |
+| **Spec** | `specs/done/0152-kasa-doviz-odeme-ve-bozdurma.md` (Onaylandı, 2026-11-20) |
 | **Onay** | Takım Yöneticisi, 2026-11-20 ("tüm önerilerini onaylıyorum, spece işle, planı yaz ve uygula") |
 | **Dal** | `feat/0152-doviz` (main `b20b78e4` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor |
+| **Durum** | Tamamlandı: commit `7fca271e` |
 
 ## 1. Dosyalar
 
