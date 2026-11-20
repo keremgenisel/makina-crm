@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { aramaNormalize } from "../lib/utils";
+import { aramaKelimeleri, kelimelerEslesir } from "../lib/utils";
 
 // Liste ekranlarında tekrar eden "ara + filtrele + sırala + sayfala" mantığını tek yerde toplar.
 // searchFields: item üzerindeki düz alan adları (örn. ["name", "city"]).
-// searchFn(item, query): alan adı yeterli olmadığında (örn. başka bir listeyle join gerekiyorsa) özel eşleştirme.
+// searchFn(item, sorgu): alan adı yeterli olmadığında (örn. başka bir listeyle join gerekiyorsa) özel eşleştirme. Spec 0149
+// R8/3: `sorgu` ayrıştırılmış nesnedir ({ kelimeler }), dize değil; çağıran `kelimelerEslesir(sorgu.kelimeler, değerler)` çağırır
+// (güncellenmemiş bir `includes(sorgu)` "[object Object]" arayıp hiç eşleşmez, hata ilk testte görünür).
 // filterFn(item): kategori/durum filtresi — referansı her render'da değişse de sorun olmaz, sadece değer kontrol edilir.
 // sortFn(a, b): sıralama.
 // ikinciFiltre(item): isteğe bağlı ikinci süzgeç (spec 0100 plan P2). Verilirse `oncesi` ondan önceki (arama + filterFn) kümedir;
@@ -15,12 +17,14 @@ export const useFilteredList = (data, { searchFields, searchFn, filterFn, ikinci
   // Arama değişince sayfa 1'e dönsün (önceki sayfada kalıp boş liste görmeyi önler).
   const setSearch = (v) => { setSearchRaw(v); setPage(1); };
 
-  const q = aramaNormalize((search || "").trim());
+  // Spec 0149 R8/2: kelimeler render başına bir kez üretilir; kayıt başına yalnız eşleşme çalışır.
+  const kelimeler = aramaKelimeleri(search);
+  const sorgu = { kelimeler };
   const oncesi = data.filter(item => {
     if (filterFn && !filterFn(item)) return false;
-    if (!q) return true;
-    if (searchFn) return searchFn(item, q);
-    return (searchFields || []).some(f => aramaNormalize(item[f]).includes(q));
+    if (!kelimeler.length) return true;
+    if (searchFn) return searchFn(item, sorgu);
+    return kelimelerEslesir(kelimeler, (searchFields || []).map(f => item[f]));
   });
   let filtered = ikinciFiltre ? oncesi.filter(ikinciFiltre) : oncesi;
   if (sortFn) filtered = [...filtered].sort(sortFn);

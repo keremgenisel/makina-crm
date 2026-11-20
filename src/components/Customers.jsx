@@ -5,7 +5,7 @@ import { yedekParcaGeriAl } from "../lib/yedekParcaStok";
 import { servisParcaGeriAl } from "../lib/servisStok";
 import { netDusumleri, IADE_TIPI } from "../lib/stokHareketi";
 import { musteriBagliSayilar, bagliKayitOzeti, yedekParcaKaskad, yedekParcaAlicisiMi, yedekParcaTahsisliMi, silinenMakinaEtiketi, GERI_DONEN_STOK_NOTU } from "../lib/musteriKaskad";
-import { grupKimlikleri, today, fmtTR, trLower, aramaNormalize, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
+import { grupKimlikleri, today, fmtTR, trLower, kelimelerEslesir, uid, bumpId, fmt, fmtKalipCapi, kalipCapiYaz, kalipCount, tahsilKdvOrani, fmtCur, parseMoney, customerHasAnyDebt, benzerKayitBul, calcKalanBorc, withDeleted, resolveSatisYapan, taksitGecikmisMi, stokSecimDiff, girisNoHaritasi, isFaturali, faturaBedeliOf } from "../lib/utils";
 import { fiyatBaglamiKur } from "../lib/parcaFiyati";
 import { ilkSatisOdemeleri } from "../lib/makinaOdeme";
 import { satisTevkifatUygula, satisTevkifatDogrula } from "../lib/satisTevkifat";
@@ -133,10 +133,10 @@ export const Customers = ({
 
   const { search, setSearch, page, setPage, filtered: searched, perPage: PER_PAGE } = useFilteredList(customers, {
     // Menüdeki genel arama gibi, makinanın eski sahiplerinin adıyla da eşleşsin.
-    searchFn: (c, q) => {
+    // Spec 0149 R8/3: kelimeler bu alanların herhangi birinde geçer (R2); alan kümesi aynı (C3).
+    searchFn: (c, sorgu) => {
       const alanlar = ["name", "city", "satisYapan", "contact", "country", "serialNo", "model", "phone", "yetkili1Ad", "yetkili1Tel", "yetkili2Ad", "yetkili2Tel"];
-      if (alanlar.some(f => aramaNormalize(c[f]).includes(q))) return true;
-      return (c.prevOwners || []).some(o => aramaNormalize(String(o.name || "")).includes(q));
+      return kelimelerEslesir(sorgu.kelimeler, [...alanlar.map(f => c[f]), ...(c.prevOwners || []).map(o => o.name)]);
     },
     filterFn: c => {
       if (listFilter === "warranty") return c.warrantyEnd && c.warrantyEnd < today();

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { aramaNormalize, fmtTR, tsGunTR, parcaAdi, fmtCur } from "../lib/utils";
+import { aramaNormalize, aramaKelimeleri, kelimelerEslesir, nedenAlani, fmtTR, tsGunTR, parcaAdi, fmtCur } from "../lib/utils";
 import { turHaritasi, ayOf } from "../lib/gider";
 import {
   aramaSorgusu, kalemEslesmesi, kalemBasligi, kalemMeta, tedarikciEslesmesi, tanimEslesmesi,
@@ -56,15 +56,35 @@ export const KAT = {
 };
 
 // Spec 0125 R6, R6/2 (Karar 7): servisin kalıp alanları; liste okuma yolu `tamirListesi`.
-const servisKalipEslesmesi = (s, has) => tamirListesi(s).some(g => has(g.ad)) || has(s.kalipKargoFirma) || has(s.kalipKargoTakipNo);
+const servisKalipDegerleri = (s) => [...tamirListesi(s).map(g => g.ad), s.kalipKargoFirma, s.kalipKargoTakipNo];
+
+// Spec 0149 R2/2, R2/3: "neden çıktı?" satırı. Başlık kümesi bugün nedensiz geçen alanlardır; başlıkta geçmeyen kelimeyi
+// taşıyan ilk alan yazılır, başlık hepsini taşıyorsa neden yok. Sıra bugünkü alan sırasıdır (tek kelimede birebir aynı).
+const nedenMetni = (n) => (n ? `${n.etiket}: ${n.deger}` : null);
+export const musteriEslesmeNedeni = (c, kelimeler) => nedenMetni(nedenAlani(kelimeler, [c.name], [
+  ["yetkili", c.yetkili1Ad], ["yetkili", c.yetkili2Ad], ["telefon", c.phone], ["yetkili tel", c.yetkili1Tel], ["yetkili tel", c.yetkili2Tel],
+  ["seri no", c.serialNo], ["model", c.model], ...(c.prevOwners || []).map(o => ["eski sahibi", o.name]),
+]));
+// Spec 0125 R7, R7/2: servis bugünkü sekiz alandan biriyle eşleşen kelimeler için neden yazmaz; yalnız kalıp alanlarından.
+export const servisEslesmeNedeni = (s, c, kelimeler) => nedenMetni(nedenAlani(kelimeler,
+  [s.tech, s.type, s.musteriTalimati, s.fabrikaNotu, s.yapilanIsler, s.durum, c?.name, c?.serialNo],
+  [...tamirListesi(s).map(g => ["kalıp", g.ad]), ["kalıp kargo", s.kalipKargoFirma], ["kalıp takip no", s.kalipKargoTakipNo]]));
+// Spec 0149 R9 (C4): ham kırpılmış sorgu en az iki karakter VE en az bir kelimesi iki karakter; yoksa sonuç yok.
+export const paletKelimeleri = (q) => {
+  const query = aramaNormalize(String(q ?? "").trim());
+  if (query.length < 2) return null;
+  const kelimeler = aramaKelimeleri(query);
+  return kelimeler.some(k => k.length >= 2) ? kelimeler : null;
+};
 const kapiBaglami = (allowedTabs, ek) => ({ izinli: (tabId) => !Array.isArray(allowedTabs) || allowedTabs.includes(tabId), ...ek });
 
 // Arama sonuç nesnesi (spec 0026 R8, R17): her kategori anahtarı her zaman vardır (kapalı kategori boş dizi), tek geçiş.
 // Bileşen bunu TEK useMemo içinde çağırır; ödeme motoru çağrılmaz, ham (ödemesiz) gider dizileri okunur (AC-36).
 export const genelAramaSonuclari = (q, v, kapiCtx) => {
-  const query = aramaNormalize(String(q ?? "").trim());
-  if (query.length < 2) return null;
-  const has = (val) => aramaNormalize(String(val || "")).includes(query);
+  const kelimeler = paletKelimeleri(q);
+  if (!kelimeler) return null;
+  // Spec 0149 R2: eşleşme kayıt düzeyinde, her kelime değerlerin birinde (alan kümeleri değişmedi, C3).
+  const esles = (...degerler) => kelimelerEslesir(kelimeler, degerler);
   const acik = (k) => KAT[k].kapi(kapiCtx);
   const { customers = [], teklifler = [], dealers = [], stock = [], yedekParcaSatislar = [], parts = [], partSales = [], services = [], notes = [], uretimFormlari = [], dosyalar = [], calisanlar = [], kalipDefs = [] } = v;
   const partMap = {}; for (const p of parts) partMap[String(p.id)] = p;
@@ -78,28 +98,28 @@ export const genelAramaSonuclari = (q, v, kapiCtx) => {
   const esle = (dizi, fn) => { const r = []; for (const x of dizi || []) { const e = fn(x); if (e) r.push({ kayit: x, neden: e.neden }); } return r; };
   // Tüm gruplar LİMİTSİZ — kaç eşleşme varsa hepsi gösterilir (hiçbir grupta .slice yok).
   return {
-    musteriler: acik("musteriler") ? customers.filter(c => !c.deletedAt && (has(c.name) || has(c.serialNo) || has(c.phone) || has(c.yetkili1Ad) || has(c.yetkili1Tel) || has(c.yetkili2Ad) || has(c.yetkili2Tel) || has(c.model) || (c.prevOwners || []).some(o => has(o.name)))) : [],
-    belgeler:   acik("belgeler") ? teklifler.filter(t => !t.deletedAt && (has(t.no) || has(t.firma))) : [],
-    bayiler:    acik("bayiler") ? dealers.filter(d => !d.deletedAt && (has(d.name) || has(d.contact) || has(d.city))) : [],
-    makinalar:  acik("makinalar") ? stock.filter(sx => !sx.deletedAt && (has(sx.serialNo) || has(sx.model))) : [],
+    musteriler: acik("musteriler") ? customers.filter(c => !c.deletedAt && esles(c.name, c.serialNo, c.phone, c.yetkili1Ad, c.yetkili1Tel, c.yetkili2Ad, c.yetkili2Tel, c.model, ...(c.prevOwners || []).map(o => o.name))) : [],
+    belgeler:   acik("belgeler") ? teklifler.filter(t => !t.deletedAt && esles(t.no, t.firma)) : [],
+    bayiler:    acik("bayiler") ? dealers.filter(d => !d.deletedAt && esles(d.name, d.contact, d.city)) : [],
+    makinalar:  acik("makinalar") ? stock.filter(sx => !sx.deletedAt && esles(sx.serialNo, sx.model)) : [],
     // Yedek parça (kargo) satışları — alıcı, parça, kargo firma/takip no VE farklı teslimat adresi (ad/şehir/ilçe/adres) ile aranır; Stok'a gider.
-    yedekParcalar: acik("yedekParcalar") ? yedekParcaSatislar.filter(s => !s.deletedAt && (has(aliciAd(s, dealers, customers)) || has(parcaAdi(partMap[String(s.partId)])) || has(s.kargoTakipNo) || has(s.kargoFirma) || has(s.kargoDurum) || (s.teslimatFarkli && (has(s.teslimatAd) || has(s.teslimatSehir) || has(s.teslimatIlce) || has(s.teslimatAdres) || has(s.teslimatTel))))) : [],
+    yedekParcalar: acik("yedekParcalar") ? yedekParcaSatislar.filter(s => !s.deletedAt && esles(aliciAd(s, dealers, customers), parcaAdi(partMap[String(s.partId)]), s.kargoTakipNo, s.kargoFirma, s.kargoDurum, ...(s.teslimatFarkli ? [s.teslimatAd, s.teslimatSehir, s.teslimatIlce, s.teslimatAdres, s.teslimatTel] : []))) : [],
     // Extra Kalıp satışları — müşteri, kalıp adı/ölçü ile aranır; müşteri detayına gider.
-    kaliplar: acik("kaliplar") ? (partSales || []).filter(p => !p.deletedAt && p.tur === "Kalıp" && (has(p.ad) || has(p.olcu) || has(custAd(p.customerId)))) : [],
+    kaliplar: acik("kaliplar") ? (partSales || []).filter(p => !p.deletedAt && p.tur === "Kalıp" && esles(p.ad, p.olcu, custAd(p.customerId))) : [],
     // Servis kayıtları — teknisyen, tip, müşteri talimatı/fabrika notu/yapılan işler, müşteri adı/seri no ile aranır; müşteri detayına gider.
     // Spec 0125 R6: ayrıca servise giren kalıpların adları (`tamirListesi`) ve kalıbın kargo firması ile takip numarası.
-    servisler: acik("servisler") ? services.filter(s => !s.deletedAt && (has(s.tech) || has(s.type) || has(s.musteriTalimati) || has(s.fabrikaNotu) || has(s.yapilanIsler) || has(s.durum) || has(custAd(s.customerId)) || has(custMap[s.customerId]?.serialNo) || servisKalipEslesmesi(s, has))) : [],
+    servisler: acik("servisler") ? services.filter(s => !s.deletedAt && esles(s.tech, s.type, s.musteriTalimati, s.fabrikaNotu, s.yapilanIsler, s.durum, custAd(s.customerId), custMap[s.customerId]?.serialNo, ...servisKalipDegerleri(s))) : [],
     // Notlar — serbest not içeriği ile aranır; Notlar sekmesine gider.
-    notlar: acik("notlar") ? notes.filter(n => !n.deletedAt && has(n.content)) : [],
+    notlar: acik("notlar") ? notes.filter(n => !n.deletedAt && esles(n.content)) : [],
     // Üretim formları — dönem notu/tarihi ve satırlardaki kalıp adı/kodu/ölçü/müşteri ile aranır; Stok > Üretim'e gider.
-    uretimler: acik("uretimler") ? uretimFormlari.filter(u => !u.deletedAt && (has(u.not) || has(u.baslangicTarihi) || (u.satirlar || []).some(r => has(r.kalipAdi) || has(r.kalipKodu) || has(r.kalipOlcusu) || has(r.musteriAdi)))) : [],
+    uretimler: acik("uretimler") ? uretimFormlari.filter(u => !u.deletedAt && esles(u.not, u.baslangicTarihi, ...(u.satirlar || []).flatMap(r => [r.kalipAdi, r.kalipKodu, r.kalipOlcusu, r.musteriAdi]))) : [],
     // Dosya arşivi — dosya etiketi/dosya adı ile aranır; ilgili müşteri detayına gider.
-    dosyalar: acik("dosyalar") ? dosyalar.filter(d => !d.deletedAt && (has(d.ad) || has(d.dosyaAdi) || has(d.aciklama)) && d.customerId) : [],
+    dosyalar: acik("dosyalar") ? dosyalar.filter(d => !d.deletedAt && esles(d.ad, d.dosyaAdi, d.aciklama) && d.customerId) : [],
     // Firma çalışanları (teknisyenler) — ad ile aranır; Ayarlar > Firma'ya gider.
-    calisanlar: acik("calisanlar") ? calisanlar.filter(cx => !cx.deletedAt && has(cx.ad)) : [],
+    calisanlar: acik("calisanlar") ? calisanlar.filter(cx => !cx.deletedAt && esles(cx.ad)) : [],
     // Spec 0125 R2 (Karar 2, 17): katalogların adı, İngilizce adı ve kodu (kalıpta ürün adı TR/EN); çöp savunma amaçlı da süzülür.
-    parcaTanimlari: acik("parcaTanimlari") ? parts.filter(p => !p.deletedAt && (has(p.ad) || has(p.adEN) || has(p.kod))) : [],
-    kalipTanimlari: acik("kalipTanimlari") ? kalipDefs.filter(d => !d.deletedAt && (has(d.ad) || has(d.kod) || has(d.urunAdi) || has(d.urunAdiEN))) : [],
+    parcaTanimlari: acik("parcaTanimlari") ? parts.filter(p => !p.deletedAt && esles(p.ad, p.adEN, p.kod)) : [],
+    kalipTanimlari: acik("kalipTanimlari") ? kalipDefs.filter(d => !d.deletedAt && esles(d.ad, d.kod, d.urunAdi, d.urunAdiEN)) : [],
     // Spec 0026 (R1, R2, R5, R9–R13, R19): personel kalem ve tanımı hiç çıkmaz; çöptekiler savunma amaçlı da süzülür.
     giderler: acik("giderler") ? esle(v.giderler, k => kalemEslesmesi(k, sorgu, { turMap, tedMap, yururlukAy: v.yururlukAy })) : [],
     tedarikciler: acik("tedarikciler") ? esle(v.tedarikciler, t => tedarikciEslesmesi(t, sorgu)) : [],
@@ -138,34 +158,14 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
   // (useMemo değil — palet için ucuz; onOpen closure'ları hep taze kalır)
   const gruplar = (() => {
     if (!results) return [];
-    const nq = aramaNormalize(q.trim());
+    const kelimeler = paletKelimeleri(q) || [];
     const custMap = {}; for (const c of customers) custMap[c.id] = c;
     const turMap = turHaritasi(giderTurleri);
     const tedMap = new Map(tedarikciler.map(t => [String(t.id), t]));
-    // Müşteri kaydı ADI dışında bir alandan yakalandıysa nedenini göster ("neden çıktı?" — telefon/yetkili/eski sahip vb.).
-    // Aranan alan sırasıyla aynı öncelik (results filtresiyle birebir): yetkili, telefon, yetkili tel, seri no, model, eski sahip.
-    const eslesmeNedeni = (c) => {
-      if (aramaNormalize(String(c.name || "")).includes(nq)) return null; // ad zaten görünüyor
-      const alanlar = [["yetkili", c.yetkili1Ad], ["yetkili", c.yetkili2Ad], ["telefon", c.phone], ["yetkili tel", c.yetkili1Tel], ["yetkili tel", c.yetkili2Tel], ["seri no", c.serialNo], ["model", c.model]];
-      for (const [ad, deger] of alanlar) if (deger && aramaNormalize(String(deger)).includes(nq)) return `${ad}: ${deger}`;
-      const eski = (c.prevOwners || []).find(o => aramaNormalize(String(o.name || "")).includes(nq));
-      return eski ? `eski sahibi: ${eski.name}` : null;
-    };
-    // Spec 0125 R7, R7/2 (Karar 8, 18): servis bugünkü sekiz alandan biriyle eşleştiyse neden yok (satır değişmez); yalnız
-    // kalıp alanından gelen eşleşmede neden yazılır. `musteriler` emsali: düz kayıt, neden `ekstra` yuvasında.
-    const servisEslesmeNedeni = (s) => {
-      const h = (v) => !!v && aramaNormalize(String(v)).includes(nq);
-      const c = custMap[s.customerId];
-      if ([s.tech, s.type, s.musteriTalimati, s.fabrikaNotu, s.yapilanIsler, s.durum, c?.name, c?.serialNo].some(h)) return null;
-      const kalip = tamirListesi(s).find(g => h(g.ad));
-      if (kalip) return `kalıp: ${kalip.ad}`;
-      if (h(s.kalipKargoFirma)) return `kalıp kargo: ${s.kalipKargoFirma}`;
-      if (h(s.kalipKargoTakipNo)) return `kalıp takip no: ${s.kalipKargoTakipNo}`;
-      return null;
-    };
+    // Müşteri ve servis neden satırları saf yardımcılardan (spec 0149 R2/2, R2/3; yukarıda).
     const yap = {
-      musteriler: c => ({ uid: `c${c.id}`, baslik: c.name || "—", meta: nokta([c.model, c.serialNo && `S/N ${c.serialNo}`, c.installDate && fmtTR(c.installDate)]), ekstra: eslesmeNedeni(c), onOpen: () => pick(onOpenCustomer, c.id) }),
-      servisler: s => { const c = custMap[s.customerId]; return { uid: `sv${s.id}`, baslik: `${s.type || "Servis"}${s.tech ? ` · ${s.tech}` : ""}`, meta: nokta([c?.name || "—", c?.serialNo && `S/N ${c.serialNo}`, s.date && fmtTR(s.date), s.durum]), ekstra: servisEslesmeNedeni(s), onOpen: () => pick(onOpenCustomer, s.customerId, s.id) }; },
+      musteriler: c => ({ uid: `c${c.id}`, baslik: c.name || "—", meta: nokta([c.model, c.serialNo && `S/N ${c.serialNo}`, c.installDate && fmtTR(c.installDate)]), ekstra: musteriEslesmeNedeni(c, kelimeler), onOpen: () => pick(onOpenCustomer, c.id) }),
+      servisler: s => { const c = custMap[s.customerId]; return { uid: `sv${s.id}`, baslik: `${s.type || "Servis"}${s.tech ? ` · ${s.tech}` : ""}`, meta: nokta([c?.name || "—", c?.serialNo && `S/N ${c.serialNo}`, s.date && fmtTR(s.date), s.durum]), ekstra: servisEslesmeNedeni(s, c, kelimeler), onOpen: () => pick(onOpenCustomer, s.customerId, s.id) }; },
       belgeler: t => ({ uid: `t${t.id}`, baslik: t.no || "—", meta: nokta([t.firma, t.type === "proforma" ? "Proforma" : "Teklif", t.tarih && fmtTR(t.tarih)]), onOpen: () => pick(onOpenDoc, t.id) }),
       bayiler: d => ({ uid: `d${d.id}`, baslik: d.name || "—", meta: nokta([d.contact, d.city]), onOpen: () => pick(onOpenDealer, d.id) }),
       makinalar: sx => ({ uid: `s${sx.id}`, baslik: sx.model || "—", meta: nokta([sx.serialNo ? `S/N ${sx.serialNo}` : "seri no'suz", sx.addedDate && fmtTR(sx.addedDate)]), onOpen: () => pick(onGoStock) }),

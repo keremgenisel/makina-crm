@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Btn, Icon, Modal } from "../ui";
-import { fmtKalipCapi, fmtTR } from "../../lib/utils";
+import { fmtKalipCapi, fmtTR, trLower, aramaKelimeleri, kelimelerEslesir } from "../../lib/utils";
 import { emptyRow } from "./uretimFormModel";
 import { AYNA_SATIR_IBARESI } from "../../lib/musteriDurumu";
 import { BASKA_FORMDA_IBARESI, tamirSatiriKur, tamirAnahtari, MANUEL_TAMIR_BASLIGI, MANUEL_TAMIR_BOS_IPUCU, MANUEL_KOD_IPUCU, TAMIR_YOK } from "../../lib/kalipTamiri";
@@ -22,10 +22,11 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], baskaForm
   const [draftRow, setDraftRow]         = useState({});
 
   const filtCusts = useMemo(() => {
-    const q = custSearch.trim().toLocaleLowerCase("tr");
+    // Spec 0149 R5/2: kelime kuralı, normalleştirici bugünkü Türkçe küçültme (X9); kesme sayısı aynı (X10).
+    const kelimeler = aramaKelimeleri(custSearch, trLower);
     const src = customers.filter(c => !c.deletedAt);
-    if (!q) return src.slice(0, 25);
-    return src.filter(c => (c.name || "").toLocaleLowerCase("tr").includes(q)).slice(0, 25);
+    if (!kelimeler.length) return src.slice(0, 25);
+    return src.filter(c => kelimelerEslesir(kelimeler, [c.name], trLower)).slice(0, 25);
   }, [customers, custSearch]);
 
   const filtKaliplar = useMemo(() => {
@@ -40,12 +41,9 @@ export function UretimSatirEkleModal({ customers = [], kalipDefs = [], baskaForm
           baskaFormda: !!baskaFormdakiler?.has(anahtar) };
       });
     }
-    const q = kalipSearch.trim().toLocaleLowerCase("tr");
-    if (!q) return kalipDefs.slice(0, 40);
-    return kalipDefs.filter(k =>
-      (k.ad || "").toLocaleLowerCase("tr").includes(q) ||
-      (k.kod || "").toLocaleLowerCase("tr").includes(q)
-    ).slice(0, 40);
+    const kelimeler = aramaKelimeleri(kalipSearch, trLower); // spec 0149 R5/2
+    if (!kelimeler.length) return kalipDefs.slice(0, 40);
+    return kalipDefs.filter(k => kelimelerEslesir(kelimeler, [k.ad, k.kod], trLower)).slice(0, 40);
   }, [kalipDefs, kalipSearch, selMusteri, customers, baskaFormdakiler]);
 
   // R7, R7/3: seçili kaydın (makina kaydı) bekleyen tamirleri; dize karşılaştırması.

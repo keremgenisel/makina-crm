@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { trLower, aramaNormalize, withDeleted } from "../lib/utils";
+import { trLower, kelimelerEslesir, withDeleted } from "../lib/utils";
 import { modelAdiTasi } from "../lib/gider";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, Pagination, SearchPick, ImageUpload, TutarInput } from "./ui";
 import { HataMetni, Ipucu } from "./tasarim";
@@ -68,7 +68,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
     ...customModels.map(m => ({ m, isStd: false })),
   ];
   const { search, setSearch, page, setPage, filtered, paged: pagedModels } = useFilteredList(allModels, {
-    searchFn: (item, q) => aramaNormalize(item.m.model).includes(q),
+    searchFn: (item, sorgu) => kelimelerEslesir(sorgu.kelimeler, [item.m.model]), // spec 0149 R8/3
     perPage: PER_PAGE,
   });
 

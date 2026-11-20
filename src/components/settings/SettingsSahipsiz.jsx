@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { fmtTR, fmtCur, parseMoney, parcaAdi, withDeleted, aramaNormalize, yedekParcaBedeli, satisUcretsizMi, UCRETSIZ_IBARESI } from "../../lib/utils";
+import { fmtTR, fmtCur, parseMoney, parcaAdi, withDeleted, aramaKelimeleri, kelimelerEslesir, yedekParcaBedeli, satisUcretsizMi, UCRETSIZ_IBARESI } from "../../lib/utils";
 import { sahipsizKayitlar } from "../../lib/sahipsiz";
 import { yedekParcaGeriAl } from "../../lib/yedekParcaStok";
 import { servisParcaGeriAl } from "../../lib/servisStok";
@@ -35,8 +35,8 @@ export const SettingsSahipsiz = ({
   // Bağlama adayları: bayi satışı için bayiler, diğerleri için müşteriler (çöptekiler aday değil)
   const adaylar = useMemo(() => {
     const havuz = bagla && bayiTuru(bagla.tur) ? canliBayiler : canliMusteriler;
-    const q = aramaNormalize(ara);
-    const l = q ? havuz.filter(c => aramaNormalize(`${c.name || ""} ${c.serialNo || ""} ${c.model || ""} ${c.city || ""}`).includes(q)) : havuz;
+    const kelimeler = aramaKelimeleri(ara); // spec 0149 R3: sorgu artık kırpılır
+    const l = kelimeler.length ? havuz.filter(c => kelimelerEslesir(kelimeler, [c.name, c.serialNo, c.model, c.city])) : havuz;
     return l.slice(0, 30);
   }, [canliMusteriler, canliBayiler, bagla, ara]);
 

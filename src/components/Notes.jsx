@@ -3,7 +3,7 @@ import { logAction, snapshotOnceki } from "../lib/audit";
 import { Icon, Btn, Modal, ConfirmDialog, LockConflict, Pagination } from "./ui";
 import { useLock } from "../hooks/useLock";
 import { useKilitListesi } from "../hooks/useKilitListesi";
-import { withDeleted, tsToDate } from "../lib/utils";
+import { withDeleted, tsToDate, trLower, aramaKelimeleri, kelimelerEslesir } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { Segment, KartBolum, BosDurum } from "./tasarim";
 
@@ -63,13 +63,15 @@ export const Notes = forwardRef(({ notes = [], setNotes, showToast = () => {}, s
   };
 
   // En son düzenlenen üstte
-  const q = search.trim().toLocaleLowerCase("tr");
+  // Spec 0149 R5/2: kelime kuralı, normalleştirici bugünkü Türkçe küçültme (harf sadeleştirmesi yok, X9).
+  const q = aramaKelimeleri(search, trLower).join(" ");
   const filtered = useMemo(() => {
     let list = [...notes].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     // Çok kullanıcıda "Benim Notlarım": kendi notların + sahibi olmayan (eski) notlar. Gizlilik değil,
     // yalnız düzen — notlar yine herkese senkronlanır ve "Tümü" ile hepsi görülebilir.
     if (coklu && filtreBenim) list = list.filter(n => !n.olusturan || n.olusturan === aktifKullanici);
-    return q ? list.filter(n => (n.content || "").toLocaleLowerCase("tr").includes(q)) : list;
+    const kelimeler = aramaKelimeleri(q, trLower);
+    return kelimeler.length ? list.filter(n => kelimelerEslesir(kelimeler, [n.content], trLower)) : list;
   }, [notes, q, coklu, filtreBenim, aktifKullanici]);
   // Sayfalama (5'er)
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));

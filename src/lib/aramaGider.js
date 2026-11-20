@@ -1,7 +1,7 @@
 // Spec 0026: genel aramanın gider modülü kuralları (saf; React almaz, ödeme hareketi okumaz).
 // GlobalSearch tek useMemo içinde buradaki eşleşmeleri çağırır (R8). Ödeme durumu türetilmiş veridir; bu modül
 // odemeleriUygula'yı çağırmaz ve kalemin ödeme alanlarını okumaz (X7, AC-36, AC-37).
-import { aramaNormalize, fmtTR } from "./utils";
+import { aramaKelimeleri, kelimelerEslesir, nedenAlani, fmtTR } from "./utils";
 import { DAVRANIS, davranisOf, kalemTutari, odenecekTutar } from "./gider";
 import { tl2 } from "./odemeYontemi"; // gider ekranlarının tutar biçimi
 import { HESAP_TUR_AD } from "./kasa";
@@ -25,10 +25,20 @@ export const aramaSorgusu = (q) => {
       ? { kurus: ham.slice(0, virgul).replace(/\D/g, "") + (ham.slice(virgul + 1).replace(/\D/g, "") + "00").slice(0, 2) }
       : { tam: rakam };
   }
-  return { ham, metin: aramaNormalize(ham), sayisal, tarih, tutar };
+  // Spec 0149 R7/2: metin dalı kelimelere bölünür (sayısal sorguda da); tarih ve tutar dalları ham sorguyla kalır.
+  // Eski tek parça `metin` alanı kalktı (triyaj): eşleşme yalnız `kelimeler` üzerinden.
+  return { ham, kelimeler: aramaKelimeleri(ham), sayisal, tarih, tutar };
 };
 
-export const metinEslesir = (deger, s) => !!s.metin && aramaNormalize(String(deger ?? "")).includes(s.metin);
+// Spec 0149 R2, R2/2: metin eşleşmesi KAYIT düzeyindedir: her kelime değerlerin birinde geçer. Tek değer de verilebilir.
+export const metinEslesir = (degerler, s) => !!s.kelimeler?.length && kelimelerEslesir(s.kelimeler, Array.isArray(degerler) ? degerler : [degerler]);
+// Kayıt düzeyinde metin eşleşmesi ve neden satırı (R2/2, R2/3): `baslik` bugün nedensiz geçen alanlar, `alanlar`
+// [[etiket, deger], ...] bugünkü sırayla; neden başlıkta geçmeyen kelimeyi taşıyan ilk alan, başlık hepsini taşıyorsa null.
+const kayitMetinEslesmesi = (s, baslik, alanlar) => {
+  if (!metinEslesir([...baslik, ...alanlar.map(a => a[1])], s)) return null;
+  const n = nedenAlani(s.kelimeler, baslik, alanlar);
+  return { neden: n ? `${n.etiket}: ${n.deger}` : null };
+};
 
 // ISO tarih (YYYY-AA-GG) ya da ay (YYYY-AA): ayraçlar birleştirilerek karşılaştırılır ("15.03.2026", "15/03/2026",
 // "2026-03-15" aynı). Aday sorgunun biçimine göre TEK: dört haneli yılla başlayan sorgu ISO'da, diğeri ekrandaki fmtTR
@@ -69,11 +79,10 @@ export const kalemBasligi = (k, turMap) => k.aciklama || turMap?.get(String(k.tu
 export const kalemEslesmesi = (k, s, { turMap, tedMap, yururlukAy = null }) => {
   if (!k || k.deletedAt || personelMi(k, turMap)) return null;
   if (yururlukAy && k.tarih && k.tarih < `${yururlukAy}-01`) return null;
-  if (metinEslesir(kalemBasligi(k, turMap), s) || metinEslesir(k.aciklama, s)) return { neden: null };
   const tur = turMap?.get(String(k.turId))?.ad || "";
-  if (metinEslesir(tur, s)) return { neden: `tür: ${tur}` };
   const ted = tedMap?.get(String(k.tedarikciId))?.ad || "";
-  if (metinEslesir(ted, s)) return { neden: `tedarikçi: ${ted}` };
+  const metin = kayitMetinEslesmesi(s, [kalemBasligi(k, turMap), k.aciklama], [["tür", tur], ["tedarikçi", ted]]);
+  if (metin) return metin;
   if (s.tarih) {
     if (tarihEslesir(k.tarih, s)) return { neden: `tarih: ${fmtTR(k.tarih)}` };
     const vade = (k.taksitler || []).find(t => tarihEslesir(t.vade, s));
@@ -94,45 +103,33 @@ export const kalemMeta = (k, { turMap, tedMap }) => {
 };
 
 // Tedarikçi: ad, yetkili, telefon, vergi no (R9); e-posta, adres, not aranmaz.
-export const tedarikciEslesmesi = (t, s) => (!t || t.deletedAt ? null : ilk([
-  [metinEslesir(t.ad, s), null],
-  [metinEslesir(t.yetkili, s), `yetkili: ${t.yetkili}`],
-  [metinEslesir(t.telefon, s), `telefon: ${t.telefon}`],
-  [metinEslesir(t.vergiNo, s), `vergi no: ${t.vergiNo}`],
-]));
+export const tedarikciEslesmesi = (t, s) => (!t || t.deletedAt ? null
+  : kayitMetinEslesmesi(s, [t.ad], [["yetkili", t.yetkili], ["telefon", t.telefon], ["vergi no", t.vergiNo]]));
 
 // Tekrarlayan tanım: ad, tür, tedarikçi; personel tanımı hiç (R2, R19).
 export const tanimEslesmesi = (t, s, { turMap, tedMap }) => {
   if (!t || personelMi(t, turMap)) return null;
   const tur = turMap?.get(String(t.turId))?.ad || "";
   const ted = tedMap?.get(String(t.tedarikciId))?.ad || "";
-  return ilk([
-    [metinEslesir(t.ad, s), null],
-    [metinEslesir(tur, s), `tür: ${tur}`],
-    [metinEslesir(ted, s), `tedarikçi: ${ted}`],
-  ]);
+  return kayitMetinEslesmesi(s, [t.ad], [["tür", tur], ["tedarikçi", ted]]);
 };
 
 // Üretim partisi: ad, açıklama, dönem (R5, AC-16).
-export const partiEslesmesi = (p, s) => (!p || p.deletedAt ? null : ilk([
-  [metinEslesir(p.ad, s), null],
-  [metinEslesir(p.aciklama, s), `açıklama: ${p.aciklama}`],
-  [tarihEslesir(p.baslangicAy, s) || metinEslesir(p.baslangicAy, s), `başlangıç: ${p.baslangicAy}`],
-  [tarihEslesir(p.bitisAy, s) || metinEslesir(p.bitisAy, s), `bitiş: ${p.bitisAy}`],
-]));
+// Spec 0149 R7/3: dönem ayı metin dalında kelime kuralıyla, tarih dalında tek alanda ve ham sorguyla aranır.
+export const partiEslesmesi = (p, s) => (!p || p.deletedAt ? null
+  : kayitMetinEslesmesi(s, [p.ad], [["açıklama", p.aciklama], ["başlangıç", p.baslangicAy], ["bitiş", p.bitisAy]]) || ilk([
+    [tarihEslesir(p.baslangicAy, s), `başlangıç: ${p.baslangicAy}`],
+    [tarihEslesir(p.bitisAy, s), `bitiş: ${p.bitisAy}`],
+  ]));
 
 // Kasa hesabı: ad (R5, AC-17); kapalı hesap da aranır ve "kapalı" ibaresi taşır (R11).
-export const hesapEslesmesi = (h, s) => (h && metinEslesir(h.ad, s) ? { neden: null } : null);
+export const hesapEslesmesi = (h, s) => (h && metinEslesir([h.ad], s) ? { neden: null } : null);
 export const hesapMeta = (h) => [HESAP_TUR_AD[h.tur] || h.tur, h.paraBirimi, h.kapali && "kapalı"];
 
 // Çek: no, banka, keşideci; alacaklı adı yalnız alacaklı çalışan değilken (R13, AC-26).
 export const cekAlacaklisi = (c) => (c?.alacakliTur === "calisan" ? "" : (c?.alacakliAd || ""));
-export const cekEslesmesi = (c, s) => (!c || c.deletedAt ? null : ilk([ // spec 0078 R36: çöpteki çek aranmaz
-  [metinEslesir(c.no, s), null],
-  [metinEslesir(c.banka, s), null],
-  [metinEslesir(c.kesideci, s), `keşideci: ${c.kesideci}`],
-  [metinEslesir(cekAlacaklisi(c), s), `alacaklı: ${cekAlacaklisi(c)}`],
-]));
+export const cekEslesmesi = (c, s) => (!c || c.deletedAt ? null // spec 0078 R36: çöpteki çek aranmaz
+  : kayitMetinEslesmesi(s, [c.no, c.banka], [["keşideci", c.kesideci], ["alacaklı", cekAlacaklisi(c)]]));
 // Durum ve vade yazılmaz (R20): verilen çekin "Ödendi" durumu bir ödeme durumudur (AC-37).
 export const cekMeta = (c) => {
   const verilen = c.yon === "verilen";

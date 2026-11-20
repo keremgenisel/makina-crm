@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { grupKimlikleri, today, yerelBugun, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaNormalize, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
+import { grupKimlikleri, today, yerelBugun, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaKelimeleri, kelimelerEslesir, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
 import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
 import { Segment, BosDurum } from "../tasarim";
@@ -101,12 +101,11 @@ export const YedekParcaSatisTab = ({ fiyatBaglami = null,
   }, [yedekParcaSatislar, filtre]);
   // Arama: alıcı adı, parça adı, kargo firma/takip no, tarih, kargo durumu.
   const aranmis = useMemo(() => {
-    const q = aramaNormalize(arama.trim());
-    if (!q) return liste;
+    const kelimeler = aramaKelimeleri(arama); // spec 0149
+    if (!kelimeler.length) return liste;
     return liste.filter(s => {
       const part = partMap[String(s.partId)];
-      const hay = aramaNormalize([aliciAd(s, dealers, customers), parcaAdi(part), s.kargoTakipNo, s.kargoFirma, s.tarih, s.kargoDurum].filter(Boolean).join(" "));
-      return hay.includes(q);
+      return kelimelerEslesir(kelimeler, [aliciAd(s, dealers, customers), parcaAdi(part), s.kargoTakipNo, s.kargoFirma, s.tarih, s.kargoDurum]);
     });
   }, [liste, arama, partMap, dealers, customers]);
   // Her iki filtre de alıcıya göre gruplu gösterilir (varsayılan katlı, akordeon). "Tahsisi eksik" modda

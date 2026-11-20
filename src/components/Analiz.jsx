@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { hesaplaAnaliz, BILINMEYEN_MODEL, trendModuSec } from "../lib/analiz";
-import { today, addMonthsToDateStr, sureBicimSaat, aramaNormalize } from "../lib/utils";
+import { today, addMonthsToDateStr, sureBicimSaat, aramaKelimeleri, kelimelerEslesir } from "../lib/utils";
 import { Modal } from "./ui";
 import { Segment, KartBolum, BosDurum } from "./tasarim";
 
@@ -114,8 +114,8 @@ const TumBtn = ({ toplam, limit, onAc }) => {
 const ParcaSecici = ({ parcalar, secili, onSec }) => {
   const [acik, setAcik] = useState(false);
   const [ara, setAra] = useState("");
-  const q = aramaNormalize(ara.trim());
-  const liste = q ? parcalar.filter(p => aramaNormalize(p.ad).includes(q)) : parcalar;
+  const kelimeler = aramaKelimeleri(ara); // spec 0149
+  const liste = kelimeler.length ? parcalar.filter(p => kelimelerEslesir(kelimeler, [p.ad])) : parcalar;
   const kapat = () => { setAcik(false); setAra(""); };
   return (
     <div style={{ position: "relative", flex: 1, minWidth: 0 }}>

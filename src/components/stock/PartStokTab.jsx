@@ -1,6 +1,6 @@
 import { SiparisPenceresi, SIPARIS_DUGMESI } from "./SiparisPenceresi";
 import { useState, useMemo } from "react";
-import { today, fmtTR, uid, mergeAndUpdate, totalMiktar, aramaNormalize } from "../../lib/utils";
+import { today, fmtTR, uid, mergeAndUpdate, totalMiktar, kelimelerEslesir } from "../../lib/utils";
 import { logAction } from "../../lib/audit";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Btn, Modal, Pagination, LockConflict, SearchSelect } from "../ui";
@@ -68,7 +68,7 @@ export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, 
   [pinnedPartIds, rows]);
 
   const { search, setSearch, page, setPage, filtered: filteredRows, paged: pagedRows } = useFilteredList(rows, {
-    searchFn: (r, q) => aramaNormalize(r.part.ad).includes(q) || (r.part.models || []).some(m => aramaNormalize(m).includes(q)),
+    searchFn: (r, sorgu) => kelimelerEslesir(sorgu.kelimeler, [r.part.ad, ...(r.part.models || [])]), // spec 0149 R8/3
     perPage: PER_PAGE,
   });
 

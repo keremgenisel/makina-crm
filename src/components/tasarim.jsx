@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Icon } from "./ui";
+import { aramaKelimeleri, kelimelerEslesir } from "../lib/utils";
+// Spec 0149 R6/2: CokluSecim'in bugünkü normalleştiricisi (harf sadeleştirmesi yok).
+const trKucult = (s) => String(s ?? "").toLocaleLowerCase("tr-TR");
 
 // Tasarım sözlüğü (spec 0009): uygulamanın paylaşılan altı yapı taşı. Ne zaman hangisinin kullanılacağı
 // docs/tasarim-sozlugu.md'de yazılı; yeni bir ekran bu dosyadan beslenir, yerel kopya yazmaz.
@@ -200,8 +203,9 @@ const cokluPil = { display: "inline-flex", alignItems: "center", gap: 4, padding
 const cokluBaglanti = { border: "none", background: "none", padding: 0, fontSize: 12, fontWeight: 600, color: "var(--blu700, #1d4ed8)", cursor: "pointer" };
 export const CokluSecim = ({ secenekler = [], secili = [], onChange, ariaLabel, aramaYerTutucu = "Ara...", bosMetni = "", testId }) => {
   const [ara, setAra] = useState("");
-  const q = ara.trim().toLocaleLowerCase("tr-TR");
-  const gorunen = q ? secenekler.filter(s => String(s.ad).toLocaleLowerCase("tr-TR").includes(q)) : secenekler;
+  // Spec 0149 R6/2: kelime kuralı, normalleştiricisi değişmeden (Türkçe küçültme, harf sadeleştirmesi yok).
+  const kelimeler = aramaKelimeleri(ara, trKucult);
+  const gorunen = kelimeler.length ? secenekler.filter(s => kelimelerEslesir(kelimeler, [s.ad], trKucult)) : secenekler;
   const set = new Set(secili.map(String));
   const degistir = (id) => onChange(set.has(String(id)) ? secili.filter(x => String(x) !== String(id)) : [...secili, String(id)]);
   return (

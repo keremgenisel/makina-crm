@@ -6371,6 +6371,22 @@
         "rapor": "docs/evidence/0114b-taban-piksel-raporu.json",
         "ekran": "musteriler-0114-pil",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0149-piksel-raporu.json",
+        "ekran": "musteriler-0149-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0149-piksel-raporu.json",
+        "ekran": "musteriler-0149-tek",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0149-piksel-raporu.json",
+        "ekran": "musteriler-0149-iki",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0149 R1"
       }
     ],
     "src/components/SimpleDealers.jsx": [
@@ -9271,6 +9287,28 @@
         "rapor": "docs/evidence/0140-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-0140-suzgec",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0149-piksel-raporu.json",
+        "ekran": "katalog-0149-bos",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0149-piksel-raporu.json",
+        "ekran": "katalog-0149-tek",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0149-piksel-raporu.json",
+        "ekran": "katalog-0149-iki",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0149 R1"
+      },
+      {
+        "rapor": "docs/evidence/0149-piksel-raporu.json",
+        "ekran": "katalog-parca-0125-suzgec",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-20 · spec 0149 R1"
       }
     ],
     "src/components/PartTypeManager.jsx": [

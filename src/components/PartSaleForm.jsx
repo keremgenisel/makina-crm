@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CUR_SYM, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, yerelBugun, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { today, yerelBugun, aramaKelimeleri, kelimelerEslesir, fmtCur, parseMoney, calcKDV, getKdvRateForDate, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KALIP_MUSTERI_SECILMEDI } from "../lib/kalipSatisi";
@@ -52,12 +52,10 @@ export const PartSaleForm = ({ title, form, setForm, customers, kalipDefs = [], 
   const selectedCust = customers.find(c => c.id === Number(form.customerId));
   // Kalıp satırına model seç: adı yaz, ölçüyü müşterinin kayıtlı kalıp ölçüsünden ön-doldur.
   const kalipSec = (i, def) => setForm(p => ({ ...p, kaliplar: kalipSatirlar().map((k, idx) => idx === i ? { ...k, ad: def.ad, olcu: k.olcu || (selectedCust?.kaliplar?.find(kk => kk.ad === def.ad)?.olcu || "") } : k) }));
-  const matchedCustomers = custSearch.trim()
-    ? customers.filter(c =>
-        aramaNormalize(c.name).includes(aramaNormalize(custSearch)) ||
-        aramaNormalize(c.model).includes(aramaNormalize(custSearch)) ||
-        aramaNormalize(c.serialNo).includes(aramaNormalize(custSearch))
-      ).slice(0, 6)
+  // Spec 0149 R3, R8/2: sorgu kırpılır ve kelimeler bir kez üretilir.
+  const custKelimeler = aramaKelimeleri(custSearch);
+  const matchedCustomers = custKelimeler.length
+    ? customers.filter(c => kelimelerEslesir(custKelimeler, [c.name, c.model, c.serialNo])).slice(0, 6)
     : [];
 
   return (

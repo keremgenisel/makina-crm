@@ -1018,6 +1018,17 @@ const T_0126 = { id: 900, type: "teklif", no: "2026-00001", tarih: "2026-09-20",
   { rowId: "r3", pickTip: "kalip", selectedModel: "", selectedKalip: "Burger 120", selectedPart: "", subItems: [alt0126("k1", "kalip", { kod: "BG-120", makinaAdi: "Köfte kalıbı", birimFiyat: "8.000" })] },
 ] };
 const ARAMA_KUTU = "doldur:Müşteri, seri no, teklif no, servis, bayi, not ara...";
+// Spec 0149: çok kelimeli arama verisi.
+const PARCA_0149 = [
+  { id: 14901, ad: "AYNA MAHRUTİ DİŞLİSİ", kod: "AMD-1", tip: "Standart", fiyatTRY: 1200 },
+  { id: 14902, ad: "AYNA RULMANI", kod: "AR-1", tip: "Standart", fiyatTRY: 350 },
+  { id: 14903, ad: "KONVEYÖR TAHRİK MİLİ", kod: "KTM-1", tip: "Standart", fiyatTRY: 900 },
+];
+const MUSTERI_0149 = [
+  { id: 14911, name: "AYNA GIDA", city: "İstanbul", country: "Türkiye", phone: "0532 444 11 22", model: "AK100", serialNo: "S-14911", installDate: "2026-03-01" },
+  { id: 14912, name: "AYNA PASTANESİ", city: "Ankara", country: "Türkiye", phone: "0312 555", model: "AK100", serialNo: "S-14912", installDate: "2026-04-01" },
+  { id: 14913, name: "LEZZET DÜNYASI", city: "İstanbul", country: "Türkiye", phone: "0216 777", model: "AK120", serialNo: "S-14913", installDate: "2026-05-01" },
+];
 
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
@@ -1843,6 +1854,16 @@ const EKRANLAR = {
   "musteri-formu-0109-hazir": [musteri0109(), ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:AK100-2026-052", "kaydir:Makina durumu"]],
   "musteri-formu-0109-manuel": [musteri0109(), ["~Yeni Müşteri", "tikla:Model seçin...", "tikla:AK100_DS", "secenek:AK100-2026-051", "secenek:Manuel gir", "kaydir:Makina durumu"]],
   "musteriler-0106-piller": [musteri0106(), []],
+  // Spec 0149: aramada kelimeler ayrı ayrı aranır. Parça kataloğu, müşteri listesi ve palet × boş, tek ve iki kelime.
+  "katalog-0149-bos": [ayarlar("yedekparca", { parts: PARCA_0149 }), []],
+  "katalog-0149-tek": [ayarlar("yedekparca", { parts: PARCA_0149 }), ["doldur:Yedek parça ara...=ayna"]],
+  "katalog-0149-iki": [ayarlar("yedekparca", { parts: PARCA_0149 }), ["doldur:Yedek parça ara...=ayna dişlisi"]],
+  "musteriler-0149-bos": [<Customers customers={MUSTERI_0149} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, []],
+  "musteriler-0149-tek": [<Customers customers={MUSTERI_0149} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, ["doldur:Müşteri ara...=ayna"]],
+  "musteriler-0149-iki": [<Customers customers={MUSTERI_0149} setCustomers={bos} partSales={[]} services={[]} payments={[]} />, ["doldur:Müşteri ara...=ayna istanbul"]],
+  "arama-0149-bos": [aramaEkrani({ parts: PARCA_0149, customers: MUSTERI_0149, onGoKatalog: bos }), ["baslik:Genel arama (Ctrl+K)"]],
+  "arama-0149-tek": [aramaEkrani({ parts: PARCA_0149, customers: MUSTERI_0149, onGoKatalog: bos }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=ayna`]],
+  "arama-0149-iki": [aramaEkrani({ parts: PARCA_0149, customers: MUSTERI_0149, onGoKatalog: bos }), ["baslik:Genel arama (Ctrl+K)", `${ARAMA_KUTU}=ayna 532`]],
   "musteriler-0106-suzgec": [musteri0106(), ["etiket:Teslim Bekleyenler (3)"]],
   "musteri-formu-0106-durum": [musteri0106({ initialDetailId: 867 }), ["~Düzenle", "kaydir:Kalıp Ölçüleri"]],
   "musteri-detay-0106-kalip": [musteri0106({ initialDetailId: 862 }), ["kaydir:Kalıp Verildi"]],

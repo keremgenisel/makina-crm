@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
 import { tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, DAVRANIS, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, kurumTarafAdi, vergiRozetleri,
   kalemGiderTutari, kalemIndirilebilirKdv, kisitEtkiliMi, kisitliRozetMetni, kapsamliMi, kapsamRozetMetni } from "../../lib/gider";
-import { fmtTR, trLower } from "../../lib/utils";
+import { fmtTR, trLower, aramaKelimeleri, kelimelerEslesir } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
 import { PERSONEL_ODEMELERI, GOC_YONTEM_NOTU } from "../../lib/odemeYontemi";
@@ -230,6 +230,7 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, bugun, canD
   // Spec 0071 R11: "Tutar girilmedi" ölçütü kalem tutarının sıfır olmasıdır (spec 0074 R10: SGK tanımından üretilen kalem dahil).
   const tutarsiz = (k) => tutarGirilmediMi(k, dav(k));
   const tutarsizSayi = kalemler.filter(tutarsiz).length;
+  const araKelimeler = aramaKelimeleri(filtre.ara, trLower);
   const suz = kalemler.filter(k => {
     if (filtre.tur && String(k.turId) !== filtre.tur) return false;
     if (filtre.ted === "_yok" ? k.tedarikciId != null : (filtre.ted && String(k.tedarikciId) !== filtre.ted)) return false;
@@ -238,7 +239,8 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, bugun, canD
     if (filtre.odeme === "gecti" && !vadesiGectiMi(k, bugun)) return false;
     if (filtre.odeme === "hatirlatma" && !hatDurum(k)) return false;
     if (filtre.odeme === "tutarsiz" && !tutarsiz(k)) return false;
-    if (filtre.ara && !trLower(`${k.aciklama || ""} ${k.calisanAd || ""} ${tedMap.get(String(k.tedarikciId))?.ad || ""}`).includes(trLower(filtre.ara))) return false;
+    // Spec 0149 R5/2: kelime kuralı; normalleştirici trLower kalır (harf sadeleştirmesi yok, spec 0026 R18).
+    if (araKelimeler.length && !kelimelerEslesir(araKelimeler, [k.aciklama, k.calisanAd, tedMap.get(String(k.tedarikciId))?.ad], trLower)) return false;
     return true;
   }).sort((a, b) => String(a.tarih).localeCompare(String(b.tarih)));
   const personel = suz.filter(k => dav(k) === DAVRANIS.PERSONEL);

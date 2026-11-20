@@ -1,7 +1,7 @@
 import React, { useId, useState, useEffect, useRef, useLayoutEffect, cloneElement, isValidElement, Children, Fragment } from "react";
 import { COUNTRIES, COUNTRY_EN, COUNTRY_ALT, staticCities, CITY_SUPPLEMENT, ODEME_YONTEMLERI } from "../lib/constants";
 import { ILCELER } from "../lib/map/ilceler";
-import { aramaNormalize, parseMoney } from "../lib/utils";
+import { aramaKelimeleri, kelimelerEslesir, parseMoney } from "../lib/utils";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { cekDogrula, CEK_TURLERI } from "../lib/cek";
 import { tutarGosterim, tutarGirdisiIsle } from "../lib/tutarGirdisi";
@@ -165,7 +165,9 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
   const [justAdded, setJustAdded] = useState(null);
   // Sonuç sayısı sınırlanmıyor — panel zaten scrollable (maxHeight:220, overflowY:auto); eski sabit
   // limit (8) bazı öğelerin (örn. 150 parçalık listede 8'den sonrası) hiç görünmemesine yol açıyordu.
-  const filtered = q.trim() ? items.filter(it => aramaNormalize(getLabel(it)).includes(aramaNormalize(q))) : items;
+  // Spec 0149 R8/2: kelimeler render başına bir kez (eskiden sorgu kayıt başına normalleştiriliyordu).
+  const kelimeler = aramaKelimeleri(q);
+  const filtered = kelimeler.length ? items.filter(it => kelimelerEslesir(kelimeler, [getLabel(it)])) : items;
   const pick = (it) => {
     onPick(it);
     setQ("");
@@ -302,8 +304,9 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
   }, [open]);
   // Arama varsa tümünde filtrele; boşken initialLimit verilmişse yalnızca ilk N'i göster (uzun listeler
   // baştan aşağı taşmasın, gerisi aramayla bulunur).
-  const matched = q.trim() ? options.filter(o => aramaNormalize(o.label).includes(aramaNormalize(q))) : options;
-  const filtered = (!q.trim() && initialLimit > 0) ? matched.slice(0, initialLimit) : matched;
+  const kelimeler = aramaKelimeleri(q); // spec 0149 R8/2
+  const matched = kelimeler.length ? options.filter(o => kelimelerEslesir(kelimeler, [o.label])) : options;
+  const filtered = (!kelimeler.length && initialLimit > 0) ? matched.slice(0, initialLimit) : matched;
   const gizliSayisi = matched.length - filtered.length;
   const secili = options.find(o => o.value === value);
   return (

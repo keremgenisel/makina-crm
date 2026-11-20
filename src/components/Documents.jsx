@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 import { teklifKaydedildiMi, teklifUretimDurumu, uretilenKayitlar, kalipRolu } from "../lib/evrakUretim";
-import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaNormalize, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, downloadFile, customerToAliciFields } from "../lib/utils";
+import { today, uid, parseMoney, calcTL, applyKurToForm, trLower, aramaKelimeleri, kelimelerEslesir, stripAutoPrint, fmtTR, withoutDeleted, numberToWordsEN, effectiveTeklifTur, downloadFile, customerToAliciFields } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { renderMailTemplate } from "../lib/mailTemplates";
 import { logAction, snapshotOnceki } from "../lib/audit";
@@ -298,9 +298,9 @@ export const Documents = ({
   const liveFaturalar = useMemo(() => withoutDeleted(faturalar).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")), [faturalar]);
   const [faturaSearch, setFaturaSearch] = useState("");
   const filteredFaturalar = useMemo(() => {
-    if (!faturaSearch.trim()) return liveFaturalar;
-    const q = aramaNormalize(faturaSearch.trim());
-    return liveFaturalar.filter(f => aramaNormalize(f.firma || "").includes(q) || aramaNormalize(f.no || "").includes(q));
+    const kelimeler = aramaKelimeleri(faturaSearch); // spec 0149
+    if (!kelimeler.length) return liveFaturalar;
+    return liveFaturalar.filter(f => kelimelerEslesir(kelimeler, [f.firma, f.no]));
   }, [liveFaturalar, faturaSearch]);
 
   const makeEmptyFatura = () => {
@@ -401,14 +401,14 @@ export const Documents = ({
   const [nihaiSearch, setNihaiSearch] = useState("");
   const liveDealers = useMemo(() => (dealers || []).filter(d => !d.deletedAt), [dealers]);
   const bayiResults = useMemo(() => {
-    if (!bayiSearch.trim()) return [];
-    const q = aramaNormalize(bayiSearch.trim());
-    return liveDealers.filter(d => aramaNormalize(d.name || "").includes(q)).slice(0, 6);
+    const kelimeler = aramaKelimeleri(bayiSearch); // spec 0149
+    if (!kelimeler.length) return [];
+    return liveDealers.filter(d => kelimelerEslesir(kelimeler, [d.name])).slice(0, 6);
   }, [bayiSearch, liveDealers]);
   const nihaiResults = useMemo(() => {
-    if (!nihaiSearch.trim()) return [];
-    const q = aramaNormalize(nihaiSearch.trim());
-    return customers.filter(c => !c.deletedAt && (aramaNormalize(c.name || "").includes(q) || aramaNormalize(c.serialNo || "").includes(q))).slice(0, 6);
+    const kelimeler = aramaKelimeleri(nihaiSearch); // spec 0149
+    if (!kelimeler.length) return [];
+    return customers.filter(c => !c.deletedAt && kelimelerEslesir(kelimeler, [c.name, c.serialNo])).slice(0, 6);
   }, [nihaiSearch, customers]);
   // Bayi seçilince belgenin firma bilgileri bayinin kayıtlı bilgileriyle dolar; alanlar düzenlenebilir kalır.
   const bayiToAliciFields = (d) => ({ dealerId: d.id, firma: d.name || "", yetkili: d.contact || "", tel: d.phone || "", adres: d.adres || "", email: d.email || "", country: d.country || "", city: d.city || "" });
@@ -416,11 +416,11 @@ export const Documents = ({
   // ── Müşteri arama (alıcı alanlarını doldurmak için) ──
   const [custSearch, setCustSearch] = useState("");
   const custResults = useMemo(() => {
-    if (!custSearch.trim()) return [];
-    const q = aramaNormalize(custSearch.trim());
+    const kelimeler = aramaKelimeleri(custSearch); // spec 0149
+    if (!kelimeler.length) return [];
     const seen = new Set();
     return customers.filter(c => {
-      if (!aramaNormalize(c.name || "").includes(q)) return false;
+      if (!kelimelerEslesir(kelimeler, [c.name])) return false;
       const key = trLower(c.name || "");
       if (seen.has(key)) return false;
       seen.add(key);
@@ -439,7 +439,7 @@ export const Documents = ({
     liveTeklifler.filter(t => t.type === subTab).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")),
   [liveTeklifler, subTab]);
   const { search, setSearch, page, setPage, filtered: searched, paged } = useFilteredList(filtered, {
-    searchFn: (t, q) => aramaNormalize(t.firma || "").includes(q) || aramaNormalize(t.no || "").includes(q),
+    searchFn: (t, sorgu) => kelimelerEslesir(sorgu.kelimeler, [t.firma, t.no]), // spec 0149 R8/3
     perPage: PER_PAGE,
   });
 

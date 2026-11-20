@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { DEFAULT_KDV_RATES } from "../lib/constants";
 import { logAction, snapshotOnceki } from "../lib/audit";
 import { useMailSender, MailComposeModal } from "./MailCompose";
-import { grupKimlikleri, uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, parcaAdi, aramaNormalize, tahsilEdilecekKdv } from "../lib/utils";
+import { grupKimlikleri, uid, bumpId, today, simdiYerel, fmtTR, fmtCur, parseMoney, isParcaBorcluAnlasmaliFirmaya, kalipBorcTarafi, altuntasParcaBedeli, withDeleted, benzerKayitBul, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, parcaAdi, aramaKelimeleri, kelimelerEslesir, tahsilEdilecekKdv } from "../lib/utils";
 import { fiyatBaglamiKur } from "../lib/parcaFiyati";
 import { makeCanDo } from "../lib/permissions";
 import { kartTahsilEdildiMi } from "../lib/krediKarti";
@@ -144,11 +144,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
   }, [services, detailView]);
 
   const dealerSvcFiltered = useMemo(() => {
-    if (!dealerDetaySearch.trim()) return dealerServices;
-    const q = aramaNormalize(dealerDetaySearch.trim());
+    const kelimeler = aramaKelimeleri(dealerDetaySearch); // spec 0149
+    if (!kelimeler.length) return dealerServices;
     return dealerServices.filter(s => {
       const cust = customers.find(c => c.id === s.customerId);
-      return aramaNormalize([cust?.name, s.type, s.repairPlace, s.tech, s.date].filter(Boolean).join(" ")).includes(q);
+      return kelimelerEslesir(kelimeler, [cust?.name, s.type, s.repairPlace, s.tech, s.date]);
     });
   }, [dealerServices, dealerDetaySearch, customers]);
 
@@ -168,11 +168,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
     return [...m.values()].map(g => ({ id: g[0].id, ad: g.map(s => `${parcaAdi((parts || []).find(p => String(p.id) === String(s.partId))) || "yedek parça"} ×${s.miktar}`).join(", ") }));
   }, [dealerYedekParca, parts]);
   const dealerYpFiltered = useMemo(() => {
-    if (!dealerDetaySearch.trim()) return dealerYedekParca;
-    const q = aramaNormalize(dealerDetaySearch.trim());
+    const kelimeler = aramaKelimeleri(dealerDetaySearch); // spec 0149
+    if (!kelimeler.length) return dealerYedekParca;
     return dealerYedekParca.filter(s => {
       const part = (parts || []).find(p => String(p.id) === String(s.partId));
-      return aramaNormalize([parcaAdi(part), s.kargoTakipNo, s.kargoFirma, s.kargoDurum, s.tarih].filter(Boolean).join(" ")).includes(q);
+      return kelimelerEslesir(kelimeler, [parcaAdi(part), s.kargoTakipNo, s.kargoFirma, s.kargoDurum, s.tarih]);
     });
   }, [dealerYedekParca, dealerDetaySearch, parts]);
   const { page: ypPage, setPage: setYpPage, paged: ypPaged } = usePagination(dealerYpFiltered, 5);
@@ -185,11 +185,11 @@ export const SimpleDealers = ({ dealers, setDealers, factory, setFactory, geoDat
       .sort((a, b) => (b.tarih || "").localeCompare(a.tarih || ""));
   }, [partSales, detailView]);
   const dealerKalipFiltered = useMemo(() => {
-    if (!dealerDetaySearch.trim()) return dealerKaliplar;
-    const q = aramaNormalize(dealerDetaySearch.trim());
+    const kelimeler = aramaKelimeleri(dealerDetaySearch); // spec 0149
+    if (!kelimeler.length) return dealerKaliplar;
     return dealerKaliplar.filter(p => {
       const cust = customers.find(c => c.id === p.customerId);
-      return aramaNormalize([cust?.name, p.ad, p.olcu, p.tarih].filter(Boolean).join(" ")).includes(q);
+      return kelimelerEslesir(kelimeler, [cust?.name, p.ad, p.olcu, p.tarih]);
     });
   }, [dealerKaliplar, dealerDetaySearch, customers]);
   const { page: kalipPage, setPage: setKalipPage, paged: kalipPaged } = usePagination(dealerKalipFiltered, 5);

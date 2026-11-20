@@ -62,8 +62,8 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 **Örnek:** `src/components/Documents.jsx:1137`
 **Örnek:** `src/components/Customers.jsx:532` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:63` (sekme kipi)
-**Örnek:** `src/components/Notes.jsx:130` (düğme kipi, eşit genişlik)
-**Örnek:** `src/components/PartSaleForm.jsx:336` (form içi, düğme kipi, eşit genişlik)
+**Örnek:** `src/components/Notes.jsx:132` (düğme kipi, eşit genişlik)
+**Örnek:** `src/components/PartSaleForm.jsx:334` (form içi, düğme kipi, eşit genişlik)
 
 ### Ne zaman açılır liste? (spec 0042 R10)
 
@@ -267,7 +267,7 @@ Alanın altında küçük gri açıklama. Boş içerikte çizilmez.
 - Uyarı niteliğinde bilgi için: `UyariSeridi`.
 
 **Örnek:** `src/components/CalisanManager.jsx:238`
-**Örnek:** `src/components/PartSaleForm.jsx:383` (seçimin sonucunu anlatan cümle)
+**Örnek:** `src/components/PartSaleForm.jsx:381` (seçimin sonucunu anlatan cümle)
 
 ---
 

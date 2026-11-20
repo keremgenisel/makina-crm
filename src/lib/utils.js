@@ -155,6 +155,37 @@ export const trLower = (s) => String(s ?? "").toLocaleLowerCase("tr");
 // kullanmaya devam etmeli (aksi halde farklı isimler yanlışlıkla aynı sayılır).
 export const aramaNormalize = (s) =>
   trLower(s).replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u");
+// Spec 0149: aramada kelimeler ayrı ayrı aranır (tek kural, C1). Sorgu yalnız boşluk karakterlerinden kelimelere bölünür
+// (R1/2: noktalama ayraç değildir, "20.000" ve "AK-100" tek kelimedir), boş kelime atılır (R1/3; `includes("")` her
+// kayıtta doğru olurdu), kelime sayısına sınır yoktur. Kelime üretimi çağıranda döngünün DIŞINDA bir kez yapılır (R8/2).
+// Normalleştirici parametredir (C1/2): varsayılan aramaNormalize, kendi normalleştiricisiyle giren kutular onu geçirir.
+export const aramaKelimeleri = (sorgu, normalize = aramaNormalize) =>
+  String(sorgu ?? "").split(/\s+/).filter(Boolean).map(k => normalize(k)).filter(Boolean);
+// Kayıt başına: her kelime değerlerin EN AZ BİRİNDE geçmeli (R1, R2: kelimenin hangi alanda geçtiği serbest). Değerler
+// kayıt başına bir kez normalleştirilir. Boş kelime listesi = sorgu yok, her kayıt eşleşir (çağıran zaten süzmez).
+export const kelimelerEslesir = (kelimeler, degerler, normalize = aramaNormalize) => {
+  if (!kelimeler || !kelimeler.length) return true;
+  const n = [];
+  for (const d of degerler || []) if (d != null && d !== "") n.push(normalize(String(d)));
+  return kelimeler.every(k => n.some(d => d.includes(k)));
+};
+// Neden satırı (R2/2, R2/3): başlık kümesinde geçmeyen kelimeler; başlık hepsini taşıyorsa boş dizi (neden yazılmaz).
+export const eksikKelimeler = (kelimeler, baslikDegerleri, normalize = aramaNormalize) => {
+  const n = (baslikDegerleri || []).filter(d => d != null && d !== "").map(d => normalize(String(d)));
+  return (kelimeler || []).filter(k => !n.some(d => d.includes(k)));
+};
+// `alanlar` = [[etiket, deger], ...] bugünkü alan sırasıyla. Başlıkta geçmeyen kelimelerden birini taşıyan İLK alanın
+// `{ etiket, deger }`'i; başlık hepsini taşıyorsa ya da hiçbir alan taşımıyorsa null.
+export const nedenAlani = (kelimeler, baslikDegerleri, alanlar, normalize = aramaNormalize) => {
+  const eksik = eksikKelimeler(kelimeler, baslikDegerleri, normalize);
+  if (!eksik.length) return null;
+  for (const [etiket, deger] of alanlar || []) {
+    if (deger == null || deger === "") continue;
+    const d = normalize(String(deger));
+    if (eksik.some(k => d.includes(k))) return { etiket, deger };
+  }
+  return null;
+};
 // Kalıp bilgisini okunur metne çevir (yeni dizi formatı + eski tek metin uyumlu)
 /**
  * @param {import("../types").Customer | null | undefined} c

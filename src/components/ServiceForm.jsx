@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
-import { today, yerelBugun, aramaNormalize, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
+import { today, yerelBugun, aramaKelimeleri, kelimelerEslesir, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { formSatisFiyati } from "../lib/parcaFiyati";
 import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
 import { HataMetni, Ipucu, Segment } from "./tasarim";
@@ -85,12 +85,10 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], fiyat
     ...form, parcaUcretsizMi, parcaUcreti: parcaUcretiToplam, parcaCurrency: form.currency,
     parcaUcretiAltuntastan: parcalar.filter(p => typeof p !== "string" && !p.disTedarik).reduce((s, p) => s + servisParcaSatirTutari(p), 0),
   }, { factoryName, kdvRates }) : null;
-  const matchedCustomers = custSearch.trim()
-    ? customers.filter(c =>
-        aramaNormalize(c.name).includes(aramaNormalize(custSearch)) ||
-        aramaNormalize(c.contact).includes(aramaNormalize(custSearch)) ||
-        aramaNormalize(c.serialNo).includes(aramaNormalize(custSearch))
-      ).slice(0, 6)
+  // Spec 0149 R3, R8/2: sorgu kırpılır ve kelimeler bir kez üretilir.
+  const custKelimeler = aramaKelimeleri(custSearch);
+  const matchedCustomers = custKelimeler.length
+    ? customers.filter(c => kelimelerEslesir(custKelimeler, [c.name, c.contact, c.serialNo])).slice(0, 6)
     : [];
 
   return (

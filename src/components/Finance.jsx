@@ -8,6 +8,7 @@ import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { hesaplaAylikRapor, oncekiAyStr } from "../lib/aylikRapor";
 import { sahipsizHaric } from "../lib/sahipsiz";
 import { yansitilanKomisyon } from "../lib/krediKarti";
+import { trLower, aramaKelimeleri, kelimelerEslesir } from "../lib/utils";
 import { customerHasAnyDebt, isCekVadesiGecmis, taksitGecikmisMi, isYedekParcaBorcluMu, yedekParcaBedeli, faturaBedeliOf, gercekSatisBedeli } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { hesaplaGiderRaporu, kdvKarsilastir, yururlukKapsami, ayinSonGunu, tevkifatOzeti, turHaritasi } from "../lib/gider";
@@ -465,11 +466,9 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
 
   const anlasmaliFiltered = useMemo(() => {
     if (!anlasmaliSearch.trim()) return anlasmaliServisDetay;
-    const q = anlasmaliSearch.toLocaleLowerCase("tr-TR");
-    return anlasmaliServisDetay.filter(r =>
-      r.firmaAdi.toLocaleLowerCase("tr-TR").includes(q) ||
-      r.islemFirma.toLocaleLowerCase("tr-TR").includes(q)
-    );
+    // Spec 0149 R5/2: kelime kuralı, normalleştirici bugünkü Türkçe küçültme (harf sadeleştirmesi yok, X9).
+    const kelimeler = aramaKelimeleri(anlasmaliSearch, trLower);
+    return anlasmaliServisDetay.filter(r => kelimelerEslesir(kelimeler, [r.firmaAdi, r.islemFirma], trLower));
   }, [anlasmaliServisDetay, anlasmaliSearch]);
 
   const { page: anlasmaliPage, setPage: setAnlasmaliPage, paged: anlasmaliPaged, perPage: ANLASMALI_PER_PAGE } = usePagination(anlasmaliFiltered, 10);
@@ -524,8 +523,8 @@ export const Finance = ({ customers, services: servicesHam = [], dealers = [], p
 
   const kartFiltered = useMemo(() => {
     if (!kartSearch.trim()) return krediKartiDetay;
-    const q = kartSearch.toLocaleLowerCase("tr-TR");
-    return krediKartiDetay.filter(r => r.firma.toLocaleLowerCase("tr-TR").includes(q) || r.kaynak.toLocaleLowerCase("tr-TR").includes(q));
+    const kelimeler = aramaKelimeleri(kartSearch, trLower); // spec 0149 R5/2
+    return krediKartiDetay.filter(r => kelimelerEslesir(kelimeler, [r.firma, r.kaynak], trLower));
   }, [krediKartiDetay, kartSearch]);
 
   const { page: kartPage, setPage: setKartPage, paged: kartPaged, perPage: KART_PER_PAGE } = usePagination(kartFiltered, 10);
