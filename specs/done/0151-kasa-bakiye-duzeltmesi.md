@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-20); uygulandı, commit bekliyor |
-| **Revizyon** | 3 (2026-11-20 plan onayı: P1–P10; plan `specs/0151-uygulama-plani.md`) |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-20) |
+| **Revizyon** | 3 (2026-11-20 plan onayı: P1–P10; plan `specs/done/0151-uygulama-plani.md`) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Kasa ekranı (hesap listesi, hesap hareketleri, hesap silme ve taşıma penceresi), çöp kutusu, yedek geri yükleme, kilit alanları, işlem geçmişi, Aylık Gider ve Kasa Raporu |

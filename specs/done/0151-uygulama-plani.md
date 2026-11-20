@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0151-kasa-bakiye-duzeltmesi.md` (Onaylandı, 2026-11-20) |
+| **Spec** | `specs/done/0151-kasa-bakiye-duzeltmesi.md` (Onaylandı, 2026-11-20) |
 | **Onay** | Takım Yöneticisi, 2026-11-20 ("tüm önerilerini kabul ediyorum, spece işle, planı yaz ve uygula") |
 | **Dal** | `feat/0151-kasa-duzeltme` (main `09fe50df` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor |
+| **Durum** | Tamamlandı: commit `d82b8b5e` |
 
 ## 1. Dosyalar
 
