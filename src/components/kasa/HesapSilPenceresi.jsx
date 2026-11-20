@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { Modal, Btn, Field, Select, Icon } from "../ui";
 import { Segment, HataMetni, Ipucu, UyariSeridi, BolumBasligi } from "../tasarim";
-import { HESAP_TUR_AD } from "../../lib/kasa";
+import { HESAP_TUR_AD, DUZELTME_TUR_ADI } from "../../lib/kasa";
 
 // Spec 0056 B (R6–R11, R17–R27): deneme döneminde hareketi olan kasa hesabının silinmesi. Bağlı kayıtlar türüyle sayılır;
 // iki yol: başka hesaba taşı (varsayılan) ya da hesapsız bırak. Kurallar ve güncelleyiciler saf kasa.hesapTasimaPlani'dan;
 // pencere yalnız seçer ve gösterir. Veri girme penceresi olduğu için `wide` (0050, plan Q2).
 export const HESAP_ACILIS_TASINMAZ = "Silinen hesabın açılış bakiyesi taşınmaz; gerekirse hedef hesabın açılış bakiyesini güncelleyin.";
 export const HESAPSIZ_BIRAK_ACIKLAMA = "Kayıtlar silinmez; hesabı belirtilmemiş kayıt listelerine düşer ve oradan yeniden hesaba atanabilir.";
-const TUR_AD = { odeme: "Gider ödemesi", virman: "Virman", avans: "Çalışan avansı", diger: "Diğer hareket", payments: "Makina tahsilatı",
+// Spec 0151 R4/2 (AC-45): bakiye düzeltmesi kendi satırında (tür adı tek sabitten).
+const TUR_AD = { odeme: "Gider ödemesi", virman: "Virman", avans: "Çalışan avansı", duzeltme: DUZELTME_TUR_ADI, diger: "Diğer hareket", payments: "Makina tahsilatı",
   servis: "Servis tahsilatı", kalip: "Extra Kalıp tahsilatı", yedekParca: "Yedek parça tahsilatı", verilenCek: "Verilen çek" };
-const SIRA = ["odeme", "virman", "avans", "diger", "payments", "servis", "kalip", "yedekParca", "verilenCek"];
+const SIRA = ["odeme", "virman", "avans", "duzeltme", "diger", "payments", "servis", "kalip", "yedekParca", "verilenCek"];
 
 export const HesapSilPenceresi = ({ hesap, plan, onTasi, onHesapsiz, onClose }) => {
   const toplam = plan.detay.toplam;

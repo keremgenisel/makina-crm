@@ -1774,7 +1774,7 @@ export default function App() {
           hesapHareketleri={odemeHareketleri} setHesapHareketleri={hareketYazici} hareketBolumuYok={!hareketBolumuVar} kasaHesaplari={kasaYetki ? canliKasaHesaplari : []} kasaYetki={kasaYetki}
           cekler={kasaYetki ? ceklerBagli : []} setCekler={kasaYetki ? setCekler : null} payments={kasaYetki ? livePayments : []}
           giderKasaRaporVerisi={giderKasaRaporVerisi} />}
-        {activeTab === "kasa"      && kasaYetki && <Kasa aktifKullanici={savedUsername} kasaHesaplari={canliKasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={canliHareketler} setHesapHareketleri={hareketYazici}
+        {activeTab === "kasa"      && kasaYetki && <Kasa aktifKullanici={savedUsername} kasaHesaplari={canliKasaHesaplari} hamKasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={canliHareketler} setHesapHareketleri={hareketYazici}
           payments={livePayments} customers={liveCustomers} giderler={giderlerOdemeli} giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} serverPermissions={effectivePermissions} showToast={showToast}
           calisanlar={calisanlar} yururlukAy={appSettings.giderAyarlari?.yururlukAy || null}
           cekler={cekler} setCekler={setCekler} giderAyarlari={appSettings.giderAyarlari || {}}

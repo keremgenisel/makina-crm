@@ -104,6 +104,8 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
   dbmod.createUser("kasasiz",     bcrypt.hashSync("kasa1234", 10), "user", KASASIZ);
   dbmod.createUser("kasafinsiz",  bcrypt.hashSync("kasa1234", 10), "user", KASA_FINANSSIZ);
   dbmod.createUser("tasiyici",    bcrypt.hashSync("tasi1234", 10), "user", TASIYICI);
+  // Spec 0151 P10 (AC-41): Kasa sekmeli, ödeme/virman/avans izinli ama kasa_hesap'sız kullanıcı.
+  dbmod.createUser("duzeltmesiz", bcrypt.hashSync("duz12345", 10), "user", JSON.stringify({ tabs: ["gider", "finance", "kasa"], giderActions: ["gider_odeme", "virman", "avans"], customerActions: [] }));
   dbmod.createUser("tahsilatci",  bcrypt.hashSync("tahsil123", 10), "user", TAHSILATCI);
   dbmod.createUser("cirocu",      bcrypt.hashSync("ciro1234", 10), "user", CIROCU);
   dbmod.createUser("formodemeci", bcrypt.hashSync("form1234", 10), "user", FORM_ODEMECI);
@@ -435,6 +437,28 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     (await postData({ ...gK, dataVersion: undefined, hesapHareketleri: [...gK.hesapHareketleri, { id: 9062, tur: "virman", tarih: "2026-09-06", tutar: 1, hesapId: 9043, karsiHesapId: 9043 }] }, gK.dataVersion, kasasizTok)).status === 403);
   check("spec 0052 triyaj: Kasa'sız kullanıcı avans veremez → 403 (avans izni olsa da)",
     (await postData({ ...gK, dataVersion: undefined, hesapHareketleri: [...gK.hesapHareketleri, { id: 9063, tur: "avans", tarih: "2026-09-06", tutar: 1, calisanId: 1, hesapId: 9043 }] }, gK.dataVersion, kasasizTok)).status === 403);
+  // Spec 0151 R10/2, P10 (AC-17, AC-18, AC-40, AC-41): bakiye düzeltmesi kasa_hesap + Kasa sekmesi ister.
+  {
+    const dz = (id) => ({ id, tur: "duzeltme", tarih: "2026-09-06", tutar: 10, yon: "giren", hesapId: 9043 });
+    let g = await gUst(kasasizTok);
+    check("spec 0151 AC-18: Kasa sekmesi olmayan kullanıcı bakiye düzeltmesi yazamaz → 403 (kasa_hesap olsa da)",
+      (await postData({ ...g, dataVersion: undefined, hesapHareketleri: [...g.hesapHareketleri, dz(9171)] }, g.dataVersion, kasasizTok)).status === 403);
+    const duzTok = (await login("duzeltmesiz", "duz12345")).body.token;
+    g = await gUst(duzTok);
+    check("spec 0151 AC-17 / AC-41: kasa_hesap izni olmayan (gider_odeme'li) kullanıcı düzeltme yazamaz → 403",
+      (await postData({ ...g, dataVersion: undefined, hesapHareketleri: [...g.hesapHareketleri, dz(9172)] }, g.dataVersion, duzTok)).status === 403);
+    const tasTok = (await login("tasiyici", "tasi1234")).body.token;
+    g = await gUst(tasTok);
+    check("spec 0151 AC-40: kasa_hesap'lı ve gider_odeme'siz kullanıcı düzeltme yazar → 200",
+      (await postData({ ...g, dataVersion: undefined, hesapHareketleri: [...g.hesapHareketleri, dz(9173)] }, g.dataVersion, tasTok)).status === 200
+      && (await gUst(adminTok)).hesapHareketleri.find(h => h.id === 9173)?.yon === "giren");
+    g = await gUst(tasTok);
+    check("spec 0151 AC-40: aynı kullanıcı düzeltmeyi siler (çöpe) → 200",
+      (await postData({ ...g, dataVersion: undefined, hesapHareketleri: g.hesapHareketleri.map(h => (h.id === 9173 ? { ...h, deletedAt: "2026-09-07T10:00:00.000Z" } : h)) }, g.dataVersion, tasTok)).status === 200);
+    g = await gUst(duzTok);
+    check("spec 0151 AC-41: kasa_hesap'sız kullanıcı düzeltmeyi geri alamaz → 403",
+      (await postData({ ...g, dataVersion: undefined, hesapHareketleri: g.hesapHareketleri.map(h => { if (h.id !== 9173) return h; const { deletedAt: _d, ...r } = h; return r; }) }, g.dataVersion, duzTok)).status === 403);
+  }
   gK = await gUst(odemeTok);
   check("spec 0052 triyaj: Kasa'lı kullanıcı virman yazar → 200",
     (await postData({ ...gK, dataVersion: undefined, hesapHareketleri: [...gK.hesapHareketleri, { id: 9064, tur: "virman", tarih: "2026-09-06", tutar: 1, hesapId: 9043, karsiHesapId: 9043 }] }, gK.dataVersion, odemeTok)).status === 200);

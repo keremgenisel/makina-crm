@@ -591,14 +591,15 @@ const ALAN_IZINLERI = {
 
 // Spec 0024: bir hareketin izni türüne bağlı. Var olan hareketi düzenlemek de (tutar, hesap, hedef) aynı izni ister.
 // Spec 0024 B (B3): avans kendi iznine (`avans`) bağlı; mahsup bir gider borcunu kapattığı için `gider_odeme`.
-function hareketIzni(r) { return r?.tur === "virman" ? "virman" : r?.tur === "avans" ? "avans" : "gider_odeme"; }
+// Spec 0151 R10/2 (Karar 3): bakiye düzeltmesi hesap yönetimi iznine (`kasa_hesap`) bağlı; varsayılan gider_odeme dalına düşmez.
+function hareketIzni(r) { return r?.tur === "virman" ? "virman" : r?.tur === "avans" ? "avans" : r?.tur === "duzeltme" ? "kasa_hesap" : "gider_odeme"; }
 const KAYIT_DUZENLE_IZINLERI = { kasaHesaplari: () => "kasa_hesap", hesapHareketleri: hareketIzni, kasaKapsamDisi: () => "kasa_hesap" };
 
 // Spec 0052 triyaj bulgu 1: hesap bakiyesini yalnız Kasa ekranından değiştiren kayıtlar Kasa sekmesi ister (önkoşul
 // Giderler + Finans, ON_KOSUL_SEKMELERI ile aynı). Virman ve avans hareketi ile verilen (kendi) çek eklenemez, silinemez,
 // düzenlenemez; ödeme ve mahsup Giderler'de kalır (R8), çünkü gider formundan ve ödeme penceresinden de yazılır.
 // Güncellenmemiş PC'de Kasa ekranı açık kalsa da (R17) bu yazımlar sunucuda reddedilir.
-const KASA_SEKMELI_HAREKETLER = new Set(["virman", "avans"]);
+const KASA_SEKMELI_HAREKETLER = new Set(["virman", "avans", "duzeltme"]); // spec 0151 R10/2, P5
 const kasaSekmesiVar = (perms) => Array.isArray(perms?.tabs) && ["kasa", ...ON_KOSUL_SEKMELERI.kasaHesaplari].every(t => perms.tabs.includes(t));
 const KASA_SEKMELI_KAYITLAR = {
   hesapHareketleri: (r) => KASA_SEKMELI_HAREKETLER.has(r?.tur),

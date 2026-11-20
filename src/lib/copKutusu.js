@@ -3,6 +3,7 @@
 // çöp kutusuna gidiyor ve kullanıcıya görünen kalıcı silme penceresi kalmadı (0068 AC-39 serbest metin yasağı yerinde).
 import { trLower, fmtTR, fmtCur } from "./utils";
 import { davranisOf, DAVRANIS } from "./gider";
+import { DUZELTME_TUR, DUZELTME_TUR_ADI } from "./kasa";
 
 // R20: geri alınacak kayıtla aynı adda (Türkçe harf duyarsız) canlı bir kayıt varsa geri alma yapılmaz; neden döner.
 export const geriAlmaAdCakismasi = (kayit, liste = [], tur = "kayıt") => {
@@ -14,8 +15,9 @@ export const geriAlmaAdCakismasi = (kayit, liste = [], tur = "kayıt") => {
 
 // ── Spec 0078 R24: satır etiketleri sabit eşlemeden. Kalem adı, tedarikçi adı, çalışan adı ve çekte keşideci YAZILMAZ
 // (0058 R21 işlem geçmişi kuralı ve 0001 K21 gizliliği). ──
-export const HAREKET_COP_TUR = { odeme: "Ödeme", virman: "Virman", avans: "Avans", mahsup: "Avanstan mahsup" };
-export const hareketCopEtiketi = (h) => [h?.tarih ? fmtTR(h.tarih) : "Tarihsiz", fmtCur(Number(h?.tutar) || 0, "TRY")].join(" · ");
+export const HAREKET_COP_TUR = { odeme: "Ödeme", virman: "Virman", avans: "Avans", mahsup: "Avanstan mahsup", [DUZELTME_TUR]: DUZELTME_TUR_ADI };
+// Spec 0151 R8/2 (AC-49): tutar isteğe bağlı para biriminde (döviz hesabın düzeltmesi); parametresiz çağrı bugünkü çıktı (TL).
+export const hareketCopEtiketi = (h, paraBirimi = "TRY") => [h?.tarih ? fmtTR(h.tarih) : "Tarihsiz", fmtCur(Number(h?.tutar) || 0, paraBirimi || "TRY")].join(" · ");
 export const cekCopEtiketi = (c) => `${c?.banka || "—"} · ${c?.no || "—"}`;
 // Tanımın adı personel tanımında çalışanın adıdır; o yüzden personel tanımında yalnız tür adı yazılır.
 export const tanimCopEtiketi = (t, turMap) => {

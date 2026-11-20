@@ -31,7 +31,7 @@ export const KILIT_ALANLARI = {
   // gider kalemlerini korumaz, onlar kayıt anında Çek Portföyü'nün `gider` denetiminden geçer (R36).
   cek: { etiket: "Çek", pencereler: ["src/components/cek/CekPortfoyu.jsx", "src/components/cek/CiroPenceresi.jsx"] },
   // R3, R6, R25: hesap formu, hesap silme / taşıma, virmanın kaynak hesabı; R14 kapat / aç denetimi.
-  kasa_hesap: { etiket: "Kasa hesabı", pencereler: ["src/components/Kasa.jsx", "src/components/kasa/HesapSilPenceresi.jsx"] },
+  kasa_hesap: { etiket: "Kasa hesabı", pencereler: ["src/components/Kasa.jsx", "src/components/kasa/HesapSilPenceresi.jsx", "src/components/kasa/BakiyeDuzeltPenceresi.jsx"] }, // spec 0151 R10/3
   tedarikci: { etiket: "Tedarikçi", pencereler: ["src/components/gider/Tedarikciler.jsx"] },
   // Spec 0088 R32: Parti Hesabı planlanan adetleri kayıt anında partinin kilidine bakar.
   uretim_partisi: { etiket: "Üretim partisi", pencereler: ["src/components/gider/UretimPartileri.jsx", "src/components/maliyet/PartiHesabi.jsx"] },

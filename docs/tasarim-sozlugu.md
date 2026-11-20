@@ -220,7 +220,7 @@ sırası korunur ve şeridin metni yerine göre yeniden yazılmaz. Örnek: Kasa 
 notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avanslarının altında durur; kullanıcı Kasa'ya bakiyeler için gelir.
 
 **Örnek:** `src/components/Giderler.jsx:329`
-**Örnek:** `src/components/Kasa.jsx:595` (sayfa sonundaki şerit, spec 0083)
+**Örnek:** `src/components/Kasa.jsx:635` (sayfa sonundaki şerit, spec 0083)
 **Örnek:** `src/components/stock/PartStokTab.jsx:158` (hata ailesi)
 
 ### Serbest içerik (spec 0011)

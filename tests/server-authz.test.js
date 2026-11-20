@@ -1844,3 +1844,27 @@ describe("Spec 0138: dış işlem bölümü sunucuda yok", () => {
     expect(eylemDenetimi({}, { disIslemler: [{ id: 1, ad: "X" }] }, JSON.stringify({ tabs: ["gider"], giderActions: [] }), "user").ok).toBe(true);
   });
 });
+
+// ── Spec 0151 R10/2 (Karar 3): bakiye düzeltmesi `kasa_hesap` + Kasa sekmesi ister ─────────────────────────────────────
+describe("spec 0151: bakiye düzeltmesi hesap yönetimi iznine ve Kasa sekmesine bağlı", () => {
+  const izin = (ids, tabs = ["dashboard", "gider", "finance", "kasa"]) => JSON.stringify({ tabs, giderActions: ids, customerActions: [] });
+  const dz = { id: 90, tur: "duzeltme", tarih: "2026-11-10", tutar: 250, yon: "giren", hesapId: 51 };
+  const durumlar = [
+    ["ekleme", { hesapHareketleri: [] }, { hesapHareketleri: [dz] }],
+    ["silme (çöpe)", { hesapHareketleri: [dz] }, { hesapHareketleri: [{ ...dz, deletedAt: "2026-11-20T10:00:00.000Z" }] }],
+    ["kalıcı silme", { hesapHareketleri: [dz] }, { hesapHareketleri: [] }],
+    ["düzenleme", { hesapHareketleri: [dz] }, { hesapHareketleri: [{ ...dz, tutar: 300 }] }],
+  ];
+  it("AC-40: kasa_hesap'lı ve gider_odeme'siz kullanıcı yazar", () => {
+    for (const [ad, eski, yeni] of durumlar) expect(eylemDenetimi(eski, yeni, izin(["kasa_hesap"]), "user").ok, ad).toBe(true);
+  });
+  it("AC-17 / AC-41: gider_odeme'li ama kasa_hesap'sız kullanıcı reddedilir (varsayılan ödeme dalına düşmez)", () => {
+    for (const [ad, eski, yeni] of durumlar) expect(eylemDenetimi(eski, yeni, izin(["gider_odeme", "virman", "avans"]), "user").ok, ad).toBe(false);
+  });
+  it("AC-18: Kasa sekmesi olmayan kullanıcı reddedilir (kasa_hesap olsa da)", () => {
+    for (const [ad, eski, yeni] of durumlar) {
+      const r = eylemDenetimi(eski, yeni, izin(["kasa_hesap", "gider_odeme"], ["dashboard", "gider", "finance"]), "user");
+      expect(r.ok, ad).toBe(false);
+    }
+  });
+});

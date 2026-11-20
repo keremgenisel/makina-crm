@@ -3,12 +3,13 @@
 // virman ve tahsilat hiçbir gider üretmez (C3). Çift kayıt defteri değildir (C2).
 // Hareket (bölüm `hesapHareketleri`): {id, tur: "odeme"|"virman", tarih, tutar, yontem, hesapId, karsiHesapId, giderId,
 // taksitId, tamKapatir, kaynak, gocKaynak, aciklama}. Müşteri tahsilatı `payments[].hesapId` ile bakiyeye girer (R6).
-import { cekDurumuOf, tahsilatTarihiOf, yerelBugun } from "./utils";
+import { cekDurumuOf, tahsilatTarihiOf, yerelBugun, fmtCur } from "./utils";
+import { gecerliGunMu } from "./gecerlilik";
 import { kartTahsilEdildiMi } from "./krediKarti";
 import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { aliciAd } from "./yedekParcaSatis";
 import { hareketPaylari, hareketHedefPaylari } from "./odemeYontemi";
-import { kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula } from "./gider";
+import { tutarCoz, kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula } from "./gider";
 // Spec 0070 R28, 0074 R22: SGK kalemine avans mahsubu yapılamaz (tek metin; avans çalışanın borcu, SGK kurumun alacağı).
 export const SGK_MAHSUP_HATASI = "SGK kalemine avans mahsubu yapılamaz; SGK kuruma ödenir.";
 
@@ -17,6 +18,27 @@ export const HESAP_TUR_AD = Object.fromEntries(HESAP_TURLERI.map(t => [t.value, 
 export const HESAPSIZ_NOTU = "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belirtilmemiş kayıtlar aşağıda ayrıca listelenir.";
 
 const PARA = ["TRY", "USD", "EUR"];
+
+// ── Spec 0151: bakiye düzeltme hareketi (R1–R12) ─────────────────────────────────────────────────────────────────────────
+// Kayıt `{ tur: "duzeltme", tarih, tutar (pozitif), yon: "giren"|"cikan", hesapId, aciklama? }`; yöntem taşımaz (R9/3). Yön
+// bakiyenin işaretine göredir (P1): `giren` bakiyeyi artırır, kartta borcu azaltır. Tür adı TEK sabit (C2/2, AC-52).
+export const DUZELTME_TUR = "duzeltme";
+export const DUZELTME_TUR_ADI = "Bakiye düzeltmesi";
+export const DUZELTME_YON = Object.freeze({ GIREN: "giren", CIKAN: "cikan" });
+export const HEDEF_BAKIYE_ETIKETI = "Hedef bakiye";
+export const HEDEF_BORC_ETIKETI = "Hedef borç";
+export const DUZELTME_ESIT_NEDENI = "Hedef bugünkü bakiyeyle aynı; düzeltme gerekmiyor.";
+export const DUZELTME_HEDEF_NEDENI = "Hedef sayıya çevrilemedi. Örnek: 12.500,00";
+export const DUZELTME_HEDEF_BOS = "Hedef girilmedi; kaydetmek için hedef rakamı yazın."; // triyaj (bulgu 2), AC-14
+export const DUZELTME_TARIH_NEDENI = "Tarih girilmedi ya da takvimde olmayan bir gün.";
+export const DUZELTME_GELECEK_NEDENI = "Gelecek tarihli düzeltme yazılamaz.";
+export const DUZELTME_KAPALI_NEDENI = "Kapalı hesabın bakiyesi düzeltilemez; önce hesabı açın.";
+export const DUZELTME_NEGATIF_UYARISI = "Kasa bakiyesi eksiye düşecek; doğruysa kaydedebilirsiniz.";
+export const DUZELTME_DUZENLENMEZ_NEDENI = "Bakiye düzeltmesi düzenlenmez; silip yeniden düzeltin.";
+export const duzeltmeIbaresi = (n) => `Giren ve çıkan, ${n} bakiye düzeltmesini içerir.`;
+// Yönün ekrandaki adı: kartta borcun yönü, öteki hesaplarda bakiyenin (P1).
+export const duzeltmeYonAdi = (yon, kart = false) => (kart ? (yon === DUZELTME_YON.GIREN ? "borç azalır" : "borç artar") : (yon === DUZELTME_YON.GIREN ? "hesaba giren" : "hesaptan çıkan"));
+export const duzeltmeMi = (m) => m?.tur === DUZELTME_TUR;
 
 // R1, C5: ad zorunlu ve benzersiz; tür ve para birimi sabit listeden; hareketi olan hesabın para birimi değişmez.
 export const hesapDogrula = (form, hesaplar = [], { hareketVar = false } = {}) => {
@@ -83,6 +105,9 @@ export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}, { ara
       ekle(m.hesapId, { tarih: m.tarih, tur: "virman", hareket: m, girenK: 0, cikanK: t });
       ekle(m.karsiHesapId, { tarih: m.tarih, tur: "virman", hareket: m, girenK: t, cikanK: 0 });
     }
+    // Spec 0151 R2, R3, R6/2: düzeltme dördüncü koldur; yönü `yon` alanından (tutar pozitif). Tanınmayan yön bakiyeye girmez.
+    else if (m.tur === DUZELTME_TUR && (m.yon === DUZELTME_YON.GIREN || m.yon === DUZELTME_YON.CIKAN))
+      ekle(m.hesapId, { tarih: m.tarih, tur: DUZELTME_TUR, turAdi: DUZELTME_TUR_ADI, hareket: m, girenK: m.yon === DUZELTME_YON.GIREN ? t : 0, cikanK: m.yon === DUZELTME_YON.GIREN ? 0 : t });
   }
   // Makina tahsilatı: satır tarihi tahsilatTarihiOf (çekte tahsil/ciro günü, kartta hesaba geçiş; 0044 R5).
   for (const p of v.payments) if (tahsilatSayilirMi(p, bugun)) ekle(p.hesapId, { tarih: tahsilatTarihiOf(p, p.tarih), tur: "tahsilat", turAdi: "Tahsilat", tahsilat: p, firma: firmaAdi(SATIS_KAYNAK.SERVIS, p, v), girenK: kurus(p.tutar), cikanK: 0 });
@@ -123,6 +148,35 @@ const aralikBakiyesi = (x, { baslangic, bitis }) => {
   const acilisSatiriK = acilisIcinde ? x.acilisK : 0;
   return { sonra: false, devredenK, acilisSatiriK, girenK, cikanK, kapanisK: devredenK + acilisSatiriK + girenK - cikanK, satirlar };
 };
+// ── Spec 0151 R1–R1/6, R2/2, R9–R9/3, AC-1–AC-4, AC-13, AC-14, AC-25–AC-30, AC-35: düzeltmenin planı (saf). Fark hesabın TOPLAM
+// bakiyesinden (tarih yalnız satırın etiketi, R1/4), kuruşla (R1/6). Pencere önizlemede, kayıt anında en son veriyle yeniden
+// çağrılır (R1/5, P2). Kartta hedef borçtur: girilen değerin mutlak değeri negatif bakiye olarak okunur (R1/3, P4).
+export const duzeltmePlani = (hesap, hareketler = [], veri = {}, { hedef, tarih, aciklama = "", bugun = yerelBugun() } = {}) => {
+  const hatalar = {};
+  if (!hesap) return { ok: false, hatalar: { hesap: "Hesap bulunamadı." } };
+  const kart = hesap.tur === "kart";
+  if (hesap.kapali) hatalar.hesap = DUZELTME_KAPALI_NEDENI;
+  if (!tarih || !gecerliGunMu(tarih)) hatalar.tarih = DUZELTME_TARIH_NEDENI;
+  else if (bugun && tarih > bugun) hatalar.tarih = DUZELTME_GELECEK_NEDENI;
+  const c = tutarCoz(hedef);
+  const b = hesapBakiyeleri([hesap], hareketler, veri).get(String(hesap.id));
+  const mevcutK = b ? b.bakiyeK : kurus(hesap.acilisBakiyesi);
+  let hedefK = null, farkK = null, yon = null;
+  if (c.bos) hatalar.hedef = DUZELTME_HEDEF_BOS;
+  else if (c.gecersiz) hatalar.hedef = DUZELTME_HEDEF_NEDENI;
+  else {
+    hedefK = kart ? -Math.abs(kurus(c.deger)) : kurus(c.deger);
+    farkK = hedefK - mevcutK;
+    if (farkK === 0) hatalar.hedef = DUZELTME_ESIT_NEDENI;
+    else yon = farkK > 0 ? DUZELTME_YON.GIREN : DUZELTME_YON.CIKAN;
+  }
+  const uyari = !kart && hesap.tur === "kasa" && hedefK != null && hedefK < 0 ? DUZELTME_NEGATIF_UYARISI : null;
+  const ok = !Object.keys(hatalar).length;
+  const not = String(aciklama ?? "").trim();
+  const hareket = ok ? { tur: DUZELTME_TUR, tarih, tutar: tl(Math.abs(farkK)), yon, hesapId: hesap.id, ...(not ? { aciklama: not } : {}) } : null;
+  return { ok, hatalar, kart, mevcutK, hedefK, farkK, yon, uyari, hareket };
+};
+
 // Spec 0051 R12, R13 (Q3): üst sınır isteğe bağlı (tek eşik tarihi); tarihsiz kayıt yalnız açık `tarihsizDahil` bayrağıyla
 // dahil edilir. 0047'nin ay aralıklı çağrısı (iki sınır, bayraksız) bugünkü gibi çalışır (AC-19, AC-20).
 const aralikta = (tarih, aralik) => !aralik
@@ -156,8 +210,13 @@ export const hareketOzeti = (hareketler = [], aralik, bakiyeler = null, { liste 
   const strip = liste ? ({ liste: l, ...r }) => ({ ...r, liste: sirali(l) }) : ({ liste: _l, ...r }) => r;
   if (liste) tahsilat.liste = tahsilatListe.map((t, i) => [t, i])
     .sort((a, b) => String(a[0].tarih || "").localeCompare(String(b[0].tarih || "")) || String(a[0].hesapAd).localeCompare(String(b[0].hesapAd), "tr") || a[1] - b[1]).map(x => x[0]);
+  // Spec 0151 R11, R11/2: düzeltme yalnız varsa döner (yön başına toplamla); düzeltmesiz çıktı birebir eski (AC-22).
+  const duzeltme = tur(DUZELTME_TUR);
+  const dz = duzeltme.adet ? { duzeltme: { ...strip(duzeltme),
+    girenK: duzeltme.liste.filter(m => m.yon === DUZELTME_YON.GIREN).reduce((a, m) => a + kurus(m.tutar), 0),
+    cikanK: duzeltme.liste.filter(m => m.yon === DUZELTME_YON.CIKAN).reduce((a, m) => a + kurus(m.tutar), 0) } } : {};
   return { odeme: strip(odeme), virman: strip(virman), avans: strip(avans), mahsup: strip(mahsup), tahsilat,
-    yontemKirilimi: [...yontem.entries()].map(([ad, tutarK]) => ({ ad, tutarK })).sort((a, b) => b.tutarK - a.tutarK) };
+    yontemKirilimi: [...yontem.entries()].map(([ad, tutarK]) => ({ ad, tutarK })).sort((a, b) => b.tutarK - a.tutarK), ...dz };
 };
 
 // R8, AC-32: hesabı belirtilmemiş ödemeler (göç dahil) ayrıca sayılır.
@@ -185,8 +244,11 @@ export const hesapsizOdemeler = (hareketler = [], aralik = null, kapsamDisi = nu
   const l = hareketler.filter(m => m && m.tur === "odeme" && hesapsiz(m) && m.cekId == null && aralikta(m.tarih, aralik) && kapsamda(m));
   // Spec 0024 B4: hesapsız avans da hiçbir bakiyeye girmez ve ayrıca sayılır.
   const av = hareketler.filter(m => m && m.tur === "avans" && hesapsiz(m) && aralikta(m.tarih, aralik) && kapsamda(m));
-  const r = { adet: l.length, gocAdet: l.filter(m => m.kaynak === "goc").length, avansAdet: av.length };
-  return aralik ? { ...r, liste: [...l, ...av].sort((a, b) => (a.tarih || "").localeCompare(b.tarih || "")) } : r;
+  // Spec 0151 R4/3, P3 (AC-46): hesabı bulunamayan düzeltme listelenir ve ayrıca sayılır; kapsam dışı bırakılamaz (yalnız silinir).
+  // Düzeltmesiz veride anahtar hiç yok (parametresiz çıktı birebir eski).
+  const dz = hareketler.filter(m => m && m.tur === DUZELTME_TUR && hesapsiz(m) && aralikta(m.tarih, aralik));
+  const r = { adet: l.length, gocAdet: l.filter(m => m.kaynak === "goc").length, avansAdet: av.length, ...(dz.length ? { duzeltmeAdet: dz.length } : {}) };
+  return aralik ? { ...r, liste: [...l, ...av, ...dz].sort((a, b) => (a.tarih || "").localeCompare(b.tarih || "")) } : r;
 };
 
 // R16, AC-24 + 0044 R11, AC-26: hareketi (ödeme, virman, tahsilat; servis, Extra Kalıp ve yedek parça tahsilatı dahil)
@@ -222,7 +284,9 @@ export const hesapKullanimDetayi = (hesapId, hareketler = [], veri = {}) => {
   const d = { odeme: 0, virman: 0, avans: 0, diger: 0, payments: 0, servis: 0, kalip: 0, yedekParca: 0, verilenCek: 0 };
   for (const m of hareketler || []) {
     if (!m || !(es(m.hesapId) || es(m.karsiHesapId))) continue;
-    if (m.tur === "virman") d.virman++; else if (m.tur === "odeme") d.odeme++; else if (m.tur === "avans") d.avans++; else d.diger++;
+    if (m.tur === "virman") d.virman++; else if (m.tur === "odeme") d.odeme++; else if (m.tur === "avans") d.avans++;
+    else if (m.tur === DUZELTME_TUR) d.duzeltme = (d.duzeltme || 0) + 1; // spec 0151 R4/2: kendi kovası (yalnız varsa)
+    else d.diger++;
   }
   d.payments = v.payments.filter(bagli).length; d.servis = v.services.filter(bagli).length;
   d.kalip = v.partSales.filter(bagli).length; d.yedekParca = v.yedekParcaSatislar.filter(bagli).length;
@@ -256,7 +320,10 @@ export const hesapTasimaPlani = (hesap, hareketler = [], veri = {}, hesaplar = [
       tasi.push(...verilenCekler.map(c => `Verilen çek ${c.no || ""}: yalnız açık bir TL banka hesabına taşınabilir.`.replace("  ", " ")));
     else tasi.push(...virmanlar.map(m => `${virmanAdi(m)}: hedef virmanın karşı hesabı olamaz; önce bu virmanı silin.`));
   }
+  // Spec 0151 R4/2 (AC-45): düzeltme hesapsız bırakılamaz; taşıma yolu onu hedef hesaba taşır (guncelle genel hesap alanı).
+  const duzeltmeler = (hareketler || []).filter(m => m && !m.deletedAt && m.tur === DUZELTME_TUR && es(m.hesapId));
   const hesapsiz = [...virmanlar.map(m => `${virmanAdi(m)}: virman hesapsız bırakılamaz; önce bu virmanı silin.`),
+    ...duzeltmeler.map(m => `${tarihYaz(m.tarih)} ${DUZELTME_TUR_ADI.toLocaleLowerCase("tr-TR")} (${fmtCur(Number(m.tutar) || 0, pb)}): hesapsız bırakılamaz; başka hesaba taşıyın ya da silin.`),
     ...verilenCekler.map(c => `Verilen çek ${c.no || ""}: hesapsız bırakılamaz; bir TL banka hesabına taşıyın.`.replace("  ", " "))];
   const guncelle = (hedefId) => {
     const yeni = hedefId == null ? null : hedefId;
@@ -323,7 +390,8 @@ export const hesapsizOzeti = (hareketler = [], veri = {}, hesaplar = null, esik 
   const tH = nedenSay(hepsiT.liste), tS = nedenSay(tahsilat.liste);
   const gizli = { odeme: hepsiO.adet - odeme.adet, avans: hepsiO.avansAdet - odeme.avansAdet,
     tahsilat: { hesapsiz: tH.hesapsiz - tS.hesapsiz, hesapYok: tH.hesapYok - tS.hesapYok, paraBirimi: tH.paraBirimi - tS.paraBirimi } };
-  gizli.toplam = gizli.odeme + gizli.avans + gizli.tahsilat.hesapsiz + gizli.tahsilat.hesapYok + gizli.tahsilat.paraBirimi;
+  if (hepsiO.duzeltmeAdet) gizli.duzeltme = hepsiO.duzeltmeAdet - (odeme.duzeltmeAdet || 0); // spec 0151 R4/3
+  gizli.toplam = gizli.odeme + gizli.avans + (gizli.duzeltme || 0) + gizli.tahsilat.hesapsiz + gizli.tahsilat.hesapYok + gizli.tahsilat.paraBirimi;
   const tarihsiz = odeme.liste.filter(m => !m.tarih).length + tahsilat.liste.filter(k => !k.tarih).length;
   if (!Array.isArray(kapsamDisi)) return { esik: esik || null, odeme, tahsilat, gizli, tarihsiz };
   const kd = kapsamKumesi(kapsamDisi);
@@ -600,6 +668,7 @@ export const VERILEN_CEK_IBARESI = "Kasa › Çek Portföyü'nden değiştirilir
 export const hareketDuzenlemeDurumu = (m, { giderVar = () => true } = {}) => {
   if (!m) return { duzenlenebilir: false, silinebilir: false, neden: null };
   if (m.cekId != null) return { duzenlenebilir: false, silinebilir: false, neden: CEK_HAREKETI_NEDENI };
+  if (m.tur === DUZELTME_TUR) return { duzenlenebilir: false, silinebilir: true, neden: DUZELTME_DUZENLENMEZ_NEDENI }; // spec 0151 R7/2
   if ((m.tur === "odeme" || m.tur === "mahsup") && !giderVar(m.giderId)) return { duzenlenebilir: false, silinebilir: true, neden: SILINMIS_KALEM_NEDENI };
   return { duzenlenebilir: true, silinebilir: true, neden: null, goc: !!m.tamKapatir };
 };

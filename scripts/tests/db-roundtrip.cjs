@@ -180,7 +180,9 @@ dbmod.writeBlobToDb({
     { id: 973, tur: "odeme", tarih: "2026-07-07", tutar: null, giderId: 82, taksitId: 9002, tamKapatir: true, kaynak: "goc", gocKaynak: "taksit:82:9002" },
     { id: 974, tur: "avans", tarih: "2026-07-08", tutar: 3000, calisanId: 55, hesapId: null },
     { id: 975, tur: "mahsup", tarih: "2026-07-09", tutar: 1000, calisanId: 55, giderId: 81, taksitId: null },
-    { id: 976, tur: "odeme", tarih: "2026-07-10", tutar: 500, giderId: 81, yontem: "Çek (ciro)", hesapId: null, cekId: 991 }],
+    { id: 976, tur: "odeme", tarih: "2026-07-10", tutar: 500, giderId: 81, yontem: "Çek (ciro)", hesapId: null, cekId: 991 },
+    // Spec 0151 R1/2, C4/2 (AC-23, AC-24): bakiye düzeltmesi; yön ayrı sütunda, tutar pozitif.
+    { id: 979, tur: "duzeltme", tarih: "2026-07-11", tutar: 250.5, yon: "cikan", hesapId: 97, aciklama: "Ekstre" }],
   // Spec 0058: kasa iş listesinden kapsam dışı bırakılanlar (tahsilat ve hareket girişi).
   kasaKapsamDisi: [{ id: 9581, tur: "tahsilat", kaynak: "servis", kayitId: 4242, zaman: "2026-10-01T10:00:00.000Z" },
     { id: 9582, tur: "hareket", kaynak: null, kayitId: 976, zaman: "2026-10-01T10:05:00.000Z" }],
@@ -296,6 +298,11 @@ check("spec 0022: üretim partileri tam turu (kapanış anlık görüntüsü JSO
 check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boolean) tam turu", (() => {
   const h = blob.kasaHesaplari || [], m = blob.hesapHareketleri || [];
   const z = h.find(x => x.id === 97), k = h.find(x => x.id === 98), o = m.find(x => x.id === 971), v = m.find(x => x.id === 972), g = m.find(x => x.id === 973);
+  check("spec 0151: bakiye düzeltmesinin yönü tam turu; yönü olmayan harekete `yon` anahtarı yazılmaz (AC-24)", (() => {
+    const d = m.find(x => x.id === 979);
+    return d?.tur === "duzeltme" && d.yon === "cikan" && d.tutar === 250.5 && d.hesapId === 97 && d.aciklama === "Ekstre"
+      && m.filter(x => x.id !== 979).every(x => !("yon" in x));
+  })());
   check("spec 0040: çek kaydı (geçmiş JSON) ve ciro hareketinin cekId'si tam turu", (() => {
     const c = (blob.cekler || []).find(x => x.id === 991);
     return c?.paymentId === 900 && c.no === "123456" && c.banka === "Ziraat" && c.kesideci === "Ali Veli" && c.tur === "resmi" && c.durum === "ciro"

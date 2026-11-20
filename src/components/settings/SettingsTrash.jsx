@@ -254,8 +254,9 @@ export const SettingsTrash = ({
   // ── Spec 0078: kasa ve gider kayıtları ──
   const hareketler = Array.isArray(rawHesapHareketleri) ? rawHesapHareketleri : [];
   // R27: hareketin geri alınması ve kalıcı silinmesi türünün iznini ister; virman ve avans ayrıca Kasa ister.
+  // Spec 0151 R10/2 (AC-42): bakiye düzeltmesi `kasa_hesap` ve kasa veri yetkisi ister.
   const hareketIzinli = (h) => !!setHesapHareketleri && giderYetki && (h.tur === "virman" ? giderCanDo("virman") && kasaVeriYetki
-    : h.tur === "avans" ? giderCanDo("avans") && kasaVeriYetki : giderCanDo("gider_odeme"));
+    : h.tur === "avans" ? giderCanDo("avans") && kasaVeriYetki : h.tur === "duzeltme" ? giderCanDo("kasa_hesap") && kasaVeriYetki : giderCanDo("gider_odeme"));
   const tanimYetki = giderYetki && giderCanDo("gider_tanim");
   const kasaHesapYetki = kasaVeriYetki && giderYetki && !!setKasaHesaplari && giderCanDo("kasa_hesap");
   const cekYetki = kasaVeriYetki && giderYetki && !!setCekler && giderCanDo("gider_odeme");
@@ -394,7 +395,9 @@ export const SettingsTrash = ({
       // çöp kutusuna girmez (R34). Etiketler sabit eşlemeden; kalem, tedarikçi ve çalışan adı yazılmaz.
       hareketler.filter(h => h.deletedAt).forEach(h => {
         const izin = hareketIzinli(h);
-        items.push({ key: `hareket-${h.id}`, type: HAREKET_COP_TUR[h.tur] || "Kasa Hareketi", label: hareketCopEtiketi(h), deletedAt: h.deletedAt,
+        // Spec 0151 R8/2 (AC-49): düzeltmenin tutarı hesabın para biriminde.
+        const pb = h.tur === "duzeltme" ? rawKasaHesaplari.find(x => String(x.id) === String(h.hesapId))?.paraBirimi : undefined;
+        items.push({ key: `hareket-${h.id}`, type: HAREKET_COP_TUR[h.tur] || "Kasa Hareketi", label: hareketCopEtiketi(h, pb), deletedAt: h.deletedAt,
           restore: izin ? () => restoreHareket(h) : null, purge: izin ? () => purgeHareket(h) : null });
       });
       const turMapCop = turHaritasi(giderTurleri);

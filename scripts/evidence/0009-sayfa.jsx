@@ -666,6 +666,9 @@ const KASA_B = [...KASA_HAREKETLER,
   { id: 4011, tur: "avans", tarih: "2026-09-08", tutar: 1500, calisanId: 24, hesapId: null },
   { id: 4012, tur: "mahsup", tarih: "2026-09-26", tutar: 5000, calisanId: 21, giderId: 5, hesapId: null }];
 const CAL_B = [CAL[0], { id: 24, ad: "Veli Kaya", deletedAt: "2026-09-20T10:00:00Z" }];
+// Spec 0151: bakiye düzeltmesi (Ziraat'te çıkan yönde, açıklamalı; Döviz hesabında giren yönde).
+const KASA_DZ = [{ id: 4151, tur: "duzeltme", tarih: "2026-09-30", tutar: 1250, yon: "cikan", hesapId: 401, aciklama: "Ekstre mutabakatı" },
+  { id: 4152, tur: "duzeltme", tarih: "2026-09-29", tutar: 40, yon: "giren", hesapId: 404 }];
 const kasaB = (o = {}) => kasaEkrani({ hesapHareketleri: KASA_B, calisanlar: CAL_B, yururlukAy: "2026-06", ...o });
 const TUR_MAP = turHaritasi(TURLER);
 // Spec 0040: çek portföyü. Bugün (sabit) 2026-09-23: 3401 vadesi geçmiş, 3402 yaklaşan, 3403 tahsilde, 3404 ciro edilmiş (hareketli),
@@ -1645,6 +1648,19 @@ const EKRANLAR = {
     cekler={[{ id: 30, paymentId: null, yon: "alinan", no: "1234567", banka: "Ziraat", tutar: 500, durum: "portfoy", gecmis: [], deletedAt: "2026-09-22T09:00:00.000Z" }]} setCekler={bos}
     rawGiderTanimlari={[{ id: 81, turId: 9, ad: "İnternet", baslangicAy: "2026-01", deletedAt: "2026-09-19T09:00:00.000Z" }]} setGiderTanimlari={bos}
     rawKasaHesaplari={[{ id: 52, ad: "Eski Kasa", tur: "kasa", paraBirimi: "TRY", deletedAt: "2026-09-17T09:00:00.000Z" }]} setKasaHesaplari={bos} />, []],
+  // Spec 0151: hesap kartının başlığındaki düğme, pencere (TL, kart, USD), hareket satırı ve ibare, kapalı hesap, silme onayı, çöp.
+  "kasa-0151-pencere": [kasaEkrani(), ["~Ziraat Bankası", "dugme:Bakiyeyi Düzelt", "doldur:Hedef bakiye=300.000", "doldur:Düzeltme açıklaması=Ekstre mutabakatı"]],
+  "kasa-0151-kart": [kasaEkrani(), ["~Şirket Kartı", "dugme:Bakiyeyi Düzelt", "doldur:Hedef borç=12.500"]],
+  "kasa-0151-usd": [kasaEkrani(), ["~Döviz Hesabı", "dugme:Bakiyeyi Düzelt", "doldur:Hedef bakiye=2.500"]],
+  "kasa-0151-satir": [kasaEkrani({ hesapHareketleri: [...KASA_HAREKETLER, ...KASA_DZ] }), ["~Ziraat Bankası"]],
+  "kasa-0151-kapali": [kasaEkrani(), ["~Eski Vadesiz"]],
+  "kasa-0151-sil-onay": [kasaEkrani({ hesapHareketleri: [...KASA_HAREKETLER, ...KASA_DZ] }), ["~Döviz Hesabı", "baslik:Sil"]],
+  "cop-kutusu-0151": [<SettingsTrash rawCustomers={[]} rawServices={[]} rawPartSales={[]} rawPayments={[]} rawDealers={[]} rawStock={[]} rawNotes={[]}
+    rawKalipDefs={[]} rawParts={[]} rawCustomModels={[]} setCustomers={bos} setServices={bos} setPartSales={bos} setPayments={bos} setDealers={bos} setStock={bos}
+    setNotes={bos} setKalipDefs={bos} setParts={bos} setCustomModels={bos} setTeklifler={bos} setFaturalar={bos} appSettings={{}} showToast={bos} giderYetki kasaVeriYetki
+    giderTurleri={[]} setGiderTurleri={bos} rawGiderler={[]} setGiderler={bos} rawTedarikciler={[]} setTedarikciler={bos} rawUretimPartileri={[]} setUretimPartileri={bos}
+    rawHesapHareketleri={KASA_DZ.map(m => ({ ...m, deletedAt: "2026-10-01T09:00:00.000Z" }))} setHesapHareketleri={bos} cekler={[]} setCekler={bos}
+    rawGiderTanimlari={[]} setGiderTanimlari={bos} rawKasaHesaplari={KASA_HESAPLAR} setKasaHesaplari={bos} />, []],
   "kilit-odeme-penceresi": [<GiderEkrani />, ["baslik:Ödeme kaydet"]],
   "kilit-katalog-paneli": [ayarlar("models"), []],
   "kilit-cop-kutusu": [ayarlar("trash"), []],

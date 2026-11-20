@@ -211,7 +211,8 @@ describe("Spec 0078 D: geri alma, kalıcı silme, çek koruması", () => {
     expect(oku("src/components/Giderler.jsx")).toMatch(/setGiderTanimlari\(p => copuKoru\(u\.guncelTanimlar, p\)\)/);
   });
   it("AC-6, AC-46, R24: satır etiketleri sabit eşlemeden; kalem, tedarikçi, çalışan adı ve keşideci geçmez", () => {
-    expect(cop.HAREKET_COP_TUR).toEqual({ odeme: "Ödeme", virman: "Virman", avans: "Avans", mahsup: "Avanstan mahsup" });
+    // Spec 0151 ile (R8/2): beşinci tür bakiye düzeltmesi.
+    expect(cop.HAREKET_COP_TUR).toEqual({ odeme: "Ödeme", virman: "Virman", avans: "Avans", mahsup: "Avanstan mahsup", duzeltme: "Bakiye düzeltmesi" });
     const h = { id: 1, tur: "avans", tarih: "2026-09-05", tutar: 1500, calisanId: 7, calisanAd: "Ahmet Yılmaz", aciklama: "Ahmet'e avans" };
     expect(cop.hareketCopEtiketi(h)).toBe(`${fmtTR("2026-09-05")} · ${fmtCur(1500, "TRY")}`);
     expect(cop.hareketCopEtiketi(h)).not.toMatch(/Ahmet/);

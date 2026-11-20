@@ -2,7 +2,8 @@
 // virman ve avans hareketlerini ve verilen (kendi) çekleri yalnız Kasa sekmeli kullanıcıdan kabul eder
 // (electron/serverAuth.cjs KASA_SEKMELI_KAYITLAR); geri yükleme bunlara dokunsaydı bütün kayıt 403 alırdı. Bu kayıtlar
 // bugünkü hâliyle korunur, bölümün geri kalanı yedekten gelir.
-export const kasaHareketiMi = (h) => h?.tur === "virman" || h?.tur === "avans";
+// Spec 0151 C5/2 (AC-44): bakiye düzeltmesi de Kasa'ya özgü harekettir (sunucu Kasa sekmesi ister), korunur.
+export const kasaHareketiMi = (h) => h?.tur === "virman" || h?.tur === "avans" || h?.tur === "duzeltme";
 export const kasaCekiMi = (c) => c?.yon === "verilen";
 
 /** Bölümün Kasa'ya ait kayıtlarını bugünkü diziden, geri kalanını yedekten alır. */

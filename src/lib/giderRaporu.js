@@ -14,7 +14,7 @@ import { odemeHatirlatmalari, gunFarki, gunFarkiMetni } from "./odemeHatirlatma"
 import { stopajBeyanAyari, stopajDonemOzetleri } from "./stopajDonemi";
 import { hesaplananKdvAylar } from "./giderKdv";
 import { donemYontemKirilimi, hareketHedefPaylari, hedefEtiketi, YONTEM_BELIRSIZ } from "./odemeYontemi";
-import { hesapBakiyeleri, hareketOzeti, hesapsizOdemeler, hesapsizTahsilatlar, avansBorclari, HESAP_TUR_AD } from "./kasa";
+import { hesapBakiyeleri, hareketOzeti, hesapsizOdemeler, hesapsizTahsilatlar, avansBorclari, HESAP_TUR_AD, DUZELTME_TUR, DUZELTME_TUR_ADI, duzeltmeYonAdi } from "./kasa";
 import { cekAyOzeti } from "./cek";
 import { acikKalemler } from "./acikKalemler";
 import { YAS_SIRA } from "./yaslandirma";
@@ -203,6 +203,8 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
   const hesapsizListe = [];
   const personelOdeme = { adet: 0, tutarK: 0 }, avansTop = { adet: 0, tutarK: 0 };
   for (const m of hsz.liste) {
+    // Spec 0151 R4/3: hesabı bulunamayan bakiye düzeltmesi kendi adıyla (kalem değildir).
+    if (m.tur === DUZELTME_TUR) { hesapsizListe.push({ tarih: m.tarih, tutarK: kurus(m.tutar), etiket: DUZELTME_TUR_ADI }); continue; }
     if (m.tur === "avans") { avansTop.adet++; avansTop.tutarK += kurus(m.tutar); continue; }
     const k = giderById.get(String(m.giderId));
     if (k && davranisOf(k, turMap) === DAVRANIS.PERSONEL) { personelOdeme.adet++; personelOdeme.tutarK += kurus(m.tutar); continue; }
@@ -257,6 +259,11 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     // Spec 0060 R13, R33: ay içinde verilen ve mahsup edilen avans (hareket özetinin toplamları, kişi bilgisi yok).
     avansAy: { verilenK: ozet.avans.tutarK, mahsupK: ozet.mahsup.tutarK },
     odemeler, virmanlar, tahsilatlar,
+    // Spec 0151 R11, R11/2 (AC-12, AC-51): ayın bakiye düzeltmeleri; yalnız varsa (düzeltmesiz rapor nesnesi birebir eski).
+    ...(ozetL.duzeltme?.liste?.length ? { duzeltmeler: ozetL.duzeltme.liste.map(m => {
+      const h = hesapById.get(String(m.hesapId));
+      return { tarih: m.tarih, hesap: hesapAd(m.hesapId), yon: duzeltmeYonAdi(m.yon, h?.tur === "kart"), tutarK: kurus(m.tutar), paraBirimi: h?.paraBirimi || "TRY" };
+    }) } : {}),
   };
   let onceki = null;
   if (_onceki) {
@@ -288,6 +295,8 @@ const stTablo = (satirlar) => `<table>${satirlar.join("")}</table>`;
 const tarihHucre = (t) => (t ? esc(gun(t)) : "Ay geneli");
 export const GUN_NOTU = (son) => `Gün sütunu ay sonuna (${fmtTR(son)}) göre ölçülür, bugüne göre değil.`;
 
+// Spec 0151 R11/2 (AC-51): tarih, hesap, yön ve para birimli tutar; açıklama basılmaz. Düzeltme olmayan ayda tablo yok.
+export const DUZELTME_TABLO_BASLIGI = "BAKİYE DÜZELTMELERİ";
 export const buildGiderKasaRaporuHtml = (r) => {
   const donem = `${esc(fmtTR(r.bas))} – ${esc(fmtTR(r.son))}`;
   const itibariyla = `${esc(fmtTR(r.son))} itibarıyla`;
@@ -385,9 +394,11 @@ export const buildGiderKasaRaporuHtml = (r) => {
   const kasaOzet = K.bloklar.length ? bolum("KASA · ÖZET", `kapanış ${itibariyla}`, ozetPb) : "";
   const hesapKutu = bolum("KASA · HESAPLAR", `${donem}, kapanış ${itibariyla}`, K.bloklar.length ? K.bloklar.map(blok).join("") : bosSatir);
   const hareketKutu = bolum("KASA · HAREKET ÖZETİ", donem, `
-      ${!(oz.odeme.adet + oz.tahsilat.adet + oz.virman.adet + oz.avans.adet + oz.mahsup.adet) ? bosSatir : tablo("HAREKETLER", ["Hareket", "Adet", "Tutar"], [["Ödeme", String(oz.odeme.adet), kp(oz.odeme.tutarK)], ["Tahsilat (hesaba giren)", String(oz.tahsilat.adet), kp(oz.tahsilat.tutarK)],
+      ${!(oz.odeme.adet + oz.tahsilat.adet + oz.virman.adet + oz.avans.adet + oz.mahsup.adet + (oz.duzeltme?.adet || 0)) ? bosSatir : tablo("HAREKETLER", ["Hareket", "Adet", "Tutar"], [["Ödeme", String(oz.odeme.adet), kp(oz.odeme.tutarK)], ["Tahsilat (hesaba giren)", String(oz.tahsilat.adet), kp(oz.tahsilat.tutarK)],
         ...oz.tahsilat.kaynaklar.map(k => [`&nbsp;&nbsp;${esc(k.ad)}`, String(k.adet), kp(k.tutarK)]),
-        ["Virman", String(oz.virman.adet), kp(oz.virman.tutarK)], ["Avans", String(oz.avans.adet), kp(oz.avans.tutarK)], ["Mahsup", String(oz.mahsup.adet), kp(oz.mahsup.tutarK)]], [SOL, R, R])}
+        ["Virman", String(oz.virman.adet), kp(oz.virman.tutarK)], ["Avans", String(oz.avans.adet), kp(oz.avans.tutarK)], ["Mahsup", String(oz.mahsup.adet), kp(oz.mahsup.tutarK)],
+        // Spec 0151 R11/2 (AC-50): yalnız ayda düzeltme varken.
+        ...(oz.duzeltme ? [[esc(DUZELTME_TUR_ADI), String(oz.duzeltme.adet), kp(oz.duzeltme.tutarK)]] : [])], [SOL, R, R])}${K.duzeltmeler?.length ? tablo(DUZELTME_TABLO_BASLIGI, ["Tarih", "Hesap", "Yön", "Tutar"], K.duzeltmeler.map(d => [tarihHucre(d.tarih), esc(d.hesap), esc(d.yon), kp(d.tutarK, d.paraBirimi)]), [SOL, SOL, SOL, R]) : ""}
       ${not(esc(NOT_MAHSUP))}`);
   // Spec 0059 R10, R14 (AC-11, AC-15, AC-29): yeni tablolar boşsa hiç basılmaz; ikisi de boşsa kutu da basılmaz.
   const odemeTablo = tablo("ÖDEME HAREKETLERİ", ["Tarih", "Hesap", "Yöntem", "Kalem", "Hedef", "Tutar"],

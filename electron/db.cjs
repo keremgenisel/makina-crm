@@ -292,7 +292,7 @@ CREATE TABLE IF NOT EXISTS kasa_hesaplari (
 CREATE TABLE IF NOT EXISTS hesap_hareketleri (
   id INTEGER PRIMARY KEY,
   tur TEXT, tarih TEXT, tutar REAL, yontem TEXT, hesapId INTEGER, karsiHesapId INTEGER, giderId INTEGER, taksitId INTEGER,
-  tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT, calisanId INTEGER, deletedAt TEXT
+  tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT, calisanId INTEGER, deletedAt TEXT, yon TEXT
 );
 -- Spec 0058 R11, C2: kasa iş listesinden kapsam dışı bırakılan kayıtlar; tek liste, kayda kimlikle bağlı.
 CREATE TABLE IF NOT EXISTS kasa_kapsam_disi (
@@ -441,6 +441,8 @@ const SATIS_HESAP_COLUMN = [["hesapId", "INTEGER"]];
 const HAREKET_CALISAN_COLUMN = [["calisanId", "INTEGER"]];
 // Spec 0040: ciro hareketi portföydeki çeke bağlıdır (R4, R7).
 const HAREKET_CEK_COLUMN = [["cekId", "INTEGER"]];
+// Spec 0151 R1/2, C4/2: bakiye düzeltmesinin yönü ("giren" | "cikan"); tutar pozitif kalır. Boş değer okumada gövdeye yazılmaz.
+const HAREKET_YON_COLUMN = [["yon", "TEXT"]];
 // Spec 0049: bağsız alınan çekin kendi alanları (tutar, para birimi, vade, alınma tarihi, kimden/müşteri) ve verilen çekin
 // alacaklısı, banka hesabı, açıklaması. Bağlı çekte bu alanlar boştur (bilgi tahsilattan okunur, Q2).
 const CEKLER_0049_COLUMNS = [["yon", "TEXT"], ["tutar", "REAL"], ["currency", "TEXT"], ["vadeTarihi", "TEXT"], ["tarih", "TEXT"], ["kimden", "TEXT"],
@@ -1030,10 +1032,10 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.hesapHareketleri) && !skip.has("hesapHareketleri")) {
     conn.prepare(`DELETE FROM hesap_hareketleri`).run();
-    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId, cekId, deletedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId, cekId, deletedAt, yon)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const m of data.hesapHareketleri) stmt.run(m.id, m.tur ?? null, m.tarih ?? null, m.tutar ?? null, m.yontem ?? null, m.hesapId ?? null, m.karsiHesapId ?? null,
-      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null, m.cekId ?? null, m.deletedAt ?? null);
+      m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null, m.cekId ?? null, m.deletedAt ?? null, m.yon || null);
   }
   if (Array.isArray(data.kasaKapsamDisi) && !skip.has("kasaKapsamDisi")) {
     conn.prepare(`DELETE FROM kasa_kapsam_disi`).run();
@@ -1175,6 +1177,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "yedek_parca_satis", SATIS_HESAP_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_CALISAN_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_CEK_COLUMN);
+  ensureColumns(conn, "hesap_hareketleri", HAREKET_YON_COLUMN);
   ensureColumns(conn, "cekler", CEKLER_0049_COLUMNS);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_COLUMNS);
@@ -1810,7 +1813,8 @@ function readBlobFromDb() {
   }));
   // Spec 0078 C4: boş deletedAt blob'a yazılmaz (sunucu karşılaştırması null ile yokluğu ayırır).
   const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, deletedAt, ...rest }) => ({ ...rest, kapali: toBool(kapali), ...bosOlmayan({ deletedAt }) }));
-  const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, deletedAt, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir), ...bosOlmayan({ deletedAt }) }));
+  // Spec 0151 C4/2: `yon` yalnız doluyken gövdeye (düzeltmesiz hareketin gövdesi spec öncesiyle birebir, AC-24).
+  const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, deletedAt, yon, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir), ...bosOlmayan({ deletedAt, yon }) }));
   const kasaKapsamDisi = db.prepare(`SELECT * FROM kasa_kapsam_disi`).all();
   // Spec 0049: boş kalan yeni alanlar blob'a hiç yazılmaz; eski (bağlı) çek kaydı okununca 0040'taki şekliyle aynı kalır
   // (sunucunun kayıt karşılaştırması null ile yokluğu ayırır).
