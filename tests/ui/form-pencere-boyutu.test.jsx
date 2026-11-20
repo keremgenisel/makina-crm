@@ -66,10 +66,11 @@ const acilis = (dosya, baslik) => {
   const bas = s.lastIndexOf("<Modal", i);
   return s.slice(bas, s.indexOf("\n", bas)); // açılış satırı (boyut özellikleri bu satırda)
 };
+// Spec 0152 ile: virman penceresinin başlığı "Virman / Bozdurma" sabitinden.
 // Spec 0073 ile güncellendi: virman, avans ve ödeme penceresinin başlığı düzenleme kipine göre değişir (title={…}); arama
 // başlık metninin kendisiyle yapılır, açılış satırı aynıdır.
 const SINIF1 = [
-  ["src/components/GiderForm.jsx", '"Yeni Gider"'], ["src/components/Kasa.jsx", '"Yeni Hesap"'], ["src/components/Kasa.jsx", '"Virmanı Düzenle"'],
+  ["src/components/GiderForm.jsx", '"Yeni Gider"'], ["src/components/Kasa.jsx", '"Yeni Hesap"'], ["src/components/Kasa.jsx", '`${VIRMAN_PENCERE_BASLIGI} · Düzenle`'],
   ["src/components/gider/OdemeKayitPenceresi.jsx", '"Ödeme Kaydet"'], ["src/components/kasa/CalisanAvanslari.jsx", '"Avans Ver"'],
   ["src/components/cek/CiroPenceresi.jsx", '"Kendi Çekimizi Yaz"'], ["src/components/cek/CekEklePenceresi.jsx", 'title="Portföye Çek Ekle"'],
   ["src/components/gider/Tedarikciler.jsx", '"Yeni Tedarikçi"'], ["src/components/gider/UretimPartileri.jsx", '"Yeni Üretim Partisi"'],

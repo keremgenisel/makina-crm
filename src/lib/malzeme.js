@@ -15,6 +15,7 @@
 import { tutarCoz, kurus } from "./gider";
 import { islemePayiKatla } from "../../electron/islemePayiGocuSaf.mjs"; // spec 0141 A-R1/2, karar 33
 import { trLower } from "./utils";
+import { dovizMi } from "./doviz";
 import { BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./tutarGirdisi";
 import { gecerliGunMu, gecerlilikTarihiDogrula, tarihteGecerliIndeks } from "./gecerlilik";
 // Triyaj (bulgu 3): etki önizlemesi maliyetin TEK okuma yolundan geçer. urunAgaci bu modülü içe aldığı için döngüdür; ikisi de
@@ -27,7 +28,7 @@ import { parcaSatisFiyati, fiyatAyariOf } from "./parcaFiyati"; // spec 0133 R16
 export const PARA_BIRIMLERI = ["TRY", "USD", "EUR"];
 export const PARA_ADI = { TRY: "TL", USD: "USD", EUR: "EUR" };
 export const PARA_SIMGE = { TRY: "₺", USD: "$", EUR: "€" };
-export const dovizMi = (pb) => pb === "USD" || pb === "EUR";
+export { dovizMi };
 const paraOf = (m) => (m?.paraBirimi == null || m.paraBirimi === "" ? "TRY" : m.paraBirimi);
 
 // R11: biçim ölçüleri. `capli` = bant uygulanabilir biçim (R3/2). Spec 0141 A-R1: işleme payı yok, ölçü satın alınan ölçüdür.
@@ -497,15 +498,8 @@ export const fiyatEtkiMetni = (e) => (e.fiyatDegisen ? `${e.fiyatDegisen} parça
 export const etkiMetni = (e) => (e.bagli === 0 ? BAGLI_PARCA_YOK : `${e.degisen} parçanın maliyeti değişecek (${e.bagli} bağlı parça).`);
 
 // ── Kur önerisi (R5, R5/2, AC-9, AC-10, AC-95) ──────────────────────────────────────────────────────────────────────────
-export const KUR_ALINMADI = "Günün kuru henüz alınmadı; kuru elle yazabilirsiniz.";
-export const KUR_CEVRIMDISI = "Çevrimdışı olduğu için günün kuru alınamadı; kuru elle yazabilirsiniz.";
-// `rates` = { usd, eur } (App), `ratesErr` çevrimdışı. Dönüş { deger, neden }.
-export const kurOnerisi = (pb, rates, ratesErr) => {
-  if (!dovizMi(pb)) return { deger: null, neden: null };
-  const v = rates ? rates[pb === "USD" ? "usd" : "eur"] : null;
-  if (v > 0) return { deger: v, neden: null };
-  return { deger: null, neden: ratesErr ? KUR_CEVRIMDISI : KUR_ALINMADI };
-};
+// Spec 0152 P9: kur önerisi ve metinleri `doviz.js`'e taşındı (kasa da okur); burada aynı adlarla yeniden dışa verilir.
+export { KUR_ALINMADI, KUR_CEVRIMDISI, kurOnerisi } from "./doviz";
 
 // ── Ekran metinleri ─────────────────────────────────────────────────────────────────────────────────────────────────────
 export const PANEL_BASLIGI = "Malzemeler";

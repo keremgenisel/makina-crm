@@ -1,4 +1,5 @@
 // Spec 0046: gider formundan hedef bazlı ödeme ve çek cirosu (saf motor, lib/formOdemesi.js).
+import { KUR_BOS_HATASI } from "../src/lib/doviz";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { formOdemeHedefleri, odemeGirisiHazirla, hepsiniOde, ciroCekleri, CIRO_YALNIZ_ANA_NEDENI } from "../src/lib/formOdemesi";
@@ -86,7 +87,8 @@ describe("Spec 0046: ödeme hareketleri", () => {
     expect(r.hareketler[0].hesapId).toBeNull();
     const b = hesapBakiyeleri(H, r.hareketler.map((h, i) => ({ ...h, id: i + 1 })), {});
     expect(b.get("51").bakiye).toBe(100000);
-    expect(hazirla(k, { ana: s(12000, { hesapId: 53 }) }).hatalar.satir[HEDEF.ANA]).toBe("Gider ödemesi yalnız TL hesaptan yapılır.");
+    // Spec 0152 ile: döviz hesap kabul edilir ama kur ister (R1, R5); kursuz satır kur hatasıyla reddedilir.
+    expect(hazirla(k, { ana: s(12000, { hesapId: 53 }) }).hatalar.satir[HEDEF.ANA]).toBe(KUR_BOS_HATASI);
     expect(hazirla(k, { ana: s(12000, { hesapId: 54 }) }).hatalar.satir[HEDEF.ANA]).toBe("Kapatılmış hesaba hareket girilemez.");
   });
   it("AC-29: form yolu ile ödeme penceresi yolu aynı girdiyle alan alan aynı hareketi üretir; iki yol aynı fonksiyonu çağırır", () => {

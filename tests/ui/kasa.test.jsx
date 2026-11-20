@@ -101,12 +101,12 @@ describe("Kasa: virman (R15)", () => {
     expect(satirOf("Ziraat").textContent).toMatch(/1\.400/);
     expect(satirOf("Merkez Kasa").textContent).toMatch(/-400|−400/);
   });
-  it("AC-30: giren hesap listesinde yalnız aynı para birimindeki açık hesaplar; tek hesapta virman düğmesi yok", () => {
+  it("AC-30 (spec 0152 ile: farklı para birimi bozdurmadır): giren hesap listesinde bütün açık hesaplar; tek hesapta virman düğmesi yok", () => {
     render(<Harness h0={[hesap(1, "Ziraat"), hesap(2, "Dolar Hesabı", { paraBirimi: "USD" }), hesap(3, "Kapalı TL", { kapali: true }), hesap(4, "Garanti")]} />);
     fireEvent.click(screen.getByText("Virman"));
     const f = screen.getByTestId("virman-formu");
     const giren = within(f).getByDisplayValue("Hesap seçin");
-    expect([...giren.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap seçin", "Garanti (TRY)"]);
+    expect([...giren.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap seçin", "Dolar Hesabı (USD)", "Garanti (TRY)"]);
     cleanup();
     render(<Harness h0={[hesap(1, "Ziraat"), hesap(2, "Kapalı", { kapali: true })]} />);
     expect(screen.queryByText("Virman")).toBeNull();

@@ -1,0 +1,2274 @@
+{
+ "bakiyeler": [
+  {
+   "id": 51,
+   "girenK": 820000,
+   "cikanK": 4680000,
+   "bakiyeK": 6140000,
+   "borc": null,
+   "satirlar": [
+    [
+     "2026-08-10",
+     "odeme",
+     0,
+     500000,
+     9500000
+    ],
+    [
+     "2026-08-20",
+     "odeme",
+     0,
+     480000,
+     9020000
+    ],
+    [
+     "2026-09-11",
+     "odeme",
+     0,
+     400000,
+     8620000
+    ],
+    [
+     "2026-09-12",
+     "virman",
+     0,
+     500000,
+     8120000
+    ],
+    [
+     "2026-09-14",
+     "tahsilat",
+     700000,
+     0,
+     8820000
+    ],
+    [
+     "2026-09-16",
+     "servisTahsilati",
+     120000,
+     0,
+     8940000
+    ],
+    [
+     "2026-09-18",
+     "odeme",
+     0,
+     1200000,
+     7740000
+    ],
+    [
+     "2026-10-05",
+     "odeme",
+     0,
+     1600000,
+     6140000
+    ]
+   ]
+  },
+  {
+   "id": 52,
+   "girenK": 500000,
+   "cikanK": 3645600,
+   "bakiyeK": -1145600,
+   "borc": null,
+   "satirlar": [
+    [
+     "2026-09-08",
+     "avans",
+     0,
+     300000,
+     1700000
+    ],
+    [
+     "2026-09-12",
+     "virman",
+     500000,
+     0,
+     2200000
+    ],
+    [
+     "2026-09-30",
+     "odeme",
+     0,
+     3345600,
+     -1145600
+    ]
+   ]
+  },
+  {
+   "id": 53,
+   "girenK": 0,
+   "cikanK": 0,
+   "bakiyeK": 100000,
+   "borc": null,
+   "satirlar": []
+  },
+  {
+   "id": 54,
+   "girenK": 0,
+   "cikanK": 0,
+   "bakiyeK": 0,
+   "borc": null,
+   "satirlar": []
+  },
+  {
+   "id": 55,
+   "girenK": 0,
+   "cikanK": 0,
+   "bakiyeK": 50000,
+   "borc": null,
+   "satirlar": []
+  },
+  {
+   "id": 56,
+   "girenK": 150000,
+   "cikanK": 0,
+   "bakiyeK": 150000,
+   "borc": null,
+   "satirlar": [
+    [
+     "2026-09-17",
+     "tahsilat",
+     150000,
+     0,
+     150000
+    ]
+   ]
+  }
+ ],
+ "zengin": [
+  {
+   "id": 1,
+   "tarih": "2026-09-05",
+   "turId": 1,
+   "tutar": 10000,
+   "kdvOrani": 20,
+   "tedarikciId": 11,
+   "aciklama": "Sac levha",
+   "sonOdemeTarihi": "2026-09-20",
+   "kdvYonu": "haric",
+   "stopajOrani": null,
+   "girisYonu": null,
+   "netTutar": null,
+   "resmiTutar": null,
+   "eldenTutar": null,
+   "sgkTutar": null,
+   "yolParasi": null,
+   "calisanId": null,
+   "calisanAd": null,
+   "ekOdemeler": [],
+   "odendi": true,
+   "odemeTarihi": "2026-09-18",
+   "taksitler": [],
+   "_odenen": {
+    "ana": 1200000
+   }
+  },
+  {
+   "id": 2,
+   "tarih": "2026-09-01",
+   "turId": 2,
+   "girisYonu": "brut",
+   "tutar": 20000,
+   "stopajOrani": 20,
+   "kdvOrani": 0,
+   "tedarikciId": 12,
+   "aciklama": "Eylül kirası",
+   "sonOdemeTarihi": "2026-09-10",
+   "kdvYonu": "haric",
+   "netTutar": 16000,
+   "resmiTutar": null,
+   "eldenTutar": null,
+   "sgkTutar": null,
+   "yolParasi": null,
+   "calisanId": null,
+   "calisanAd": null,
+   "ekOdemeler": [],
+   "odendi": true,
+   "odemeTarihi": "2026-10-05",
+   "taksitler": [
+    {
+     "id": 7001,
+     "hedef": "ana",
+     "sira": 1,
+     "vade": "2026-09-10",
+     "tutar": 16000,
+     "odendi": true,
+     "odemeTarihi": "2026-10-05",
+     "_odenenK": 1600000
+    },
+    {
+     "id": 7002,
+     "hedef": "stopaj",
+     "sira": 1,
+     "vade": null,
+     "tutar": 4000,
+     "odendi": true,
+     "odemeTarihi": "2026-09-11",
+     "_odenenK": 400000
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "tarih": "2026-09-15",
+   "turId": 1,
+   "tutar": 1000,
+   "kdvOrani": 0,
+   "aciklama": "Temizlik",
+   "sonOdemeTarihi": "2026-10-03",
+   "kdvYonu": "haric",
+   "stopajOrani": null,
+   "girisYonu": null,
+   "netTutar": null,
+   "resmiTutar": null,
+   "eldenTutar": null,
+   "sgkTutar": null,
+   "yolParasi": null,
+   "calisanId": null,
+   "calisanAd": null,
+   "ekOdemeler": [],
+   "odendi": true,
+   "odemeTarihi": "2026-09-20",
+   "taksitler": [],
+   "_odenen": {
+    "ana": 100000
+   }
+  },
+  {
+   "id": 4,
+   "tarih": "2026-09-30",
+   "turId": 3,
+   "calisanId": 21,
+   "calisanAd": "Zümrüt Kaplanoğlu",
+   "resmiTutar": 31111,
+   "eldenTutar": 17777,
+   "ekOdemeler": [
+    {
+     "tur": "prim",
+     "aciklama": "Eylül primi",
+     "resmiTutar": 2345,
+     "eldenTutar": null
+    }
+   ],
+   "sonOdemeTarihi": "2026-10-05",
+   "kdvYonu": null,
+   "yolParasi": null,
+   "tutar": null,
+   "kdvOrani": 0,
+   "tedarikciId": null,
+   "stopajOrani": null,
+   "girisYonu": null,
+   "netTutar": null,
+   "odendi": false,
+   "odemeTarihi": null,
+   "taksitler": [
+    {
+     "id": 7003,
+     "hedef": "ana",
+     "sira": 1,
+     "vade": "2026-10-05",
+     "tutar": 31111,
+     "odendi": true,
+     "odemeTarihi": "2026-09-30",
+     "_odenenK": 3345600
+    },
+    {
+     "id": 7004,
+     "hedef": "elden",
+     "sira": 1,
+     "vade": "2026-10-05",
+     "tutar": 17777,
+     "odendi": false,
+     "odemeTarihi": null,
+     "_odenenK": 100000
+    },
+    {
+     "id": 7005,
+     "hedef": "ekResmi",
+     "sira": 1,
+     "vade": "2026-10-05",
+     "tutar": 2345,
+     "odendi": false,
+     "odemeTarihi": null,
+     "_odenenK": 0
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "tarih": "2026-10-02",
+   "turId": 1,
+   "tutar": 999,
+   "kdvOrani": 0,
+   "aciklama": "Ekim kalemi",
+   "kdvYonu": "haric",
+   "stopajOrani": null,
+   "girisYonu": null,
+   "netTutar": null,
+   "resmiTutar": null,
+   "eldenTutar": null,
+   "sgkTutar": null,
+   "yolParasi": null,
+   "calisanId": null,
+   "calisanAd": null,
+   "ekOdemeler": [],
+   "odendi": false,
+   "odemeTarihi": null,
+   "taksitler": [],
+   "_odenen": {
+    "ana": 0
+   }
+  },
+  {
+   "id": 6,
+   "tarih": "2026-09-06",
+   "turId": 1,
+   "tutar": 2000,
+   "kdvOrani": 0,
+   "tedarikciId": 11,
+   "aciklama": "Bant",
+   "kdvYonu": "haric",
+   "stopajOrani": null,
+   "girisYonu": null,
+   "netTutar": null,
+   "resmiTutar": null,
+   "eldenTutar": null,
+   "sgkTutar": null,
+   "yolParasi": null,
+   "calisanId": null,
+   "calisanAd": null,
+   "ekOdemeler": [],
+   "odendi": true,
+   "odemeTarihi": "2026-09-22",
+   "taksitler": [],
+   "_odenen": {
+    "ana": 200000
+   }
+  },
+  {
+   "id": 7,
+   "tarih": "2026-09-03",
+   "turId": 1,
+   "tutar": 3000,
+   "kdvOrani": 0,
+   "tedarikciId": 13,
+   "aciklama": "Vida & somun",
+   "sonOdemeTarihi": "2026-09-12",
+   "kdvYonu": "haric",
+   "stopajOrani": null,
+   "girisYonu": null,
+   "netTutar": null,
+   "resmiTutar": null,
+   "eldenTutar": null,
+   "sgkTutar": null,
+   "yolParasi": null,
+   "calisanId": null,
+   "calisanAd": null,
+   "ekOdemeler": [],
+   "odendi": false,
+   "odemeTarihi": null,
+   "taksitler": [],
+   "_odenen": {
+    "ana": 0
+   }
+  },
+  {
+   "id": 8,
+   "tarih": "2026-08-12",
+   "turId": 1,
+   "tutar": 4000,
+   "kdvOrani": 20,
+   "tedarikciId": 11,
+   "aciklama": "Ağustos sacı",
+   "sonOdemeTarihi": "2026-08-25",
+   "kdvYonu": "haric",
+   "stopajOrani": null,
+   "girisYonu": null,
+   "netTutar": null,
+   "resmiTutar": null,
+   "eldenTutar": null,
+   "sgkTutar": null,
+   "yolParasi": null,
+   "calisanId": null,
+   "calisanAd": null,
+   "ekOdemeler": [],
+   "odendi": true,
+   "odemeTarihi": "2026-08-20",
+   "taksitler": [],
+   "_odenen": {
+    "ana": 480000
+   }
+  }
+ ],
+ "borc": {
+  "satirlar": [
+   {
+    "tur": "calisanlar",
+    "ad": "Çalışanlar · 1 kişi",
+    "kisi": 1,
+    "tutar": 19122,
+    "vadesiGecti": false,
+    "ayrinti": [
+     {
+      "calisanId": 21,
+      "ad": "Zümrüt Kaplanoğlu",
+      "tutar": 19122,
+      "resmi": 2345,
+      "elden": 16777,
+      "hedefler": {
+       "elden": 16777,
+       "ekResmi": 2345
+      },
+      "vadesiGecti": false,
+      "kalemler": [
+       {
+        "id": 4,
+        "tarih": "2026-09-30",
+        "turId": 3,
+        "calisanId": 21,
+        "calisanAd": "Zümrüt Kaplanoğlu",
+        "resmiTutar": 31111,
+        "eldenTutar": 17777,
+        "ekOdemeler": [
+         {
+          "tur": "prim",
+          "aciklama": "Eylül primi",
+          "resmiTutar": 2345,
+          "eldenTutar": null
+         }
+        ],
+        "sonOdemeTarihi": "2026-10-05",
+        "kdvYonu": null,
+        "yolParasi": null,
+        "tutar": null,
+        "kdvOrani": 0,
+        "tedarikciId": null,
+        "stopajOrani": null,
+        "girisYonu": null,
+        "netTutar": null,
+        "odendi": false,
+        "odemeTarihi": null,
+        "taksitler": [
+         {
+          "id": 7003,
+          "hedef": "ana",
+          "sira": 1,
+          "vade": "2026-10-05",
+          "tutar": 31111,
+          "odendi": true,
+          "odemeTarihi": "2026-09-30",
+          "_odenenK": 3345600
+         },
+         {
+          "id": 7004,
+          "hedef": "elden",
+          "sira": 1,
+          "vade": "2026-10-05",
+          "tutar": 17777,
+          "odendi": false,
+          "odemeTarihi": null,
+          "_odenenK": 100000
+         },
+         {
+          "id": 7005,
+          "hedef": "ekResmi",
+          "sira": 1,
+          "vade": "2026-10-05",
+          "tutar": 2345,
+          "odendi": false,
+          "odemeTarihi": null,
+          "_odenenK": 0
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tur": "tedarikci",
+    "tedarikciId": 13,
+    "ad": "A<B Ticaret",
+    "tutar": 3000,
+    "vadesiGecti": true,
+    "kalemler": [
+     {
+      "id": 7,
+      "tarih": "2026-09-03",
+      "turId": 1,
+      "tutar": 3000,
+      "kdvOrani": 0,
+      "tedarikciId": 13,
+      "aciklama": "Vida & somun",
+      "sonOdemeTarihi": "2026-09-12",
+      "kdvYonu": "haric",
+      "stopajOrani": null,
+      "girisYonu": null,
+      "netTutar": null,
+      "resmiTutar": null,
+      "eldenTutar": null,
+      "sgkTutar": null,
+      "yolParasi": null,
+      "calisanId": null,
+      "calisanAd": null,
+      "ekOdemeler": [],
+      "odendi": false,
+      "odemeTarihi": null,
+      "taksitler": [],
+      "_odenen": {
+       "ana": 0
+      }
+     }
+    ]
+   }
+  ],
+  "toplam": 22122
+ },
+ "acik": {
+  "kovalar": [
+   {
+    "ad": "0-30 gün",
+    "kalemAdet": 2,
+    "kalanK": 2212200
+   },
+   {
+    "ad": "31-60 gün",
+    "kalemAdet": 0,
+    "kalanK": 0
+   },
+   {
+    "ad": "61-90 gün",
+    "kalemAdet": 0,
+    "kalanK": 0
+   },
+   {
+    "ad": "90+ gün",
+    "kalemAdet": 0,
+    "kalanK": 0
+   }
+  ],
+  "gecmisAdet": 1,
+  "vadesizAdet": 0,
+  "kalemAdet": 2,
+  "toplamK": 2212200,
+  "taraflar": [
+   {
+    "tur": "calisanlar",
+    "id": null,
+    "ad": "Çalışanlar",
+    "kovalar": {
+     "0-30 gün": 1912200,
+     "31-60 gün": 0,
+     "61-90 gün": 0,
+     "90+ gün": 0
+    },
+    "toplamK": 1912200,
+    "kalemAdet": 1,
+    "kisi": 1,
+    "ayrinti": [
+     {
+      "calisanId": 21,
+      "ad": "Zümrüt Kaplanoğlu",
+      "kovalar": {
+       "0-30 gün": 1912200,
+       "31-60 gün": 0,
+       "61-90 gün": 0,
+       "90+ gün": 0
+      },
+      "toplamK": 1912200
+     }
+    ]
+   },
+   {
+    "tur": "tedarikci",
+    "id": 13,
+    "ad": "A<B Ticaret",
+    "kovalar": {
+     "0-30 gün": 300000,
+     "31-60 gün": 0,
+     "61-90 gün": 0,
+     "90+ gün": 0
+    },
+    "toplamK": 300000,
+    "kalemAdet": 1
+   }
+  ],
+  "satirlar": [
+   {
+    "kalemId": 7,
+    "hedef": "ana",
+    "davranis": "normal",
+    "cokHedef": false,
+    "tarafTur": "tedarikci",
+    "tarafId": 13,
+    "tarafAd": "A<B Ticaret",
+    "calisanId": null,
+    "calisanAd": "",
+    "personel": false,
+    "turAd": "Hammadde",
+    "aciklama": "Vida & somun",
+    "tarih": "2026-09-03",
+    "vade": "2026-09-12",
+    "yas": 27,
+    "kova": "0-30 gün",
+    "kalanK": 300000,
+    "gecti": true,
+    "vadesiz": false
+   },
+   {
+    "kalemId": 4,
+    "hedef": "ekResmi",
+    "davranis": "personel",
+    "cokHedef": true,
+    "tarafTur": "calisanlar",
+    "tarafId": null,
+    "tarafAd": "Çalışanlar",
+    "calisanId": 21,
+    "calisanAd": "Zümrüt Kaplanoğlu",
+    "personel": true,
+    "turAd": "Maaşlar",
+    "aciklama": "Personel gideri",
+    "tarih": "2026-09-30",
+    "vade": "2026-10-05",
+    "yas": 0,
+    "kova": "0-30 gün",
+    "kalanK": 234500,
+    "gecti": false,
+    "vadesiz": false
+   },
+   {
+    "kalemId": 4,
+    "hedef": "elden",
+    "davranis": "personel",
+    "cokHedef": true,
+    "tarafTur": "calisanlar",
+    "tarafId": null,
+    "tarafAd": "Çalışanlar",
+    "calisanId": 21,
+    "calisanAd": "Zümrüt Kaplanoğlu",
+    "personel": true,
+    "turAd": "Maaşlar",
+    "aciklama": "Personel gideri",
+    "tarih": "2026-09-30",
+    "vade": "2026-10-05",
+    "yas": 0,
+    "kova": "0-30 gün",
+    "kalanK": 1677700,
+    "gecti": false,
+    "vadesiz": false
+   }
+  ]
+ },
+ "ekstreT": {
+  "devirK": null,
+  "satirlar": [
+   {
+    "tarih": "2026-08-12",
+    "sira": 0,
+    "tur": "borc",
+    "kalem": {
+     "id": 8,
+     "tarih": "2026-08-12",
+     "turId": 1,
+     "tutar": 4000,
+     "kdvOrani": 20,
+     "tedarikciId": 11,
+     "aciklama": "Ağustos sacı",
+     "sonOdemeTarihi": "2026-08-25",
+     "kdvYonu": "haric",
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "resmiTutar": null,
+     "eldenTutar": null,
+     "sgkTutar": null,
+     "yolParasi": null,
+     "calisanId": null,
+     "calisanAd": null,
+     "ekOdemeler": [],
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": []
+    },
+    "etkiK": 480000,
+    "tutarK": 480000,
+    "bakiyeK": 480000
+   },
+   {
+    "tarih": "2026-08-20",
+    "sira": 1,
+    "tur": "odeme",
+    "kalem": {
+     "id": 8,
+     "tarih": "2026-08-12",
+     "turId": 1,
+     "tutar": 4000,
+     "kdvOrani": 20,
+     "tedarikciId": 11,
+     "aciklama": "Ağustos sacı",
+     "sonOdemeTarihi": "2026-08-25",
+     "kdvYonu": "haric",
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "resmiTutar": null,
+     "eldenTutar": null,
+     "sgkTutar": null,
+     "yolParasi": null,
+     "calisanId": null,
+     "calisanAd": null,
+     "ekOdemeler": [],
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": []
+    },
+    "hareket": {
+     "id": 111,
+     "tur": "odeme",
+     "tarih": "2026-08-20",
+     "tutar": 4800,
+     "yontem": "Havale",
+     "hesapId": 51,
+     "giderId": 8,
+     "taksitId": null
+    },
+    "etkiK": -480000,
+    "tutarK": 480000,
+    "goc": false,
+    "bakiyeK": 0
+   },
+   {
+    "tarih": "2026-09-05",
+    "sira": 0,
+    "tur": "borc",
+    "kalem": {
+     "id": 1,
+     "tarih": "2026-09-05",
+     "turId": 1,
+     "tutar": 10000,
+     "kdvOrani": 20,
+     "tedarikciId": 11,
+     "aciklama": "Sac levha",
+     "sonOdemeTarihi": "2026-09-20",
+     "kdvYonu": "haric",
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "resmiTutar": null,
+     "eldenTutar": null,
+     "sgkTutar": null,
+     "yolParasi": null,
+     "calisanId": null,
+     "calisanAd": null,
+     "ekOdemeler": [],
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": []
+    },
+    "etkiK": 1200000,
+    "tutarK": 1200000,
+    "bakiyeK": 1200000
+   },
+   {
+    "tarih": "2026-09-06",
+    "sira": 0,
+    "tur": "borc",
+    "kalem": {
+     "id": 6,
+     "tarih": "2026-09-06",
+     "turId": 1,
+     "tutar": 2000,
+     "kdvOrani": 0,
+     "tedarikciId": 11,
+     "aciklama": "Bant",
+     "kdvYonu": "haric",
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "resmiTutar": null,
+     "eldenTutar": null,
+     "sgkTutar": null,
+     "yolParasi": null,
+     "calisanId": null,
+     "calisanAd": null,
+     "ekOdemeler": [],
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": []
+    },
+    "etkiK": 200000,
+    "tutarK": 200000,
+    "bakiyeK": 1400000
+   },
+   {
+    "tarih": "2026-09-18",
+    "sira": 1,
+    "tur": "odeme",
+    "kalem": {
+     "id": 1,
+     "tarih": "2026-09-05",
+     "turId": 1,
+     "tutar": 10000,
+     "kdvOrani": 20,
+     "tedarikciId": 11,
+     "aciklama": "Sac levha",
+     "sonOdemeTarihi": "2026-09-20",
+     "kdvYonu": "haric",
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "resmiTutar": null,
+     "eldenTutar": null,
+     "sgkTutar": null,
+     "yolParasi": null,
+     "calisanId": null,
+     "calisanAd": null,
+     "ekOdemeler": [],
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": []
+    },
+    "hareket": {
+     "id": 101,
+     "tur": "odeme",
+     "tarih": "2026-09-18",
+     "tutar": 12000,
+     "yontem": "Havale",
+     "hesapId": 51,
+     "giderId": 1,
+     "taksitId": null
+    },
+    "etkiK": -1200000,
+    "tutarK": 1200000,
+    "goc": false,
+    "bakiyeK": 200000
+   },
+   {
+    "tarih": "2026-09-22",
+    "sira": 1,
+    "tur": "odeme",
+    "kalem": {
+     "id": 6,
+     "tarih": "2026-09-06",
+     "turId": 1,
+     "tutar": 2000,
+     "kdvOrani": 0,
+     "tedarikciId": 11,
+     "aciklama": "Bant",
+     "kdvYonu": "haric",
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "resmiTutar": null,
+     "eldenTutar": null,
+     "sgkTutar": null,
+     "yolParasi": null,
+     "calisanId": null,
+     "calisanAd": null,
+     "ekOdemeler": [],
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": []
+    },
+    "hareket": {
+     "id": 110,
+     "tur": "odeme",
+     "tarih": "2026-09-22",
+     "tutar": 2000,
+     "yontem": "Çek (ciro)",
+     "hesapId": null,
+     "giderId": 6,
+     "taksitId": null,
+     "cekId": 200
+    },
+    "etkiK": -200000,
+    "tutarK": 200000,
+    "goc": false,
+    "bakiyeK": 0
+   }
+  ],
+  "bakiyeK": 0,
+  "bakiye": 0
+ },
+ "ekstreC": {
+  "devirK": null,
+  "satirlar": [
+   {
+    "tarih": "2026-09-08",
+    "sira": 2,
+    "tur": "avans",
+    "hareket": {
+     "id": 106,
+     "tur": "avans",
+     "tarih": "2026-09-08",
+     "tutar": 3000,
+     "calisanId": 21,
+     "hesapId": 52
+    },
+    "etkiK": -300000,
+    "tutarK": 300000,
+    "bakiyeK": -300000
+   },
+   {
+    "tarih": "2026-09-25",
+    "sira": 2,
+    "tur": "avans",
+    "hareket": {
+     "id": 108,
+     "tur": "avans",
+     "tarih": "2026-09-25",
+     "tutar": 500,
+     "calisanId": 21,
+     "hesapId": null
+    },
+    "etkiK": -50000,
+    "tutarK": 50000,
+    "bakiyeK": -350000
+   },
+   {
+    "tarih": "2026-09-29",
+    "sira": 1,
+    "tur": "mahsup",
+    "kalem": {
+     "id": 4,
+     "tarih": "2026-09-30",
+     "turId": 3,
+     "calisanId": 21,
+     "calisanAd": "Zümrüt Kaplanoğlu",
+     "resmiTutar": 31111,
+     "eldenTutar": 17777,
+     "ekOdemeler": [
+      {
+       "tur": "prim",
+       "aciklama": "Eylül primi",
+       "resmiTutar": 2345,
+       "eldenTutar": null
+      }
+     ],
+     "sonOdemeTarihi": "2026-10-05",
+     "kdvYonu": null,
+     "yolParasi": null,
+     "tutar": null,
+     "kdvOrani": 0,
+     "tedarikciId": null,
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": [
+      {
+       "id": 7003,
+       "hedef": "ana",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 31111,
+       "odendi": false,
+       "odemeTarihi": null
+      },
+      {
+       "id": 7004,
+       "hedef": "elden",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 17777,
+       "odendi": false,
+       "odemeTarihi": null
+      },
+      {
+       "id": 7005,
+       "hedef": "ekResmi",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 2345,
+       "odendi": false,
+       "odemeTarihi": null
+      }
+     ]
+    },
+    "hareket": {
+     "id": 107,
+     "tur": "mahsup",
+     "tarih": "2026-09-29",
+     "tutar": 1000,
+     "calisanId": 21,
+     "giderId": 4,
+     "taksitId": 7004,
+     "hesapId": null
+    },
+    "hedef": "elden",
+    "hedefPaylari": [
+     {
+      "hedef": "elden",
+      "payK": 100000
+     }
+    ],
+    "etkiK": 0,
+    "tutarK": 100000,
+    "goc": false,
+    "bakiyeK": -350000
+   },
+   {
+    "tarih": "2026-09-30",
+    "sira": 0,
+    "tur": "maas",
+    "kalem": {
+     "id": 4,
+     "tarih": "2026-09-30",
+     "turId": 3,
+     "calisanId": 21,
+     "calisanAd": "Zümrüt Kaplanoğlu",
+     "resmiTutar": 31111,
+     "eldenTutar": 17777,
+     "ekOdemeler": [
+      {
+       "tur": "prim",
+       "aciklama": "Eylül primi",
+       "resmiTutar": 2345,
+       "eldenTutar": null
+      }
+     ],
+     "sonOdemeTarihi": "2026-10-05",
+     "kdvYonu": null,
+     "yolParasi": null,
+     "tutar": null,
+     "kdvOrani": 0,
+     "tedarikciId": null,
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": [
+      {
+       "id": 7003,
+       "hedef": "ana",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 31111,
+       "odendi": false,
+       "odemeTarihi": null
+      },
+      {
+       "id": 7004,
+       "hedef": "elden",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 17777,
+       "odendi": false,
+       "odemeTarihi": null
+      },
+      {
+       "id": 7005,
+       "hedef": "ekResmi",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 2345,
+       "odendi": false,
+       "odemeTarihi": null
+      }
+     ]
+    },
+    "etkiK": 5123300,
+    "tutarK": 5123300,
+    "kirilim": {
+     "resmiK": 3111100,
+     "eldenK": 1777700,
+     "ekK": 234500,
+     "maasK": 4888800
+    },
+    "bakiyeK": 4773300
+   },
+   {
+    "tarih": "2026-09-30",
+    "sira": 1,
+    "tur": "odeme",
+    "kalem": {
+     "id": 4,
+     "tarih": "2026-09-30",
+     "turId": 3,
+     "calisanId": 21,
+     "calisanAd": "Zümrüt Kaplanoğlu",
+     "resmiTutar": 31111,
+     "eldenTutar": 17777,
+     "ekOdemeler": [
+      {
+       "tur": "prim",
+       "aciklama": "Eylül primi",
+       "resmiTutar": 2345,
+       "eldenTutar": null
+      }
+     ],
+     "sonOdemeTarihi": "2026-10-05",
+     "kdvYonu": null,
+     "yolParasi": null,
+     "tutar": null,
+     "kdvOrani": 0,
+     "tedarikciId": null,
+     "stopajOrani": null,
+     "girisYonu": null,
+     "netTutar": null,
+     "odendi": false,
+     "odemeTarihi": null,
+     "taksitler": [
+      {
+       "id": 7003,
+       "hedef": "ana",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 31111,
+       "odendi": false,
+       "odemeTarihi": null
+      },
+      {
+       "id": 7004,
+       "hedef": "elden",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 17777,
+       "odendi": false,
+       "odemeTarihi": null
+      },
+      {
+       "id": 7005,
+       "hedef": "ekResmi",
+       "sira": 1,
+       "vade": "2026-10-05",
+       "tutar": 2345,
+       "odendi": false,
+       "odemeTarihi": null
+      }
+     ]
+    },
+    "hareket": {
+     "id": 103,
+     "tur": "odeme",
+     "tarih": "2026-09-30",
+     "tutar": 33456,
+     "yontem": "Nakit",
+     "hesapId": 52,
+     "giderId": 4,
+     "taksitId": 7003
+    },
+    "hedef": "ana",
+    "hedefPaylari": [
+     {
+      "hedef": "ana",
+      "payK": 3111100
+     }
+    ],
+    "etkiK": -3111100,
+    "tutarK": 3111100,
+    "goc": false,
+    "bakiyeK": 1662200
+   }
+  ],
+  "bakiyeK": 1662200,
+  "bakiye": 16622,
+  "avansBorcK": 250000
+ },
+ "yontem": [
+  [
+   "1",
+   {
+    "satirlar": [
+     {
+      "yontem": "Havale",
+      "tutarK": 1200000
+     }
+    ],
+    "karar": "tek",
+    "etiket": "Havale",
+    "toplamK": 1200000,
+    "gocVar": false
+   }
+  ],
+  [
+   "2",
+   {
+    "satirlar": [
+     {
+      "yontem": "Havale",
+      "tutarK": 2000000
+     }
+    ],
+    "karar": "tek",
+    "etiket": "Havale",
+    "toplamK": 2000000,
+    "gocVar": false
+   }
+  ],
+  [
+   "3",
+   {
+    "satirlar": [
+     {
+      "yontem": "Belirtilmemiş",
+      "tutarK": 100000
+     }
+    ],
+    "karar": "tek",
+    "etiket": "Belirtilmemiş",
+    "toplamK": 100000,
+    "gocVar": false
+   }
+  ],
+  [
+   "4",
+   {
+    "satirlar": [
+     {
+      "yontem": "Nakit",
+      "tutarK": 3111100
+     },
+     {
+      "yontem": "Avanstan mahsup",
+      "tutarK": 100000
+     }
+    ],
+    "karar": "karma",
+    "etiket": "Karma",
+    "toplamK": 3211100,
+    "gocVar": false
+   }
+  ],
+  [
+   "5",
+   {
+    "satirlar": [],
+    "karar": "yok",
+    "etiket": null,
+    "toplamK": 0,
+    "gocVar": false
+   }
+  ],
+  [
+   "6",
+   {
+    "satirlar": [
+     {
+      "yontem": "Çek (ciro)",
+      "tutarK": 200000
+     }
+    ],
+    "karar": "tek",
+    "etiket": "Çek (ciro)",
+    "toplamK": 200000,
+    "gocVar": false
+   }
+  ],
+  [
+   "7",
+   {
+    "satirlar": [],
+    "karar": "yok",
+    "etiket": null,
+    "toplamK": 0,
+    "gocVar": false
+   }
+  ],
+  [
+   "8",
+   {
+    "satirlar": [
+     {
+      "yontem": "Havale",
+      "tutarK": 480000
+     }
+    ],
+    "karar": "tek",
+    "etiket": "Havale",
+    "toplamK": 480000,
+    "gocVar": false
+   }
+  ]
+ ],
+ "tasima": [
+  [
+   51,
+   {
+    "odeme": 5,
+    "virman": 1,
+    "avans": 0,
+    "diger": 0,
+    "payments": 2,
+    "servis": 1,
+    "kalip": 0,
+    "yedekParca": 0,
+    "verilenCek": 0,
+    "toplam": 9
+   },
+   [
+    55
+   ],
+   {
+    "tasi": [],
+    "hesapsiz": [
+     "2026-09-12 virmanı (51 ↔ 52): virman hesapsız bırakılamaz; önce bu virmanı silin."
+    ]
+   }
+  ],
+  [
+   52,
+   {
+    "odeme": 1,
+    "virman": 1,
+    "avans": 1,
+    "diger": 0,
+    "payments": 0,
+    "servis": 0,
+    "kalip": 0,
+    "yedekParca": 0,
+    "verilenCek": 0,
+    "toplam": 3
+   },
+   [
+    55
+   ],
+   {
+    "tasi": [],
+    "hesapsiz": [
+     "2026-09-12 virmanı (51 ↔ 52): virman hesapsız bırakılamaz; önce bu virmanı silin."
+    ]
+   }
+  ],
+  [
+   53,
+   {
+    "odeme": 0,
+    "virman": 0,
+    "avans": 0,
+    "diger": 0,
+    "payments": 0,
+    "servis": 0,
+    "kalip": 0,
+    "yedekParca": 0,
+    "verilenCek": 0,
+    "toplam": 0
+   },
+   [],
+   {
+    "tasi": [
+     "USD para biriminde açık başka hesap yok."
+    ],
+    "hesapsiz": []
+   }
+  ],
+  [
+   54,
+   {
+    "odeme": 0,
+    "virman": 0,
+    "avans": 0,
+    "diger": 0,
+    "payments": 0,
+    "servis": 0,
+    "kalip": 0,
+    "yedekParca": 0,
+    "verilenCek": 0,
+    "toplam": 0
+   },
+   [
+    51,
+    52,
+    55
+   ],
+   {
+    "tasi": [],
+    "hesapsiz": []
+   }
+  ],
+  [
+   55,
+   {
+    "odeme": 0,
+    "virman": 0,
+    "avans": 0,
+    "diger": 0,
+    "payments": 0,
+    "servis": 0,
+    "kalip": 0,
+    "yedekParca": 0,
+    "verilenCek": 0,
+    "toplam": 0
+   },
+   [
+    51,
+    52
+   ],
+   {
+    "tasi": [],
+    "hesapsiz": []
+   }
+  ],
+  [
+   56,
+   {
+    "odeme": 0,
+    "virman": 0,
+    "avans": 0,
+    "diger": 0,
+    "payments": 1,
+    "servis": 0,
+    "kalip": 0,
+    "yedekParca": 0,
+    "verilenCek": 0,
+    "toplam": 1
+   },
+   [],
+   {
+    "tasi": [
+     "EUR para biriminde açık başka hesap yok."
+    ],
+    "hesapsiz": []
+   }
+  ]
+ ],
+ "cop": [
+  [
+   101,
+   "18/09/2026 · ₺12.000"
+  ],
+  [
+   102,
+   "05/10/2026 · ₺16.000"
+  ],
+  [
+   103,
+   "30/09/2026 · ₺33.456"
+  ],
+  [
+   104,
+   "20/09/2026 · ₺1.000"
+  ],
+  [
+   105,
+   "12/09/2026 · ₺5.000"
+  ],
+  [
+   106,
+   "08/09/2026 · ₺3.000"
+  ],
+  [
+   107,
+   "29/09/2026 · ₺1.000"
+  ],
+  [
+   108,
+   "25/09/2026 · ₺500"
+  ],
+  [
+   109,
+   "10/08/2026 · ₺5.000"
+  ],
+  [
+   110,
+   "22/09/2026 · ₺2.000"
+  ],
+  [
+   111,
+   "20/08/2026 · ₺4.800"
+  ],
+  [
+   112,
+   "11/09/2026 · ₺4.000"
+  ]
+ ],
+ "odemeTl": {
+  "hatalar": {},
+  "kayit": {
+   "tur": "odeme",
+   "tarih": "2026-09-25",
+   "tutar": 500,
+   "yontem": "Havale",
+   "hesapId": 51,
+   "giderId": 7,
+   "taksitId": null,
+   "aciklama": ""
+  }
+ },
+ "odemeHesapsiz": {
+  "hatalar": {},
+  "kayit": {
+   "tur": "odeme",
+   "tarih": "2026-09-25",
+   "tutar": 500,
+   "yontem": "",
+   "hesapId": null,
+   "giderId": 7,
+   "taksitId": null,
+   "aciklama": ""
+  }
+ },
+ "odemeFazla": {
+  "hatalar": {
+   "tutar": "Kalandan fazla ödeme kaydedilemez (kalan 3.000,00 ₺)."
+  },
+  "kayit": null
+ },
+ "virmanTl": {
+  "hatalar": {},
+  "kayit": {
+   "tur": "virman",
+   "tarih": "2026-09-25",
+   "tutar": 1000,
+   "hesapId": 51,
+   "karsiHesapId": 52,
+   "aciklama": "x"
+  }
+ },
+ "avans": {
+  "hatalar": {},
+  "kayit": {
+   "tur": "avans",
+   "tarih": "2026-09-25",
+   "tutar": 100,
+   "calisanId": 21,
+   "hesapId": 52,
+   "yontem": "",
+   "aciklama": ""
+  }
+ },
+ "sonHesap": 51,
+ "hepsi": [
+  {
+   "anahtar": "a",
+   "hedef": "ana",
+   "sira": null,
+   "tutar": "3000",
+   "yontem": "Havale",
+   "hesapId": 51,
+   "aciklama": ""
+  }
+ ],
+ "hazirlaTl": {
+  "hatalar": {
+   "satirlar": {},
+   "hedefler": [],
+   "genel": [],
+   "mahsup": {}
+  },
+  "hareketler": [
+   {
+    "tur": "odeme",
+    "tarih": "2026-09-25",
+    "tutar": 1000,
+    "yontem": "Havale",
+    "hesapId": 51,
+    "giderId": 7,
+    "taksitId": null,
+    "aciklama": ""
+   },
+   {
+    "tur": "odeme",
+    "tarih": "2026-09-25",
+    "tutar": 200,
+    "yontem": "Nakit",
+    "hesapId": 52,
+    "giderId": 7,
+    "taksitId": null,
+    "aciklama": ""
+   }
+  ],
+  "cek": null,
+  "uyari": null
+ },
+ "hazirlaFazla": {
+  "hatalar": {
+   "satirlar": {
+    "a": {
+     "tutar": "Kalandan fazla ödeme kaydedilemez (kalan 999,00 ₺)."
+    }
+   },
+   "hedefler": [],
+   "genel": [],
+   "mahsup": {}
+  },
+  "hareketler": null,
+  "cek": null,
+  "uyari": null
+ },
+ "duzenle": {
+  "hatalar": {
+   "satirlar": {},
+   "hedefler": [],
+   "genel": [],
+   "mahsup": {}
+  },
+  "hareketler": null,
+  "cek": null,
+  "uyari": null,
+  "guncellenen": {
+   "id": 101,
+   "tur": "odeme",
+   "tarih": "2026-09-26",
+   "tutar": 11000,
+   "yontem": "Nakit",
+   "hesapId": 52,
+   "giderId": 1,
+   "taksitId": null,
+   "aciklama": "",
+   "tamKapatir": false
+  }
+ },
+ "rapor": {
+  "ay": "2026-09",
+  "ayAdi": "Eylül 2026",
+  "bas": "2026-09-01",
+  "son": "2026-09-30",
+  "gider": {
+   "yururlukOncesi": false,
+   "bos": false,
+   "ozet": {
+    "toplam": 87233,
+    "odenen": 13000,
+    "odenmeyen": 74233,
+    "indirilecekKdv": 2000,
+    "stopaj": 4000
+   },
+   "turler": [
+    {
+     "ad": "Kira",
+     "adet": 1,
+     "toplam": 20000
+    },
+    {
+     "ad": "Hammadde",
+     "adet": 4,
+     "toplam": 16000
+    },
+    {
+     "ad": "Personel gideri",
+     "adet": null,
+     "toplam": 51233
+    }
+   ],
+   "tedarikciler": {
+    "satirlar": [
+     {
+      "ad": "Yıldız Gayrimenkul",
+      "harcama": 20000,
+      "acikBorc": 16000
+     },
+     {
+      "ad": "Demir Bant",
+      "harcama": 12000,
+      "acikBorc": 0
+     },
+     {
+      "ad": "A<B Ticaret",
+      "harcama": 3000,
+      "acikBorc": 3000
+     }
+    ],
+    "secilmemis": {
+     "harcama": 1000,
+     "adet": 1,
+     "acikBorc": 0
+    },
+    "toplamHarcama": 36000,
+    "toplamBorc": 19000
+   },
+   "odemeDurumu": {
+    "gecmisAdet": 2,
+    "gecmisTutar": 19000,
+    "yaklasanAdet": 1,
+    "yaklasanTutar": 19122,
+    "esikGun": 7
+   },
+   "kovalar": {
+    "makina": 0,
+    "model": 0,
+    "dagitma": 0,
+    "ortak": 87233
+   },
+   "kdv": {
+    "hesaplananTL": 200,
+    "indirilecek": 2000,
+    "fark": -1800,
+    "odenecek": 0,
+    "devreden": 1800,
+    "haricTutarlar": []
+   },
+   "yontem": {
+    "satirlar": [
+     {
+      "ad": "Havale",
+      "tutar": 16000
+     },
+     {
+      "ad": "Çek (ciro)",
+      "tutar": 2000
+     },
+     {
+      "ad": "Belirtilmemiş",
+      "tutar": 1000
+     }
+    ],
+    "personel": 32111,
+    "toplam": 51111
+   },
+   "ekOdemeTurleri": [
+    {
+     "ad": "Prim",
+     "tutar": 2345
+    }
+   ],
+   "yaslandirma": {
+    "kovalar": [
+     {
+      "ad": "0-30 gün",
+      "kalemAdet": 3,
+      "kalanK": 3812200
+     }
+    ],
+    "toplamK": 3812200,
+    "gruplar": [
+     {
+      "ad": "Çalışanlar",
+      "kovalarK": [
+       1912200,
+       0,
+       0,
+       0
+      ],
+      "toplamK": 1912200
+     },
+     {
+      "ad": "Yıldız Gayrimenkul",
+      "kovalarK": [
+       1600000,
+       0,
+       0,
+       0
+      ],
+      "toplamK": 1600000
+     },
+     {
+      "ad": "A<B Ticaret",
+      "kovalarK": [
+       300000,
+       0,
+       0,
+       0
+      ],
+      "toplamK": 300000
+     }
+    ]
+   },
+   "stopaj": {
+    "kesilen": 4000,
+    "odenen": 4000,
+    "acik": 0,
+    "donemler": [
+     {
+      "donemAdi": "2026 3. dönem (Temmuz-Eylül)",
+      "odemeTarihi": "2026-10-26",
+      "kesilen": 4000,
+      "odenen": 4000,
+      "acik": 0
+     }
+    ]
+   },
+   "tevkifat": null,
+   "sgk": null,
+   "kalemler": [
+    {
+     "tarih": "2026-09-01",
+     "tur": "Kira",
+     "aciklama": "Eylül kirası",
+     "tedarikci": "Yıldız Gayrimenkul",
+     "tutar": 20000,
+     "durum": "Kısmen ödendi"
+    },
+    {
+     "tarih": "2026-09-03",
+     "tur": "Hammadde",
+     "aciklama": "Vida & somun",
+     "tedarikci": "A<B Ticaret",
+     "tutar": 3000,
+     "durum": "Ödenmedi"
+    },
+    {
+     "tarih": "2026-09-05",
+     "tur": "Hammadde",
+     "aciklama": "Sac levha",
+     "tedarikci": "Demir Bant",
+     "tutar": 10000,
+     "durum": "Ödendi"
+    },
+    {
+     "tarih": "2026-09-06",
+     "tur": "Hammadde",
+     "aciklama": "Bant",
+     "tedarikci": "Demir Bant",
+     "tutar": 2000,
+     "durum": "Ödendi"
+    },
+    {
+     "tarih": "2026-09-15",
+     "tur": "Hammadde",
+     "aciklama": "Temizlik",
+     "tedarikci": "",
+     "tutar": 1000,
+     "durum": "Ödendi"
+    },
+    {
+     "tarih": null,
+     "tur": "Personel gideri",
+     "aciklama": "Personel gideri",
+     "tedarikci": "",
+     "tutar": 51233,
+     "durum": "Kısmen ödendi",
+     "personel": true
+    }
+   ],
+   "vadeler": {
+    "gecmis": [
+     {
+      "tarih": "2026-09-01",
+      "tur": "Kira",
+      "tedarikci": "Yıldız Gayrimenkul",
+      "kalanK": 1600000,
+      "vade": "2026-09-10",
+      "gun": -20
+     },
+     {
+      "tarih": "2026-09-03",
+      "tur": "Hammadde",
+      "tedarikci": "A<B Ticaret",
+      "kalanK": 300000,
+      "vade": "2026-09-12",
+      "gun": -18
+     }
+    ],
+    "yaklasan": [
+     {
+      "personel": true,
+      "tarih": null,
+      "tur": "Personel gideri",
+      "tedarikci": "",
+      "adet": 1,
+      "kalanK": 1912200,
+      "vade": "2026-10-05",
+      "gun": 5
+     }
+    ]
+   },
+   "tedarikciKalemleri": [
+    {
+     "ad": "Yıldız Gayrimenkul",
+     "kalemler": [
+      {
+       "tarih": "2026-09-01",
+       "tur": "Kira",
+       "aciklama": "Eylül kirası",
+       "tedarikci": "Yıldız Gayrimenkul",
+       "tutar": 20000,
+       "durum": "Kısmen ödendi"
+      }
+     ]
+    },
+    {
+     "ad": "Demir Bant",
+     "kalemler": [
+      {
+       "tarih": "2026-09-05",
+       "tur": "Hammadde",
+       "aciklama": "Sac levha",
+       "tedarikci": "Demir Bant",
+       "tutar": 10000,
+       "durum": "Ödendi"
+      },
+      {
+       "tarih": "2026-09-06",
+       "tur": "Hammadde",
+       "aciklama": "Bant",
+       "tedarikci": "Demir Bant",
+       "tutar": 2000,
+       "durum": "Ödendi"
+      }
+     ]
+    },
+    {
+     "ad": "A<B Ticaret",
+     "kalemler": [
+      {
+       "tarih": "2026-09-03",
+       "tur": "Hammadde",
+       "aciklama": "Vida & somun",
+       "tedarikci": "A<B Ticaret",
+       "tutar": 3000,
+       "durum": "Ödenmedi"
+      }
+     ]
+    },
+    {
+     "ad": "Tedarikçi seçilmemiş",
+     "kalemler": [
+      {
+       "tarih": "2026-09-15",
+       "tur": "Hammadde",
+       "aciklama": "Temizlik",
+       "tedarikci": "",
+       "tutar": 1000,
+       "durum": "Ödendi"
+      }
+     ]
+    }
+   ]
+  },
+  "kasa": {
+   "bloklar": [
+    {
+     "paraBirimi": "TRY",
+     "satirlar": [
+      {
+       "ad": "Kasa",
+       "tur": "Kasa",
+       "paraBirimi": "TRY",
+       "kapali": false,
+       "devredenK": 0,
+       "acilisSatiriK": 2000000,
+       "girenK": 500000,
+       "cikanK": 3645600,
+       "kapanisK": -1145600
+      },
+      {
+       "ad": "Ziraat",
+       "tur": "Banka",
+       "paraBirimi": "TRY",
+       "kapali": false,
+       "devredenK": 9020000,
+       "acilisSatiriK": 0,
+       "girenK": 820000,
+       "cikanK": 2100000,
+       "kapanisK": 7740000
+      }
+     ],
+     "toplam": {
+      "devredenK": 9020000,
+      "acilisSatiriK": 2000000,
+      "girenK": 1320000,
+      "cikanK": 5745600,
+      "kapanisK": 6594400
+     }
+    },
+    {
+     "paraBirimi": "EUR",
+     "satirlar": [
+      {
+       "ad": "Euro Hesap",
+       "tur": "Banka",
+       "paraBirimi": "EUR",
+       "kapali": false,
+       "devredenK": 0,
+       "acilisSatiriK": 0,
+       "girenK": 150000,
+       "cikanK": 0,
+       "kapanisK": 150000
+      }
+     ],
+     "toplam": {
+      "devredenK": 0,
+      "acilisSatiriK": 0,
+      "girenK": 150000,
+      "cikanK": 0,
+      "kapanisK": 150000
+     }
+    },
+    {
+     "paraBirimi": "USD",
+     "satirlar": [
+      {
+       "ad": "Döviz",
+       "tur": "Banka",
+       "paraBirimi": "USD",
+       "kapali": false,
+       "devredenK": 100000,
+       "acilisSatiriK": 0,
+       "girenK": 0,
+       "cikanK": 0,
+       "kapanisK": 100000
+      }
+     ],
+     "toplam": {
+      "devredenK": 100000,
+      "acilisSatiriK": 0,
+      "girenK": 0,
+      "cikanK": 0,
+      "kapanisK": 100000
+     }
+    }
+   ],
+   "ozet": {
+    "odeme": {
+     "adet": 5,
+     "tutarK": 5245600
+    },
+    "virman": {
+     "adet": 1,
+     "tutarK": 500000
+    },
+    "avans": {
+     "adet": 2,
+     "tutarK": 350000
+    },
+    "mahsup": {
+     "adet": 1,
+     "tutarK": 100000
+    },
+    "tahsilat": {
+     "adet": 3,
+     "tutarK": 970000,
+     "kaynaklar": [
+      {
+       "ad": "Makina tahsilatı",
+       "adet": 2,
+       "tutarK": 850000
+      },
+      {
+       "ad": "Servis tahsilatı",
+       "adet": 1,
+       "tutarK": 120000
+      }
+     ]
+    },
+    "yontemKirilimi": [
+     {
+      "ad": "Nakit",
+      "tutarK": 3345600
+     },
+     {
+      "ad": "Havale",
+      "tutarK": 1600000
+     },
+     {
+      "ad": "Çek (ciro)",
+      "tutarK": 200000
+     },
+     {
+      "ad": "Belirtilmemiş",
+      "tutarK": 100000
+     }
+    ]
+   },
+   "hesapsiz": {
+    "odemeAdet": 1,
+    "avansAdet": 1,
+    "liste": [
+     {
+      "tarih": "2026-09-20",
+      "tutarK": 100000,
+      "etiket": "Temizlik"
+     },
+     {
+      "tarih": null,
+      "tutarK": 50000,
+      "etiket": "Çalışan avansları · 1 adet",
+      "toplu": true
+     }
+    ],
+    "tahsilatAdet": 1,
+    "tahsilatlar": [
+     {
+      "tarih": "2026-09-19",
+      "ad": "Extra Kalıp tahsilatı",
+      "firma": "Kutu Gıda",
+      "tutarK": 50000,
+      "paraBirimi": "TRY"
+     }
+    ]
+   },
+   "cek": {
+    "elde": {
+     "adet": 3,
+     "tutarK": {
+      "TRY": 1150000
+     }
+    },
+    "tahsil": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 400000
+     },
+     "liste": [
+      {
+       "id": 205,
+       "no": "C-205",
+       "banka": "İş Bankası",
+       "tutarK": 400000,
+       "currency": "TRY",
+       "vade": "2026-09-27",
+       "tarih": "2026-09-28"
+      }
+     ]
+    },
+    "ciro": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 200000
+     },
+     "liste": [
+      {
+       "id": 200,
+       "no": "C-200",
+       "banka": "Ziraat",
+       "tutarK": 200000,
+       "currency": "TRY",
+       "vade": "2026-10-01",
+       "tarih": "2026-09-22"
+      }
+     ]
+    },
+    "karsiliksiz": {
+     "adet": 1,
+     "tutarK": {
+      "TRY": 300000
+     },
+     "liste": [
+      {
+       "id": 203,
+       "no": "C-203",
+       "banka": "Halkbank",
+       "tutarK": 300000,
+       "currency": "TRY",
+       "vade": "2026-09-24",
+       "tarih": "2026-09-25"
+      }
+     ]
+    },
+    "gecmisYokAdet": 1
+   },
+   "avansK": 250000,
+   "avansAy": {
+    "verilenK": 350000,
+    "mahsupK": 100000
+   },
+   "odemeler": [
+    {
+     "tarih": "2026-09-11",
+     "hesap": "Ziraat",
+     "yontem": "Havale",
+     "kalem": "Eylül kirası",
+     "hedef": "Vergi dairesine (stopaj)",
+     "tutarK": 400000
+    },
+    {
+     "tarih": "2026-09-18",
+     "hesap": "Ziraat",
+     "yontem": "Havale",
+     "kalem": "Sac levha",
+     "hedef": "",
+     "tutarK": 1200000
+    },
+    {
+     "tarih": "2026-09-20",
+     "hesap": "Hesapsız",
+     "yontem": "Belirtilmemiş",
+     "kalem": "Temizlik",
+     "hedef": "",
+     "tutarK": 100000
+    },
+    {
+     "tarih": "2026-09-22",
+     "hesap": "Çek (ciro)",
+     "yontem": "Çek (ciro)",
+     "kalem": "Bant",
+     "hedef": "",
+     "tutarK": 200000
+    },
+    {
+     "tarih": null,
+     "toplu": true,
+     "kalem": "Personel ödemeleri · 1 adet",
+     "tutarK": 3345600
+    },
+    {
+     "tarih": null,
+     "toplu": true,
+     "kalem": "Çalışan avansları · 2 adet",
+     "tutarK": 350000
+    },
+    {
+     "tarih": null,
+     "toplu": true,
+     "kalem": "Avanstan mahsup · 1 adet",
+     "tutarK": 100000
+    }
+   ],
+   "virmanlar": [
+    {
+     "tarih": "2026-09-12",
+     "kaynak": "Ziraat",
+     "hedef": "Kasa",
+     "tutarK": 500000,
+     "paraBirimi": "TRY"
+    }
+   ],
+   "tahsilatlar": [
+    {
+     "tarih": "2026-09-14",
+     "hesap": "Ziraat",
+     "kaynak": "Makina tahsilatı",
+     "firma": "Kutu Gıda",
+     "tutarK": 700000,
+     "paraBirimi": "TRY"
+    },
+    {
+     "tarih": "2026-09-16",
+     "hesap": "Ziraat",
+     "kaynak": "Servis tahsilatı",
+     "firma": "Kutu Gıda",
+     "tutarK": 120000,
+     "paraBirimi": "TRY"
+    },
+    {
+     "tarih": "2026-09-17",
+     "hesap": "Euro Hesap",
+     "kaynak": "Makina tahsilatı",
+     "firma": "Kutu Gıda",
+     "tutarK": 150000,
+     "paraBirimi": "EUR"
+    }
+   ]
+  },
+  "onceki": {
+   "ay": "2026-08",
+   "yururlukOncesi": false,
+   "gider": {
+    "toplam": 4000,
+    "odenen": 4000,
+    "odenmeyen": 0,
+    "indirilecekKdv": 800,
+    "stopaj": 0
+   },
+   "kasa": {
+    "TRY": {
+     "girenK": 0,
+     "cikanK": 980000,
+     "kapanisK": 9020000
+    },
+    "EUR": {
+     "girenK": 0,
+     "cikanK": 0,
+     "kapanisK": 0
+    },
+    "USD": {
+     "girenK": 0,
+     "cikanK": 0,
+     "kapanisK": 100000
+    }
+   }
+  },
+  "firma": {
+   "name": "Altuntaş Makina",
+   "adres": "Organize Sanayi",
+   "city": "Konya",
+   "country": "Türkiye"
+  }
+ },
+ "raporHtml": "<!DOCTYPE html><html lang=\"tr\"><head><meta charset=\"utf-8\">\n<title>Aylık Gider ve Kasa Raporu 2026-09</title>\n<style>body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;max-width:720px;margin:24px auto;padding:0 16px;} table{border-collapse:collapse;width:100%;}@media print{body{margin:10mm auto;}}</style>\n</head><body>\n  <div style=\"display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px solid #1a1a1a;padding-bottom:8px;margin-bottom:16px;\">\n    <div>\n      <div style=\"font-size:18px;font-weight:800;\">Aylık Gider ve Kasa Raporu</div>\n      <div style=\"font-size:13px;color:#475569;\">Eylül 2026 dönemi</div>\n      <div style=\"font-size:11px;color:#94a3b8;\">Dönem: 01/09/2026 – 30/09/2026</div>\n    </div>\n    <div style=\"text-align:right;font-size:11px;color:#64748b;\">\n      <div style=\"font-weight:700;font-size:13px;color:#1a1a1a;\">Altuntaş Makina</div>\n      <div>Organize Sanayi</div>\n      <div>Konya, Türkiye</div>\n      \n      \n    </div>\n  </div>\n  <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Bu rapor yazdırıldığı andaki veriyle üretilmiştir. Bu aya sonradan kayıt girilir, silinir ya da çöpe atılırsa rakamlar değişir.</div>\n  <div style=\"font-size:14px;font-weight:800;letter-spacing:.5px;border-bottom:3px solid #1a1a1a;padding-bottom:4px;margin:20px 0 10px;\">GİDER</div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · ÖZET</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">Toplam ₺87.233</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">01/09/2026 – 30/09/2026</div>\n      <table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Toplam gider</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺87.233<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: ₺4.000</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ödenen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺13.000<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: ₺4.000</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ödenmeyen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺74.233<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: ₺0</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">İndirilecek KDV</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺2.000<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: ₺800</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kesilen stopaj</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺4.000<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: ₺0</span></td></tr></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · TÜR KIRILIMI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TÜRLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kalem</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Toplam</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kira</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺20.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">4</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺16.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Personel gideri</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺51.233</td></tr></tbody></table></div>\n    </div><!--ek-odeme--><div data-bolum=\"ek-odeme\">\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · EK ÖDEMELER (TÜR BAZINDA)</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">EK ÖDEMELER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Toplam</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Prim</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺2.345</td></tr></tbody></table>\n      <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Tutarlar tür bazında toplamdır; çalışan adı, kişi bazlı tutar ve ödeme biçimi ayrımı yazılmaz.</div></div>\n    </div></div><!--/ek-odeme-->\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · TEDARİKÇİ KIRILIMI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">harcama dönem, açık borç 30/09/2026 itibarıyla</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TEDARİKÇİLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tedarikçi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Harcama</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açık borç</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yıldız Gayrimenkul</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺20.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺16.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Demir Bant</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺12.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺0</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">A&lt;B Ticaret</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Tedarikçi seçilmemiş</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺0</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>Toplam</b></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺36.000</b></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺19.000</b></td></tr></tbody></table>\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">Yıldız Gayrimenkul · bu ayın kalemleri</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açıklama</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">01.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kira</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Eylül kirası</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺20.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kısmen ödendi</td></tr></tbody></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">Demir Bant · bu ayın kalemleri</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açıklama</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">05.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Sac levha</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺10.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">06.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bant</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺2.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr></tbody></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">A&lt;B Ticaret · bu ayın kalemleri</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açıklama</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">03.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Vida &amp; somun</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr></tbody></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">Tedarikçi seçilmemiş · bu ayın kalemleri</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açıklama</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">15.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Temizlik</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr></tbody></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · ÖDEME DURUMU</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">30/09/2026 itibarıyla</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Vadesi geçmiş</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">2 kalem · ₺19.000</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Yaklaşan (ay sonundan sonraki 7 gün)</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">1 kalem · ₺19.122</td></tr></table>\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">VADESİ GEÇMİŞ KALEMLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tedarikçi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kalan</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Vade</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Gün</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">01.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kira</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yıldız Gayrimenkul</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺16.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">10.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">20 gün geçti</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">03.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">A&lt;B Ticaret</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">12.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">18 gün geçti</td></tr></tbody></table>\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YAKLAŞAN KALEMLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tedarikçi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kalan</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Vade</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Gün</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ay geneli</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Personel gideri · 1 kalem</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺19.122</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">05.10.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">5 gün kaldı</td></tr></tbody></table>\n      <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Gün sütunu ay sonuna (30/09/2026) göre ölçülür, bugüne göre değil.</div></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · AÇIK KALEMLER YAŞLANDIRMASI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">yaş gider tarihinden, 30/09/2026 itibarıyla</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">KOVALAR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Yaş aralığı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kalem</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kalan</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Pay</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">0-30 gün</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺38.122</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">%100</td></tr></tbody></table>\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TARAFLAR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Taraf</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">0-30 gün</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">31-60 gün</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">61-90 gün</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">90+ gün</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Toplam</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Çalışanlar</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺19.122</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺19.122</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yıldız Gayrimenkul</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺16.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺16.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">A&lt;B Ticaret</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.000</td></tr></tbody></table>\n      <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Yaş, kalemin gider tarihinden ay sonuna kadar geçen gündür; vadesi girilmemiş kalemler dahildir. Personel tek satırdır, çalışan adı ve kişi bazlı tutar yazılmaz.</div></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · STOPAJ</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">kesilen 01/09/2026 – 30/09/2026, ödeme durumu 30/09/2026 itibarıyla</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kesilen stopaj</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺4.000</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ödenen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺4.000</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay sonunda açık</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺0</td></tr></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">BEYAN DÖNEMLERİ</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Dönem</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kesilen</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Ödenen</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açık</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Ödeme tarihi</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">2026 3. dönem (Temmuz-Eylül)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺4.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺4.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺0</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">26.10.2026</td></tr></tbody></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · KDV KARŞILAŞTIRMASI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Hesaplanan satış KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺200</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">İndirilecek gider KDV'si</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺2.000</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Fark</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺-1.800</td></tr></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · ÖDEME YÖNTEMİ KIRILIMI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">ayın kalemlerine yapılan ödemeler</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YÖNTEMLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Yöntem</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Havale</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺16.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Çek (ciro)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺2.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Belirtilmemiş</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Personel ödemeleri</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺32.111</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>Toplam</b></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺51.111</b></td></tr></tbody></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">GİDER · KALEM LİSTESİ</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">KALEMLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açıklama</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tedarikçi</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Durum</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">01.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kira</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Eylül kirası</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Yıldız Gayrimenkul</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺20.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kısmen ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">03.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Vida &amp; somun</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">A&lt;B Ticaret</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödenmedi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">05.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Sac levha</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Demir Bant</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺10.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">06.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bant</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Demir Bant</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺2.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">15.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hammadde</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Temizlik</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödendi</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ay geneli</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Personel gideri</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Personel gideri</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺51.233</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kısmen ödendi</td></tr></tbody></table></div>\n    </div><div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Uygulamanın gider toplamı vergi matrahı değildir: uygulama harcanan parayı ölçer; kanunen kabul edilmeyen gider (KKEG), amortisman ve benzeri vergi kavramları matrahı ayrıca belirler.</div>\n  <div style=\"font-size:14px;font-weight:800;letter-spacing:.5px;border-bottom:3px solid #1a1a1a;padding-bottom:4px;margin:20px 0 10px;\">KASA</div>\n  <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Kasa bölümü nakit hareketlerini gösterir, gelir raporu değildir; Finans'ın Aylık Faaliyet Raporu'ndaki ciroyla toplanmaz.</div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · ÖZET</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">kapanış 30/09/2026 itibarıyla</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TRY</div><table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kasaya giren</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺13.200<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: ₺0</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kasadan çıkan</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺57.456<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: ₺9.800</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay sonu toplam bakiye</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺65.944<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: ₺90.200</span></td></tr></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">EUR</div><table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kasaya giren</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">€1.500<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: €0</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kasadan çıkan</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">€0<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: €0</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay sonu toplam bakiye</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">€1.500<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: €0</span></td></tr></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">USD</div><table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kasaya giren</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">$0<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: $0</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Kasadan çıkan</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">$0<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: $0</span></td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay sonu toplam bakiye</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">$1.000<span style=\"font-weight:400;color:#94a3b8;font-size:10px;\"> · geçen ay: $1.000</span></td></tr></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · HESAPLAR</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026, kapanış 30/09/2026 itibarıyla</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TRY</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hesap</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Ay açılışı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açılış kaydı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Giren</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Çıkan</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kapanış</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kasa</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kasa</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺0</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺20.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺5.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺36.456</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺-11.456</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ziraat</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Banka</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺90.200</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺8.200</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺21.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺77.400</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>Toplam</b></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺90.200</b></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺20.000</b></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺13.200</b></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺57.456</b></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺65.944</b></td></tr></tbody></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">EUR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hesap</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Ay açılışı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açılış kaydı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Giren</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Çıkan</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kapanış</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Euro Hesap</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Banka</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">€0</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">€1.500</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">€0</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">€1.500</td></tr></tbody></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">USD</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hesap</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tür</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Ay açılışı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Açılış kaydı</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Giren</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Çıkan</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kapanış</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Döviz</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Banka</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">$1.000</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">—</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">$0</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">$0</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">$1.000</td></tr></tbody></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · HAREKET ÖZETİ</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">HAREKETLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hareket</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Adet</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ödeme</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">5</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺52.456</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Tahsilat (hesaba giren)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">3</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺9.700</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">&nbsp;&nbsp;Makina tahsilatı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">2</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺8.500</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">&nbsp;&nbsp;Servis tahsilatı</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.200</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Virman</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺5.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Avans</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">2</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.500</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Mahsup</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">1</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td></tr></tbody></table>\n      <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Mahsup para hareketi değildir, hiçbir bakiyeye girmez.</div></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · AYIN ÖDEME HAREKETLERİ</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">ÖDEME HAREKETLERİ</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hesap</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Yöntem</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kalem</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hedef</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">11.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ziraat</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Havale</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Eylül kirası</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Vergi dairesine (stopaj)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺4.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">18.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ziraat</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Havale</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Sac levha</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺12.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">20.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Hesapsız</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Belirtilmemiş</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Temizlik</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">22.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Çek (ciro)</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Çek (ciro)</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Bant</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺2.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ay geneli</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Personel ödemeleri · 1 adet</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺33.456</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ay geneli</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Çalışan avansları · 2 adet</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.500</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ay geneli</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Avanstan mahsup · 1 adet</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td></tr></tbody></table><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">VİRMANLAR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kaynak hesap</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hedef hesap</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">12.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ziraat</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kasa</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺5.000</td></tr></tbody></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · AYIN TAHSİLAT HAREKETLERİ</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026, yalnız hesaba girenler</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">TAHSİLATLAR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Hesap</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kaynak</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Para birimi</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">14.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ziraat</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Makina tahsilatı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kutu Gıda</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺7.000</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">TRY</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">16.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ziraat</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Servis tahsilatı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kutu Gıda</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.200</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">TRY</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">17.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Euro Hesap</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Makina tahsilatı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kutu Gıda</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">€1.500</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">EUR</td></tr></tbody></table></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · ÖDEME YÖNTEMİ KIRILIMI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">ay içinde yapılan ödeme hareketleri</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">YÖNTEMLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Yöntem</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Nakit</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺33.456</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Havale</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺16.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Çek (ciro)</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺2.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Belirtilmemiş</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>Toplam</b></td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\"><b>₺52.456</b></td></tr></tbody></table>\n      <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Gider bölümü ayın kalemlerine yapılan ödemeleri, Kasa bölümü ay içinde yapılan ödeme hareketlerini sayar; iki kırılım farklı olabilir.</div></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · HESABI BELİRTİLMEMİŞ HAREKETLER</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">01/09/2026 – 30/09/2026</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">ÖDEMELER VE AVANSLAR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Kalem</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">20.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Temizlik</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺1.000</td></tr><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ay geneli</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Çalışan avansları · 1 adet</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺500</td></tr></tbody></table>\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">HESABI BELİRTİLMEMİŞ TAHSİLATLAR</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tahsilat</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Firma</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">19.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Extra Kalıp tahsilatı</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Kutu Gıda</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺500</td></tr></tbody></table>\n      <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Hesabı belirtilmemiş hareketler hiçbir hesabın bakiyesine girmez; rapordaki bakiye ile gerçek bakiye arasındaki fark buradan doğabilir. Personel ödemeleri ve çalışan avansları toplu yazılır; ayrıntı Giderler ve Kasa ekranlarındadır. Ciro hareketleri kasıtlı olarak hesapsızdır ve bu sayıya girmez; ciro edilen çekler çek bölümündedir.</div></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · ÇEK PORTFÖYÜ</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">elde olan 30/09/2026 itibarıyla, diğerleri 01/09/2026 – 30/09/2026</span>\n      </div>\n      <div style=\"padding:10px 12px;\">\n      <table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay sonunda elde</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">3 adet · ₺11.500</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde tahsil edilen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">1 adet · ₺4.000</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde ciro edilen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">1 adet · ₺2.000</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde karşılıksız çıkan</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">1 adet · ₺3.000</td></tr></table>\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">AY İÇİNDE TAHSİL EDİLEN ÇEKLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Numara</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Banka</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Vade</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">28.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">C-205</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">İş Bankası</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">27.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺4.000</td></tr></tbody></table>\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">AY İÇİNDE CİRO EDİLEN ÇEKLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Numara</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Banka</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Vade</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">22.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">C-200</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Ziraat</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">01.10.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺2.000</td></tr></tbody></table>\n      <div style=\"font-size:10px;font-weight:700;color:#94a3b8;margin-top:8px;\">AY İÇİNDE KARŞILIKSIZ ÇIKAN ÇEKLER</div><table><thead><tr><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tarih</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Numara</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Banka</th><th style=\"text-align:left;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Vade</th><th style=\"text-align:right;padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;\">Tutar</th></tr></thead><tbody><tr><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">25.09.2026</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">C-203</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">Halkbank</td><td style=\"text-align:left;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">24.09.2026</td><td style=\"text-align:right;padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;\">₺3.000</td></tr></tbody></table>\n      <div style=\"font-size:9.5px;color:#94a3b8;margin-top:6px;\">Geçmişi kaydedilmemiş eski çeklerde güncel durum kullanıldı.</div></div>\n    </div>\n    <div style=\"border:1px solid #e2e8f0;border-radius:8px;margin-bottom:12px;overflow:hidden;\">\n      <div style=\"background:#211d19;color:#fff;padding:7px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;\">\n        <span style=\"font-weight:700;font-size:11.5px;letter-spacing:.4px;\">KASA · AÇIK ÇALIŞAN AVANSI</span>\n        <span style=\"font-size:11px;color:#f4c9ac;white-space:nowrap;text-align:right;\">30/09/2026 itibarıyla</span>\n      </div>\n      <div style=\"padding:10px 12px;\"><table><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde verilen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺3.500</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Ay içinde mahsup edilen</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺1.000</td></tr><tr><td style=\"padding:3px 8px 3px 0;color:#64748b;font-size:11px;\">Açık avans toplamı</td><td style=\"padding:3px 0;font-weight:700;font-size:12px;\">₺2.500</td></tr></table></div>\n    </div>\n</body></html>",
+ "k1Id": 1
+}

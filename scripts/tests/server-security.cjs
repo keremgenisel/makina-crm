@@ -459,6 +459,19 @@ process.on("uncaughtException", (e) => { console.error("FAIL (uncaught):", e && 
     check("spec 0151 AC-41: kasa_hesap'sız kullanıcı düzeltmeyi geri alamaz → 403",
       (await postData({ ...g, dataVersion: undefined, hesapHareketleri: g.hesapHareketleri.map(h => { if (h.id !== 9173) return h; const { deletedAt: _d, ...r } = h; return r; }) }, g.dataVersion, duzTok)).status === 403);
   }
+  // Spec 0152 C6 (DoD): bozdurma yeni izin istemez; virman izni + Kasa sekmesiyle yazılır ve iki bacak sunucudan geri okunur.
+  {
+    const duzTok = (await login("duzeltmesiz", "duz12345")).body.token;
+    // Triyaj (bulgu 4): bozdurma iki farklı hesap arasında (USD 9175 → TL 9043); USD hesabı admin açar.
+    const gA = await gUst(adminTok);
+    await postData({ ...gA, dataVersion: undefined, kasaHesaplari: [...(gA.kasaHesaplari || []), { id: 9175, ad: "Dolar Hesap", tur: "banka", paraBirimi: "USD", acilisBakiyesi: 0, kapali: false }] }, gA.dataVersion, adminTok);
+    const g = await gUst(duzTok);
+    const bz = { id: 9174, tur: "virman", tarih: "2026-09-06", tutar: 100, hesapId: 9175, karsiHesapId: 9043, karsiTutar: 3550, kur: 35.5, paraBirimi: "USD", karsiParaBirimi: "TRY" };
+    const r = await postData({ ...g, dataVersion: undefined, hesapHareketleri: [...g.hesapHareketleri, bz] }, g.dataVersion, duzTok);
+    const geri = (await gUst(adminTok)).hesapHareketleri.find(h => h.id === 9174);
+    check("spec 0152: virman izinli Kasa kullanıcısı bozdurma yazar → 200; karşı bacak, kur ve iki para birimi geri okunur",
+      r.status === 200 && geri?.karsiTutar === 3550 && geri.kur === 35.5 && geri.paraBirimi === "USD" && geri.karsiParaBirimi === "TRY" && !("dovizTutar" in geri));
+  }
   gK = await gUst(odemeTok);
   check("spec 0052 triyaj: Kasa'lı kullanıcı virman yazar → 200",
     (await postData({ ...gK, dataVersion: undefined, hesapHareketleri: [...gK.hesapHareketleri, { id: 9064, tur: "virman", tarih: "2026-09-06", tutar: 1, hesapId: 9043, karsiHesapId: 9043 }] }, gK.dataVersion, odemeTok)).status === 200);

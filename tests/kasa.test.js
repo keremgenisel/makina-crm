@@ -1,4 +1,5 @@
 // Spec 0024 A: kasa, banka ve kredi kartı hesapları; ödemenin kalemden ayrılması (saf motor).
+import { KUR_BOS_HATASI } from "../src/lib/doviz";
 import { describe, it, expect } from "vitest";
 import {
   hesapDogrula, hesapBakiyeleri, hesapsizOdemeler, hesapKullanimi, secilebilirHesaplar, odemeDogrula, virmanDogrula, sonKullanilanHesap,
@@ -74,9 +75,9 @@ describe("Spec 0024 A: ödeme hareketi ve durum (R2, R3, R18)", () => {
     const taksitli = kayit({ ...KALEM, taksitSayisi: 3, sonOdemeTarihi: "2026-10-15" });
     expect(odemeDogrula({ tarih: "2026-09-20", tutar: "1" }, { kalem: uygula([taksitli], [])[0], turMap }).hatalar.hedef).toBe("Taksitli kalemde ödeme bir taksite bağlanır.");
   });
-  it("C5: gider ödemesi kapalı ya da TL dışı hesaptan yapılamaz", () => {
+  it("C5: gider ödemesi kapalı hesaptan yapılamaz; TL dışı hesap kur ister (spec 0152 ile)", () => {
     const k = uygula([KALEM], [])[0];
-    expect(odemeDogrula({ tarih: "2026-09-20", tutar: "100", hesapId: 102 }, { kalem: k, turMap, hesaplar: [USD] }).hatalar.hesapId).toBe("Gider ödemesi yalnız TL hesaptan yapılır.");
+    expect(odemeDogrula({ tarih: "2026-09-20", tutar: "100", hesapId: 102 }, { kalem: k, turMap, hesaplar: [USD] }).hatalar.kur).toBe(KUR_BOS_HATASI);
     expect(odemeDogrula({ tarih: "2026-09-20", tutar: "100", hesapId: 101 }, { kalem: k, turMap, hesaplar: [{ ...BANKA, kapali: true }] }).hatalar.hesapId).toBe("Kapatılmış hesaba hareket girilemez.");
   });
   it("AC-20 / AC-36: taksit ödemesi bir hareket; taksidin durumu hareketten türer, saklı bayrak okunmaz", () => {
@@ -145,9 +146,9 @@ describe("Spec 0024 A: hesap bakiyesi (R6–R8, R15, C5)", () => {
     const r = hesaplaGiderRaporu({ giderler: [], turler: TUR }, { baslangic: "2026-09-01", bitis: "2026-09-30" }, { bugun: BUGUN });
     expect(r.toplam).toBe(0);
   });
-  it("AC-30: farklı para biriminde iki hesap arasında virman kaydedilemez", () => {
-    expect(virmanDogrula({ hesapId: 101, karsiHesapId: 102, tutar: "10", tarih: "2026-09-20" }, [BANKA, USD]).hatalar.karsiHesapId)
-      .toBe("Farklı para birimindeki hesaplar arasında virman yapılamaz.");
+  it("AC-30 (spec 0152 ile): farklı para biriminde iki hesap arasında virman kur ister; kurla bozdurma olarak kaydedilir", () => {
+    expect(virmanDogrula({ hesapId: 101, karsiHesapId: 102, tutar: "10", tarih: "2026-09-20" }, [BANKA, USD]).hatalar.kur).toBe(KUR_BOS_HATASI);
+    expect(virmanDogrula({ hesapId: 101, karsiHesapId: 102, tutar: "10", kur: "0,025", tarih: "2026-09-20" }, [BANKA, USD]).kayit.karsiTutar).toBe(0.25);
   });
   it("AC-31: kredi kartı bakiyesi borç olarak (açılış 2.000 + harcama 1.500 = 3.500 borç)", () => {
     expect(b.get("103")).toMatchObject({ bakiye: -3500, borc: 3500 });

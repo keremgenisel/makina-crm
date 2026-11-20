@@ -174,7 +174,8 @@ dbmod.writeBlobToDb({
   ],
   // Spec 0024 A: kasa hesapları ve hareketler.
   kasaHesaplari: [{ id: 97, ad: "Ziraat", tur: "banka", paraBirimi: "TRY", acilisBakiyesi: 100000.5, acilisTarihi: "2026-01-01", kapali: false },
-    { id: 98, ad: "Kart", tur: "kart", paraBirimi: "TRY", acilisBakiyesi: -2000, acilisTarihi: null, kapali: true }],
+    { id: 98, ad: "Kart", tur: "kart", paraBirimi: "TRY", acilisBakiyesi: -2000, acilisTarihi: null, kapali: true },
+    { id: 99, ad: "Dolar", tur: "banka", paraBirimi: "USD", acilisBakiyesi: 0, acilisTarihi: "2026-01-01", kapali: false }],
   hesapHareketleri: [{ id: 971, tur: "odeme", tarih: "2026-07-05", tutar: 1234.56, yontem: "Havale", hesapId: 97, karsiHesapId: null, giderId: 81, taksitId: null, tamKapatir: false, kaynak: null, gocKaynak: null, aciklama: "kısmi" },
     { id: 972, tur: "virman", tarih: "2026-07-06", tutar: 500, hesapId: 97, karsiHesapId: 98, aciklama: "" },
     { id: 973, tur: "odeme", tarih: "2026-07-07", tutar: null, giderId: 82, taksitId: 9002, tamKapatir: true, kaynak: "goc", gocKaynak: "taksit:82:9002" },
@@ -182,7 +183,10 @@ dbmod.writeBlobToDb({
     { id: 975, tur: "mahsup", tarih: "2026-07-09", tutar: 1000, calisanId: 55, giderId: 81, taksitId: null },
     { id: 976, tur: "odeme", tarih: "2026-07-10", tutar: 500, giderId: 81, yontem: "Çek (ciro)", hesapId: null, cekId: 991 },
     // Spec 0151 R1/2, C4/2 (AC-23, AC-24): bakiye düzeltmesi; yön ayrı sütunda, tutar pozitif.
-    { id: 979, tur: "duzeltme", tarih: "2026-07-11", tutar: 250.5, yon: "cikan", hesapId: 97, aciklama: "Ekstre" }],
+    { id: 979, tur: "duzeltme", tarih: "2026-07-11", tutar: 250.5, yon: "cikan", hesapId: 97, aciklama: "Ekstre" },
+    // Spec 0152 R2/2, R10/2, P4 (AC-25, AC-27): döviz ödeme (TL tutar + döviz tutar + kur + para birimi) ve bozdurma (iki bacak).
+    { id: 980, tur: "odeme", tarih: "2026-07-12", tutar: 3550, yontem: "Havale", hesapId: 99, giderId: 81, taksitId: null, dovizTutar: 100, kur: 35.5, paraBirimi: "USD" },
+    { id: 981, tur: "virman", tarih: "2026-07-13", tutar: 200, hesapId: 99, karsiHesapId: 97, karsiTutar: 7100, kur: 35.5, paraBirimi: "USD", karsiParaBirimi: "TRY" }],
   // Spec 0058: kasa iş listesinden kapsam dışı bırakılanlar (tahsilat ve hareket girişi).
   kasaKapsamDisi: [{ id: 9581, tur: "tahsilat", kaynak: "servis", kayitId: 4242, zaman: "2026-10-01T10:00:00.000Z" },
     { id: 9582, tur: "hareket", kaynak: null, kayitId: 976, zaman: "2026-10-01T10:05:00.000Z" }],
@@ -303,6 +307,13 @@ check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boo
     return d?.tur === "duzeltme" && d.yon === "cikan" && d.tutar === 250.5 && d.hesapId === 97 && d.aciklama === "Ekstre"
       && m.filter(x => x.id !== 979).every(x => !("yon" in x));
   })());
+  check("spec 0152: döviz ödeme ve bozdurmanın alanları tam turu; döviz olmayan harekete beş alanın hiçbiri yazılmaz (AC-25, AC-26, AC-27)", (() => {
+    const o = m.find(x => x.id === 980), b = m.find(x => x.id === 981);
+    const alanlar = ["dovizTutar", "kur", "paraBirimi", "karsiTutar", "karsiParaBirimi"];
+    return o?.tutar === 3550 && o.dovizTutar === 100 && o.kur === 35.5 && o.paraBirimi === "USD" && !("karsiTutar" in o)
+      && b?.tutar === 200 && b.karsiTutar === 7100 && b.kur === 35.5 && b.paraBirimi === "USD" && b.karsiParaBirimi === "TRY" && !("dovizTutar" in b)
+      && m.filter(x => x.id !== 980 && x.id !== 981).every(x => alanlar.every(a => !(a in x)));
+  })());
   check("spec 0040: çek kaydı (geçmiş JSON) ve ciro hareketinin cekId'si tam turu", (() => {
     const c = (blob.cekler || []).find(x => x.id === 991);
     return c?.paymentId === 900 && c.no === "123456" && c.banka === "Ziraat" && c.kesideci === "Ali Veli" && c.tur === "resmi" && c.durum === "ciro"
@@ -316,7 +327,7 @@ check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boo
   })());
   check("spec 0024 B: avans ve mahsup çalışan bağıyla tam turu", m.find(x => x.id === 974)?.calisanId === 55 && m.find(x => x.id === 974)?.hesapId == null
     && m.find(x => x.id === 975)?.tur === "mahsup" && m.find(x => x.id === 975)?.giderId === 81 && m.find(x => x.id === 975)?.calisanId === 55);
-  return h.length === 2 && z?.acilisBakiyesi === 100000.5 && z.kapali === false && k?.kapali === true && k.acilisBakiyesi === -2000
+  return h.length === 3 /* spec 0152 ile: USD hesap (99) eklendi */ && z?.acilisBakiyesi === 100000.5 && z.kapali === false && k?.kapali === true && k.acilisBakiyesi === -2000
     && o?.tutar === 1234.56 && o.hesapId === 97 && o.giderId === 81 && o.tamKapatir === false && o.aciklama === "kısmi"
     && v?.tur === "virman" && v.karsiHesapId === 98 && g?.tamKapatir === true && g.tutar == null && g.gocKaynak === "taksit:82:9002";
 })());

@@ -96,8 +96,8 @@ describe("Giderden ödeme → hesap bakiyesi (R2, R7)", () => {
     fireEvent.click(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödeme kaydet"));
     const pencere = screen.getByTestId("odeme-kayit-penceresi");
     const hesap = within(pencere).getByLabelText("Hesap");
-    // Gider TL'dir: yalnız açık TL hesabı seçilebilir (C5).
-    expect([...hesap.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap belirtilmedi", "Ziraat (Banka)"]);
+    // Spec 0152 ile (R1/2): bütün açık hesaplar seçilebilir; döviz hesap kur ister.
+    expect([...hesap.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap belirtilmedi", "Ziraat (Banka)", "Döviz (Banka · USD)"]);
     fireEvent.change(hesap, { target: { value: "51" } });
     fireEvent.click(screen.getByText("Ödemeyi Kaydet"));
     await waitFor(() => expect(within(screen.getByTestId("kalem-listesi")).getByTitle("Ödemeleri görüntüle")).toBeTruthy());

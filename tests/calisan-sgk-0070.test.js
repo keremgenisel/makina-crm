@@ -75,7 +75,8 @@ describe("spec 0070 B: kalem ve toplam (yol parası)", () => {
 describe("spec 0070: değişmeyenler", () => {
   it("AC-35: ödeme doğrulamasının üç imzası değişmedi", () => {
     const kasa = kod("src/lib/kasa.js"), fo = kod("src/lib/formOdemesi.js");
-    expect(kasa).toContain("export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false, kendiCek = false } = {}) => {");
+    // Spec 0152 ile: isteğe bağlı `yalnizTl` seçeneği eklendi (P5).
+    expect(kasa).toContain("export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false, kendiCek = false, yalnizTl = false } = {}) => {");
     expect(kasa).toContain("export const cokluOdemeDogrula = (form, { kalem, turMap, hesaplar = [], hedefAdi = (id) => (id == null ? \"Kalem\" : \"Taksit\") } = {}) => {");
     expect(fo).toMatch(/export const odemeGirisiHazirla = \(kalem, \{\n/);
   });

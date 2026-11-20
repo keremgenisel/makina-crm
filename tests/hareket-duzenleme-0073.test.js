@@ -125,7 +125,8 @@ describe("Spec 0073 B: doğrulama aynı, sınır bu hareket hariç", () => {
   it("AC-12: virman düzenlemesi aynı virman doğrulamasından geçer (aynı para birimi, farklı hesaplar)", () => {
     const f = { hesapId: 51, karsiHesapId: 51, tarih: T, tutar: "100", aciklama: "" };
     expect(virmanDogrula(f, H).hatalar.karsiHesapId).toBe("Aynı hesaba virman yapılamaz.");
-    expect(virmanDogrula({ ...f, karsiHesapId: 54 }, H).hatalar.karsiHesapId).toMatch(/Farklı para birimindeki/);
+    // Spec 0152 ile: farklı para birimi bozdurmadır ve kur ister (R9, R10/3).
+    expect(virmanDogrula({ ...f, karsiHesapId: 54 }, H).hatalar.kur).toMatch(/Kur girilmedi/);
     expect(virmanDogrula({ ...f, karsiHesapId: 52 }, H).kayit).toMatchObject({ tur: "virman", hesapId: 51, karsiHesapId: 52, tutar: 100 });
   });
   it("AC-32 (R23): hesabın açılış tarihinden önceye ve geleceğe tarih girilebilir", () => {
@@ -207,7 +208,8 @@ describe("Spec 0073 E: türev etkiler ve ortak yazma yolu", () => {
 describe("Spec 0073 F: kapsam sınırları", () => {
   it("AC-31: doğrulayıcı imzaları değişmedi", () => {
     const s = readFileSync("src/lib/kasa.js", "utf8");
-    expect(s).toContain("export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false, kendiCek = false } = {}) => {");
+    // Spec 0152 ile: odemeDogrula'ya isteğe bağlı `yalnizTl` seçeneği eklendi (P5); öteki parametreler aynı.
+    expect(s).toContain("export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false, kendiCek = false, yalnizTl = false } = {}) => {");
     expect(s).toContain("export const cokluOdemeDogrula = (form, { kalem, turMap, hesaplar = [], hedefAdi = (id) => (id == null ? \"Kalem\" : \"Taksit\") } = {}) => {");
     expect(s).toContain("export const virmanDogrula = (form, hesaplar = []) => {");
     expect(s).toContain("export const mahsupDogrula = (form, { kalem, turMap, hareketler = [], giderler = [], bugun = null, yururlukAy = null } = {}) => {");

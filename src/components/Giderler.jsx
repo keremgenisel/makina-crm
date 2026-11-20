@@ -26,6 +26,7 @@ import { KdvKarsilastirmaKarti } from "./gider/KdvKarsilastirmaKarti";
 import { Tedarikciler } from "./gider/Tedarikciler";
 import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
+import { dovizIzAyrintisi } from "../lib/doviz"; // spec 0152 R14/4
 import { StopajDonemleri } from "./gider/StopajDonemleri";
 import { stopajBeyanAyari, stopajOdemeTarihi, stopajDonemleri } from "../lib/stopajDonemi";
 import { useKilitListesi } from "../hooks/useKilitListesi";
@@ -46,7 +47,7 @@ const gecerliGorunum = (g) => (GORUNUMLER.some(x => x.value === g) ? g : "rapor"
 export const Giderler = ({
   giderler: giderlerHam = [], setGiderler, giderTanimlari = [], setGiderTanimlari, giderTurleri = [], tedarikciler = [], setTedarikciler,
   calisanlar = [], stock = [], customers = [], standardModels = [], customModels = [], parts = [], malzemeler = [], // spec 0096 R13/5: ham parça dizisi (tedarikçi kullanımı); spec 0140: ham malzemeler (Ana tedarikçi)
-  appSettings = {}, kdvRates, factory = null, rates = null, satisVerisi = {}, serverPermissions = null, showToast = () => {},
+  appSettings = {}, kdvRates, factory = null, rates = null, ratesErr = false, satisVerisi = {}, serverPermissions = null, showToast = () => {},
   // Spec 0003: Anasayfa'daki "Giderlerde Görüntüle" ile gelinirse ödeme süzgeci "hatirlatma" açık başlar.
   baslangicOdemeFiltresi = "",
   // Spec 0026 R3, R18: genel aramadan gelinirse görünüm, dönem ayı ve kalem süzgecinin ilk değeri (vurgu/odak yok, X8).
@@ -159,10 +160,10 @@ export const Giderler = ({
   const odemeleriYaz = (k, od, silinenler = []) => {
     const yazilan = odemeGirisiYaz({ hareketler: od?.hareketler || [], cek: od?.cek || null, silinenler }, { setHesapHareketleri, setCekler, uid });
     const ad = k.aciklama || k.calisanAd || "";
-    for (const h of yazilan) logAction({ serverPermissions, action: h.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: ad, detail: { tutar: h.tutar, yontem: h.yontem || null } });
+    for (const h of yazilan) logAction({ serverPermissions, action: h.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: ad, detail: { tutar: h.tutar, yontem: h.yontem || null, ...dovizIzAyrintisi(h) } });
     for (const id of silinenler) {
       const h = (hesapHareketleri || []).find(x => String(x.id) === String(id));
-      logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: ad, detail: { tutar: h?.tutar ?? null, tarih: h?.tarih ?? null } });
+      logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: ad, detail: { tutar: h?.tutar ?? null, tarih: h?.tarih ?? null, ...dovizIzAyrintisi(h) } });
     }
     if (od?.cek) {
       const yeniCek = od.cek.yon === "verilen";
@@ -235,7 +236,7 @@ export const Giderler = ({
   const odemeSil = (h) => {
     const k = odemeKalemi;
     if (setHesapHareketleri) odemeGirisiYaz({ silinenler: [h.id] }, { setHesapHareketleri, setCekler, uid }); // spec 0073 R20
-    logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: h.tutar ?? null, tarih: h.tarih } });
+    logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: h.tutar ?? null, tarih: h.tarih, ...dovizIzAyrintisi(h) } });
     showToast("Ödeme silindi.");
   };
   const sil = () => {
@@ -406,7 +407,7 @@ export const Giderler = ({
           odemeYetkisi={canDo("gider_odeme")} onIsaretle={satirIsaretle} onClose={() => setPlanKalemId(null)} />
       )}
       {form && (
-        <GiderForm kalem={form.kalemId != null ? giderler.find(k => k.id === form.kalemId) || null : null} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
+        <GiderForm rates={rates} ratesErr={ratesErr} kalem={form.kalemId != null ? giderler.find(k => k.id === form.kalemId) || null : null} giderTurleri={giderTurleri} tedarikciler={tedarikciler} calisanlar={calisanlar}
           giderler={liveGiderler} giderAyarlari={giderAyarlari} kdvRates={kdvRates} odemeDegistirebilir={canDo("gider_odeme") && !!setHesapHareketleri}
           hesaplar={kasaHesaplari} hareketler={hesapHareketleri || []} hareketBolumu={Array.isArray(hesapHareketleri)} hesapSecimi={kasaYetki}
           cekler={cekler} payments={payments} ciroYetkisi={kasaYetki && !!setCekler}
@@ -414,7 +415,7 @@ export const Giderler = ({
       )}
       {/* Spec 0046 Q7: ödeme penceresi formdan SONRA çizilir; düzenleme formunun üstünde açılır. */}
       {odemeKalemi && (
-        <OdemeKayitPenceresi kalem={odemeKalemi} davranis={turMap.get(String(odemeKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(odemeKalemi.turId))?.ad || "Gider"}
+        <OdemeKayitPenceresi rates={rates} ratesErr={ratesErr} kalem={odemeKalemi} davranis={turMap.get(String(odemeKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(odemeKalemi.turId))?.ad || "Gider"}
           turMap={turMap} hedef={odemeHedefi.hedef} hareketler={hesapHareketleri || []} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki}
           odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun} onKaydet={odemeKaydet} onSil={odemeSil} onClose={() => setOdemeHedefi(null)} giderler={giderlerHam} yururlukAy={yururlukAy}
           onDuzenle={odemeDuzenle(odemeKalemi)}

@@ -1768,13 +1768,13 @@ export default function App() {
         {activeTab === "gider"     && giderYetki && <Giderler aktifKullanici={savedUsername} giderler={giderler} setGiderler={setGiderler} giderTanimlari={canliGiderTanimlari} setGiderTanimlari={setGiderTanimlari}
           giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} setTedarikciler={setTedarikciler} parts={parts} malzemeler={malzemeler}
           calisanlar={liveCalisanlar} stock={liveStock} customers={liveCustomers} standardModels={standardModels} customModels={liveCustomModels}
-          appSettings={appSettings} kdvRates={appSettings.kdvRates} factory={factory} rates={rates} serverPermissions={effectivePermissions} showToast={showToast}
+          appSettings={appSettings} kdvRates={appSettings.kdvRates} factory={factory} rates={rates} ratesErr={ratesErr} serverPermissions={effectivePermissions} showToast={showToast}
           satisVerisi={giderSatisVerisi} key={`gider-${giderOdemeFiltresi}-${giderAcilis?.no || 0}`} baslangicOdemeFiltresi={giderOdemeFiltresi}
           baslangicGorunum={giderAcilis?.gorunum || "rapor"} baslangicAy={giderAcilis?.ay || null} baslangicKalemFiltresi={giderAcilis?.kalemFiltresi || null}
           hesapHareketleri={odemeHareketleri} setHesapHareketleri={hareketYazici} hareketBolumuYok={!hareketBolumuVar} kasaHesaplari={kasaYetki ? canliKasaHesaplari : []} kasaYetki={kasaYetki}
           cekler={kasaYetki ? ceklerBagli : []} setCekler={kasaYetki ? setCekler : null} payments={kasaYetki ? livePayments : []}
           giderKasaRaporVerisi={giderKasaRaporVerisi} />}
-        {activeTab === "kasa"      && kasaYetki && <Kasa aktifKullanici={savedUsername} kasaHesaplari={canliKasaHesaplari} hamKasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={canliHareketler} setHesapHareketleri={hareketYazici}
+        {activeTab === "kasa"      && kasaYetki && <Kasa aktifKullanici={savedUsername} rates={rates} ratesErr={ratesErr} kasaHesaplari={canliKasaHesaplari} hamKasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={canliHareketler} setHesapHareketleri={hareketYazici}
           payments={livePayments} customers={liveCustomers} giderler={giderlerOdemeli} giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} serverPermissions={effectivePermissions} showToast={showToast}
           calisanlar={calisanlar} yururlukAy={appSettings.giderAyarlari?.yururlukAy || null}
           cekler={cekler} setCekler={setCekler} giderAyarlari={appSettings.giderAyarlari || {}}

@@ -1,3 +1,4 @@
+import { dovizIzAyrintisi } from "./doviz"; // spec 0152 R14/4 (AC-52)
 let _localUsername = "yerel";
 export function setAuditUsername(name) { _localUsername = name || "yerel"; }
 // Görüşme kayıtları gibi "kim yaptı" alanı taşıyan kayıtlar için — App açılışta config'ten set eder
@@ -62,4 +63,4 @@ export const snapshotOnceki = (kayit) => {
 export const HAREKET_ENTITY = { odeme: "kasa_hareketi", mahsup: "kasa_hareketi", virman: "virman", avans: "avans" };
 export const hareketDuzenlemeKaydi = ({ serverPermissions, guncellenen, onceki, ad = "" }) =>
   logAction({ serverPermissions, action: "duzenlendi", entity: HAREKET_ENTITY[guncellenen?.tur] || "kasa_hareketi", entityId: guncellenen?.id, entityName: ad,
-    detail: { onceki: snapshotOnceki(onceki), tutar: guncellenen?.tutar ?? null, tarih: guncellenen?.tarih ?? null } });
+    detail: { onceki: snapshotOnceki(onceki), tutar: guncellenen?.tutar ?? null, tarih: guncellenen?.tarih ?? null, ...dovizIzAyrintisi(guncellenen) } });

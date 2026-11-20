@@ -55,7 +55,8 @@ describe("Spec 0046: hedef bazlı ödeme satırları", () => {
     fireEvent.click(L("Maaş (elden) ödendi"));
     expect(L("Maaş (resmi) hesabı").value).toBe("52");
     expect(L("Maaş (elden) hesabı").value).toBe("52");
-    expect(secenekler(L("Maaş (resmi) hesabı"))).toEqual(["Hesap belirtilmedi", "Ziraat (Banka)", "Kasa (Kasa)"]);
+    // Spec 0152 ile (R1/2, AC-30): döviz hesap da listede; ön seçim yine son kullanılan TL hesap (P1).
+    expect(secenekler(L("Maaş (resmi) hesabı"))).toEqual(["Hesap belirtilmedi", "Ziraat (Banka)", "Kasa (Kasa)", "Dolar (Banka · USD)"]);
   });
   it("AC-2 / AC-3: resmi bankadan havaleyle, elden kasadan nakitle; iki ayrı hareket ve iki hesap ayrı düşer", () => {
     let st;

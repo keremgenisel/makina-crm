@@ -144,7 +144,7 @@ describe("Spec 0073 A: iki liste, düzenleme ve hesap değişimi", () => {
     hesapSec("Akbank");
     fireEvent.click(within(satir("Virman")).getByLabelText("Hareketi düzenle: Akbank → Merkez Kasa"));
     const f = screen.getByTestId("virman-formu");
-    expect(screen.getByText("Virmanı Düzenle")).toBeTruthy();
+    expect(screen.getByText("Virman / Bozdurma · Düzenle")).toBeTruthy(); // spec 0152 ile (R9/2)
     fireEvent.change(within(f).getAllByRole("combobox")[0], { target: { value: "3" } });
     fireEvent.change(within(f).getAllByRole("combobox")[1], { target: { value: "2" } });
     fireEvent.change(within(f).getByLabelText("Virman tutarı"), { target: { value: "650" } });

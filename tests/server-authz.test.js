@@ -1868,3 +1868,19 @@ describe("spec 0151: bakiye düzeltmesi hesap yönetimi iznine ve Kasa sekmesine
     }
   });
 });
+
+// ── Spec 0152 C6 (AC-14, DoD): yeni izin yok; döviz ödeme bugünkü ödeme izniyle, bozdurma virman izni ve Kasa sekmesiyle ───
+describe("spec 0152: döviz ödeme ve bozdurma bugünkü izinlerle", () => {
+  const izin = (ids, tabs = ["dashboard", "gider", "finance", "kasa"]) => JSON.stringify({ tabs, giderActions: ids, customerActions: [] });
+  const od = { id: 91, tur: "odeme", tarih: "2026-11-10", tutar: 1775, yontem: "Havale", hesapId: 53, giderId: 7, taksitId: null, dovizTutar: 50, kur: 35.5, paraBirimi: "USD" };
+  const bz = { id: 92, tur: "virman", tarih: "2026-11-10", tutar: 100, hesapId: 53, karsiHesapId: 51, karsiTutar: 3550, kur: 35.5, paraBirimi: "USD", karsiParaBirimi: "TRY" };
+  it("döviz ödeme gider_odeme ile yazılır (Kasa sekmesi istemez); izni olmayan reddedilir", () => {
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [od] }, izin(["gider_odeme"], ["dashboard", "gider", "finance"]), "user").ok).toBe(true);
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [od] }, izin(["virman"]), "user").ok).toBe(false);
+  });
+  it("bozdurma virman izni ve Kasa sekmesiyle yazılır; Kasa sekmesi olmayan ya da virman izni olmayan reddedilir", () => {
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [bz] }, izin(["virman"]), "user").ok).toBe(true);
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [bz] }, izin(["gider_odeme"]), "user").ok).toBe(false);
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [bz] }, izin(["virman"], ["dashboard", "gider", "finance"]), "user").ok).toBe(false);
+  });
+});

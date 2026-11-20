@@ -421,7 +421,7 @@ const H0060 = [
   { id: 4, tur: "odeme", tarih: "2026-09-15", tutar: t0060(603, "ana")[0].tutar, hesapId: 1, giderId: 603, taksitId: t0060(603, "ana")[0].id, yontem: "Havale" },
 ];
 
-function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED, satis = SATIS, parcalar = [], malzemeler = [] }) {
+function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLAR, p0 = [], musteriler = MUSTERILER, stok = [], h0 = null, rapor = null, cekli = false, tedler = TED, satis = SATIS, parcalar = [], malzemeler = [], rates = {}, ratesErr = false }) {
   const [giderler, setGiderler] = useState(g0);
   // Spec 0024: h0 verilirse ödeme durumu hareketlerden türer (App gibi); verilmezse eski ekranlar saklı durumu okur.
   const [hareketler, setHareketler] = useState(h0);
@@ -431,7 +431,7 @@ function GiderEkrani({ g0 = GIDERLER, turler = TURLER, ayar = AYAR, t0 = TANIMLA
   return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={tanimlar} setGiderTanimlari={setTanimlar}
     giderTurleri={turler} tedarikciler={ted} setTedarikciler={setTed}
     calisanlar={CAL} standardModels={MODELLER} customModels={[]} appSettings={ayar} serverPermissions={null}
-    satisVerisi={satis} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={{}} parts={parcalar} malzemeler={malzemeler}
+    satisVerisi={satis} showToast={bos} customers={musteriler} stock={stok} factory={{ name: "Altuntaş Makina" }} rates={rates} ratesErr={ratesErr} parts={parcalar} malzemeler={malzemeler}
     uretimPartileri={partiler} setUretimPartileri={setPartiler}
     setHesapHareketleri={setHareketler} {...(h0 ? { hesapHareketleri: hareketler, kasaHesaplari: KASA_HESAPLAR, kasaYetki: true } : {})}
     {...(rapor ? { giderKasaRaporVerisi: rapor, kasaYetki: true } : {})}
@@ -669,6 +669,11 @@ const CAL_B = [CAL[0], { id: 24, ad: "Veli Kaya", deletedAt: "2026-09-20T10:00:0
 // Spec 0151: bakiye düzeltmesi (Ziraat'te çıkan yönde, açıklamalı; Döviz hesabında giren yönde).
 const KASA_DZ = [{ id: 4151, tur: "duzeltme", tarih: "2026-09-30", tutar: 1250, yon: "cikan", hesapId: 401, aciklama: "Ekstre mutabakatı" },
   { id: 4152, tur: "duzeltme", tarih: "2026-09-29", tutar: 40, yon: "giren", hesapId: 404 }];
+// Spec 0152: döviz ödeme (Döviz Hesabı'ndan, kur 35,5) ve bozdurma (Döviz → Ziraat); günün kuru sabit.
+const KASA_0152 = [odm(4152, 1, 1775, "2026-09-26", { hesapId: 404, dovizTutar: 50, kur: 35.5, paraBirimi: "USD" }),
+  { id: 4153, tur: "virman", tarih: "2026-09-27", tutar: 500, hesapId: 404, karsiHesapId: 401, karsiTutar: 17750, kur: 35.5, paraBirimi: "USD", karsiParaBirimi: "TRY", aciklama: "Dolar bozdurma" }];
+const KUR_0152 = { usd: 35.5, eur: 38.2 };
+const EURO_0152 = { id: 406, ad: "Euro Hesabı", tur: "banka", paraBirimi: "EUR", acilisBakiyesi: 2000, acilisTarihi: "2026-09-01", kapali: false };
 const kasaB = (o = {}) => kasaEkrani({ hesapHareketleri: KASA_B, calisanlar: CAL_B, yururlukAy: "2026-06", ...o });
 const TUR_MAP = turHaritasi(TURLER);
 // Spec 0040: çek portföyü. Bugün (sabit) 2026-09-23: 3401 vadesi geçmiş, 3402 yaklaşan, 3403 tahsilde, 3404 ciro edilmiş (hareketli),
@@ -1655,6 +1660,20 @@ const EKRANLAR = {
   "kasa-0151-satir": [kasaEkrani({ hesapHareketleri: [...KASA_HAREKETLER, ...KASA_DZ] }), ["~Ziraat Bankası"]],
   "kasa-0151-kapali": [kasaEkrani(), ["~Eski Vadesiz"]],
   "kasa-0151-sil-onay": [kasaEkrani({ hesapHareketleri: [...KASA_HAREKETLER, ...KASA_DZ] }), ["~Döviz Hesabı", "baslik:Sil"]],
+  "giderler-0152-doviz-odeme": [<GiderEkrani h0={KASA_HAREKETLER} rates={KUR_0152} />, ["baslik:Ödeme kaydet", "sec:Hesap=404"]],
+  "giderler-0152-kur-yok": [<GiderEkrani h0={KASA_HAREKETLER} rates={null} ratesErr />, ["baslik:Ödeme kaydet", "sec:Hesap=404"]],
+  "giderler-0152-cek-doviz": [<GiderEkrani h0={KASA_HAREKETLER} rates={KUR_0152} cekli />, ["baslik:Ödeme kaydet", "sec:Hesap=404", "kaydir:Kur"]],
+  "kasa-0152-bozdurma": [kasaEkrani({ rates: KUR_0152 }), ["dugme:Virman", "sec:Çıkan hesap=404", "sec:Giren hesap=401", "doldur:Virman tutarı=500"]],
+  "kasa-0152-iki-doviz": [kasaEkrani({ rates: KUR_0152, kasaHesaplari: [...KASA_HESAPLAR, EURO_0152] }), ["dugme:Virman", "sec:Çıkan hesap=404", "sec:Giren hesap=406", "doldur:Virman tutarı=100"]],
+  "kasa-0152-dolar-hareketler": [kasaEkrani({ hesapHareketleri: [...KASA_HAREKETLER, ...KASA_0152] }), ["~Döviz Hesabı"]],
+  "kasa-0152-ziraat-hareketler": [kasaEkrani({ hesapHareketleri: [...KASA_HAREKETLER, ...KASA_0152] }), ["~Ziraat Bankası"]],
+  "gider-kasa-raporu-0152": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu({ ...RAPOR_VERI, hareketler: [...KASA_HAREKETLER, ...KASA_0152] }, "2026-09")) }} />, []],
+  "cop-kutusu-0152": [<SettingsTrash rawCustomers={[]} rawServices={[]} rawPartSales={[]} rawPayments={[]} rawDealers={[]} rawStock={[]} rawNotes={[]}
+    rawKalipDefs={[]} rawParts={[]} rawCustomModels={[]} setCustomers={bos} setServices={bos} setPartSales={bos} setPayments={bos} setDealers={bos} setStock={bos}
+    setNotes={bos} setKalipDefs={bos} setParts={bos} setCustomModels={bos} setTeklifler={bos} setFaturalar={bos} appSettings={{}} showToast={bos} giderYetki kasaVeriYetki
+    giderTurleri={TURLER} setGiderTurleri={bos} rawGiderler={GIDERLER} setGiderler={bos} rawTedarikciler={[]} setTedarikciler={bos} rawUretimPartileri={[]} setUretimPartileri={bos}
+    rawHesapHareketleri={KASA_0152.map(m => ({ ...m, deletedAt: "2026-10-01T09:00:00.000Z" }))} setHesapHareketleri={bos} cekler={[]} setCekler={bos}
+    rawGiderTanimlari={[]} setGiderTanimlari={bos} rawKasaHesaplari={KASA_HESAPLAR.filter(h => h.id !== 404)} setKasaHesaplari={bos} />, []],
   "cop-kutusu-0151": [<SettingsTrash rawCustomers={[]} rawServices={[]} rawPartSales={[]} rawPayments={[]} rawDealers={[]} rawStock={[]} rawNotes={[]}
     rawKalipDefs={[]} rawParts={[]} rawCustomModels={[]} setCustomers={bos} setServices={bos} setPartSales={bos} setPayments={bos} setDealers={bos} setStock={bos}
     setNotes={bos} setKalipDefs={bos} setParts={bos} setCustomModels={bos} setTeklifler={bos} setFaturalar={bos} appSettings={{}} showToast={bos} giderYetki kasaVeriYetki

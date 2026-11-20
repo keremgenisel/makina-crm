@@ -6,6 +6,7 @@
 import { cokluOdemeDogrula, mahsupDogrula, COKLU_ODEME_MAX_SATIR } from "./kasa";
 import { ciroAdaylari, ciroPlani, ciroVarsayilanDagitim, CIRO_YONTEMI, portfoySatirlari, CEK_DURUM, KENDI_CEK_YONTEMI, kendiCekPlani } from "./cek";
 import { parseMoney } from "./utils";
+import { dovizAlanlariYaz, dovizAlanlariOf, dovizHesapYamasi, dovizSatirYamasi } from "./doviz";
 import { tl, kurus, satirliMi, davranisOf, odemeHedefleri, personelHedefKirilimi, personelBolunmezMi, personelEkBolunmezMi, kalemPersonelAyrimi, odemeHedefKalaniK, odemeleriUygula, DAVRANIS, HEDEF, HEDEF_SIRASI } from "./gider";
 
 // Spec 0057 R7, R9, R20: taksitli hedef yalnız bu düzenlemede taksit sayısı değiştiyse pasiftir (satırlar kayıtta yeniden
@@ -144,7 +145,15 @@ export const satirSiralariniEsle = (satirlar = [], hedefler = []) => {
 // R25: her çizilebilir hedefin İLK satırı tam kalanla (spec 0057 R12, R23: taksitli hedefte en yakın vadeli açık taksit, o
 // taksidin kalanıyla), varsayılan yöntem ve hesapla dolar; ek satırlara dokunulmaz, dolu ilk
 // satır değişmez (ikinci basış yalnız boş ilk satırları doldurur). Ciro asla (yöntem varsayılan, elle seçilemeyen değil).
-export const hepsiniOde = (satirlar = [], hedefler = [], { yontem = "", hesapId = "", yeniAnahtar = () => Math.random() } = {}) => {
+// Spec 0152 R4/4, P1 (AC-45): satırın hesabı döviz ise kur önerisiyle (kurOner(paraBirimi) → { deger, neden }) doldurulur ve
+// döviz tutar hesaplanır; öneri yoksa kur boş kalır ve kayıt kur hatasıyla durur. TL satırın şekli değişmez.
+const dovizDoldur = (r, hesaplar, kurOner) => {
+  const h = (hesaplar || []).find(x => String(x.id) === String(r.hesapId));
+  if (!h || (h.paraBirimi || "TRY") === "TRY") return r;
+  const yama = String(r.kur ?? "").trim() ? dovizSatirYamasi(r, "tutar", r.tutar) : dovizHesapYamasi(r, h, kurOner ? kurOner(h.paraBirimi) : null);
+  return { ...r, ...yama };
+};
+export const hepsiniOde = (satirlar = [], hedefler = [], { yontem = "", hesapId = "", yeniAnahtar = () => Math.random(), hesaplar = [], kurOner = null } = {}) => {
   let liste = [...satirlar];
   for (const h of hedefler) {
     if (h.pasif || h.kalanK <= 0) continue;
@@ -152,8 +161,8 @@ export const hepsiniOde = (satirlar = [], hedefler = [], { yontem = "", hesapId 
     const ilk = h.taksitli ? h.acikTaksitler?.[0] : null;
     if (h.taksitli && !ilk) continue;
     const tutar = String(tl(ilk ? ilk.kalanK : h.kalanK)).replace(".", ","); // form durumu ham metin (0045)
-    if (i < 0) liste = [...liste, { anahtar: yeniAnahtar(), hedef: h.hedef, sira: ilk ? ilk.sira : null, tutar, yontem, hesapId, aciklama: "" }];
-    else if (bosMu(liste[i].tutar)) liste = liste.map((r, j) => (j === i ? { ...r, ...(ilk ? { sira: ilk.sira } : {}), tutar, yontem: r.yontem || yontem, hesapId: r.hesapId || hesapId } : r));
+    if (i < 0) liste = [...liste, dovizDoldur({ anahtar: yeniAnahtar(), hedef: h.hedef, sira: ilk ? ilk.sira : null, tutar, yontem, hesapId, aciklama: "" }, hesaplar, kurOner)];
+    else if (bosMu(liste[i].tutar)) liste = liste.map((r, j) => (j === i ? dovizDoldur({ ...r, ...(ilk ? { sira: ilk.sira } : {}), tutar, yontem: r.yontem || yontem, hesapId: r.hesapId || hesapId }, hesaplar, kurOner) : r));
   }
   return liste;
 };
@@ -195,7 +204,8 @@ export const odemeGirisiHazirla = (kalem, {
   for (const [hedef, liste] of gruplar) {
     if (!hedefler.some(h => h.hedef === hedef)) { for (const r of liste) hatalar.satirlar[r.anahtar] = { hedef: "Bu kalemde böyle bir ödeme bölümü yok." }; continue; }
     if (liste.length > COKLU_ODEME_MAX_SATIR) { hatalar.hedefler.push(`${hedefAdi(hedef)}: en çok ${COKLU_ODEME_MAX_SATIR} satır girilebilir; fazlası için ayrı ödeme girin.`); continue; }
-    const giris = liste.map(r => ({ taksitId: satirTaksitId(kalem, hedef, r.sira), tutar: bosMu(r.tutar) ? "0" : r.tutar, yontem: r.yontem || "", hesapId: r.hesapId ?? "", aciklama: r.aciklama || "" }));
+    const giris = liste.map(r => ({ taksitId: satirTaksitId(kalem, hedef, r.sira), tutar: bosMu(r.tutar) ? "0" : r.tutar, yontem: r.yontem || "", hesapId: r.hesapId ?? "", aciklama: r.aciklama || "",
+      kur: r.kur, kurKaynak: r.kurKaynak, dovizTutar: r.dovizTutar })); // spec 0152 R2/3: kur ve döviz tutar satırın alanı
     // Hata metnindeki ad: hedefin adı, taksitli hedefte taksit sırasıyla ("Resmi 2/3. taksit"; 0041 Q7 biçimi).
     const yerAdi = (taksitId) => {
       const sat = satirliMi(kalem) ? kalem.taksitler.filter(r => (r.hedef || HEDEF.ANA) === hedef) : [];
@@ -290,7 +300,7 @@ const hareketDuzenlemeHazirla = (kalem, { turMap, tarih, satirlar = [], mahsup =
     const t = l.find(x => String(x.id) === String(id));
     return `${hedefAdi(hedef)}${t && l.length > 1 ? ` ${t.sira}/${l.length}. taksit` : ""}`;
   };
-  const v = cokluOdemeDogrula({ tarih: tarih || "2000-01-01", satirlar: [{ taksitId, tutar: bosMu(sat.tutar) ? "0" : sat.tutar, yontem: sat.yontem || "", hesapId: sat.hesapId ?? "", aciklama: sat.aciklama || "" }] },
+  const v = cokluOdemeDogrula({ tarih: tarih || "2000-01-01", satirlar: [{ taksitId, tutar: bosMu(sat.tutar) ? "0" : sat.tutar, yontem: sat.yontem || "", hesapId: sat.hesapId ?? "", aciklama: sat.aciklama || "", kur: sat.kur, kurKaynak: sat.kurKaynak, dovizTutar: sat.dovizTutar }] },
     { kalem: zengin, turMap, hesaplar, hedefAdi: yerAdi });
   if (!v.kayitlar) {
     if (v.hatalar.satirlar?.[0]) hatalar.satirlar[sat.anahtar] = v.hatalar.satirlar[0];
@@ -301,7 +311,8 @@ const hareketDuzenlemeHazirla = (kalem, { turMap, tarih, satirlar = [], mahsup =
   if (hatalar.genel.length) return sonuc(null);
   // R5, R12, AC-36: kimlik, tür, bağ (gider kalemi), kaynak ve gocKaynak izi korunur; tamKapatir düşer.
   const k = v.kayitlar[0];
-  return sonuc({ ...duzenlenen, tarih, tutar: k.tutar, yontem: k.yontem, hesapId: k.hesapId, taksitId: k.taksitId, aciklama: k.aciklama, tamKapatir: false, id: duzenlenen.id });
+  // Spec 0152 R14/2 (Karar 12, AC-41): döviz alanları tek yazıcıdan; TL hesaba taşınan ödemenin eski alanları silinir.
+  return sonuc(dovizAlanlariYaz({ ...duzenlenen, tarih, tutar: k.tutar, yontem: k.yontem, hesapId: k.hesapId, taksitId: k.taksitId, aciklama: k.aciklama, tamKapatir: false, id: duzenlenen.id }, dovizAlanlariOf(k)));
 };
 
 // Ciro satırının salt okunur tutarı (0046 Q5, 0053 Q3): çek tutarı ile (hedef kalanı − aynı hedefteki diğer satırlar)

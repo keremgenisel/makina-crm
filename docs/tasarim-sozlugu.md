@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:294`
+**Örnek:** `src/components/Giderler.jsx:295`
 **Örnek:** `src/components/Documents.jsx:1137`
 **Örnek:** `src/components/Customers.jsx:532` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:63` (sekme kipi)
@@ -192,7 +192,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:361`
+**Örnek:** `src/components/Giderler.jsx:362`
 **Örnek:** `src/components/Customers.jsx:567` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:885` (ayrımlı ekran, yalnız başlık)
 
@@ -220,7 +220,7 @@ sırası korunur ve şeridin metni yerine göre yeniden yazılmaz. Örnek: Kasa 
 notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avanslarının altında durur; kullanıcı Kasa'ya bakiyeler için gelir.
 
 **Örnek:** `src/components/Giderler.jsx:329`
-**Örnek:** `src/components/Kasa.jsx:635` (sayfa sonundaki şerit, spec 0083)
+**Örnek:** `src/components/Kasa.jsx:681` (sayfa sonundaki şerit, spec 0083)
 **Örnek:** `src/components/stock/PartStokTab.jsx:158` (hata ailesi)
 
 ### Serbest içerik (spec 0011)

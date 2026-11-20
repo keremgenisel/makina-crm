@@ -2,10 +2,12 @@ import { useState, useMemo } from "react";
 import { uid, fmtTR, fmtCur, today, withoutDeleted } from "../lib/utils";
 import { makeCanDo } from "../lib/permissions";
 import { logAction, snapshotOnceki, hareketDuzenlemeKaydi } from "../lib/audit";
+import { bozdurmaKurOnerisi, bozdurmaYamasi, kurGirdisi, KUR_KAYNAK, ONERI_BUGUN_IBARESI, dovizAlanlariYaz, dovizAlanlariOf, dovizOdemeMi, bozdurmaMi,
+  dovizOdemeIbaresi, bozdurmaIbaresi, dovizIzAyrintisi } from "../lib/doviz";
 import { tl, turHaritasi, davranisOf, DAVRANIS } from "../lib/gider";
 import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { hareketGruplari, hareketHedefPaylari } from "../lib/odemeYontemi";
-import { hesabiSilinmisMi, HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani, hareketDuzenlemeDurumu, tahsilatSatiriIbaresi, VERILEN_CEK_IBARESI, KAPALI_HESAP_NEDENI, avansSilinebilirMi, DUZELTME_TUR, DUZELTME_TUR_ADI, DUZELTME_KAPALI_NEDENI, duzeltmePlani, duzeltmeYonAdi, duzeltmeIbaresi } from "../lib/kasa";
+import { hesabiSilinmisMi, HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani, hareketDuzenlemeDurumu, tahsilatSatiriIbaresi, VERILEN_CEK_IBARESI, KAPALI_HESAP_NEDENI, avansSilinebilirMi, DUZELTME_TUR, DUZELTME_TUR_ADI, DUZELTME_KAPALI_NEDENI, duzeltmePlani, duzeltmeYonAdi, duzeltmeIbaresi, hareketParaBirimi } from "../lib/kasa";
 import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
 import { BakiyeDuzeltPenceresi } from "./kasa/BakiyeDuzeltPenceresi";
 import { SATIS_KAYNAK, tahsilatGunuAta, tahsilatGunuSorulurMu, tahsilatGunuEksikMi, TAHSILAT_GUNU_EKSIK, TAHSILAT_GUNU_DUZELTILDI } from "../lib/satisTahsilat";
@@ -88,12 +90,17 @@ const HesapFormu = ({ hesap, hesaplar, hareketVar, onKaydet, onClose }) => {
 };
 
 // Spec 0073 C1, R2 (AC-2): aynı form düzenleme kipinde (`hareket` verilir) açılır; iki hesap da düzenlenir, kimlik korunur.
-const VirmanFormu = ({ hesaplar, onKaydet, onClose, hareket = null }) => {
+// Spec 0152 R9–R11, R14/2 (Karar 22, AC-14–AC-17, AC-35, AC-36, AC-51): pencerenin adı "Virman / Bozdurma"; giren hesap
+// bütün açık hesaplardır, farklı para birimi seçilince kur bölümü açılır (öneri bozdurmaKurOnerisi'nden, iki döviz arasında
+// yok). Kayıt `virman` türüyle; alanlar tek yazıcıdan (aynı para birimine dönen düzenlemede karşı bacak silinir).
+export const VIRMAN_PENCERE_BASLIGI = "Virman / Bozdurma";
+const VirmanFormu = ({ hesaplar, onKaydet, onClose, hareket = null, rates = null, ratesErr = false }) => {
   const duzenle = !!hareket;
   // Düzenlemede hareketin kapalı hesapları da listede görünür (seçili değer boş kalmasın); doğrulama onları reddeder (R27).
   const acik = hesaplar.filter(h => !h.kapali || (duzenle && [hareket.hesapId, hareket.karsiHesapId].some(id => String(id) === String(h.id))));
   const [form, setForm] = useState(() => (duzenle
-    ? { hesapId: hareket.hesapId ?? "", karsiHesapId: hareket.karsiHesapId ?? "", tarih: hareket.tarih || "", tutar: hareket.tutar == null ? "" : String(hareket.tutar).replace(".", ","), aciklama: hareket.aciklama || "" }
+    ? { hesapId: hareket.hesapId ?? "", karsiHesapId: hareket.karsiHesapId ?? "", tarih: hareket.tarih || "", tutar: hareket.tutar == null ? "" : String(hareket.tutar).replace(".", ","), aciklama: hareket.aciklama || "",
+      ...(bozdurmaMi(hareket) ? { kur: kurGirdisi(hareket.kur), kurKaynak: KUR_KAYNAK.TURETILEN, karsiTutar: String(hareket.karsiTutar).replace(".", ",") } : {}) }
     : { hesapId: acik[0]?.id ?? "", karsiHesapId: "", tarih: today(), tutar: "", aciklama: "" }));
   const [hatalar, setHatalar] = useState({});
   const kapaliHesap = duzenle && hesaplar.some(h => h.kapali && [hareket.hesapId, hareket.karsiHesapId].some(id => String(id) === String(h.id)));
@@ -104,23 +111,42 @@ const VirmanFormu = ({ hesaplar, onKaydet, onClose, hareket = null }) => {
   const { lockConflict: kaynakKilidi, forceAcquire: kaynakKilidiDevral } = useLock("kasa_hesap", kilitId === "" || kilitId == null ? null : kilitId);
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
   const cikan = acik.find(h => String(h.id) === String(form.hesapId));
-  const girenler = cikan ? secilebilirHesaplar(acik, cikan.paraBirimi).filter(h => String(h.id) !== String(cikan.id)) : [];
+  const girenler = cikan ? acik.filter(h => String(h.id) !== String(cikan.id)) : [];
   const idBul = (v) => acik.find(h => String(h.id) === v)?.id ?? "";
+  const giren = acik.find(h => String(h.id) === String(form.karsiHesapId));
+  const cpb = cikan?.paraBirimi || "TRY", gpb = giren?.paraBirimi || "TRY";
+  const bozdurma = !!(cikan && giren && cpb !== gpb);
+  const oneri = bozdurma ? bozdurmaKurOnerisi(cpb, gpb, rates, ratesErr) : { deger: null, neden: null };
+  // Hesap değişince kur bölümü yeniden kurulur: bozdurmada öneri (varsa) gelir, aynı para biriminde alanlar boşalır.
+  // Triyaj (R14, AC-41): çıkan ve giren para birimi çifti değişmediyse (yalnız aynı cinsten başka hesap seçildi) kur ve karşı
+  // tutar korunur, yalnız hesap kimliği değişir.
+  const pbCifti = (f) => {
+    const c = acik.find(h => String(h.id) === String(f.hesapId)), g = acik.find(h => String(h.id) === String(f.karsiHesapId));
+    return c && g ? `${c.paraBirimi || "TRY"}>${g.paraBirimi || "TRY"}` : null;
+  };
+  const hesapYamasi = (f, onceki) => {
+    const c = acik.find(h => String(h.id) === String(f.hesapId)), g = acik.find(h => String(h.id) === String(f.karsiHesapId));
+    if (!c || !g || (c.paraBirimi || "TRY") === (g.paraBirimi || "TRY")) return { ...f, kur: "", kurKaynak: null, karsiTutar: "" };
+    if (onceki && pbCifti(onceki) === pbCifti(f) && String(f.kur ?? "").trim() !== "") return f;
+    const o = bozdurmaKurOnerisi(c.paraBirimi || "TRY", g.paraBirimi || "TRY", rates, ratesErr);
+    const t = { ...f, kur: o.deger ? kurGirdisi(o.deger) : "", kurKaynak: o.deger ? KUR_KAYNAK.ONERI : null };
+    return { ...t, ...bozdurmaYamasi(t, "tutar", t.tutar) };
+  };
   const kaydet = () => {
     if (kaynakKilidi) return;
     const r = virmanDogrula(form, hesaplar);
     if (!r.kayit) { setHatalar(r.hatalar); return; }
-    onKaydet(duzenle ? { ...hareket, ...r.kayit, id: hareket.id } : r.kayit);
+    onKaydet(duzenle ? dovizAlanlariYaz({ ...hareket, ...r.kayit, id: hareket.id }, dovizAlanlariOf(r.kayit)) : r.kayit);
   };
   return (
-    <Modal title={duzenle ? "Virmanı Düzenle" : "Virman"} onClose={onClose} wide
+    <Modal title={duzenle ? `${VIRMAN_PENCERE_BASLIGI} · Düzenle` : VIRMAN_PENCERE_BASLIGI} onClose={onClose} wide
       footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet} disabled={!!kaynakKilidi}><Icon name="check" size={14} /> {duzenle ? "Değişiklikleri Kaydet" : "Virmanı Kaydet"}</Btn></div>}>
       {kaynakKilidi && <LockConflict lockedBy={kaynakKilidi.lockedBy} lockedAt={kaynakKilidi.lockedAt} onForce={kaynakKilidiDevral} onCancel={onClose} />}
       {kapaliHesap && <div style={{ marginBottom: 12 }}><UyariSeridi aile="uyari" testId="kapali-hesap-notu" metin={KAPALI_HESAP_NEDENI} /></div>}
       <div data-testid="virman-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
         <div>
           <Field label="Çıkan hesap">
-            <Select value={form.hesapId} onChange={e => set({ hesapId: idBul(e.target.value), karsiHesapId: "" })}>
+            <Select aria-label="Çıkan hesap" value={form.hesapId} onChange={e => setForm(f => hesapYamasi({ ...f, hesapId: idBul(e.target.value), karsiHesapId: "" }, f))}>
               {acik.map(h => <option key={h.id} value={h.id}>{h.ad} ({h.paraBirimi})</option>)}
             </Select>
           </Field>
@@ -128,24 +154,38 @@ const VirmanFormu = ({ hesaplar, onKaydet, onClose, hareket = null }) => {
         </div>
         <div>
           <Field label="Giren hesap">
-            <Select value={form.karsiHesapId} onChange={e => set({ karsiHesapId: idBul(e.target.value) })}>
+            <Select aria-label="Giren hesap" value={form.karsiHesapId} onChange={e => setForm(f => hesapYamasi({ ...f, karsiHesapId: idBul(e.target.value) }, f))}>
               <option value="">Hesap seçin</option>
               {girenler.map(h => <option key={h.id} value={h.id}>{h.ad} ({h.paraBirimi})</option>)}
             </Select>
           </Field>
-          {hatalar.karsiHesapId ? <HataMetni>{hatalar.karsiHesapId}</HataMetni> : cikan && !girenler.length ? <Ipucu>Aynı para biriminde başka açık hesap yok.</Ipucu> : <Ipucu>Yalnız aynı para birimindeki hesaplar arasında.</Ipucu>}
+          {hatalar.karsiHesapId ? <HataMetni>{hatalar.karsiHesapId}</HataMetni> : cikan && !girenler.length ? <Ipucu>Başka açık hesap yok.</Ipucu> : <Ipucu>Farklı para birimindeki hesap seçilirse bozdurma olur ve kur sorulur.</Ipucu>}
         </div>
         <div>
           <Field label="Tarih"><Input type="date" value={form.tarih} onChange={e => set({ tarih: e.target.value })} /></Field>
           <HataMetni>{hatalar.tarih}</HataMetni>
         </div>
         <div>
-          <Field label="Tutar"><TutarInput ariaLabel="Virman tutarı" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hatalar.tutar} sym={SEMBOL[cikan?.paraBirimi] || "₺"} /></Field>
+          <Field label={bozdurma ? `Çıkan tutar (${cpb})` : "Tutar"}><TutarInput ariaLabel="Virman tutarı" value={form.tutar} onChange={v => set(bozdurma ? bozdurmaYamasi(form, "tutar", v) : { tutar: v })} invalid={!!hatalar.tutar} sym={SEMBOL[cikan?.paraBirimi] || "₺"} /></Field>
           <HataMetni>{hatalar.tutar}</HataMetni>
         </div>
+        {bozdurma && (
+          <>
+            <div data-testid="bozdurma-kur">
+              <Field label={`Kur (1 ${cpb} = ? ${gpb})`}><Input aria-label="Bozdurma kuru" inputMode="decimal" value={form.kur ?? ""} onChange={e => set(bozdurmaYamasi(form, "kur", e.target.value))} /></Field>
+              {hatalar.kur ? <HataMetni>{hatalar.kur}</HataMetni>
+                : !String(form.kur ?? "").trim() && oneri.neden ? <Ipucu><span data-testid="bozdurma-kur-nedeni">{oneri.neden}</span></Ipucu> : null}
+            </div>
+            <div data-testid="bozdurma-karsi">
+              <Field label={`Giren hesaba eklenecek (${gpb})`}><TutarInput ariaLabel="Giren tutar" value={form.karsiTutar ?? ""} onChange={v => set(bozdurmaYamasi(form, "karsiTutar", v))} invalid={!!hatalar.karsiTutar} sym={SEMBOL[gpb] || gpb} /></Field>
+              <HataMetni>{hatalar.karsiTutar}</HataMetni>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}><Ipucu>{ONERI_BUGUN_IBARESI}</Ipucu></div>
+          </>
+        )}
         <div style={{ gridColumn: "1 / -1" }}>
           <Field label="Açıklama"><Input value={form.aciklama} onChange={e => set({ aciklama: e.target.value })} placeholder="İsteğe bağlı" /></Field>
-          <Ipucu>Virman gider ya da gelir değildir; yalnız iki hesabın bakiyesini değiştirir.</Ipucu>
+          <Ipucu>Virman ve bozdurma gider ya da gelir değildir; yalnız iki hesabın bakiyesini değiştirir (kur farkı kâr zarara yazılmaz).</Ipucu>
         </div>
       </div>
     </Modal>
@@ -156,6 +196,8 @@ export const Kasa = ({
   kasaHesaplari = [], setKasaHesaplari, hesapHareketleri = [], setHesapHareketleri, payments = [], customers = [],
   // Spec 0151 triyaj (bulgu 3): çöpteki hesapların para birimi (hesabı silinmiş düzeltmenin tutarı kendi para biriminde yazılsın).
   hamKasaHesaplari = null,
+  // Spec 0152 R4/2, P8 (AC-32): günün kuru; bozdurma penceresi ve ödeme düzenleme penceresi önerisi buradan.
+  rates = null, ratesErr = false,
   giderler = [], giderTurleri = [], tedarikciler = [], serverPermissions = null, showToast = () => {},
   // Spec 0024 B: çalışan avansları (silinmişler dahil, C8) ve ekstre kapsamı için yürürlük ayı.
   calisanlar = [], yururlukAy = null,
@@ -241,7 +283,8 @@ export const Kasa = ({
     }
     if (s.tur === "virman") {
       const karsi = hesapById.get(String(s.girenK > 0 ? m.hesapId : m.karsiHesapId));
-      return { tur: "Virman", metin: [`${s.girenK > 0 ? "Gelen" : "Giden"}: ${karsi?.ad || "Silinmiş hesap"}`, m.aciklama].filter(Boolean).join(" · ") };
+      // Spec 0152 R9/2, R15/3 (AC-49, AC-51): bozdurmada tür "Bozdurma", Açıklama'da iki bacak ve kur tek ibarede.
+      return { tur: bozdurmaMi(m) ? "Bozdurma" : "Virman", metin: [`${s.girenK > 0 ? "Gelen" : "Giden"}: ${karsi?.ad || "Silinmiş hesap"}`, bozdurmaIbaresi(m), m.aciklama].filter(Boolean).join(" · ") };
     }
     const k = giderById.get(String(m.giderId));
     const taraf = k ? (k.calisanAd || tedById.get(String(k.tedarikciId))?.ad || turById.get(String(k.turId))?.ad || "Gider") : "Silinmiş gider";
@@ -249,7 +292,8 @@ export const Kasa = ({
     // Spec 0060 R4, R35 (AC-7, AC-29): taksite bağlı ödemede ödeme penceresiyle aynı taksit adı ("… 2/6. taksit") önce gelir.
     const kDav = k ? davranisOf(k, turMap) : null;
     const hedef = k ? (taksitAdi(k, m.taksitId, kDav) || hedefEtiketi(k, kDav, hedefPaylari.get(String(m.id)))) : null;
-    return { tur: "Gider ödemesi", metin: [taraf, hedef, k?.aciklama, m.aciklama].filter(Boolean).join(" · ") };
+    // Spec 0152 R15/3 (AC-21, AC-49): döviz ödemede Çıkan sütunu hesabın para biriminde; döviz tutar, kur ve TL karşılığı burada.
+    return { tur: "Gider ödemesi", metin: [taraf, hedef, k?.aciklama, dovizOdemeIbaresi(m), m.aciklama].filter(Boolean).join(" · ") };
   };
 
   const hesapKaydet = (kayit) => {
@@ -335,7 +379,7 @@ export const Kasa = ({
     const yeni = { ...kayit, id: uid() };
     setHesapHareketleri(p => [...p, yeni]);
     const a = hesapById.get(String(kayit.hesapId)), b = hesapById.get(String(kayit.karsiHesapId));
-    logAction({ serverPermissions, action: "olusturuldu", entity: "virman", entityId: yeni.id, entityName: `${a?.ad || ""} → ${b?.ad || ""}`, detail: { tutar: kayit.tutar } });
+    logAction({ serverPermissions, action: "olusturuldu", entity: "virman", entityId: yeni.id, entityName: `${a?.ad || ""} → ${b?.ad || ""}`, detail: { tutar: kayit.tutar, ...dovizIzAyrintisi(kayit) } });
     setVirmanAcik(false);
     showToast("Virman kaydedildi.");
   };
@@ -392,7 +436,7 @@ export const Kasa = ({
   const virmanSil = (m) => {
     if (kilitliMi("kasa_hesap", m.hesapId)) return; // spec 0064 R14: kaynak hesap başkasındaysa silinmez
     odemeGirisiYaz({ silinenler: [m.id] }, { setHesapHareketleri, setCekler, uid }); // spec 0073 R20: ortak yazma yolu
-    logAction({ serverPermissions, action: "silindi", entity: "virman", entityId: m.id, entityName: `${hesapById.get(String(m.hesapId))?.ad || ""} → ${hesapById.get(String(m.karsiHesapId))?.ad || ""}`, detail: { tutar: m.tutar } });
+    logAction({ serverPermissions, action: "silindi", entity: "virman", entityId: m.id, entityName: `${hesapById.get(String(m.hesapId))?.ad || ""} → ${hesapById.get(String(m.karsiHesapId))?.ad || ""}`, detail: { tutar: m.tutar, ...dovizIzAyrintisi(m) } });
     showToast("Virman silindi.");
   };
   // ── Spec 0151: bakiye düzeltmesi (R1, R1/5, C7, R10/4) ──
@@ -457,7 +501,7 @@ export const Kasa = ({
     }
     const k = m.tur === "avans" ? null : giderById.get(String(m.giderId));
     if (m.tur === "avans") logAction({ serverPermissions, action: "silindi", entity: "avans", entityId: m.id, entityName: hareketAdi(m), detail: { tutar: m.tutar } });
-    else if (k) logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: m.tutar ?? null, tarih: m.tarih } });
+    else if (k) logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: m.tutar ?? null, tarih: m.tarih, ...dovizIzAyrintisi(m) } });
     else logAction({ serverPermissions, action: "silindi", entity: "kasa_hareketi", entityId: m.id, entityName: "Silinmiş gider", detail: { tutar: m.tutar ?? null, tarih: m.tarih } });
     showToast(m.tur === "avans" ? "Avans silindi." : "Ödeme silindi.");
   };
@@ -506,7 +550,9 @@ export const Kasa = ({
   const hoIzgara = { display: "grid", gridTemplateColumns: "90px 110px minmax(0, 1.6fr) 120px 130px 170px", gap: 10, alignItems: "center" };
   const odemeSatirlari = [...(hesapsiz.liste || [])];
   const odemeTutari = (m) => (m.tutar == null ? "Tam kapatma (aktarılan)" : para(m.tutar, "TRY"));
-  const hareketParaBirimi = (m) => (hesapById.get(String(m?.hesapId)) || (hamKasaHesaplari || []).find(h => String(h.id) === String(m?.hesapId)))?.paraBirimi || "TRY"; // spec 0151 R5
+  // Spec 0151 R5; spec 0152 P7 (R14/3): kayıttaki para birimi önce, sonra hesap (çöptekiler dahil), sonra TL.
+  // Spec 0152 P7: para birimi okuma sırası (kayıt, hesap, TL) tek yerde, kasa.hareketParaBirimi; burada yalnız hesap çözülür.
+  const hareketPb = (m) => hareketParaBirimi(m, hesapById.get(String(m?.hesapId)) || (hamKasaHesaplari || []).find(h => String(h.id) === String(m?.hesapId)));
   // Spec 0062 R1, R2, R19, R24, R29, R34: dört liste ayrı sayfa durumu (10). Hareketler en yeni üstte: motor sırasının tam
   // tersi, bakiye motorun satır değeri (yeniden hesap yok, R18); hesap seçimi değişince 1. sayfa. Hesapsız listeler motorun
   // sırasında (en yeni üstte), "Hepsini göster" değişince 1. sayfa. Toplu işlem sayfaya değil listenin tamamına (R17).
@@ -701,7 +747,7 @@ export const Kasa = ({
                   <span>{m.tarih ? fmtTR(m.tarih) : "Tarihsiz"}</span>
                   <span>{a.tur}</span>
                   <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={a.metin}>{a.metin}{hesabiSilinmisMi(m, kasaHesaplari) ? " · hesabı silinmiş" : ""}</span>
-                  <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{m.tur === DUZELTME_TUR ? para(m.tutar, hareketParaBirimi(m)) : odemeTutari(m)}</span>
+                  <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{m.tur === DUZELTME_TUR ? para(m.tutar, hareketPb(m)) : dovizOdemeMi(m) ? para(m.dovizTutar, hareketPb(m)) : odemeTutari(m)}</span>
                   {/* Spec 0151 P3: düzeltme kapsam dışı bırakılmaz, yalnız silinir. */}
                   <span>{kapsamYetkisi && m.tur !== DUZELTME_TUR && <Btn small variant="ghost" onClick={() => kapsamDisiBirak([m])} aria-label={`Kapsam dışı bırak: ${a.metin}`}>Kapsam dışı bırak</Btn>}</span>
                   {hareketEylemleri(m) || <span />}
@@ -789,9 +835,9 @@ export const Kasa = ({
         <BakiyeDuzeltPenceresi hesap={kasaHesaplari.find(x => String(x.id) === String(duzeltHesap.id)) || duzeltHesap} hareketler={hesapHareketleri} veri={veri} bugun={bugun}
           onKaydet={duzeltmeKaydet} onClose={() => setDuzeltHesap(null)} />
       )}
-      {virmanAcik && <VirmanFormu hesaplar={kasaHesaplari} onKaydet={virmanKaydet} onClose={() => setVirmanAcik(false)} />}
+      {virmanAcik && <VirmanFormu rates={rates} ratesErr={ratesErr} hesaplar={kasaHesaplari} onKaydet={virmanKaydet} onClose={() => setVirmanAcik(false)} />}
       {/* Spec 0073 C1: düzenleme, o türü ekleyen pencerenin kendisidir (yeni kipi). */}
-      {duzenlenecek?.tur === "virman" && <VirmanFormu hesaplar={kasaHesaplari} hareket={duzenlenecek} onKaydet={g => hareketGuncelle(g, duzenlenecek)} onClose={() => setDuzenlenecek(null)} />}
+      {duzenlenecek?.tur === "virman" && <VirmanFormu rates={rates} ratesErr={ratesErr} hesaplar={kasaHesaplari} hareket={duzenlenecek} onKaydet={g => hareketGuncelle(g, duzenlenecek)} onClose={() => setDuzenlenecek(null)} />}
       {duzenlenecek?.tur === "avans" && <AvansFormu calisanlar={calisanlar} hesaplar={kasaHesaplari} hareket={duzenlenecek} hareketler={hesapHareketleri} giderler={giderler}
         onKaydet={g => hareketGuncelle(g, duzenlenecek)} onClose={() => setDuzenlenecek(null)} />}
       {duzenKalemi && odemeKilidi && (
@@ -800,7 +846,7 @@ export const Kasa = ({
         </Modal>
       )}
       {duzenKalemi && !odemeKilidi && (
-        <OdemeKayitPenceresi kalem={duzenKalemi} davranis={turMap.get(String(duzenKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(duzenKalemi.turId))?.ad || "Gider"}
+        <OdemeKayitPenceresi rates={rates} ratesErr={ratesErr} kalem={duzenKalemi} davranis={turMap.get(String(duzenKalemi.turId))?.davranis || DAVRANIS.NORMAL} turAd={turMap.get(String(duzenKalemi.turId))?.ad || "Gider"}
           turMap={turMap} hareketler={hesapHareketleri} hesaplar={kasaHesaplari} hesapSecimi odemeYetkisi={canDo("gider_odeme") && !!setHesapHareketleri} bugun={bugun}
           giderler={giderler} yururlukAy={yururlukAy} cekler={cekler} payments={payments} tedarikciler={tedarikciler}
           duzenlenen={duzenlenecek} onDuzenle={hareketGuncelle} onKaydet={() => {}} onSil={() => {}} onClose={() => setDuzenlenecek(null)} />
@@ -808,7 +854,7 @@ export const Kasa = ({
       {silinecekHareket && (
         silinecekHareket.tur === DUZELTME_TUR ? (
           <ConfirmDialog title={`${DUZELTME_TUR_ADI} silinsin mi?`}
-            message={`${silinecekHareket.tarih ? fmtTR(silinecekHareket.tarih) : "Tarihsiz"} tarihli ${para(silinecekHareket.tutar, hareketParaBirimi(silinecekHareket))} ${DUZELTME_TUR_ADI.toLocaleLowerCase("tr-TR")} çöp kutusuna taşınacak; hesabın bakiyesi düzeltmeden önceki hâline döner.`}
+            message={`${silinecekHareket.tarih ? fmtTR(silinecekHareket.tarih) : "Tarihsiz"} tarihli ${para(silinecekHareket.tutar, hareketPb(silinecekHareket))} ${DUZELTME_TUR_ADI.toLocaleLowerCase("tr-TR")} çöp kutusuna taşınacak; hesabın bakiyesi düzeltmeden önceki hâline döner.`}
             confirmLabel="Sil" onConfirm={() => hareketSil(silinecekHareket)} onCancel={() => setSilinecekHareket(null)} />
         ) :
         <ConfirmDialog title={silinecekHareket.tur === "avans" ? "Avans silinsin mi?" : "Ödeme silinsin mi?"}

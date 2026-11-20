@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { fmtTR, uid } from "../../lib/utils";
 import { odemeDurumu, odemeleriUygula, satirliMi, tl, HEDEF, DAVRANIS } from "../../lib/gider";
-import { mahsupKapsamda, avansBorcuK, secilebilirHesaplar, sonKullanilanHesap, sonKullanilanYontem, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
+import { mahsupKapsamda, avansBorcuK, acikHesaplar, sonKullanilanHesap, sonKullanilanYontem, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
 import { CIRO_YONTEMI } from "../../lib/cek";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, GOC_DUZENLEME_NOTU } from "../../lib/formOdemesi";
 import { Btn, Modal, Icon } from "../ui";
@@ -25,6 +25,8 @@ export const OdemeKayitPenceresi = ({
   giderler = [], yururlukAy = null,
   // Spec 0053 R10, R14: çek yöntemleri yalnız kasa yetkisiyle; tedarikciler alacaklının adı için (ciro "kime" ister).
   cekler = [], payments = [], ciroYetkisi = false, tedarikciler = [],
+  // Spec 0152 R4/2: günün kuru (dört yolun ortak penceresi).
+  rates = null, ratesErr = false,
   // Spec 0073 C1, R1 (Q3): düzenleme kipi. duzenlenen verilirse pencere o hareketi düzenler; "Kayıtlı ödemeler" listesindeki
   // Düzenle de pencereyi bu kipe geçirir (yalnız onDuzenle verilince). onDuzenle(guncellenen, onceki).
   duzenlenen: duzenlenenIlk = null, onDuzenle = null,
@@ -52,7 +54,7 @@ export const OdemeKayitPenceresi = ({
   // Spec 0073 triyaj (bulgu 4): düzenlemede hareketin kendi hesabı kapalı da olsa listede kalır (seçili değer boş görünmesin;
   // VirmanFormu deseni); doğrulayıcı kapalı hesaba yazmayı yine reddeder (R27).
   const uygunHesaplar = useMemo(() => {
-    const l = secilebilirHesaplar(hesaplar, "TRY");
+    const l = acikHesaplar(hesaplar); // spec 0152 R1/2: döviz hesaplar da
     const kendi = duzenlenen?.hesapId != null ? hesaplar.find(h => String(h.id) === String(duzenlenen.hesapId)) : null;
     return kendi && !l.includes(kendi) ? [...l, kendi] : l;
   }, [hesaplar, duzenlenen]);
@@ -124,7 +126,7 @@ export const OdemeKayitPenceresi = ({
           alacakliSerbest={alacakliSerbest} varsayilanYontem={varsayilanYontem} varsayilanHesap={varsayilanHesap} odemeYetkisi={formVar}
           mahsupVar={mahsupVar} avansK={avansK} hareketler={hareketler} onSil={odemeYetkisi && !duzenlenen ? onSil : null}
           duzenleKipi={!!duzenlenen} duzenlemeNotlari={duzenlemeNotlari} kayitliGoster={!duzenlenen}
-          onDuzenle={odemeYetkisi && onDuzenle && !duzenlenen ? duzenlemeyeGec : null} />
+          onDuzenle={odemeYetkisi && onDuzenle && !duzenlenen ? duzenlemeyeGec : null} rates={rates} ratesErr={ratesErr} />
       </div>
     </Modal>
   );

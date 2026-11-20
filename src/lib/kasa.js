@@ -5,6 +5,7 @@
 // taksitId, tamKapatir, kaynak, gocKaynak, aciklama}. Müşteri tahsilatı `payments[].hesapId` ile bakiyeye girer (R6).
 import { cekDurumuOf, tahsilatTarihiOf, yerelBugun, fmtCur } from "./utils";
 import { gecerliGunMu } from "./gecerlilik";
+import { cevrimOku, dovizAlanlariYaz, dovizOdemeMi, CEK_DOVIZ_NEDENI, YALNIZ_TL_NEDENI } from "./doviz";
 import { kartTahsilEdildiMi } from "./krediKarti";
 import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { aliciAd } from "./yedekParcaSatis";
@@ -89,6 +90,13 @@ const satisKalemleri = (v) => satisTahsilatKalemleri({
 // devredene katlanır (ekstre deseni), aralık içi giren/çıkan olur, sonrası sayılmaz. Açılış tarihi aralık içindeyse
 // açılış bakiyesi ayrı "açılış" satırıdır ve devreden sıfırdır (R41); açılış aralıktan sonraysa `sonra: true`.
 // Aralıksız çağrı bugünkü çıktıyı birebir verir (AC-46).
+// Spec 0152 C1, R2/2, R10/2 (AC-25, AC-29): bakiyenin iki TEK okuyucusu. Gider tarafı (kalemin kalanı, borç, ekstre)
+// `tutar` (TL) okur ve bunlara dokunmaz; hesabın bakiyesi ödemede hesaptan çıkan döviz tutarı, bozdurmada giren bacağın
+// tutarını okur. Alan yoksa `tutar` (TL kayıtta iki okuma birebir aynı, C2).
+export const hesaptanCikanK = (m) => kurus(m?.dovizTutar != null ? m.dovizTutar : m?.tutar);
+export const girenBacakK = (m) => kurus(m?.karsiTutar != null ? m.karsiTutar : m?.tutar);
+// P7 (R14/3): hareketin para birimi; kayıttaki, yoksa hesabın, yoksa TL. Bozdurmada giren bacak `karsiParaBirimi`.
+export const hareketParaBirimi = (m, hesap = null) => m?.paraBirimi || hesap?.paraBirimi || "TRY";
 export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}, { aralik = null } = {}) => {
   const v = veriOf(veri);
   const bugun = v.bugun || yerelBugun();
@@ -98,12 +106,12 @@ export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}, { ara
   for (const m of hareketler) {
     if (!m || m.hesapId == null) continue; // R8: hesapsız hareket hiçbir bakiyeye girmez
     const t = kurus(m.tutar);
-    if (m.tur === "odeme") ekle(m.hesapId, { tarih: m.tarih, tur: "odeme", hareket: m, girenK: 0, cikanK: t });
+    if (m.tur === "odeme") ekle(m.hesapId, { tarih: m.tarih, tur: "odeme", hareket: m, girenK: 0, cikanK: hesaptanCikanK(m) });
     // Spec 0024 B (R9): avans hesaptan çıkar; mahsup para hareketi değildir, hiçbir bakiyeye girmez (R10).
     else if (m.tur === "avans") ekle(m.hesapId, { tarih: m.tarih, tur: "avans", hareket: m, girenK: 0, cikanK: t });
     else if (m.tur === "virman") {
       ekle(m.hesapId, { tarih: m.tarih, tur: "virman", hareket: m, girenK: 0, cikanK: t });
-      ekle(m.karsiHesapId, { tarih: m.tarih, tur: "virman", hareket: m, girenK: t, cikanK: 0 });
+      ekle(m.karsiHesapId, { tarih: m.tarih, tur: "virman", hareket: m, girenK: girenBacakK(m), cikanK: 0 });
     }
     // Spec 0151 R2, R3, R6/2: düzeltme dördüncü koldur; yönü `yon` alanından (tutar pozitif). Tanınmayan yön bakiyeye girmez.
     else if (m.tur === DUZELTME_TUR && (m.yon === DUZELTME_YON.GIREN || m.yon === DUZELTME_YON.CIKAN))
@@ -322,8 +330,11 @@ export const hesapTasimaPlani = (hesap, hareketler = [], veri = {}, hesaplar = [
   }
   // Spec 0151 R4/2 (AC-45): düzeltme hesapsız bırakılamaz; taşıma yolu onu hedef hesaba taşır (guncelle genel hesap alanı).
   const duzeltmeler = (hareketler || []).filter(m => m && !m.deletedAt && m.tur === DUZELTME_TUR && es(m.hesapId));
+  // Spec 0152 R7/2 (Karar 11, AC-40): döviz ödeme hesapsız kalırsa bakiyeye girmez ve TL'ymiş gibi görünürdü.
+  const dovizOdemeler = (hareketler || []).filter(m => m && !m.deletedAt && dovizOdemeMi(m) && es(m.hesapId));
   const hesapsiz = [...virmanlar.map(m => `${virmanAdi(m)}: virman hesapsız bırakılamaz; önce bu virmanı silin.`),
     ...duzeltmeler.map(m => `${tarihYaz(m.tarih)} ${DUZELTME_TUR_ADI.toLocaleLowerCase("tr-TR")} (${fmtCur(Number(m.tutar) || 0, pb)}): hesapsız bırakılamaz; başka hesaba taşıyın ya da silin.`),
+    ...dovizOdemeler.map(m => `${tarihYaz(m.tarih)} döviz ödeme (${fmtCur(Number(m.dovizTutar) || 0, m.paraBirimi || pb)}): hesapsız bırakılamaz; aynı para birimindeki hesaba taşıyın ya da silin.`),
     ...verilenCekler.map(c => `Verilen çek ${c.no || ""}: hesapsız bırakılamaz; bir TL banka hesabına taşıyın.`.replace("  ", " "))];
   const guncelle = (hedefId) => {
     const yeni = hedefId == null ? null : hedefId;
@@ -454,6 +465,8 @@ export const sonTahsilatHesabi = (veri = {}, hesaplar = [], paraBirimi = "TRY") 
 };
 
 // C5 (1): harekete yalnız aynı para biriminde ve açık hesap seçilebilir.
+// Spec 0152 R1/2 (Karar 3, AC-1, AC-30): gider ödemesinin hesap listesi bütün açık hesaplar (para birimi süzülmez).
+export const acikHesaplar = (hesaplar = []) => (hesaplar || []).filter(h => h && !h.kapali);
 export const secilebilirHesaplar = (hesaplar = [], paraBirimi = "TRY") => hesaplar.filter(h => !h.kapali && h.paraBirimi === (paraBirimi || "TRY"));
 
 const tutarOku = (v) => {
@@ -465,7 +478,10 @@ const tutarOku = (v) => {
 
 // R2, R3, R18, AC-7, AC-28: ödeme tek hedefi kapatır (bir kalem ya da taksitli kalemde bir taksit); kalandan fazla
 // olamaz; hesap açık ve TL olmalı (gider TL'dir). kalem: odemeleriUygula'dan geçmiş (zenginleştirilmiş) kalem.
-export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false, kendiCek = false } = {}) => {
+// Spec 0152 R1, R2/2, R2/3, R5, R8/2 (Karar 1, 5, 10, 20): hesap TL değilse satır kur ister; döviz tutar kurdan ya da
+// kullanıcının yazdığından gelir, kayda `dovizAlanlariYaz` ile yazılır. Hesapsız ödemede döviz alanı yok (R1/3). yalnizTl:
+// stopaj dönem ödemesi ve çek dağıtımı (P5) döviz hesabı kabul etmez.
+export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false, kendiCek = false, yalnizTl = false } = {}) => {
   const hatalar = {};
   // Spec 0040 R19, AC-37: "Çek (ciro)" yöntemi elle seçilemez; yalnız portföyden çek ciro edilirken atanır.
   if (!ciro && form?.yontem === "Çek (ciro)") hatalar.yontem = "“Çek (ciro)” elle seçilemez; müşteri çekiyle ödemek için Kasa › Çek Portföyü'nden ciro edin.";
@@ -481,19 +497,28 @@ export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false,
   if (!Number.isFinite(t)) hatalar.tutar = "Tutar sayıya çevrilemedi. Örnek: 12.500,00";
   else if (t <= 0) hatalar.tutar = "Tutar sıfırdan büyük olmalı.";
   else if (kurus(t) > kalanK) hatalar.tutar = `Kalandan fazla ödeme kaydedilemez (kalan ${tl(kalanK).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺).`;
+  let doviz = null;
   if (form?.hesapId != null && form.hesapId !== "") {
     const h = hesaplar.find(x => String(x.id) === String(form.hesapId));
     if (!h) hatalar.hesapId = "Hesap bulunamadı.";
     else if (h.kapali) hatalar.hesapId = "Kapatılmış hesaba hareket girilemez.";
-    else if (h.paraBirimi !== "TRY") hatalar.hesapId = "Gider ödemesi yalnız TL hesaptan yapılır.";
+    else if ((h.paraBirimi || "TRY") !== "TRY") {
+      if (yalnizTl) hatalar.hesapId = YALNIZ_TL_NEDENI;
+      else if (form?.yontem === "Çek (ciro)" || form?.yontem === "Çek (kendi)") hatalar.yontem = CEK_DOVIZ_NEDENI;
+      else if (!hatalar.tutar) {
+        const c = cevrimOku({ kur: form?.kur, kurKaynak: form?.kurKaynak, ham: form?.dovizTutar }, kurus(t), "bol");
+        if (c.hata) Object.assign(hatalar, c.hata);
+        else doviz = { dovizTutar: tl(c.sonucK), kur: c.kur, paraBirimi: h.paraBirimi };
+      }
+    }
   }
   if (Object.keys(hatalar).length) return { hatalar, kayit: null };
   return {
     hatalar,
-    kayit: {
+    kayit: dovizAlanlariYaz({
       tur: "odeme", tarih: form.tarih, tutar: t, yontem: form.yontem || "", hesapId: form.hesapId == null || form.hesapId === "" ? null : form.hesapId,
       giderId: kalem.id, taksitId: satirli ? form.taksitId : null, aciklama: String(form.aciklama || "").trim(),
-    },
+    }, doviz),
   };
 };
 
@@ -509,7 +534,7 @@ export const cokKalemOdemeleri = ({ satirlar = [], adaylar = [], tarih, hesapId 
   for (const d of satirlar) {
     const a = adaylar.find(x => x.anahtar === d.anahtar);
     if (!a) { const h = ["Seçilen gider kalemi bulunamadı."]; satirHatalari[d.anahtar] = h; ilk ??= h; continue; }
-    const r = odemeDogrula({ tarih, tutar: tl(d.tutarK), yontem, hesapId, taksitId: a.taksitId, aciklama }, { kalem: a.kalem, turMap, hesaplar, ...bayrak });
+    const r = odemeDogrula({ tarih, tutar: tl(d.tutarK), yontem, hesapId, taksitId: a.taksitId, aciklama }, { kalem: a.kalem, turMap, hesaplar, yalnizTl: true, ...bayrak });
     if (!r.kayit) { const h = Object.values(r.hatalar); satirHatalari[d.anahtar] = h; ilk ??= h; continue; }
     hareketler.push({ ...r.kayit, ...ek });
   }
@@ -566,7 +591,7 @@ export const cokluOdemeDogrula = (form, { kalem, turMap, hesaplar = [], hedefAdi
   return hataVar ? { hatalar, kayitlar: null } : { hatalar, kayitlar: gecerli.map(g => g.kayit) };
 };
 
-// R15, AC-12, AC-30: virman aynı para biriminde iki farklı, açık hesap arasında; gider ya da gelir değildir.
+// R15, AC-12, AC-30: virman iki farklı, açık hesap arasında; gider ya da gelir değildir (spec 0152 ile farklı para birimi de).
 export const virmanDogrula = (form, hesaplar = []) => {
   const hatalar = {};
   const a = hesaplar.find(x => String(x.id) === String(form?.hesapId));
@@ -574,14 +599,21 @@ export const virmanDogrula = (form, hesaplar = []) => {
   if (!a) hatalar.hesapId = "Çıkan hesap seçilmedi.";
   if (!b) hatalar.karsiHesapId = "Giren hesap seçilmedi.";
   if (a && b && String(a.id) === String(b.id)) hatalar.karsiHesapId = "Aynı hesaba virman yapılamaz.";
-  if (a && b && a.paraBirimi !== b.paraBirimi) hatalar.karsiHesapId = "Farklı para birimindeki hesaplar arasında virman yapılamaz.";
   if ((a && a.kapali) || (b && b.kapali)) hatalar.hesapId = "Kapatılmış hesaba hareket girilemez.";
   if (!form?.tarih) hatalar.tarih = "Tarih girilmedi.";
   const t = tutarOku(form?.tutar);
   if (!Number.isFinite(t)) hatalar.tutar = "Tutar sayıya çevrilemedi.";
   else if (t <= 0) hatalar.tutar = "Tutar sıfırdan büyük olmalı.";
+  // Spec 0152 R9, R10/2, R10/3 (Karar 2, 7, 22): farklı para biriminde bozdurma; tür `virman` kalır, giren bacak `karsiTutar`.
+  let doviz = null;
+  const apb = a?.paraBirimi || "TRY", bpb = b?.paraBirimi || "TRY";
+  if (a && b && apb !== bpb && !hatalar.tutar) {
+    const c = cevrimOku({ kur: form?.kur, kurKaynak: form?.kurKaynak, ham: form?.karsiTutar }, kurus(t), "carp");
+    if (c.hata) Object.assign(hatalar, c.hata.dovizTutar ? { karsiTutar: c.hata.dovizTutar } : c.hata);
+    else doviz = { karsiTutar: tl(c.sonucK), kur: c.kur, paraBirimi: apb, karsiParaBirimi: bpb };
+  }
   if (Object.keys(hatalar).length) return { hatalar, kayit: null };
-  return { hatalar, kayit: { tur: "virman", tarih: form.tarih, tutar: t, hesapId: a.id, karsiHesapId: b.id, aciklama: String(form.aciklama || "").trim() } };
+  return { hatalar, kayit: dovizAlanlariYaz({ tur: "virman", tarih: form.tarih, tutar: t, hesapId: a.id, karsiHesapId: b.id, aciklama: String(form.aciklama || "").trim() }, doviz) };
 };
 
 // Son kullanılan hesap (R17): en son tarihli ödeme hareketinin açık hesabı.

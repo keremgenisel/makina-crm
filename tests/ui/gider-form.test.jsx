@@ -172,7 +172,7 @@ describe("GiderForm: atama (spec 0090 ile alan kalktı)", () => {
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1.000" } });
     fireEvent.click(screen.getByLabelText("Tedarikçiye ödendi"));
     const hesap = screen.getByLabelText("Tedarikçiye hesabı");
-    expect([...hesap.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap belirtilmedi", "Merkez Kasa (Kasa)"]);
+    expect([...hesap.querySelectorAll("option")].map(o => o.textContent)).toEqual(["Hesap belirtilmedi", "Merkez Kasa (Kasa)", "Dolar (Banka · USD)"]); // spec 0152 ile (R1/2)
     fireEvent.change(hesap, { target: { value: "1" } });
     fireEvent.click(screen.getByText("Kaydet"));
     const [kayit, plan] = onSave.mock.calls[0];

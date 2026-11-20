@@ -12,6 +12,7 @@ import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
 import { kapsamHatirlatmalari, kapsamBitisEsigi } from "../lib/giderKapsami";
 import { turHaritasi, DAVRANIS } from "../lib/gider";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
+import { dovizIzAyrintisi } from "../lib/doviz"; // spec 0152 R14/4
 import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { logAction, hareketDuzenlemeKaydi } from "../lib/audit";
 import { OdemeHatirlatmaKarti, OdemeHatirlatmaPenceresi } from "./gider/OdemeHatirlatma";
@@ -58,7 +59,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const hatOdemeKaydet = (sonuc) => {
     const k = hatOdemeKalemi;
     const yeni = odemeGirisiYaz(sonuc, { setHesapHareketleri, setCekler, uid });
-    for (const kayit of yeni) logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: kayit.tutar, yontem: kayit.yontem || null } });
+    for (const kayit of yeni) logAction({ serverPermissions, action: kayit.tur === "mahsup" ? "mahsup_edildi" : "odendi", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { ...dovizIzAyrintisi(kayit), tutar: kayit.tutar, yontem: kayit.yontem || null } });
     if (sonuc.cek) logAction({ serverPermissions, action: sonuc.cek.yon === "verilen" ? "olusturuldu" : "ciro_edildi", entity: "cek", entityId: sonuc.cek.id, entityName: `${sonuc.cek.no} · ${sonuc.cek.banka}`, detail: { gider: k.id } });
     setHatOdeme(null);
   };
@@ -72,7 +73,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
   const hatOdemeSil = (h) => {
     const k = hatOdemeKalemi;
     if (setHesapHareketleri) odemeGirisiYaz({ silinenler: [h.id] }, { setHesapHareketleri, setCekler, uid });
-    logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: h.tutar ?? null, tarih: h.tarih } });
+    logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: h.tutar ?? null, tarih: h.tarih, ...dovizIzAyrintisi(h) } });
   };
   const [showDealerDebtors, setShowDealerDebtors] = useState(false);
   const [teklifBusy, setTeklifBusy]       = useState(new Set()); // kilit kontrolü devam eden teklif id'leri
@@ -633,7 +634,7 @@ export const Dashboard = ({ customers, dealers, services, stock = [], partSales 
         </Modal>
       )}
       {hatOdemeKalemi && !hatKilidi && (
-        <OdemeKayitPenceresi kalem={hatOdemeKalemi} davranis={giderTurMap.get(String(hatOdemeKalemi.turId))?.davranis || DAVRANIS.NORMAL}
+        <OdemeKayitPenceresi rates={rates} ratesErr={ratesErr} kalem={hatOdemeKalemi} davranis={giderTurMap.get(String(hatOdemeKalemi.turId))?.davranis || DAVRANIS.NORMAL}
           turAd={giderTurMap.get(String(hatOdemeKalemi.turId))?.ad || "Gider"} turMap={giderTurMap} hedef={{ hedef: hatOdeme.hedef }}
           hareketler={hesapHareketleri} hesaplar={kasaHesaplari} hesapSecimi={kasaYetki} odemeYetkisi={canGider("gider_odeme") && !!setHesapHareketleri}
           bugun={bugunYerel} onKaydet={hatOdemeKaydet} onSil={hatOdemeSil} onDuzenle={hatOdemeDuzenle} onClose={() => setHatOdeme(null)} giderler={giderler} yururlukAy={giderAyarlari?.yururlukAy || null}
