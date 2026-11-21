@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { fmtTR, uid } from "../../lib/utils";
-import { odemeDurumu, odemeleriUygula, satirliMi, tl, HEDEF, DAVRANIS } from "../../lib/gider";
+import { odemeDurumu, odemeleriUygula, satirliMi, tl, HEDEF, DAVRANIS, dovizKalemMi, kalemParaBirimi } from "../../lib/gider";
+import { paraMetni } from "../../lib/doviz";
 import { mahsupKapsamda, avansBorcuK, acikHesaplar, sonKullanilanHesap, sonKullanilanYontem, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
 import { CIRO_YONTEMI } from "../../lib/cek";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, GOC_DUZENLEME_NOTU } from "../../lib/formOdemesi";
@@ -59,9 +60,11 @@ export const OdemeKayitPenceresi = ({
     return kendi && !l.includes(kendi) ? [...l, kendi] : l;
   }, [hesaplar, duzenlenen]);
   const varsayilanHesap = hesapSecimi ? (sonKullanilanHesap(hareketler, hesaplar) ?? "") : "";
+  // Spec 0153 P6: döviz kalemin ANA hedefi için ön seçim kalemin para birimindeki son hesap (yoksa hesapsız).
+  const dovizHesapId = hesapSecimi && dovizKalemMi(kalem) ? (sonKullanilanHesap(hareketler, hesaplar, kalemParaBirimi(kalem)) ?? "") : "";
   const varsayilanYontem = sonKullanilanYontem(hareketler);
   const [giris, setGiris] = useState(() => (duzenlenen ? duzenlemeGirisi(duzenlenen, kalemG, hedefler)
-    : ilkGiris(hedefler, { tarih: bugun, yontem: varsayilanYontem, hesapId: varsayilanHesap, taksitId: hedef?.taksitId ?? null, kalem })));
+    : ilkGiris(hedefler, { tarih: bugun, yontem: varsayilanYontem, hesapId: varsayilanHesap, taksitId: hedef?.taksitId ?? null, kalem, dovizHesapId })));
   const [hatalar, setHatalar] = useState(null);
   const cekSatirlari = useMemo(() => (ciroYetkisi ? ciroCekleri(cekler, payments) : []), [ciroYetkisi, cekler, payments]);
   const alacakli = ciroAlacaklisi(kalem, turMap);
@@ -116,7 +119,7 @@ export const OdemeKayitPenceresi = ({
           <b style={{ color: "var(--n900, #0f172a)" }}>{turAd}</b> · {fmtTR(kalem.tarih)}{kalem.aciklama || kalem.calisanAd ? ` · ${kalem.aciklama || kalem.calisanAd}` : ""}
           <div style={{ marginTop: 4 }} data-testid="odeme-kayit-ozet">
             Durum: <b>{durum === "odendi" ? "Ödendi" : durum === "kismen" ? "Kısmen ödendi" : "Ödenmedi"}</b>
-            {formVar && <> · {hedefSecimi || hedefler.length === 1 ? "Bu hedefin kalanı" : "Kalan"}: <b>{tl2(tl(kalanK))}</b></>}
+            {formVar && <> · {hedefSecimi || hedefler.length === 1 ? "Bu hedefin kalanı" : "Kalan"}: <b>{hedefler.length === 1 && hedefler[0].paraBirimi ? paraMetni(tl(hedefler[0].dovizKalanK), hedefler[0].paraBirimi) : tl2(tl(kalanK))}</b></>}
           </div>
           {avansK > 0 && <div style={{ marginTop: 4 }} data-testid="acik-avans">{kalem.calisanAd || "Çalışan"} açık avansı: <b>{tl2(tl(avansK))}</b></div>}
         </div>

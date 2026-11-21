@@ -4,7 +4,7 @@ import { gunFarkiMetni } from "../../lib/odemeHatirlatma";
 import { Btn, Icon, Modal, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
 import { tl2, hedefAdi } from "./GiderAlanlari";
-import { DAVRANIS } from "../../lib/gider";
+import { DAVRANIS, HEDEF, kalemDovizMetni } from "../../lib/gider";
 import { KAPSAM_KART_ALT_METNI, kapsamSayiEtiketi, kapsamBolumBasligi, KAPSAM_SUZGEC_IBARESI, kapsamBosEki, KAPSAM_BITIS_ESIK_VARSAYILAN } from "../../lib/giderKapsami";
 
 // Ödeme hatırlatıcısı arayüzü (spec 0003 R2–R4, R6, R9). Sessizdir: ses, açılışta pencere, bildirim yok.
@@ -81,7 +81,9 @@ const KalemSatiri = ({ o, bolum, odendiYetkisi, onOdendi, girinti = false }) => 
       {o.personel && (o.hedefler || []).length > 1 && <div data-testid="hatirlatma-hedef-kirilimi" style={{ fontSize: 11.5, color: "var(--n500, #64748b)" }}>
         {o.hedefler.map(h => `${hedefAdi(h.hedef, DAVRANIS.PERSONEL, true)} ${tl2(h.odenecek)}`).join(" · ")}</div>}
     </div>
-    <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(o.odenecek)}</b>
+    {/* Spec 0153 R8, R22/2 (AC-57): döviz kalemin ANA hedefi kalemin para biriminde, altında lira (toplamlar lira kalır). */}
+    <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{!o.personel && o.hedef === HEDEF.ANA && kalemDovizMetni(o.kalem, o.odenecekK)
+      ? <><span data-testid="hatirlatma-doviz-tutari">{kalemDovizMetni(o.kalem, o.odenecekK)}</span><div style={{ fontSize: 11, fontWeight: 400, color: "var(--n500, #64748b)" }}>{tl2(o.odenecek)}</div></> : tl2(o.odenecek)}</b>
     <span><span style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{o.vadeEtiketi}</span><br />{fmtTR(o.vade)}</span>
     <span style={{ fontWeight: 700, color: renk[bolum][2] }}>{gunFarkiMetni(o.gunFarki)}</span>
     <span style={{ textAlign: "right" }}>{odendiYetkisi && <Btn small variant="ghost" onClick={() => onOdendi(o.kalem, o.hedef)} title={o.taksit ? "Bu taksit için ödeme kaydet" : "Ödeme kaydet"}><Icon name="check" size={12} /> Ödendi</Btn>}</span>

@@ -6,6 +6,7 @@
 // "aşım" üretirdi. Dışarı TL (kuruş / 100) döner.
 import { kalemTedarikciIdleri } from "./maliyetKalemleri";
 import { trLower, getKdvRateForDate, uid as varsayilanUid } from "./utils";
+import { kurCoz, KUR_KAYNAK, dovizKurusu, karsiKurusu, paraMetni, kurMetni } from "./kur"; // spec 0153 C9/2: yaprak modül
 
 // Spec 0074 R1: SGK, kira ve personel gibi kilitli bir davranıştır (tek ANA hedefli kalem; KDV, tedarikçi ve atama yok).
 export const DAVRANIS = { NORMAL: "normal", KIRA: "kira", PERSONEL: "personel", SGK: "sgk" };
@@ -65,6 +66,49 @@ export const atanabilirMi = (davranis) => davranis !== DAVRANIS.KIRA && davranis
 // Spec 0074 R33 (S3), C1: davranış kuralları tek kapılardan geçer; ekranlar bu fonksiyonları çağırır, `dav === "sgk"` dalı yazmaz.
 // KDV'si olan davranış (personel ve SGK KDV'siz) ve tedarikçi seçilen davranış (personelin alacaklısı çalışan, SGK'nınki kurum).
 export const kdvliMi = (dav) => dav !== DAVRANIS.PERSONEL && dav !== DAVRANIS.SGK;
+
+// ── Döviz kalem (spec 0153) ─────────────────────────────────────────────────────────────────────────────────────────────
+// R1/2, C1: `tutar` TL kalır ve kalemin DONMUŞ lira karşılığıdır (bütün kuruş hesaplarının tek tabanı); kalemin kendi rakamı
+// `dovizTutar` (KDV hariç), kuru `kur` ("1 birim = X TL"), para birimi `paraBirimi`. TL kalemde üçü hiç yazılmaz.
+export const DOVIZ_KALEM_ALANLARI = ["dovizTutar", "kur", "paraBirimi"];
+export const KALEM_PARA_BIRIMLERI = ["TRY", "USD", "EUR"];
+// R1, R10, R11, X4: para birimi yalnız normal davranışlı kalemde seçilir.
+export const dovizSecilebilirMi = (dav) => dav === DAVRANIS.NORMAL;
+// C9/3 (Karar 26): kalemin para birimini okuyan TEK yardımcı. C6/2 (Karar 24, P4): tanınmayan değer, kuru ya da döviz tutarı
+// olmayan kayıt lira sayılır, neden yazılmaz. Ekranlar `k.paraBirimi`'ni doğrudan okumaz (tarama).
+export const kalemParaBirimi = (k) => ((k?.paraBirimi === "USD" || k?.paraBirimi === "EUR") && Number(k.kur) > 0 && k.dovizTutar != null ? k.paraBirimi : "TRY");
+export const dovizKalemMi = (k) => kalemParaBirimi(k) !== "TRY";
+// R4/2, C4/2 (Karar 8): lira karşılığının TEK çarpımı; döviz kuruşu × kur, bir kez kuruşa yuvarlanır.
+export const dovizdenLiraK = (dovizTutar, kur) => karsiKurusu(kurus(dovizTutar), Number(kur));
+// Okuma anında lira kuruşundan kalemin para birimine (kalan, taksit, ödenecek): donmuş kurla bölüm (C2). TL kalemde aynen.
+export const kalemDovizKurusu = (k, liraK) => (dovizKalemMi(k) ? dovizKurusu(liraK, Number(k.kur)) : liraK);
+// Kalemin para birimindeki metin (R8). TL kalemde boş döner: TL kalemin bugünkü metinleri değişmez (C7).
+export const kalemDovizMetni = (k, liraK) => (dovizKalemMi(k) ? paraMetni(tl(kalemDovizKurusu(k, liraK)), kalemParaBirimi(k)) : "");
+export const kalemKurMetni = (k) => (dovizKalemMi(k) ? `1 ${kalemParaBirimi(k)} = ${kurMetni(k.kur)} TL` : "");
+// Kalemin kendi döviz tutarı (KDV hariç, R1/2) metni; TL kalemde boş.
+export const kalemDovizTutarMetni = (k) => (dovizKalemMi(k) ? paraMetni(k.dovizTutar, kalemParaBirimi(k)) : "");
+// R7/2 (Karar 15): "ödeme almış kalem" ölçütü tektir: zenginleştirilmiş kalemde kapanan tutar sıfırdan büyükse (kaleme bağlı
+// canlı ödeme ya da mahsup). Çöpteki hareket odemeleriUygula'ya hiç girmediği için saymaz.
+export const kalemOdemeAlmisMi = (k) => {
+  if (!k) return false;
+  if (Array.isArray(k.taksitler) && k.taksitler.length) return k.taksitler.some(r => (r._odenenK || 0) > 0);
+  return Object.values(k._odenen || {}).some(v => (Number(v) || 0) > 0);
+};
+// R13/2, R14/4 (plan P1): döviz kipi yalnız ANA hedefe uygulanır. Satırlı kalemde hedef taksidin satırından okunur (tevkifat
+// hedefi vergi dairesine lira ödenir); satırsız normal kalemin tek hedefi ANA'dır. Dönüş { paraBirimi, kur } ya da null.
+export const hedefDovizKipi = (k, taksitId = null) => {
+  if (!dovizKalemMi(k)) return null;
+  if (Array.isArray(k.taksitler) && k.taksitler.length) {
+    const r = k.taksitler.find(x => String(x.id) === String(taksitId));
+    if (r && (r.hedef || HEDEF.ANA) !== HEDEF.ANA) return null;
+  }
+  return { paraBirimi: kalemParaBirimi(k), kur: Number(k.kur) };
+};
+export const DOVIZ_KILIT_NEDENI = "Bu kalem ödeme almış; para birimi ve kur değiştirilemez. Değiştirmek için önce ödemelerini silin.";
+export const DOVIZ_TUTAR_SIFIR_HATASI = "Döviz tutar sıfırdan büyük olmalı.";
+export const DOVIZ_LIRA_SIFIR_HATASI = "Lira karşılığı kuruşta sıfıra iniyor; tutarı ya da kuru düzeltin.";
+// İz ayrıntısı (R24/2, AC-58): yalnız döviz kalemde; TL kalemde boş nesne (iz gövdesi değişmez).
+export const dovizKalemIzAyrintisi = (k) => (dovizKalemMi(k) ? { paraBirimi: k.paraBirimi, dovizTutar: k.dovizTutar, kur: k.kur } : {});
 export const tedarikciSecilirMi = (dav) => dav !== DAVRANIS.PERSONEL && dav !== DAVRANIS.SGK;
 export const sgkDavranisiMi = (dav) => dav === DAVRANIS.SGK;
 // Spec 0075 R9, C1 (Ö-8): KDV tevkifatı yalnız normal davranışta olur (personel ve SGK KDV'siz, kiralama tevkifata tabi
@@ -676,7 +720,7 @@ export const kapsamVerisiKoru = (form, kapsamAcik) => {
   return !c.hata && c.deger > 1 ? { [KAPSAM_ANAHTARI]: c.deger } : {};
 };
 
-export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsayilanUid } = {}) => {
+export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsayilanUid, kilit = null } = {}) => {
   const hatalar = [];
   const uyarilar = [];
   const hata = (alan, mesaj) => hatalar.push({ alan, mesaj });
@@ -686,6 +730,17 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
   const dav = tur?.davranis || DAVRANIS.NORMAL;
   const kayit = { ...form };
   delete kayit._manual;
+  // Spec 0153 R1/3 (Karar 14): döviz alanlarının TEK yazıcısı; üç alan her çağrıda silinir, yalnız döviz kipinde geçerli değerle
+  // yazılır (form yayılımı `{ ...form }` eski değeri taşımasın). Formun geçici alanları kayda girmez.
+  for (const a of DOVIZ_KALEM_ALANLARI) delete kayit[a];
+  delete kayit.kurKaynak; delete kayit._kurDokunuldu;
+  const dovizKipi = dovizSecilebilirMi(dav) && (form?.paraBirimi === "USD" || form?.paraBirimi === "EUR");
+  // R7 (Karar 15): ödeme almış kalemde para birimi ve kur kilitlidir; çağıran kayıtlı değerleri `kilit` ile verir.
+  if (kilit) {
+    const yeniPb = dovizKipi ? form.paraBirimi : "TRY", eskiPb = kilit.paraBirimi || "TRY";
+    if (yeniPb !== eskiPb) hata("paraBirimi", DOVIZ_KILIT_NEDENI);
+    else if (yeniPb !== "TRY" && kurCoz(form.kur, { kaynak: KUR_KAYNAK.TURETILEN }).deger !== Number(kilit.kur)) hata("kur", DOVIZ_KILIT_NEDENI);
+  }
   // Spec 0071 R1, R17, R18: giriş yönü. Personelde null; kirada net girişte hariç (R6 Q1). Dâhil tutar ayrılır (R3, R4);
   // oran geçersizse ayırma yapılmaz (hata zaten kdvOrani alanında).
   const kdvYonu = !kdvliMi(dav) ? null : (kdvYonuSecilebilirMi(dav, form.girisYonu) ? kdvYonuOf(form) : KDV_YONU.HARIC); // spec 0074 R6
@@ -755,7 +810,21 @@ export const giderKalemDogrula = (form, { turMap, tedarikciler = [], uid = varsa
     kayit.resmiTutar = null; kayit.eldenTutar = null; kayit.sgkTutar = null; kayit.yolParasi = null; kayit.calisanId = null; kayit.calisanAd = null; kayit.ekOdemeler = [];
   } else {
     const t = tutarCoz(form.tutar);
-    if (t.gecersiz) hata("tutar", "Tutar sayıya çevrilemedi. Örnek: 14.800,00");
+    if (dovizKipi) {
+      // Spec 0153 R2, R2/3, R4, R6/2: döviz kipinde sıfır ve boş reddedilir (tanım kapısı açılmaz); KDV döviz tutarın üzerinde
+      // ayrılır, KDV hariç döviz tek çarpımla liraya çevrilir; KDV motorun bugünkü yolundan lira tabandan hesaplanır.
+      const kc = kurCoz(form.kur, { kaynak: form.kurKaynak || KUR_KAYNAK.ELLE });
+      if (t.gecersiz) hata("tutar", "Tutar sayıya çevrilemedi. Örnek: 1.200,00");
+      else if (t.bos || t.deger <= 0) hata("tutar", DOVIZ_TUTAR_SIFIR_HATASI);
+      if (kc.hata) hata("kur", kc.hata);
+      if (!t.gecersiz && t.deger > 0 && !kc.hata) {
+        const dovizHaricK = kurus(haricOf(t.deger));
+        const liraK = dovizdenLiraK(tl(dovizHaricK), kc.deger);
+        if (dovizHaricK <= 0) hata("tutar", DOVIZ_TUTAR_SIFIR_HATASI);
+        else if (liraK <= 0) hata("tutar", DOVIZ_LIRA_SIFIR_HATASI);
+        else { kayit.tutar = tl(liraK); kayit.dovizTutar = tl(dovizHaricK); kayit.kur = kc.deger; kayit.paraBirimi = form.paraBirimi; }
+      }
+    } else if (t.gecersiz) hata("tutar", "Tutar sayıya çevrilemedi. Örnek: 14.800,00");
     else if (tanimKalemi && sifirTutarSerbestMi(dav) && (t.bos || t.deger === 0)) kayit.tutar = 0; // R10: 0 saklanır, null değil
     else if (t.bos || t.deger <= 0) hata("tutar", "Tutar sıfırdan büyük olmalı.");
     else kayit.tutar = haricOf(t.deger);
@@ -1296,6 +1365,13 @@ export const hesaplaGiderRaporu = (
 // Spec 0061 R2, R17 (AC-27): borç kapsamının TEK tanımı. borcOzeti ve açık kalemler motoru bunu çağırır; çöpteki, ödenmiş,
 // tarihsiz, yürürlük öncesi ve gider tarihi `bugun`den sonra olan kalem kapsam dışıdır (ödenecek 0 hedef düzeyinde düşer).
 export const borcKapsamindaMi = (k, { esik = "", bugun = null } = {}) => !(k.deletedAt || k.odendi || !k.tarih || k.tarih < esik || (bugun && k.tarih > bugun));
+// Spec 0153 R22/2, R22/3 (Karar 13, plan P2): satır tedarikçi bazındadır ve lira toplar; döviz kalemin ANA hedefi satırın
+// `dovizKalemleri`ne kalem başına (kalan, kalemin para biriminde) yazılır. Anahtar yalnız döviz kalem varken doğar (C7).
+const dovizKalemEkle = (satir, k, h, kalanK) => {
+  if (h.hedef !== HEDEF.ANA || !dovizKalemMi(k)) return;
+  (satir.dovizKalemleri ||= []).push({ kalemId: k.id, aciklama: k.aciklama || "", kalanK, dovizKalanK: kalemDovizKurusu(k, kalanK), paraBirimi: kalemParaBirimi(k),
+    metin: kalemDovizMetni(k, kalanK) });
+};
 export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yururlukAy = null } = {}, bugun) => {
   const turMap = turHaritasi(turler);
   const tedMap = new Map(tedarikciler.map(t => [String(t.id), t]));
@@ -1330,7 +1406,8 @@ export const borcOzeti = (giderler = [], { turler = [], tedarikciler = [], yurur
         const tk = String(k.tedarikciId);
         if (!ted.has(tk)) ted.set(tk, { tedarikciId: k.tedarikciId, ad: tedMap.get(tk).ad, tutar: 0, vadesiGecti: false, kalemler: [] });
         const t = ted.get(tk); t.tutar += o; t.vadesiGecti = t.vadesiGecti || gecti; t.kalemler.push(k);
-      } else { secilmemis.tutar += o; secilmemis.adet++; secilmemis.vadesiGecti = secilmemis.vadesiGecti || gecti; secilmemis.kalemler.push(k); }
+        dovizKalemEkle(t, k, h, o);
+      } else { secilmemis.tutar += o; secilmemis.adet++; secilmemis.vadesiGecti = secilmemis.vadesiGecti || gecti; secilmemis.kalemler.push(k); dovizKalemEkle(secilmemis, k, h, o); }
     }
   }
   const satirlar = [...ted.values()].map(t => ({ tur: "tedarikci", ...t, tutar: tl(t.tutar) }));

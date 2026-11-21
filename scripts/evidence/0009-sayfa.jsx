@@ -674,6 +674,10 @@ const KASA_0152 = [odm(4152, 1, 1775, "2026-09-26", { hesapId: 404, dovizTutar: 
   { id: 4153, tur: "virman", tarih: "2026-09-27", tutar: 500, hesapId: 404, karsiHesapId: 401, karsiTutar: 17750, kur: 35.5, paraBirimi: "USD", karsiParaBirimi: "TRY", aciklama: "Dolar bozdurma" }];
 const KUR_0152 = { usd: 35.5, eur: 38.2 };
 const EURO_0152 = { id: 406, ad: "Euro Hesabı", tur: "banka", paraBirimi: "EUR", acilisBakiyesi: 2000, acilisTarihi: "2026-09-01", kapali: false };
+// Spec 0153: döviz kalem (1.200 USD, kur 40) ve dövizle ödemesi (500 USD, Döviz Hesabı'ndan, kalemin kuruyla).
+const DOVIZ_0153 = k(4153, { turId: 5, tutar: 48000, dovizTutar: 1200, kur: 40, paraBirimi: "USD", kdvOrani: 0, tedarikciId: 11, aciklama: "İthal rulman", sonOdemeTarihi: "2026-09-30" });
+const ODEME_0153 = odm(4154, 4153, 20000, "2026-09-20", { hesapId: 404, dovizTutar: 500, kur: 40, paraBirimi: "USD" });
+const formu0153 = (o = {}) => <GiderForm giderTurleri={TURLER} tedarikciler={TED} calisanlar={CAL} giderAyarlari={AYAR.giderAyarlari} onSave={bos} onCancel={bos} rates={KUR_0152} {...o} />;
 const kasaB = (o = {}) => kasaEkrani({ hesapHareketleri: KASA_B, calisanlar: CAL_B, yururlukAy: "2026-06", ...o });
 const TUR_MAP = turHaritasi(TURLER);
 // Spec 0040: çek portföyü. Bugün (sabit) 2026-09-23: 3401 vadesi geçmiş, 3402 yaklaşan, 3403 tahsilde, 3404 ciro edilmiş (hareketli),
@@ -1668,6 +1672,14 @@ const EKRANLAR = {
   "kasa-0152-dolar-hareketler": [kasaEkrani({ hesapHareketleri: [...KASA_HAREKETLER, ...KASA_0152] }), ["~Döviz Hesabı"]],
   "kasa-0152-ziraat-hareketler": [kasaEkrani({ hesapHareketleri: [...KASA_HAREKETLER, ...KASA_0152] }), ["~Ziraat Bankası"]],
   "gider-kasa-raporu-0152": [<div style={{ background: "#fff", margin: -24, padding: 8 }} dangerouslySetInnerHTML={{ __html: buildGiderKasaRaporuHtml(giderKasaRaporu({ ...RAPOR_VERI, hareketler: [...KASA_HAREKETLER, ...KASA_0152] }, "2026-09")) }} />, []],
+  // Spec 0153: gider formunun para birimi ve kalemin kuru; ödeme almış kalemde kilit; listeler ve ödeme penceresi döviz kalemle.
+  "gider-formu-0153-doviz": [formu0153({ kalem: { turId: 5, tarih: "2026-09-10", tutar: 48000, dovizTutar: 1200, kur: 40, paraBirimi: "USD", kdvOrani: 20, tedarikciId: 11, aciklama: "İthal rulman", sonOdemeTarihi: "2026-09-30" } }), []],
+  "gider-formu-0153-kur-yok": [formu0153({ kalem: null, rates: null, ratesErr: true }), ["sec:Gider türü *=5", "sec:Para birimi=USD", "doldur:Tutar=1.200"]],
+  "gider-formu-0153-kilit": [formu0153({ kalem: odemeleriUygula([DOVIZ_0153], [ODEME_0153], TUR_MAP)[0], hareketler: [ODEME_0153], hareketBolumu: true, hesaplar: KASA_HESAPLAR, hesapSecimi: true, odemeDegistirebilir: true }), []],
+  "giderler-0153-liste": [<GiderEkrani g0={[...GIDERLER, DOVIZ_0153]} h0={[...KASA_HAREKETLER, ODEME_0153]} rates={KUR_0152} />, []],
+  "giderler-0153-borc-ozeti": [<GiderEkrani g0={[...GIDERLER, DOVIZ_0153]} h0={[...KASA_HAREKETLER, ODEME_0153]} rates={KUR_0152} />, ["dugme:Kalemleri göster", "kaydir:Kime Ne Kadar Borçluyuz"]],
+  "giderler-0153-odeme": [<GiderEkrani g0={[DOVIZ_0153]} h0={[ODEME_0153]} rates={KUR_0152} />, ["baslik:Ödeme kaydet"]],
+  "giderler-0153-acik-kalemler": [<GiderEkrani g0={[...GIDERLER, DOVIZ_0153]} h0={[...KASA_HAREKETLER, ODEME_0153]} rates={KUR_0152} />, ["dugme:Açık kalemler"]],
   "cop-kutusu-0152": [<SettingsTrash rawCustomers={[]} rawServices={[]} rawPartSales={[]} rawPayments={[]} rawDealers={[]} rawStock={[]} rawNotes={[]}
     rawKalipDefs={[]} rawParts={[]} rawCustomModels={[]} setCustomers={bos} setServices={bos} setPartSales={bos} setPayments={bos} setDealers={bos} setStock={bos}
     setNotes={bos} setKalipDefs={bos} setParts={bos} setCustomModels={bos} setTeklifler={bos} setFaturalar={bos} appSettings={{}} showToast={bos} giderYetki kasaVeriYetki

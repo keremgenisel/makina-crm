@@ -3,7 +3,7 @@
 // Tutar, para birimi, vade (`vadeTarihi`), alınma tarihi ve kimden alındığı bağlı tahsilattan (`payments`) okunur.
 // Durumun tek kaynağı çek kaydıdır (C10). Ciro bir gider ödemesinin aracıdır: `cekId` taşıyan, hesapsız ödeme hareketleri
 // (0024 `hesapHareketleri`, R5, R7). Ciro tahsilata ve müşteri kaydına yazmaz (Q3); gelir tarihi çekin geçmişinden okunur.
-import { kurus, tl, satirliMi, odemeHedefleri, davranisOf, DAVRANIS, HEDEF } from "./gider";
+import { kurus, tl, satirliMi, odemeHedefleri, davranisOf, DAVRANIS, HEDEF, dovizKalemMi } from "./gider";
 import { cokKalemOdemeleri } from "./kasa";
 import { parseMoney, trLower } from "./utils";
 
@@ -185,6 +185,7 @@ export const ciroAdaylari = (kalemler = [], alacakli, turMap) => {
   const r = [];
   for (const k of kalemler) {
     if (!k || k.deletedAt) continue;
+    if (dovizKalemMi(k)) continue; // spec 0153 R18/2 (Karar 6): döviz kalem çek adayı değildir (ciro ve kendi çekimiz)
     const dav = davranisOf(k, turMap);
     const uygun = alacakli.tur === "tedarikci" ? dav !== DAVRANIS.PERSONEL && idEsit(k.tedarikciId, alacakli.id)
       : alacakli.tur === "calisan" ? dav === DAVRANIS.PERSONEL && idEsit(k.calisanId, alacakli.id)

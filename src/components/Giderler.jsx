@@ -27,6 +27,8 @@ import { Tedarikciler } from "./gider/Tedarikciler";
 import { OdemePlaniPenceresi } from "./gider/OdemePlaniPenceresi";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { dovizIzAyrintisi } from "../lib/doviz"; // spec 0152 R14/4
+import { dovizKalemMi, dovizKalemIzAyrintisi, DOVIZ_KALEM_ALANLARI } from "../lib/gider"; // spec 0153
+const dovizAlanlariSiz = (k) => { const r = { ...k }; for (const a of DOVIZ_KALEM_ALANLARI) delete r[a]; return r; };
 import { StopajDonemleri } from "./gider/StopajDonemleri";
 import { stopajBeyanAyari, stopajOdemeTarihi, stopajDonemleri } from "../lib/stopajDonemi";
 import { useKilitListesi } from "../hooks/useKilitListesi";
@@ -178,14 +180,16 @@ export const Giderler = ({
       const od = plan ? odemeHazirla(yeni, plan) : null;
       if (od && (!od.hareketler || (od.cek && !setCekler))) { showToast("Ödeme doğrulanamadı; gider kaydedilmedi.", "err"); return; }
       setGiderler(p => [...p, yeni]);
-      logAction({ serverPermissions, action: "olusturuldu", entity: "gider", entityId: yeni.id, entityName: yeni.aciklama || yeni.calisanAd || "" });
+      logAction({ serverPermissions, action: "olusturuldu", entity: "gider", entityId: yeni.id, entityName: yeni.aciklama || yeni.calisanAd || "",
+        ...(dovizKalemMi(yeni) ? { detail: dovizKalemIzAyrintisi(yeni) } : {}) }); // spec 0153 R24/2 (P9: TL kalemin iz gövdesi değişmez)
       const yazilan = od ? odemeleriYaz(yeni, od) : [];
       showToast(yazilan.length ? "Gider ve ödemesi kaydedildi." : "Gider kaydedildi.");
     } else {
       const eski = giderler.find(k => k.id === kayit.id);
       const od = plan ? odemeHazirla(kayit, plan) : null;
       if (od && (!od.hareketler || (od.cek && !setCekler))) { showToast("Ödeme doğrulanamadı; gider kaydedilmedi.", "err"); return; }
-      setGiderler(p => p.map(k => (k.id === kayit.id ? { ...k, ...kayit } : k)));
+      // Spec 0153 R1/3 (Karar 14): `{ ...eski, ...yeni }` döviz alanlarını taşımasın; TL'ye çevrilen kalemde üç alan düşer.
+      setGiderler(p => p.map(k => (k.id === kayit.id ? { ...dovizAlanlariSiz(k), ...kayit } : k)));
       logAction({ serverPermissions, action: "duzenlendi", entity: "gider", entityId: kayit.id, entityName: kayit.aciklama || kayit.calisanAd || "", detail: { onceki: snapshotOnceki(eski) } });
       const yazilan = od ? odemeleriYaz(kayit, od, plan.silinenler || []) : [];
       showToast(yazilan.length || plan?.silinenler?.length ? "Gider ve ödemeleri güncellendi." : "Gider güncellendi.");

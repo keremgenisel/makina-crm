@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Icon, Btn } from "../ui";
 import { tutarGirilmediMi, davranisOf, kalemTutari, kalemKdv, kalemStopaj, kalemTevkifat, odenecekTutar, vadesiGectiMi, DAVRANIS, satirliMi, odemeDurumu, odemeHedefleri, HEDEF, HEDEF_SIRASI, EK_ODEME_TUR_AD, ekOdemeKurus, ekOdemeTurToplamlari, kurumTarafAdi, vergiRozetleri,
-  kalemGiderTutari, kalemIndirilebilirKdv, kisitEtkiliMi, kisitliRozetMetni, kapsamliMi, kapsamRozetMetni } from "../../lib/gider";
+  kalemGiderTutari, kalemIndirilebilirKdv, kisitEtkiliMi, kisitliRozetMetni, kapsamliMi, kapsamRozetMetni, dovizKalemMi, kalemDovizTutarMetni } from "../../lib/gider";
 import { fmtTR, trLower, aramaKelimeleri, kelimelerEslesir } from "../../lib/utils";
 import { tl2, DavranisRozeti, hedefAdi, hedefBasligi, cokHedefliMi } from "./GiderAlanlari";
 import { KartBolum, BosDurum } from "../tasarim";
@@ -127,6 +127,21 @@ export const TedarikciKirilimi = ({ rapor, katlanir = false }) => {
 // yerde satır içinde değil; flex tabanı yok, içeriği kadar ve tam genişlik çizilir.
 // Spec 0070 R13, 0074 R18, R19: SGK kurum satırı ("Kurum" rozeti); SGK davranışlı kalemlerin borcudur ve diğer taraf
 // satırları gibi yalnız gösterir (0070'in "SGK'yı Öde" düğmesi kalktı; ödeme kalemin kendi penceresinden).
+// Spec 0153 R22/3 (plan P2): döviz kalem içeren tedarikçi satırında "Kalemleri göster" ve ibare; satır lira toplar.
+const DovizKalemListesi = ({ s }) => {
+  const [acik, setAcik] = useState(false);
+  if (!s.dovizKalemleri?.length) return null;
+  return (
+    <div data-testid="borc-doviz-kalemleri">
+      <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 2 }}>Döviz kalem içerir · <AcKapa acik={acik} onClick={() => setAcik(a => !a)}>{acik ? "Kalemleri gizle" : "Kalemleri göster"}</AcKapa></div>
+      {acik && s.dovizKalemleri.map(x => (
+        <div key={String(x.kalemId)} data-testid="borc-doviz-kalemi" style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, padding: "3px 0 3px 12px" }}>
+          <span>{x.aciklama || "Kalem"}</span><b>{x.metin} <span style={{ fontWeight: 400, color: "var(--n500, #64748b)" }}>· {tl2(x.kalanK / 100)}</span></b>
+        </div>
+      ))}
+    </div>
+  );
+};
 export const BorcOzeti = ({ ozet }) => {
   const [acik, setAcik] = useState(false);
   return (
@@ -143,6 +158,7 @@ export const BorcOzeti = ({ ozet }) => {
               </div>
               {s.tur === "calisanlar" && <div style={{ marginTop: 3 }}><AcKapa acik={acik} onClick={() => setAcik(a => !a)}>{acik ? "Adları gizle" : "Adları göster"}</AcKapa></div>}
               {s.tur !== "calisanlar" && <div style={{ fontSize: 11.5, color: "var(--n500, #64748b)", marginTop: 2 }}>{s.kalemler.length} kalem</div>}
+              <DovizKalemListesi s={s} />
             </div>
             <b style={{ fontSize: 14, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{tl2(s.tutar)}</b>
           </div>
@@ -352,7 +368,9 @@ export const KalemListesi = ({ kalemler, giderTurleri, tedarikciler, bugun, canD
           </div>
         </td>
         {/* Spec 0076 R19 (AC-18): tutar hücresi gider tutarı; kısıtlı kalemde altında oran ve indirilemeyen KDV rozeti. */}
-        <td style={{ ...tdR, fontWeight: 700 }}>{tl2(kalemGiderTutari(k, d))}
+        {/* Spec 0153 R8/2, P8 (AC-54): döviz kalemde önde kalemin kendi rakamı (KDV hariç döviz), altında soluk lira (gider tutarı). */}
+        <td style={{ ...tdR, fontWeight: 700 }}>{dovizKalemMi(k) ? <><span data-testid="kalem-doviz-tutari">{kalemDovizTutarMetni(k)}</span>
+          <div data-testid="kalem-lira-karsiligi" style={{ fontSize: 11, fontWeight: 400, color: "var(--n500, #64748b)" }}>{tl2(kalemGiderTutari(k, d))}</div></> : tl2(kalemGiderTutari(k, d))}
           {kisitEtkiliMi(k, d) && <div data-testid="kisitli-rozeti" style={{ marginTop: 4, fontWeight: 400 }}><Rozet renk="turuncu">{kisitliRozetMetni(k, d)}</Rozet></div>}
           {/* Spec 0092 R19, R19/2 (AC-33/3): kapsam rozeti kısıtlı rozetin altında; kaçıncı ay yazılmaz. */}
           {kapsamliMi(k, d) && <div data-testid="kapsam-rozeti" style={{ marginTop: 4, fontWeight: 400 }}><Rozet renk="mavi">{kapsamRozetMetni(k, d)}</Rozet></div>}</td>

@@ -290,7 +290,8 @@ describe("Spec 0152: kaynak taramaları", () => {
   });
   it("AC-25 / AC-29 / C1: döviz tutarı ve karşı bacağı kuruşa çeviren (bakiyeyi okuyan) tek yer kasa.js'in iki okuyucusu", () => {
     const yerler = dosyalar("src").filter(f => /kurus\((\w+)\.(dovizTutar|karsiTutar)/.test(yorumsuz(f)) || /kurus\(m\?\.(dovizTutar|karsiTutar)/.test(yorumsuz(f)));
-    expect(yerler.sort()).toEqual([path.join("src", "lib", "giderRaporu.js"), path.join("src", "lib", "kasa.js")].sort());
+    // Spec 0153 ile: gider formu döviz KALEMİN kendi tutarını (hareket bakiyesi değil) form açılışında yeniden kurar (0071 deseni).
+    expect(yerler.sort()).toEqual([path.join("src", "components", "GiderForm.jsx"), path.join("src", "lib", "giderRaporu.js"), path.join("src", "lib", "kasa.js")].sort());
     const k = yorumsuz("src/lib/kasa.js");
     expect(k.match(/kurus\(m\?\.dovizTutar/g)).toHaveLength(1);
     expect(k.match(/kurus\(m\?\.karsiTutar/g)).toHaveLength(1);
@@ -303,7 +304,8 @@ describe("Spec 0152: kaynak taramaları", () => {
     }
   });
   it("DoD: kur için tutar ayrıştırıcısı kullanılmaz; döviz alanlarını yazan tek yol (tarama)", () => {
-    expect(yorumsuz("src/lib/doviz.js")).toMatch(/export const kurCoz/);
+    expect(yorumsuz("src/lib/kur.js")).toMatch(/export const kurCoz/); // spec 0153 ile: kur ilkelleri yaprak modülde (C9/2)
+    expect(yorumsuz("src/lib/doviz.js")).toMatch(/export \{[^}]*\bkurCoz\b[^}]*\} *;?|\bkurCoz,/);
     for (const f of dosyalar("src")) expect(yorumsuz(f), f).not.toMatch(/(tutarCoz|parseMoney|tutarOku)\([^)]*\.kur\b/);
     // Döviz alanları kayda yalnız doğrulayıcıların döndürdüğü nesneyle ve tek yazıcıdan girer.
     const yazanlar = dosyalar("src").filter(f => /\b(dovizTutar|karsiTutar): tl\(/.test(yorumsuz(f)));

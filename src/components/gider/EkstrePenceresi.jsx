@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { fmtTR } from "../../lib/utils";
-import { tl, DAVRANIS } from "../../lib/gider";
+import { tl, DAVRANIS, dovizKalemMi, kalemDovizMetni, hedefDovizKipi } from "../../lib/gider";
+import { paraMetni } from "../../lib/doviz";
 import { Btn, Modal, Input, Field, Icon, Pagination } from "../ui";
 import { usePagination } from "../../hooks/usePagination";
 import { BosDurum, Ipucu } from "../tasarim";
@@ -33,8 +34,12 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
     return [hedef, s.tur === "avans" ? null : k && `${k.aciklama || fmtTR(k.tarih)}`, m.yontem || null, s.tur === "mahsup" ? null : hesapAdi(m.hesapId), m.aciklama || null]
       .filter(Boolean).join(" · ");
   };
+  // Spec 0153 R22, X8 (AC-28): bakiye lira yürür; döviz kalemin borç satırı ve ödemesi kendi para birimindeki tutarı da taşır.
+  const dovizEki = (s) => (s.tur === "borc" && s.kalem && dovizKalemMi(s.kalem) ? kalemDovizMetni(s.kalem, s.tutarK)
+    : s.tur === "odeme" && s.hareket?.dovizTutar != null && s.kalem && hedefDovizKipi(s.kalem, s.hareket.taksitId) ? paraMetni(s.hareket.dovizTutar, s.hareket.paraBirimi) : "");
   const etki = (s) => (s.tur === "mahsup" ? <span style={{ color: "var(--n500, #64748b)" }}>{para(s.tutarK)}<div style={{ fontSize: 11 }}>net etkisiz</div></span>
-    : <span style={{ color: s.etkiK < 0 ? "var(--grn700, #15803d)" : "var(--red700, #b91c1c)" }}>{s.etkiK < 0 ? "−" : "+"}{para(Math.abs(s.etkiK))}</span>);
+    : <span style={{ color: s.etkiK < 0 ? "var(--grn700, #15803d)" : "var(--red700, #b91c1c)" }}>{s.etkiK < 0 ? "−" : "+"}{para(Math.abs(s.etkiK))}
+      {dovizEki(s) && <div data-testid="ekstre-doviz-tutari" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dovizEki(s)}</div>}</span>);
   const izgara = { display: "grid", gridTemplateColumns: "90px 130px minmax(0, 1fr) 120px 130px 40px", gap: 10, alignItems: "center" };
   const bakiyeEtiketi = calisan
     ? (e.bakiyeK >= 0 ? `Çalışana borcumuz ${para(e.bakiyeK)}` : `Çalışandan alacağımız ${para(-e.bakiyeK)}`)

@@ -9,7 +9,7 @@
 //
 // DÖNEM KİLİDİ (R26, Q1): her şey ay sonu itibarıyla. Ödeme ve mahsup hareketleri ay sonuna süzülüp kaleme uygulanır,
 // kasa aralıklı bakiyeyle, kart blokajı ve hatırlatıcı `bugun = ay sonu` ile, çek durumu geçmişinden.
-import { hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemGiderTutari, odemeDurumu, KKEG_ETIKETI, KKEG_KISA, VERGI_MATRAHI_NOTU, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti, tevkifatOzeti, sgkOzeti, kurumTarafAdi, VERGI_DAIRESI } from "./gider";
+import { dovizKalemMi, kalemParaBirimi, kalemDovizKurusu, HEDEF, hesaplaGiderRaporu, odemeleriUygula, turHaritasi, davranisOf, kalemGiderTutari, odemeDurumu, KKEG_ETIKETI, KKEG_KISA, VERGI_MATRAHI_NOTU, kdvKarsilastir, ayinSonGunu, tl, kurus, DAVRANIS, PERSONEL_ETIKETI, kalemGorunenAd, ekOdemeTurToplamlari, stopajOzeti, tevkifatOzeti, sgkOzeti, kurumTarafAdi, VERGI_DAIRESI } from "./gider";
 import { odemeHatirlatmalari, gunFarki, gunFarkiMetni } from "./odemeHatirlatma";
 import { stopajBeyanAyari, stopajDonemOzetleri } from "./stopajDonemi";
 import { hesaplananKdvAylar } from "./giderKdv";
@@ -98,7 +98,8 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     const genel = genelKalemler.map(k => {
         const dav = davranisOf(k, turMap);
         return { tarih: k.tarih, tur: turMap.get(String(k.turId))?.ad || "(türsüz)", aciklama: kalemGorunenAd(k, dav),
-          tedarikci: kurumTarafAdi(dav) || tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemGiderTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)] }; // spec 0074 R19
+          tedarikci: kurumTarafAdi(dav) || tedMap.get(String(k.tedarikciId))?.ad || "", tutar: kalemGiderTutari(k, dav), durum: DURUM_AD[odemeDurumu(k)], // spec 0074 R19
+          ...(dovizKalemMi(k) ? { doviz: { tutarK: kurus(k.dovizTutar), paraBirimi: kalemParaBirimi(k), kur: Number(k.kur) } } : {}) }; // spec 0153 R9/2
       });
     const personel = gr.kalemler.filter(k => davranisOf(k, turMap) === DAVRANIS.PERSONEL);
     // Spec 0060 R11, R12, R16, R28, R31, C2: tür bazında ek ödeme toplamı ve stopaj özeti saf motordan (bu dosya kişi bazlı
@@ -129,7 +130,8 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       // Spec 0084 R21/2 (AC-31): gruplanmış kira stopajı satırının kimliği yoktur; kendi dalıyla basılır ("(türsüz)" değil).
       if (v.tur === "stopaj") return { stopaj: true, tarih: null, tur: STOPAJ_RAPOR_TURU, donemAdi: v.donemTamAdi, tedarikci: VERGI_DAIRESI, adet: v.adet, kalanK: v.odenecekK, vade: v.vade, gun: gunFarki(son, v.vade) };
       const kk = giderAySonuById.get(String(v.id));
-      return { tarih: kk?.tarih || null, tur: turMap.get(String(kk?.turId))?.ad || "(türsüz)", tedarikci: v.taraf, kalanK: v.odenecekK, vade: v.vade, gun: v.gunFarki };
+      return { tarih: kk?.tarih || null, tur: turMap.get(String(kk?.turId))?.ad || "(türsüz)", tedarikci: v.taraf, kalanK: v.odenecekK, vade: v.vade, gun: v.gunFarki,
+        ...(kk && v.hedef === HEDEF.ANA && dovizKalemMi(kk) ? { doviz: { tutarK: kalemDovizKurusu(kk, v.odenecekK), paraBirimi: kalemParaBirimi(kk), kur: Number(kk.kur) } } : {}) }; // spec 0153 P11
     });
     // Spec 0059 R9, R39 (AC-10, AC-27): tedarikçi kırılımının altındaki kalemler kalem listesinden gruplanır (yeni hesap yok).
     // Triyaj: gruplama tedarikçi KİMLİĞİYLE yapılır, ad yalnız başlıktır (aynı adlı iki tedarikçi bir tabloda karışmasın).
@@ -330,9 +332,9 @@ export const buildGiderKasaRaporuHtml = (r) => {
         ...(G.tedarikciler.secilmemis.adet ? [["Tedarikçi seçilmemiş", tlp(G.tedarikciler.secilmemis.harcama), tlp(G.tedarikciler.secilmemis.acikBorc)]] : []),
         ["<b>Toplam</b>", `<b>${tlp(G.tedarikciler.toplamHarcama)}</b>`, `<b>${tlp(G.tedarikciler.toplamBorc)}</b>`]], [SOL, R, R])}
       ${G.tedarikciKalemleri.map(t => tablo(`${t.ad} · bu ayın kalemleri`, ["Tarih", "Tür", "Açıklama", "Tutar", "Durum"],
-        t.kalemler.map(k => [tarihHucre(k.tarih), esc(k.tur), esc(k.aciklama), tlp(k.tutar), esc(k.durum)]), [SOL, SOL, SOL, R, SOL])).join("")}`);
+        t.kalemler.map(k => [tarihHucre(k.tarih), esc(k.tur), esc(k.aciklama), tlp(k.tutar) + dovizEk(k.doviz), esc(k.durum)]), [SOL, SOL, SOL, R, SOL])).join("")}`);
     const vadeTablo = (baslik, l) => tablo(baslik, ["Tarih", "Tür", "Tedarikçi", "Kalan", "Vade", "Gün"],
-      l.map(v => [tarihHucre(v.tarih), esc(v.stopaj ? `${v.tur} · ${v.donemAdi} · ${v.adet} kalem` : v.personel || v.toplu ? `${v.tur} · ${v.adet} kalem` : v.tur), esc(v.tedarikci), kp(v.kalanK), esc(gun(v.vade)), esc(gunFarkiMetni(v.gun))]), [SOL, SOL, SOL, R, SOL, R]);
+      l.map(v => [tarihHucre(v.tarih), esc(v.stopaj ? `${v.tur} · ${v.donemAdi} · ${v.adet} kalem` : v.personel || v.toplu ? `${v.tur} · ${v.adet} kalem` : v.tur), esc(v.tedarikci), kp(v.kalanK) + dovizEk(v.doviz), esc(gun(v.vade)), esc(gunFarkiMetni(v.gun))]), [SOL, SOL, SOL, R, SOL, R]);
     const vadeVar = G.vadeler.gecmis.length + G.vadeler.yaklasan.length > 0;
     const durumKutu = bolum("GİDER · ÖDEME DURUMU", itibariyla, `
       ${stTablo([st("Vadesi geçmiş", `${G.odemeDurumu.gecmisAdet} kalem · ${tlp(G.odemeDurumu.gecmisTutar)}`),
@@ -377,7 +379,7 @@ export const buildGiderKasaRaporuHtml = (r) => {
     const sgkKutu = G.sgk ? `<!--sgk--><div data-bolum="sgk">${bolum("GİDER · SGK", `${donem}, ödeme durumu ${itibariyla}`, stTablo([st("SGK toplamı", tlp(G.sgk.toplam)),
       st("Ödenen", tlp(G.sgk.odenen)), st("Ay sonunda açık", tlp(G.sgk.acik))]))}</div><!--/sgk-->` : "";
     const kalemKutu = bolum("GİDER · KALEM LİSTESİ", donem,
-      tablo("KALEMLER", ["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"], G.kalemler.map(k => [tarihHucre(k.tarih), esc(k.tur), esc(k.aciklama), esc(k.tedarikci), tlp(k.tutar), esc(k.durum)]),
+      tablo("KALEMLER", ["Tarih", "Tür", "Açıklama", "Tedarikçi", "Tutar", "Durum"], G.kalemler.map(k => [tarihHucre(k.tarih), esc(k.tur), esc(k.aciklama), esc(k.tedarikci), tlp(k.tutar) + dovizEk(k.doviz), esc(k.durum)]),
         [SOL, SOL, SOL, SOL, R, SOL]) || bosSatir);
       // Spec 0055 R2, R11: koşul içeriğe bakar; kalemsiz ay zaten yukarıda bütün bölümüyle "Bu ayda kayıt yok" satırına iner
       // (G.bos), bu dal savunmadır ve aynı satırı kullanır (boş tablo basılmaz).

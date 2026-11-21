@@ -5,12 +5,12 @@
 // taksitId, tamKapatir, kaynak, gocKaynak, aciklama}. Müşteri tahsilatı `payments[].hesapId` ile bakiyeye girer (R6).
 import { cekDurumuOf, tahsilatTarihiOf, yerelBugun, fmtCur } from "./utils";
 import { gecerliGunMu } from "./gecerlilik";
-import { cevrimOku, dovizAlanlariYaz, dovizOdemeMi, CEK_DOVIZ_NEDENI, YALNIZ_TL_NEDENI } from "./doviz";
+import { cevrimOku, dovizAlanlariYaz, dovizOdemeMi, CEK_DOVIZ_NEDENI, YALNIZ_TL_NEDENI, dovizKurusu, karsiKurusu, paraMetni as dovizParaMetni } from "./doviz";
 import { kartTahsilEdildiMi } from "./krediKarti";
 import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { aliciAd } from "./yedekParcaSatis";
 import { hareketPaylari, hareketHedefPaylari } from "./odemeYontemi";
-import { tutarCoz, kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula } from "./gider";
+import { tutarCoz, kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula, hedefDovizKipi, dovizKalemMi, DOVIZ_LIRA_SIFIR_HATASI } from "./gider";
 // Spec 0070 R28, 0074 R22: SGK kalemine avans mahsubu yapılamaz (tek metin; avans çalışanın borcu, SGK kurumun alacağı).
 export const SGK_MAHSUP_HATASI = "SGK kalemine avans mahsubu yapılamaz; SGK kuruma ödenir.";
 
@@ -494,6 +494,11 @@ export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false,
   if (!form?.tarih) hatalar.tarih = "Ödeme tarihi girilmedi.";
   const t = tutarOku(form?.tutar);
   const kalanK = odemeHedefKalaniK(kalem, davranisOf(kalem, turMap), satirli ? form?.taksitId : null);
+  // Spec 0153 R13/2, R14, R15, R16/2 (Karar 3, 4, 5): döviz kalemin ANA hedefinde çevrimin yönü tersine döner. Satırın tutarı
+  // kalemin para birimindedir, lira tutarı kalemin DONMUŞ kurundan türer; hesap yalnız aynı para biriminde ya da boş; üç alan
+  // hesapsız kayıtta da yazılır. Kırpma: yazılan döviz kalemin döviz kalanına eşitse lira tutar lira kalanına eşitlenir.
+  const dk = hedefDovizKipi(kalem, satirli ? form?.taksitId : null);
+  if (dk) return dovizKalemOdemesi(form, { kalem, satirli, t, kalanK, dk, hesaplar, hatalar, ciro, kendiCek, yalnizTl });
   if (!Number.isFinite(t)) hatalar.tutar = "Tutar sayıya çevrilemedi. Örnek: 12.500,00";
   else if (t <= 0) hatalar.tutar = "Tutar sıfırdan büyük olmalı.";
   else if (kurus(t) > kalanK) hatalar.tutar = `Kalandan fazla ödeme kaydedilemez (kalan ${tl(kalanK).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺).`;
@@ -522,6 +527,40 @@ export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false,
   };
 };
 
+// Spec 0153: döviz kalemin ANA hedef ödemesi (odemeDogrula'nın döviz dalı; tek doğrulayıcı korunur, TL yolu değişmez).
+export const DOVIZ_KALEM_HESAP_NEDENI = "Döviz kalem yalnız kendi para birimindeki hesaptan ya da hesapsız ödenir; lirayla ödemek için önce Kasa'dan bozdurma yapın.";
+export const DOVIZ_KALEM_CEK_NEDENI = "Döviz kalem çekle ödenmez (ciro ve kendi çekimiz yalnız TL kaleme).";
+const dovizKalemOdemesi = (form, { kalem, satirli, t, kalanK, dk, hesaplar, hatalar, ciro, kendiCek, yalnizTl }) => {
+  const kalanDovizK = dovizKurusu(kalanK, dk.kur);
+  let liraK = 0;
+  if (ciro || kendiCek || yalnizTl || form?.yontem === "Çek (ciro)" || form?.yontem === "Çek (kendi)") hatalar.yontem = DOVIZ_KALEM_CEK_NEDENI; // R18, R18/2
+  if (!Number.isFinite(t)) hatalar.tutar = "Tutar sayıya çevrilemedi. Örnek: 1.200,00";
+  else if (t <= 0) hatalar.tutar = "Tutar sıfırdan büyük olmalı.";
+  else if (kurus(t) > kalanDovizK) hatalar.tutar = `Kalandan fazla ödeme kaydedilemez (kalan ${dovizParaMetni(tl(kalanDovizK), dk.paraBirimi)}).`;
+  else {
+    liraK = kurus(t) === kalanDovizK ? kalanK : Math.min(kalanK, karsiKurusu(kurus(t), dk.kur));
+    // Triyaj (R16, C2): ödemeden sonra kalan lira dövizde sıfıra iniyorsa (yarım kurun altında artık) kalanın tamamı kapanır;
+    // yoksa döviz kalanı 0 görünen ama lirada açık kalan ve hiçbir ödemeyle kapatılamayan kalem doğardı.
+    if (dovizKurusu(kalanK - liraK, dk.kur) === 0) liraK = kalanK;
+    if (liraK <= 0) hatalar.tutar = DOVIZ_LIRA_SIFIR_HATASI;
+  }
+  const hesapli = form?.hesapId != null && form.hesapId !== "";
+  if (hesapli) {
+    const h = hesaplar.find(x => String(x.id) === String(form.hesapId));
+    if (!h) hatalar.hesapId = "Hesap bulunamadı.";
+    else if (h.kapali) hatalar.hesapId = "Kapatılmış hesaba hareket girilemez.";
+    else if ((h.paraBirimi || "TRY") !== dk.paraBirimi) hatalar.hesapId = DOVIZ_KALEM_HESAP_NEDENI;
+  }
+  if (Object.keys(hatalar).length) return { hatalar, kayit: null };
+  return {
+    hatalar,
+    kayit: dovizAlanlariYaz({
+      tur: "odeme", tarih: form.tarih, tutar: tl(liraK), yontem: form.yontem || "", hesapId: hesapli ? form.hesapId : null,
+      giderId: kalem.id, taksitId: satirli ? form.taksitId : null, aciklama: String(form.aciklama || "").trim(),
+    }, { dovizTutar: tl(kurus(t)), kur: dk.kur, paraBirimi: dk.paraBirimi }),
+  };
+};
+
 // Spec 0084 R15/1 (revizyon 3, P4): çok kaleme dağıtım çekirdeği (eski cek.js dagitimHareketleri, taşındı ve parametreleşti).
 // Her dağıtım satırı bugünkü odemeDogrula'dan geçer (tek hedef, kalan sınırı, hesap); 0024'ün "bir ödeme bir kalemi kapatır"
 // kuralı değişmez: satır başına bir hareket. satirlar: [{anahtar, tutarK}] (seçili); adaylar: [{anahtar, kalem, taksitId}];
@@ -534,6 +573,7 @@ export const cokKalemOdemeleri = ({ satirlar = [], adaylar = [], tarih, hesapId 
   for (const d of satirlar) {
     const a = adaylar.find(x => x.anahtar === d.anahtar);
     if (!a) { const h = ["Seçilen gider kalemi bulunamadı."]; satirHatalari[d.anahtar] = h; ilk ??= h; continue; }
+    if (dovizKalemMi(a.kalem)) { const h = [DOVIZ_KALEM_CEK_NEDENI]; satirHatalari[d.anahtar] = h; ilk ??= h; continue; } // spec 0153 R18/2
     const r = odemeDogrula({ tarih, tutar: tl(d.tutarK), yontem, hesapId, taksitId: a.taksitId, aciklama }, { kalem: a.kalem, turMap, hesaplar, yalnizTl: true, ...bayrak });
     if (!r.kayit) { const h = Object.values(r.hatalar); satirHatalari[d.anahtar] = h; ilk ??= h; continue; }
     hareketler.push({ ...r.kayit, ...ek });
@@ -567,6 +607,31 @@ export const cokluOdemeDogrula = (form, { kalem, turMap, hesaplar = [], hedefAdi
     const v = odemeDogrula({ ...r, tarih: form?.tarih || "2000-01-01" }, { kalem, turMap, hesaplar });
     if (v.kayit) gecerli.push({ i, kayit: { ...v.kayit, tarih: form?.tarih } });
     else hatalar.satirlar[i] = v.hatalar;
+  }
+  // Spec 0153 R16/3 (plan P3): döviz kalemin ANA hedefinde satırlar hedef (taksitli kalemde taksit) başına gruplanır; grubun
+  // döviz toplamı o hedefin döviz kalanını aşamaz, toplam kalana EŞİTSE son satırın lira tutarı "lira kalan eksi öteki
+  // satırlar" olur (tek satırlık R16/2 kırpmasının grup hâli). Lira katmanları aşağıda aynen çalışır.
+  if (!Object.keys(hatalar.satirlar).length) {
+    const gruplar = new Map();
+    for (const g of gecerli) {
+      if (g.kayit.dovizTutar == null || !hedefDovizKipi(kalem, satirli ? g.kayit.taksitId : null)) continue;
+      const key = String(satirli ? g.kayit.taksitId : "");
+      gruplar.set(key, [...(gruplar.get(key) || []), g]);
+    }
+    for (const [, liste] of gruplar) {
+      if (liste.length < 2) continue;
+      const taksitId = satirli ? liste[0].kayit.taksitId : null;
+      const dk = hedefDovizKipi(kalem, taksitId);
+      const kalanK = odemeHedefKalaniK(kalem, dav, taksitId);
+      const kalanDovizK = dovizKurusu(kalanK, dk.kur);
+      const dovizTopK = liste.reduce((a, g) => a + kurus(g.kayit.dovizTutar), 0);
+      if (dovizTopK > kalanDovizK) { hatalar.hedefler.push(`${hedefAdi(taksitId)} için girilen toplam kalanı aşıyor (kalan ${dovizParaMetni(tl(kalanDovizK), dk.paraBirimi)}).`); continue; }
+      const son = liste[liste.length - 1];
+      const otekiK = liste.slice(0, -1).reduce((a, g) => a + kurus(g.kayit.tutar), 0);
+      let sonK = dovizTopK === kalanDovizK ? kalanK - otekiK : Math.min(kurus(son.kayit.tutar), kalanK - otekiK);
+      if (dovizKurusu(kalanK - otekiK - sonK, dk.kur) === 0) sonK = kalanK - otekiK; // triyaj: dövizde sıfıra inen lira artığı kalmaz
+      if (sonK > 0) son.kayit = { ...son.kayit, tutar: tl(sonK) };
+    }
   }
   // R6 katman 2: aynı taksite giden satırların toplamı.
   if (satirli && !Object.keys(hatalar.satirlar).length) {
@@ -631,9 +696,12 @@ export const sonKullanilanYontem = (hareketler = []) => {
   return son ? son.yontem : "";
 };
 
-export const sonKullanilanHesap = (hareketler = [], hesaplar = []) => {
-  const son = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId != null).sort((a, b) => (b.tarih || "").localeCompare(a.tarih || "") || Number(b.id) - Number(a.id))[0];
-  const h = son && hesaplar.find(x => String(x.id) === String(son.hesapId) && !x.kapali && x.paraBirimi === "TRY");
+// Spec 0153 P6: isteğe bağlı para birimi; döviz kalemde o para birimindeki son kullanılan açık hesap (yoksa null = hesapsız).
+// Parametresiz çağrı bugünkü TL davranışıdır (0152 P1).
+export const sonKullanilanHesap = (hareketler = [], hesaplar = [], paraBirimi = "TRY") => {
+  const uygun = (id) => hesaplar.find(x => String(x.id) === String(id) && !x.kapali && x.paraBirimi === paraBirimi);
+  const son = hareketler.filter(m => m && m.tur === "odeme" && m.hesapId != null && (paraBirimi === "TRY" || uygun(m.hesapId))).sort((a, b) => (b.tarih || "").localeCompare(a.tarih || "") || Number(b.id) - Number(a.id))[0];
+  const h = son && uygun(son.hesapId);
   return h ? h.id : null;
 };
 
@@ -760,7 +828,9 @@ export const copHareketGeriAlmaNedeni = (h, { giderler = [], hareketler = [], tu
   if (!kalem) return null;
   const canli = (hareketler || []).filter(m => m && !m.deletedAt && String(m.id) !== String(h.id));
   const zengin = odemeleriUygula([kalem], canli, turMap)[0];
-  const form = { tutar: h.tutar, tarih: h.tarih, taksitId: h.taksitId, yontem: h.cekId != null ? "" : h.yontem };
+  // Spec 0153 R13/2: döviz kalemin ANA hedefine giden ödeme doğrulayıcıya kendi döviz tutarıyla verilir (satır tutarı orada döviz).
+  const tutar = h.tur === "odeme" && h.dovizTutar != null && hedefDovizKipi(zengin, h.taksitId) ? h.dovizTutar : h.tutar;
+  const form = { tutar, tarih: h.tarih, taksitId: h.taksitId, yontem: h.cekId != null ? "" : h.yontem };
   const r = h.tur === "mahsup"
     ? mahsupDogrula(form, { kalem: zengin, turMap, hareketler: canli, giderler, bugun, yururlukAy })
     : odemeDogrula(form, { kalem: zengin, turMap });

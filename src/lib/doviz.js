@@ -5,23 +5,16 @@
 // - Kur kendi ayrıştırıcısıyla okunur (R5/2, Karar 8): virgül ve nokta ondalık; elle yazılan kur en çok dört, öneriden gelen ve
 //   türetilen kur en çok altı ondalık (P3). Tutar ayrıştırıcısı kur için kullanılmaz (nokta orada binliktir).
 // - Çevrim bir kez kuruşa yuvarlanır (C4/2); TL tutar ile döviz tutar asıl değerlerdir, kur bilgidir (P2).
-import { CUR_SYM } from "./constants";
 import { tutarCoz } from "./gider";
+import { KUR_ALINMADI, KUR_CEVRIMDISI, dovizMi, kurOnerisi, ONERI_BUGUN_IBARESI, KUR_KAYNAK, KUR_ONDALIK_ELLE, KUR_ONDALIK_EN_COK,
+  KUR_BOS_HATASI, KUR_SAYI_HATASI, KUR_POZITIF_HATASI, kurOndalikHatasi, kurCoz, kurGirdisi, dovizKurusu, karsiKurusu, kurTuret,
+  paraMetni, kurMetni, kurSapmaUyarisi, ondalikYuvarla as yuvarla } from "./kur";
+// Spec 0153 C9/2: kur ilkelleri yaprak modülde (kur.js); 0152'nin adlarıyla buradan da dışa verilir.
+export { KUR_ALINMADI, KUR_CEVRIMDISI, dovizMi, kurOnerisi, ONERI_BUGUN_IBARESI, KUR_KAYNAK, KUR_ONDALIK_ELLE, KUR_ONDALIK_EN_COK,
+  KUR_BOS_HATASI, KUR_SAYI_HATASI, KUR_POZITIF_HATASI, kurOndalikHatasi, kurCoz, kurGirdisi, dovizKurusu, karsiKurusu, kurTuret,
+  paraMetni, kurMetni, kurSapmaUyarisi };
 
-// ── Kur önerisi (0132'den taşındı; malzeme.js yeniden dışa verir, P9) ─────────────────────────────────────────────────────
-export const KUR_ALINMADI = "Günün kuru henüz alınmadı; kuru elle yazabilirsiniz.";
-export const KUR_CEVRIMDISI = "Çevrimdışı olduğu için günün kuru alınamadı; kuru elle yazabilirsiniz.";
-export const dovizMi = (pb) => pb === "USD" || pb === "EUR";
-// `rates` = { usd, eur } (App, "1 birim kaç TL"), `ratesErr` çevrimdışı. Dönüş { deger, neden }. Öneri her zaman bugünün kurudur.
-export const kurOnerisi = (pb, rates, ratesErr) => {
-  if (!dovizMi(pb)) return { deger: null, neden: null };
-  const v = rates ? rates[pb === "USD" ? "usd" : "eur"] : null;
-  if (v > 0) return { deger: v, neden: null };
-  return { deger: null, neden: ratesErr ? KUR_CEVRIMDISI : KUR_ALINMADI };
-};
 export const IKI_DOVIZ_NEDENI = "İki döviz hesap arasında günün kuru önerilmez; kuru (1 çıkan birim kaç giren birim) elle yazın.";
-export const ONERI_BUGUN_IBARESI = "Önerilen kur bugünün kurudur; işlem başka bir güne aitse o günün kurunu yazın.";
-const yuvarla = (n, h) => Math.round(n * 10 ** h) / 10 ** h;
 // R10/3, Karar 7: bozdurmada kur "1 çıkan birim = X giren birim". TL'ye bozdurmada günün kuru, TL'den dövize tersi (altı
 // ondalık, P3), iki döviz arasında öneri yok.
 export const bozdurmaKurOnerisi = (cikanPb, girenPb, rates, ratesErr) => {
@@ -33,33 +26,8 @@ export const bozdurmaKurOnerisi = (cikanPb, girenPb, rates, ratesErr) => {
   return o.deger ? { deger: yuvarla(1 / o.deger, 6), neden: null } : o;
 };
 
-// ── Kur ayrıştırıcısı (R5/2, AC-37) ─────────────────────────────────────────────────────────────────────────────────────
-export const KUR_KAYNAK = { ELLE: "elle", ONERI: "oneri", TURETILEN: "turetilen" };
-export const KUR_ONDALIK_ELLE = 4;
-export const KUR_ONDALIK_EN_COK = 6;
-export const KUR_BOS_HATASI = "Kur girilmedi; kur olmadan kaydedilmez.";
-export const KUR_SAYI_HATASI = "Kur sayıya çevrilemedi. Örnek: 35,5";
-export const KUR_POZITIF_HATASI = "Kur sıfırdan büyük olmalı.";
-export const kurOndalikHatasi = (n) => `Kur en çok ${n} ondalık hane taşır.`;
-export const kurCoz = (ham, { kaynak = KUR_KAYNAK.ELLE } = {}) => {
-  const ondalik = kaynak === KUR_KAYNAK.ONERI || kaynak === KUR_KAYNAK.TURETILEN ? KUR_ONDALIK_EN_COK : KUR_ONDALIK_ELLE;
-  if (typeof ham === "number") return Number.isFinite(ham) && ham > 0 ? { deger: ham, hata: null } : { deger: null, hata: KUR_POZITIF_HATASI };
-  const t = String(ham ?? "").replace(/\s/g, "");
-  if (!t) return { deger: null, hata: KUR_BOS_HATASI };
-  if (t.startsWith("-")) return { deger: null, hata: KUR_POZITIF_HATASI };
-  const m = /^(\d+)(?:[.,](\d+))?$/.exec(t);
-  if (!m) return { deger: null, hata: KUR_SAYI_HATASI };
-  if (m[2] && m[2].length > ondalik) return { deger: null, hata: kurOndalikHatasi(ondalik) };
-  const n = Number(`${m[1]}.${m[2] || "0"}`);
-  return n > 0 ? { deger: n, hata: null } : { deger: null, hata: KUR_POZITIF_HATASI };
-};
-export const kurGirdisi = (n) => (n == null || !(n > 0) ? "" : String(yuvarla(n, KUR_ONDALIK_EN_COK)).replace(".", ","));
-
 // ── Çevrim (C4/2) ───────────────────────────────────────────────────────────────────────────────────────────────────────
 // Ödeme: TL kuruşu ÷ kur = döviz kuruşu. Bozdurma: çıkan kuruşu × kur = giren kuruşu. Türetilen kur altı ondalık (P2).
-export const dovizKurusu = (tlK, kur) => (kur > 0 ? Math.round(tlK / kur) : 0);
-export const karsiKurusu = (cikanK, kur) => (kur > 0 ? Math.round(cikanK * kur) : 0);
-export const kurTuret = (payK, paydaK) => (payK > 0 && paydaK > 0 ? yuvarla(payK / paydaK, KUR_ONDALIK_EN_COK) : null);
 export const DOVIZ_SIFIR_HATASI = "Hesaptan çıkacak döviz tutar kuruşta sıfıra iniyor; tutarı ya da kuru düzeltin.";
 export const KARSI_SIFIR_HATASI = "Giren hesaba eklenecek tutar kuruşta sıfıra iniyor; tutarı ya da kuru düzeltin.";
 export const DOVIZ_TUTAR_HATASI = "Döviz tutar sayıya çevrilemedi. Örnek: 1.250,00";
@@ -135,8 +103,6 @@ export const dovizOdemeMi = (m) => m?.tur === "odeme" && m.dovizTutar != null;
 export const bozdurmaMi = (m) => m?.tur === "virman" && m.karsiTutar != null;
 
 // ── Metinler (R15/3, AC-49) ─────────────────────────────────────────────────────────────────────────────────────────────
-export const paraMetni = (n, pb = "TRY") => `${CUR_SYM[pb] || `${pb} `}${Number(n || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-export const kurMetni = (kur) => Number(kur || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: KUR_ONDALIK_EN_COK });
 export const BOZDURMA_IBARESI = "Bozdurma";
 export const dovizOdemeIbaresi = (m) => (dovizOdemeMi(m) ? `${paraMetni(m.dovizTutar, m.paraBirimi)} · kur ${kurMetni(m.kur)} · TL karşılığı ${paraMetni(m.tutar, "TRY")}` : "");
 export const bozdurmaIbaresi = (m) => (bozdurmaMi(m) ? `${BOZDURMA_IBARESI}: ${paraMetni(m.tutar, m.paraBirimi)} → ${paraMetni(m.karsiTutar, m.karsiParaBirimi)} · kur ${kurMetni(m.kur)}` : "");

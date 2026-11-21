@@ -2,7 +2,8 @@
 // GlobalSearch tek useMemo içinde buradaki eşleşmeleri çağırır (R8). Ödeme durumu türetilmiş veridir; bu modül
 // odemeleriUygula'yı çağırmaz ve kalemin ödeme alanlarını okumaz (X7, AC-36, AC-37).
 import { aramaKelimeleri, kelimelerEslesir, nedenAlani, fmtTR } from "./utils";
-import { DAVRANIS, davranisOf, kalemTutari, odenecekTutar } from "./gider";
+import { DAVRANIS, davranisOf, kalemTutari, odenecekTutar, dovizKalemMi, kalemParaBirimi, kalemDovizKurusu, kalemDovizTutarMetni, kurus, tl } from "./gider";
+import { paraMetni } from "./kur";
 import { tl2 } from "./odemeYontemi"; // gider ekranlarının tutar biçimi
 import { HESAP_TUR_AD } from "./kasa";
 
@@ -90,16 +91,23 @@ export const kalemEslesmesi = (k, s, { turMap, tedMap, yururlukAy = null }) => {
   }
   if (s.tutar) {
     const dav = davranisOf(k, turMap);
+    // Spec 0153 R12/2 (Karar 17): döviz kalemde faturanın kendi rakamı (KDV hariç döviz tutar ve döviz ödenecek) adaydır;
+    // neden kalemin para birimiyle yazılır. Lira karşılığı aramayı bulmaya devam eder (eski davranış).
+    if (dovizKalemMi(k)) {
+      const pb = kalemParaBirimi(k);
+      for (const d of [Number(k.dovizTutar), tl(kalemDovizKurusu(k, kurus(odenecekTutar(k, dav))))]) if (tutarEslesir(d, s)) return { neden: `tutar: ${paraMetni(d, pb)}` };
+    }
     for (const hesap of [kalemTutari, odenecekTutar]) {
       const t = hesap(k, dav);
-      if (tutarEslesir(t, s)) return { neden: `tutar: ${tl2(t)}` };
+      if (tutarEslesir(t, s)) return { neden: `tutar: ${tl2(t)}${dovizKalemMi(k) ? ` (${kalemDovizTutarMetni(k)})` : ""}` };
     }
   }
   return null;
 };
 export const kalemMeta = (k, { turMap, tedMap }) => {
   const dav = davranisOf(k, turMap);
-  return [k.aciklama && turMap?.get(String(k.turId))?.ad, tedMap?.get(String(k.tedarikciId))?.ad, k.tarih && fmtTR(k.tarih), tl2(kalemTutari(k, dav))];
+  return [k.aciklama && turMap?.get(String(k.turId))?.ad, tedMap?.get(String(k.tedarikciId))?.ad, k.tarih && fmtTR(k.tarih),
+    dovizKalemMi(k) ? `${kalemDovizTutarMetni(k)} · ${tl2(kalemTutari(k, dav))}` : tl2(kalemTutari(k, dav))]; // spec 0153 R12/2
 };
 
 // Tedarikçi: ad, yetkili, telefon, vergi no (R9); e-posta, adres, not aranmaz.

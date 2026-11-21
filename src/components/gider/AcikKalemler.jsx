@@ -57,7 +57,8 @@ export const AcikKalemler = ({ giderler = [], giderTurleri = [], tedarikciler = 
         <td style={td}>{fmtTR(s.tarih)}</td>
         <td style={td}>{vadeMetni || <Rozet renk="gri">Vade girilmemiş</Rozet>}</td>
         <td style={tdR}>{s.yas}</td>
-        <td style={{ ...tdR, fontWeight: 700 }}>{tl2(tl(s.kalanK))}</td>
+        {/* Spec 0153 R8, R22/2 (AC-57): hedef bazlı satırda döviz kalemin kalanı kalemin para biriminde, altında lira. */}
+        <td style={{ ...tdR, fontWeight: 700 }}>{s.dovizMetni ? <><span data-testid="acik-doviz-tutari">{s.dovizMetni}</span><div style={{ fontSize: 11, fontWeight: 400, color: "var(--n500, #64748b)" }}>{tl2(tl(s.kalanK))}</div></> : tl2(tl(s.kalanK))}</td>
         <td style={td}>{s.gecti ? <Rozet renk="kirmizi">{gunFarkiMetni(gecikme)}</Rozet> : s.vade ? <span style={{ color: "var(--n600, #475569)" }}>{gunFarkiMetni(gecikme)}</span> : "—"}</td>
         <td style={{ ...td, textAlign: "right" }}>
           {yetki && <button type="button" data-testid="acik-kalem-ode" onClick={() => onHedefOde(s.kalemId, s.hedef)}

@@ -1,6 +1,6 @@
 import { Icon, Select, Field, TutarInput, Input } from "../ui";
 import { HataMetni, Ipucu } from "../tasarim";
-import { HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, KISIT_KUTU_ETIKETI, KISIT_FORM_NOTU, KAPSAM_ETIKETI, KAPSAM_IPUCU, KAPSAM_ANAHTARI } from "../../lib/gider";
+import { HEDEF, HEDEF_SIRASI, EK_ODEME_TURLERI, KISIT_KUTU_ETIKETI, KISIT_FORM_NOTU, KAPSAM_ETIKETI, KAPSAM_IPUCU, KAPSAM_ANAHTARI, kalemDovizMetni, kurus as kurusGider } from "../../lib/gider";
 import { fmtCur, fmtTR } from "../../lib/utils";
 // Spec 0059 R20, R31: hedef ad zinciri ve tutar biçimi saf kitaplıkta (rapor React almadan kullanır); burada aynı adlarla
 // yeniden dışa verilir, çağıranlar değişmez. TEK tanım odemeYontemi.js'tedir.
@@ -88,7 +88,10 @@ export const STOPAJ_AYRI_KALEM_NOTU = "Kira stopajını ayrı gider kalemi olara
 // Spec 0024 R18: taksit kısmen ödenebilir; _odenenK okuma anında hareketlerden gelir (odemeleriUygula).
 const kismenMi = (r) => !r.odendi && (r._odenenK || 0) > 0;
 const satirKalani = (r) => Math.max(0, Math.round((Number(r.tutar) || 0) * 100) - (r._odenenK || 0)) / 100;
-export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) => {
+// Spec 0153 R20, R20/2 (AC-26): `dovizKalemi` verilirse (döviz kalem) ANA hedefin taksitleri kalemin para biriminde yazılır;
+// plan lira kuruşunda bölünür, döviz okuma anında türetilir (son taksitte bir kuruş ayrışma kabul edilen sınır).
+export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId, dovizKalemi = null }) => {
+  const parasi = (r, n) => ((r.hedef || HEDEF.ANA) === HEDEF.ANA && kalemDovizMetni(dovizKalemi, kurusGider(n))) || tl2(n);
   const hedefler = HEDEF_SIRASI.filter(h => satirlar.some(r => (r.hedef || HEDEF.ANA) === h));
   const ikiHedef = cokHedefliSatirlar(satirlar);
   const izgara = { display: "grid", gridTemplateColumns: "44px minmax(0, 1fr) minmax(0, 1fr) 130px", gap: 10, alignItems: "center" };
@@ -107,12 +110,12 @@ export const OdemeSatirlari = ({ satirlar = [], davranis, onIsaretle, testId }) 
               <div key={r.id} data-testid="odeme-satiri" style={{ ...izgara, fontSize: 13, padding: "5px 0", borderTop: "1px solid var(--n150, #f1f5f9)" }}>
                 <span style={{ color: "var(--n500, #64748b)" }}>{r.sira}</span>
                 <span>{r.vade ? fmtTR(r.vade) : <span style={{ color: "var(--n500, #64748b)" }}>Vade girilmemiş</span>}</span>
-                <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tl2(r.tutar)}</b>
+                <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{parasi(r, r.tutar)}</b>
                 <span>{onIsaretle
                   ? <button type="button" onClick={() => onIsaretle(r)} title={r.odendi ? "Ödemeleri görüntüle" : "Ödeme kaydet"}
                     style={{ border: "1px solid var(--n200, #e2e8f0)", background: r.odendi ? "var(--grnBg, #f0fdf4)" : "var(--surface, #ffffff)", color: r.odendi ? "var(--grn700, #15803d)" : kismenMi(r) ? "var(--orTx, #c2410c)" : "var(--n700, #334155)", borderRadius: 7, padding: "3px 9px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                    {r.odendi ? `Ödendi${r.odemeTarihi ? ` ${fmtTR(r.odemeTarihi).slice(0, 5)}` : ""}` : kismenMi(r) ? `Kısmen · kalan ${tl2(satirKalani(r))}` : "Ödeme gir"}</button>
-                  : <span style={{ fontSize: 12, fontWeight: 700, color: r.odendi ? "var(--grn700, #15803d)" : "var(--n600, #475569)" }}>{r.odendi ? "Ödendi" : kismenMi(r) ? `Kısmen · kalan ${tl2(satirKalani(r))}` : "Ödenmedi"}</span>}</span>
+                    {r.odendi ? `Ödendi${r.odemeTarihi ? ` ${fmtTR(r.odemeTarihi).slice(0, 5)}` : ""}` : kismenMi(r) ? `Kısmen · kalan ${parasi(r, satirKalani(r))}` : "Ödeme gir"}</button>
+                  : <span style={{ fontSize: 12, fontWeight: 700, color: r.odendi ? "var(--grn700, #15803d)" : "var(--n600, #475569)" }}>{r.odendi ? "Ödendi" : kismenMi(r) ? `Kısmen · kalan ${parasi(r, satirKalani(r))}` : "Ödenmedi"}</span>}</span>
               </div>
             ))}
           </div>

@@ -672,6 +672,126 @@
         "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "gider-formu-0092-hata",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0053-duzenle-ciro",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0053-iki-satir",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0057-taksit-yeni",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0071-kdv-dahil",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0071-sifir",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0071-yuvarlama",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0075-tevkifat",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0076-kisit",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0076-tevkifat",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0092-dolu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0092-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-asim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-duzenle-plan-hatasi",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-ciro",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-odeme-duzenle",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-tutar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0153-doviz",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0153-kur-yok",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0153-kilit",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
       }
     ],
     "src/components/Giderler.jsx": [
@@ -4825,6 +4945,18 @@
         "rapor": "docs/evidence/0092-taban-piksel-raporu.json",
         "ekran": "giderler-0076-kdv",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "giderler-0153-liste",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "giderler-0153-borc-ozeti",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
       }
     ],
     "src/components/gider/GiderAlanlari.jsx": [
@@ -12037,6 +12169,18 @@
         "rapor": "docs/evidence/0152-taban-piksel-raporu.json",
         "ekran": "giderler-0152-cek-doviz",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "giderler-0153-odeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "gider-formu-0153-kilit",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
       }
     ],
     "src/components/cek/CekEklePenceresi.jsx": [
@@ -12242,6 +12386,12 @@
         "rapor": "docs/evidence/0090-piksel-raporu.json",
         "ekran": "giderler-acik-kalemler-kova",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0153-piksel-raporu.json",
+        "ekran": "giderler-0153-acik-kalemler",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-21 · spec 0153 P12"
       }
     ],
     "src/components/SatisTevkifatAlani.jsx": [

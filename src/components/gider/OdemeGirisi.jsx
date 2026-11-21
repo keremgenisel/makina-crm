@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { fmtTR, parseMoney } from "../../lib/utils";
-import { tl, hedefOdemeleri, HEDEF } from "../../lib/gider";
-import { HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR } from "../../lib/kasa";
+import { tl, hedefOdemeleri, HEDEF, hedefDovizKipi } from "../../lib/gider";
+import { HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR, sonKullanilanHesap, DOVIZ_KALEM_HESAP_NEDENI, DOVIZ_KALEM_CEK_NEDENI } from "../../lib/kasa";
 import { CIRO_YONTEMI, KENDI_CEK_YONTEMI } from "../../lib/cek";
 import { yontemKirilimi, hareketPaylari, hareketHedefPaylari, GOC_YONTEM_NOTU, taksitAdi as ortakTaksitAdi } from "../../lib/odemeYontemi";
 import { hepsiniOde, satirSiralariniEsle, ciroTutariK, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, CEK_DAGITIM_NOTU, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
@@ -9,7 +9,8 @@ import { PERSONEL_BOLUNMEZ_NEDENI, PERSONEL_EK_BOLUNMEZ_NEDENI } from "../../lib
 import { Btn, Field, Input, Select, ConfirmDialog, Icon, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
 import { HataMetni, Ipucu, BolumBasligi, Segment, KartBolum, UyariSeridi } from "../tasarim";
-import { kurOnerisi, dovizSatirYamasi, dovizHesapYamasi, kurGirdisi, ONERI_BUGUN_IBARESI, CEK_DOVIZ_NEDENI, HESAP_YOK_NOTU, KUR_KAYNAK } from "../../lib/doviz";
+import { kurOnerisi, dovizSatirYamasi, dovizHesapYamasi, kurGirdisi, ONERI_BUGUN_IBARESI, CEK_DOVIZ_NEDENI, HESAP_YOK_NOTU, KUR_KAYNAK, paraMetni, kurMetni } from "../../lib/doviz";
+import { CUR_SYM } from "../../lib/constants";
 import { TutarInput, tl2, tutarMetni, ODEME_SECENEKLERI, hedefAdi, cokHedefliMi, hedefEtiketi } from "./GiderAlanlari";
 
 // Spec 0053 R17: gider ödemesinin TEK editörü. Gider formu (kapsam "form", yeni kalem ve düzenleme) ve ödeme penceresi
@@ -30,6 +31,11 @@ const para = (k) => tl2(tl(k));
 const cekEtiketi = (s) => [s.cek.no, s.cek.banka, s.cek.kesideci, para(s.tutarK), s.vade ? `vade ${fmtTR(s.vade)}` : ""].filter(Boolean).join(" · ");
 const satirTutarK = (r) => { const t = parseMoney(r?.tutar); return Number.isFinite(t) && t > 0 ? Math.round(t * 100) : 0; };
 const tutarOf = (k) => (k > 0 ? tutarMetni(tl(k)) : "");
+// Spec 0153 R8, R13: döviz kalemin ANA hedefinde (formOdemeHedefleri `paraBirimi` taşır) tutarlar ve kalanlar kalemin para
+// birimindedir; öteki hedefler (ve TL kalem) bugünkü lira metnini kullanır.
+const hedefKalanK = (h) => (h.paraBirimi ? h.dovizKalanK : h.kalanK);
+const taksitKalanK = (h, t) => (h.paraBirimi ? t?.dovizKalanK : t?.kalanK) || 0;
+const paraH = (h, k) => (h?.paraBirimi ? paraMetni(tl(k), h.paraBirimi) : para(k));
 
 // Spec 0064 R20: mahsup kipinde çalışanın kilidi başkasındayken kayıt yapılmaz.
 export const MAHSUP_KILITLI_HATASI = "Bu çalışanın avansı başka bir kullanıcıda açık; mahsup kaydedilemez.";
@@ -55,6 +61,10 @@ export const OdemeGirisi = ({
   const onEkli = form || hedefler.length > 1;
   const lbl = (hedef, ad, n = 1) => `${onEkli ? `${adOf(hedef)} ${FORM_AD[ad]}` : buyuk(ad)}${n > 1 ? ` ${n}` : ""}`;
   const satirlar = giris.satirlar || [];
+  // Spec 0153 R14, R14/3, P6: döviz kalemin ANA hedefinde hesap listesi kalemin para birimiyle süzülür (hesapsız seçeneği
+  // kalır); ön seçim o para birimindeki son kullanılan hesap. TL hedef 0152'deki gibi bütün açık hesapları görür.
+  const hesapListesi = (h) => (h?.paraBirimi ? hesaplar.filter(x => (x.paraBirimi || "TRY") === h.paraBirimi) : hesaplar);
+  const varsayilanOf = (h) => (!h?.paraBirimi ? varsayilanHesap : hesapSecimi ? (sonKullanilanHesap(hareketler, hesaplar, h.paraBirimi) ?? "") : "");
   const mahsupKipi = mahsupVar && giris.kip === "mahsup";
   // Spec 0064 R20 (AC-26): mahsup bir çalışanın açık avansını tüketir; kalem kilidine (pencereyi açan ebeveyn) ek olarak
   // mahsup kipi açıkken çalışanın kilidi de alınır. Çakışmada mahsup alanı yerine LockConflict çizilir ve giriş
@@ -68,20 +78,20 @@ export const OdemeGirisi = ({
   const setSatir = (anahtar, patch) => setGiris(g => ({ ...g, satirlar: g.satirlar.map(r => (r.anahtar === anahtar ? { ...r, ...patch } : r)) }));
   // Satırın hedefi/taksiti için kalan: hedefin (taksitli hedefte seçili taksitin) kalanı eksi aynı yere giden diğer satırlar.
   const yerKalaniK = (h, sira, haric = null) => {
-    const hedefK = h.taksitli ? (h.acikTaksitler.find(t => Number(t.sira) === Number(sira))?.kalanK || 0) : h.kalanK;
+    const hedefK = h.taksitli ? taksitKalanK(h, h.acikTaksitler.find(t => Number(t.sira) === Number(sira))) : hedefKalanK(h);
     const digerK = satirlar.filter(r => r.anahtar !== haric && r.hedef === h.hedef && (!h.taksitli || Number(r.sira) === Number(sira))).reduce((a, r) => a + satirTutarK(r), 0);
     return Math.max(0, hedefK - digerK);
   };
   const yeniSatir = (h) => {
     const sira = h.taksitli ? (h.acikTaksitler[0]?.sira ?? null) : null;
     const k = yerKalaniK(h, sira);
-    return { anahtar: yeniAnahtar(), hedef: h.hedef, sira, tutar: tutarOf(k), yontem: varsayilanYontem, hesapId: varsayilanHesap, aciklama: "" };
+    return { anahtar: yeniAnahtar(), hedef: h.hedef, sira, tutar: tutarOf(k), yontem: varsayilanYontem, hesapId: varsayilanOf(h), aciklama: "" };
   };
   const satirEkle = (h) => setGiris(g => ({ ...g, satirlar: [...g.satirlar, yeniSatir(h)] }));
   const satirKaldir = (anahtar) => setGiris(g => ({ ...g, satirlar: g.satirlar.filter(r => r.anahtar !== anahtar) }));
   const hedefAc = (h, acik) => setGiris(g => ({ ...g, satirlar: acik ? [...g.satirlar, yeniSatir(h)] : g.satirlar.filter(r => r.hedef !== h.hedef) }));
   const kurOner = (pb) => kurOnerisi(pb, rates, ratesErr);
-  const hepsi = () => setGiris(g => ({ ...g, satirlar: hepsiniOde(g.satirlar, hedefler, { yontem: varsayilanYontem, hesapId: varsayilanHesap, yeniAnahtar, hesaplar, kurOner }) }));
+  const hepsi = () => setGiris(g => ({ ...g, satirlar: hepsiniOde(g.satirlar, hedefler, { yontem: varsayilanYontem, hesapId: varsayilanHesap, yeniAnahtar, hesaplar, kurOner, hesapIdOf: varsayilanOf }) }));
   // Spec 0152 R1, R2/3: satırın hesabı TL değilse satır döviz satırıdır (kur ve döviz tutar satırın alanı).
   const hesapOf = (id) => (id == null || id === "" ? null : hesaplar.find(x => String(x.id) === String(id)) || null);
   const dovizPb = (r) => { const hs = hesapOf(r.hesapId); return hs && (hs.paraBirimi || "TRY") !== "TRY" ? hs.paraBirimi : null; };
@@ -95,6 +105,8 @@ export const OdemeGirisi = ({
     setGiris(g => { const cur = g.satirlar || []; const s = satirSiralariniEsle(cur, hedefler); return s === cur ? g : { ...g, satirlar: s }; });
   }, [hedefler, setGiris]);
   const satirHata = (r) => hatalar?.satirlar?.[r.anahtar] || {};
+  // Spec 0153 R8: döviz kalemin ANA hedefine giden ödeme listede kalemin para biriminde (TL kalemin 0152 döviz ödemesi lira kalır).
+  const kalemDovizOdemesi = (h) => h.tur === "odeme" && h.dovizTutar != null && !!hedefDovizKipi(kalem, h.taksitId);
 
   // ── Kayıtlı ödemeler (R16) ──
   const odemeler = useMemo(() => (kalem && kalem.id != null && kayitliGoster ? hedefOdemeleri(hareketler, kalem.id) : []), [kalem, hareketler, kayitliGoster]);
@@ -113,10 +125,11 @@ export const OdemeGirisi = ({
     const e = satirHata(r);
     const ciro = r.yontem === CIRO_YONTEMI;
     const kendi = r.yontem === KENDI_CEK_YONTEMI;
-    const pb = dovizPb(r);
+    const kalemPb = h.paraBirimi || null; // spec 0153: döviz kalemin hedefi (kur kalemin donmuş kuru, elle sorulmaz)
+    const pb = kalemPb ? null : dovizPb(r);
     // Spec 0152 R8/2 (AC-46): döviz hesap seçili satırda çek yöntemleri yok (X2), nedeni yazar.
     const cekHakki = h.hedef === HEDEF.ANA && ciroYetkisi && !duzenleKipi; // spec 0073 R25: düzenlemede çek yöntemi yok
-    const cekOlur = cekHakki && !pb;
+    const cekOlur = cekHakki && !pb && !kalemPb;
     const secenekler = [...ODEME_SECENEKLERI, ...(cekOlur ? [{ value: CIRO_YONTEMI, label: CIRO_YONTEMI }, { value: KENDI_CEK_YONTEMI, label: KENDI_CEK_YONTEMI }] : [])];
     const cekSatiri = ciro ? cekSatirlari.find(x => String(x.cek.id) === String(r.cekId)) : null;
     // Spec 0057 R8, R19: çek satırı taksit seçmez; tutar hedefin açık taksitlerine en eski vadeden dağıtılır (motor), yani
@@ -141,7 +154,7 @@ export const OdemeGirisi = ({
             <div style={{ gridColumn: "1 / -1" }}>
               <Field label="Taksit">
                 <Select aria-label={lbl(h.hedef, "taksit", n)} value={r.sira ?? ""} onChange={e => setSatir(r.anahtar, { sira: e.target.value === "" ? null : Number(e.target.value), tutar: tutarOf(yerKalaniK(h, Number(e.target.value), r.anahtar)) })}>
-                  {h.acikTaksitler.map(t => <option key={t.sira} value={t.sira}>{adOf(h.hedef)} {t.sira}/{h.satirSayisi}. taksit · vade {t.vade ? fmtTR(t.vade) : "girilmemiş"} · kalan {para(t.kalanK)}</option>)}
+                  {h.acikTaksitler.map(t => <option key={t.sira} value={t.sira}>{adOf(h.hedef)} {t.sira}/{h.satirSayisi}. taksit · vade {t.vade ? fmtTR(t.vade) : "girilmemiş"} · kalan {paraH(h, taksitKalanK(h, t))}</option>)}
                 </Select>
               </Field>
             </div>
@@ -150,7 +163,7 @@ export const OdemeGirisi = ({
           <div>
             <Field label="Tutar">
               {ciro ? <div aria-label={lbl(h.hedef, "ödeme tutarı", n)} style={{ fontWeight: 700, padding: "8px 0" }}>{cekSatiri ? para(ciroTutariK(cekSatiri, cekKalaniK)) : "—"}</div>
-                : <TutarInput ariaLabel={lbl(h.hedef, "ödeme tutarı", n)} value={r.tutar} onChange={v => setSatir(r.anahtar, pb ? dovizSatirYamasi(r, "tutar", v) : { tutar: v })} invalid={!!e.tutar} />}
+                : <TutarInput ariaLabel={lbl(h.hedef, "ödeme tutarı", n)} sym={kalemPb ? CUR_SYM[kalemPb] : undefined} value={r.tutar} onChange={v => setSatir(r.anahtar, pb ? dovizSatirYamasi(r, "tutar", v) : { tutar: v })} invalid={!!e.tutar} />}
             </Field>
             {e.tutar && <HataMetni>{e.tutar}</HataMetni>}
           </div>
@@ -161,6 +174,7 @@ export const OdemeGirisi = ({
               </Select>
             </Field>
             {e.yontem ? <HataMetni>{e.yontem}</HataMetni>
+              : kalemPb && cekHakki ? <Ipucu><span data-testid="cek-doviz-nedeni">{DOVIZ_KALEM_CEK_NEDENI}</span></Ipucu>
               : pb && cekHakki ? <Ipucu><span data-testid="cek-doviz-nedeni">{CEK_DOVIZ_NEDENI}</span></Ipucu>
               : r.yontem === "Çek" ? <Ipucu>Düz “Çek” takip edilmeyen bir nottur.{cekOlur ? " Portföydeki bir çekle ödemek için “Çek (ciro)”, kendi çekimizle ödemek için “Çek (kendi)” seçin." : ""}</Ipucu> : null}
           </div>
@@ -191,16 +205,22 @@ export const OdemeGirisi = ({
                   const yeni = ev.target.value === "" ? null : hesaplar.find(x => String(x.id) === ev.target.value) || null;
                   // Spec 0152 R14/2, R1/3, R4: hesap değişince döviz alanları yeniden kurulur (TL ya da hesapsızda silinir).
                   const eski = hesaplar.find(x => String(x.id) === String(r.hesapId)) || null;
-                  setSatir(r.anahtar, { hesapId: yeni ? yeni.id : "", ...dovizHesapYamasi(r, yeni, yeni ? kurOner(yeni.paraBirimi) : null, eski) });
+                  // Spec 0153 triyaj: döviz kalemin satırında kur kalemin kuru; 0152'nin kur alanları satıra yazılmaz, yalnız hesap.
+                  setSatir(r.anahtar, kalemPb ? { hesapId: yeni ? yeni.id : "" } : { hesapId: yeni ? yeni.id : "", ...dovizHesapYamasi(r, yeni, yeni ? kurOner(yeni.paraBirimi) : null, eski) });
                 }}>
                   <option value="">Hesap belirtilmedi</option>
-                  {hesaplar.map(x => <option key={x.id} value={x.id}>{x.ad} ({HESAP_TUR_AD[x.tur] || x.tur}{(x.paraBirimi || "TRY") !== "TRY" ? ` · ${x.paraBirimi}` : ""})</option>)}
+                  {hesapListesi(h).map(x => <option key={x.id} value={x.id}>{x.ad} ({HESAP_TUR_AD[x.tur] || x.tur}{(x.paraBirimi || "TRY") !== "TRY" ? ` · ${x.paraBirimi}` : ""})</option>)}
                 </Select>
               </Field>
+              {kalemPb && <div data-testid="doviz-kalem-hesap-nedeni"><Ipucu>{DOVIZ_KALEM_HESAP_NEDENI}</Ipucu></div>}
               {e.hesapId ? <HataMetni>{e.hesapId}</HataMetni>
-                : !hesaplar.length ? <Ipucu>{HESAP_YOK_NOTU}</Ipucu>
+                : !hesapListesi(h).length ? <Ipucu>{HESAP_YOK_NOTU}</Ipucu>
                 : !r.hesapId ? <Ipucu>Hesap seçilmezse ödeme hiçbir bakiyeye girmez.</Ipucu> : null}
             </div>
+          )}
+          {/* Spec 0153 R15, AC-19: döviz kalemde kur sorulmaz; kalemin donmuş kuru salt okunur gösterilir. */}
+          {kalemPb && (
+            <div style={{ gridColumn: "1 / -1" }} data-testid="doviz-kalem-kuru"><Ipucu>{`Kalemin kuru: 1 ${kalemPb} = ${kurMetni(h.kur)} TL. Ödemenin lira karşılığı bu kurla hesaplanır.`}</Ipucu></div>
           )}
           {pb && !ciro && !kendi && (
             <>
@@ -242,14 +262,14 @@ export const OdemeGirisi = ({
   const hedefCiz = (h) => {
     const ad = adOf(h.hedef);
     const hs = satirlar.filter(r => r.hedef === h.hedef);
-    const durumMetni = h.kalanK === 0 ? "Ödendi" : h.kalanK < h.toplamK ? `Kısmen · kalan ${para(h.kalanK)}` : "Ödenmedi";
+    const durumMetni = h.kalanK === 0 ? "Ödendi" : h.kalanK < h.toplamK ? `Kısmen · kalan ${paraH(h, hedefKalanK(h))}` : "Ödenmedi";
     const acilabilir = !h.pasif && h.kalanK > 0 && odemeYetkisi;
     return (
       <div key={h.hedef} data-testid="form-odeme-satiri" data-hedef={h.hedef} style={{ borderTop: "1px solid var(--n150, #f1f5f9)", padding: "10px 0" }}>
         {(form || hedefler.length > 1) && (
           <div data-testid={durum ? "form-odeme-durum-satiri" : undefined} data-hedef={h.hedef} style={{ fontSize: 13 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <BolumBasligi bosluk={0}>{ad} · {para(durum ? h.toplamK : h.kalanK)}</BolumBasligi>
+              <BolumBasligi bosluk={0}>{ad} · {paraH(h, durum ? (h.paraBirimi ? h.dovizToplamK : h.toplamK) : hedefKalanK(h))}</BolumBasligi>
               {durum && <span style={{ marginLeft: "auto" }}>{durumMetni}</span>}
             </div>
             {/* 0048 R3, R4: personelde maaş/ek ödeme kırılımı ve ödenenin yeni toplamı aşması. */}
@@ -408,7 +428,7 @@ export const OdemeGirisi = ({
                           {[h.yontem || null, h.tur === "mahsup" ? null : hesapAdi(h.hesapId), h.kaynak === "goc" ? "Eski kayıttan aktarıldı" : null, h.aciklama || null].filter(Boolean).join(" · ")}
                         </div>
                       </span>
-                      <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.tamKapatir ? (paylar.has(String(h.id)) ? para(paylar.get(String(h.id))) : "Tamamı") : tl2(h.tutar)}</b>
+                      <b style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{h.tamKapatir ? (paylar.has(String(h.id)) ? para(paylar.get(String(h.id))) : "Tamamı") : kalemDovizOdemesi(h) ? paraMetni(h.dovizTutar, h.paraBirimi) : tl2(h.tutar)}</b>
                       <span style={{ textAlign: "right" }}>
                         {/* Spec 0073 R1 (Q3): ödeme ve mahsup bu listeden de düzenlenir (mahsubun tek düzenleme yolu). */}
                         {onDuzenle && h.cekId == null && !silinecekMi && <Btn small variant="ghost" onClick={() => onDuzenle(h)} title={h.tur === "mahsup" ? "Mahsubu düzenle" : "Ödemeyi düzenle"} aria-label={h.tur === "mahsup" ? "Mahsubu düzenle" : "Ödemeyi düzenle"}><Icon name="edit" size={12} /></Btn>}
@@ -424,7 +444,7 @@ export const OdemeGirisi = ({
         </>
       )}
       {silinecek && (
-        <ConfirmDialog title="Ödeme silinsin mi?" message={`${fmtTR(silinecek.tarih)} tarihli ${silinecek.tamKapatir ? "ödeme" : `${tl2(silinecek.tutar)} ödeme`} silinecek; kalemin durumu geri döner.`}
+        <ConfirmDialog title="Ödeme silinsin mi?" message={`${fmtTR(silinecek.tarih)} tarihli ${silinecek.tamKapatir ? "ödeme" : `${kalemDovizOdemesi(silinecek) ? paraMetni(silinecek.dovizTutar, silinecek.paraBirimi) : tl2(silinecek.tutar)} ödeme`} silinecek; kalemin durumu geri döner.`}
           confirmLabel="Ödemeyi Sil" onConfirm={() => { onSil(silinecek); setSilinecek(null); }} onCancel={() => setSilinecek(null)} />
       )}
     </div>
@@ -443,23 +463,25 @@ export const OdemeGirisi = ({
 export const duzenlemeGirisi = (h, kalem, hedefler) => {
   const t = h.taksitId != null ? (kalem?.taksitler || []).find(x => String(x.id) === String(h.taksitId)) : null;
   const hedef = t?.hedef || hedefler[0]?.hedef || HEDEF.ANA;
-  const tutar = h.tamKapatir ? "" : tutarMetni(h.tutar);
+  // Spec 0153 R13/2: döviz kalemin ANA hedefindeki ödemenin satır tutarı kendi döviz tutarıdır (kur elle sorulmaz).
+  const kalemDoviz = h.dovizTutar != null && !!hedefDovizKipi(kalem, h.taksitId);
+  const tutar = h.tamKapatir ? "" : tutarMetni(kalemDoviz ? h.dovizTutar : h.tutar);
   return { tarih: h.tarih || "", kip: h.tur === "mahsup" ? "mahsup" : "odeme",
     satirlar: [{ anahtar: "s0", hedef, sira: t?.sira ?? null, tutar, yontem: h.yontem || "", hesapId: h.hesapId ?? "", aciklama: h.aciklama || "",
       // Spec 0152 R14 (AC-13): döviz ödemenin kayıtlı kuru ve döviz tutarı aynen gelir (günün kuru okunmaz).
-      ...(h.dovizTutar != null ? { kur: kurGirdisi(h.kur), kurKaynak: KUR_KAYNAK.TURETILEN, dovizTutar: tutarMetni(h.dovizTutar) } : {}) }],
+      ...(h.dovizTutar != null && !kalemDoviz ? { kur: kurGirdisi(h.kur), kurKaynak: KUR_KAYNAK.TURETILEN, dovizTutar: tutarMetni(h.dovizTutar) } : {}) }],
     mahsup: { hedef, sira: t?.sira ?? null, tutar, aciklama: h.aciklama || "" }, alacakliAd: "", _kalemId: kalem?.id ?? null };
 };
 
 // Pencerenin ilk girişi: hedef verildiyse o hedefe, yoksa ilk açık hedefe tam kalanla bir satır (0024 R17: tutar = kalan).
-export const ilkGiris = (hedefler, { tarih, yontem = "", hesapId = "", taksitId = null, kalem = null } = {}) => {
+export const ilkGiris = (hedefler, { tarih, yontem = "", hesapId = "", taksitId = null, kalem = null, dovizHesapId = "" } = {}) => {
   const h = hedefler.find(x => !x.pasif && x.kalanK > 0) || null;
   const satirlar = [];
   if (h) {
     let sira = h.taksitli ? (h.acikTaksitler[0]?.sira ?? null) : null;
     if (h.taksitli && taksitId != null) { const t = h.acikTaksitler.find(x => String(x.id) === String(taksitId)); if (t) sira = t.sira; }
-    const k = h.taksitli ? (h.acikTaksitler.find(t => Number(t.sira) === Number(sira))?.kalanK || 0) : h.kalanK;
-    satirlar.push({ anahtar: "s0", hedef: h.hedef, sira, tutar: tutarOf(k), yontem, hesapId, aciklama: "" });
+    const k = h.taksitli ? taksitKalanK(h, h.acikTaksitler.find(t => Number(t.sira) === Number(sira))) : hedefKalanK(h);
+    satirlar.push({ anahtar: "s0", hedef: h.hedef, sira, tutar: tutarOf(k), yontem, hesapId: h.paraBirimi ? dovizHesapId : hesapId, aciklama: "" }); // spec 0153 P6
   }
   const mahsupYeri = h ? { hedef: h.hedef, sira: satirlar[0]?.sira ?? null } : {};
   return { tarih, kip: "odeme", satirlar, mahsup: { ...mahsupYeri, tutar: "", aciklama: "" }, alacakliAd: "", _kalemId: kalem?.id ?? null };

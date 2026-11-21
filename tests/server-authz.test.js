@@ -1884,3 +1884,23 @@ describe("spec 0152: döviz ödeme ve bozdurma bugünkü izinlerle", () => {
     expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [bz] }, izin(["virman"], ["dashboard", "gider", "finance"]), "user").ok).toBe(false);
   });
 });
+
+// ── Spec 0153 C4 (DoD): yeni izin yok; döviz kalem bugünkü gider_add / gider_edit ile, ödemesi gider_odeme ile yazılır ──────
+// `giderler` bölüm düzeyinde güvenilir (ALAN_IZINLERI'nde yok), yani para birimi ve kur alanları ayrıca denetlenmez.
+describe("spec 0153: döviz kalem bugünkü izinlerle", () => {
+  const izin = (ids) => JSON.stringify({ tabs: ["dashboard", "gider", "finance"], giderActions: ids, customerActions: [] });
+  const tl = { id: 7, tarih: "2026-11-10", turId: 1, tutar: 1200, kdvOrani: 0, tedarikciId: 11, taksitler: [] };
+  const doviz = { ...tl, tutar: 48000, dovizTutar: 1200, kur: 40, paraBirimi: "USD" };
+  it("döviz kalem gider_add ile eklenir, gider_edit ile para birimi ve kur değişir; izni olmayan reddedilir", () => {
+    expect(eylemDenetimi({ giderler: [] }, { giderler: [doviz] }, izin(["gider_add"]), "user").ok).toBe(true);
+    expect(eylemDenetimi({ giderler: [] }, { giderler: [doviz] }, izin(["gider_edit"]), "user").ok).toBe(false);
+    const db = { giderler: [tl] }, ist = { giderler: [doviz] };
+    expect(yazmaYetkisiVar(izin(["gider_edit"]), "user", degisenBolumler(db, ist), db, ist).ok).toBe(true);
+    expect(eylemDenetimi(db, ist, izin(["gider_edit"]), "user").ok).toBe(true);
+  });
+  it("döviz kalemin dövizle (hesapsız da) ödemesi gider_odeme ister", () => {
+    const od = { id: 93, tur: "odeme", tarih: "2026-11-12", tutar: 20000, yontem: "", hesapId: null, giderId: 7, taksitId: null, dovizTutar: 500, kur: 40, paraBirimi: "USD" };
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [od] }, izin(["gider_odeme"]), "user").ok).toBe(true);
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [od] }, izin(["gider_add"]), "user").ok).toBe(false);
+  });
+});

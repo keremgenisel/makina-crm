@@ -3,7 +3,7 @@
 // (gider.borcKapsamindaMi) ve vade şartı yoktur; ödeme hatırlatıcısından tek ayrımı budur. Satır ödeme HEDEFİ başınadır;
 // kovalar ve çapraz sayılar KALEM sayar, toplam hedef kalanlarının toplamıdır. Yaş gider tarihinden `gunFarki` ile sayılır.
 // Bu dosya `gider.js`'te değil, çünkü `gunFarki` odemeHatirlatma.js'tedir ve o dosya gider.js'i içe alır (R27).
-import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, borcKapsamindaMi, kalemGorunenAd, sgkDavranisiMi, DAVRANIS, HEDEF, VERGI_DAIRESI, SGK } from "./gider";
+import { turHaritasi, davranisOf, odemeHedefleri, hedefGecti, borcKapsamindaMi, kalemGorunenAd, sgkDavranisiMi, DAVRANIS, HEDEF, VERGI_DAIRESI, SGK, dovizKalemMi, kalemDovizMetni, kalemParaBirimi } from "./gider";
 import { gunFarki } from "./odemeHatirlatma";
 import { YAS_KOVALARI, yasKovaAdi } from "./yaslandirma";
 
@@ -56,6 +56,9 @@ export const acikKalemler = (giderler = [], { turler = [], tedarikciler = [], yu
         turAd: turMap.get(String(k.turId))?.ad || "(türsüz)", aciklama: kalemGorunenAd(k, dav),
         tarih: k.tarih, vade: h.vade || null, yas, kova, kalanK: h.kalanK,
         gecti: bugun ? hedefGecti(h, bugun) : false, vadesiz: !h.vade,
+        // Spec 0153 R8, R22/2: hedef bazlı satırda döviz kalemin ANA hedefi kalemin para birimindeki kalanı da taşır (anahtar yalnız
+        // döviz kalemde; toplamlar lira kalır, C6).
+        ...(h.hedef === HEDEF.ANA && dovizKalemMi(k) ? { dovizMetni: kalemDovizMetni(k, h.kalanK), paraBirimi: kalemParaBirimi(k) } : {}),
       });
     }
   }

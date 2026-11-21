@@ -47,9 +47,10 @@ describe("Spec 0050: Sınıf 1 pencereleri tek geniş boyutta (bileşen)", () =>
     const onSave = vi.fn();
     render(<GiderForm kalem={null} giderTurleri={TURLER} onSave={onSave} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Gider türü *"), { target: { value: "4" } });
-    const etiketler = [...document.querySelectorAll("label")].map(l => l.textContent.trim()).filter(Boolean).slice(0, 7);
+    const etiketler = [...document.querySelectorAll("label")].map(l => l.textContent.trim()).filter(Boolean).slice(0, 8);
     // Spec 0071 R1 ile güncellendi: tutarın üstünde KDV yönü seçicisi; diğer alanların sırası aynı.
-    expect(etiketler).toEqual(["Tarih *", "Gider türü *", "Tedarikçi", "Açıklama", "Tutar KDV hariç mi, dâhil mi?", "Tutar (KDV hariç) *", "KDV oranı"]);
+    // Spec 0153 R1 ile güncellendi: normal davranışta tutarın solunda para birimi seçicisi (varsayılan TL, form aynı davranır).
+    expect(etiketler).toEqual(["Tarih *", "Gider türü *", "Tedarikçi", "Açıklama", "Tutar KDV hariç mi, dâhil mi?", "Para birimi", "Tutar (KDV hariç) *", "KDV oranı"]);
     fireEvent.change(screen.getByLabelText("Tutar"), { target: { value: "1000" } });
     fireEvent.change(screen.getByLabelText("KDV oranı"), { target: { value: "20" } });
     fireEvent.click(screen.getAllByText("Kaydet").filter(e => e.closest("button")).pop());

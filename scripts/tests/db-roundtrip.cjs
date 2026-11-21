@@ -142,7 +142,7 @@ dbmod.writeBlobToDb({
   giderler: [
     { id: 81, tarih: "2026-07-10", turId: 43, aciklama: "Bant 70 adet", tedarikciId: 51, tutar: 140000, kdvOrani: 20, kdvYonu: "dahil", dagitimAy: 12, odemeYontemi: "Çek", sonOdemeTarihi: "2026-08-15", odendi: false, odemeTarihi: null,
       atamaTur: "model", modelSatirlari: [{ modelAd: "AK120_DSC", birimMaliyet: 3000, adet: 30 }, { modelAd: "AK100_DS", birimMaliyet: 1000, adet: 20 }], tanimId: null, donem: null,
-      kisitliGider: true, indirilebilirOran: 70 }, // spec 0076 AC-32
+      kisitliGider: true, indirilebilirOran: 70, dovizTutar: 3500, kur: 40, paraBirimi: "USD" }, // spec 0076 AC-32; spec 0153 AC-33: döviz kalem
     { id: 82, tarih: "2026-07-01", turId: 41, aciklama: "Kira", tutar: 20000, netTutar: 16000, girisYonu: "net", kdvYonu: "haric", stopajOrani: 20, kdvOrani: 20, odendi: true, odemeTarihi: "2026-07-05", tanimId: 61, donem: "2026-07", atamaTur: "", modelSatirlari: [],
       // Spec 0021: iki ödeme hedefi, stopaj taksitli; kimlikli alt satırlar.
       taksitler: [{ id: 9001, hedef: "ana", sira: 1, vade: "2026-07-05", tutar: 20000, odendi: true, odemeTarihi: "2026-07-05" },
@@ -397,6 +397,11 @@ check("spec 0076 AC-32: kısıtlama iki alanı iki tabloda roundtrip eder (oran 
   return k?.kisitliGider === true && k.indirilebilirOran === 70 && k0?.kisitliGider === true && k0.indirilebilirOran === 0
     && t?.kisitliGider === true && !("indirilebilirOran" in t)
     && ["kisitliGider", "indirilebilirOran"].every(a => !(a in e) && !(a in t2));
+})());
+check("spec 0153 AC-33: döviz kalemin üç alanı (dovizTutar, kur, paraBirimi) giderler tablosunda roundtrip eder; TL kaleme hiçbiri yazılmaz", (() => {
+  const d = (blob.giderler || []).find(x => x.id === 81), e = (blob.giderler || []).find(x => x.id === 83);
+  return d?.dovizTutar === 3500 && d.kur === 40 && d.paraBirimi === "USD" && d.tutar === 140000
+    && ["dovizTutar", "kur", "paraBirimi"].every(a => !(a in e));
 })());
 check("spec 0076 AC-33: giderAyarlari.indirilebilirOran roundtrip (yeni sütun yok)", blob.appSettings?.giderAyarlari?.indirilebilirOran === 88);
 check("gider: makina ataması roundtrip", (() => { const k = (blob.giderler || []).find(x => x.id === 84); return k?.atamaTur === "makina" && k.makinaTur === "stok" && k.makinaId === 4; })());

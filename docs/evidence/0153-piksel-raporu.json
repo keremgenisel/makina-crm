@@ -1,0 +1,296 @@
+[
+  {
+    "ad": "gider-formu-aydinlik.png",
+    "boyut": "2880x2740",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 278080
+  },
+  {
+    "ad": "gider-formu-karanlik.png",
+    "boyut": "2880x2740",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "piksel": 204687
+  },
+  {
+    "ad": "gider-formu-0053-iki-satir-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1
+  },
+  {
+    "ad": "gider-formu-0053-iki-satir-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0053-duzenle-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 37.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 34
+  },
+  {
+    "ad": "gider-formu-0053-duzenle-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 37.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0057-taksit-yeni-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 1
+  },
+  {
+    "ad": "gider-formu-0057-taksit-yeni-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "gider-formu-0092-dolu-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 91410
+  },
+  {
+    "ad": "gider-formu-0092-dolu-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 90093
+  },
+  {
+    "ad": "gider-formu-0092-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 91410
+  },
+  {
+    "ad": "gider-formu-0092-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 90093
+  },
+  {
+    "ad": "gider-formu-tutar-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 114468
+  },
+  {
+    "ad": "gider-formu-tutar-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 114519
+  },
+  {
+    "ad": "gider-formu-odeme-ciro-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 15.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 206
+  },
+  {
+    "ad": "gider-formu-odeme-ciro-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Çek tutarı kapatılan borçlardan 15.000,00 ₺ fazla. Fark hiçbir borcu k"
+    ],
+    "piksel": 198
+  },
+  {
+    "ad": "gider-formu-odeme-duzenle-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 9025
+  },
+  {
+    "ad": "gider-formu-odeme-duzenle-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 9023
+  },
+  {
+    "ad": "gider-formu-duzenle-asim-aydinlik.png",
+    "boyut": "2880x1800",
+    "adimUyarilari": [
+      "kaydırılamadı: kaydir:Ödemeler gider listesindeki"
+    ],
+    "piksel": 129876
+  },
+  {
+    "ad": "gider-formu-duzenle-asim-karanlik.png",
+    "boyut": "2880x1800",
+    "adimUyarilari": [
+      "kaydırılamadı: kaydir:Ödemeler gider listesindeki"
+    ],
+    "piksel": 129960
+  },
+  {
+    "ad": "gider-formu-duzenle-plan-hatasi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ödeme planında hata var; aşağıdaki durum kayıtlı hâli gösteriyor."
+    ],
+    "adimUyarilari": [
+      "kaydırılamadı: kaydir:Ödemeler gider listesindeki"
+    ],
+    "piksel": 129829
+  },
+  {
+    "ad": "gider-formu-duzenle-plan-hatasi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Ödeme planında hata var; aşağıdaki durum kayıtlı hâli gösteriyor."
+    ],
+    "adimUyarilari": [
+      "kaydırılamadı: kaydir:Ödemeler gider listesindeki"
+    ],
+    "piksel": 130026
+  },
+  {
+    "ad": "gider-formu-0153-doviz-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "gider-formu-0153-doviz-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "gider-formu-0153-kur-yok-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "gider-formu-0153-kur-yok-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "gider-formu-0153-kilit-aydinlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "gider-formu-0153-kilit-karanlik.png",
+    "boyut": "2880x1800",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-0153-liste-aydinlik.png",
+    "boyut": "2880x2950",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-0153-liste-karanlik.png",
+    "boyut": "2880x2950",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-0153-borc-ozeti-aydinlik.png",
+    "boyut": "2880x2992",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-0153-borc-ozeti-karanlik.png",
+    "boyut": "2880x2992",
+    "seritler": [
+      "Aynı tanımdan bu dönemde birden fazla kalem var.Eylül kira (2026-09): "
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-0153-odeme-aydinlik.png",
+    "boyut": "2880x1828",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-0153-odeme-karanlik.png",
+    "boyut": "2880x1828",
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-0153-acik-kalemler-aydinlik.png",
+    "boyut": "2880x2716",
+    "seritler": [
+      "Açık kalemler (tüm dönemler)Dönem filtresi devre dışı: yürürlük ayında"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "giderler-0153-acik-kalemler-karanlik.png",
+    "boyut": "2880x2716",
+    "seritler": [
+      "Açık kalemler (tüm dönemler)Dönem filtresi devre dışı: yürürlük ayında"
+    ],
+    "fark": "önce görüntüsü yok"
+  },
+  {
+    "ad": "gider-formu-0071-kdv-dahil-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 110674
+  },
+  {
+    "ad": "gider-formu-0071-kdv-dahil-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 110755
+  },
+  {
+    "ad": "gider-formu-0071-yuvarlama-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 114594
+  },
+  {
+    "ad": "gider-formu-0071-yuvarlama-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 114645
+  },
+  {
+    "ad": "gider-formu-0071-sifir-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 101498
+  },
+  {
+    "ad": "gider-formu-0071-sifir-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 101691
+  },
+  {
+    "ad": "gider-formu-0075-tevkifat-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 93432
+  },
+  {
+    "ad": "gider-formu-0075-tevkifat-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 93538
+  },
+  {
+    "ad": "gider-formu-0076-kisit-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 102769
+  },
+  {
+    "ad": "gider-formu-0076-kisit-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 102876
+  },
+  {
+    "ad": "gider-formu-0076-tevkifat-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 106270
+  },
+  {
+    "ad": "gider-formu-0076-tevkifat-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 106284
+  }
+]

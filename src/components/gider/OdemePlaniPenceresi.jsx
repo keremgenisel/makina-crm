@@ -1,5 +1,5 @@
 import { fmtTR } from "../../lib/utils";
-import { odemeDurumu, odemeHedefleri, tl } from "../../lib/gider";
+import { odemeDurumu, odemeHedefleri, tl, HEDEF, kalemDovizMetni } from "../../lib/gider";
 import { Btn, Modal } from "../ui";
 import { Ipucu } from "../tasarim";
 import { OdemeSatirlari, tl2 } from "./GiderAlanlari";
@@ -10,16 +10,19 @@ import { OdemeSatirlari, tl2 } from "./GiderAlanlari";
 export const OdemePlaniPenceresi = ({ kalem, davranis, turAd, odemeYetkisi, onIsaretle, onClose }) => {
   if (!kalem) return null;
   const durum = odemeDurumu(kalem);
-  const kalan = odemeHedefleri(kalem, davranis).reduce((a, h) => a + h.kalanK, 0);
+  const hedefler = odemeHedefleri(kalem, davranis);
+  const kalan = hedefler.reduce((a, h) => a + h.kalanK, 0);
+  // Spec 0153 R20: yalnız ANA hedefli döviz kalemde kalan kalemin para biriminde (tevkifat hedefi lira kalır, P1).
+  const kalanMetni = (hedefler.every(h => h.hedef === HEDEF.ANA) && kalemDovizMetni(kalem, kalan)) || tl2(tl(kalan));
   return (
     <Modal title="Ödeme Planı" onClose={onClose} wide footer={<Btn variant="ghost" onClick={onClose}>Kapat</Btn>}>
       <div style={{ fontSize: 13, color: "var(--n600, #475569)", marginBottom: 12 }}>
         <b style={{ color: "var(--n900, #0f172a)" }}>{turAd}</b> · {fmtTR(kalem.tarih)}{kalem.aciklama ? ` · ${kalem.aciklama}` : ""}
         <div style={{ marginTop: 4 }} data-testid="odeme-plani-ozet">
-          Durum: <b>{durum === "odendi" ? "Ödendi" : durum === "kismen" ? "Kısmen ödendi" : "Ödenmedi"}</b> · Kalan: <b>{tl2(tl(kalan))}</b>
+          Durum: <b>{durum === "odendi" ? "Ödendi" : durum === "kismen" ? "Kısmen ödendi" : "Ödenmedi"}</b> · Kalan: <b>{kalanMetni}</b>
         </div>
       </div>
-      <OdemeSatirlari satirlar={kalem.taksitler} davranis={davranis} onIsaretle={odemeYetkisi ? (r) => onIsaretle(kalem, r) : null} testId="odeme-plani-satirlari" />
+      <OdemeSatirlari satirlar={kalem.taksitler} davranis={davranis} onIsaretle={odemeYetkisi ? (r) => onIsaretle(kalem, r) : null} testId="odeme-plani-satirlari" dovizKalemi={kalem} />
       {!odemeYetkisi && <Ipucu>Ödeme kaydetme yetkiniz yok.</Ipucu>}
       <Ipucu>Taksit bir ödeme kavramıdır: gider, doğduğu ayda ve tutarının tamamıyla sayılır; taksitler yalnız borç ve hatırlatmayı etkiler.</Ipucu>
     </Modal>
