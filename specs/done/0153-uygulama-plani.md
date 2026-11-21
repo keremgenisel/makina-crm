@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0153-doviz-gider-kalemi.md` (Onaylandı, 2026-11-21) |
+| **Spec** | `specs/done/0153-doviz-gider-kalemi.md` (Onaylandı, 2026-11-21) |
 | **Onay** | Takım Yöneticisi, 2026-11-21 ("tüm önerilerini onaylıyorum, spece işle, planı yaz ve uygula") |
 | **Dal** | `feat/0153-doviz-kalem` (main `a3c9d193` üstünde) |
-| **Durum** | Uygulandı, commit bekliyor |
+| **Durum** | Tamamlandı: commit `4a7b7459` |
 
 ## 1. Dosyalar
 

@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-21); uygulandı, commit bekliyor |
+| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-21) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
-| **Revizyon** | 3 (2026-11-21 plan onayı: P1–P12; plan `specs/0153-uygulama-plani.md`) |
+| **Revizyon** | 3 (2026-11-21 plan onayı: P1–P12; plan `specs/done/0153-uygulama-plani.md`) |
 | **Etkilenen alanlar** | Giderler (gider formu, Dönem Raporu, kalem listesi, ödeme girişi, borç özeti, açık kalemler), Anasayfa ödeme hatırlatıcısı, saf motorlar `gider.js` / `kasa.js` / `doviz.js` / `cek.js` / `acikKalemler.js` / `odemeHatirlatma.js` / `aramaGider.js`, yeni yaprak kur modülü, Kasa hareket listesi ve hesapsız liste, işlem geçmişi, Aylık Gider ve Kasa Raporu, `giderler` tablosu |
 | **Bağımlı spec'ler** | 0152 (döviz ödeme ve bozdurma), 0071 (KDV dâhil giriş), 0024 (ödeme bir harekettir), 0021 (taksit), 0076 (kısıtlı gider), 0075 (tevkifat), 0026 (genel arama), 0040 ve 0049 (çek ve ciro), 0041 (çoklu ödeme), 0047 (aylık rapor), 0048 (düzenleme formunda canlı ödeme kutusu), 0053 (tek ödeme editörü), 0054 (ödeme hedefleri), 0084 (stopaj dönem ödemesi) |
 | **QA turu** | 2026-11-21: 26 bulgu (6 Bloklayıcı / 14 Önemli / 6 Küçük), hepsi onaylandı |
