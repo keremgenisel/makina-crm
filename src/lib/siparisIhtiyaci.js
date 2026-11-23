@@ -10,7 +10,7 @@
 //   5. Malzeme kalemi olan parçanın SİPARİŞ adedi (× kalem adedi) her malzeme kaleminin kesit satırına gider .
 import { PARCA_BILGI_ALANLARI, bilgiDegeri } from "./parcaBilgi";
 import { trLower, totalMiktar } from "./utils";
-import { setMi, setIcerigiOf, kalemAdetiOf, parcaMaliyetKurus, setKatalogu, parcaDovizMaliyeti, islemKalemiTutari } from "./urunAgaci";
+import { setMi, setIcerigiOf, kalemAdetiOf, parcaMaliyetKurus, setKatalogu, parcaDovizMaliyeti, islemKalemiTutari, ALIM_ISLEM } from "./urunAgaci";
 import { BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./tutarGirdisi";
 import {
   BICIMLER, PARA_BIRIMLERI, dovizMi, bantSec, bantlarOf, fiyatKumesi, hamOlculer, hamKesit, malzemeOzeti,
@@ -59,16 +59,18 @@ export const BOS_KIT = "Seçilen modellerin kitinde parça yok; sipariş üretme
 export const BOS_STOK_YETIYOR = "Eldeki stok ihtiyacı karşılıyor; sipariş edilecek satır yok.";
 export const BOS_SECIM = "Seçilen tedarikçilerde bu girdi için satır yok.";
 export const CIFT_SAYIM_DEGIL = "Bir parça hem Ana tedarikçisinin bölümünde (hazır parça) hem malzemesinin tedarikçisinin bölümünde (malzeme) görünebilir; bunlar ayrı siparişlerdir, çift sayım değildir.";
-export const HAMMADDE_SUZGEC_NEDENI = "Listede hammadde işaretli tedarikçiler, bir parçanın ya da malzemenin Ana tedarikçisi olan firmalar ve bir parçanın işlem kaleminde geçen (fason) firmalar var; kargo, kira gibi tedarikçiler listelenmez."; // spec 0150 R5/2
+export const HAMMADDE_SUZGEC_NEDENI = "Listede hammadde işaretli tedarikçiler, bir parçanın ya da malzemenin Ana tedarikçisi olan firmalar ve bir parçanın alım ya da işlem kaleminde geçen (satıcı ya da fason) firmalar var; kargo, kira gibi tedarikçiler listelenmez."; // spec 0159 R7/2
 export const GECICI_DUZENLEME = "Düzenlemeler geçicidir: pencere kapanınca kaybolur, hiçbir yere kaydedilmez.";
 export const satirsizSecilenMetni = (n, m) => `Seçilen ${n} firmanın ${m} tanesinde satır yok.`;
 // ── Spec 0150: sipariş listesinde işlem kalemleri (R1–R10/2) ────────────────────────────────────────────────────────────
-export const ISLEMLER_BASLIGI = "İşlemler"; // R2/2
+export const ISLEMLER_BASLIGI = ALIM_ISLEM.TABLO; // R2/2; spec 0159 R1/2
 export const ISLEM_TUTAR_YOK = "tutar girilmedi"; // R4/2: ekran ve belge kendi metnini yazmaz
-export const ISLEMLER_TOPLAMI = "İşlemler toplamı"; // R9
+// Spec 0159 R6/2, P1 (AC-38): bedeli alım ve işlem satırlarında olan hazır parça satırının nedeni (tutarsız sayılmaz).
+export const BEDEL_KALEMLERDE = "bedeli alım/işlem satırlarında";
+export const ISLEMLER_TOPLAMI = ALIM_ISLEM.TOPLAM; // R9; spec 0159 R1/2
 // Spec 0150 R10/3 (triyaj bulgu 1, TY kararı): seçim yüzünden pencerede görünmeyen ama basılacak bir bölümü kilitleyen hatalı parça.
 export const gizliHataMetni = (ad, yer) => `Belge basılamaz: ${ad} satırının sipariş adedi geçersiz. Satır ${yer} kartında; o firmayı seçime ekleyip düzeltin ya da seçimi temizleyin.`;
-export const tedarikcisizIslemMetni = (n) => `${n} işlem kaleminin tedarikçisi girilmemiş; belgeye basılmaz. Parça kartının maliyet kalemlerinden girin.`; // R6/2
+export const tedarikcisizIslemMetni = (n) => `${n} ${ALIM_ISLEM.KISA_KUCUK} kaleminin tedarikçisi girilmemiş; belgeye basılmaz. Parça kartının maliyet kalemlerinden girin.`; // R6/2
 export const duzenlemeSayiMetni = (d) => `${d.duzenlenen} satır düzenlendi · ${d.kapatilan} satır kapatıldı`;
 export const MALZEMESI_ASAGIDA = "malzemesi aşağıda";
 export const MALIYET_YOK = "maliyet girilmedi";
@@ -486,12 +488,21 @@ const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed,
     // Spec 0157 R15, R15/2, C1/2, P9 (AC-24, AC-38): elle döviz maliyetli hazır parçanın tutarı kendi para biriminde de taşınır;
     // lira tutarı tek okuma yolunun lira birimi × adet. Yeni anahtarlar yalnız dövizde (C6/2, AC-57). Kardeş okuyucuyu yalnız burası çağırır.
     const dv = k.malzemeli ? null : parcaDovizMaliyeti(p);
+    // Spec 0159 R6/2, R6/3, P2 (AC-38, AC-39, AC-41): bedel bir kez sayılır. Malzemesiz parçanın hazır satırının tutarı, parçanın
+    // maliyeti eksi alım ve işlem kalemlerinin (tedarikçisiz olanlar dahil) toplamıdır; sıfıra inerse tutar yazılmaz, nedeni yazılır
+    // ve satır tutarsız sayılmaz. Kalemsiz elle maliyetli parça ve malzemeli parça bugünkü gibi.
+    const alimKalemleri = k.malzemeli ? [] : islemKalemleri(p).filter(ik => !eskiKatalogKalemi(ik));
+    const kalemToplamK = alimKalemleri.reduce((a, ik) => a + (islemKalemiTutari(ik).birimK ?? 0), 0);
+    const hazirBirimK = birimK == null || !alimKalemleri.length ? birimK : birimK - kalemToplamK;
+    const bedelKalemde = alimKalemleri.length > 0 && hazirBirimK === 0;
     const satir = { partId: k.partId, ad: k.ad, set: k.set, ihtiyac: k.ihtiyac, stok: k.stok, oneri, siparis: k.siparis, duzenlendi: !!k.duzenlendi,
       kapali: !!k.kapali, hata: k.hata || null, malzemeli: k.malzemeli, olculer: k.olculer, birimK, ...k.bilgi, olcuSatirlari: olcuSatirlariOf(k.malzemeli, k.olculer, k.bilgi),
-      tutarK: k.malzemeli || birimK == null ? null : birimK * k.siparis, tutarNeden: k.malzemeli ? MALZEMESI_ASAGIDA : birimK == null ? MALIYET_YOK : null };
+      tutarK: k.malzemeli || hazirBirimK == null || bedelKalemde ? null : hazirBirimK * k.siparis,
+      tutarNeden: k.malzemeli ? MALZEMESI_ASAGIDA : bedelKalemde ? BEDEL_KALEMLERDE : birimK == null ? MALIYET_YOK : null };
+    if (bedelKalemde) satir.bedelKalemde = true;
     if (dv) Object.assign(satir, { paraBirimi: dv.paraBirimi, dovizTutarK: satir.tutarK == null ? null : kurus(dv.tutar) * k.siparis });
     if (kesitNedenleri.has(k.partId)) satir.kesitNedenleri = kesitNedenleri.get(k.partId);
-    hazirMaliyet.set(k.partId, { birimK: satir.birimK, tutarK: satir.tutarK, tutarNeden: k.malzemeli ? null : satir.tutarNeden,
+    hazirMaliyet.set(k.partId, { birimK: satir.birimK, tutarK: satir.tutarK, tutarNeden: k.malzemeli ? null : satir.tutarNeden, ...(bedelKalemde ? { bedelKalemde } : {}),
       ...(dv ? { paraBirimi: satir.paraBirimi, dovizTutarK: satir.dovizTutarK } : {}) });
     if (!tid) belirtilmemis.parcalar.push(satir); else bolum(tid).hazirParcalar.push(satir);
   }
@@ -743,6 +754,7 @@ const belgeTutarlariKur = (b, kesitMap, hazirMaliyet) => {
     } else {
       const h = hazirMaliyet.get(x.partId) || { birimK: null, tutarK: null, tutarNeden: MALIYET_YOK };
       x.parcaTutarlari = []; x.birimK = h.birimK; x.tutarK = h.tutarK; x.tutarNeden = h.tutarK == null ? (h.tutarNeden || MALIYET_YOK) : null;
+      if (h.bedelKalemde) { x.bedelKalemde = true; continue; } // spec 0159 R6/2: tutarsız sayılmaz, toplama girmez
       // Spec 0157 R15, P9 (AC-24, AC-25, AC-38): döviz hazır parça kendi para biriminde toplanır, lira toplamına lira tutarıyla girer.
       if (h.paraBirimi) { x.paraBirimi = h.paraBirimi; x.dovizTutarK = h.dovizTutarK; }
       if (x.tutarK == null) tutarsiz++; else hazirTutarlar.push(h.paraBirimi ? { pb: h.paraBirimi, k: h.dovizTutarK, liraK: x.tutarK } : { pb: "TRY", k: x.tutarK });
@@ -825,10 +837,15 @@ const kesimSatirlariKur = (x, kesitMap, malzemeSatirlari) => {
 // R26–R31, R26/2, R30/2, C7, P6, P7 (AC-39–AC-47, AC-73, AC-74): genel toplam (TL) = bölüm toplamının kayıtlı kurla lira karşılığı +
 // işlemler toplamı. İşlem tutarı yoksa yazılmaz; bölümde parça tutarı kaynağı (toplam satırı ya da hazır parça) yoksa işlemler toplamı;
 // kaynak var ama lira karşılığı hiç çıkmadıysa yazılmaz. Kısmi toplamda sayaç iki sayacın toplamıdır. Günün kuru okunmaz.
+// Spec 0159 P1 (AC-41): bölümde parça tutarı kaynağı var mı: alınacak malzeme toplamı ya da bedeli kalemlerde OLMAYAN hazır parça.
+// Genel toplamın kuralı bunu okur. Belgenin "Bölüm toplamı" satırı ayrı ve daha geniş bir ölçütle basılır (bedeli kalemlerde olmayan
+// herhangi bir parça satırı, malzemeli dahil; `siparisRaporu.siparisRaporuHtml`); ikisi yalnız malzemeli satırı olup alınacak malzeme
+// toplamı boş bölümde ayrışır ve bu ayrım 0159'dan öncedir (triyaj bulgu 3).
+export const parcaTutariVarMi = (b) => (b.toplam?.length || 0) > 0 || (b.satirlar || []).some(x => !x.malzemeKalemli && !x.bedelKalemde);
 const genelToplamKur = (b) => {
   b.genelTutarsizSayi = (b.tutarsizSayi || 0) + (b.islemTutarsizSayi || 0);
   if (b.islemToplamK == null) { b.genelToplamK = null; return; }
-  const kaynak = b.toplam.length > 0 || b.satirlar.some(x => !x.malzemeKalemli);
+  const kaynak = parcaTutariVarMi(b); // spec 0159 P1
   b.genelToplamK = !kaynak ? b.islemToplamK : b.toplamTLK == null ? null : b.toplamTLK + b.islemToplamK;
 };
 

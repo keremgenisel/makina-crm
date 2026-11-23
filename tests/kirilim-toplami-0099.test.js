@@ -70,7 +70,7 @@ describe("Spec 0099: metinler tek yerde (C5, C5/2); spec 0135 ile kalem diline g
     expect(urunAgaci.kaynakKartMetni).toBeUndefined();
     expect(urunAgaci.KAYNAK_KIRILIM).toBeUndefined();
     expect(urunAgaci.kaynakListeMetni).toBeUndefined();
-    expect(urunAgaci.kalemKaynakMetni({ malzeme: 1, islem: 2 })).toBe("Maliyet kalemlerinden hesaplanıyor (1 malzeme, 2 işlem kalemi)");
+    expect(urunAgaci.kalemKaynakMetni({ malzeme: 1, islem: 2 })).toBe("Maliyet kalemlerinden hesaplanıyor (1 malzeme, 2 alım/işlem kalemi)"); // spec 0159 ile (R7/2)
     expect(oku(PART)).not.toContain('data-testid="maliyet-kirilimdan"');
   });
 });

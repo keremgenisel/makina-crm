@@ -2,6 +2,7 @@
 // Spec 0096: hammadde tedarikçisi ve parça maliyetinin tedarikçi kırılımı (ekran). Gerçek Settings (Katalog › Parça/Yedek
 // Parça, App gibi bağlanır: panele çöpü süzülmüş parça dizisi, setter'a tam dizi, tedarikçi dizisi HAM), gerçek Tedarikciler
 // ekranı ve gerçek Çöp Kutusu. Motor kriterleri tests/hammadde-0096.test.js'te.
+// Spec 0159 ile (R1/3): kalemin erişilebilir adları ve ekleme düğmesi yeni adla ("Alım ya da işlem adı", "Alım / işlem tutarı", "Alım/işlem ekle").
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { useState } from "react";
@@ -68,19 +69,19 @@ describe("Spec 0096: ad çözümü (R14, R16, R17/2)", () => {
     // Spec 0135 ile (R39, R44): liste hücresinin ikinci satırı tek kalem ibaresi; kırılım satırları işlem kalemi olarak açılır.
     expect(within(satir("Ayna dişlisi")).getByTestId("parca-maliyet").textContent).toBe(`601,00 ₺${UC_ISLEM}`);
     duzenle("Ayna dişlisi");
-    const s1 = screen.getByLabelText("İşlem tedarikçisi 1");
+    const s1 = screen.getByLabelText("Alım / işlem tedarikçisi 1");
     expect(s1.options[s1.selectedIndex].textContent).toBe(`Eski Sac (${SILINMIS_TEDARIKCI})`);
-    const s2 = screen.getByLabelText("İşlem tedarikçisi 2");
+    const s2 = screen.getByLabelText("Alım / işlem tedarikçisi 2");
     expect(s2.options[s2.selectedIndex].textContent).toBe(BULUNAMAYAN_TEDARIKCI);
     // Çöpteki tedarikçi başka satırın seçicisinde listelenmez
-    expect([...screen.getByLabelText("İşlem tedarikçisi 3").options].map(o => o.textContent)).not.toContain(`Eski Sac (${SILINMIS_TEDARIKCI})`);
+    expect([...screen.getByLabelText("Alım / işlem tedarikçisi 3").options].map(o => o.textContent)).not.toContain(`Eski Sac (${SILINMIS_TEDARIKCI})`);
   });
   it("AC-25 / AC-26: ad değişince yeni ad; hammadde işareti kaldırılınca kırılım ve maliyet aynı, yeni satır seçicisinde yok", () => {
     const t0 = TED.map(t => (t.id === 31 ? { ...t, ad: "Demir Çelik Sanayi", hammadde: undefined } : t));
     render(<Katalog t0={t0} />);
     expect(within(satir("Ayna dişlisi")).getByTestId("parca-maliyet").textContent).toBe(`17.000,00 ₺${UC_ISLEM}`); // spec 0135 ile (R39)
     duzenle("Ayna dişlisi");
-    const s1 = screen.getByLabelText("İşlem tedarikçisi 1");
+    const s1 = screen.getByLabelText("Alım / işlem tedarikçisi 1");
     expect(s1.options[s1.selectedIndex].textContent).toBe("Demir Çelik Sanayi");
     kaydet();
     expect(kayit(8).hammaddeler).toEqual(PARCALAR[1].hammaddeler);
@@ -94,7 +95,7 @@ describe("Spec 0096: gider yetkisi (R17, C11)", () => {
     // Spec 0135 ile (R39/2, AC-112): kalem ibaresi yetki istemez (tedarikçi kimliği taşımaz); "tek satır" iddiası ters çevrildi.
     expect(within(satir("Ayna dişlisi")).getByTestId("parca-maliyet").textContent).toBe(`17.000,00 ₺${UC_ISLEM}`);
     duzenle("Ayna dişlisi");
-    expect(screen.queryByLabelText("İşlem tedarikçisi 1")).toBeNull();
+    expect(screen.queryByLabelText("Alım / işlem tedarikçisi 1")).toBeNull();
     for (const t of TED) expect(document.body.textContent).not.toContain(t.ad);
   });
   it("triyaj bulgu 2: yetkisiz kullanıcıda kart da tedarikçi SAYISINI yazmaz (listeyle aynı karar); sayısız ibare çıkar", () => {

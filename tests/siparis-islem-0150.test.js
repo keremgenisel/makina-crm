@@ -142,7 +142,7 @@ describe("Spec 0150: motor", () => {
 describe("Spec 0150: belge", () => {
   // AC-8 ve AC-19 spec öncesi altınla `siparis-islem-0150-kiyas.test.js`'te.
   it("AC-4 / AC-36: fiyatsız belgede üç sütun, başlıklar BELGE_SUTUNLARI.islem'den", () => {
-    expect(BELGE_SUTUNLARI.islem).toEqual(["Parça", "İşlem", "Sipariş adedi"]);
+    expect(BELGE_SUTUNLARI.islem).toEqual(["Parça", "Alım / işlem", "Sipariş adedi"]); // spec 0159 ile (R1/2, AC-12): sütun adı satın almayı kapsar
     expect(belgeSutunlari().islem).toEqual(BELGE_SUTUNLARI.islem);
     const t = islemTablosu(html(odakli()), "Kaplamacı");
     expect(basliklar(t)).toEqual(BELGE_SUTUNLARI.islem);
@@ -199,6 +199,7 @@ describe("Spec 0150: belge", () => {
   });
   it("Ekran ve belge aynı motor sonucunu okur: işlem listesi yalnız motorda kurulur", () => {
     for (const f of ["src/lib/siparisRaporu.js", "src/components/stock/SiparisPenceresi.jsx"]) expect(yorumsuz(f)).not.toMatch(/islemKalemleri/);
-    expect(yorumsuz("src/lib/siparisIhtiyaci.js").match(/islemKalemleri\(p\)/g)).toHaveLength(1);
+    // Spec 0159 ile (R6/2): hazır parça satırının bedel düşümü aynı tek türetme kümesini okur (iki çağrı, ikisi de motorda).
+    expect(yorumsuz("src/lib/siparisIhtiyaci.js").match(/islemKalemleri\(p\)/g)).toHaveLength(2);
   });
 });

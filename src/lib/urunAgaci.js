@@ -252,10 +252,15 @@ export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = f
   // P5: karar kayıtta saklı son kuruştan değil, eski kaydın çözülmüş değerinden
   const eskiK = bugunkuKurus(eski, malzemeKat);
   const yeniK = cozulmusK == null ? null : cozulmusK;
-  const eskiD = gecmisDovizi(eski); const yeniD = yeniKayit ? gecmisDovizi(yeniKayit) : null;
+  // Spec 0159 R5/2, C2/2 (AC-36): yeni kayıtta döviz bilgisi yoksa ve kalem listesi doluysa eski döviz bilgisi yok sayılır; lira kuruş eşitse kayıt yazılmaz
+  // (kip geçişi elle döviz maliyeti kaleme çevirir ve kaydın üç alanını siler; maliyet değişmediği hâlde sahte satır düşmesin).
+  const yeniD = yeniKayit ? gecmisDovizi(yeniKayit) : null; const eskiD = gecmisDovizi(eski);
+  // Triyaj (bulgu 1): yok sayma yalnız yeni kayıtta kalem listesi doluyken (kip geçişi: döviz bilgisi kalemde). Elle döviz → elle lira
+  // düzenlemesinde 0157'nin üçlü anahtarı sürer ve satır yazılır. Satırlarda eski döviz alanları her durumda korunur.
+  const karsilastirilanEskiD = yeniD || !(yeniKayit && maliyetKalemleriOf(yeniKayit).length) ? eskiD : null;
   // P5: son kayıt her yazımda bugünkü değere eşitlenir (karışık sürümde ayrışmış olabilir). Spec 0157: döviz alanlarıyla birlikte.
   const taban = g.length ? [...g.slice(0, -1), { gecerli: g[g.length - 1].gecerli, kurus: eskiK, ...(eskiD || {}) }] : [];
-  if (yeniK === eskiK && dovizEsit(eskiD, yeniD)) {
+  if (yeniK === eskiK && dovizEsit(karsilastirilanEskiD, yeniD)) {
     // R7, R7/2 (P3): tutar aynı; yalnız kullanıcı tarih alanını değiştirdiyse son kaydın tarihi düzeltilir.
     const son = taban[taban.length - 1];
     // Triyaj (bulgu 3): boşaltılmış tarih alanı tutar değişmiyorsa yok sayılır (maliyetle ilgisiz düzenleme engellenmesin).
@@ -377,7 +382,7 @@ export const maliyetKaynagi = (p, tarih, katalog, malzemeKat) => {
   return parcaMaliyetiVar(p, tarih, katalog, malzemeKat) ? { tur: "elle" } : null;
 };
 export const KAYNAK_ELLE = "Elle girildi";
-export const kalemKaynakMetni = ({ malzeme = 0, islem = 0 } = {}) => `Maliyet kalemlerinden hesaplanıyor (${malzeme} malzeme, ${islem} işlem kalemi)`;
+export const kalemKaynakMetni = ({ malzeme = 0, islem = 0 } = {}) => `Maliyet kalemlerinden hesaplanıyor (${malzeme} malzeme, ${islem} ${ALIM_ISLEM.KISA_KUCUK} kalemi)`; // spec 0159 R7/2
 
 // Spec 0096 R11/2 ve spec 0135 R24: işlem kaleminin tedarikçisinin adı HAM diziden; çöpteki ve bulunamayan iki ibareyle.
 export const SILINMIS_TEDARIKCI = "silinmiş tedarikçi";
@@ -397,7 +402,19 @@ const kimlikCoz = (v) => (/^\d+$/.test(String(v)) ? Number(v) : v);
 export const KALEM_SINIRI_NEDENI = `Bir parçada en çok ${MALIYET_KALEM_SINIRI} maliyet kalemi olabilir.`;
 export const ADET_UST_HATASI = "Adet en çok 1.000 olabilir.";
 export const MALZEME_SECILMEDI = "Malzeme seçilmedi.";
-export const ISLEM_AD_HATASI = "İşlem adı boş olamaz.";
+// ── Spec 0159 R1, R1/2, R1/3, R7/2, C6 (AC-11, AC-19, AC-20): kalem türünün ekrandaki adı satın almayı da kapsar ve TEK sabit
+// kümesinden gelir. Veri değeri `KALEM_TUR.ISLEM`, `islem-kalemi` / `kalem-tutar` kimlikleri ve `ESKI_KALEM_ADI` değişmez (R1/4).
+// "gider" sözcüğü kullanılmaz (C6: gider modülünün kendi kalem kavramı var).
+export const ALIM_ISLEM = Object.freeze({
+  KISA: "Alım / işlem", KISA_KUCUK: "alım/işlem", EKLE: "Alım/işlem ekle", AD_ETIKETI: "Alım ya da işlem adı",
+  YER_TUTUCU: "Örn: Dış yay alımı, kalaylama", TEDARIKCI_ETIKETI: "Tedarikçi", TABLO: "Alımlar ve işlemler", SUTUN: "Alım / işlem", TOPLAM: "Alımlar ve işlemler toplamı",
+});
+export const alimIslemSatirBasligi = (n) => `${ALIM_ISLEM.KISA} kalemi ${n}`;
+export const alimIslemErisilebilirAd = (alan, n) => ({ ad: `${ALIM_ISLEM.AD_ETIKETI} ${n}`, tedarikci: `${ALIM_ISLEM.KISA} tedarikçisi ${n}`,
+  tutar: `${ALIM_ISLEM.KISA} tutarı ${n}`, kaldir: `${ALIM_ISLEM.KISA} kalemini kaldır ${n}` })[alan];
+// R2/3, Ö6 (AC-24): kip geçişinde elle tutardan dönen kalemin varsayılan adı; 0135'in TURETILEN_KALEM_ADI'si ("Hammadde alımı") ayrı kavram.
+export const ALIM_KALEMI_VARSAYILAN_ADI = "Parça alımı";
+export const ISLEM_AD_HATASI = `${ALIM_ISLEM.AD_ETIKETI} boş olamaz.`;
 export const ISLEM_TUTAR_SAYI_HATASI = "Tutar sayı olmalı.";
 export const ISLEM_TUTAR_NEGATIF_HATASI = "Tutar negatif olamaz.";
 export const ISLEM_TUTAR_UYARISI = "Tutar girilmedi; bu kalem toplama girmez.";
@@ -423,6 +440,42 @@ const islemTutariDogrula = (ham) => {
   if (r.deger < 0) return { deger: null, hata: ISLEM_TUTAR_NEGATIF_HATASI };
   return { deger: Math.round(r.deger * 100) / 100, hata: null };
 };
+// ── Spec 0159 R2–R4/2, C3, C3/2, P5, P6, P7, P9 (AC-2–AC-10, AC-22–AC-34, AC-48): kip geçişinin TEK saf kuralı, iki yönlü. Form
+// durumunu ve hedef kipi alır; formun yeni alanlarını (`yama`) ve "onay sorulsun mu" kararını döndürür. Ekran kural yazmaz.
+//   - Elle sabit → Hesapla: elle alan doluysa (0 dahil, geçersiz metin de: kalem kendi hatasını gösterir, P7) listenin ilk kalemi
+//     olur: ad `ALIM_KALEMI_VARSAYILAN_ADI`, tedarikçi formdaki Ana tedarikçi (öneri, bağ değil; R8/2), tutar elle alanın HAM metni
+//     (R2/4), para birimi, kur ve kurun kaynağı elle alandan (R2/2). Onay yok (R2/7). Elle alan boşsa liste boş (AC-7).
+//   - Hesapla → Elle sabit: tek kalem, türü işlem, eski katalog kalemi değil ve tutarı geçerli ve dolu (0 dahil) ise tutar doğrulanmış
+//     değerin form metniyle elle alana, para birimi, kur ve kaynağı da geri taşınır (R3–R3/5); onay yok, taşıma notu (P6) ve kuru
+//     eksik dövizde neden işareti (P5) geçici form alanlarıdır. Koşul tutmazsa bugünkü onay ve temizleme (R3/6).
+// Kip saklanmaz (C2); geçici alanlar (`_maliyetKipi`, `_maliyetDokunuldu`, `_tasimaNotu`, `_tasimaKurEksik`) kayda yazılmaz.
+export const MALIYET_KIP = Object.freeze({ ELLE: "elle", HESAPLA: "hesapla" });
+export const TASIMA_NOTU = "Kalemin adı ve tedarikçisi elle maliyette tutulmaz; kaydedince yalnız tutar, para birimi ve kur kalır. Parçanın Ana tedarikçisi değişmez.";
+export const elleKipIpucu = (hesaplaAdi) => `Fason, nakliye ya da ikinci bir bedel eklemek için "${hesaplaAdi}" kipine geçin; girilen tutar ilk ${ALIM_ISLEM.KISA_KUCUK} kalemi olur.`;
+const GECICI_BOS = { _tasimaNotu: false, _tasimaKurEksik: false };
+export const kipGecisi = (form, hedef) => {
+  if (hedef === form?._maliyetKipi) return null;
+  const ortak = { _maliyetKipi: hedef, _maliyetDokunuldu: true };
+  if (hedef === MALIYET_KIP.HESAPLA) {
+    const ham = String(form?.maliyet ?? "").trim();
+    const kalemler = ham === "" ? [] : [{ tur: KALEM_TUR.ISLEM, _anahtar: yeniKalemAnahtari(), ad: ALIM_KALEMI_VARSAYILAN_ADI,
+      tedarikciId: form?.tedarikciId == null ? "" : String(form.tedarikciId), tutar: ham,
+      paraBirimi: form?.maliyetParaBirimi || "", kur: form?.maliyetKuru || "", _kurKaynak: form?._maliyetKurKaynak || KUR_KAYNAK.ELLE }];
+    return { onay: false, yama: { ...ortak, maliyet: "", maliyetParaBirimi: "", maliyetKuru: "", _maliyetKurKaynak: KUR_KAYNAK.ELLE, maliyetKalemleri: kalemler, ...GECICI_BOS } };
+  }
+  const liste = form?.maliyetKalemleri || [];
+  const tek = liste.length === 1 && liste[0]?.tur === KALEM_TUR.ISLEM && !liste[0]._eskiKatalog ? liste[0] : null;
+  const t = tek ? islemTutariDogrula(tek.tutar) : null;
+  if (t && !t.hata && !t.bos) {
+    const pb = pbAyikla(tek.paraBirimi);
+    const doviz = !!pb && pb !== "TRY";
+    return { onay: false, yama: { ...ortak, maliyetKalemleri: [], maliyet: tutarMetni(t.deger),
+      maliyetParaBirimi: doviz ? pb : "", maliyetKuru: doviz ? String(tek.kur ?? "") : "", _maliyetKurKaynak: doviz ? (tek._kurKaynak || KUR_KAYNAK.ELLE) : KUR_KAYNAK.ELLE,
+      _tasimaNotu: true, _tasimaKurEksik: doviz && String(tek.kur ?? "").trim() === "" } };
+  }
+  return { onay: liste.length > 0, yama: { ...ortak, maliyetKalemleri: [], ...GECICI_BOS } };
+};
+
 // Formdaki kalemler (metin alanları) → kayıt biçimi. Dönüş { kayit, hatalar: { [i]: { alan: metin } }, uyarilar: { [i]: metin },
 // gecerli }. Hatalı malzeme kalemi kaydı engeller; tutarı boş işlem kalemi yalnız uyarır (R43). Sınır doğrulamada yok (R9/2).
 export const kalemlerDogrula = (formKalemler = []) => {
@@ -503,10 +556,10 @@ export const bosIslemKalemi = () => kalemFormu({ tur: KALEM_TUR.ISLEM });
 export const formKalemDolu = (kalemler = []) => (kalemler || []).length > 0;
 
 // Kalem listesinin altındaki ibareler (R20, R20/2, R35/2, R35/4) ve boş durum (R40, R41).
-export const ISLEM_ZAM_IBARESI = "İşlem tutarları sabittir; malzeme fiyatına gelen zam yalnız malzeme kalemlerini günceller.";
-export const KARMA_TARIH_IBARESI = "Geçmiş bir tarihin maliyetinde malzeme kalemleri o tarihin fiyatıyla, işlem kalemleri bugünkü tutarıyla hesaplanır.";
+export const ISLEM_ZAM_IBARESI = "Alım ve işlem tutarları sabittir; malzeme fiyatına gelen zam yalnız malzeme kalemlerini günceller.";
+export const KARMA_TARIH_IBARESI = "Geçmiş bir tarihin maliyetinde malzeme kalemleri o tarihin fiyatıyla, alım ve işlem kalemleri bugünkü tutarıyla hesaplanır.";
 export const MALZEME_GECMIS_IBARESI = "Bu parçanın maliyet geçmişi malzemenin kendi fiyat geçmişinden gelir; geçerlilik tarihi girilmez.";
-export const KALEM_BOS_METNI = "Henüz maliyet kalemi yok. Malzeme kalemi malzemeden hesaplanır, işlem kalemi (lazer kesim, büküm, kaplama, işçilik) sabit tutardır.";
+export const KALEM_BOS_METNI = "Henüz maliyet kalemi yok. Malzeme kalemi malzemeden hesaplanır, alım ya da işlem kalemi (parça alımı, lazer kesim, kaplama, nakliye) sabit tutardır.";
 export const MALZEME_KATALOG_BOS_NEDENI = "Henüz malzeme tanımlanmadı. Malzemeler Ayarlar › Katalog › Malzemeler panelinden eklenir.";
 export const KALEM_TOPLAM_ETIKETI = "Toplam, parçanın alış maliyeti";
 export const KALEM_BOLUM_BASLIGI = "Maliyet kalemleri";

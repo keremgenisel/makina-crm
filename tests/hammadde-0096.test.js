@@ -213,11 +213,13 @@ describe("Spec 0096: kaynak taramaları", () => {
   it("AC-32: parçanın maliyet alanını doğrudan okuyan yer yalnız tek okuma yolu; motorun satır içi ölçütü kalktı (istisnalar tam yollu, sayılı)", () => {
     expect(say(/\.maliyet\b/)).toEqual({
       // Spec 0157 ile (P3): elle maliyetin modül içi tek okuyucusu (`elleTutarVar`, `bugunkuKurus`, kardeş okuyucu) aynı dosyada; dört satır.
-      "src/lib/urunAgaci.js": 4, // tek okuma yolu (parcaMaliyetKurus) ve elle maliyetin form metni (elleMaliyetMetni)
+      // Spec 0159 ile (C3/2): kip geçişinin saf kuralı FORMUN elle alanını okur (`form?.maliyet`), kayıt değil; beş satır.
+      "src/lib/urunAgaci.js": 5, // tek okuma yolu (parcaMaliyetKurus) ve elle maliyetin form metni (elleMaliyetMetni)
       // FORM durumunun okunması (f.maliyet, form.maliyet, editForm.maliyet), kayıt değil. Spec 0135 ile 6: kip onayının doluluk
       // denetimi ve dokunulmamış kopyanın yerel nesnesindeki anahtar (maliyetAlanlari.maliyet) eklendi.
       // Spec 0157 ile: dokunulmamış kopyadaki `maliyetAlanlari.maliyet` silmesi elle alan listesiyle döngüye girdi (5).
-      "src/components/PartManager.jsx": 5,
+      // Spec 0159 ile (C3/2): kip onayının doluluk denetimi saf kurala taşındı (4).
+      "src/components/PartManager.jsx": 4,
       "src/lib/makinaMaliyeti.js": 2, // stok partisi toplayıcısının yerel alanı (x.maliyet), parça kaydı değil
     });
     expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/p\.maliyet|maliyet == null/);

@@ -87,11 +87,21 @@ describe("Spec 0157 kıyas (lira veri)", () => {
     expect(PARCALAR.some(p => p.setIcerigi?.length)).toBe(true);
     expect(MALZEMELER.some(m => m.paraBirimi === "USD")).toBe(true);
   });
-  it("AC-2 / AC-33 / AC-57 / AC-61: motor çıktıları, kayıt gövdesi, Excel ve sipariş belgesi spec öncesiyle birebir (ayıklamasız)", () => {
+  it("AC-2 / AC-33 / AC-57 / AC-61: motor çıktıları, kayıt gövdesi, Excel ve sipariş belgesi spec öncesiyle birebir (spec 0159 ile: ad ve R6/2 ayıklaması)", async () => {
     const s = { ...motor(), govde: govde() };
     if (process.env.YAZ_0157 === "1") { fs.writeFileSync(DOSYA, JSON.stringify(s) + "\n"); return; }
     const a = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
-    for (const k of Object.keys(a)) expect(s[k], k).toEqual(a[k]);
+    // Spec 0159 ile (C7/3, R6/2, P3, P4): altın yenilenmez. Belgenin yeni adları eski adlara çevrilir; yalnız işlem kalemli parçanın
+    // ("Fason parça") hazır satırı artık tutar taşımaz, o satırın ve bölümünün tutar alanları iki taraftan düşer, fiyatlı nüshada o
+    // bölüm karşılaştırılmaz. Öteki her şey (maliyet, geçmiş, satış fiyatı, Model Maliyetleri, Parti Hesabı, Excel, gövde) birebir.
+    const { ayiklaMotor0159, ayiklaBelge0159, ayiklaAd0159 } = await import(/* @vite-ignore */ "../fixtures/0159-ayikla.js");
+    const r62 = s.siparis.tedarikciBolumleri.belge.flatMap(b => b.satirlar.filter(x => x.bedelKalemde));
+    expect(r62.map(x => x.ad)).toEqual(["Fason parça"]);
+    const ids = r62.map(x => x.partId); const adlar = r62.map(x => x.ad);
+    for (const k of Object.keys(a).filter(k => !["siparis", "belge"].includes(k))) expect(s[k], k).toEqual(a[k]);
+    expect(ayiklaMotor0159(s.siparis, ids)).toEqual(ayiklaMotor0159(a.siparis, ids));
+    expect(ayiklaAd0159(s.belge.fiyatsiz)).toBe(ayiklaAd0159(a.belge.fiyatsiz));
+    expect(ayiklaBelge0159(s.belge.fiyatli, adlar)).toBe(ayiklaBelge0159(a.belge.fiyatli, adlar));
     expect(Object.keys(s).sort()).toEqual(Object.keys(a).sort());
   });
 });

@@ -86,7 +86,7 @@ describe("Spec 0132 gerçek App", () => {
     await baslat();
     await ayarlar("Katalog", "Parça/Yedek Parça");
     const parca = (await screen.findByText("Kesme mili")).closest("tr");
-    expect(within(parca).getByTestId("parca-maliyet").textContent).toBe("1.701,12 ₺Maliyet kalemlerinden hesaplanıyor (1 malzeme, 0 işlem kalemi)"); // spec 0135 ile (R39): tek kalem ibaresi
+    expect(within(parca).getByTestId("parca-maliyet").textContent).toBe("1.701,12 ₺Maliyet kalemlerinden hesaplanıyor (1 malzeme, 0 alım/işlem kalemi)"); // spec 0135 ile (R39): tek kalem ibaresi; spec 0159 ile (R7/2): kalemin yeni adı
     expect(screen.queryByTestId("maliyetsiz-parca")).toBeNull();
   });
   it("AC-59 (kaynak) / C5: yükleme, kayıt, otomatik yedek, birleştirme ve silme satırları malzemeyi taşır", () => {

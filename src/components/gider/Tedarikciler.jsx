@@ -17,7 +17,7 @@ import { tedarikciEkstresi } from "../../lib/kasa";
 const BOS = { id: null, ad: "", yetkili: "", telefon: "", eposta: "", vergiDairesi: "", vergiNo: "", adres: "", not: "" };
 // Spec 0096 R1, R2: hammadde tedarikçisi işareti (yalnız bu formdan konur, C7). Kapalıyken kayıtta alan hiç yoktur (C4).
 export const HAMMADDE_ISARET_ETIKETI = "Hammadde tedarikçisi";
-export const HAMMADDE_ISARET_IPUCU = "İşaretli tedarikçi, Ayarlar › Katalog › Parça/Yedek Parça'da parçaların işlem kaleminin tedarikçi seçicisinde başta listelenir.";
+export const HAMMADDE_ISARET_IPUCU = "İşaretli tedarikçi, Ayarlar › Katalog › Parça/Yedek Parça'da parçaların alım/işlem kaleminin tedarikçi seçicisinde başta listelenir.";
 // R13/4: "silinemez" penceresinin yönlendirme cümleleri kullanım türüne göre.
 export const SIL_KALEM_YONLENDIRME = "Silmek için önce kalemlerde başka tedarikçi seçin.";
 export const SIL_PARCA_YONLENDIRME = "Silmek için önce Ayarlar › Katalog › Parça/Yedek Parça'da bu parçaların maliyet kaleminden tedarikçiyi çıkarın.";

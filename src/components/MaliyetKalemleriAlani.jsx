@@ -10,6 +10,7 @@ import {
   KALEM_TOPLAM_ETIKETI, KALEM_BOLUM_BASLIGI, KALEM_SET_PASIF_NEDENI,
   MALIYET_PARA_BIRIMLERI, MALIYET_PB_ETIKETI, maliyetKurEtiketi, GUNUN_KURU_DUGMESI, gununKuruIpucu, pbDegisimi, kurAlaniDurumu, dovizMaliyetMetni,
   ISLEM_TUTAR_ETIKETI, LIRA_KARSILIGI_ETIKETI, elleMaliyetNedeni, TANINMAYAN_PB_EKI,
+  MALIYET_KIP, ALIM_ISLEM, alimIslemSatirBasligi, alimIslemErisilebilirAd, elleKipIpucu, TASIMA_NOTU,
 } from "../lib/urunAgaci";
 import { KUR_KAYNAK, kurGirdisi } from "../lib/doviz";
 import { CUR_SYM } from "../lib/constants"; // bileşenler kur ilkellerini doviz.js üzerinden alır (0153 taraması)
@@ -52,12 +53,12 @@ export const DovizAlani = ({ pb = "", kur = "", kurKaynak = KUR_KAYNAK.ELLE, onD
 // Spec 0135 R1–R6/2 (Karar 30): maliyet kipi saklanmaz, kayıttan türer (C3); seçici 0133'ün "Fiyat kipi" seçicisinin ikizidir.
 // Adlar tek sabit kümesinden: "Elle sabit" 0133'ün adıdır (ikinci kez yazılmaz), "Hesapla" bu spec'indir.
 export const MALIYET_KIPI_ETIKETI = "Maliyet kipi";
-export const MALIYET_KIP_HESAPLA = "hesapla";
-export const MALIYET_KIP_ELLE = "elle";
+// Spec 0159 P9: kip değerleri motorda tek sabit (`MALIYET_KIP`); saf kip kuralı bileşeni içe alamaz. Adlar burada aynen kalır.
+export const MALIYET_KIP_HESAPLA = MALIYET_KIP.HESAPLA;
+export const MALIYET_KIP_ELLE = MALIYET_KIP.ELLE;
 export const MALIYET_KIP_ADLARI = { [MALIYET_KIP_ELLE]: KIP_ADLARI[KIP_ELLE], [MALIYET_KIP_HESAPLA]: "Hesapla" };
 export const KIP_SET_PASIF_NEDENI = "Set içeriği dolu: maliyet bileşenlerden gelir; maliyet kipi seçilmez.";
 export const KIP_ONAY_ELLE = "Elle sabit kipine geçilince maliyet kalemleri listeden kalkar.";
-export const KIP_ONAY_HESAPLA = "Hesapla kipine geçilince elle girilen maliyet temizlenir.";
 const FIELDSET_STILI = { border: 0, padding: 0, margin: 0, minWidth: 0 };
 
 // R17, R17/2, R18–R21 (AC-32–AC-40, AC-101): işlem kalemi. Ad ve tutar herkese görünür; tedarikçi seçicisi yalnız gider
@@ -71,22 +72,22 @@ const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hat
   return (
     <div data-testid="islem-kalemi" style={{ border: "1px solid var(--n200, #e2e8f0)", borderRadius: 10, padding: "10px 12px", display: "grid", gap: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>{`İşlem kalemi ${sira}`}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--n600, #475569)" }}>{alimIslemSatirBasligi(sira)}</span>
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {/* Spec 0157 R12/3 (AC-59): döviz kalem kendi tutarını, kurunu ve lira karşılığını yazar. */}
           <b data-testid="kalem-tutar" style={{ fontSize: 13, color: "var(--blu700, #1d4ed8)" }}>{ozet?.tutarK == null ? "—"
             : ozet.dovizTutarK != null ? dovizMaliyetMetni(ozet.dovizTutarK / 100, ozet.paraBirimi, ozet.kur, ozet.tutarK) : maliyetMetniKurus(ozet.tutarK)}</b>
-          <Btn small variant="danger" title="Kalemi kaldır" aria-label={`İşlem kalemini kaldır ${sira}`} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>
+          <Btn small variant="danger" title="Kalemi kaldır" aria-label={alimIslemErisilebilirAd("kaldir", sira)} onClick={onKaldir}><Icon name="trash" size={12} /></Btn>
         </span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: giderYetki ? "2fr 2fr 1fr" : "2fr 1fr", gap: 12 }}>
-        <Field label="İşlem adı">
-          <Input value={satir.ad ?? ""} onChange={e => set("ad", e.target.value)} placeholder="Örn: Lazer kesim" aria-label={`İşlem adı ${sira}`} />
+        <Field label={ALIM_ISLEM.AD_ETIKETI}>
+          <Input value={satir.ad ?? ""} onChange={e => set("ad", e.target.value)} placeholder={ALIM_ISLEM.YER_TUTUCU} aria-label={alimIslemErisilebilirAd("ad", sira)} />
           <HataMetni>{hatalar.ad}</HataMetni>
         </Field>
         {giderYetki && (
-          <Field label="Tedarikçi">
-            <Select value={id} onChange={e => set("tedarikciId", e.target.value)} aria-label={`İşlem tedarikçisi ${sira}`}>
+          <Field label={ALIM_ISLEM.TEDARIKCI_ETIKETI}>
+            <Select value={id} onChange={e => set("tedarikciId", e.target.value)} aria-label={alimIslemErisilebilirAd("tedarikci", sira)}>
               <option value="">Tedarikçi seçilmedi (kendi işimiz)</option>
               {kayitliDisi && <option value={id}>{tedarikciAdiCoz(id, tedarikciler)}</option>}
               {secenekler.map(t => <option key={t.id} value={String(t.id)}>{t.ad}</option>)}
@@ -94,7 +95,7 @@ const IslemSatiri = ({ satir, setSatir, sira, tedarikciler = [], giderYetki, hat
           </Field>
         )}
         <Field label={ISLEM_TUTAR_ETIKETI}>
-          <Input value={satir.tutar ?? ""} inputMode="decimal" onChange={e => set("tutar", e.target.value)} placeholder="Girilmedi" aria-label={`İşlem tutarı ${sira}`} />
+          <Input value={satir.tutar ?? ""} inputMode="decimal" onChange={e => set("tutar", e.target.value)} placeholder="Girilmedi" aria-label={alimIslemErisilebilirAd("tutar", sira)} />
           <HataMetni>{hatalar.tutar}</HataMetni>
         </Field>
       </div>
@@ -119,6 +120,8 @@ export const MaliyetKalemleriAlani = ({
   ellePb = "", elleKur = "", elleKurKaynak = KUR_KAYNAK.ELLE, setElleDoviz = null, elleKurHata = null, ellePbHata = null, elleK = null, rates = null, ratesErr = false,
   // Triyaj (bulgu 2, R19/2): kayıttaki elle maliyetin nedeni (kuru girilmemiş döviz ya da tanınmayan para birimi); yalnız düzenlemede.
   kayitNedeni = null,
+  // Spec 0159 R3/4, R3/5, P5, P6: Hesapla'dan taşımadan sonra elle alanın altındaki not ve kuru eksik dövizin nedeni (geçici form durumu).
+  tasimaNotu = false, tasimaNedeni = null,
   malzemeler = [], hamMalzemeler = [], tedarikciler = [], giderYetki = false, hatalar = {}, uyarilar = {}, ozet = null, set = false, kaynak = null,
 }) => {
   const hesapla = kip === MALIYET_KIP_HESAPLA;
@@ -147,7 +150,10 @@ export const MaliyetKalemleriAlani = ({
             <Ipucu>{set ? SET_PASIF_NEDENI : MALIYET_IPUCU}</Ipucu>
           </Field>
           {!set && setElleDoviz && <DovizAlani pb={ellePb} kur={elleKur} kurKaynak={elleKurKaynak} kurHata={elleKurHata} rates={rates} ratesErr={ratesErr}
-            etiketEki=" (alış maliyeti)" onDegis={setElleDoviz} pbHata={ellePbHata} neden={elleMaliyetNedeni(ellePb, "-") || kayitNedeni} />}
+            etiketEki=" (alış maliyeti)" onDegis={setElleDoviz} pbHata={ellePbHata} neden={elleMaliyetNedeni(ellePb, "-") || tasimaNedeni || kayitNedeni} />}
+          {!set && tasimaNotu && <div data-testid="tasima-notu" role="note" style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{TASIMA_NOTU}</div>}
+          {/* Spec 0159 R4, R4/2 (AC-1, AC-35): hangi kipe geçileceğini söyleyen ipucu; kip adı sabit kümesinden, set doluyken yok. */}
+          {!set && <div data-testid="elle-kip-ipucu"><Ipucu>{elleKipIpucu(MALIYET_KIP_ADLARI[MALIYET_KIP_HESAPLA])}</Ipucu></div>}
           {/* R12 (AC-17): döviz maliyette lira karşılığı her zaman yazar (formun tek canlı sonucundan). */}
           {!set && ellePb && <div data-testid="elle-lira-karsiligi" style={{ fontSize: 12.5, color: "var(--n700, #334155)", marginTop: 2 }}>
             {LIRA_KARSILIGI_ETIKETI}: <b>{elleK == null ? "girilmedi" : maliyetMetniKurus(elleK)}</b></div>}
@@ -169,7 +175,7 @@ export const MaliyetKalemleriAlani = ({
           )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <Btn small variant="ghost" disabled={sinirda || katalogBos} onClick={() => setKalemler([...kalemler, bosMalzemeKalemi()])}><Icon name="plus" size={12} /> Malzeme ekle</Btn>
-            <Btn small variant="ghost" disabled={sinirda} onClick={() => setKalemler([...kalemler, bosIslemKalemi()])}><Icon name="plus" size={12} /> İşlem ekle</Btn>
+            <Btn small variant="ghost" disabled={sinirda} onClick={() => setKalemler([...kalemler, bosIslemKalemi()])}><Icon name="plus" size={12} /> {ALIM_ISLEM.EKLE}</Btn>
           </div>
           {katalogBos && !sinirda && <div data-testid="malzeme-katalog-bos" style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{MALZEME_KATALOG_BOS_NEDENI}</div>}
           {sinirda && <div data-testid="kalem-sinir" style={{ fontSize: 12, color: "var(--n600, #475569)", marginTop: 4 }}>{KALEM_SINIRI_NEDENI}</div>}

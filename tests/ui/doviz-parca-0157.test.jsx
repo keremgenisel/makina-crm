@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Spec 0157: parça kartı (para birimi, kur, öneri, sapma, lira karşılığı, kipler, dokunulmamış kayıt), işlem kaleminin satırı, parça
 // listesi, maliyet geçmişi listesi ve sipariş penceresi (para yok). Test adları AC-<n> taşır.
+// Spec 0159 ile (R1/3): kalemin erişilebilir adları ve ekleme düğmesi yeni adla ("Alım ya da işlem adı", "Alım / işlem tutarı", "Alım/işlem ekle").
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { useState } from "react";
@@ -138,18 +139,17 @@ describe("Spec 0157 A: parça kartı", () => {
     expect(screen.getAllByTestId("maliyet-gecmisi-satiri").map(r => r.textContent)).toEqual([
       expect.stringContaining("$120,00 · kur 42,00 · 5.040,00 ₺"), expect.stringContaining("$120,00 · kur 40,00 · 4.800,00 ₺")]);
   });
-  it("AC-46 / AC-47: para birimi seçicisi yalnız Elle sabit kipinde; Hesapla kipine geçilince iki alan kayıttan silinir", () => {
+  // Spec 0159 ile (R2, R2/2, R2/7): Hesapla'ya geçiş onay sormaz; elle döviz maliyet para birimi ve kuruyla ilk kalem olur ve parçanın
+  // iki alanı kayıttan silinir (iddianın "silinir" yarısı aynı; tutar artık kaybolmuyor).
+  it("AC-46 / AC-47: para birimi seçicisi yalnız Elle sabit kipinde; Hesapla kipine geçilince iki alan kayıttan silinir (spec 0159 ile: kaleme taşınır)", () => {
     const k = kur(); duzenle("İthal rulman");
     fireEvent.click(screen.getByRole("radio", { name: "Hesapla" }));
-    fireEvent.click(screen.getByRole("button", { name: "Değiştir" }));
     expect(screen.queryByLabelText("Para birimi (alış maliyeti)")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    fireEvent.change(screen.getByLabelText("İşlem adı 1"), { target: { value: "Kaplama" } });
-    fireEvent.change(screen.getByLabelText("İşlem tutarı 1"), { target: { value: "10" } });
+    expect(screen.getByLabelText("Para birimi 1").value).toBe("USD");
     kaydet();
     const p = k.parts.find(x => x.id === 30);
     for (const a of ["maliyet", "maliyetParaBirimi", "maliyetKuru"]) expect(p, a).not.toHaveProperty(a);
-    expect(p.maliyetKalemleri).toEqual([{ tur: "islem", ad: "Kaplama", tutar: 10 }]);
+    expect(p.maliyetKalemleri).toEqual([{ tur: "islem", ad: "Parça alımı", tutar: 120, paraBirimi: "USD", kur: 40 }]);
   });
 });
 
@@ -157,9 +157,9 @@ describe("Spec 0157 B: işlem kalemi satırı", () => {
   it("AC-13 / AC-59: işlem kaleminde para birimi ve kur; satır kendi tutarını, kurunu ve lira karşılığını yazar, toplam lira", () => {
     const k = kur(); yeni("Fasonlu");
     fireEvent.click(screen.getByRole("radio", { name: "Hesapla" }));
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    fireEvent.change(screen.getByLabelText("İşlem adı 1"), { target: { value: "İthal kaplama" } });
-    fireEvent.change(screen.getByLabelText("İşlem tutarı 1"), { target: { value: "10" } });
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    fireEvent.change(screen.getByLabelText("Alım ya da işlem adı 1"), { target: { value: "İthal kaplama" } });
+    fireEvent.change(screen.getByLabelText("Alım / işlem tutarı 1"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Para birimi 1"), { target: { value: "EUR" } });
     expect(screen.getByLabelText("Kur 1").value).toBe("47,25");
     fireEvent.change(screen.getByLabelText("Kur 1"), { target: { value: "50" } });

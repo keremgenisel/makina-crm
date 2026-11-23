@@ -2,6 +2,7 @@
 // Spec 0135: parça kartının maliyet bölümü ve parça listesi (gerçek Settings › Katalog › Parça/Yedek Parça, durumlu kap). Kip
 // seçici ve onayı, kalem listesi, malzeme ve işlem kalemi, eski kayıtların açılışı, dokunma işareti ve kaydedilen gövde, geçerlilik
 // tarihi, iki yönlü set pasifliği, gizlilik, liste ibaresi, tedarikçi süzgeci, maliyetsiz sayacı ve toplu kip onayı.
+// Spec 0159 ile (R1/3): kalemin erişilebilir adları ve ekleme düğmesi yeni adla ("Alım ya da işlem adı", "Alım / işlem tutarı", "Alım/işlem ekle").
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
@@ -13,7 +14,8 @@ import {
 } from "../../src/lib/urunAgaci";
 import { malzemeKatalogu, malzemeOzeti, BELIRSIZ_HATASI } from "../../src/lib/malzeme";
 import { TURETILEN_KALEM_ADI } from "../../src/lib/maliyetKalemleri";
-import { KIP_SET_PASIF_NEDENI, KIP_ONAY_ELLE, KIP_ONAY_HESAPLA } from "../../src/components/MaliyetKalemleriAlani";
+import { KIP_SET_PASIF_NEDENI, KIP_ONAY_ELLE } from "../../src/components/MaliyetKalemleriAlani";
+import { ALIM_KALEMI_VARSAYILAN_ADI } from "../../src/lib/urunAgaci";
 
 vi.mock("../../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
 afterEach(() => { cleanup(); });
@@ -79,24 +81,24 @@ describe("Spec 0135: kip seçici (R1–R6/2, Karar 30, 36, 37)", () => {
     duzenle("Kesme mili"); expect(secili("Hesapla")).toBe(true); fireEvent.click(screen.getByRole("button", { name: "İptal" }));
     duzenle("Kapak"); expect(secili("Hesapla")).toBe(true);
     expect(screen.getAllByTestId("islem-kalemi")).toHaveLength(2);
-    expect(screen.getByLabelText("İşlem adı 1").value).toBe(TURETILEN_KALEM_ADI);
-    expect(screen.getByLabelText("İşlem tutarı 2").value).toBe("80");
+    expect(screen.getByLabelText("Alım ya da işlem adı 1").value).toBe(TURETILEN_KALEM_ADI);
+    expect(screen.getByLabelText("Alım / işlem tutarı 2").value).toBe("80");
     fireEvent.click(screen.getByRole("button", { name: "İptal" }));
     duzenle("Pul"); expect(secili("Elle sabit")).toBe(true);
     expect(screen.getByLabelText("Alış maliyeti").value).toBe("5");
   });
-  it("AC-7 / AC-8: elle tutar doluyken Hesapla onay sorar; vazgeçince kip ve tutar yerinde, onayla kip değişir ve tutar boşalır", () => {
+  // Spec 0159 ile (R2, R2/7, R3, AC-2, AC-8, AC-29): Elle sabitten Hesapla'ya onay sorulmaz, elle tutar silinmez, ilk kalem olur;
+  // tek geçerli kalemle geri dönüşte tutar elle alana taşınır (eski iddia "onay sorar, tutar boşalır" ters çevrildi).
+  it("AC-7 / AC-8 (spec 0159 ile): elle tutar doluyken Hesapla onay sormaz ve tutarı ilk kaleme taşır; geri dönüşte tutar elle alana döner", () => {
     render(<Katalog />); duzenle("Pul");
     kip("Hesapla");
-    expect(screen.getByTestId("kip-onay").textContent).toBe(KIP_ONAY_HESAPLA);
-    fireEvent.click(screen.getByRole("button", { name: "Vazgeç" }));
-    expect(secili("Elle sabit")).toBe(true);
-    expect(screen.getByLabelText("Alış maliyeti").value).toBe("5");
-    kip("Hesapla"); fireEvent.click(screen.getByRole("button", { name: "Değiştir" }));
-    expect(secili("Hesapla")).toBe(true);
-    kip("Elle sabit"); // boş listeden geçişte onay yok (AC-10)
     expect(screen.queryByTestId("kip-onay")).toBeNull();
-    expect(screen.getByLabelText("Alış maliyeti").value).toBe("");
+    expect(secili("Hesapla")).toBe(true);
+    expect(screen.getByLabelText("Alım ya da işlem adı 1").value).toBe(ALIM_KALEMI_VARSAYILAN_ADI);
+    expect(screen.getByLabelText("Alım / işlem tutarı 1").value).toBe("5");
+    kip("Elle sabit");
+    expect(screen.queryByTestId("kip-onay")).toBeNull();
+    expect(screen.getByLabelText("Alış maliyeti").value).toBe("5");
   });
   it("AC-9: kalem listesi doluyken Elle sabit onay sorar; onaylanınca kalemler listeden kalkar", () => {
     render(<Katalog />); duzenle("Gövde");
@@ -111,9 +113,10 @@ describe("Spec 0135: kip seçici (R1–R6/2, Karar 30, 36, 37)", () => {
     kip("Hesapla"); expect(screen.queryByTestId("kip-onay")).toBeNull();
     kip("Elle sabit"); expect(screen.queryByTestId("kip-onay")).toBeNull();
   });
+  // Spec 0159 ile (R2/7, R3/6): onay yalnız taşınamayan listeden Elle sabite geçişte; Escape kuralı o onayla ölçülür.
   it("Karar 37: kip onayı açıkken Escape kartı kapatmaz (yalnız onay kapanır)", () => {
-    render(<Katalog />); duzenle("Pul");
-    kip("Hesapla");
+    render(<Katalog />); duzenle("Gövde");
+    kip("Elle sabit");
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("kip-onay")).toBeNull();
     expect(screen.getByText("Yedek Parçayı Düzenle")).toBeTruthy();
@@ -121,7 +124,9 @@ describe("Spec 0135: kip seçici (R1–R6/2, Karar 30, 36, 37)", () => {
   it("Karar 37 (triyaj bulgu 2, ekleme kartı): kip onayı açıkken Escape yeni parça kartını kapatmaz", () => {
     render(<Katalog />); ekleAc();
     yaz("Alış maliyeti", "8");
-    kip("Hesapla");
+    kip("Hesapla"); // spec 0159 ile: onay yok, tutar ilk kalem olur; ikinci kalemle geri dönüş onay sorar
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    kip("Elle sabit");
     expect(screen.getByTestId("kip-onay")).toBeTruthy();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("kip-onay")).toBeNull();
@@ -147,10 +152,10 @@ describe("Spec 0135: kalem listesi (R7–R11, R20/2, R40–R43)", () => {
     expect(screen.getByTestId("kalem-bos")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Malzeme ekle/ }));
     expect(screen.getByLabelText("Malzeme adedi 1").value).toBe("1");
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    expect(screen.getByLabelText("İşlem adı 1").value).toBe("");
-    expect(screen.getByLabelText("İşlem tutarı 1").value).toBe("");
-    expect(screen.getByLabelText("İşlem tedarikçisi 1").value).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    expect(screen.getByLabelText("Alım ya da işlem adı 1").value).toBe("");
+    expect(screen.getByLabelText("Alım / işlem tutarı 1").value).toBe("");
+    expect(screen.getByLabelText("Alım / işlem tedarikçisi 1").value).toBe("");
     fireEvent.click(screen.getByRole("button", { name: "Malzeme kalemini kaldır 1" }));
     expect(screen.queryByTestId("malzeme-kalemi")).toBeNull();
     expect(screen.getAllByTestId("islem-kalemi")).toHaveLength(1);
@@ -159,7 +164,7 @@ describe("Spec 0135: kalem listesi (R7–R11, R20/2, R40–R43)", () => {
     const kalemler = Array.from({ length: 20 }, (_, i) => ({ tur: "islem", ad: `İş ${i}`, tutar: 1 }));
     render(<Katalog p0={[{ id: 50, ad: "Dolu", models: [], maliyetKalemleri: kalemler }]} />); duzenle("Dolu");
     expect(screen.getByRole("button", { name: /Malzeme ekle/ }).disabled).toBe(true);
-    expect(screen.getByRole("button", { name: /İşlem ekle/ }).disabled).toBe(true);
+    expect(screen.getByRole("button", { name: /Alım\/işlem ekle/ }).disabled).toBe(true);
     expect(screen.getByTestId("kalem-sinir").textContent).toBe(KALEM_SINIRI_NEDENI);
   });
   it("AC-18: kalemler eklendikleri sırada; sıralama düğmesi yok", () => {
@@ -180,7 +185,7 @@ describe("Spec 0135: kalem listesi (R7–R11, R20/2, R40–R43)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Malzeme kalemini kaldır 1" }));
     expect(screen.queryByTestId("kalem-karma-ibaresi")).toBeNull();
     expect(screen.queryByTestId("kalem-gecmis-ibaresi")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "İşlem kalemini kaldır 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Alım / işlem kalemini kaldır 1" }));
     expect(screen.queryByTestId("kalem-zam-ibaresi")).toBeNull();
     expect(screen.queryByTestId("kalem-toplam")).toBeNull();
   });
@@ -188,7 +193,7 @@ describe("Spec 0135: kalem listesi (R7–R11, R20/2, R40–R43)", () => {
     render(<Katalog malzemeler={[]} tedarikciler={[]} />); ekleAc(); kip("Hesapla");
     expect(screen.getByRole("button", { name: /Malzeme ekle/ }).disabled).toBe(true);
     expect(screen.getByTestId("malzeme-katalog-bos").textContent).toBe(MALZEME_KATALOG_BOS_NEDENI);
-    expect(screen.getByRole("button", { name: /İşlem ekle/ }).disabled).toBe(false);
+    expect(screen.getByRole("button", { name: /Alım\/işlem ekle/ }).disabled).toBe(false);
   });
 });
 
@@ -213,18 +218,18 @@ describe("Spec 0135: malzeme ve işlem kalemi (R12–R21, R44)", () => {
   });
   it("AC-32 / AC-33 / AC-34: işlem kaleminin alanları; adı boş kalem reddedilir, tedarikçisiz kalem kaydedilir", () => {
     render(<Katalog />); ekleAc(); yaz("Yedek Parça Adı (TR)", "Yeni"); kip("Hesapla");
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    for (const ad of ["İşlem adı 1", "İşlem tedarikçisi 1", "İşlem tutarı 1"]) expect(screen.getByLabelText(ad)).toBeTruthy();
-    yaz("İşlem tutarı 1", "15"); kaydet();
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    for (const ad of ["Alım ya da işlem adı 1", "Alım / işlem tedarikçisi 1", "Alım / işlem tutarı 1"]) expect(screen.getByLabelText(ad)).toBeTruthy();
+    yaz("Alım / işlem tutarı 1", "15"); kaydet();
     expect(screen.getByText(ISLEM_AD_HATASI)).toBeTruthy();
     expect(durum.parts.find(p => p.ad === "Yeni")).toBeUndefined();
-    yaz("İşlem adı 1", "Büküm"); kaydet();
+    yaz("Alım ya da işlem adı 1", "Büküm"); kaydet();
     expect(durum.parts.find(p => p.ad === "Yeni").maliyetKalemleri).toEqual([{ tur: "islem", ad: "Büküm", tutar: 15 }]);
   });
   it("AC-35 / R19: tutarı boş işlem kalemi uyarır, kayıt yapılır ve toplama girmez", () => {
     render(<Katalog />); duzenle("Gövde");
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    yaz("İşlem adı 2", "Kaplama");
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    yaz("Alım ya da işlem adı 2", "Kaplama");
     // Uyarı canlıdır (kayıttan önce görünür), toplama girmez, kaydı engellemez.
     expect(screen.getByTestId("islem-tutar-uyarisi").textContent).toBe(ISLEM_TUTAR_UYARISI);
     expect(screen.getByTestId("kalem-toplam-tutar").textContent).toBe(maliyetMetniKurus(birim(SACK) + 12550));
@@ -233,7 +238,7 @@ describe("Spec 0135: malzeme ve işlem kalemi (R12–R21, R44)", () => {
   });
   it("AC-103 (ekran): '2.400' tutarı belirsiz sayı olarak reddedilir, kayıt yapılmaz", () => {
     render(<Katalog />); duzenle("Gövde");
-    yaz("İşlem tutarı 1", "2.400"); kaydet();
+    yaz("Alım / işlem tutarı 1", "2.400"); kaydet();
     expect(screen.getByText(BELIRSIZ_HATASI)).toBeTruthy();
     // Hatalı kalem varken de kaynak ibaresi kalemleri söyler (kayıt yapılmadı, toplam girilmedi).
     expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(kalemKaynakMetni({ malzeme: 1, islem: 1 }));
@@ -241,42 +246,42 @@ describe("Spec 0135: malzeme ve işlem kalemi (R12–R21, R44)", () => {
   });
   it("Karar 38 (triyaj bulgu 1): kalem hatası satırına bağlıdır; hatalı satır kaldırılınca hata geçerli komşu satıra kaymaz", () => {
     render(<Katalog />); duzenle("Gövde");
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    yaz("İşlem adı 2", "Kaplama"); yaz("İşlem tutarı 2", "10");
-    yaz("İşlem tutarı 1", "2.400"); kaydet();
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    yaz("Alım ya da işlem adı 2", "Kaplama"); yaz("Alım / işlem tutarı 2", "10");
+    yaz("Alım / işlem tutarı 1", "2.400"); kaydet();
     expect(within(screen.getAllByTestId("islem-kalemi")[0]).getByText(BELIRSIZ_HATASI)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "İşlem kalemini kaldır 1" }));
-    expect(screen.getByLabelText("İşlem adı 1").value).toBe("Kaplama");
+    fireEvent.click(screen.getByRole("button", { name: "Alım / işlem kalemini kaldır 1" }));
+    expect(screen.getByLabelText("Alım ya da işlem adı 1").value).toBe("Kaplama");
     expect(screen.queryByText(BELIRSIZ_HATASI)).toBeNull();
   });
   it("AC-101 / AC-102: tedarikçi seçicisi bütün canlı tedarikçileri listeler, işaretliler başta; aynı tedarikçi iki kalemde kaydedilir", () => {
     render(<Katalog />); duzenle("Gövde");
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    const secenekler = [...screen.getByLabelText("İşlem tedarikçisi 2").options].map(o => o.textContent);
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    const secenekler = [...screen.getByLabelText("Alım / işlem tedarikçisi 2").options].map(o => o.textContent);
     expect(secenekler.slice(1)).toEqual(["Hammadde A.Ş.", "Lazer Ltd.", "Kaplama Sanayi"]);
-    yaz("İşlem adı 2", "Büküm"); yaz("İşlem tedarikçisi 2", "32"); yaz("İşlem tutarı 2", "10"); kaydet();
+    yaz("Alım ya da işlem adı 2", "Büküm"); yaz("Alım / işlem tedarikçisi 2", "32"); yaz("Alım / işlem tutarı 2", "10"); kaydet();
     expect(kayit(44).maliyetKalemleri.filter(k => k.tedarikciId === 32)).toHaveLength(2);
     expect(within(satir("Gövde")).getByTestId("parca-maliyet").textContent.startsWith(maliyetMetniKurus(birim(SACK) + 12550 + 1000))).toBe(true);
   });
   it("AC-43 / AC-44: kırılımdan türeyen kalemin adı sabit; bulunamayan tedarikçi alanında kendi ibaresi", () => {
     render(<Katalog />); duzenle("Kapak");
-    expect(screen.getByLabelText("İşlem adı 2").value).toBe(TURETILEN_KALEM_ADI);
-    const s = screen.getByLabelText("İşlem tedarikçisi 2");
+    expect(screen.getByLabelText("Alım ya da işlem adı 2").value).toBe(TURETILEN_KALEM_ADI);
+    const s = screen.getByLabelText("Alım / işlem tedarikçisi 2");
     expect(s.selectedOptions[0].textContent).toBe(BULUNAMAYAN_TEDARIKCI);
   });
   it("AC-39 / AC-93 / AC-112: gider yetkisi olmayan kullanıcıda tedarikçi seçicisi yok, ad ve tutar görünür; hiçbir tedarikçi adı geçmez; ibare aynı", () => {
     render(<Katalog giderYetki={false} />);
     expect(within(satir("Kapak")).getByTestId("parca-maliyet-kalem").textContent).toBe(kalemKaynakMetni({ malzeme: 0, islem: 2 }));
     duzenle("Kapak");
-    expect(screen.queryByLabelText("İşlem tedarikçisi 1")).toBeNull();
-    expect(screen.getByLabelText("İşlem adı 1")).toBeTruthy();
-    expect(screen.getByLabelText("İşlem tutarı 1")).toBeTruthy();
+    expect(screen.queryByLabelText("Alım / işlem tedarikçisi 1")).toBeNull();
+    expect(screen.getByLabelText("Alım ya da işlem adı 1")).toBeTruthy();
+    expect(screen.getByLabelText("Alım / işlem tutarı 1")).toBeTruthy();
     expect(screen.getByTestId("maliyet-kaynagi").textContent).toBe(kalemKaynakMetni({ malzeme: 0, islem: 2 }));
     for (const t of TED) expect(document.body.textContent).not.toContain(t.ad);
   });
   it("AC-40: gider yetkisi olmayan kullanıcının kaydı işlem kalemlerinin tedarikçi bağını korur", () => {
     render(<Katalog giderYetki={false} />); duzenle("Gövde");
-    yaz("İşlem tutarı 1", "130"); kaydet();
+    yaz("Alım / işlem tutarı 1", "130"); kaydet();
     expect(kayit(44).maliyetKalemleri[1]).toEqual({ tur: "islem", ad: "Lazer kesim", tedarikciId: 32, tutar: 130 });
   });
 });
@@ -317,13 +322,14 @@ describe("Spec 0135: eski kayıtlar ve yazım (R22–R26/2)", () => {
     expect(kayit(44)).not.toHaveProperty("maliyetKalemleri");
     expect(kayit(44).maliyet).toBe(99);
   });
-  it("AC-97: elle maliyeti dolu parçaya kalem eklenip kaydedilince maliyet anahtarı da kalkar", () => {
+  // Spec 0159 ile (R2, AC-6): Hesapla'ya geçişte elle tutar ilk kalem olur; ikinci kalem eklenince ikisi birlikte yazılır.
+  it("AC-97 (spec 0159 ile): elle maliyeti dolu parçaya kalem eklenip kaydedilince maliyet anahtarı kalkar, elle tutar ilk kalemdir", () => {
     render(<Katalog />); duzenle("Pul");
-    kip("Hesapla"); fireEvent.click(screen.getByRole("button", { name: "Değiştir" }));
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    yaz("İşlem adı 1", "Taşlama"); yaz("İşlem tutarı 1", "6"); kaydet();
+    kip("Hesapla");
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    yaz("Alım ya da işlem adı 2", "Taşlama"); yaz("Alım / işlem tutarı 2", "6"); kaydet();
     expect(kayit(42)).not.toHaveProperty("maliyet");
-    expect(kayit(42).maliyetKalemleri).toEqual([{ tur: "islem", ad: "Taşlama", tutar: 6 }]);
+    expect(kayit(42).maliyetKalemleri).toEqual([{ tur: "islem", ad: ALIM_KALEMI_VARSAYILAN_ADI, tutar: 5 }, { tur: "islem", ad: "Taşlama", tutar: 6 }]);
   });
   it("AC-98 (ekran): tutarı boş tek işlem kalemi ve saklı elle maliyet: girilmedi, eski tutar ne listede ne kartta", () => {
     render(<Katalog p0={[{ id: 60, ad: "Boş kalemli", models: [], maliyet: 777, maliyetKalemleri: [{ tur: "islem", ad: "Kaplama", tutar: null }] }]} />);
@@ -347,7 +353,7 @@ describe("Spec 0135: geçerlilik tarihi (R35–R35/4, Karar 11, 12)", () => {
     render(<Katalog />); duzenle("Kaplamalı pim");
     expect(screen.getByLabelText(GECERLILIK_ETIKETI).disabled).toBe(false);
     expect(screen.getByTestId("maliyet-gecmisi")).toBeTruthy();
-    yaz("İşlem tutarı 1", "55"); yaz(GECERLILIK_ETIKETI, "2026-10-01"); kaydet();
+    yaz("Alım / işlem tutarı 1", "55"); yaz(GECERLILIK_ETIKETI, "2026-10-01"); kaydet();
     expect(kayit(45).maliyetGecmisi).toEqual([{ gecerli: "", kurus: 3000 }, { gecerli: "2026-05-01", kurus: 4000 }, { gecerli: "2026-10-01", kurus: 5500 }]);
   });
   it("AC-84 (ekleme anı): yalnız işlem kalemli parçaya malzeme kalemi eklenince tarih ve geçmiş kaybolur, ibare çıkar", () => {
@@ -376,7 +382,7 @@ describe("Spec 0135: set ile kalem (R5/2, R25/3)", () => {
     // Triyaj (bulgu 2): ekleme kartında da kalem eklenince set bölümü pasifleşir.
     render(<Katalog />); ekleAc(); kip("Hesapla");
     expect(screen.getByTestId("set-icerigi").disabled).toBe(false);
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
     expect(screen.getByTestId("set-icerigi").disabled).toBe(true);
     expect(screen.getByTestId("set-kalem-pasif").textContent).toBe(SET_KALEM_PASIF_NEDENI);
   });
@@ -394,8 +400,8 @@ describe("Spec 0135: fiyat, liste, süzgeç ve sayaç (R39–R47)", () => {
     render(<Katalog fiyatAyarlari={{ varsayilanKat: 2 }} />); ekleAc();
     fireEvent.click(within(screen.getByRole("radiogroup", { name: "Fiyat kipi" })).getByRole("radio", { name: "Maliyete bağlı" }));
     kip("Hesapla");
-    fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
-    yaz("İşlem adı 1", "Lazer"); yaz("İşlem tutarı 1", "100");
+    fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
+    yaz("Alım ya da işlem adı 1", "Lazer"); yaz("Alım / işlem tutarı 1", "100");
     expect(screen.getByLabelText("TL fiyatı (türetilen)").value).toMatch(/^200/);
   });
   it("AC-74 / AC-75 (ekran): Hesapla kipindeki parçanın hücresinde tek kalem ibaresi, kaç malzeme ve kaç işlem kalemi", () => {

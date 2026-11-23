@@ -24,7 +24,9 @@ import { finansOzetiHesapla, finansOzetiSatirlari } from "../src/components/sett
 import { PARCALAR, MALZEMELER, TEDARIKCILER, MODELLER, PART_STOCK, FIYAT_AYARLARI, M304, RAPOR_VERI, RAPOR_AYI } from "./fixtures/0138-veri.js";
 import * as V36 from "./fixtures/0136-veri.js";
 import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
-const ayikla0142v0143 = (x) => ayikla0143(ayikla0142(x));
+// Spec 0159 ile (R7/2, C7/3): kalemin ekrandaki yeni adı ("alım/işlem kalemi") iki taraftan eski ada çevrilir (kaynak ibaresi).
+import { ayiklaAd0159 } from "./fixtures/0159-ayikla.js";
+const ayikla0142v0143 = (x) => JSON.parse(ayiklaAd0159(JSON.stringify(ayikla0143(ayikla0142(x)))));
 
 const ALTIN = "tests/fixtures/0138-once.json";
 const TARIHLER = [undefined, "2026-01-15", "2026-04-15", "2026-06-15"];

@@ -4,4 +4,5 @@
 // { tur: "malzeme" }, yalnız işlem kalemi varsa eski { tur: "kirilim", n: işlem sayısı }. Metin tarafında yeni tek ibare eski
 // "Malzemeden hesaplanıyor" ibaresine çevrilir. Rakamlara dokunulmaz.
 export const kaynakEski = (k) => (k?.tur !== "kalem" ? k : k.malzeme > 0 ? { tur: "malzeme" } : { tur: "kirilim", n: k.islem });
-export const kalemMetniEski = (metin) => String(metin).replace(/Maliyet kalemlerinden hesaplanıyor \(\d+ malzeme, 0 işlem kalemi\)/g, "Malzemeden hesaplanıyor");
+// Spec 0159 ile (R7/2): kalemin ekrandaki adı "alım/işlem kalemi" oldu; desen iki adı da kabul eder.
+export const kalemMetniEski = (metin) => String(metin).replace(/Maliyet kalemlerinden hesaplanıyor \(\d+ malzeme, 0 (?:alım\/)?işlem kalemi\)/g, "Malzemeden hesaplanıyor");

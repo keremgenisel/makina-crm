@@ -56,11 +56,18 @@ describe("Spec 0158 kıyas", () => {
     const a = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
     const { ayiklaMotor0158, ayiklaBelge0158, ayiklaExcel0158 } = await ayiklaYukle();
     expect(ayiklaMotor0158(s.motor)).toEqual(a.motor);
-    expect(s.pencere).toBe(a.pencere);
-    expect(s.liste).toBe(a.liste);
+    // Spec 0159 ile (R7/2, C7/3): ekranın yeniden adlandırılan metinleri (seçicinin nedeni, kalem ibareleri) eski adlara çevrilir.
+    const { ayiklaAd0159 } = await import(/* @vite-ignore */ "../fixtures/0159-ayikla.js");
+    expect(ayiklaAd0159(s.pencere)).toBe(a.pencere);
+    expect(ayiklaAd0159(s.liste)).toBe(a.liste);
     expect(ayiklaExcel0158(s.excel)).toEqual(a.excel);
     for (const ad of Object.keys(a.belge)) for (const n of ["fiyatsiz", "fiyatli"]) expect(ayiklaBelge0158(s.belge[ad][n]), `${ad}/${n}`).toBe(a.belge[ad][n]);
-    expect(s.adetli).toEqual(a.adetli); // AC-38
+    // Spec 0159 ile (R6/2, R6/3, P3, P4): yalnız işlem kalemli parçanın ("Fason parça") hazır satırı artık tutar taşımaz; o satırın
+    // bölümünün toplamları bilinçli fark olarak iki taraftan düşer, öteki her şey (kesitler, işlem toplamı, adetler) birebir.
+    const r62 = S.siparisIhtiyaci(DOLU.veri(), { tedarikciOdakli: true }).tedarikciBolumleri.belge.filter(b => b.satirlar.some(x => x.bedelKalemde)).map(b => b.ad);
+    expect(r62).toEqual(["Aksu CNC"]);
+    const dus = (x) => ({ ...x, bolumler: x.bolumler.map(b => (r62.includes(b.ad) ? (({ toplamlar, toplamTLK, tutarsizSayi, ...g }) => g)(b) : b)) });
+    expect(dus(s.adetli)).toEqual(dus(a.adetli)); // AC-38
     // Ayıklama gerçekten bir şey geri alıyor: dokunulmamış veride en az bir tabloda Ölçü sütunu düşmüş olmalı.
     expect(Object.values(s.belge).some(b => b.fiyatsiz !== a.belge.odakli.fiyatsiz || b.fiyatsiz.split("<th").length < a.belge.odakli.fiyatsiz.split("<th").length)).toBe(true);
   });

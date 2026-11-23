@@ -95,7 +95,8 @@ describe("Spec 0138: tarihli okuma ve geçmiş kapısı (R12, R12/2)", () => {
     expect(MALZEME_GECMIS_IBARESI).toMatch(/malzemenin kendi fiyat geçmişinden/);
   });
   it("AC-4 (R23): boş durum metni 0135'in metniyle birebir (5d2f4285'ten); Katalogdan sözü yok", () => {
-    expect(KALEM_BOS_METNI).toBe("Henüz maliyet kalemi yok. Malzeme kalemi malzemeden hesaplanır, işlem kalemi (lazer kesim, büküm, kaplama, işçilik) sabit tutardır.");
+    // Spec 0159 ile (R7/2): metin kalemin yeni adıyla güncellendi; 0138'in iddiası (katalogdan söz yok) aynen.
+    expect(KALEM_BOS_METNI).toBe("Henüz maliyet kalemi yok. Malzeme kalemi malzemeden hesaplanır, alım ya da işlem kalemi (parça alımı, lazer kesim, kaplama, nakliye) sabit tutardır.");
     expect(KALEM_BOS_METNI).not.toMatch(/Katalog/);
   });
 });

@@ -5,7 +5,7 @@ import { Icon, Field, Input, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, 
 import { HataMetni, Ipucu, UyariSeridi, BolumBasligi, Segment } from "./tasarim";
 import { malzemeKatalogu } from "../lib/malzeme";
 import { islemePayiParcaKatla } from "../../electron/islemePayiGocuSaf.mjs"; // spec 0141 A-R1/3 (karar 31)
-import { MaliyetKalemleriAlani, MALIYET_KIP_HESAPLA, MALIYET_KIP_ELLE, KIP_ONAY_ELLE, KIP_ONAY_HESAPLA } from "./MaliyetKalemleriAlani";
+import { MaliyetKalemleriAlani, MALIYET_KIP_HESAPLA, MALIYET_KIP_ELLE, KIP_ONAY_ELLE } from "./MaliyetKalemleriAlani";
 import { maliyetKalemleriOf, kalemVarMi, kalemTedarikciIdleri, ESKI_MALIYET_ANAHTARLARI, KALEM_ANAHTARI, KALEM_TUR } from "../lib/maliyetKalemleri";
 import { FiyatListesiDugmesi } from "./rapor/FiyatListesiDugmesi";
 import { SiparisPenceresi, SIPARIS_DUGMESI } from "./stock/SiparisPenceresi";
@@ -22,7 +22,7 @@ import { KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, maliyetGirildiMi,
   kalemlerDogrula, kalemleriFormu, formKalemOzeti, maliyetGecmisiYaz, gecmisliKayit, maliyetGecmisiSatirlari, GECERLILIK_ETIKETI, GECERLILIK_IPUCU, GECMIS_BASLIGI,
   setKatalogu, setMi, setOzeti, parcaKullanimi, parcaKullanimMetni, setKullanimAdlari, setIcerigiDogrula, setIcerigiFormu, setBilesenAdi, setBilesenAdaylari, setEksikMetni, setFiyatsizMetni,
   SET_BOLUM_BASLIGI, SET_BOS_METNI, SET_IPUCU, SET_BILESEN_ARA, SET_TOPLAM_ETIKETI, SET_FIYAT_ETIKETI, SET_FIYAT_DUGMESI,
-  SET_KALEM_PASIF_NEDENI, elleMaliyetDogrula, elleMaliyetNedeni, ELLE_PB_ANAHTARLARI, parcaMaliyetListeMetni } from "../lib/urunAgaci";
+  SET_KALEM_PASIF_NEDENI, elleMaliyetDogrula, elleMaliyetNedeni, ELLE_PB_ANAHTARLARI, parcaMaliyetListeMetni, kipGecisi, MALIYET_KUR_EKSIK_NEDENI } from "../lib/urunAgaci";
 import { KUR_KAYNAK, kurGirdisi } from "../lib/doviz"; // bileşenler kur ilkellerini doviz.js üzerinden alır (0153 taraması)
 import { useBugun } from "../hooks/useBugun";
 import { SetRozeti } from "./stock/SetRozeti";
@@ -335,7 +335,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   //   3. Öteki hâllerde (Elle sabit kipi, boş liste, set): kalem alanı ve eski iki alan yazılmaz, elle tutar formdan.
   // Set içeriği dolu kayıtta kalem alanı hiç yazılmaz (R25/3). Geçici iki alan (`_maliyetKipi`, `_maliyetDokunuldu`) kayda girmez.
   const hazirlaTemel = (kayit, eski = null) => {
-    const { maliyet, maliyetParaBirimi, maliyetKuru, _maliyetKurKaynak, maliyetKalemleri, _maliyetKipi, _maliyetDokunuldu, maliyetGecmisi: _formKopyasi, setIcerigi, fiyatKipi, karKati, tedarikciId, ...geri0 } = kayit;
+    const { maliyet, maliyetParaBirimi, maliyetKuru, _maliyetKurKaynak, _tasimaNotu, _tasimaKurEksik, maliyetKalemleri, _maliyetKipi, _maliyetDokunuldu, maliyetGecmisi: _formKopyasi, setIcerigi, fiyatKipi, karKati, tedarikciId, ...geri0 } = kayit;
     // Spec 0140 A-R1/2, A-R2, C6 (AC-3, AC-4): Ana tedarikçi her çağrıda silinir, yalnız doluyken yazılır. Yetkisiz kullanıcıda alan
     // çizilmez ve form kaydın değerini taşıdığı için bağ aynen geri yazılır.
     const ted = tedarikciId == null ? "" : String(tedarikciId).trim();
@@ -550,11 +550,12 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
   // Spec 0135 R4, R26/2 (AC-7–AC-10, Karar 37): kip değişince öteki kipin alanları temizlenir; temizlenecek alanda veri varsa onay
   // sorulur ve vazgeçilirse kip değişmez. Kip, kalem eklenmesi, silinmesi ve kalem alanı değişimi "dokunuldu" işaretini kurar.
   const [kipOnay, setKipOnay] = useState(null);
-  const kipUygula = (yaz, hedef) => yaz(p => ({ ...p, _maliyetKipi: hedef, _maliyetDokunuldu: true, ...(hedef === MALIYET_KIP_ELLE ? { maliyetKalemleri: [] } : { maliyet: "", maliyetParaBirimi: "", maliyetKuru: "", _maliyetKurKaynak: KUR_KAYNAK.ELLE }) })); // spec 0157 R1/3
+  // Spec 0159 C3/2 (AC-48): kip geçişi yalnız saf kuraldan (`kipGecisi`); yama güncelleyicinin içinde en güncel formla kurulur.
+  const kipUygula = (yaz, hedef) => yaz(p => ({ ...p, ...(kipGecisi(p, hedef)?.yama || {}) }));
   const kipDegistir = (f, yaz) => (hedef) => {
-    if (hedef === f._maliyetKipi) return;
-    const dolu = f._maliyetKipi === MALIYET_KIP_HESAPLA ? (f.maliyetKalemleri || []).length > 0 : String(f.maliyet ?? "").trim() !== "";
-    if (dolu) setKipOnay({ hedef, yaz }); else kipUygula(yaz, hedef);
+    const k = kipGecisi(f, hedef);
+    if (!k) return;
+    if (k.onay) setKipOnay({ hedef, yaz }); else kipUygula(yaz, hedef);
   };
   const kalemYaz = (yaz) => (v) => yaz(p => ({ ...p, maliyetKalemleri: v, _maliyetDokunuldu: true }));
   // Spec 0157: elle maliyetin para birimi ve kurunun yaması (`DovizAlani`).
@@ -673,7 +674,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       {/* Spec 0135 R4 (AC-7–AC-9): kip değişiminin onayı; vazgeçilirse kip değişmez. Karar 37: kartın Escape'i bu açıkken çalışmaz. */}
       {kipOnay && (
         <ConfirmDialog title="Maliyet kipini değiştir" icon="check" confirmLabel="Değiştir" confirmIcon="check" confirmVariant="primary"
-          message={<span data-testid="kip-onay">{kipOnay.hedef === MALIYET_KIP_ELLE ? KIP_ONAY_ELLE : KIP_ONAY_HESAPLA}</span>}
+          message={<span data-testid="kip-onay">{KIP_ONAY_ELLE}</span>} /* spec 0159 R2/7: onay yalnız Hesapla → Elle sabitte */
           onCancel={() => setKipOnay(null)} onConfirm={() => { kipUygula(kipOnay.yaz, kipOnay.hedef); setKipOnay(null); }} />
       )}
       {confirmDel && (
@@ -726,7 +727,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <MaliyetKalemleriAlani kip={form._maliyetKipi} onKip={kipDegistir(form, setForm)} kalemler={form.maliyetKalemleri || []} setKalemler={kalemYaz(setForm)}
             elleDeger={form.maliyet} setElleDeger={v => setForm(p => ({ ...p, maliyet: v }))} elleHata={hatalar.maliyet}
             ellePb={form.maliyetParaBirimi || ""} elleKur={form.maliyetKuru || ""} elleKurKaynak={form._maliyetKurKaynak} setElleDoviz={elleDovizYaz(setForm)} elleKurHata={hatalar.maliyetKur} ellePbHata={hatalar.maliyetPb}
-            elleK={canliEkle?.elleK} rates={rates} ratesErr={ratesErr}
+            elleK={canliEkle?.elleK} rates={rates} ratesErr={ratesErr} tasimaNotu={!!form._tasimaNotu} tasimaNedeni={form._tasimaKurEksik && !String(form.maliyetKuru ?? "").trim() ? MALIYET_KUR_EKSIK_NEDENI : null}
             malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler} tedarikciler={tedarikciler} giderYetki={giderYetki}
             hatalar={hatalar.kalem} uyarilar={canliEkle?.kalem?.uyarilar} ozet={canliEkle?.kalem} set={!!canliEkle?.set} kaynak={canliEkle?.kaynak} />
           {giderYetki && <AnaTedarikciAlani value={form.tedarikciId} onChange={v => setForm(p => ({ ...p, tedarikciId: v }))} tedarikciler={tedarikciler} />}
@@ -787,7 +788,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
           <MaliyetKalemleriAlani kip={editForm._maliyetKipi} onKip={kipDegistir(editForm, setEditForm)} kalemler={editForm.maliyetKalemleri || []} setKalemler={kalemYaz(setEditForm)}
             elleDeger={editForm.maliyet} setElleDeger={v => setEditForm(p => ({ ...p, maliyet: v }))} elleHata={hatalar.maliyet}
             ellePb={editForm.maliyetParaBirimi || ""} elleKur={editForm.maliyetKuru || ""} elleKurKaynak={editForm._maliyetKurKaynak} setElleDoviz={elleDovizYaz(setEditForm)} elleKurHata={hatalar.maliyetKur} ellePbHata={hatalar.maliyetPb} kayitNedeni={elleMaliyetNedeni(parts.find(x => x.id === editId)?.maliyetParaBirimi, kurGirdisi(parts.find(x => x.id === editId)?.maliyetKuru))}
-            elleK={canliDuzenle?.elleK} rates={rates} ratesErr={ratesErr}
+            elleK={canliDuzenle?.elleK} rates={rates} ratesErr={ratesErr} tasimaNotu={!!editForm._tasimaNotu} tasimaNedeni={editForm._tasimaKurEksik && !String(editForm.maliyetKuru ?? "").trim() ? MALIYET_KUR_EKSIK_NEDENI : null}
             malzemeler={malzemeler} hamMalzemeler={rawMalzemeler || malzemeler} tedarikciler={tedarikciler} giderYetki={giderYetki}
             hatalar={hatalar.kalem} uyarilar={canliDuzenle?.kalem?.uyarilar} ozet={canliDuzenle?.kalem} set={!!canliDuzenle?.set} kaynak={canliDuzenle?.kaynak} />
           {giderYetki && <AnaTedarikciAlani value={editForm.tedarikciId} onChange={v => setEditForm(p => ({ ...p, tedarikciId: v }))} tedarikciler={tedarikciler} />}

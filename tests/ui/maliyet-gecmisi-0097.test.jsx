@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Spec 0097: parça kartında geçerlilik tarihi ve maliyet geçmişi (ekran). Gerçek Settings (Katalog › Parça/Yedek Parça; panele
 // çöpü süzülmüş dizi, setter'a tam dizi, App gibi). Saat Europe/Istanbul'da 01:30'a sabit: UTC'de gün hâlâ dündür (R5/4).
+// Spec 0159 ile (R1/3): kalemin erişilebilir adları ve ekleme düğmesi yeni adla ("Alım ya da işlem adı", "Alım / işlem tutarı", "Alım/işlem ekle").
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within, act } from "@testing-library/react";
@@ -149,7 +150,7 @@ describe("Spec 0097: parça kartı (R5–R8)", () => {
     expect(screen.queryByLabelText("Alış maliyeti")).toBeNull();
     expect(screen.getByLabelText(GECERLILIK_ETIKETI).disabled).toBe(false);
     expect(screen.getByTestId("kalem-toplam")).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("İşlem tutarı 1"), { target: { value: "200" } });
+    fireEvent.change(screen.getByLabelText("Alım / işlem tutarı 1"), { target: { value: "200" } });
     tarih("2026-04-01");
     kaydet();
     expect(kayit(9).maliyetGecmisi).toEqual([{ gecerli: "", kurus: 17000 }, { gecerli: "2026-04-01", kurus: 20000 }]);

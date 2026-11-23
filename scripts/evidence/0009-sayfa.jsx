@@ -45,6 +45,7 @@ import * as V142 from "../../tests/fixtures/0142-veri.js";
 import * as V144 from "../../tests/fixtures/0144-veri.js";
 import * as V158 from "../../tests/fixtures/0158-dolu.js";
 import * as V157 from "../../tests/fixtures/0157-veri.js";
+import * as V159 from "../../tests/fixtures/0159-veri.js";
 import * as V150 from "../../tests/fixtures/0150-veri.js";
 import * as V148 from "../../tests/fixtures/0148-veri.js";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
@@ -898,6 +899,14 @@ function SiparisBelgesi0157() {
   const html = siparisRaporuHtml0142(r, { bugun: V157.BUGUN, factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi", fiyatli: true });
   return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
+// Spec 0159: alım ve işlem kalemi; elle maliyetli dış yay (Ana tedarikçili) ve iki tedarikçili dış yay sipariş belgesi.
+const DIS_YAY_ELLE_0159 = { id: 70, ad: "Dış yay", models: [], maliyet: 40, tedarikciId: 22 };
+function SiparisBelgesi0159() {
+  const parts = [V159.DIS_YAY];
+  const r = siparisIhtiyaci0142(V159.veri({ parts, modeller: [{ model: "AK", defaultParcalar: [{ partId: "50", miktar: 1 }] }], satirlar: [{ model: "AK", adet: "1" }] }), { tedarikciOdakli: true });
+  const html = siparisRaporuHtml0142(r, { bugun: V159.BUGUN, factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi", fiyatli: true });
+  return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
+}
 const PARCA_0158 = [V158.PARCALAR.find(p => p.id === 4), V158.PARCALAR.find(p => p.id === 1), V158.PARCALAR.find(p => p.id === 5)];
 // Spec 0150: sipariş listesinde işlem kalemleri; veri tests/fixtures/0150-veri.js (motor, belge ve ekran testleriyle aynı).
 const PARTI_0150 = [{ id: 901, ad: "Güz Partisi", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100: 10 } }];
@@ -1134,7 +1143,7 @@ const EKRANLAR = {
   "katalog-parca-0096-bos": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Alış maliyeti (KDV"]],
   "katalog-parca-0097-gecmis": [ayarlar("yedekparca", { parts: PARCA_0097, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Maliyet geçmişi"]],
   "katalog-parca-0097-hata": [ayarlar("yedekparca", { parts: PARCA_0097, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Alış maliyeti=20", "doldur:Geçerlilik tarihi=2026-05-15", "Kaydet", "kaydir:Alış maliyeti"]],
-  "katalog-parca-0096-hata": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:İşlem tutarı 1=-5", "Kaydet", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0096-hata": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Alım / işlem tutarı 1=-5", "Kaydet", "kaydir:Maliyet kalemleri"]],
   "ayarlar-yedekparca-0096-suzgec": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["sec:Tedarikçi süzgeci=32"]],
   "ayarlar-yedekparca-0096-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), []],
   "katalog-parca-yeni": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["~Parça/Yedek Parça Ekle"]],
@@ -1193,21 +1202,21 @@ const EKRANLAR = {
   // Spec 0099: kırılım toplamının yeri. Yetkisiz kullanıcının penceresi (C3, değişmez), iki tedarikçili ekleme penceresi (AC-19)
   // ve kırılımsız elle maliyetli parçanın penceresi (R10, değişmez).
   "katalog-parca-0099-yetkisiz": [ayarlar("yedekparca", { parts: PARCA_0096, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), ["baslik:Düzenle", "kaydir:Alış maliyeti (KDV"]],
-  "katalog-parca-0099-ekle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "dugme:Hesapla", "dugme:İşlem ekle", "doldur:İşlem adı 1=Lazer kesim", "sec:İşlem tedarikçisi 1=31", "doldur:İşlem tutarı 1=7000", "dugme:İşlem ekle", "doldur:İşlem adı 2=Büküm", "sec:İşlem tedarikçisi 2=32", "doldur:İşlem tutarı 2=9000", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0099-ekle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "dugme:Hesapla", "dugme:Alım/işlem ekle", "doldur:Alım ya da işlem adı 1=Lazer kesim", "sec:Alım / işlem tedarikçisi 1=31", "doldur:Alım / işlem tutarı 1=7000", "dugme:Alım/işlem ekle", "doldur:Alım ya da işlem adı 2=Büküm", "sec:Alım / işlem tedarikçisi 2=32", "doldur:Alım / işlem tutarı 2=9000", "kaydir:Maliyet kalemleri"]],
   "katalog-parca-0099-elle": [ayarlar("yedekparca", { parts: PARCA_0087, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Alış maliyeti (KDV"]],
   // Spec 0135: tek kip seçimi, çok malzeme ve işlem kalemi (kart: iki kip, boş ve dolu liste, hata, set pasifliği, yetkisiz, onay,
   // yalnız işlem kalemli parçanın geçmişi; liste: tek kalem ibaresi).
   "katalog-parca-0135-elle": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "kaydir:Alış maliyeti (KDV"]],
   "katalog-parca-0135-hesapla-bos": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "dugme:Hesapla", "kaydir:Alış maliyeti (KDV"]],
   "katalog-parca-0135-dolu": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Maliyet kalemleri"]],
-  "katalog-parca-0135-hata": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Malzeme adedi 1=0", "doldur:İşlem tutarı 1=2.400", "doldur:İşlem adı 2=", "Kaydet", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0135-hata": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "doldur:Malzeme adedi 1=0", "doldur:Alım / işlem tutarı 1=2.400", "doldur:Alım ya da işlem adı 2=", "Kaydet", "kaydir:Maliyet kalemleri"]],
   "katalog-parca-0135-set-pasif": [ayarlar("yedekparca", { parts: PARCA_0121_SET.filter(p => p.id === 20), standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Alış maliyeti (KDV"]],
   "katalog-parca-0135-yetkisiz": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096, giderYetki: false }), ["baslik:Düzenle", "kaydir:Maliyet kalemleri"]],
   "katalog-parca-0135-onay": [ayarlar("yedekparca", { parts: [GOVDE_0135], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "dugme:Elle sabit"]],
   "katalog-parca-0135-yalniz-islem": [ayarlar("yedekparca", { parts: [PIM_0135], standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Geçerlilik tarihi"]],
   // Spec 0138: işlem kalemi tek çeşit (çeşit seçicisi yok); başka bir bilgisayarda 0137 ile eklenmiş katalog kalemi (R2/2) neden yazar.
-  "katalog-parca-0138-islem": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "dugme:Hesapla", "dugme:İşlem ekle", "kaydir:Maliyet kalemleri"]],
-  "katalog-parca-0138-eski": [ayarlar("yedekparca", { parts: [ESKI_0138], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:İşlem kalemi 1"]],
+  "katalog-parca-0138-islem": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["~Parça/Yedek Parça Ekle", "dugme:Hesapla", "dugme:Alım/işlem ekle", "kaydir:Maliyet kalemleri"]],
+  "katalog-parca-0138-eski": [ayarlar("yedekparca", { parts: [ESKI_0138], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), ["baslik:Düzenle", "kaydir:Alım / işlem kalemi 1"]],
   "katalog-parca-0138-liste": [ayarlar("yedekparca", { parts: [...PARCA_0135, ESKI_0138], malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), []],
   "katalog-parca-0135-liste": [ayarlar("yedekparca", { parts: PARCA_0135, malzemeler: MALZEME_0132, standardModels: MODELLER_0087, tedarikciler: TED_0096 }), []],
   "katalog-model-ekmaliyet": [ayarlar("models", { parts: PARCA_0087, standardModels: MODELLER_0087 }), ["baslik:Düzenle", "kaydir:Ek Maliyet Kalemleri"]],
@@ -1340,6 +1349,10 @@ const EKRANLAR = {
   "ayarlar-yedekparca-0157-liste": [ayarlar("yedekparca", { parts: LISTE_0157 }), []],
   "siparis-0157-belge-fiyatli": [<SiparisBelgesi0157 />, ["kaydir:Aksu CNC"]],
   "siparis-0157-belge-islem": [<SiparisBelgesi0157 />, ["kaydir:Fason Kaplama"]],
+  // Spec 0159 (K5): iki kipte parça kartı ve iki tedarikçili sipariş belgesi.
+  "katalog-parca-0159-elle": [ayarlar("yedekparca", { parts: [DIS_YAY_ELLE_0159], tedarikciler: V159.TEDARIKCILER }), ["baslik:Düzenle", "kaydir:Alış maliyeti (KDV"]],
+  "katalog-parca-0159-donusum": [ayarlar("yedekparca", { parts: [DIS_YAY_ELLE_0159], tedarikciler: V159.TEDARIKCILER }), ["baslik:Düzenle", "dugme:Hesapla", "kaydir:Maliyet kalemleri"]],
+  "siparis-0159-belge": [<SiparisBelgesi0159 />, []],
   "siparis-0140-bos": [<SiparisEkrani partiler={[]} />, []],
   "siparis-0140-model-hatali": [<SiparisEkrani partiler={[{ ...PARTI_0134[0], planlananAdetler: { AK100_DS: 70, YOK_MODEL: 4 } }]} />, []],
   "siparis-0140-silinmis-tedarikci": [<SiparisEkrani malzemeler={[{ ...F34.P304, tedarikciId: 99 }]} hamTed={[...F34.TED, { id: 99, ad: "Eski Döküm", deletedAt: "2026-09-01" }]} />, ["kaydir:Eski Döküm"]],

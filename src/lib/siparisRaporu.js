@@ -22,6 +22,7 @@ import {
   pbTutarMetni, pbToplamMetni, tlMetni, boySiparisMetni, parcaAdetMetni, SIPARIS_FARK_BASLIGI,
   ISLEMLER_BASLIGI, ISLEMLER_TOPLAMI, GENEL_TOPLAM, sutunGenislikleri,
 } from "./siparisIhtiyaci";
+import { ALIM_ISLEM } from "./urunAgaci";
 
 // PAY_FARK_NOTU 2026-11-15'ten beri basılmıyor; kıyas (0144-ayikla) ve "basılmaz" testleri buradan okur, bilerek dışa veriliyor.
 export { PAY_FARK_NOTU, FIYATLI_NUSHA, sutunGenislikleri };
@@ -41,7 +42,7 @@ export const BELGE_SUTUNLARI = Object.freeze({
   parca: ["Parça", "Kod", OLCU_BASLIGI, "Hammadde", "Cins", "Sipariş adedi"],
   toplam: ["Malzeme", "Kesit", "Alınacak"],
   fiyat: ["Tutar"], // spec 0144 B-R3: yalnız fiyatlı nüshada; 2026-11-15 isteğiyle "Birim fiyat" sütunu kalktı
-  islem: ["Parça", "İşlem", "Sipariş adedi"], // spec 0150 R2/2: komşu parça tablosuyla aynı "Sipariş adedi"
+  islem: ["Parça", ALIM_ISLEM.SUTUN, "Sipariş adedi"], // spec 0150 R2/2; spec 0159 R1/2 (AC-12, AC-42): sütun adı satın almayı da kapsar
 });
 // Spec 0144 AC-43: iki hâl tek yerden.
 export const belgeSutunlari = ({ fiyatli = false } = {}) => ({
@@ -171,7 +172,8 @@ export const siparisRaporuHtml = (sonuc, { bugun, factory = null, partiAd = null
   const modeller = detayTablo("Model satırları", ["Model", "Makina adedi"], sonuc.satirlar.filter(s => !s.hata).map(s => [esc(s.model), n(s.adet)]), ["left", "right"]);
   const bolumler = basilacakBolumler(sonuc).map((b, i) => `<div class="siparis-bolum"${i > 0 ? " style=\"page-break-before:always;break-before:page;\"" : ""}>
   ${bolum(`${esc(b.ad)} · ${girdi}`, "", [grupTablolari(b, fiyatli), islemTablosu(b, fiyatli), siparisFarkNotu(b),
-    fiyatli && b.satirlar.length ? bolumToplami(b) : "", // spec 0150 R9/3, R9/4: parça satırı olmayan bölümde bölüm toplamı yok
+    // spec 0150 R9/3, R9/4: parça satırı olmayan bölümde bölüm toplamı yok; spec 0159 P1: bedeli kalemlerde olan satır sayılmaz
+    fiyatli && b.satirlar.some(x => !x.bedelKalemde) ? bolumToplami(b) : "",
     fiyatli ? genelToplam(b) : "", // spec 0158 R26/2, R32
     b.kapaliKesitVar ? not(esc(KESIT_KAPALI_UYARISI)) : "",
     // Triyaj (qa2 bulgu 2): hücreye basılan elle boy adedi de notu doğurur.

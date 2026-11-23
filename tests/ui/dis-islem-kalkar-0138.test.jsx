@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 // Spec 0138: dış işlem kataloğu kalkar (ekran). Gerçek Settings › Katalog (menü, parça kartı, malzeme paneli), SettingsTrash,
 // Tedarikler ve SettingsBackup. Motor ve taramalar: tests/dis-islem-kalkar-0138.test.js.
+// Spec 0159 ile (R1/3): kalemin erişilebilir adları ve ekleme düğmesi yeni adla ("Alım ya da işlem adı", "Alım / işlem tutarı", "Alım/işlem ekle").
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
@@ -51,7 +52,7 @@ const yaz = (ad, v) => fireEvent.change(screen.getByLabelText(ad), { target: { v
 const kaydet = () => fireEvent.click(screen.getByRole("button", { name: /^Kaydet$/ }));
 const kayit = (id) => durum.parts.find(p => p.id === id);
 const hesapla = () => fireEvent.click(within(screen.getByRole("radiogroup", { name: "Maliyet kipi" })).getByRole("radio", { name: "Hesapla" }));
-const islemEkle = () => fireEvent.click(screen.getByRole("button", { name: /İşlem ekle/ }));
+const islemEkle = () => fireEvent.click(screen.getByRole("button", { name: /Alım\/işlem ekle/ }));
 
 describe("Spec 0138: panel ve parça kartı (R1, R2, R10, R12/2, R23)", () => {
   it("AC-1: Ayarlar › Katalog listesinde Dış İşlemler yok; Malzemeler duruyor", () => {
@@ -66,10 +67,10 @@ describe("Spec 0138: panel ve parça kartı (R1, R2, R10, R12/2, R23)", () => {
     expect(screen.queryByPlaceholderText("İşlem ara...")).toBeNull();
     expect(screen.queryByTestId("katalog-islem-bilgi")).toBeNull();
     expect(screen.queryByLabelText(/İşlem miktarı/)).toBeNull();
-    expect(screen.getByLabelText("İşlem adı 1")).toBeTruthy();
-    expect(screen.getByLabelText("İşlem tutarı 1")).toBeTruthy();
-    expect(screen.getByLabelText("İşlem tedarikçisi 1")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "İşlem kalemini kaldır 1" }).className).toContain("btn--danger");
+    expect(screen.getByLabelText("Alım ya da işlem adı 1")).toBeTruthy();
+    expect(screen.getByLabelText("Alım / işlem tutarı 1")).toBeTruthy();
+    expect(screen.getByLabelText("Alım / işlem tedarikçisi 1")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Alım / işlem kalemini kaldır 1" }).className).toContain("btn--danger");
   });
   it("AC-4: kalem listesinin boş durumu 0135'in metniyle birebir", () => {
     render(<Katalog />); ekleAc(); hesapla();
@@ -78,19 +79,19 @@ describe("Spec 0138: panel ve parça kartı (R1, R2, R10, R12/2, R23)", () => {
   });
   it("AC-7 / AC-10: adı ve tutarı girilmiş, tedarikçisiz serbest kalem kaydedilir ve maliyete girer", () => {
     render(<Katalog />); ekleAc(); yaz("Yedek Parça Adı (TR)", "Yeni pul"); hesapla(); islemEkle();
-    yaz("İşlem adı 1", "Taşlama"); yaz("İşlem tutarı 1", "12,5"); kaydet();
+    yaz("Alım ya da işlem adı 1", "Taşlama"); yaz("Alım / işlem tutarı 1", "12,5"); kaydet();
     const p = durum.parts.find(x => x.ad === "Yeni pul");
     expect(p.maliyetKalemleri).toEqual([{ tur: "islem", ad: "Taşlama", tutar: 12.5 }]);
     expect(within(satir("Yeni pul")).getByText(maliyetMetniKurus(1250))).toBeTruthy();
   });
   it("AC-8: tutarı boş serbest kalem maliyete girmez ve kartta uyarısı görünür", () => {
-    render(<Katalog />); ekleAc(); yaz("Yedek Parça Adı (TR)", "Boş"); hesapla(); islemEkle(); yaz("İşlem adı 1", "Kaplama");
+    render(<Katalog />); ekleAc(); yaz("Yedek Parça Adı (TR)", "Boş"); hesapla(); islemEkle(); yaz("Alım ya da işlem adı 1", "Kaplama");
     expect(screen.getByTestId("islem-tutar-uyarisi").textContent).toBe(ISLEM_TUTAR_UYARISI);
     kaydet();
     expect(durum.parts.find(x => x.ad === "Boş").maliyetKalemleri).toEqual([{ tur: "islem", ad: "Kaplama", tutar: null }]);
   });
   it("AC-9: adı boş işlem kalemi kaydı engeller, neden satırın altında", () => {
-    render(<Katalog />); ekleAc(); yaz("Yedek Parça Adı (TR)", "Adsız"); hesapla(); islemEkle(); yaz("İşlem tutarı 1", "5"); kaydet();
+    render(<Katalog />); ekleAc(); yaz("Yedek Parça Adı (TR)", "Adsız"); hesapla(); islemEkle(); yaz("Alım / işlem tutarı 1", "5"); kaydet();
     expect(durum.parts.some(x => x.ad === "Adsız")).toBe(false);
     expect(within(screen.getByTestId("islem-kalemi")).getByText(ISLEM_AD_HATASI)).toBeTruthy();
   });
@@ -114,20 +115,20 @@ describe("Spec 0138: eski biçimli kalem (R2/2, AC-37–AC-39)", () => {
   it("AC-38: kartta eski kalemin nedeni görünür, tutar alanı doldurulabilir; tutar girilince neden kalkar", () => {
     render(<Katalog />); duzenle("Eski katalog");
     expect(screen.getByTestId("eski-katalog-kalemi").textContent).toBe(ESKI_KATALOG_KALEMI_NEDENI);
-    const tutar = screen.getByLabelText("İşlem tutarı 1");
+    const tutar = screen.getByLabelText("Alım / işlem tutarı 1");
     expect(tutar.disabled).toBe(false);
-    yaz("İşlem tutarı 1", "30");
+    yaz("Alım / işlem tutarı 1", "30");
     expect(screen.queryByTestId("eski-katalog-kalemi")).toBeNull();
   });
   it("AC-39: düzenleme formunda ad 'Dış işlem'; kayıt engellenmez ve serbest kalem islemId taşımaz", () => {
     render(<Katalog />); duzenle("Eski katalog");
-    expect(screen.getByLabelText("İşlem adı 1").value).toBe("Dış işlem");
-    yaz("İşlem tutarı 1", "30"); kaydet();
+    expect(screen.getByLabelText("Alım ya da işlem adı 1").value).toBe("Dış işlem");
+    yaz("Alım / işlem tutarı 1", "30"); kaydet();
     expect(kayit(46).maliyetKalemleri[1]).toEqual({ tur: "islem", ad: "Dış işlem", tutar: 30 });
   });
   it("Triyaj bulgu 1 (AC-39 tamamlayıcı): maliyet bölümüne dokunulup eski kalemin tutarı boş bırakılınca kalem eski biçimiyle yazılır, maliyet girilmedi kalır", () => {
     render(<Katalog />); duzenle("Eski katalog");
-    yaz("İşlem adı 1", "Isıl işlem"); // maliyet bölümüne dokunuldu, tutar boş
+    yaz("Alım ya da işlem adı 1", "Isıl işlem"); // maliyet bölümüne dokunuldu, tutar boş
     expect(screen.getByTestId("eski-katalog-kalemi").textContent).toBe(ESKI_KATALOG_KALEMI_NEDENI);
     kaydet();
     expect(kayit(46).maliyetKalemleri).toEqual(PARCALAR[2].maliyetKalemleri);

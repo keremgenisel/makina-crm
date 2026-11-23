@@ -9671,6 +9671,11 @@
         "rapor": "docs/evidence/0157-taban-piksel-raporu.json",
         "ekran": "ayarlar-yedekparca-0157-liste",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0159-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0159-elle",
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartTypeManager.jsx": [
@@ -14605,6 +14610,16 @@
       {
         "rapor": "docs/evidence/0157-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0157-sapma",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0159-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0159-elle",
+        "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0159-taban-piksel-raporu.json",
+        "ekran": "katalog-parca-0159-donusum",
         "beklenen": "ayni"
       }
     ],
