@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-11-23) |
+| **Durum** | Tamamlandı (commit `d5a45926`, 2026-11-23) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Sipariş belgesi (`siparisRaporu.js`), sipariş motoru (`siparisIhtiyaci.js`), sipariş penceresi (`stock/SiparisPenceresi.jsx`), Ayarlar › Katalog › Parça/Yedek Parça (kart ve liste), genel arama, parça Excel aktarması, `parts` tablosu |

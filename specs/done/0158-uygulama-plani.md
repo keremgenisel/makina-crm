@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0158-siparis-belgesi-paketi.md` (Onaylandı, 2026-11-23) |
+| **Spec** | `specs/done/0158-siparis-belgesi-paketi.md` (Onaylandı, 2026-11-23) |
 | **Onay** | Takım Yöneticisi, 2026-11-23 ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula") |
 | **Dal** | `feat/0158-siparis-belgesi` (main `3363e1d2` üstünde) |
-| **Durum** | Uygulandı; commit ve kapanış Takım Yöneticisinin talimatını bekliyor |
+| **Durum** | Tamamlandı (commit `d5a45926`) |
 
 ## 1. Dosyalar
 
