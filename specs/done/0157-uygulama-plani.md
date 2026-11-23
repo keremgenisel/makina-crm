@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0157-doviz-parca-maliyeti.md` (Onaylandı, 2026-11-23) |
+| **Spec** | `specs/done/0157-doviz-parca-maliyeti.md` (Onaylandı, 2026-11-23) |
 | **Onay** | Takım Yöneticisi, 2026-11-23 ("tum onerilerini kabul ediyorum, spece isle, plani yaz ve uygula") |
 | **Dal** | `feat/0157-doviz-parca-maliyeti` (main `6a2b7b59` üstünde) |
-| **Durum** | Uygulandı; commit ve kapanış Takım Yöneticisinin talimatını bekliyor |
+| **Durum** | Tamamlandı (commit `0b88d517`) |
 
 ## 1. Dosyalar
 

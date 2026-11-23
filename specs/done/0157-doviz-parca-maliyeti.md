@@ -2,12 +2,12 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-23) |
+| **Durum** | Tamamlandı (commit `0b88d517`, 2026-11-23) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Etkilenen alanlar** | Ayarlar › Katalog › Parça/Yedek Parça (parça kartı, liste, `MaliyetKalemleriAlani.jsx`), `Settings.jsx` (günün kuru prop zinciri), saf motorlar `urunAgaci.js` / `malzeme.js` / `kur.js` / `gider.js` (tek çarpım) / `siparisIhtiyaci.js`, parça Excel aktarması, Makina Maliyeti (Model Maliyetleri, Parti Hesabı), sipariş listesi ve belgesi, `parts` tablosu |
 | **Bağımlı spec'ler** | 0087 (parça maliyeti), 0097 (tarihli maliyet geçmişi), 0132 (malzemenin döviz fiyatı), 0135 (maliyet kalemleri), 0133 (satış fiyatı maliyetten türer), 0136 (donan parti maliyeti), 0152 ve 0153 (döviz alanları, donmuş kur), 0144 ve 0150 (sipariş belgesinin tutarları), 0158 (Excel'in 12 ve 13. sütunu) |
-| **Revizyon** | 3 (2026-11-23 plan turu: P1–P10; plan `specs/0157-uygulama-plani.md`) |
+| **Revizyon** | 3 (2026-11-23 plan turu: P1–P10; plan `specs/done/0157-uygulama-plani.md`) |
 | **QA turu** | 2026-11-23: 25 bulgu (4 Bloklayıcı / 15 Önemli / 6 Küçük), hepsi onaylandı |
 | **Düzeltilen iddialar** | 1 (Excel şablonunun sütun sayısı) |
 
