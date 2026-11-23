@@ -20,6 +20,7 @@ import { PARCALAR, MALZEMELER } from "./fixtures/0133-veri.js";
 import { kalemMetniEski } from "./fixtures/0135-ayikla.js"; // spec 0135 ile: kaynak ibaresi kalem diline geçti (R39)
 
 vi.mock("../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
+import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
 const ALTIN = "tests/fixtures/0133-once.json";
@@ -101,7 +102,7 @@ const uret = () => {
   return {
     katalog: katalogSatirlari(), stok: stokMetni(), evrak, servis, yedek,
     setToplami: setOzeti(PARCALAR[3].setIcerigi, katalog, undefined, mk),
-    disaAktarma: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, katalog, mk)),
+    disaAktarma: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, katalog, mk).slice(0, 11)),
   };
 };
 

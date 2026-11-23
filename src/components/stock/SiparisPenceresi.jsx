@@ -6,11 +6,12 @@ import { BosDurum, UyariSeridi, Ipucu, HataMetni, KartBolum, CokluSecim } from "
 import { partiSecenekAdi, panoVarsayilanParti } from "../../lib/stokDurumu";
 import { uretimdeSuzulmusModeller } from "../../lib/uretimdekiModeller";
 import { useBugun } from "../../hooks/useBugun";
+import { parcaBilgiDegerleri } from "../../lib/parcaBilgi";
 import {
   siparisIhtiyaci, partidenSatirlar, hataliSatirMetni, KIT_BOS_METNI, KESISIM_UYARISI, STOK_UYARISI, PARTI_PLAN_YOK,
   adetMetni as sayi, OLCU_BASLIGI, OLCU_GIRILMEMIS, tedarikciSecenekleri, bosDurumNedeni,
   TEDARIKCI_BELIRTILMEMIS, anasizParcaMetni, anasizMalzemeliMetni, HAMMADDE_SUZGEC_NEDENI, GECICI_DUZENLEME,
-  satirsizSecilenMetni, duzenlemeSayiMetni, SILINMIS_TEDARIKCI_BELGE, ISLEMLER_BASLIGI, tedarikcisizIslemMetni,
+  satirsizSecilenMetni, duzenlemeSayiMetni, SILINMIS_TEDARIKCI_BELGE, ISLEMLER_BASLIGI, tedarikcisizIslemMetni, KESIM_IBARESI,
 } from "../../lib/siparisIhtiyaci";
 
 // Spec 0140 B-R1/2, B-R5, B-R6, C4: tedarikçi odaklı, düzenlenebilir sipariş listesi. TEK dosya, iki giriş noktası (Ayarlar › Katalog ›
@@ -39,8 +40,12 @@ const kucuk = { fontSize: 11, color: "var(--n500, #64748b)" };
 const elleIsaret = { fontSize: 10.5, fontWeight: 800, color: "var(--orTx, #c2410c)", marginLeft: 6 };
 const girdiStil = { width: 96 };
 // Spec 0142 B-R4/2, B-R5/2 (AC-41, AC-43): ölçüler ayrı satırlarda, noktalamasız; eksik ölçünün ibaresi parçanın adının altında.
-const OlcuHucresi = ({ olculer = [] }) => <td style={{ ...td, textAlign: "left", whiteSpace: "normal" }} data-testid="siparis-olcu-hucresi">
-  {olculer.filter(o => !o.eksik).map((o, i) => <div key={i} data-testid="siparis-olcu">{o.metin}</div>)}</td>;
+// Spec 0158 R8/2, R15/2 (AC-64): pencerenin Ölçü hücresi belgeyle aynı motor alanını (`olcuSatirlari`) basar.
+const OlcuHucresi = ({ satirlar = [] }) => <td style={{ ...td, textAlign: "left", whiteSpace: "normal" }} data-testid="siparis-olcu-hucresi">
+  {satirlar.map((m, i) => <div key={i} data-testid="siparis-olcu">{m}</div>)}</td>;
+// Spec 0158 R15, R15/2, P17 (AC-24): dolu hammadde ve cins parçanın adının altında; ölçü zaten Ölçü sütununda motorun tek alanından
+// (R8: malzeme kalemli parçada kesit; elle girilmiş eski ölçü adın altında da gösterilmez). Sütun sayısı değişmez.
+const BilgiSatiri = ({ x }) => { const d = parcaBilgiDegerleri({ hammaddeAdi: x.hammaddeAdi, cins: x.cins }); return d.length ? <div data-testid="siparis-parca-bilgi" style={kucuk}>{d.join(" · ")}</div> : null; };
 const OlcuEksik = ({ olculer = [] }) => (olculer.some(o => o.eksik) ? <div data-testid="siparis-olcu-eksik" style={kucuk}>{OLCU_GIRILMEMIS}</div> : null);
 
 const NOOP = () => {};
@@ -87,10 +92,10 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
         <th style={th}>Sipariş etme</th></tr></thead>
       <tbody>{rows.map(x => (
         <tr key={x.partId} data-testid="siparis-hazir-satiri" data-kapali={x.kapali ? "1" : "0"} style={x.kapali ? { opacity: 0.55 } : undefined}>
-          <td style={{ ...td, textAlign: "left", whiteSpace: "normal" }}><b>{x.ad}</b>{x.duzenlendi && <span data-testid="siparis-duzenlendi" style={elleIsaret}>DÜZENLENDİ</span>}<OlcuEksik olculer={x.olculer} />
+          <td style={{ ...td, textAlign: "left", whiteSpace: "normal" }}><b>{x.ad}</b>{x.duzenlendi && <span data-testid="siparis-duzenlendi" style={elleIsaret}>DÜZENLENDİ</span>}<OlcuEksik olculer={x.olculer} /><BilgiSatiri x={x} />
             {x.belgeYeri && <div data-testid="siparis-belge-yeri" style={kucuk}>{x.belgeYeri}</div>}
             {(x.kesitNedenleri || []).map(n => <div key={n} data-testid="siparis-kesit-neden" style={kucuk}>{n}</div>)}</td>
-          <OlcuHucresi olculer={x.olculer} />
+          <OlcuHucresi satirlar={x.olcuSatirlari} />
           <td style={td}>{sayi(x.ihtiyac)}</td><td style={td}>{sayi(x.stok)}</td>
           <td style={td} data-testid="siparis-oneri">{sayi(x.oneri)}</td>
           <td style={td}><div style={girdiStil}><Input value={parcaAdet(x.partId, x.oneri)} inputMode="numeric" onChange={e => parcaYaz(x.partId, "adet", e.target.value)} aria-label={`${x.ad} sipariş adedi`} disabled={x.kapali} /></div>
@@ -189,6 +194,8 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
                 <span data-testid="siparis-duzen-sayilari" style={{ fontSize: 12.5, fontWeight: 700, color: duzenVar ? "var(--orTx, #c2410c)" : "var(--n500, #64748b)" }}>{duzenlemeSayiMetni(tb.duzen)}</span>
                 <span data-testid="siparis-gecici" style={kucuk}>{GECICI_DUZENLEME}</span>
               </div>
+              {/* Spec 0158 R25, P15 (AC-37): belgede kesilecek adet yazılacaksa ekran bunu söyler (ekran parça adedini gösterir). */}
+              {tb.kesimVar && <Ipucu><span data-testid="siparis-kesim-ibaresi">{KESIM_IBARESI}</span></Ipucu>}
               {/* 2026-11-15 kararı: ekranda malzeme bölümü kalmadığı için "çift sayım değildir" cümlesi kalktı. */}
             </div>
             {bosNeden && <BosDurum testId="bos-siparis-tedarikci" baslik="Sipariş edilecek satır yok" metin={bosNeden} />}

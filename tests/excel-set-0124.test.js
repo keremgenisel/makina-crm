@@ -27,11 +27,11 @@ const kayit = (r, ad) => r.parts.find(p => p.ad === ad);
 
 describe("Spec 0124 A: sütun ve biçim (R1–R4)", () => {
   it("AC-1 / AC-14: şablon on bir sütun, on birincisi 'Set İçeriği', örnek satırda biçim örneği", () => {
-    expect(H).toHaveLength(11);
+    expect(H).toHaveLength(16); // spec 0158 ile (R35/2): 12–13 spec 0157'nin, 14–16 bilgi alanları
     expect(H[10]).toBe("Set İçeriği");
     expect(H[10]).toBe(SET_ICERIGI_BASLIGI);
     expect(H[9]).toBe("Maliyet (TL, KDV hariç)");
-    expect(PARCA_SABLON_ORNEGI).toHaveLength(11);
+    expect(PARCA_SABLON_ORNEGI).toHaveLength(16); // spec 0158 ile
     expect(PARCA_SABLON_ORNEGI[10]).toBe(SET_ICERIGI_ORNEGI);
     // Kod tarama #53 (js/redos): parça adı `[^;]+` ile sınırlanır; `.+` ayraçla birlikte üstel geri izlemeye açıktı.
     expect(SET_ICERIGI_ORNEGI).toMatch(/^[^;]+ x \d+(?:; [^;]+ x \d+)*$/);

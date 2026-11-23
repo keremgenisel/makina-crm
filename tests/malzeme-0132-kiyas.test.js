@@ -9,6 +9,7 @@ import { parcaMaliyetKurus, parcaMaliyetMetni, maliyetKaynagi, maliyetGirildiMi,
 import { kaynakEski } from "./fixtures/0135-ayikla.js"; // spec 0135 ile: kaynak kalem diline geçti (R39)
 import { modelMaliyetleri } from "../src/lib/makinaStandartMaliyet";
 import { MALZEMELER, PARCALAR, MODELLER, TARIHLER } from "./fixtures/0132-veri";
+import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
 
 const DOSYA = "tests/fixtures/0132-once.json";
 const malzemeHaritasi = new Map(MALZEMELER.map(m => [String(m.id), m]));
@@ -19,7 +20,7 @@ const simdi = () => {
     metin: PARCALAR.map(p => parcaMaliyetMetni(p, undefined, kat, malzemeHaritasi)),
     kaynak: PARCALAR.map(p => kaynakEski(maliyetKaynagi(p, undefined, kat, malzemeHaritasi))),
     girildi: PARCALAR.map(p => maliyetGirildiMi(p, undefined, kat, malzemeHaritasi)),
-    disa: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, kat, malzemeHaritasi)),
+    disa: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, kat, malzemeHaritasi).slice(0, 11)),
     modeller: modelMaliyetleri({ ...MODELLER, parts: PARCALAR, malzemeler: MALZEMELER }, 12345),
   }));
 };

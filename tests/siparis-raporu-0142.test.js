@@ -22,8 +22,12 @@ describe("Spec 0142 A: belgeden kalkanlar", () => {
   it("AC-1 / AC-2: İhtiyaç ve Stok başlıkları yok", () => { expect(h).not.toContain("İhtiyaç"); expect(h).not.toContain(">Stok<"); });
   it("AC-3: parça tablosunda Kesit başlığı yok; başlıklar birebir Parça · Ölçü · Sipariş adedi", () => {
     // Spec 0147 ile: bölümde birden çok parça tablosu var; her birinin başlıkları birebir aynı.
+    // Spec 0158 ile (R10, C9/2): bütün satırlarında boş kalan Ölçü sütunu o grup tablosunda çizilmez (hazır parçalar tablosu).
     for (const ad of ["Alfa Çelik", "Beta Plastik", "Gama Boru", "Delta Hırdavat"]) {
-      for (const t of tablolar(bolumHtml(h, ad)).filter(x => basliklar(x)[0] === "Parça")) expect(basliklar(t)).toEqual(["Parça", "Ölçü", "Sipariş adedi"]);
+      for (const t of tablolar(bolumHtml(h, ad)).filter(x => basliklar(x)[0] === "Parça")) {
+        expect(basliklar(t)).not.toContain("Kesit");
+        expect([["Parça", "Ölçü", "Sipariş adedi"], ["Parça", "Sipariş adedi"]]).toContainEqual(basliklar(t));
+      }
     }
   });
   it("AC-4 / AC-6: para başlığı ve bölüm başlığında tutar yok", () => {
@@ -42,7 +46,7 @@ describe("Spec 0142 B: belgenin yeni düzeni", () => {
     for (const ad of ["Alfa Çelik", "Beta Plastik", "Gama Boru", "Delta Hırdavat"]) {
       expect(tablolar(bolumHtml(h, ad)).filter(t => basliklar(t)[0] === "Parça")).toHaveLength(belge.find(b => b.ad === ad).gruplar.length);
     }
-    expect(BELGE_SUTUNLARI.parca).toEqual(["Parça", "Ölçü", "Sipariş adedi"]);
+    expect(BELGE_SUTUNLARI.parca).toEqual(["Parça", "Kod", "Ölçü", "Hammadde", "Cins", "Sipariş adedi"]); // spec 0158 ile (R7/2)
     expect(bolumHtml(h, "Delta Hırdavat")).toContain(S.HAZIR_PARCALAR_BASLIGI);
   });
   // Spec 0144 ile (A-R1, A-R1/3): malzeme satırı artık kesidi Ölçü hücresine, o parçanın payını Sipariş adedi hücresine yazar.
@@ -54,7 +58,8 @@ describe("Spec 0142 B: belgenin yeni düzeni", () => {
   });
   it("AC-9 / AC-10: hazır parçanın ölçü hücresi boş, altında malzeme satırı yok", () => {
     const { r, alt } = parcaSatiri(h, "Delta Hırdavat", "Elle");
-    expect(r[1]).toBe(""); expect(alt?.[0] || "").not.toContain(`${MALZEME_ETIKETI} · `);
+    // Spec 0158 ile (R10, C9/2): ölçüsüz hazır parçalar tablosunda Ölçü sütunu yok; satır parça ve sipariş adediyle kalır (R11).
+    expect(r).toHaveLength(2); expect(r[1]).toMatch(/^\d+$/); expect(alt?.[0] || "").not.toContain(`${MALZEME_ETIKETI} · `);
   });
   it("AC-11 / AC-12: aynı çubuktan kesilenler yan yana, hazır parçalar sonda", () => {
     const ad = satirlar(parcaTablosu(h, "Alfa Çelik")).map(satirAdi).filter(Boolean); // malzeme satırlarının adı boş
@@ -117,7 +122,7 @@ describe("Spec 0142 F: bölümleme, süzgeç ve ölçü hücresi (belge)", () =>
     const modeller = [{ model: "AK100_DS", defaultParcalar: parts.map(p => ({ partId: String(p.id), miktar: 1 })) }];
     const d = html(sonuc({ parts, modeller }));
     const { r, alt } = parcaSatiri(d, "Delta Hırdavat", "Boş set");
-    expect(r[1]).toBe(""); expect(alt?.[0] || "").not.toContain(`${MALZEME_ETIKETI} · `);
+    expect(r).toHaveLength(2); expect(alt?.[0] || "").not.toContain(`${MALZEME_ETIKETI} · `); // spec 0158 ile: Ölçü sütunu çizilmez
   });
   it("AC-43: iki ölçülü parçada ölçüler alt alta (`<br>`), aralarında noktalama yok", () => {
     expect(parcaSatiri(h, "Alfa Çelik", "Aynı kesit farklı boy").r[1]).toBe("Ø62 × 50 mm<br>Ø62 × 75 mm");

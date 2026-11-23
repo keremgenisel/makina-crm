@@ -7,6 +7,7 @@ import * as R from "../src/lib/siparisRaporu";
 import { SENARYOLAR, BUGUN, FACTORY } from "./fixtures/0144-veri.js";
 import { ayikla0144, MALZEME_SATIRI, TOPLAM_TABLOSU } from "./fixtures/0144-ayikla.js";
 import { ayikla0147 } from "./fixtures/0147-ayikla.js";
+import { ayiklaBelge0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P10): yeni sütun kuralları ve kesilecek adet geri alınır
 
 const DOSYA = "tests/fixtures/0144-belge-once.json";
 const uret = () => Object.fromEntries(Object.entries(SENARYOLAR()).map(([ad, [v, sec, ops]]) =>
@@ -19,7 +20,7 @@ describe("Spec 0144 kıyas (C4)", () => {
     const altin = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
     const not = R.PAY_FARK_NOTU;
     // Spec 0147 ile: grup başına tablo, mm ve hammaddeye bölünme ayıklanır (satırlar ölçü başına dörtlülere açılıp sıralanır, C3).
-    for (const ad of Object.keys(altin)) expect(ayikla0147(ayikla0144(s[ad], not))).toBe(ayikla0147(ayikla0144(altin[ad])));
+    for (const ad of Object.keys(altin)) expect(ayikla0147(ayikla0144(ayiklaBelge0158(s[ad]), not))).toBe(ayikla0147(ayikla0144(altin[ad])));
   });
   it("2026-11-15 isteğiyle: yeni belgede malzeme satırı ve toplam tablosu yok; ayıklama bunları altından düşer", () => {
     const s = uret(); const altin = JSON.parse(fs.readFileSync(DOSYA, "utf8"));

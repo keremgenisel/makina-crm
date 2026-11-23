@@ -23,7 +23,14 @@ export const detayTablo = (baslik, basliklar, satirlar, hizalar = []) => {
     if (!satirlar || !satirlar.length) return "";
     const hiza = (i) => hizalar[i] || "left";
     const th = basliklar.map((h, i) => `<th style="text-align:${hiza(i)};padding:4px 8px 4px 0;font-size:9px;color:#94a3b8;font-weight:700;border-bottom:1px solid #cbd5e1;">${h}</th>`).join("");
-    const tr = satirlar.map(hucreler => `<tr>${hucreler.map((c, i) => `<td style="text-align:${hiza(i)};padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid #f1f5f9;">${c ?? "—"}</td>`).join("")}</tr>`).join("");
+    // Spec 0158 triyaj (bulgu 1): hücre düz metin ya da `{ h, rowspan, sutun, ic }` nesnesidir. Nesne hücre birden çok satırı kaplar
+    // (`rowspan`), hizasını kendi sütunundan alır (`sutun`; devam satırında konum kayar) ve iç satırda alt çizgi çizmez (`ic`).
+    // Düz metin hücrenin çıktısı birebir eskisidir (faaliyet raporu altını).
+    const td = (c, i) => {
+      const o = c !== null && typeof c === "object" ? c : { h: c };
+      return `<td${o.rowspan > 1 ? ` rowspan="${o.rowspan}"` : ""} style="text-align:${hiza(o.sutun ?? i)};padding:3px 8px 3px 0;font-size:10.5px;border-bottom:1px solid ${o.ic ? "transparent" : "#f1f5f9"};">${o.h ?? "—"}</td>`;
+    };
+    const tr = satirlar.map(hucreler => `<tr>${hucreler.map(td).join("")}</tr>`).join("");
     return `${altBaslik(baslik)}<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
   };
 

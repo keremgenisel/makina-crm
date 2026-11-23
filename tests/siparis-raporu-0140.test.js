@@ -27,7 +27,9 @@ describe("Spec 0140 E: belge", () => {
   it("AC-44 / AC-45 / AC-90 / AC-16 (spec 0142 ile): sütunlar tek listeden; para sütunu hiçbir seçenekte basılmaz", () => {
     for (const secenek of [{ paraGoster: true }, { paraGoster: false }, {}]) {
       const h = html(sonuc(), secenek);
-      for (const s of BELGE_SUTUNLARI.parca) expect(h, s).toContain(s); // 2026-11-15 isteğiyle: toplam tablosu basılmaz
+      // Spec 0158 ile (R10): Kod, Hammadde ve Cins yalnız dolu oldukları tabloda çizilir; bu veride hiçbiri dolu değil.
+      for (const s of BELGE_SUTUNLARI.parca.filter(x => !["Kod", "Hammadde", "Cins"].includes(x))) expect(h, s).toContain(s); // 2026-11-15 isteğiyle: toplam tablosu basılmaz
+      for (const s of ["Hammadde", "Cins"]) expect(h, s).not.toContain(`>${s}</th>`);
       expect(h).not.toContain(TOPLAM_BASLIGI);
       for (const s of ["Birim maliyet", "Birim fiyat", "Tutar"]) expect(h, s).not.toContain(s);
       expect(h).not.toMatch(/\d,\d{2} (TL|\$|€|₺)/);

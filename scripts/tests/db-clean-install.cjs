@@ -184,6 +184,14 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
     && b.customModels.find(m => m.model === "OZEL")?.ekMaliyetler?.[0]?.tutar === 145.6);
 }
 
+// Spec 0158 AC-55: temiz kurulumda parçanın bilgi alanları ilk oturumda yazılır.
+{
+  let h = null;
+  try { dbmod.writeBlobToDb({ parts: [{ id: 42, ad: "Cıvata", models: [], olcu: "M8 × 40", hammaddeAdi: "Paslanmaz", cins: "DIN 933" }] }); } catch (e) { h = e; }
+  const p = dbmod.readBlobFromDb().parts.find(x => x.id === 42);
+  check("spec 0158 AC-55: temiz kurulumda bilgi sütunları var ve yazıldı", h === null && p?.olcu === "M8 × 40" && p.hammaddeAdi === "Paslanmaz" && p.cins === "DIN 933");
+}
+
 // Spec 0096: temiz kurulumda tedarikçinin hammadde işareti ve parçanın hammadde kırılımı ilk oturumda yazılır.
 {
   let h = null;

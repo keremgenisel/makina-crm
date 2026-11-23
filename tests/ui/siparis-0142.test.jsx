@@ -40,7 +40,7 @@ describe("Spec 0142 D: pencere", () => {
     expect(screen.queryByTestId("siparis-parca-tablosu")).toBeNull();
     const h = ths(within(bolum("Beta Plastik")).getByTestId("siparis-hazir-tablosu"));
     expect(h).toContain("Stok"); expect(h).toContain("İhtiyaç"); expect(h[1]).toBe(S.OLCU_BASLIGI);
-    expect(BELGE_SUTUNLARI.parca[1]).toBe(S.OLCU_BASLIGI);
+    expect(BELGE_SUTUNLARI.parca[2]).toBe(S.OLCU_BASLIGI); // spec 0158 ile (R7/2): Kod ikinci sütun
   });
   it("AC-23 (2026-11-15 isteğiyle): stokta yeten (sipariş 0) parça ekranda satır açmaz; ölçüsü motorda durur", () => {
     render(<Pencere veri={VERI({ partStock: [{ id: 1, partId: 1, miktar: 500 }] })} />);

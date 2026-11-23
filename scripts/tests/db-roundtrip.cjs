@@ -1210,6 +1210,31 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0138 AC-33: tablo şemada duruyor (CREATE TABLE kalır, Karar 30)", /CREATE TABLE IF NOT EXISTS dis_islemler/.test(fs.readFileSync(path.join(root, "electron", "db.cjs"), "utf-8")));
 }
 
+// ── Spec 0158 C2, C2/2 (AC-55, AC-71): parçanın bilgi alanları (olcu, hammaddeAdi, cins) kendi TEXT sütunlarında; boş ya da yalnız
+// boşluklu değer NULL yazılır ve gövdeye anahtar girmez; dolu değer kırpılmış geri gelir. Alanlar boşken gövde spec öncesiyle birebir.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  check("spec 0158 AC-71: bilgi alanları boşken parçaların gövdesi spec öncesiyle birebir, üç anahtar yok", esit(dbmod.readBlobFromDb().parts, once.parts));
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  Object.assign(girdi.parts[0], { olcu: " M8 × 40 ", hammaddeAdi: "Paslanmaz A2", cins: "Cıvata" });
+  Object.assign(girdi.parts[1], { olcu: "", hammaddeAdi: "   ", cins: null });
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ps = ham.prepare(`SELECT id, olcu, hammaddeAdi, cins FROM parts`).all();
+  ham.close();
+  check("spec 0158 AC-55: üç alan TEXT sütunda, boş değer NULL", ps.find(r => r.id === 7)?.olcu === "M8 × 40" && ps.filter(r => r.id !== 7).every(r => r.olcu === null && r.hammaddeAdi === null && r.cins === null));
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  const p7 = c.parts.find(p => p.id === 7); const p8 = c.parts.find(p => p.id === 8);
+  check("spec 0158 AC-55: dolu alanlar kırpılmış geri gelir", p7?.olcu === "M8 × 40" && p7.hammaddeAdi === "Paslanmaz A2" && p7.cins === "Cıvata");
+  check("spec 0158 AC-71: boş alanın anahtarı gövdede yok", !("olcu" in p8) && !("hammaddeAdi" in p8) && !("cins" in p8));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

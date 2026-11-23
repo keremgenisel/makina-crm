@@ -9,6 +9,7 @@ import fs from "node:fs";
 import * as S from "../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml } from "../src/lib/siparisRaporu";
 import { veri, islemsiz, PARCALAR } from "./fixtures/0150-veri.js";
+import { ayiklaBelge0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P10)
 
 const DOSYA = "tests/fixtures/0150-once.json";
 const html = (r, fiyatli) => siparisRaporuHtml(r, { bugun: "2026-11-20", factory: { name: "Altuntaş" }, partiAd: "Güz", fiyatli });
@@ -36,8 +37,8 @@ describe("Spec 0150 kıyas", () => {
     const s = uret();
     if (process.env.YAZ_0150 === "1") return;
     const a = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
-    expect(s.tedarikcisiz.fiyatsiz).toBe(a.tedarikcisiz.fiyatsiz);
-    expect(s.tedarikcisiz.fiyatli).toBe(a.tedarikcisiz.fiyatli);
+    expect(ayiklaBelge0158(s.tedarikcisiz.fiyatsiz)).toBe(a.tedarikcisiz.fiyatsiz);
+    expect(ayiklaBelge0158(s.tedarikcisiz.fiyatli)).toBe(a.tedarikcisiz.fiyatli);
     expect(a.tedarikcisiz.fiyatsiz).toContain("Tedarikçisiz işlemli"); // boş geçmez
   });
 });

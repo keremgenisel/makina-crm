@@ -13,6 +13,7 @@ import { ayikla0141 } from "./fixtures/0141-ayikla.js"; // spec 0141 ile: sipari
 import { ayikla0142 } from "./fixtures/0142-ayikla.js"; // spec 0142 ile: parça satırının `olculer` alanı ve tedarikçi bölümlerinin `belge` alanı
 import { ayikla0143 } from "./fixtures/0143-ayikla.js"; // spec 0143 ile (C2/3): kalkan ve adı değişen alanlar normalleşir, sayılar dokunulmaz
 import { MALZEMELER, TABLOLU_MALZEMELER, PARCALAR, MODELLER, TARIHLER, FIYAT_AYARLARI } from "./fixtures/0139-veri";
+import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
 const ayikla0142v0143 = (x) => ayikla0143(ayikla0142(x));
 
 const DOSYA = "tests/fixtures/0139-once.json";
@@ -30,7 +31,7 @@ const ciktilar = (malzemeler) => {
     ozet: PARCALAR.flatMap(p => (p.maliyetKalemleri || []).filter(k => k.tur === "malzeme").map(k => malzemeOzeti(k, mk))),
     maliyet: PARCALAR.map(p => TARIHLER.map(t => parcaMaliyetKurus(p, t, kat, mk))),
     fiyat: PARCALAR.map(p => parcaSatisFiyati(p, "TRY", baglam)),
-    disa: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, kat, mk, FIYAT_AYARLARI)),
+    disa: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, kat, mk, FIYAT_AYARLARI).slice(0, 11)),
     modeller: mm,
     parti: partiHesabi(parti, { stock, customers: [] },
       { payK: 1000, modeller: mm, bugun: "2026-11-09", katalog: { ...MODELLER, parts: PARCALAR, malzemeler } }),

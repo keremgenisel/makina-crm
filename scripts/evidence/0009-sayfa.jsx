@@ -43,6 +43,7 @@ import { partiGenelPaylari as pgp136, partiKapanisGoruntusu as pkg136, modelMali
 import * as F34 from "../../tests/fixtures/0134-veri.js";
 import * as V142 from "../../tests/fixtures/0142-veri.js";
 import * as V144 from "../../tests/fixtures/0144-veri.js";
+import * as V158 from "../../tests/fixtures/0158-dolu.js";
 import * as V150 from "../../tests/fixtures/0150-veri.js";
 import * as V148 from "../../tests/fixtures/0148-veri.js";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
@@ -877,6 +878,14 @@ function SiparisBelgesi0144({ fiyatli = false, senaryo = "odakli" }) {
   const html = siparisRaporuHtml0142(siparisIhtiyaci0142(v, sec), { bugun: V144.BUGUN, factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi", fiyatli });
   return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
+// Spec 0158: parça bilgileri, kesilecek adet ve genel toplam; veri tests/fixtures/0158-dolu.js (motor, belge ve ekran testleriyle aynı).
+const PARTI_0158 = [{ id: 958, ad: "Güz Partisi", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK: 70 } }];
+const siparis0158 = () => <SiparisEkrani modeller={V158.kit(V158.PARCALAR)} partiler={PARTI_0158} parts={V158.PARCALAR} malzemeler={V158.MALZEMELER} tedarikciler={V158.TEDARIKCILER} stok={[]} />;
+function SiparisBelgesi0158({ fiyatli = false }) {
+  const html = siparisRaporuHtml0142(siparisIhtiyaci0142(V158.veri(), { tedarikciOdakli: true }), { bugun: V158.BUGUN, factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Güz Partisi", fiyatli });
+  return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+const PARCA_0158 = [V158.PARCALAR.find(p => p.id === 4), V158.PARCALAR.find(p => p.id === 1), V158.PARCALAR.find(p => p.id === 5)];
 // Spec 0150: sipariş listesinde işlem kalemleri; veri tests/fixtures/0150-veri.js (motor, belge ve ekran testleriyle aynı).
 const PARTI_0150 = [{ id: 901, ad: "Güz Partisi", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100: 10 } }];
 const siparis0150 = () => <SiparisEkrani modeller={V150.MODELLER} partiler={PARTI_0150} parts={V150.PARCALAR.filter(p => !p.deletedAt)} malzemeler={V150.MALZEMELER}
@@ -1300,6 +1309,14 @@ const EKRANLAR = {
   "siparis-0147-belge-fiyatli": [<SiparisBelgesi0144 fiyatli />, []],
   "siparis-0147-cok-hammadde": [<SiparisBelgesi0144 />, ["kaydir:EUR pirinç"]],
   "siparis-0147-hazir": [<SiparisBelgesi0144 />, ["kaydir:Hazır parçalar"]],
+  // Spec 0158: belge (Kod/Ölçü/Hammadde/Cins sütunları, kesilecek adet, genel toplam), pencere (bilgi alanları, ibare), parça kartı ve listesi.
+  "siparis-0158-belge-fiyatsiz": [<SiparisBelgesi0158 />, []],
+  "siparis-0158-belge-fiyatli": [<SiparisBelgesi0158 fiyatli />, []],
+  "siparis-0158-kesim": [<SiparisBelgesi0158 />, ["kaydirgenis:100_AYNA MAHRUTİ DİŞLİSİ TAKIM"]],
+  "siparis-0158-genel-toplam": [<SiparisBelgesi0158 fiyatli />, ["kaydir:Genel toplam (TL)"]],
+  "siparis-0158-pencere": [siparis0158(), []],
+  "katalog-parca-0158-kart": [ayarlar("yedekparca", { parts: PARCA_0158 }), ["baslik:Düzenle"]],
+  "ayarlar-yedekparca-0158-liste": [ayarlar("yedekparca", { parts: PARCA_0158 }), []],
   "siparis-0140-bos": [<SiparisEkrani partiler={[]} />, []],
   "siparis-0140-model-hatali": [<SiparisEkrani partiler={[{ ...PARTI_0134[0], planlananAdetler: { AK100_DS: 70, YOK_MODEL: 4 } }]} />, []],
   "siparis-0140-silinmis-tedarikci": [<SiparisEkrani malzemeler={[{ ...F34.P304, tedarikciId: 99 }]} hamTed={[...F34.TED, { id: 99, ad: "Eski Döküm", deletedAt: "2026-09-01" }]} />, ["kaydir:Eski Döküm"]],

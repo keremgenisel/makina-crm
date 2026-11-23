@@ -20,11 +20,11 @@ import { belgeAcilis, bolum, detayTablo, not, gun, sayi } from "./raporSunumu";
 import {
   OLCU_BASLIGI, OLCU_GIRILMEMIS, KESIT_KAPALI_UYARISI, PAY_FARK_NOTU, TOPLAM_KAPSAM_CUMLESI, BOLUM_TOPLAMI, FIYATLI_NUSHA, tutarsizMetni,
   pbTutarMetni, pbToplamMetni, tlMetni, boySiparisMetni, parcaAdetMetni, SIPARIS_FARK_BASLIGI,
-  ISLEMLER_BASLIGI, ISLEMLER_TOPLAMI,
+  ISLEMLER_BASLIGI, ISLEMLER_TOPLAMI, GENEL_TOPLAM, sutunGenislikleri,
 } from "./siparisIhtiyaci";
 
 // PAY_FARK_NOTU 2026-11-15'ten beri basılmıyor; kıyas (0144-ayikla) ve "basılmaz" testleri buradan okur, bilerek dışa veriliyor.
-export { PAY_FARK_NOTU, FIYATLI_NUSHA };
+export { PAY_FARK_NOTU, FIYATLI_NUSHA, sutunGenislikleri };
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const n = (x) => (x == null ? "—" : sayi(x));
@@ -37,7 +37,8 @@ export const TOPLAM_BASLIGI = "Alınacak malzeme toplamı";
 export const MALZEME_ETIKETI = "malzeme";
 // Spec 0142 B-R1, B-R7/2, B-R5/2 (AC-7, AC-45, AC-48): belgenin sütunları TEK yerde; ölçü başlığı pencereyle aynı sabit.
 export const BELGE_SUTUNLARI = Object.freeze({
-  parca: ["Parça", OLCU_BASLIGI, "Sipariş adedi"],
+  // Spec 0158 R7/2, R16/2 (AC-57, AC-76): sıra Parça · Kod · Ölçü · Hammadde · Cins · Sipariş adedi; başlık "Sipariş adedi" kalır.
+  parca: ["Parça", "Kod", OLCU_BASLIGI, "Hammadde", "Cins", "Sipariş adedi"],
   toplam: ["Malzeme", "Kesit", "Alınacak"],
   fiyat: ["Tutar"], // spec 0144 B-R3: yalnız fiyatlı nüshada; 2026-11-15 isteğiyle "Birim fiyat" sütunu kalktı
   islem: ["Parça", "İşlem", "Sipariş adedi"], // spec 0150 R2/2: komşu parça tablosuyla aynı "Sipariş adedi"
@@ -48,7 +49,20 @@ export const belgeSutunlari = ({ fiyatli = false } = {}) => ({
   toplam: fiyatli ? [...BELGE_SUTUNLARI.toplam, ...BELGE_SUTUNLARI.fiyat] : BELGE_SUTUNLARI.toplam,
   islem: fiyatli ? [...BELGE_SUTUNLARI.islem, ...BELGE_SUTUNLARI.fiyat] : BELGE_SUTUNLARI.islem,
 });
-const HIZA = ["left", "left", "right", "right"];
+const HIZA = ["left", "left", "right", "right"]; // işlem tablosu (R14: yeni sütunlar orada çizilmez)
+// Spec 0158 R10, R13, R13/2, C5 (AC-16–AC-20, AC-66, AC-67): parça tablosunun sütunları motorun grup kararından (`g.sutunlar`) süzülür;
+// hiza ve genişlik sütun adından türer (konuma bağlı değil), tablo başına uygulanır.
+const PARCA_SUTUN_ANAHTARI = Object.freeze({ Kod: "kod", [OLCU_BASLIGI]: "olcu", Hammadde: "hammaddeAdi", Cins: "cins" });
+export const parcaSutunlari = (sutunlar, fiyatli) => belgeSutunlari({ fiyatli }).parca.filter(h => !PARCA_SUTUN_ANAHTARI[h] || !!sutunlar?.[PARCA_SUTUN_ANAHTARI[h]]);
+const SAG = new Set(["Sipariş adedi", "Tutar"]);
+const hizalar = (basliklar) => basliklar.map(h => (SAG.has(h) ? "right" : "left"));
+const KISA = { Parça: "P", Kod: "K", [OLCU_BASLIGI]: "O", Hammadde: "H", Cins: "C", "Sipariş adedi": "S", Tutar: "T" };
+export const sutunSinifi = (basliklar) => `sk-${basliklar.map(h => KISA[h]).join("")}`;
+// R12, R12/2, P1, P8 (AC-21, AC-58, AC-59): altı ve üstü sütunlu tabloda punto ve dolgu bir kademe küçülür, serbest metin kırar;
+// böyle bir tablo varsa gövde kenar dolgusuyla birlikte 780 piksele genişler. Yalnız bu belgenin ek stilinde (C6).
+export const GENIS_ESIK = 6;
+export const UST_HIZA_STIL = ".siparis-bolum .siparis-ust td{vertical-align:top;}"; // R19: ölçü ve adet satırları aynı hizada
+export const GENIS_STIL = "body{max-width:748px;}.siparis-bolum .siparis-genis td{font-size:9.5px !important;padding:2px 6px 2px 0 !important;overflow-wrap:anywhere;}.siparis-bolum .siparis-genis th{padding:3px 6px 3px 0 !important;}";
 export const ELLE_ISARETI = " (elle)";
 export const ELLE_NOTU = "\"(elle)\" işaretli satırın adedi ya da kilosu öneriden değiştirildi.";
 
@@ -80,24 +94,51 @@ const parcaFiyatHucreleri = (x) => (x.malzemeKalemli
   ? [`${x.parcaTutarlari?.length ? esc(pbToplamMetni(x.parcaTutarlari)) : ""}${x.tutarNeden ? kucuk(esc(x.tutarNeden)) : ""}`]
   : [tutarHucresi(x.tutarK, "TRY", x.tutarNeden)]);
 // 2026-11-15 isteği: boydan sipariş edilen parçada hücre kesit başına "n boy (… mm)" yazar, altında parça adedi (iki nüshada da).
-const siparisHucresi = (x) => (x.boySiparisleri?.length
+// Spec 0158 R16–R22, R19/2, P2–P5: motorun `siparisSatirlari` dizisi varsa ölçü başına bir satır (boy / boş / kesilecek adet / parça
+// adedi) ve altında açıklama; yoksa 0144'ün kuralı aynen.
+const SATIR_METNI = { boy: (l) => `${esc(boySiparisMetni(l))}${l.elle ? ELLE_ISARETI : ""}`, bos: () => "", kesim: (l) => n(l.adet), parca: (l) => n(l.adet) };
+const siparisHucresi = (x) => (x.siparisSatirlari ? `${x.siparisSatirlari.map(l => SATIR_METNI[l.tur](l)).join("<br>")}${kucuk(esc(x.kesimAciklama))}` : x.boySiparisleri?.length
   ? `${x.boySiparisleri.map(b => `${esc(boySiparisMetni(b))}${b.elle ? ELLE_ISARETI : ""}`).join("<br>")}${kucuk(esc(parcaAdetMetni(x.siparis)))}`
   : x.boyKalemiVar ? esc(parcaAdetMetni(x.siparis)) : n(x.siparis)); // triyaj (qa2 bulgu 3): boy yazılamayan boydan parçada birimli
-const parcaTablo = (baslik, satirlar, fiyatli) => {
-  const rows = [];
-  for (const x of satirlar) {
-    const eksik = x.olculer.some(o => o.eksik);
-    const satir = [`${esc(x.ad)}${x.duzenlendi ? ELLE_ISARETI : ""}${eksik ? kucuk(esc(OLCU_GIRILMEMIS)) : ""}`, olcuHucresi(x.olculer), siparisHucresi(x)];
-    rows.push(fiyatli ? [...satir, ...parcaFiyatHucreleri(x)] : satir); // 2026-11-15: altında malzeme satırı yok
-  }
-  return detayTablo(esc(baslik), belgeSutunlari({ fiyatli }).parca, rows, HIZA);
+// Spec 0158 R8, R8/2 (AC-64): ölçü hücresi motorun tek alanını basar (kesit metinleri ya da parçanın kendi ölçüsü).
+const HUCRE = {
+  Parça: (x) => `${esc(x.ad)}${x.duzenlendi ? ELLE_ISARETI : ""}${x.olculer.some(o => o.eksik) ? kucuk(esc(OLCU_GIRILMEMIS)) : ""}`,
+  Kod: (x) => esc(x.kod || ""),
+  [OLCU_BASLIGI]: (x) => (x.olcuSatirlari || []).map(esc).join("<br>"),
+  Hammadde: (x) => esc(x.hammaddeAdi || ""),
+  Cins: (x) => esc(x.cins || ""),
+  "Sipariş adedi": (x) => siparisHucresi(x),
+  Tutar: (x) => parcaFiyatHucreleri(x)[0],
+};
+// Triyaj (bulgu 1, R19, AC-28, AC-61): ölçü başına satır yazan parça (motorun `siparisSatirlari`'ı, birden çok ölçü) ölçü başına bir
+// tablo satırına bölünür; Ölçü ve Sipariş adedi hücreleri satır satır, öteki hücreler `rowspan` ile tek. Hizayı tarayıcı garanti eder:
+// dar sütunda kırılan uzun ölçü metni sağdaki rakamı bir alt ölçünün karşısına kaydıramaz. Açıklama son satırın sipariş hücresinde.
+const BOLUNEN = new Set([OLCU_BASLIGI, "Sipariş adedi"]);
+const altSatirlar = (x, basliklar) => {
+  const k = x.siparisSatirlari.length;
+  const olc = x.olcuSatirlari || [];
+  return x.siparisSatirlari.map((l, j) => {
+    const son = j === k - 1;
+    const parca = (h) => (h === OLCU_BASLIGI ? esc(olc[j] ?? "") : `${SATIR_METNI[l.tur](l)}${son ? kucuk(esc(x.kesimAciklama)) : ""}`);
+    return basliklar.flatMap((h, i) => (BOLUNEN.has(h) ? [{ h: parca(h), sutun: i, ic: !son }] : j === 0 ? [{ h: HUCRE[h](x), rowspan: k, sutun: i }] : []));
+  });
+};
+const parcaTablo = (g, fiyatli) => {
+  const basliklar = parcaSutunlari(g.sutunlar, fiyatli);
+  const rows = g.satirlar.flatMap(x => (x.siparisSatirlari?.length > 1 ? altSatirlar(x, basliklar) : [basliklar.map(h => HUCRE[h](x))])); // 2026-11-15: altında malzeme satırı yok
+  const sinif = `${sutunSinifi(basliklar)}${basliklar.length >= GENIS_ESIK ? " siparis-genis" : ""}${g.ustHiza ? " siparis-ust" : ""}`;
+  return `<div class="${sinif}">${detayTablo(esc(g.baslik), basliklar, rows, hizalar(basliklar))}</div>`;
 };
 // Spec 0147: grup tabloları alt alta durduğu için sütunlar bütün gruplarda aynı genişlikte (otomatik genişlik her tabloda başka
 // hizalanıyordu). Yalnız tedarikçi bölümlerinin tabloları; MODELLER ve ortak sunum modülü etkilenmez.
-export const GRUP_TABLO_STILI = (fiyatli) => `.siparis-bolum table{table-layout:fixed;}${(fiyatli ? [26, 28, 22, 24] : [34, 38, 28])
-  .map((w, i) => `.siparis-bolum th:nth-child(${i + 1}){width:${w}%;}`).join("")}`;
+// Spec 0158 R13/2, P9 (AC-66): genişlik tablo başına, sütun kümesinin sınıfıyla; kümesi aynı tablolar aynı genişlikte.
+const kumeStili = (basliklar) => sutunGenislikleri(basliklar).map((w, i) => `.siparis-bolum .${sutunSinifi(basliklar)} th:nth-child(${i + 1}){width:${w}%;}`).join("");
+export const GRUP_TABLO_STILI = (fiyatli, kumeler = [parcaSutunlari({ olcu: true }, fiyatli)], ustHiza = false) => {
+  const essiz = [...new Map(kumeler.map(k => [k.join("|"), k])).values()];
+  return `.siparis-bolum table{table-layout:fixed;}${essiz.map(kumeStili).join("")}${essiz.some(k => k.length >= GENIS_ESIK) ? GENIS_STIL : ""}${ustHiza ? UST_HIZA_STIL : ""}`;
+};
 // Spec 0147 R1, R3: grup başına tablo (boş grup motorda yoktur).
-const grupTablolari = (b, fiyatli) => (b.gruplar || []).map(g => parcaTablo(g.baslik, g.satirlar, fiyatli)).join("");
+const grupTablolari = (b, fiyatli) => (b.gruplar || []).map(g => parcaTablo(g, fiyatli)).join("");
 // Spec 0150 R1/3, R2, R2/3, R3/2, R4, R9, R9/2, C1/2: işlemler tablosu (adet her zaman parça adedi, ad kaçışlı) ve fiyatlı nüshada
 // hemen altında kendi toplamı ve kendi tutarsız sayacı. Sıra ve tutar motordan; burada aritmetik yok (C1).
 const islemTablosu = (b, fiyatli) => {
@@ -116,20 +157,26 @@ const siparisFarkNotu = (b) => (b.siparisFarklari?.length
 // B-R7, B-R7/2, B-R7/3, B-R8: bölümün tek toplam satırı, kapsam cümlesi ve tutarsız sayacı.
 const bolumToplami = (b) => `<div data-bolum-toplami style="font-size:11px;margin-top:8px;"><b>${BOLUM_TOPLAMI}:</b> ${esc(pbToplamMetni(b.toplamlar))}${
   b.dovizVar && b.toplamTLK != null ? ` · kayıtlı kurla ${esc(tlMetni(b.toplamTLK))}` : ""}${b.tutarsizSayi ? ` · ${esc(tutarsizMetni(b.tutarsizSayi))}` : ""}</div>${not(esc(TOPLAM_KAPSAM_CUMLESI))}`;
+// Spec 0158 R26–R31, R26/2, R30/2 (AC-39–AC-46, AC-73, AC-74): bölümün sonunda kendi satırı; rakam ve sayaç motordan (C1).
+const genelToplam = (b) => (b.genelToplamK == null ? "" : `<div data-genel-toplam style="font-size:11.5px;margin-top:8px;"><b>${esc(GENEL_TOPLAM)}:</b> ${esc(tlMetni(b.genelToplamK))}${
+  b.genelTutarsizSayi ? ` · ${esc(tutarsizMetni(b.genelTutarsizSayi))}` : ""}</div>`);
 
 export const siparisRaporuHtml = (sonuc, { bugun, factory = null, partiAd = null, fiyatli = false } = {}) => {
+  const gruplar = basilacakBolumler(sonuc).flatMap(b => b.gruplar || []);
+  const kumeler = gruplar.map(g => parcaSutunlari(g.sutunlar, fiyatli));
   const girdi = partiAd ? `Üretim partisi: ${esc(partiAd)}` : "Elle girilen model satırları";
   const modeller = detayTablo("Model satırları", ["Model", "Makina adedi"], sonuc.satirlar.filter(s => !s.hata).map(s => [esc(s.model), n(s.adet)]), ["left", "right"]);
   const bolumler = basilacakBolumler(sonuc).map((b, i) => `<div class="siparis-bolum"${i > 0 ? " style=\"page-break-before:always;break-before:page;\"" : ""}>
   ${bolum(`${esc(b.ad)} · ${girdi}`, "", [grupTablolari(b, fiyatli), islemTablosu(b, fiyatli), siparisFarkNotu(b),
     fiyatli && b.satirlar.length ? bolumToplami(b) : "", // spec 0150 R9/3, R9/4: parça satırı olmayan bölümde bölüm toplamı yok
+    fiyatli ? genelToplam(b) : "", // spec 0158 R26/2, R32
     b.kapaliKesitVar ? not(esc(KESIT_KAPALI_UYARISI)) : "",
     // Triyaj (qa2 bulgu 2): hücreye basılan elle boy adedi de notu doğurur.
     // Triyaj (qa2): fark notundaki elle kesit değeri de notu doğurur.
     // Spec 0150 R3/2: elle düzenlenmiş parçanın işlem satırı da notu doğurur (işlem başka bölümde basılabilir).
     b.satirlar.some(x => x.duzenlendi || x.boySiparisleri?.some(y => y.elle)) || b.siparisFarklari?.some(f => f.elle) || b.islemler?.some(x => x.duzenlendi) ? not(esc(ELLE_NOTU)) : ""].join(""))}
 </div>`).join("");
-  return `${belgeAcilis({ title: SIPARIS_RAPOR_BASLIGI, baslik: SIPARIS_RAPOR_BASLIGI.toLocaleUpperCase("tr-TR"), ust: fiyatli ? `${girdi} · ${FIYATLI_NUSHA}` : girdi, donem: gun(bugun), factory, ekStil: GRUP_TABLO_STILI(fiyatli) })}
+  return `${belgeAcilis({ title: SIPARIS_RAPOR_BASLIGI, baslik: SIPARIS_RAPOR_BASLIGI.toLocaleUpperCase("tr-TR"), ust: fiyatli ? `${girdi} · ${FIYATLI_NUSHA}` : girdi, donem: gun(bugun), factory, ekStil: GRUP_TABLO_STILI(fiyatli, kumeler, gruplar.some(g => g.ustHiza)) })}
   ${bolum("MODELLER", "", modeller)}
   ${bolumler}
 </body></html>`;

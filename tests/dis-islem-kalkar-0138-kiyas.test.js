@@ -23,6 +23,7 @@ import { hesaplaAylikRapor } from "../src/lib/aylikRapor";
 import { finansOzetiHesapla, finansOzetiSatirlari } from "../src/components/settings/SettingsExport";
 import { PARCALAR, MALZEMELER, TEDARIKCILER, MODELLER, PART_STOCK, FIYAT_AYARLARI, M304, RAPOR_VERI, RAPOR_AYI } from "./fixtures/0138-veri.js";
 import * as V36 from "./fixtures/0136-veri.js";
+import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
 const ayikla0142v0143 = (x) => ayikla0143(ayikla0142(x));
 
 const ALTIN = "tests/fixtures/0138-once.json";
@@ -42,7 +43,7 @@ const uret = () => {
   return {
     zincir: PARCALAR.map(p => ({ id: p.id, k: TARIHLER.map(t => parcaMaliyetKurus(p, t, katalog, mk)), var: parcaMaliyetiVar(p, undefined, katalog, mk), listesiz: parcaMaliyetKurus(p) })),
     fiyat: PARCALAR.map(p => ({ id: p.id, f: parcaSatisFiyati(p, "TRY", baglam), usd: parcaSatisFiyati(p, "USD", baglam) })),
-    excel: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, katalog, mk, FIYAT_AYARLARI)),
+    excel: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, katalog, mk, FIYAT_AYARLARI).slice(0, 11)),
     iceAktarma: parcaSatirlariniCoz(satirlar, PARCALAR, 900000, "2026-06-15", MALZEMELER, FIYAT_AYARLARI),
     model: modelMaliyetleri({ ...MODELLER, parts: PARCALAR, malzemeler: MALZEMELER }, 5000),
     parti: V36.PARTILER.map(p => partiHesabi(p, v, { payK: 65000, modeller, bugun: V36.BUGUN, katalog: pkat, partiPay: pay.partiler.find(x => x.id === p.id) })),

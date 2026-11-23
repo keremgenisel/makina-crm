@@ -13,9 +13,9 @@ const ONCE = JSON.parse(readFileSync("tests/fixtures/0087-aktarma-once.json", "u
 describe("Spec 0087: parça aktarması", () => {
   // Spec 0124 ile (R1, Karar 1): maliyet artık son değil onuncu sütun, on birincisi "Set İçeriği"; konuma göre eşleme iddiası aynen.
   it("AC-29: dışa aktarmada maliyet onuncu sütun (spec 0124 ile son değil); ilk dokuz sütun spec öncesiyle aynı, maliyetsiz hücre boş", () => {
-    expect(PARCA_AKTARMA_BASLIKLARI).toHaveLength(11);
+    expect(PARCA_AKTARMA_BASLIKLARI).toHaveLength(16); // spec 0158 ile (R35/2)
     expect(PARCA_AKTARMA_BASLIKLARI[9]).toBe("Maliyet (TL, KDV hariç)");
-    expect(PARCA_SABLON_ORNEGI).toHaveLength(11);
+    expect(PARCA_SABLON_ORNEGI).toHaveLength(16); // spec 0158 ile
     const satirlar = MEVCUT_PARCALAR.map(parcaDisaAktarmaSatiri);
     expect(satirlar.map(s => s.slice(0, 9))).toEqual(ONCE.disa);
     expect(satirlar.map(s => s[9])).toEqual([120.5, "", ""]);

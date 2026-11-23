@@ -25,6 +25,7 @@ import { KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, maliyetGirildiMi, parcaMaliyetDog
   SET_KALEM_PASIF_NEDENI } from "../lib/urunAgaci";
 import { useBugun } from "../hooks/useBugun";
 import { SetRozeti } from "./stock/SetRozeti";
+import { PARCA_BILGI_ALANLARI, parcaBilgiYaz, parcaBilgiDegerleri } from "../lib/parcaBilgi";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -292,6 +293,16 @@ const AnaTedarikciAlani = ({ value, onChange, tedarikciler }) => {
     </Field></div>
   );
 };
+// Spec 0158 R1, R4 (AC-1, AC-4): kodun ardından üç serbest metin alanı; cins parça tipinden ayrı bir alandır ve etiketi karışmaz.
+const ParcaBilgiAlanlari = ({ value, onChange }) => (
+  <div data-testid="parca-bilgi-alanlari" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+    {PARCA_BILGI_ALANLARI.map(a => (
+      <Field key={a.alan} label={a.etiket}>
+        <Input value={value[a.alan] || ""} onChange={e => onChange(p => ({ ...p, [a.alan]: e.target.value }))} placeholder={a.ornek} aria-label={a.etiket} />
+      </Field>))}
+  </div>
+);
+
 export const PartManager = ({ parts = [], setParts, showToast = () => {}, setServices = null, standardModels = [], customModels = [],
   setStandardModels = null, setCustomModels = null, partTypeDefs = [], baskasiKilitli = null, rawCustomModels = null, tedarikciler = [], giderYetki = false, rawParts = null, baslangicArama = "",
   // Spec 0132 C1/2: canlı malzeme listesi; harita bir kez kurulur ve tek okuma yolunun dördüncü parametresi olur. `rawMalzemeler`
@@ -348,7 +359,8 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
       maliyetAlanlari = kalemKayit.length ? { [KALEM_ANAHTARI]: kalemKayit } : elle;
     }
     if (icerik.length) delete maliyetAlanlari[KALEM_ANAHTARI]; // R25/3 (AC-108): set dolu kayıtta kalem alanı hiç yazılmaz
-    return { ...geri, ...anaTed, ...maliyetAlanlari, ...(icerik.length ? { setIcerigi: icerik } : {}), ...(kipMaliyet ? { fiyatKipi: KIP_MALIYET } : {}), ...(kat != null ? { karKati: kat } : {}) };
+    // Spec 0158 R2/2 (AC-70): üç bilgi alanının tek yazıcısı (sil, kırp, yalnız doluyken yaz).
+    return parcaBilgiYaz({ ...geri, ...anaTed, ...maliyetAlanlari, ...(icerik.length ? { setIcerigi: icerik } : {}), ...(kipMaliyet ? { fiyatKipi: KIP_MALIYET } : {}), ...(kat != null ? { karKati: kat } : {}) });
   };
   // Spec 0097 R4, C13, C13/2 (tuzak 2, 3, 9): formdan gelen geçmiş kopyası atılır; geçmiş güncelleyicinin içindeki ESKİ kayıttan
   // (`eski`) ve yeni kaydın ÇÖZÜLMÜŞ maliyetinden (kırılım toplamı dahil) tek karar motoruyla yazılır. Tarih ve bugün `ek` ile
@@ -608,6 +620,8 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{k.ad}</span>
                     {/* Spec 0121 R24/2 biçimi: set ad hücresinde rozetle tanınır (sütun sayısı değişmez). */}
                     {setMi(k) && <SetRozeti n={k.setIcerigi.length} />}
+                    {/* Spec 0158 R5, R5/2 (AC-5, AC-6, AC-78): dolu bilgi alanları adın altında, sırayla, etiketsiz; hiçbiri doluysa satır yok. */}
+                    {parcaBilgiDegerleri(k).length > 0 && <div data-testid="parca-bilgi-satiri" style={{ fontSize: 11, color: "var(--n500, #64748b)", marginTop: 2 }}>{parcaBilgiDegerleri(k).join(" · ")}</div>}
                   </td>
                   <td style={{ padding: "10px 14px" }}>
                     {(() => { const t = k.tip || "Standart"; const c = tipRenk(t, partTypeDefs); return (
@@ -681,6 +695,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <Input value={form.kod || ""} onChange={e => setForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KES-001" />
           </Field>
           </div>
+          <ParcaBilgiAlanlari value={form} onChange={setForm} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Tanım (TR)">
             <textarea value={form.tanim || ""} onChange={e => setForm(p => ({ ...p, tanim: e.target.value }))}
@@ -739,6 +754,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
             <Input value={editForm.kod || ""} onChange={e => setEditForm(p => ({ ...p, kod: e.target.value }))} placeholder="Örn: KES-001" />
           </Field>
           </div>
+          <ParcaBilgiAlanlari value={editForm} onChange={setEditForm} />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <Field label="Tanım (TR)">
             <textarea value={editForm.tanim || ""} onChange={e => setEditForm(p => ({ ...p, tanim: e.target.value }))}

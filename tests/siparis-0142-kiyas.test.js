@@ -7,11 +7,12 @@ import * as S from "../src/lib/siparisIhtiyaci";
 import { SENARYOLAR } from "./fixtures/0142-veri.js";
 import { ayikla0143 } from "./fixtures/0143-ayikla.js";
 import { ayikla0150 } from "./fixtures/0150-ayikla.js";
+import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
 
 const DOSYA = "tests/fixtures/0142-once.json";
 // Spec 0143 ile (C2/3): kalkan ve adı değişen alanlar 0143-ayikla ile normalleşir.
 // Spec 0150 ile (AC-19): işlem alanları da düşer.
-const ayikla = (x) => ayikla0150(ayikla0143(JSON.parse(JSON.stringify(x, (k, v) => (k === "olculer" || k === "belge" || k === "belgeYeri" ? undefined : v)))));
+const ayikla = (x) => ayiklaMotor0158(ayikla0150(ayikla0143(JSON.parse(JSON.stringify(x, (k, v) => (k === "olculer" || k === "belge" || k === "belgeYeri" ? undefined : v))))));
 const uret = () => Object.fromEntries(Object.entries(SENARYOLAR()).map(([ad, [v, sec]]) => [ad, ayikla(sec === undefined ? S.siparisIhtiyaci(v) : S.siparisIhtiyaci(v, sec))]));
 
 describe("Spec 0142 kıyas (C6)", () => {

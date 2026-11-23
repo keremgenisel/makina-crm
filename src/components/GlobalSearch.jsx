@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { PARCA_BILGI_ALANLARI } from "../lib/parcaBilgi";
 import { aramaNormalize, aramaKelimeleri, kelimelerEslesir, nedenAlani, fmtTR, tsGunTR, parcaAdi, fmtCur } from "../lib/utils";
 import { turHaritasi, ayOf } from "../lib/gider";
 import {
@@ -69,6 +70,10 @@ export const musteriEslesmeNedeni = (c, kelimeler) => nedenMetni(nedenAlani(keli
 export const servisEslesmeNedeni = (s, c, kelimeler) => nedenMetni(nedenAlani(kelimeler,
   [s.tech, s.type, s.musteriTalimati, s.fabrikaNotu, s.yapilanIsler, s.durum, c?.name, c?.serialNo],
   [...tamirListesi(s).map(g => ["kalıp", g.ad]), ["kalıp kargo", s.kalipKargoFirma], ["kalıp takip no", s.kalipKargoTakipNo]]));
+// Spec 0158 R6, R6/2 (P16, AC-9, AC-75): parça kataloğunun neden satırı. Başlık kümesi bugün nedensiz geçen alanlar (ad, İngilizce
+// ad, kod); neden alanları sırayla ölçü, hammadde, cins, her biri kendi etiketiyle. Meta satırı değişmez.
+export const parcaEslesmeNedeni = (p, kelimeler) => nedenMetni(nedenAlani(kelimeler, [p.ad, p.adEN, p.kod],
+  PARCA_BILGI_ALANLARI.map(a => [a.arama, p[a.alan]])));
 // Spec 0149 R9 (C4): ham kırpılmış sorgu en az iki karakter VE en az bir kelimesi iki karakter; yoksa sonuç yok.
 export const paletKelimeleri = (q) => {
   const query = aramaNormalize(String(q ?? "").trim());
@@ -118,7 +123,7 @@ export const genelAramaSonuclari = (q, v, kapiCtx) => {
     // Firma çalışanları (teknisyenler) — ad ile aranır; Ayarlar > Firma'ya gider.
     calisanlar: acik("calisanlar") ? calisanlar.filter(cx => !cx.deletedAt && esles(cx.ad)) : [],
     // Spec 0125 R2 (Karar 2, 17): katalogların adı, İngilizce adı ve kodu (kalıpta ürün adı TR/EN); çöp savunma amaçlı da süzülür.
-    parcaTanimlari: acik("parcaTanimlari") ? parts.filter(p => !p.deletedAt && esles(p.ad, p.adEN, p.kod)) : [],
+    parcaTanimlari: acik("parcaTanimlari") ? parts.filter(p => !p.deletedAt && esles(p.ad, p.adEN, p.kod, ...PARCA_BILGI_ALANLARI.map(a => p[a.alan]))) : [],
     kalipTanimlari: acik("kalipTanimlari") ? kalipDefs.filter(d => !d.deletedAt && esles(d.ad, d.kod, d.urunAdi, d.urunAdiEN)) : [],
     // Spec 0026 (R1, R2, R5, R9–R13, R19): personel kalem ve tanımı hiç çıkmaz; çöptekiler savunma amaçlı da süzülür.
     giderler: acik("giderler") ? esle(v.giderler, k => kalemEslesmesi(k, sorgu, { turMap, tedMap, yururlukAy: v.yururlukAy })) : [],
@@ -177,7 +182,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
       calisanlar: cx => ({ uid: `emp${cx.id}`, baslik: cx.ad || "—", meta: "Firma çalışanı", onOpen: () => pick(onGoCalisanlar, cx.id) }),
       // Spec 0125 R3, R5 (Karar 2, 16, 22): süzgeç kaydın kendi ADIYLA dolar (panel yalnız adı arıyor, C3).
       parcaTanimlari: p => ({ uid: `pt${p.id}`, baslik: p.ad || "—",
-        meta: nokta([p.kod, p.tip || "Standart", setIcerigiOf(p).length ? setRozetMetni(setIcerigiOf(p).length) : null]),
+        meta: nokta([p.kod, p.tip || "Standart", setIcerigiOf(p).length ? setRozetMetni(setIcerigiOf(p).length) : null]), ekstra: parcaEslesmeNedeni(p, kelimeler),
         onOpen: () => pick(onGoKatalog, { panel: "yedekparca", ara: p.ad || "" }) }),
       kalipTanimlari: d => ({ uid: `kt${d.id}`, baslik: d.ad || "—", meta: nokta([d.kod, d.urunAdi]),
         onOpen: () => pick(onGoKatalog, { panel: "kaliplar", ara: d.ad || "" }) }),

@@ -264,7 +264,7 @@ describe("Spec 0135: Excel (R37–R38)", () => {
     expect(ayni.errors).toEqual([]);
   });
   it("AC-73: şablon on bir sütun, başlıklar değişmedi", () => {
-    expect(PARCA_AKTARMA_BASLIKLARI).toHaveLength(11);
+    expect(PARCA_AKTARMA_BASLIKLARI).toHaveLength(16); // spec 0158 ile (R35/2); kalem sütunu yine yok
     expect(PARCA_AKTARMA_BASLIKLARI.join(" ")).not.toMatch(/kalem/i);
   });
   it("AC-114 / R37/3: eski alanlı parçanın adı Excel'den değişince eski alanlar aynen durur, kalem alanı oluşmaz", () => {

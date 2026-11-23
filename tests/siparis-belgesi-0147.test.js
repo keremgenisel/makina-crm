@@ -208,7 +208,9 @@ describe("Spec 0147 E: değişmeyenler", () => {
     expect(b[0].gruplar.map(g => g.baslik)).toEqual(["304 Çubuk"]);
     const t = gruplar(html(d), "Alfa Çelik");
     expect(t).toHaveLength(1);
-    expect(satirlar(t[0].tablo).map(x => [satirAdi(x), x[1].replace(/ mm(?= ·|$)/, ""), x[2]])).toEqual([["İnce mil", "Ø16 × 235 · parça başına 3", "140"], ["Yatak", "Ø144 × 78", "70"]]);
+    // Spec 0158 ile (R16, R17): kalem adedi 3 olan "İnce mil" kesilecek adedi (140 × 3) yazar, altında hesabın açıklaması.
+    const duz = (c) => c.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    expect(satirlar(t[0].tablo).map(x => [satirAdi(x), x[1].replace(/ mm(?= ·|$)/, ""), duz(x[2])])).toEqual([["İnce mil", "Ø16 × 235 · parça başına 3", "420 140 parça × 3"], ["Yatak", "Ø144 × 78", "70"]]);
   });
   it("AC-24: basılacak satırı olmayan bölüm basılmaz", () => {
     const d = calis("odakli");

@@ -11,14 +11,24 @@ import { malzemeKatalogu } from "./malzeme";
 import { kalemVarMi, malzemeKalemiVarMi } from "./maliyetKalemleri";
 import { maliyeteBagliMi, parcaSatisFiyati, fiyatAyariOf } from "./parcaFiyati";
 import { tutarCoz } from "./gider";
+import { PARCA_BILGI_ALANLARI, bilgiDegeri, parcaBilgiHucreleri } from "./parcaBilgi";
+// Spec 0158 P14: spec 0157'nin iki sütununun başlığı (konum eşlemesi için şimdiden sabit).
+export const MALIYET_PB_BASLIKLARI = Object.freeze(["Maliyet Para Birimi", "Maliyet Kuru"]);
+const BILGI_ILK_SUTUN = 13; // 0 tabanlı: on dördüncü sütun
+const MALIYET_PB_ILK_SUTUN = 11; // 0 tabanlı: on ikinci sütun
+// Triyaj (bulgu 3): 12–13. sütun spec 0157 gelene kadar okunmaz; dolu hücre sessizce yok sayılmasın diye satır numarasıyla bildirilir.
+export const MALIYET_PB_EXCEL_HATASI = "Maliyet Para Birimi ve Maliyet Kuru sütunları henüz okunmuyor, bu hücreler alınmadı.";
 export const FIYAT_EXCEL_HATASI = "bu parçanın fiyatı maliyetten türüyor, Excel'deki fiyat alınmadı.";
 
 export const PARCA_AKTARMA_BASLIKLARI = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)",
   // Spec 0087 R11: onuncu sütun (konuma göre eşleme; araya eklenseydi eski dosyalar kayardı).
   "Maliyet (TL, KDV hariç)",
-  // Spec 0124 R1: on birinci ve SON sütun.
-  SET_ICERIGI_BASLIGI];
-export const PARCA_SABLON_ORNEGI = ["Örnek Parça", "Example Part", "PRC-001", "Standart", "Parça açıklaması", "Part description", "250", "", "", "120,50", SET_ICERIGI_ORNEGI];
+  // Spec 0124 R1: on birinci sütun.
+  SET_ICERIGI_BASLIGI,
+  // Spec 0158 R35, R35/2 (P14, AC-48, AC-77): son beş sütunun sırası sabit. 12–13 spec 0157'nin (maliyet para birimi, kur;
+  // bu işte boş yazılır ve okunmaz), 14–16 parçanın bilgi alanları.
+  ...MALIYET_PB_BASLIKLARI, ...PARCA_BILGI_ALANLARI.map(a => a.etiket)];
+export const PARCA_SABLON_ORNEGI = ["Örnek Parça", "Example Part", "PRC-001", "Standart", "Parça açıklaması", "Part description", "250", "", "", "120,50", SET_ICERIGI_ORNEGI, "", "", ...PARCA_BILGI_ALANLARI.map(a => a.ornek.replace(/^Örn: /, ""))];
 // Spec 0124 R5/3 (Karar 4): dosyada yinelenen ad (boş ad emsali).
 export const YINELENEN_AD_HATASI = "Bu ad dosyada daha önce geçti, satır atlandı.";
 
@@ -37,7 +47,7 @@ const maliyetHucresi = (p, katalog, malzemeKat) => { const k = parcaMaliyetKurus
 const tlHucresi = (p, katalog, malzemeKat, fiyatAyarlari) => (maliyeteBagliMi(p)
   ? parcaSatisFiyati(p, "TRY", { setKat: katalog, malzemeKat, ayar: fiyatAyariOf(fiyatAyarlari) }).deger : (p.fiyatTRY ?? ""));
 export const parcaDisaAktarmaSatiri = (p, katalog, malzemeKat, fiyatAyarlari = null) => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", tlHucresi(p, katalog, malzemeKat, fiyatAyarlari), p.fiyatUSD ?? "", p.fiyatEUR ?? "", maliyetHucresi(p, katalog, malzemeKat),
-  setIcerigiHucresi(p, katalog)];
+  setIcerigiHucresi(p, katalog), "", "", ...PARCA_BILGI_ALANLARI.map(a => bilgiDegeri(p[a.alan]))]; // spec 0158 R36
 
 // Satırlar (ilk satır başlık) → kayıt dizisi. `idBaslangic` yeni parçaların kimlik tabanıdır (ekranda Date.now()).
 // Spec 0097 R20, R20/2 (plan P11): `bugun` (yerel gün, YYYY-AA-GG) zorunludur ve varsayılanı yoktur; modül saat okumaz.
@@ -205,6 +215,7 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
       const dosya = tutarCoz(cell(6)); // Excel sayıyı "4082.69" biçiminde verir; tutarCoz noktayı ondalık okur
       if (yurur === "" || dosya.gecersiz || Math.round(dosya.deger * 100) !== Math.round(Number(yurur) * 100)) errors.push(`Satır ${idx + 2}: ${FIYAT_EXCEL_HATASI}`);
     }
+    if (MALIYET_PB_BASLIKLARI.some((_, i) => cell(MALIYET_PB_ILK_SUTUN + i) !== "")) errors.push(`Satır ${idx + 2}: ${MALIYET_PB_EXCEL_HATASI}`);
     if (mevcut) guncellenenler++; else yeniler++;
     const maliyetAlani = m.bos || m.hata || kalemli || setli ? {} : { maliyet: m.deger };
     // R20, R4: geçmiş mevcut kayıttan türer; değer değişmiyorsa geçmiş alanı hiç yazılmaz (uygulama kolu eskisini korur).
@@ -226,6 +237,8 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
       ...(gecmisKarari?.hata ? {} : maliyetAlani),
       ...gecmisAlani,
       ...(icerikYaz ? { setIcerigi: yeniIcerik } : {}),
+      // Spec 0158 R37, R37/2 (AC-49–AC-51, AC-69): boş hücre kayıtlı değere düşer, ikisi de boşsa anahtar yok; 12–13 okunmaz.
+      ...parcaBilgiHucreleri(PARCA_BILGI_ALANLARI.map((_, i) => cell(BILGI_ILK_SUTUN + i)), mevcut),
       _mevcut: !!mevcut,
     });
   });

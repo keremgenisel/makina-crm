@@ -3,13 +3,14 @@ import { describe, it, expect } from "vitest";
 import * as S from "../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml, belgeSutunlari, BELGE_SUTUNLARI, TOPLAM_BASLIGI, MALZEME_ETIKETI, ELLE_NOTU, ELLE_ISARETI, PAY_FARK_NOTU, FIYATLI_NUSHA } from "../src/lib/siparisRaporu";
 import { SENARYOLAR, BUGUN, FACTORY, PARCALAR, veri } from "./fixtures/0144-veri.js";
+import { birlesikSatirlar } from "./fixtures/0158-alt-satir.js";
 
 const calis = (ad) => { const [v, sec] = SENARYOLAR()[ad]; return S.siparisIhtiyaci(v, sec); };
 const html = (r, o = {}) => siparisRaporuHtml(r, { bugun: BUGUN, factory: FACTORY, partiAd: "Güz", ...o });
 const bolumHtml = (h, ad) => h.split('<div class="siparis-bolum"').find(p => p.includes(`${ad} · `)) || "";
 const tablolar = (h) => [...h.matchAll(/<table>([\s\S]*?)<\/table>/g)].map(m => m[1]);
 const basliklar = (t) => [...t.matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map(m => m[1]);
-const satirlar = (t) => [...t.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(m => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(c => c[1])).filter(r => r.length);
+const satirlar = birlesikSatirlar; // spec 0158 triyaj (bulgu 1): ölçü başına alt satırlar tek mantıksal satır
 // Spec 0147 ile (R1): bölümde grup (hammadde) başına bir parça tablosu var; yardımcı bölümün bütün parça tablolarını sırasıyla birleştirir.
 const parcaTablosu = (h, ad) => { const t = tablolar(bolumHtml(h, ad)).filter(x => basliklar(x)[0] === "Parça"); return t.length ? t.join("") : undefined; };
 const toplamTablosu = (h, ad) => tablolar(bolumHtml(h, ad)).find(t => basliklar(t)[0] === "Malzeme");
@@ -117,7 +118,8 @@ describe("2026-11-15: boydan sipariş edilen parçanın sipariş adedi boy yazar
     const d = S.siparisIhtiyaci(veri({ parts, modeller: [{ model: "AK100_DS", defaultParcalar: parts.map(p => ({ partId: String(p.id), miktar: 1 })) }] }), { tedarikciOdakli: true });
     const h = html(d);
     expect(altlar(h, "Gama Boru", "İki çubuklu").r[2]).toMatch(/^14 boy \(1\.000 mm\)<br>6 boy \(3\.000 mm\)<div[^>]*>70 parça<\/div>$/);
-    expect(hucre(h, "Gama Boru", "Karışık")).toBe("18 boy (2.000 mm) 70 parça");
+    // Spec 0158 ile (R19/2, AC-60): karışık satırda hücre ölçü başına satır yazar; kilo ölçüsünün satırı parça adedi, altında açıklama.
+    expect(hucre(h, "Gama Boru", "Karışık")).toBe("18 boy (2.000 mm) 70 70 parça");
   });
   it("tedarikçisiz boy kesidi de boy yazar; motor alanı yalnız belge satırında", () => {
     const parts = [...PARCALAR, { id: 52, ad: "Bronz çubuk", tedarikciId: 14, maliyetKalemleri: [{ tur: "malzeme", adet: 1, malzemeId: 510, bicim: "mil", cap: 25, boy: 100, boydanSiparis: true, cubukBoyu: 1000 }] }];
@@ -156,8 +158,9 @@ describe("Spec 0144 B: fiyatlı ve fiyatsız nüsha", () => {
   });
   it("AC-27 / AC-28 / AC-69 (2026-11-15 isteğiyle): hazır parça tutarı (birim fiyat basılmaz); maliyetsizde neden", () => {
     const { r: p } = altlar(fli, "Delta Hırdavat", "Elle");
-    expect(p).toHaveLength(4); expect(p[3]).toBe("3.150,00 ₺"); expect(fli).not.toContain("/adet");
-    expect(duz(altlar(fli, "Delta Hırdavat", "Maliyetsiz hazır").r[3])).toBe(S.MALIYET_YOK);
+    // Spec 0158 ile (R10): ölçüsüz hazır parçalar tablosunda Ölçü sütunu yok; tutar son hücre.
+    expect(p).toHaveLength(3); expect(p.at(-1)).toBe("3.150,00 ₺"); expect(fli).not.toContain("/adet");
+    expect(duz(altlar(fli, "Delta Hırdavat", "Maliyetsiz hazır").r.at(-1))).toBe(S.MALIYET_YOK);
   });
   it("AC-59 / AC-60: kalemi çözülemeyen malzemeli parçada birim boş, neden; maliyet basılmaz", () => {
     const { r: p } = altlar(fli, "Delta Hırdavat", "Çöpteki malzemeli");

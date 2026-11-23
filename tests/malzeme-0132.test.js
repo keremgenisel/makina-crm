@@ -369,7 +369,7 @@ describe("Spec 0132: Excel, model maliyeti ve etki", () => {
     expect(parcaSatirlariniCoz(ayni, [PM], 1000, "2026-11-05", [P304, C8620]).errors).toEqual([]);
   });
   it("AC-74: şablonun sütun sayısı değişmez", () => {
-    expect(PARCA_AKTARMA_BASLIKLARI).toHaveLength(11);
+    expect(PARCA_AKTARMA_BASLIKLARI).toHaveLength(16); // spec 0158 ile (R35/2); malzeme sütunu yine yok
     expect(PARCA_AKTARMA_BASLIKLARI.join(" ")).not.toMatch(/malzeme/i);
   });
   it("R16/4: model maliyeti motorunun veri nesnesi malzemeleri taşır", () => {

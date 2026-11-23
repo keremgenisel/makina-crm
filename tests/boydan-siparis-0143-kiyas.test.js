@@ -12,6 +12,7 @@ import { parcaSatisFiyati, fiyatBaglamiKur } from "../src/lib/parcaFiyati";
 import { modelMaliyetleri, partiHesabi } from "../src/lib/makinaStandartMaliyet";
 import { ayikla0143 } from "./fixtures/0143-ayikla.js";
 import { MALZEMELER, PARCALAR, MODELLER, TARIHLER, FIYAT_AYARLARI } from "./fixtures/0143-veri.js";
+import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
 
 const DOSYA = "tests/fixtures/0143-once.json";
 const ciktilar = () => {
@@ -25,7 +26,7 @@ const ciktilar = () => {
     ozet: PARCALAR.flatMap(p => [...(p.maliyetKalemleri || []), ...(p.malzemeSatiri ? [p.malzemeSatiri] : [])].filter(k => k.tur !== "islem").map(k => TARIHLER.map(t => malzemeOzeti(k, mk, t)))),
     maliyet: PARCALAR.map(p => TARIHLER.map(t => parcaMaliyetKurus(p, t, kat, mk))),
     fiyat: PARCALAR.map(p => ["TRY", "USD"].map(pb => parcaSatisFiyati(p, pb, baglam))),
-    disa: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, kat, mk, FIYAT_AYARLARI)),
+    disa: PARCALAR.map(p => parcaDisaAktarmaSatiri(p, kat, mk, FIYAT_AYARLARI).slice(0, 11)),
     modeller: mm,
     parti: partiHesabi(parti, { stock, customers: [] }, { payK: 1000, modeller: mm, bugun: "2026-11-12", katalog: { ...MODELLER, parts: PARCALAR, malzemeler: MALZEMELER } }),
   }));
