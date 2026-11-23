@@ -186,7 +186,10 @@ dbmod.writeBlobToDb({
     { id: 979, tur: "duzeltme", tarih: "2026-07-11", tutar: 250.5, yon: "cikan", hesapId: 97, aciklama: "Ekstre" },
     // Spec 0152 R2/2, R10/2, P4 (AC-25, AC-27): döviz ödeme (TL tutar + döviz tutar + kur + para birimi) ve bozdurma (iki bacak).
     { id: 980, tur: "odeme", tarih: "2026-07-12", tutar: 3550, yontem: "Havale", hesapId: 99, giderId: 81, taksitId: null, dovizTutar: 100, kur: 35.5, paraBirimi: "USD" },
-    { id: 981, tur: "virman", tarih: "2026-07-13", tutar: 200, hesapId: 99, karsiHesapId: 97, karsiTutar: 7100, kur: 35.5, paraBirimi: "USD", karsiParaBirimi: "TRY" }],
+    { id: 981, tur: "virman", tarih: "2026-07-13", tutar: 200, hesapId: 99, karsiHesapId: 97, karsiTutar: 7100, kur: 35.5, paraBirimi: "USD", karsiParaBirimi: "TRY" },
+    // Spec 0155 C6 (AC-41): tedarikçi avansı ve mahsubu (yeni sütun tedarikciId).
+    { id: 982, tur: "avans", tarih: "2026-07-14", tutar: 4000, tedarikciId: 71, hesapId: 97, yontem: "Havale", aciklama: "" },
+    { id: 983, tur: "mahsup", tarih: "2026-07-15", tutar: 1500, tedarikciId: 71, giderId: 81, taksitId: null, hesapId: null }],
   // Spec 0058: kasa iş listesinden kapsam dışı bırakılanlar (tahsilat ve hareket girişi).
   kasaKapsamDisi: [{ id: 9581, tur: "tahsilat", kaynak: "servis", kayitId: 4242, zaman: "2026-10-01T10:00:00.000Z" },
     { id: 9582, tur: "hareket", kaynak: null, kayitId: 976, zaman: "2026-10-01T10:05:00.000Z" }],
@@ -325,6 +328,9 @@ check("spec 0024: kasa hesapları (kapali boolean) ve hareketler (tamKapatir boo
       && v?.yon === "verilen" && v.durum === "yazildi" && v.alacakliTur === "tedarikci" && v.alacakliId === 71 && v.alacakliAd === "Demir Bant" && v.hesapId === 97 && v.aciklama === "Eylül"
       && !("yon" in eski) && !("tutar" in eski) && !("hesapId" in eski);
   })());
+  check("spec 0155: tedarikçi avansı ve mahsubunun tedarikciId'si tam turu; tedarikçisiz harekete anahtar yazılmaz (AC-41)",
+    m.find(x => x.id === 982)?.tedarikciId === 71 && m.find(x => x.id === 982)?.tutar === 4000 && m.find(x => x.id === 983)?.tedarikciId === 71
+    && m.find(x => x.id === 983)?.giderId === 81 && m.filter(x => x.id !== 982 && x.id !== 983).every(x => !("tedarikciId" in x)));
   check("spec 0024 B: avans ve mahsup çalışan bağıyla tam turu", m.find(x => x.id === 974)?.calisanId === 55 && m.find(x => x.id === 974)?.hesapId == null
     && m.find(x => x.id === 975)?.tur === "mahsup" && m.find(x => x.id === 975)?.giderId === 81 && m.find(x => x.id === 975)?.calisanId === 55);
   return h.length === 3 /* spec 0152 ile: USD hesap (99) eklendi */ && z?.acilisBakiyesi === 100000.5 && z.kapali === false && k?.kapali === true && k.acilisBakiyesi === -2000

@@ -294,7 +294,7 @@ CREATE TABLE IF NOT EXISTS hesap_hareketleri (
   id INTEGER PRIMARY KEY,
   tur TEXT, tarih TEXT, tutar REAL, yontem TEXT, hesapId INTEGER, karsiHesapId INTEGER, giderId INTEGER, taksitId INTEGER,
   tamKapatir INTEGER, kaynak TEXT, gocKaynak TEXT, aciklama TEXT, calisanId INTEGER, deletedAt TEXT, yon TEXT,
-  dovizTutar REAL, kur REAL, paraBirimi TEXT, karsiTutar REAL, karsiParaBirimi TEXT
+  dovizTutar REAL, kur REAL, paraBirimi TEXT, karsiTutar REAL, karsiParaBirimi TEXT, tedarikciId INTEGER
 );
 -- Spec 0058 R11, C2: kasa iş listesinden kapsam dışı bırakılan kayıtlar; tek liste, kayda kimlikle bağlı.
 CREATE TABLE IF NOT EXISTS kasa_kapsam_disi (
@@ -446,6 +446,8 @@ const HAREKET_CEK_COLUMN = [["cekId", "INTEGER"]];
 // Spec 0151 R1/2, C4/2: bakiye düzeltmesinin yönü ("giren" | "cikan"); tutar pozitif kalır. Boş değer okumada gövdeye yazılmaz.
 const HAREKET_YON_COLUMN = [["yon", "TEXT"]];
 // Spec 0152 R2/2, R10/2, P4 (C5): döviz ödeme ve bozdurmanın beş alanı; yalnız döviz harekette dolu, okumada boşken gövdeye yazılmaz.
+// Spec 0155 C6: tedarikçi avansı ve mahsubunun tedarikçisi (çalışan yerine); boşken okumada gövdeye yazılmaz.
+const HAREKET_TEDARIKCI_COLUMN = [["tedarikciId", "INTEGER"]];
 const HAREKET_DOVIZ_COLUMNS = [["dovizTutar", "REAL"], ["kur", "REAL"], ["paraBirimi", "TEXT"], ["karsiTutar", "REAL"], ["karsiParaBirimi", "TEXT"]];
 // Spec 0049: bağsız alınan çekin kendi alanları (tutar, para birimi, vade, alınma tarihi, kimden/müşteri) ve verilen çekin
 // alacaklısı, banka hesabı, açıklaması. Bağlı çekte bu alanlar boştur (bilgi tahsilattan okunur, Q2).
@@ -1045,11 +1047,11 @@ function populateAll(conn, data, skip = new Set()) {
   }
   if (Array.isArray(data.hesapHareketleri) && !skip.has("hesapHareketleri")) {
     conn.prepare(`DELETE FROM hesap_hareketleri`).run();
-    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId, cekId, deletedAt, yon, dovizTutar, kur, paraBirimi, karsiTutar, karsiParaBirimi)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    const stmt = conn.prepare(`INSERT INTO hesap_hareketleri (id, tur, tarih, tutar, yontem, hesapId, karsiHesapId, giderId, taksitId, tamKapatir, kaynak, gocKaynak, aciklama, calisanId, cekId, deletedAt, yon, dovizTutar, kur, paraBirimi, karsiTutar, karsiParaBirimi, tedarikciId)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
     for (const m of data.hesapHareketleri) stmt.run(m.id, m.tur ?? null, m.tarih ?? null, m.tutar ?? null, m.yontem ?? null, m.hesapId ?? null, m.karsiHesapId ?? null,
       m.giderId ?? null, m.taksitId ?? null, toInt(m.tamKapatir), m.kaynak ?? null, m.gocKaynak ?? null, m.aciklama ?? null, m.calisanId ?? null, m.cekId ?? null, m.deletedAt ?? null, m.yon || null,
-      m.dovizTutar ?? null, m.kur ?? null, m.paraBirimi || null, m.karsiTutar ?? null, m.karsiParaBirimi || null);
+      m.dovizTutar ?? null, m.kur ?? null, m.paraBirimi || null, m.karsiTutar ?? null, m.karsiParaBirimi || null, m.tedarikciId ?? null);
   }
   if (Array.isArray(data.kasaKapsamDisi) && !skip.has("kasaKapsamDisi")) {
     conn.prepare(`DELETE FROM kasa_kapsam_disi`).run();
@@ -1193,6 +1195,7 @@ function applyColumnMigrations(conn) {
   ensureColumns(conn, "hesap_hareketleri", HAREKET_CEK_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_YON_COLUMN);
   ensureColumns(conn, "hesap_hareketleri", HAREKET_DOVIZ_COLUMNS);
+  ensureColumns(conn, "hesap_hareketleri", HAREKET_TEDARIKCI_COLUMN);
   ensureColumns(conn, "cekler", CEKLER_0049_COLUMNS);
   ensureColumns(conn, "customer_kaliplar", KALIPLAR_URETIM_COLUMNS);
   ensureColumns(conn, "yedek_parca_satis", YEDEK_PARCA_COLUMNS);
@@ -1834,7 +1837,7 @@ function readBlobFromDb() {
   // Spec 0078 C4: boş deletedAt blob'a yazılmaz (sunucu karşılaştırması null ile yokluğu ayırır).
   const kasaHesaplari = db.prepare(`SELECT * FROM kasa_hesaplari`).all().map(({ kapali, deletedAt, ...rest }) => ({ ...rest, kapali: toBool(kapali), ...bosOlmayan({ deletedAt }) }));
   // Spec 0151 C4/2: `yon` yalnız doluyken gövdeye (düzeltmesiz hareketin gövdesi spec öncesiyle birebir, AC-24).
-  const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, deletedAt, yon, dovizTutar, kur, paraBirimi, karsiTutar, karsiParaBirimi, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir), ...bosOlmayan({ deletedAt, yon, dovizTutar, kur, paraBirimi, karsiTutar, karsiParaBirimi }) }));
+  const hesapHareketleri = db.prepare(`SELECT * FROM hesap_hareketleri`).all().map(({ tamKapatir, deletedAt, yon, dovizTutar, kur, paraBirimi, karsiTutar, karsiParaBirimi, tedarikciId, ...rest }) => ({ ...rest, tamKapatir: toBool(tamKapatir), ...bosOlmayan({ deletedAt, yon, dovizTutar, kur, paraBirimi, karsiTutar, karsiParaBirimi, tedarikciId }) }));
   const kasaKapsamDisi = db.prepare(`SELECT * FROM kasa_kapsam_disi`).all();
   // Spec 0049: boş kalan yeni alanlar blob'a hiç yazılmaz; eski (bağlı) çek kaydı okununca 0040'taki şekliyle aynı kalır
   // (sunucunun kayıt karşılaştırması null ile yokluğu ayırır).

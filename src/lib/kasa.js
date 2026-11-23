@@ -5,12 +5,13 @@
 // taksitId, tamKapatir, kaynak, gocKaynak, aciklama}. Müşteri tahsilatı `payments[].hesapId` ile bakiyeye girer (R6).
 import { cekDurumuOf, tahsilatTarihiOf, yerelBugun, fmtCur } from "./utils";
 import { gecerliGunMu } from "./gecerlilik";
-import { cevrimOku, dovizAlanlariYaz, dovizOdemeMi, CEK_DOVIZ_NEDENI, YALNIZ_TL_NEDENI, dovizKurusu, karsiKurusu, paraMetni as dovizParaMetni } from "./doviz";
+import { cevrimOku, dovizAlanlariYaz, dovizHareketMi, CEK_DOVIZ_NEDENI, YALNIZ_TL_NEDENI, dovizKurusu, karsiKurusu, paraMetni as dovizParaMetni } from "./doviz";
 import { kartTahsilEdildiMi } from "./krediKarti";
 import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { aliciAd } from "./yedekParcaSatis";
 import { hareketPaylari, hareketHedefPaylari } from "./odemeYontemi";
-import { tutarCoz, kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula, hedefDovizKipi, dovizKalemMi, DOVIZ_LIRA_SIFIR_HATASI, kalemVergiKirilimi } from "./gider";
+import { tutarCoz, kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula, hedefDovizKipi, dovizKalemMi, DOVIZ_LIRA_SIFIR_HATASI, kalemVergiKirilimi, kalemParaBirimi } from "./gider";
+import { kurCoz, KUR_KAYNAK } from "./kur";
 // Spec 0070 R28, 0074 R22: SGK kalemine avans mahsubu yapılamaz (tek metin; avans çalışanın borcu, SGK kurumun alacağı).
 export const SGK_MAHSUP_HATASI = "SGK kalemine avans mahsubu yapılamaz; SGK kuruma ödenir.";
 
@@ -19,6 +20,8 @@ export const HESAP_TUR_AD = Object.fromEntries(HESAP_TURLERI.map(t => [t.value, 
 export const HESAPSIZ_NOTU = "Bakiye, hesabı belirtilmiş hareket ve tahsilatları sayar. Hesabı belirtilmemiş kayıtlar aşağıda ayrıca listelenir.";
 
 const PARA = ["TRY", "USD", "EUR"];
+// Spec 0155 R11: geri ödeme avans türünün giren yönüdür (0151'in yön adları; yeni tür yok).
+export const AVANS_YON = Object.freeze({ GIREN: "giren", CIKAN: "cikan" });
 
 // ── Spec 0151: bakiye düzeltme hareketi (R1–R12) ─────────────────────────────────────────────────────────────────────────
 // Kayıt `{ tur: "duzeltme", tarih, tutar (pozitif), yon: "giren"|"cikan", hesapId, aciklama? }`; yöntem taşımaz (R9/3). Yön
@@ -108,7 +111,10 @@ export const hesapBakiyeleri = (hesaplar = [], hareketler = [], veri = {}, { ara
     const t = kurus(m.tutar);
     if (m.tur === "odeme") ekle(m.hesapId, { tarih: m.tarih, tur: "odeme", hareket: m, girenK: 0, cikanK: hesaptanCikanK(m) });
     // Spec 0024 B (R9): avans hesaptan çıkar; mahsup para hareketi değildir, hiçbir bakiyeye girmez (R10).
-    else if (m.tur === "avans") ekle(m.hesapId, { tarih: m.tarih, tur: "avans", hareket: m, girenK: 0, cikanK: t });
+    // Spec 0155 R3/2 (AC-46): tutar hesaptan çıkan okuyucusundan (döviz avansta hesabın para birimi), yön `yon`'dan; yönü
+    // yazılmamış ya da tanınmayan avans çıkan sayılır (eski kayıtların hepsi; 0151'in düzeltme kolundan bilinçli sapma).
+    else if (m.tur === "avans") ekle(m.hesapId, m.yon === AVANS_YON.GIREN ? { tarih: m.tarih, tur: "avans", hareket: m, girenK: hesaptanCikanK(m), cikanK: 0 }
+      : { tarih: m.tarih, tur: "avans", hareket: m, girenK: 0, cikanK: hesaptanCikanK(m) });
     else if (m.tur === "virman") {
       ekle(m.hesapId, { tarih: m.tarih, tur: "virman", hareket: m, girenK: 0, cikanK: t });
       ekle(m.karsiHesapId, { tarih: m.tarih, tur: "virman", hareket: m, girenK: girenBacakK(m), cikanK: 0 });
@@ -223,8 +229,19 @@ export const hareketOzeti = (hareketler = [], aralik, bakiyeler = null, { liste 
   const dz = duzeltme.adet ? { duzeltme: { ...strip(duzeltme),
     girenK: duzeltme.liste.filter(m => m.yon === DUZELTME_YON.GIREN).reduce((a, m) => a + kurus(m.tutar), 0),
     cikanK: duzeltme.liste.filter(m => m.yon === DUZELTME_YON.CIKAN).reduce((a, m) => a + kurus(m.tutar), 0) } } : {};
+  // Spec 0155 R19/2, P7 (AC-49): avans ve mahsup taraf (çalışan / tedarikçi) ve yön (giren) kırılımı; yalnız tedarikçi avansı
+  // ya da giren yönlü avans varken yazılır (çalışan avansı olan veride çıktı birebir eski).
+  const topla = (l) => ({ adet: l.length, tutarK: l.reduce((a, m) => a + kurus(m.tutar), 0) });
+  const kirilim = avans.liste.some(m => m.tedarikciId != null || m.yon === AVANS_YON.GIREN) || mahsup.liste.some(m => m.tedarikciId != null) ? {
+    avansKirilimi: {
+      calisan: topla(avans.liste.filter(m => m.tedarikciId == null && m.yon !== AVANS_YON.GIREN)),
+      tedarikci: topla(avans.liste.filter(m => m.tedarikciId != null && m.yon !== AVANS_YON.GIREN)),
+      giren: topla(avans.liste.filter(m => m.yon === AVANS_YON.GIREN)),
+      mahsupCalisan: topla(mahsup.liste.filter(m => m.tedarikciId == null)),
+      mahsupTedarikci: topla(mahsup.liste.filter(m => m.tedarikciId != null)),
+    } } : {};
   return { odeme: strip(odeme), virman: strip(virman), avans: strip(avans), mahsup: strip(mahsup), tahsilat,
-    yontemKirilimi: [...yontem.entries()].map(([ad, tutarK]) => ({ ad, tutarK })).sort((a, b) => b.tutarK - a.tutarK), ...dz };
+    yontemKirilimi: [...yontem.entries()].map(([ad, tutarK]) => ({ ad, tutarK })).sort((a, b) => b.tutarK - a.tutarK), ...dz, ...kirilim };
 };
 
 // R8, AC-32: hesabı belirtilmemiş ödemeler (göç dahil) ayrıca sayılır.
@@ -330,11 +347,12 @@ export const hesapTasimaPlani = (hesap, hareketler = [], veri = {}, hesaplar = [
   }
   // Spec 0151 R4/2 (AC-45): düzeltme hesapsız bırakılamaz; taşıma yolu onu hedef hesaba taşır (guncelle genel hesap alanı).
   const duzeltmeler = (hareketler || []).filter(m => m && !m.deletedAt && m.tur === DUZELTME_TUR && es(m.hesapId));
-  // Spec 0152 R7/2 (Karar 11, AC-40): döviz ödeme hesapsız kalırsa bakiyeye girmez ve TL'ymiş gibi görünürdü.
-  const dovizOdemeler = (hareketler || []).filter(m => m && !m.deletedAt && dovizOdemeMi(m) && es(m.hesapId));
+  // Spec 0152 R7/2 (Karar 11, AC-40): döviz ödeme hesapsız kalırsa bakiyeye girmez ve TL'ymiş gibi görünürdü. Spec 0155
+  // R22/2, R27/2 (AC-48): yüklem türden bağımsız, döviz avans da hesapsız bırakılamaz (kendi adıyla).
+  const dovizOdemeler = (hareketler || []).filter(m => m && !m.deletedAt && dovizHareketMi(m) && es(m.hesapId));
   const hesapsiz = [...virmanlar.map(m => `${virmanAdi(m)}: virman hesapsız bırakılamaz; önce bu virmanı silin.`),
     ...duzeltmeler.map(m => `${tarihYaz(m.tarih)} ${DUZELTME_TUR_ADI.toLocaleLowerCase("tr-TR")} (${fmtCur(Number(m.tutar) || 0, pb)}): hesapsız bırakılamaz; başka hesaba taşıyın ya da silin.`),
-    ...dovizOdemeler.map(m => `${tarihYaz(m.tarih)} döviz ödeme (${fmtCur(Number(m.dovizTutar) || 0, m.paraBirimi || pb)}): hesapsız bırakılamaz; aynı para birimindeki hesaba taşıyın ya da silin.`),
+    ...dovizOdemeler.map(m => `${tarihYaz(m.tarih)} döviz ${m.tur === "avans" ? "avans" : "ödeme"} (${fmtCur(Number(m.dovizTutar) || 0, m.paraBirimi || pb)}): hesapsız bırakılamaz; aynı para birimindeki hesaba taşıyın ya da silin.`),
     ...verilenCekler.map(c => `Verilen çek ${c.no || ""}: hesapsız bırakılamaz; bir TL banka hesabına taşıyın.`.replace("  ", " "))];
   const guncelle = (hedefId) => {
     const yeni = hedefId == null ? null : hedefId;
@@ -754,6 +772,99 @@ export const avansDuzenlenebilirMi = (avans, yeniTutar, hareketler = [], giderle
   const eksikK = enAzK - kurus(yeniTutar);
   return { ok: eksikK <= 0, eksikK: Math.max(0, eksikK), enAzK, mahsupK: b.mahsupK };
 };
+
+// ── Spec 0155: tedarikçi avansı, geri ödeme ve mahsup (R1–R28; plan P1–P10) ─────────────────────────────────────────────
+// Kayıt: `avans` hareketi `tedarikciId` taşır (çalışan yerine, R4); geri ödeme aynı türün `yon: "giren"` hâlidir (R11, P3:
+// çıkan avans `yon` yazmaz). Döviz hesaptan avans 0152'nin alanlarını taşır: `tutar` lira karşılığı, `dovizTutar` hesabın
+// para birimindeki tutar, `kur`, `paraBirimi` (R22). Mahsup `tedarikciId` taşır; dövizli mahsupta `dovizTutar` avansın para
+// biriminden düşen tutardır, `tutar` kalemi kapatan lira (R24, R25).
+export const avansParaBirimi = (m) => (m && m.dovizTutar != null && m.paraBirimi && m.paraBirimi !== "TRY" ? m.paraBirimi : "TRY");
+const avansMiktarK = (m) => kurus(avansParaBirimi(m) === "TRY" ? m.tutar : m.dovizTutar);
+export const tedarikciAvansMi = (m) => !!m && m.tur === "avans" && m.tedarikciId != null;
+export const geriOdemeMi = (m) => !!m && m.tur === "avans" && m.yon === AVANS_YON.GIREN;
+const PB_SIRA = ["TRY", "USD", "EUR"];
+const pbSira = (pb) => { const i = PB_SIRA.indexOf(pb); return i < 0 ? PB_SIRA.length : i; };
+// Bir kova adımının sırası: aynı günde çıkan avans mahsup ve geri ödemeden önce işlenir (triyaj bulgu 2: tersi döviz
+// kovasını geçici olarak eksiye indirip kur farkını yanlış tetikliyordu). Ekranın satır sırasından bağımsızdır.
+const kovaSira = (m) => (m.tur === "avans" && m.yon !== AVANS_YON.GIREN ? 0 : 1);
+// P1: kovanın yürütülmesi, tek tanım (okuyucu ve ekstre aynı kuralı izler). Döviz kovası açığı bu adımla sıfıra inince
+// (adımdan önce açık sıfırdan büyükken) lira eksenindeki kalıntı (kur farkı) sıfırlanır ve kaydın `kurFarkiK`'sı olarak döner;
+// hiçbir yere yazılmaz (R26).
+const kovaAdimi = (kova, m) => {
+  const d = avansMiktarK(m), l = kurus(m.tutar), onceK = kova.dovizAcikK;
+  if (m.tur === "mahsup") { kova.mahsupK += d; kova.liraMahsupK += l; kova.dovizAcikK -= d; kova.liraAcikK -= l; }
+  else if (m.yon === AVANS_YON.GIREN) { kova.geriK += d; kova.liraGeriK += l; kova.dovizAcikK -= d; kova.liraAcikK -= l; }
+  else { kova.verilenK += d; kova.liraVerilenK += l; kova.dovizAcikK += d; kova.liraAcikK += l; }
+  let kurFarkiK = 0;
+  if (kova.paraBirimi !== "TRY" && onceK > 0 && kova.dovizAcikK <= 0 && kova.liraAcikK !== 0 && (m.tur === "mahsup" || m.yon === AVANS_YON.GIREN)) {
+    kurFarkiK = kova.liraAcikK; kova.liraAcikK = 0;
+  }
+  return kurFarkiK;
+};
+const yeniKova = (paraBirimi) => ({ paraBirimi, verilenK: 0, mahsupK: 0, geriK: 0, acikK: 0, liraK: 0,
+  liraVerilenK: 0, liraMahsupK: 0, liraGeriK: 0, dovizAcikK: 0, liraAcikK: 0 });
+// R23/2, C2, C2/2, P1 (AC-57): açık avansın TEK okuyucusu. Tedarikçi başına, para birimi başına verilen, mahsup edilen, geri
+// ödenen ve açık kalan (avansın para biriminde) ile bilgi amaçlı lira karşılığı (`liraK`; kapanmış kovada 0). Mahsubun kalemi
+// canlı değilse (çöpte ya da yok) mahsup sayılmaz (R10). hareketler: canlı hareketler; giderler: ham dizi.
+// Dönüş: Map(tedarikciId → [kova], para birimi sırasıyla).
+// Kova yürütmesinin tek yeri: okuyucu kovaları, ekstre her hareketin kur farkını (`farklar`, hareket kimliği → kuruş) okur.
+const kovaYurut = (hareketler = [], giderler = []) => {
+  const canli = new Set((giderler || []).filter(k => k && !k.deletedAt).map(k => String(k.id)));
+  const adimlar = (hareketler || []).map((m, i) => [m, i]).filter(([m]) => m && !m.deletedAt && m.tedarikciId != null
+    && (m.tur === "avans" || (m.tur === "mahsup" && canli.has(String(m.giderId)))))
+    .sort(([a, i], [b, j]) => String(a.tarih || "").localeCompare(String(b.tarih || "")) || kovaSira(a) - kovaSira(b) || i - j).map(([m]) => m);
+  const r = new Map(), farklar = new Map();
+  for (const m of adimlar) {
+    const tid = String(m.tedarikciId), pb = avansParaBirimi(m);
+    if (!r.has(tid)) r.set(tid, new Map());
+    const kovalar = r.get(tid);
+    if (!kovalar.has(pb)) kovalar.set(pb, yeniKova(pb));
+    const fark = kovaAdimi(kovalar.get(pb), m);
+    if (fark) farklar.set(String(m.id), fark);
+  }
+  return { r, farklar };
+};
+export const tedarikciAvanslari = (hareketler = [], giderler = []) => {
+  const { r } = kovaYurut(hareketler, giderler);
+  const sonuc = new Map();
+  for (const [tid, kovalar] of r) {
+    const l = [...kovalar.values()].sort((a, b) => pbSira(a.paraBirimi) - pbSira(b.paraBirimi)).map(k => {
+      const acikK = Math.max(0, k.dovizAcikK);
+      const { dovizAcikK: _d, liraAcikK, ...x } = k;
+      return { ...x, acikK, liraK: acikK > 0 ? liraAcikK : 0 };
+    });
+    sonuc.set(tid, l);
+  }
+  return sonuc;
+};
+export const tedarikciAvansKovasi = (tedarikciId, paraBirimi, hareketler, giderler) =>
+  (tedarikciAvanslari(hareketler, giderler).get(String(tedarikciId)) || []).find(k => k.paraBirimi === (paraBirimi || "TRY")) || yeniKova(paraBirimi || "TRY");
+// P8 (C10/2, AC-67): avans ya da mahsup hareketi olan (çöpteki hareket dahil) tedarikçiler; kalıcı silme kapıları okur.
+export const avansliTedarikciler = (hareketler = []) => new Set((hareketler || []).filter(m => m && m.tedarikciId != null && (m.tur === "avans" || m.tur === "mahsup")).map(m => String(m.tedarikciId)));
+export const AVANSLI_TEDARIKCI_NEDENI = "Bu tedarikçinin avans ya da mahsup kaydı var; kalıcı silinemez (alacak izlenemez olurdu). Önce kayıtları silin.";
+// Metin biçimi: tutar avansın para biriminde (R8/2).
+const pbMetni = (k, pb) => dovizParaMetni(tl(k), pb || "TRY");
+
+// R1/2 (AC-38, AC-66): tedarikçi avansının düzenleme ve silme sınırı, kova içinde ve geri ödemeler dahil. Çıkan avans açık
+// avansı (verilen − mahsup − geri) eksiye düşürecek kadar küçültülemez; giren avans (geri ödeme) açık avansı aşacak kadar
+// büyütülemez, silinmesi serbesttir. yeniTutar avansın para biriminde (silme = 0). Dönüş { ok, enAzK?, enCokK?, paraBirimi }.
+export const tedarikciAvansDuzenlenebilirMi = (avans, yeniTutar, hareketler = [], giderler = []) => {
+  const pb = avansParaBirimi(avans);
+  const digerleri = (hareketler || []).filter(m => m && String(m.id) !== String(avans?.id));
+  const k = tedarikciAvansKovasi(avans?.tedarikciId, pb, digerleri, giderler);
+  const yeniK = kurus(yeniTutar);
+  const net = k.verilenK - k.mahsupK - k.geriK; // bu avans hariç
+  if (avans?.yon === AVANS_YON.GIREN) {
+    const enCokK = Math.max(0, net);
+    return { ok: yeniK <= enCokK, enCokK, paraBirimi: pb };
+  }
+  const enAzK = Math.max(0, -net);
+  return { ok: yeniK >= enAzK, enAzK, paraBirimi: pb };
+};
+export const tedarikciAvansSilinebilirMi = (avans, hareketler = [], giderler = []) => tedarikciAvansDuzenlenebilirMi(avans, 0, hareketler, giderler);
+export const tedarikciAvansSinirMetni = (d) => (d.enCokK != null
+  ? `Geri ödeme en çok ${pbMetni(d.enCokK, d.paraBirimi)} olabilir (açık avans).`
+  : `Bu avans en az ${pbMetni(d.enAzK, d.paraBirimi)} olmalı; o kadarı mahsup edildi ya da geri ödendi.`);
 export const avansEnAzMetni = (d) => `Bu avans en az ${paraMetni(d.enAzK)} ₺ olmalı; ${paraMetni(d.mahsupK)} ₺ tutarında mahsup edilmiş.`;
 
 // Spec 0073 R10, R12, R22, R27: bir hareketin düzenleme ve silme durumu (tek kural; listeler ve pencere bunu okur).
@@ -774,7 +885,11 @@ export const hareketDuzenlemeDurumu = (m, { giderVar = () => true } = {}) => {
 };
 
 // R9, B4: avans bir çalışana verilir; hesap isteğe bağlı (verilirse açık ve TL). Gider üretmez (R11, C3).
-export const avansDogrula = (form, { calisanlar = [], hesaplar = [] } = {}) => {
+export const IKI_TARAF_HATASI = "Avans ya bir çalışana ya bir tedarikçiye verilir; ikisi birden seçilemez.";
+export const avansDogrula = (form, { calisanlar = [], hesaplar = [], tedarikciler = [], hareketler = [], giderler = [] } = {}) => {
+  // Spec 0155 R4 (AC-7): iki taraf birlikte taşınmaz; tedarikçi dalı kendi doğrulayıcısında (çalışan dalı aynen, C8).
+  if (form?.tedarikciId != null && form.tedarikciId !== "" && form?.calisanId != null && form.calisanId !== "") return { hatalar: { taraf: IKI_TARAF_HATASI }, kayit: null };
+  if (form?.taraf === "tedarikci" || (form?.tedarikciId != null && form.tedarikciId !== "")) return tedarikciAvansDogrula(form, { tedarikciler, hesaplar, hareketler, giderler });
   const hatalar = {};
   const c = calisanlar.find(x => idEsit(x.id, form?.calisanId));
   if (!c) hatalar.calisanId = "Çalışan seçilmedi.";
@@ -790,17 +905,66 @@ export const avansDogrula = (form, { calisanlar = [], hesaplar = [] } = {}) => {
     yontem: form.yontem || "", aciklama: String(form.aciklama || "").trim() } };
 };
 
+// Spec 0155 R1, R2, R3, R5, R11, R11/2, R12, R22, R27 (AC-2–AC-10, AC-21, AC-22, AC-45): tedarikçi avansı ve geri ödemesi.
+// Hesap TL de döviz de olabilir; döviz hesapta tutar hesabın para birimindedir, kur zorunlu, lira karşılığı kurdan (karşı
+// kuruş) ve kayıtta donar. Geri ödemede (yon: giren) hesap zorunlu ve tutar o para birimindeki açık avansı aşamaz.
+export const TEDARIKCI_SECILMEDI = "Tedarikçi seçilmedi.";
+export const SILINMIS_TEDARIKCI_AVANS = "Silinmiş tedarikçiye avans verilemez.";
+export const GERI_ODEME_HESAP_HATASI = "Geri ödeme bir hesaba girer; hesap seçin.";
+export const KUR_GIRILMEDI_HATASI = "Döviz hesapta kur girilmedi.";
+const tedarikciAvansDogrula = (form, { tedarikciler, hesaplar, hareketler, giderler }) => {
+  const hatalar = {};
+  const t0 = tedarikciler.find(x => idEsit(x.id, form?.tedarikciId));
+  if (!t0) hatalar.tedarikciId = TEDARIKCI_SECILMEDI;
+  else if (t0.deletedAt) hatalar.tedarikciId = SILINMIS_TEDARIKCI_AVANS;
+  if (!form?.tarih) hatalar.tarih = "Tarih girilmedi.";
+  const giren = form?.yon === AVANS_YON.GIREN;
+  const t = tutarOku(form?.tutar);
+  if (!Number.isFinite(t)) hatalar.tutar = "Tutar sayıya çevrilemedi. Örnek: 5.000,00";
+  else if (t <= 0) hatalar.tutar = "Tutar sıfırdan büyük olmalı.";
+  const hesapli = form?.hesapId != null && form.hesapId !== "";
+  let h = null;
+  if (hesapli) {
+    h = hesaplar.find(x => String(x.id) === String(form.hesapId));
+    if (!h) hatalar.hesapId = "Hesap bulunamadı.";
+    else if (h.kapali) hatalar.hesapId = "Kapatılmış hesaba hareket girilemez.";
+  } else if (giren) hatalar.hesapId = GERI_ODEME_HESAP_HATASI;
+  const pb = h?.paraBirimi || "TRY";
+  let doviz = null, liraK = Number.isFinite(t) ? kurus(t) : 0;
+  if (h && pb !== "TRY" && !hatalar.tutar) {
+    const k = kurCoz(form?.kur, { kaynak: form?.kurKaynak || KUR_KAYNAK.ELLE });
+    if (String(form?.kur ?? "").trim() === "") hatalar.kur = KUR_GIRILMEDI_HATASI;
+    else if (k.hata) hatalar.kur = k.hata;
+    else {
+      liraK = karsiKurusu(kurus(t), k.deger);
+      if (!(liraK > 0)) hatalar.tutar = DOVIZ_LIRA_SIFIR_HATASI;
+      doviz = { dovizTutar: tl(kurus(t)), kur: k.deger, paraBirimi: pb };
+    }
+  }
+  if (giren && t0 && !hatalar.tutar && !hatalar.hesapId) {
+    const kova = tedarikciAvansKovasi(t0.id, pb, (hareketler || []).filter(m => m && String(m.id) !== String(form?.id)), giderler);
+    if (kurus(t) > kova.acikK) hatalar.tutar = `Geri ödeme açık avanstan fazla olamaz (açık avans ${pbMetni(kova.acikK, pb)}).`;
+  }
+  if (Object.keys(hatalar).length) return { hatalar, kayit: null };
+  return { hatalar, kayit: dovizAlanlariYaz({ tur: "avans", tarih: form.tarih, tutar: tl(liraK), tedarikciId: t0.id, hesapId: hesapli ? form.hesapId : null,
+    yontem: form.yontem || "", aciklama: String(form.aciklama || "").trim(), ...(giren ? { yon: AVANS_YON.GIREN } : {}) }, doviz) };
+};
+
 // R10, B2: mahsup aynı çalışanın personel kalemine yapılır; sınır kalem (taksitliyse taksit) kalanı ile açık avans
 // borcunun küçüğüdür. kalem: odemeleriUygula'dan geçmiş kalem; giderler: ham dizi (avans borcu için).
 // Triyaj bulgu 2: mahsup yalnız ekstre ve borç özetinin kapsamındaki kaleme yapılır (gider tarihi bugün veya öncesi,
 // yürürlük ayı veya sonrası); yoksa açık avans düşer ama ekstre o kalemi görmez ve iki rakam ayrışır.
 export const mahsupKapsamda = (kalem, { bugun = null, yururlukAy = null } = {}) => kapsamda(kalem, yururlukAy ? `${yururlukAy}-01` : "", bugun);
-export const mahsupDogrula = (form, { kalem, turMap, hareketler = [], giderler = [], bugun = null, yururlukAy = null } = {}) => {
+export const mahsupDogrula = (form, { kalem, turMap, hareketler = [], giderler = [], bugun = null, yururlukAy = null, tedarikciler = [] } = {}) => {
   const hatalar = {};
   if (!kalem) return { hatalar: { hedef: "Mahsup edilecek kalem bulunamadı." }, kayit: null };
   // Spec 0074 R22 (S6): kural davranışa bakar ve personel denetiminden ÖNCE durur (yoksa SGK metni hiç görünmezdi).
   if (sgkDavranisiMi(davranisOf(kalem, turMap))) return { hatalar: { hedef: SGK_MAHSUP_HATASI }, kayit: null };
-  if (davranisOf(kalem, turMap) !== DAVRANIS.PERSONEL || kalem.calisanId == null) return { hatalar: { hedef: "Avans yalnız personel kalemine mahsup edilir." }, kayit: null };
+  // Spec 0155: personel dışı kalemde tedarikçi avansından mahsup (çalışan yolu aynen, C8). Personel kalemine tedarikçi avansı
+  // açıkça istenirse reddedilir (AC-14).
+  if (form?.taraf === "tedarikci" && davranisOf(kalem, turMap) === DAVRANIS.PERSONEL) return { hatalar: { hedef: PERSONEL_TEDARIKCI_MAHSUP_HATASI }, kayit: null };
+  if (davranisOf(kalem, turMap) !== DAVRANIS.PERSONEL) return tedarikciMahsupDogrula(form, { kalem, turMap, hareketler, giderler, bugun, yururlukAy, tedarikciler });
+  if (kalem.calisanId == null) return { hatalar: { hedef: "Avans yalnız personel kalemine mahsup edilir." }, kayit: null };
   if (!mahsupKapsamda(kalem, { bugun, yururlukAy })) return { hatalar: { hedef: "Gelecek tarihli ya da yürürlük öncesi maaş kalemine mahsup yapılamaz." }, kayit: null };
   const satirli = satirliMi(kalem);
   if (satirli && form?.taksitId == null) hatalar.hedef = "Taksitli kalemde mahsup bir taksite bağlanır.";
@@ -818,11 +982,97 @@ export const mahsupDogrula = (form, { kalem, turMap, hareketler = [], giderler =
     hesapId: null, aciklama: String(form.aciklama || "").trim() } };
 };
 
+// Spec 0155 R6–R9, R24, R25, R28, P2, P10 (AC-11–AC-18, AC-24–AC-27, AC-58, AC-61, AC-62): tedarikçi avansından mahsup.
+// Kalemin yalnız ANA hedefini kapatır (stopaj ve tevkifat vergi dairesinindir). Kova (avansın para birimi) form.avansPb ya da
+// varsayılan (kalemin para birimi). Döviz kalemde tutar kalemin para birimindedir, lira kalemin donmuş kurundan (R24); döviz
+// avanstan lira kaleme tutar avansın para birimindedir ve kur hareketin kendisidir (R25). Avansın kuru hiçbir yerde okunmaz.
+export const PERSONEL_TEDARIKCI_MAHSUP_HATASI = "Tedarikçi avansı personel kalemine mahsup edilmez.";
+export const TEDARIKCISIZ_MAHSUP_HATASI = "Tedarikçisi seçilmemiş kaleme avans mahsubu yapılamaz.";
+export const baskaTedarikciMahsupHatasi = (ad) => `Bu kalem ${ad || "başka bir tedarikçiye"} ait; avans başka bir tedarikçinin.`;
+export const SILINMIS_TEDARIKCI_MAHSUP_HATASI = "Tedarikçisi silinmiş kaleme mahsup yapılamaz.";
+export const KAPSAM_DISI_MAHSUP_HATASI = "Gelecek tarihli ya da yürürlük öncesi kaleme mahsup yapılamaz.";
+export const YALNIZ_ANA_MAHSUP_HATASI = "Mahsup yalnız tedarikçiye giden kısmı kapatır; stopaj ve tevkifat vergi dairesine ödenir.";
+export const IKI_DOVIZ_MAHSUP_HATASI = "Bir döviz avans başka bir dövizdeki kaleme mahsup edilmez.";
+export const TL_AVANS_DOVIZ_KALEM_HATASI = "TL avans yalnız lira kaleme mahsup edilir.";
+// P2: kalem için uygun kovalar (R28). Lira kalemde TL ve döviz kovaları, döviz kalemde yalnız kendi dövizi; açığı olanlar.
+// P2, R8/2: mahsup tutarının varsayılanı (kuruş, alanın biriminde): yerin kalanı ile açık avansın küçüğü; döviz avanstan lira
+// kaleme kalan mahsubun kuruyla avansın para birimine çevrilir (kur yoksa açık avans). Ekran çevrim yazmaz (C3).
+export const mahsupVarsayilanK = ({ kalanK = 0, acikK = 0, kurluMu = false, kur = null }) => (kurluMu ? (kur > 0 ? Math.min(acikK, dovizKurusu(kalanK, kur)) : acikK) : Math.min(kalanK, acikK));
+export const mahsupKovalari = (kalem, kovalar = []) => {
+  const kpb = kalemParaBirimi(kalem);
+  return (kovalar || []).filter(k => k.acikK > 0 && (kpb === "TRY" || k.paraBirimi === kpb));
+};
+export const varsayilanMahsupKovasi = (kalem, kovalar = []) => {
+  const l = mahsupKovalari(kalem, kovalar);
+  return l.find(k => k.paraBirimi === kalemParaBirimi(kalem)) || l[0] || null;
+};
+const tedarikciMahsupDogrula = (form, { kalem, turMap, hareketler, giderler, bugun, yururlukAy, tedarikciler }) => {
+  const hatalar = {};
+  const dav = davranisOf(kalem, turMap);
+  if (kalem.tedarikciId == null) return { hatalar: { hedef: TEDARIKCISIZ_MAHSUP_HATASI }, kayit: null };
+  const tedAdi = (id) => (tedarikciler || []).find(x => idEsit(x.id, id))?.ad;
+  if (form?.tedarikciId != null && form.tedarikciId !== "" && !idEsit(form.tedarikciId, kalem.tedarikciId)) return { hatalar: { hedef: baskaTedarikciMahsupHatasi(tedAdi(kalem.tedarikciId)) }, kayit: null };
+  if ((tedarikciler || []).find(x => idEsit(x.id, kalem.tedarikciId))?.deletedAt) return { hatalar: { hedef: SILINMIS_TEDARIKCI_MAHSUP_HATASI }, kayit: null };
+  if (!mahsupKapsamda(kalem, { bugun, yururlukAy })) return { hatalar: { hedef: KAPSAM_DISI_MAHSUP_HATASI }, kayit: null };
+  const satirli = satirliMi(kalem);
+  if (satirli && form?.taksitId == null) hatalar.hedef = "Taksitli kalemde mahsup bir taksite bağlanır.";
+  if (satirli && form?.taksitId != null) {
+    const sat = kalem.taksitler.find(x => String(x.id) === String(form.taksitId));
+    if (sat && (sat.hedef || HEDEF.ANA) !== HEDEF.ANA) return { hatalar: { hedef: YALNIZ_ANA_MAHSUP_HATASI }, kayit: null };
+  }
+  if (!form?.tarih) hatalar.tarih = "Tarih girilmedi.";
+  const kpb = kalemParaBirimi(kalem);
+  const avansPb = form?.avansPb || kpb;
+  if (kpb !== "TRY" && avansPb !== kpb) return { hatalar: { avansPb: avansPb === "TRY" ? TL_AVANS_DOVIZ_KALEM_HATASI : IKI_DOVIZ_MAHSUP_HATASI }, kayit: null };
+  const kova = tedarikciAvansKovasi(kalem.tedarikciId, avansPb, (hareketler || []).filter(m => m && String(m.id) !== String(form?.id)), giderler);
+  // Ana hedefin kalanı (lira): satırlıda taksidin, satırsızda ANA hedefin.
+  const kalanK = satirli ? odemeHedefKalaniK(kalem, dav, form?.taksitId) : (odemeHedefleri(kalem, dav).find(h => h.hedef === HEDEF.ANA)?.kalanK || 0);
+  const t = tutarOku(form?.tutar);
+  let liraK = 0, doviz = null;
+  if (!Number.isFinite(t)) hatalar.tutar = "Tutar sayıya çevrilemedi.";
+  else if (t <= 0) hatalar.tutar = "Tutar sıfırdan büyük olmalı.";
+  else if (kurus(t) > kova.acikK) hatalar.tutar = `Açık avanstan fazla mahsup edilemez (açık avans ${pbMetni(kova.acikK, avansPb)}).`;
+  else if (kpb !== "TRY") {
+    // R24: döviz kalem; kur kalemin donmuş kuru, kırpma 0153'teki gibi.
+    const kur = Number(kalem.kur), kalanDovizK = dovizKurusu(kalanK, kur);
+    if (kurus(t) > kalanDovizK) hatalar.tutar = `Kalandan fazla mahsup edilemez (kalan ${pbMetni(kalanDovizK, kpb)}).`;
+    else {
+      liraK = kurus(t) === kalanDovizK ? kalanK : Math.min(kalanK, karsiKurusu(kurus(t), kur));
+      if (dovizKurusu(kalanK - liraK, kur) === 0) liraK = kalanK;
+      if (liraK <= 0) hatalar.tutar = DOVIZ_LIRA_SIFIR_HATASI;
+      doviz = { dovizTutar: tl(kurus(t)), kur, paraBirimi: kpb };
+    }
+  } else if (avansPb !== "TRY") {
+    // R25: döviz avanstan lira kaleme; kur bu hareketin kendisi (öneri günün kuru, elle değişir, kayıtta donar).
+    const k = kurCoz(form?.kur, { kaynak: form?.kurKaynak || KUR_KAYNAK.ELLE });
+    if (String(form?.kur ?? "").trim() === "") hatalar.kur = KUR_GIRILMEDI_HATASI;
+    else if (k.hata) hatalar.kur = k.hata;
+    else {
+      liraK = karsiKurusu(kurus(t), k.deger);
+      if (liraK <= 0) hatalar.tutar = DOVIZ_LIRA_SIFIR_HATASI;
+      else if (liraK > kalanK) hatalar.tutar = `Kalandan fazla mahsup edilemez (kalan ${pbMetni(kalanK, "TRY")}; ${pbMetni(kurus(t), avansPb)} bu kurla ${pbMetni(liraK, "TRY")}).`;
+      doviz = { dovizTutar: tl(kurus(t)), kur: k.deger, paraBirimi: avansPb };
+    }
+  } else {
+    liraK = kurus(t);
+    if (liraK > kalanK) hatalar.tutar = `Kalandan fazla mahsup edilemez (kalan ${pbMetni(kalanK, "TRY")}).`;
+  }
+  if (Object.keys(hatalar).length) return { hatalar, kayit: null };
+  return { hatalar, kayit: dovizAlanlariYaz({ tur: "mahsup", tarih: form.tarih, tutar: tl(liraK), tedarikciId: kalem.tedarikciId, giderId: kalem.id,
+    taksitId: satirli ? form.taksitId : null, hesapId: null, aciklama: String(form.aciklama || "").trim() }, doviz) };
+};
+
 // Spec 0078 triyaj (bulgu 1): çöpten geri alınan ödeme ve mahsup, bugünkü CANLI hareketlerle aynı doğrulayıcılardan geçer
 // (odemeDogrula, mahsupDogrula). Silinen ödeme yeniden girildiyse çöpteki kopyası geri alınınca kalem iki kez ödenmiş, hesap
 // iki kez düşmüş görünürdü; mahsupta avans borcu eksiye düşerdi. Ebeveyn (hesap, çek) denetlenmez (R20): hesap alanı
 // doğrulamaya verilmez. Kalemi bulunmayan (kalıcı silinmiş) ya da tutarsız göç hareketi engellenmez. Dönüş: neden ya da null.
-export const copHareketGeriAlmaNedeni = (h, { giderler = [], hareketler = [], turMap = new Map(), bugun = null, yururlukAy = null } = {}) => {
+export const copHareketGeriAlmaNedeni = (h, { giderler = [], hareketler = [], turMap = new Map(), bugun = null, yururlukAy = null, tedarikciler = [] } = {}) => {
+  // Spec 0155 triyaj (bulgu 3, R12): tedarikçinin geri ödemesi açık avansı aşacak biçimde geri alınamaz (sınır kova içinde).
+  if (geriOdemeMi(h) && h.tedarikciId != null) {
+    const canliH = (hareketler || []).filter(m => m && !m.deletedAt && String(m.id) !== String(h.id));
+    const d = tedarikciAvansDuzenlenebilirMi(h, tl(avansMiktarK(h)), canliH, giderler);
+    return d.ok ? null : `Geri alınamadı: ${tedarikciAvansSinirMetni(d)}`;
+  }
   if (!h || (h.tur !== "odeme" && h.tur !== "mahsup") || h.tutar == null) return null;
   const kalem = (giderler || []).find(k => k && String(k.id) === String(h.giderId));
   if (!kalem) return null;
@@ -830,9 +1080,12 @@ export const copHareketGeriAlmaNedeni = (h, { giderler = [], hareketler = [], tu
   const zengin = odemeleriUygula([kalem], canli, turMap)[0];
   // Spec 0153 R13/2: döviz kalemin ANA hedefine giden ödeme doğrulayıcıya kendi döviz tutarıyla verilir (satır tutarı orada döviz).
   const tutar = h.tur === "odeme" && h.dovizTutar != null && hedefDovizKipi(zengin, h.taksitId) ? h.dovizTutar : h.tutar;
-  const form = { tutar, tarih: h.tarih, taksitId: h.taksitId, yontem: h.cekId != null ? "" : h.yontem };
+  // Spec 0155: tedarikçi mahsubu kendi kovası ve kuruyla yeniden doğrulanır (döviz miktarı avansın para biriminde).
+  const ted = h.tur === "mahsup" && h.tedarikciId != null
+    ? { tutar: h.dovizTutar != null ? h.dovizTutar : h.tutar, avansPb: avansParaBirimi(h), kur: h.kur, kurKaynak: KUR_KAYNAK.TURETILEN, tedarikciId: h.tedarikciId, taraf: "tedarikci" } : {};
+  const form = { tutar, tarih: h.tarih, taksitId: h.taksitId, yontem: h.cekId != null ? "" : h.yontem, ...ted };
   const r = h.tur === "mahsup"
-    ? mahsupDogrula(form, { kalem: zengin, turMap, hareketler: canli, giderler, bugun, yururlukAy })
+    ? mahsupDogrula(form, { kalem: zengin, turMap, hareketler: canli, giderler, bugun, yururlukAy, tedarikciler })
     : odemeDogrula(form, { kalem: zengin, turMap });
   const ilk = Object.values(r.hatalar || {})[0];
   return ilk ? `Geri alınamadı: ${ilk}` : null;
@@ -889,9 +1142,33 @@ export const tedarikciEkstresi = (tedarikciId, { giderler = [], hareketler = [],
     // P8: satırın davranışı (kapanış etiketi ve taksit adı kalemin kendi hedef adıyla; pencere tür listesi almaz, R4/2).
     satirlar.push({ tarih: k.tarih, sira: 0, tur: "borc", kalem: k, etkiK: toplamK, tutarK: toplamK,
       vergi: kalemVergiKirilimi(k, dav), odemeler: paylar, kalanK: anaHedef(k, dav).kalanK, davranis: dav });
-    for (const p of paylar) satirlar.push({ tarih: p.hareket.tarih || k.tarih, sira: 1, tur: "odeme", kalem: k, hareket: p.hareket, etkiK: -p.payK, tutarK: p.payK, goc: p.hareket.kaynak === "goc", davranis: dav });
+    // Spec 0155 R15/2 (AC-50): mahsup kendi satır türüyle ve net etkisi sıfır (borcu ve alacağı birlikte kapatır; çalışan
+    // ekstresinin ikizi). Ödeme satırı yalnız ödemedir; aksi hâlde avans satırı alacağı, mahsup borcu bir kez daha düşürürdü.
+    for (const p of paylar) satirlar.push(p.hareket.tur === "mahsup"
+      ? { tarih: p.hareket.tarih || k.tarih, sira: 1, tur: "mahsup", kalem: k, hareket: p.hareket, etkiK: 0, tutarK: p.payK, davranis: dav }
+      : { tarih: p.hareket.tarih || k.tarih, sira: 1, tur: "odeme", kalem: k, hareket: p.hareket, etkiK: -p.payK, tutarK: p.payK, goc: p.hareket.kaynak === "goc", davranis: dav });
   }
-  return araliga(anahtarla(sirala(satirlar)), aralik);
+  // Spec 0155 R15, R15/4 (AC-29, AC-52): tedarikçi avansı alacak doğurur (bakiye eksiye), geri ödeme alacağı azaltır; tutar
+  // lira karşılığıdır (bakiye lira yürür, X8).
+  const avanslar = (hareketler || []).filter(m => m && !m.deletedAt && m.tur === "avans" && idEsit(m.tedarikciId, tedarikciId));
+  for (const m of avanslar) {
+    const giren = m.yon === AVANS_YON.GIREN;
+    satirlar.push({ tarih: m.tarih, sira: 2, tur: giren ? "geriOdeme" : "avans", hareket: m, etkiK: giren ? kurus(m.tutar) : -kurus(m.tutar), tutarK: kurus(m.tutar) });
+  }
+  const sirali = anahtarla(sirala(satirlar));
+  if (!avanslar.length) return araliga(sirali, aralik);
+  // P1 (R15/3, R26): kovalar tarih sırasıyla yürütülür (okuyucuyla aynı adım); döviz kovasını kapatan satır lira kalıntısını
+  // (kur farkı) kendi etkisine katar, ayrıntısı bunu söyler. Son bakiye = borç özeti satırı − açık avansın lira karşılığı.
+  // Triyaj bulgu 2: yürütme okuyucunun kendisidir (kova sırası ekranın satır sırasına bağlı değil).
+  const { farklar } = kovaYurut(hareketler, giderler);
+  for (const x of sirali) {
+    if (!(x.tur === "avans" || x.tur === "geriOdeme" || (x.tur === "mahsup" && x.hareket?.tedarikciId != null))) continue;
+    const fark = farklar.get(String(x.hareket.id));
+    if (fark) { x.etkiK += fark; x.kurFarkiK = fark; }
+  }
+  const r = araliga(sirali, aralik);
+  const acikAvans = tedarikciAvanslari(hareketler, giderler).get(String(tedarikciId)) || [];
+  return { ...r, acikAvans, avansLiraK: acikAvans.reduce((a, k) => a + k.liraK, 0) };
 };
 
 // R13, AC-17, B8: çalışan ekstresi, tek net sütun: + çalışana borcumuz, − çalışandan alacağımız. Maaş kalemi borç doğurur,

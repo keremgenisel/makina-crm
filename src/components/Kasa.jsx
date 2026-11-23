@@ -7,7 +7,7 @@ import { bozdurmaKurOnerisi, bozdurmaYamasi, kurGirdisi, KUR_KAYNAK, ONERI_BUGUN
 import { tl, turHaritasi, davranisOf, DAVRANIS } from "../lib/gider";
 import { odemeGirisiYaz } from "../lib/formOdemesi";
 import { hareketGruplari, hareketHedefPaylari } from "../lib/odemeYontemi";
-import { hesabiSilinmisMi, HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani, hareketDuzenlemeDurumu, tahsilatSatiriIbaresi, VERILEN_CEK_IBARESI, KAPALI_HESAP_NEDENI, avansSilinebilirMi, DUZELTME_TUR, DUZELTME_TUR_ADI, DUZELTME_KAPALI_NEDENI, duzeltmePlani, duzeltmeYonAdi, duzeltmeIbaresi, hareketParaBirimi } from "../lib/kasa";
+import { hesabiSilinmisMi, HESAP_TURLERI, HESAP_TUR_AD, HESAPSIZ_NOTU, hesapDogrula, hesapBakiyeleri, hesapKullanimi, virmanDogrula, secilebilirHesaplar, hesapsizOzeti, kapsamAnahtari, kapsamGirisAnahtari, kapsamGirisi, denemeDonemiAcik, denemeDonemiBitisi, hesapTasimaPlani, hareketDuzenlemeDurumu, tahsilatSatiriIbaresi, VERILEN_CEK_IBARESI, KAPALI_HESAP_NEDENI, avansSilinebilirMi, tedarikciAvansSilinebilirMi, tedarikciAvansSinirMetni, AVANS_YON, DUZELTME_TUR, DUZELTME_TUR_ADI, DUZELTME_KAPALI_NEDENI, duzeltmePlani, duzeltmeYonAdi, duzeltmeIbaresi, hareketParaBirimi } from "../lib/kasa";
 import { HesapSilPenceresi } from "./kasa/HesapSilPenceresi";
 import { BakiyeDuzeltPenceresi } from "./kasa/BakiyeDuzeltPenceresi";
 import { SATIS_KAYNAK, tahsilatGunuAta, tahsilatGunuSorulurMu, tahsilatGunuEksikMi, TAHSILAT_GUNU_EKSIK, TAHSILAT_GUNU_DUZELTILDI } from "../lib/satisTahsilat";
@@ -21,6 +21,7 @@ import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { KartBolum, BosDurum, UyariSeridi, HataMetni, Ipucu, Segment } from "./tasarim";
 import { hedefEtiketi, cokHedefliMi, taksitAdi, tutarMetni } from "./gider/GiderAlanlari";
 import { CalisanAvanslari, AvansFormu } from "./kasa/CalisanAvanslari";
+import { TedarikciAvanslari, tedarikciAvansIzi } from "./kasa/TedarikciAvanslari";
 import { OdemeKayitPenceresi } from "./gider/OdemeKayitPenceresi";
 import { GiderKasaRaporuDugmesi } from "./rapor/GiderKasaRaporuDugmesi";
 import { CekPortfoyu } from "./cek/CekPortfoyu";
@@ -198,7 +199,7 @@ export const Kasa = ({
   hamKasaHesaplari = null,
   // Spec 0152 R4/2, P8 (AC-32): günün kuru; bozdurma penceresi ve ödeme düzenleme penceresi önerisi buradan.
   rates = null, ratesErr = false,
-  giderler = [], giderTurleri = [], tedarikciler = [], serverPermissions = null, showToast = () => {},
+  giderler = [], giderTurleri = [], tedarikciler = [], tumTedarikciler = null, serverPermissions = null, showToast = () => {},
   // Spec 0024 B: çalışan avansları (silinmişler dahil, C8) ve ekstre kapsamı için yürürlük ayı.
   calisanlar = [], yururlukAy = null,
   // Spec 0064 R14, R15: anlık işlemlerde "başkasının kilidinde mi" denetimi için oturumdaki kullanıcı.
@@ -253,6 +254,9 @@ export const Kasa = ({
   const giderById = useMemo(() => new Map(giderler.map(k => [String(k.id), k])), [giderler]);
   const turById = useMemo(() => new Map(giderTurleri.map(t => [String(t.id), t])), [giderTurleri]);
   const tedById = useMemo(() => new Map(tedarikciler.map(t => [String(t.id), t])), [tedarikciler]);
+  // Spec 0155 R1/3: tedarikçi avansının adı çöpteki tedarikçide de çözülür (silinmiş ibaresiyle).
+  const tumTedById = useMemo(() => new Map((tumTedarikciler || tedarikciler).map(t => [String(t.id), t])), [tumTedarikciler, tedarikciler]);
+  const tedAdi = (id) => { const t = tumTedById.get(String(id)); return t ? `${t.ad}${t.deletedAt ? " (silinmiş)" : ""}` : "Silinmiş tedarikçi"; };
   const hesapById = useMemo(() => new Map(kasaHesaplari.map(h => [String(h.id), h])), [kasaHesaplari]);
   // Spec 0051 B (R8, Q1): her gider ödemesinin kapattığı hedef(ler); yalnız birden çok hedefli kalemler için hesaplanır.
   const turMap = useMemo(() => turHaritasi(giderTurleri), [giderTurleri]);
@@ -277,6 +281,8 @@ export const Kasa = ({
       const h = hesapById.get(String(m.hesapId));
       return { tur: DUZELTME_TUR_ADI, metin: [duzeltmeYonAdi(m.yon, h?.tur === "kart"), m.aciklama].filter(Boolean).join(" · ") };
     }
+    // Spec 0155 R1/3, R22/2 (AC-47, AC-64): tedarikçi avansı tedarikçinin adını ve döviz ibaresini yazar.
+    if (s.tur === "avans" && m?.tedarikciId != null) return { tur: m.yon === AVANS_YON.GIREN ? "Avans geri ödemesi" : "Tedarikçi avansı", metin: [tedAdi(m.tedarikciId), dovizOdemeIbaresi(m), m.aciklama].filter(Boolean).join(" · ") };
     if (s.tur === "avans") {
       const c = calisanlar.find(x => String(x.id) === String(m.calisanId));
       return { tur: "Avans", metin: [c ? `${c.ad}${c.deletedAt ? " (silinmiş)" : ""}` : "Silinmiş çalışan", m.aciklama].filter(Boolean).join(" · ") };
@@ -323,7 +329,7 @@ export const Kasa = ({
       if (sat.kaynak === SATIS_KAYNAK.KALIP) return ["part_sale", sat.kayit.id];
       return ["yedek_parca", sat.kayit.id];
     }
-    return sat?.tur === "avans" ? ["calisan", sat.calisanId] : ["gider", sat?.giderId];
+    return sat?.tur === "avans" ? (sat.tedarikciId != null ? ["tedarikci", sat.tedarikciId] : ["calisan", sat.calisanId]) : ["gider", sat?.giderId];
   };
   // R16, AC-24: kapatılan hesap yeni harekette seçilemez, geçmişi durur; yeniden açılabilir.
   const kapatAc = (h) => {
@@ -408,7 +414,7 @@ export const Kasa = ({
   // R21 (Q6): işlem geçmişinde tahsilatta "tür · firma", ödemede tedarikçi ya da tür; avansta çalışan adı yazılmaz.
   const kapsamAdi = (sat) => {
     if (sat.kaynak && sat.kayit) return [sat.turAdi, sat.firma].filter(Boolean).join(" · ");
-    if (sat.tur === "avans") return "Avans";
+    if (sat.tur === "avans") return sat.tedarikciId != null ? `Tedarikçi avansı · ${tedAdi(sat.tedarikciId)}` : "Avans";
     const k = giderById.get(String(sat.giderId));
     return k ? (tedById.get(String(k.tedarikciId))?.ad || turById.get(String(k.turId))?.ad || "Gider ödemesi") : "Gider ödemesi";
   };
@@ -457,7 +463,7 @@ export const Kasa = ({
   // Spec 0151 R10/2: bakiye düzeltmesi `kasa_hesap` ile (varsayılan ödeme dalına düşmez).
   const hareketYetkisi = (m) => !!setHesapHareketleri && (m.tur === "virman" ? canDo("virman") : m.tur === "avans" ? canDo("avans") : m.tur === DUZELTME_TUR ? canDo("kasa_hesap") : canDo("gider_odeme"));
   // R14: anlık silmenin kilit alanı (pencerenin aldığı kilitle aynı kayıt).
-  const hareketKilidi = (m) => (m.tur === "virman" || m.tur === DUZELTME_TUR ? ["kasa_hesap", m.hesapId] : m.tur === "avans" ? ["calisan", m.calisanId] : ["gider", m.giderId]);
+  const hareketKilidi = (m) => (m.tur === "virman" || m.tur === DUZELTME_TUR ? ["kasa_hesap", m.hesapId] : m.tur === "avans" ? (m.tedarikciId != null ? ["tedarikci", m.tedarikciId] : ["calisan", m.calisanId]) : ["gider", m.giderId]);
   const hareketDurumu = (m) => hareketDuzenlemeDurumu(m, { giderVar: (id) => giderById.has(String(id)) });
   const [duzenlenecek, setDuzenlenecek] = useState(null); // düzenleme penceresi açık hareket
   const [silinecekHareket, setSilinecekHareket] = useState(null); // onay bekleyen ödeme / avans
@@ -465,7 +471,7 @@ export const Kasa = ({
   const duzenKalemi = duzenlenecek && (duzenlenecek.tur === "odeme" || duzenlenecek.tur === "mahsup") ? giderById.get(String(duzenlenecek.giderId)) || null : null;
   const { lockConflict: odemeKilidi, forceAcquire: odemeKilidiDevral } = useLock("gider", duzenKalemi?.id ?? null);
   const hareketAdi = (m) => (m.tur === DUZELTME_TUR ? hesapById.get(String(m.hesapId))?.ad || "Silinmiş hesap" : m.tur === "virman" ? `${hesapById.get(String(m.hesapId))?.ad || ""} → ${hesapById.get(String(m.karsiHesapId))?.ad || ""}`
-    : m.tur === "avans" ? calisanlar.find(c => String(c.id) === String(m.calisanId))?.ad || ""
+    : m.tur === "avans" ? (m.tedarikciId != null ? tumTedById.get(String(m.tedarikciId))?.ad || "" : calisanlar.find(c => String(c.id) === String(m.calisanId))?.ad || "")
       : (() => { const k = giderById.get(String(m.giderId)); return k ? k.aciklama || k.calisanAd || "" : ""; })());
   // R21: hesabı (virmanda kaynak hesabı) değişen satır seçili listeden çıkar; bildirim nereye gittiğini söyler.
   const duzenlemeBildirimi = (g, onceki) => {
@@ -487,7 +493,10 @@ export const Kasa = ({
     if (!m || !hareketYetkisi(m) || !hareketDurumu(m).silinebilir) return;
     if (m.tur === "virman") { virmanSil(m); return; }
     if (kilitliMi(...hareketKilidi(m))) return;
-    if (m.tur === "avans") {
+    if (m.tur === "avans" && m.tedarikciId != null) {
+      const d = tedarikciAvansSilinebilirMi(m, hesapHareketleri, giderler); // spec 0155 R1/2 (AC-64)
+      if (!d.ok) { showToast(tedarikciAvansSinirMetni(d), "err"); return; }
+    } else if (m.tur === "avans") {
       const d = avansSilinebilirMi(m, hesapHareketleri, giderler);
       if (!d.ok) { showToast("Bu avansa mahsup yapılmış; önce mahsupları silin.", "err"); return; }
     }
@@ -500,7 +509,7 @@ export const Kasa = ({
       return;
     }
     const k = m.tur === "avans" ? null : giderById.get(String(m.giderId));
-    if (m.tur === "avans") logAction({ serverPermissions, action: "silindi", entity: "avans", entityId: m.id, entityName: hareketAdi(m), detail: { tutar: m.tutar } });
+    if (m.tur === "avans") logAction({ serverPermissions, action: "silindi", entity: "avans", entityId: m.id, entityName: hareketAdi(m), detail: m.tedarikciId != null ? tedarikciAvansIzi(m, hareketAdi(m)) : { tutar: m.tutar } });
     else if (k) logAction({ serverPermissions, action: "odeme_iptal", entity: "gider", entityId: k.id, entityName: k.aciklama || k.calisanAd || "", detail: { tutar: m.tutar ?? null, tarih: m.tarih, ...dovizIzAyrintisi(m) } });
     else logAction({ serverPermissions, action: "silindi", entity: "kasa_hareketi", entityId: m.id, entityName: "Silinmiş gider", detail: { tutar: m.tutar ?? null, tarih: m.tarih } });
     showToast(m.tur === "avans" ? "Avans silindi." : "Ödeme silindi.");
@@ -672,8 +681,11 @@ export const Kasa = ({
         </>
       )}
 
-      <CalisanAvanslari aktifKullanici={aktifKullanici} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} kasaHesaplari={kasaHesaplari}
+      <CalisanAvanslari bugun={bugun} aktifKullanici={aktifKullanici} calisanlar={calisanlar} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri} kasaHesaplari={kasaHesaplari}
         giderler={giderler} giderTurleri={giderTurleri} yururlukAy={yururlukAy} canDo={canDo} serverPermissions={serverPermissions} showToast={showToast} />
+      {/* Spec 0155 R14, R14/2 (AC-70): Tedarikçi avansları Çalışan avanslarından sonra, hesapsız bloğun önünde. */}
+      <TedarikciAvanslari bugun={bugun} aktifKullanici={aktifKullanici} tedarikciler={tedarikciler} tumTedarikciler={tumTedarikciler} hesapHareketleri={hesapHareketleri} setHesapHareketleri={setHesapHareketleri}
+        kasaHesaplari={kasaHesaplari} giderler={giderler} giderTurleri={giderTurleri} yururlukAy={yururlukAy} canDo={canDo} serverPermissions={serverPermissions} showToast={showToast} rates={rates} ratesErr={ratesErr} />
 
       {/* Spec 0083 R6, R7: hesabı belirtilmemiş kayıtlar bloğu (deneme şeridi dahil, sekiz parça, iç sırası aynen) sayfanın
           sonunda, Çalışan avanslarından sonra. Kullanıcı Kasa'ya bakiyeler için gelir; blok bakiye tablosunun önüne geçmez. */}
@@ -839,6 +851,7 @@ export const Kasa = ({
       {/* Spec 0073 C1: düzenleme, o türü ekleyen pencerenin kendisidir (yeni kipi). */}
       {duzenlenecek?.tur === "virman" && <VirmanFormu rates={rates} ratesErr={ratesErr} hesaplar={kasaHesaplari} hareket={duzenlenecek} onKaydet={g => hareketGuncelle(g, duzenlenecek)} onClose={() => setDuzenlenecek(null)} />}
       {duzenlenecek?.tur === "avans" && <AvansFormu calisanlar={calisanlar} hesaplar={kasaHesaplari} hareket={duzenlenecek} hareketler={hesapHareketleri} giderler={giderler}
+        taraf={duzenlenecek.tedarikciId != null ? "tedarikci" : "calisan"} tedarikciler={tumTedarikciler || tedarikciler} rates={rates} ratesErr={ratesErr}
         onKaydet={g => hareketGuncelle(g, duzenlenecek)} onClose={() => setDuzenlenecek(null)} />}
       {duzenKalemi && odemeKilidi && (
         <Modal title="Ödemeyi Düzenle" onClose={() => setDuzenlenecek(null)}>
@@ -858,7 +871,7 @@ export const Kasa = ({
             confirmLabel="Sil" onConfirm={() => hareketSil(silinecekHareket)} onCancel={() => setSilinecekHareket(null)} />
         ) :
         <ConfirmDialog title={silinecekHareket.tur === "avans" ? "Avans silinsin mi?" : "Ödeme silinsin mi?"}
-          message={`${silinecekHareket.tarih ? fmtTR(silinecekHareket.tarih) : "Tarihsiz"} tarihli ${silinecekHareket.tutar == null ? "tutarsız (aktarılan)" : para(silinecekHareket.tutar, "TRY")} ${silinecekHareket.tur === "avans" ? "avans" : "ödeme"} çöp kutusuna taşınacak; ${silinecekHareket.tur === "avans" ? "çalışanın açık avansı" : "kalemin kalanı"} buna göre yeniden hesaplanır.`}
+          message={`${silinecekHareket.tarih ? fmtTR(silinecekHareket.tarih) : "Tarihsiz"} tarihli ${silinecekHareket.tutar == null ? "tutarsız (aktarılan)" : para(silinecekHareket.tutar, "TRY")} ${silinecekHareket.tur === "avans" ? "avans" : "ödeme"} çöp kutusuna taşınacak; ${silinecekHareket.tur === "avans" ? (silinecekHareket.tedarikciId != null ? "tedarikçinin açık avansı" : "çalışanın açık avansı") : "kalemin kalanı"} buna göre yeniden hesaplanır.`}
           confirmLabel="Sil" onConfirm={() => hareketSil(silinecekHareket)} onCancel={() => setSilinecekHareket(null)} />
       )}
       {tasinacak && tasimaPlani && !hesapKilidi && (

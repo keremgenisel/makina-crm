@@ -187,8 +187,10 @@ describe("Spec 0083 B: Kasa › Hesaplar yerleşimi (R6–R13)", () => {
     render(<KH hareketler={HAREKET.filter(h => h.tur !== "avans")} />);
     expect(tid("hesapsiz-notu").textContent).toBe(HESAPSIZ_NOTU);
     expect(tid("deneme-donemi").textContent).toBe(denemeDonemiMetni("2027-01-01"));
-    // Deneme şeridinin hemen önceki kardeşi Çalışan avansları kartıdır (araya öğe girmedi).
-    expect(tid("deneme-donemi").previousElementSibling).toBe(tid("calisan-avanslari"));
+    // Deneme şeridinin hemen önceki kardeşi avans kartıdır (araya öğe girmedi). Spec 0155 ile (R14/2, AC-70): Tedarikçi
+    // avansları Çalışan avanslarından sonra, hesapsız bloğun önünde; sıra Çalışan → Tedarikçi → blok.
+    expect(tid("deneme-donemi").previousElementSibling).toBe(tid("tedarikci-avanslari"));
+    expect(tid("tedarikci-avanslari").previousElementSibling).toBe(tid("calisan-avanslari"));
   });
   it("AC-19: hesap satırında 'n hareket' ibaresi, deneme dönemindeki silme düğmesi ve taşıma penceresi çalışır", () => {
     render(<KH />);

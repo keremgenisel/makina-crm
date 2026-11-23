@@ -11,7 +11,7 @@ import { useFilteredList } from "../../hooks/useFilteredList";
 import { KartBolum } from "../tasarim";
 import { ciroluTahsilatIdleri, bagliHareketiOlanCekler, BAGLI_HAREKETLI_CEK_NEDENI } from "../../lib/cek";
 import { turHaritasi, kalemdeGecenTedarikciler, tedarikciKorumaCumlesi, tedarikciKorumaSatiri } from "../../lib/gider";
-import { copHareketGeriAlmaNedeni } from "../../lib/kasa";
+import { copHareketGeriAlmaNedeni, avansliTedarikciler, AVANSLI_TEDARIKCI_NEDENI } from "../../lib/kasa";
 import { makeCanDo } from "../../lib/permissions";
 import { geriAlmaAdCakismasi, HAREKET_COP_TUR, hareketCopEtiketi, cekCopEtiketi, tanimCopEtiketi, hesapCopEtiketi } from "../../lib/copKutusu";
 import { uretimFormDonemMetni } from "../stock/uretimFormPrint";
@@ -221,6 +221,10 @@ export const SettingsTrash = ({
   // parça geri alınırsa bağ kopmasın). "Çöpü boşalt" çöpteki parçaları da kalıcı sildiği için orada kalacak parçalar sayılır.
   // Spec 0140 A-R5, A-R5/2 (AC-7–AC-9, AC-59): parçanın Ana tedarikçisi ve malzemenin Ana tedarikçisi de korur.
   const korunanTedarikciler = kalemdeGecenTedarikciler(rawParts || [], rawMalzemeler || []);
+  // Spec 0155 C10/2, P8 (AC-67): avans ya da mahsup hareketi olan tedarikçi kalıcı silinmez (çöpteki hareket dahil; "çöpü
+  // boşalt" çöpteki hareketleri de sildiği için orada kalacak hareketlerden).
+  const avansliTed = avansliTedarikciler(Array.isArray(rawHesapHareketleri) ? rawHesapHareketleri : []);
+  const bosaltmadaAvansliTed = avansliTedarikciler((Array.isArray(rawHesapHareketleri) ? rawHesapHareketleri : []).filter(h => !h.deletedAt));
   const bosaltmadaKorunanTedarikciler = kalemdeGecenTedarikciler((rawParts || []).filter(x => !x.deletedAt), (rawMalzemeler || []).filter(x => !x.deletedAt));
   // Spec 0123 R1/2, R3/6, C2 (Karar 5, 27): iki harita, çizim başına. Kalıcı Sil bütün parçalardan, "çöpü boşalt" kalacaklardan.
   const setteKorunanParcalar = setteGecenParcalar(rawParts || []);
@@ -242,6 +246,7 @@ export const SettingsTrash = ({
   const purgeTedarikci = (t) => {
     // Spec 0140 A-R5/3 (AC-60): bildirimde sabit cümle, ad yok.
     if (korunanTedarikciler.has(String(t.id))) { showToast(`Tedarikçi kalıcı silinemez: ${tedarikciKorumaCumlesi(korunanTedarikciler.get(String(t.id)))}`, "err"); return; }
+    if (avansliTed.has(String(t.id))) { showToast(AVANSLI_TEDARIKCI_NEDENI, "err"); return; }
     setTedarikciler(p => p.filter(x => x.id !== t.id)); showToast("Tedarikçi kalıcı olarak silindi.");
   };
   const restoreParti = (u) => {
@@ -268,7 +273,7 @@ export const SettingsTrash = ({
   // Triyaj (bulgu 1): ödeme ve mahsup bugünkü canlı hareketlerle aynı doğrulayıcılardan geçer; aşım varsa geri alınmaz.
   const restoreHareket = (h) => {
     const neden = copHareketGeriAlmaNedeni(h, { giderler: rawGiderler, hareketler, turMap: turHaritasi(giderTurleri), bugun: yerelBugun(),
-      yururlukAy: appSettings?.giderAyarlari?.yururlukAy || null });
+      yururlukAy: appSettings?.giderAyarlari?.yururlukAy || null, tedarikciler: rawTedarikciler || [] });
     if (neden) { showToast(neden, "err"); return; }
     geriAl(setHesapHareketleri, h.id); showToast(`${HAREKET_COP_TUR[h.tur] || "Hareket"} geri alındı.`);
   };
@@ -327,7 +332,8 @@ export const SettingsTrash = ({
     setYedekParcaSatislar?.(p => p.filter(x => !x.deletedAt));
     if (giderYetki && rawGiderler.some(x => x.deletedAt)) setGiderler?.(p => p.filter(x => !x.deletedAt));
     // Spec 0068 R11 (AC-15, AC-33): yalnız görebildiği ve silme izni olan kullanıcının boşaltması dokunur (gider satırlarıyla aynı ilke).
-    if (tedarikciYetki && rawTedarikciler.some(x => x.deletedAt && !bosaltmadaKorunanTedarikciler.has(String(x.id)))) setTedarikciler(p => p.filter(x => !x.deletedAt || bosaltmadaKorunanTedarikciler.has(String(x.id))));
+    const tedKorunur = (x) => bosaltmadaKorunanTedarikciler.has(String(x.id)) || bosaltmadaAvansliTed.has(String(x.id)); // spec 0155 AC-67
+    if (tedarikciYetki && rawTedarikciler.some(x => x.deletedAt && !tedKorunur(x))) setTedarikciler(p => p.filter(x => !x.deletedAt || tedKorunur(x)));
     if (partiYetki && rawUretimPartileri.some(x => x.deletedAt)) setUretimPartileri(p => p.filter(x => !x.deletedAt));
     // Spec 0078 R23, AC-45: altı kasa/gider bölümü; yalnız görebildiği ve izni olan kullanıcının boşaltması dokunur.
     // Hareket satırı türüne göre izinli olanlar silinir; çeke bağlı canlı hareketi olan çek kalır (R21).
@@ -387,8 +393,8 @@ export const SettingsTrash = ({
       });
       // Spec 0068 R11, R21: tedarikçi ve üretim partisi; düğmeler silme izniyle (izinsizde satır görünür, düğme yok).
       rawTedarikciler.filter(t => t.deletedAt).forEach(t => items.push({ key: `tedarikci-${t.id}`, type: "Tedarikçi", label: t.ad || "—", deletedAt: t.deletedAt,
-        restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki && !korunanTedarikciler.has(String(t.id)) ? () => purgeTedarikci(t) : null,
-        neden: tedarikciKorumaSatiri(korunanTedarikciler.get(String(t.id))) })); // spec 0140 AC-61
+        restore: tedarikciYetki ? () => restoreTedarikci(t) : null, purge: tedarikciYetki && !korunanTedarikciler.has(String(t.id)) && !avansliTed.has(String(t.id)) ? () => purgeTedarikci(t) : null,
+        neden: tedarikciKorumaSatiri(korunanTedarikciler.get(String(t.id))) || (avansliTed.has(String(t.id)) ? AVANSLI_TEDARIKCI_NEDENI : undefined) })); // spec 0140 AC-61, 0155 AC-67
       rawUretimPartileri.filter(u => u.deletedAt).forEach(u => items.push({ key: `parti-${u.id}`, type: "Üretim Partisi", label: `${u.ad || "—"} · ${u.baslangicAy || ""}${u.bitisAy ? " – " + u.bitisAy : " (açık)"}`, deletedAt: u.deletedAt,
         restore: partiYetki ? () => restoreParti(u) : null, purge: partiYetki ? () => purgeParti(u) : null }));
       // Spec 0078 R23, R24: hareket, tekrarlayan tanım ve gider türü (gider yetkisi). Çeke bağlı hareket
@@ -397,7 +403,9 @@ export const SettingsTrash = ({
         const izin = hareketIzinli(h);
         // Spec 0151 R8/2 (AC-49): düzeltmenin tutarı hesabın para biriminde.
         const pb = h.tur === "duzeltme" ? rawKasaHesaplari.find(x => String(x.id) === String(h.hesapId))?.paraBirimi : undefined;
-        items.push({ key: `hareket-${h.id}`, type: HAREKET_COP_TUR[h.tur] || "Kasa Hareketi", label: hareketCopEtiketi(h, pb), deletedAt: h.deletedAt,
+        // Spec 0155 R20 (AC-36): tedarikçi avansı tedarikçinin adını yazar (0078 R24'ün ters çevrildiği yer).
+        const tedAd = h.tur === "avans" && h.tedarikciId != null ? rawTedarikciler.find(x => String(x.id) === String(h.tedarikciId))?.ad || "Silinmiş tedarikçi" : null;
+        items.push({ key: `hareket-${h.id}`, type: HAREKET_COP_TUR[h.tur] || "Kasa Hareketi", label: hareketCopEtiketi(h, pb, { tedarikciAdi: tedAd }), deletedAt: h.deletedAt,
           restore: izin ? () => restoreHareket(h) : null, purge: izin ? () => purgeHareket(h) : null });
       });
       const turMapCop = turHaritasi(giderTurleri);

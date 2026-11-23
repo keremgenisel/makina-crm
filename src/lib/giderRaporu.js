@@ -15,7 +15,7 @@ import { stopajBeyanAyari, stopajDonemOzetleri } from "./stopajDonemi";
 import { hesaplananKdvAylar } from "./giderKdv";
 import { donemYontemKirilimi, hareketHedefPaylari, hedefEtiketi, YONTEM_BELIRSIZ } from "./odemeYontemi";
 import { dovizOdemeMi, bozdurmaMi, kurMetni } from "./doviz";
-import { hesapBakiyeleri, hareketOzeti, hesapsizOdemeler, hesapsizTahsilatlar, avansBorclari, HESAP_TUR_AD, DUZELTME_TUR, DUZELTME_TUR_ADI, duzeltmeYonAdi, hareketParaBirimi } from "./kasa";
+import { hesapBakiyeleri, hareketOzeti, hesapsizOdemeler, hesapsizTahsilatlar, avansBorclari, tedarikciAvanslari, HESAP_TUR_AD, DUZELTME_TUR, DUZELTME_TUR_ADI, duzeltmeYonAdi, hareketParaBirimi } from "./kasa";
 import { cekAyOzeti } from "./cek";
 import { acikKalemler } from "./acikKalemler";
 import { YAS_SIRA } from "./yaslandirma";
@@ -32,6 +32,23 @@ export const RAPOR_BASLIGI = "Aylık Gider ve Kasa Raporu";
 export const NOT_GELIR_DEGIL = "Kasa bölümü nakit hareketlerini gösterir, gelir raporu değildir; Finans'ın Aylık Faaliyet Raporu'ndaki ciroyla toplanmaz.";
 export const NOT_YONTEM = "Gider bölümü ayın kalemlerine yapılan ödemeleri, Kasa bölümü ay içinde yapılan ödeme hareketlerini sayar; iki kırılım farklı olabilir.";
 export const NOT_ANLIK = "Bu rapor yazdırıldığı andaki veriyle üretilmiştir. Bu aya sonradan kayıt girilir, silinir ya da çöpe atılırsa rakamlar değişir.";
+// Spec 0155 R19, R19/3: tedarikçi avansı kutusunun verisi; para birimi başına üç toplam, kişi ya da firma adı yok.
+const tedarikciAvansKutusu = (hareketlerAySonu, giderler, aralik) => {
+  const top = (map) => {
+    const pb = new Map();
+    for (const kovalar of map.values()) for (const k of kovalar) {
+      const x = pb.get(k.paraBirimi) || { paraBirimi: k.paraBirimi, verilenK: 0, mahsupK: 0, acikK: 0 };
+      x.verilenK += k.verilenK; x.mahsupK += k.mahsupK; x.acikK += k.acikK; pb.set(k.paraBirimi, x);
+    }
+    return pb;
+  };
+  const butun = tedarikciAvanslari(hareketlerAySonu, giderler);
+  if (!butun.size) return {};
+  const ay = top(tedarikciAvanslari((hareketlerAySonu || []).filter(m => m && (!aralik?.baslangic || (m.tarih || "") >= aralik.baslangic)), giderler));
+  const acik = top(butun);
+  const satirlar = [...acik.values()].map(x => ({ paraBirimi: x.paraBirimi, acikK: x.acikK, verilenK: ay.get(x.paraBirimi)?.verilenK || 0, mahsupK: ay.get(x.paraBirimi)?.mahsupK || 0 }));
+  return { tedarikciAvans: satirlar };
+};
 export const NOT_HESAPSIZ = "Hesabı belirtilmemiş hareketler hiçbir hesabın bakiyesine girmez; rapordaki bakiye ile gerçek bakiye arasındaki fark buradan doğabilir. Personel ödemeleri ve çalışan avansları toplu yazılır; ayrıntı Giderler ve Kasa ekranlarındadır.";
 export const NOT_MAHSUP = "Mahsup para hareketi değildir, hiçbir bakiyeye girmez.";
 // Spec 0060 R11, R16, R20: tür toplamı tek tutardır (bileşenler ayrı yazılmaz); çalışan adı ve kişi bazlı tutar yazılmaz.
@@ -206,11 +223,12 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
   const hesapsizListe = [];
   // Spec 0152 R14/3, R15/4 (AC-42, AC-50): döviz ödemenin döviz tutarı ve kuru, kayıttaki para birimiyle; yalnız döviz harekette.
   const dovizOf = (m) => (dovizOdemeMi(m) ? { doviz: { tutarK: kurus(m.dovizTutar), paraBirimi: hareketParaBirimi(m, (g.hesaplar || []).find(x => String(x.id) === String(m.hesapId))), kur: m.kur } } : {});
-  const personelOdeme = { adet: 0, tutarK: 0 }, avansTop = { adet: 0, tutarK: 0 };
+  const personelOdeme = { adet: 0, tutarK: 0 }, avansTop = { adet: 0, tutarK: 0 }, tedAvansTop = { adet: 0, tutarK: 0 };
   for (const m of hsz.liste) {
     // Spec 0151 R4/3: hesabı bulunamayan bakiye düzeltmesi kendi adıyla (kalem değildir).
     if (m.tur === DUZELTME_TUR) { hesapsizListe.push({ tarih: m.tarih, tutarK: kurus(m.tutar), etiket: DUZELTME_TUR_ADI }); continue; }
-    if (m.tur === "avans") { avansTop.adet++; avansTop.tutarK += kurus(m.tutar); continue; }
+    // Spec 0155 R19/2 (AC-49): tedarikçi avansı kendi toplu satırında; çalışan satırı onu saymaz.
+    if (m.tur === "avans") { const t = m.tedarikciId != null ? tedAvansTop : avansTop; t.adet++; t.tutarK += kurus(m.tutar); continue; }
     const k = giderById.get(String(m.giderId));
     if (k && davranisOf(k, turMap) === DAVRANIS.PERSONEL) { personelOdeme.adet++; personelOdeme.tutarK += kurus(m.tutar); continue; }
     const etiket = k ? (kalemGorunenAd(k, davranisOf(k, turMap)) || turMap.get(String(k.turId))?.ad || "Gider") : "Silinmiş gider";
@@ -219,6 +237,7 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
   }
   if (personelOdeme.adet) hesapsizListe.push({ tarih: null, tutarK: personelOdeme.tutarK, etiket: `Personel ödemeleri · ${personelOdeme.adet} adet`, toplu: true });
   if (avansTop.adet) hesapsizListe.push({ tarih: null, tutarK: avansTop.tutarK, etiket: `Çalışan avansları · ${avansTop.adet} adet`, toplu: true });
+  if (tedAvansTop.adet) hesapsizListe.push({ tarih: null, tutarK: tedAvansTop.tutarK, etiket: `Tedarikçi avansları · ${tedAvansTop.adet} adet`, toplu: true });
   const hszTah = hesapsizTahsilatlar(veri, g.hesaplar, aralik, g.kasaKapsamDisi);
   // Spec 0059 R10, R11, R21, R36, R37 (AC-11, AC-12, AC-17, AC-29): ayın hareket listeleri motorun opt-in listesinden.
   // Yalnız `odeme` satır satır yazılır; personel ödemeleri, avans ve mahsup birer "Ay geneli" toplu satırdır (C9) ve
@@ -247,7 +266,11 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
       tutarK: kurus(m.tutar), ...(m.tamKapatir && (m.tutar == null || m.tutar === "") ? { tamami: true } : {}), ...dovizOf(m) });
   }
   const toplu = (etiket, l) => (l.adet ? [{ tarih: null, toplu: true, kalem: `${etiket} · ${l.adet} adet`, tutarK: l.tutarK }] : []);
-  if (detay) odemeler.push(...toplu("Personel ödemeleri", personelTop), ...toplu("Silinmiş kalem ödemeleri", silinmisTop), ...toplu("Çalışan avansları", ozetL.avans), ...toplu("Avanstan mahsup", ozetL.mahsup));
+  // Spec 0155 R19/2: kırılım varsa çalışan avansı, tedarikçi avansı ve geri ödeme ayrı toplu satırlar.
+  const ak = ozetL.avansKirilimi;
+  if (detay) odemeler.push(...toplu("Personel ödemeleri", personelTop), ...toplu("Silinmiş kalem ödemeleri", silinmisTop),
+    ...(ak ? [...toplu("Çalışan avansları", ak.calisan), ...toplu("Tedarikçi avansları", ak.tedarikci), ...toplu("Avans geri ödemeleri", ak.giren)] : toplu("Çalışan avansları", ozetL.avans)),
+    ...toplu("Avanstan mahsup", ozetL.mahsup));
   // Spec 0152 R15/4, P4 (AC-50): bozdurmada iki bacak ayrı, her biri kendi para biriminde (kayıttaki para birimi önce, P7).
   const virmanlar = (ozetL.virman.liste || []).map(m => ({ tarih: m.tarih, kaynak: hesapAd(m.hesapId), hedef: hesapAd(m.karsiHesapId), tutarK: kurus(m.tutar),
     paraBirimi: hareketParaBirimi(m, hesapById.get(String(m.hesapId))),
@@ -264,7 +287,10 @@ export const giderKasaRaporu = (girdi = {}, ay, { _onceki = true } = {}) => {
     cek: cekAyOzeti(g.cekler, g.payments, ay, { liste: detay }),
     avansK,
     // Spec 0060 R13, R33: ay içinde verilen ve mahsup edilen avans (hareket özetinin toplamları, kişi bilgisi yok).
-    avansAy: { verilenK: ozet.avans.tutarK, mahsupK: ozet.mahsup.tutarK },
+    avansAy: ozet.avansKirilimi ? { verilenK: ozet.avansKirilimi.calisan.tutarK, mahsupK: ozet.avansKirilimi.mahsupCalisan.tutarK } : { verilenK: ozet.avans.tutarK, mahsupK: ozet.mahsup.tutarK },
+    // Spec 0155 R19, R19/3 (AC-34, AC-69): açık tedarikçi avansı para birimi başına (tek okuyucu; tedarikçi kırılımı yok). Ay
+    // içi verilen ve mahsup edilen aynı okuyucunun ay hareketleriyle çağrısından. Tedarikçi avansı yoksa alan yok.
+    ...tedarikciAvansKutusu(hareketlerAySonu, g.giderler, aralik),
     odemeler, virmanlar, tahsilatlar,
     // Spec 0151 R11, R11/2 (AC-12, AC-51): ayın bakiye düzeltmeleri; yalnız varsa (düzeltmesiz rapor nesnesi birebir eski).
     ...(ozetL.duzeltme?.liste?.length ? { duzeltmeler: ozetL.duzeltme.liste.map(m => {
@@ -405,7 +431,8 @@ export const buildGiderKasaRaporuHtml = (r) => {
   const hareketKutu = bolum("KASA · HAREKET ÖZETİ", donem, `
       ${!(oz.odeme.adet + oz.tahsilat.adet + oz.virman.adet + oz.avans.adet + oz.mahsup.adet + (oz.duzeltme?.adet || 0)) ? bosSatir : tablo("HAREKETLER", ["Hareket", "Adet", "Tutar"], [["Ödeme", String(oz.odeme.adet), kp(oz.odeme.tutarK)], ["Tahsilat (hesaba giren)", String(oz.tahsilat.adet), kp(oz.tahsilat.tutarK)],
         ...oz.tahsilat.kaynaklar.map(k => [`&nbsp;&nbsp;${esc(k.ad)}`, String(k.adet), kp(k.tutarK)]),
-        ["Virman", String(oz.virman.adet), kp(oz.virman.tutarK)], ["Avans", String(oz.avans.adet), kp(oz.avans.tutarK)], ["Mahsup", String(oz.mahsup.adet), kp(oz.mahsup.tutarK)],
+        ["Virman", String(oz.virman.adet), kp(oz.virman.tutarK)], ...(oz.avansKirilimi?.giren?.adet ? [["Avans (verilen)", String(oz.avans.adet - oz.avansKirilimi.giren.adet), kp(oz.avans.tutarK - oz.avansKirilimi.giren.tutarK)],
+          ["Avans geri ödemesi (giren)", String(oz.avansKirilimi.giren.adet), kp(oz.avansKirilimi.giren.tutarK)]] : [["Avans", String(oz.avans.adet), kp(oz.avans.tutarK)]]), ["Mahsup", String(oz.mahsup.adet), kp(oz.mahsup.tutarK)],
         // Spec 0151 R11/2 (AC-50): yalnız ayda düzeltme varken.
         ...(oz.duzeltme ? [[esc(DUZELTME_TUR_ADI), String(oz.duzeltme.adet), kp(oz.duzeltme.tutarK)]] : [])], [SOL, R, R])}${K.duzeltmeler?.length ? tablo(DUZELTME_TABLO_BASLIGI, ["Tarih", "Hesap", "Yön", "Tutar"], K.duzeltmeler.map(d => [tarihHucre(d.tarih), esc(d.hesap), esc(d.yon), kp(d.tutarK, d.paraBirimi)]), [SOL, SOL, SOL, R]) : ""}
       ${not(esc(NOT_MAHSUP))}`);
@@ -438,7 +465,11 @@ export const buildGiderKasaRaporuHtml = (r) => {
   // mahsup edilen satırları eklenir.
   const avansKutu = bolum("KASA · AÇIK ÇALIŞAN AVANSI", itibariyla, stTablo([st("Ay içinde verilen", kp(K.avansAy?.verilenK || 0)),
     st("Ay içinde mahsup edilen", kp(K.avansAy?.mahsupK || 0)), st("Açık avans toplamı", kp(K.avansK))]));
-  const kasa = [kasaOzet, hesapKutu, hareketKutu, odemeKutu, tahsilatKutu, yontemKutu, hesapsizKutu, cekKutu, avansKutu].join("");
+  // Spec 0155 R19 (AC-34): yalnız tedarikçi avansı varken; para birimi başına satır, firma adı yok.
+  const tedAvansKutu = K.tedarikciAvans ? bolum("KASA · AÇIK TEDARİKÇİ AVANSI", itibariyla, K.tedarikciAvans.map(x => stTablo([
+    st(`Ay içinde verilen (${x.paraBirimi})`, kp(x.verilenK, x.paraBirimi)), st(`Ay içinde mahsup edilen (${x.paraBirimi})`, kp(x.mahsupK, x.paraBirimi)),
+    st(`Açık avans (${x.paraBirimi})`, kp(x.acikK, x.paraBirimi))])).join("")) : "";
+  const kasa = [kasaOzet, hesapKutu, hareketKutu, odemeKutu, tahsilatKutu, yontemKutu, hesapsizKutu, cekKutu, avansKutu, tedAvansKutu].join("");
 
   const firma = r.firma ? Object.fromEntries(Object.entries(r.firma).map(([k, v]) => [k, v == null ? v : esc(v)])) : null;
   return `${belgeAcilis({ title: esc(`${RAPOR_BASLIGI} ${r.ay}`), baslik: esc(RAPOR_BASLIGI), ust: `${esc(r.ayAdi)} dönemi`, donem, factory: firma,

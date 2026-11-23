@@ -16,13 +16,17 @@ import { Rozet } from "./DonemRaporu";
 // onKalemdeGoster(kalem) yalnız tedarikçi ekstresinde verilir (R14, R16).
 
 // Spec 0156 C9/2: penceredeki kullanıcı metinlerinin tek bloğu.
-export const ISLEM_AD = { borc: "Borç doğdu", odeme: "Ödeme", maas: "Maaş", mahsup: "Avanstan mahsup", avans: "Avans" };
+export const ISLEM_AD = { borc: "Borç doğdu", odeme: "Ödeme", maas: "Maaş", mahsup: "Avanstan mahsup", avans: "Avans", geriOdeme: "Avans geri ödemesi" }; // spec 0155 R15/4
 export const EKSTRE_METIN = Object.freeze({
   baslikTedarikci: "Tedarikçi Ekstresi", baslikCalisan: "Çalışan Ekstresi", kapat: "Kapat", silinmis: "Silinmiş",
   baslangic: "Başlangıç", bitis: "Bitiş", devir: "Devreden bakiye", goc: "Eski kayıttan aktarıldı",
   sutunTarih: "Tarih", sutunIslem: "İşlem", sutunAciklama: "Açıklama", sutunTutar: "Tutar", sutunBakiye: "Bakiye", sutunNetBakiye: "Net bakiye",
   netEtkisiz: "net etkisiz", acikAvans: "Açık avans", kalanBorc: "Kalan borç", calisanaBorc: "Çalışana borcumuz", calisandanAlacak: "Çalışandan alacağımız",
   bosBaslik: "Hareket yok", bosTedarikci: "Bu tedarikçiye bağlı gider kalemi yok.", bosCalisan: "Bu çalışan için maaş kalemi, ödeme ya da avans kaydı yok.",
+  // Spec 0155 R15/3, R15/5, R15/6, P1: iki yönlü tedarikçi ekstresinin metinleri.
+  tedarikciyeBorc: "Bu tedarikçiye borcumuz", tedarikcidenAlacak: "Bu tedarikçiden alacağımız",
+  ipucuTedarikciAvans: "Net bakiye: artı tedarikçiye borcumuz, eksi tedarikçiden alacağımız (açık avans). Mahsup borcu ve avansı birlikte kapatır, net bakiyeyi değiştirmez. Kira stopajı ve KDV tevkifatı vergi dairesine ödenir, bu ekstreye girmez.",
+  hesabaGiren: "Hesaba giren", avanstanDusen: "Avanstan düşen", kurFarki: "Döviz avans kapandı; lira karşılığındaki kur farkı bakiyeye yansıtılmaz.",
   ipucuTedarikci: "Borç, kalemin tedarikçiye ödenecek tutarıdır (KDV dâhil). Kira stopajı ve KDV tevkifatı vergi dairesine ödenir, bu ekstreye girmez; satıra tıklayınca faturanın vergi kırılımı açılır.",
   ipucuCalisan: "Net bakiye: artı çalışana borcumuz, eksi çalışandan alacağımız (açık avans). Mahsup borcu ve avansı birlikte kapatır, net bakiyeyi değiştirmez.",
   avansSil: "Avansı sil", kalemdeGoster: "Kalemde göster", kalemdeGosterIpucu: "Dönem Raporu'nda bu kalemi göster",
@@ -42,7 +46,7 @@ const para = (k) => tl2(tl(k));
 const yuzde = (oran) => `%${oran}`; // R2/4: kisitliRozetMetni'nin biçimi
 const izgara = { display: "grid", gridTemplateColumns: "90px 130px minmax(0, 1fr) 120px 130px 150px", gap: 10, alignItems: "center" }; // R9/2
 const IZGARA_MIN = 860;
-const TIKLANAN = new Set(["borc", "maas", "odeme", "mahsup", "avans"]);
+const TIKLANAN = new Set(["borc", "maas", "odeme", "mahsup", "avans", "geriOdeme"]);
 const durdur = (e) => e.stopPropagation(); // R1/5: satırın içindeki düğmeler ayrıntıyı tetiklemez
 
 // Ayrıntının satırları: [{ etiket, deger, isaret?, ibare?, kapanis? }]. Tutarı sıfır olan satır listeye girmez (R3/2).
@@ -98,30 +102,40 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
       return { bilgi: [{ etiket: M.resmi, deger: para(r.resmiK) }, { etiket: M.elden, deger: para(r.eldenK) }, r.ekK > 0 && { etiket: M.ekOdeme, deger: para(r.ekK) }, r.yolK > 0 && { etiket: M.yolParasi, deger: para(r.yolK) },
         k.aciklama && { etiket: M.aciklama, deger: k.aciklama }].filter(Boolean) };
     }
-    if (s.tur === "avans") return { bilgi: [{ etiket: M.tarih, deger: fmtTR(m.tarih) }, hesapSatiri(m.hesapId), m.aciklama && { etiket: M.aciklama, deger: m.aciklama }].filter(Boolean) };
+    // Spec 0155 R15/6 (AC-54): döviz bayrağı satır türünden bağımsız; geri ödemede para hesaba girer.
+    const dovizH = m?.dovizTutar != null && m.paraBirimi && m.paraBirimi !== "TRY";
+    const kurFarki = s.kurFarkiK ? { etiket: M.kurFarki, deger: "" } : null;
+    if (s.tur === "avans" || s.tur === "geriOdeme") return { bilgi: [{ etiket: M.tarih, deger: fmtTR(m.tarih) }, hesapSatiri(m.hesapId),
+      dovizH && { etiket: s.tur === "geriOdeme" ? M.hesabaGiren : M.hesaptanCikan, deger: paraMetni(m.dovizTutar, m.paraBirimi) },
+      dovizH && m.kur && { etiket: M.odemeKuru, deger: kurSatiriMetni(m.paraBirimi, m.kur) },
+      m.aciklama && { etiket: M.aciklama, deger: m.aciklama }, kurFarki].filter(Boolean) };
     const hedef = calisan ? hedefEtiketi(k, DAVRANIS.PERSONEL, s.hedefPaylari) : null;
     const taksit = calisan ? null : taksitNumarasiAdi(k, m.taksitId, s.davranis || DAVRANIS.NORMAL);
-    const doviz = s.tur === "odeme" && m.dovizTutar != null && m.paraBirimi && m.paraBirimi !== "TRY";
+    const doviz = dovizH;
     return { bilgi: [
       k && { etiket: M.kalem, deger: kalemAdi(k) },
       hedef && { etiket: M.hedef, deger: hedef },
       taksit && { etiket: M.taksit, deger: taksit },
       s.tur === "odeme" && m.yontem && { etiket: M.yontem, deger: m.yontem },
       s.tur === "odeme" ? hesapSatiri(m.hesapId) : null,
-      doviz && { etiket: M.hesaptanCikan, deger: paraMetni(m.dovizTutar, m.paraBirimi) },
+      doviz && { etiket: s.tur === "mahsup" ? M.avanstanDusen : M.hesaptanCikan, deger: paraMetni(m.dovizTutar, m.paraBirimi) },
       doviz && m.kur && { etiket: M.odemeKuru, deger: kurSatiriMetni(m.paraBirimi, m.kur) },
-      m.aciklama && { etiket: M.aciklama, deger: m.aciklama },
+      m.aciklama && { etiket: M.aciklama, deger: m.aciklama }, kurFarki,
     ].filter(Boolean) };
   };
   // Spec 0153 R22, X8 (AC-28): bakiye lira yürür; döviz kalemin borç satırı ve ödemesi kendi para birimindeki tutarı da taşır.
   const dovizEki = (s) => (s.tur === "borc" && s.kalem && dovizKalemMi(s.kalem) ? kalemDovizMetni(s.kalem, s.tutarK)
-    : s.tur === "odeme" && s.hareket?.dovizTutar != null && s.kalem && hedefDovizKipi(s.kalem, s.hareket.taksitId) ? paraMetni(s.hareket.dovizTutar, s.hareket.paraBirimi) : "");
+    : s.tur === "odeme" && s.hareket?.dovizTutar != null && s.kalem && hedefDovizKipi(s.kalem, s.hareket.taksitId) ? paraMetni(s.hareket.dovizTutar, s.hareket.paraBirimi)
+      : (s.tur === "avans" || s.tur === "geriOdeme") && s.hareket?.dovizTutar != null ? paraMetni(s.hareket.dovizTutar, s.hareket.paraBirimi) : "");
   const etki = (s) => (s.tur === "mahsup" ? <span style={{ color: "var(--n500, #64748b)" }}>{para(s.tutarK)}<div style={{ fontSize: 11 }}>{M.netEtkisiz}</div></span>
     : <span style={{ color: s.etkiK < 0 ? "var(--grn700, #15803d)" : "var(--red700, #b91c1c)" }}>{s.etkiK < 0 ? "−" : "+"}{para(Math.abs(s.etkiK))}
       {dovizEki(s) && <div data-testid="ekstre-doviz-tutari" style={{ fontSize: 11, color: "var(--n500, #64748b)" }}>{dovizEki(s)}</div>}</span>);
+  // Spec 0155 R15/3, R15/5 (AC-29, AC-53): tedarikçi ekstresi avansı varken iki yönlüdür (net bakiye, iki etiket, açık avans).
+  const avansli = !calisan && Array.isArray(e.acikAvans);
   const bakiyeEtiketi = calisan
     ? (e.bakiyeK >= 0 ? `${M.calisanaBorc} ${para(e.bakiyeK)}` : `${M.calisandanAlacak} ${para(-e.bakiyeK)}`)
-    : `${M.kalanBorc} ${para(e.bakiyeK)}`;
+    : avansli ? (e.bakiyeK >= 0 ? `${M.tedarikciyeBorc} ${para(e.bakiyeK)}` : `${M.tedarikcidenAlacak} ${para(-e.bakiyeK)}`)
+      : `${M.kalanBorc} ${para(e.bakiyeK)}`;
   const satirCiz = ({ etiket, deger, isaret, ibare, kapanis }, i) => (
     <div key={i} data-testid={kapanis ? "ayrinti-kapanis" : "ayrinti-satir"} style={{ display: "grid", gridTemplateColumns: "18px minmax(0, 1fr) auto", gap: 8, padding: "2px 0",
       borderTop: kapanis ? "1px solid var(--n200, #e2e8f0)" : undefined, fontWeight: kapanis ? 700 : 400 }}>
@@ -145,7 +159,7 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
               {s.odemeler.map(p => (
                 <div key={p.hareket.id} data-testid="ayrinti-odeme" style={{ display: "grid", gridTemplateColumns: "84px minmax(0, 1fr) auto", gap: 8, padding: "2px 0" }}>
                   <span>{fmtTR(p.hareket.tarih)}</span>
-                  <span style={{ color: "var(--n600, #475569)" }}>{[p.hareket.yontem || null, p.hareket.hesapId != null ? hesapAdi(p.hareket.hesapId) || null : null].filter(Boolean).join(" · ")}</span>
+                  <span style={{ color: "var(--n600, #475569)" }}>{[p.hareket.tur === "mahsup" ? ISLEM_AD.mahsup : p.hareket.yontem || null, p.hareket.hesapId != null ? hesapAdi(p.hareket.hesapId) || null : null].filter(Boolean).join(" · ")}</span>
                   <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{para(p.payK)}</span>
                 </div>
               ))}
@@ -165,6 +179,7 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
             <div data-testid="ekstre-ozet" style={{ fontSize: 13, marginTop: 4 }}>
               <b>{bakiyeEtiketi}</b>
               {calisan && <span style={{ color: "var(--n600, #475569)" }}> · {M.acikAvans} {para(e.avansBorcK || 0)}</span>}
+              {avansli && <span data-testid="ekstre-acik-avans" style={{ color: "var(--n600, #475569)" }}> · {M.acikAvans} {e.acikAvans.map(kv => paraMetni(tl(kv.acikK), kv.paraBirimi)).join(" · ")}</span>}
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
@@ -178,7 +193,7 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
           <div style={{ overflowX: "auto" }}>
             <div style={{ minWidth: IZGARA_MIN }}>
               <div style={{ ...izgara, fontSize: 11.5, fontWeight: 700, color: "var(--n500, #64748b)", padding: "0 0 6px", borderBottom: "1px solid var(--n200, #e2e8f0)" }}>
-                <span>{M.sutunTarih}</span><span>{M.sutunIslem}</span><span>{M.sutunAciklama}</span><span style={{ textAlign: "right" }}>{M.sutunTutar}</span><span style={{ textAlign: "right" }}>{calisan ? M.sutunNetBakiye : M.sutunBakiye}</span><span />
+                <span>{M.sutunTarih}</span><span>{M.sutunIslem}</span><span>{M.sutunAciklama}</span><span style={{ textAlign: "right" }}>{M.sutunTutar}</span><span style={{ textAlign: "right" }}>{calisan || avansli ? M.sutunNetBakiye : M.sutunBakiye}</span><span />
               </div>
               {e.devirK != null && (
                 <div data-testid="ekstre-devir" style={{ ...izgara, fontSize: 13, padding: "7px 0", borderTop: "1px solid var(--n150, #f1f5f9)", color: "var(--n600, #475569)" }}>
@@ -188,7 +203,7 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
               {e.satirlar.map(s => {
                 const tiklanir = TIKLANAN.has(s.tur); // R1/3: beş türün ayrıntısı her zaman en az bir satır taşır
                 const acikMi = tiklanir && acik.has(s.anahtar);
-                const kalemdeGoster = !calisan && onKalemdeGoster && s.kalem && (s.tur === "borc" || s.tur === "odeme"); // R14, R16, R17
+                const kalemdeGoster = !calisan && onKalemdeGoster && s.kalem && (s.tur === "borc" || s.tur === "odeme" || s.tur === "mahsup"); // R14, R16, R17; 0155 R15/7
                 return (
                   <div key={s.anahtar} data-testid="ekstre-kayit">
                     {/* Triyaj (bulgu 2): rol ve klavye yalnız ilk beş hücreyi saran öğede (subgrid ile aynı sütunlar); düğme hücresi
@@ -205,7 +220,7 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
                         <b id={`${kimlik}${s.anahtar}-b`} style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{para(s.bakiyeK)}</b>
                       </div>
                       <span data-testid="ekstre-satir-eylem" style={{ textAlign: "right" }} onClick={durdur} onKeyDown={durdur}>
-                        {s.tur === "avans" && onAvansSil && <Btn small variant="danger" onClick={() => onAvansSil(s.hareket)} title={M.avansSil}><Icon name="trash" size={12} /></Btn>}
+                        {(s.tur === "avans" || s.tur === "geriOdeme") && onAvansSil && <Btn small variant="danger" onClick={() => onAvansSil(s.hareket)} title={M.avansSil}><Icon name="trash" size={12} /></Btn>}
                         {kalemdeGoster && <Btn small variant="ghost" onClick={() => onKalemdeGoster(s.kalem)} title={M.kalemdeGosterIpucu}>{M.kalemdeGoster}</Btn>}
                       </span>
                     </div>
@@ -216,7 +231,7 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
             </div>
           </div>
         )}
-        <Ipucu>{calisan ? M.ipucuCalisan : M.ipucuTedarikci}</Ipucu>
+        <Ipucu>{calisan ? M.ipucuCalisan : avansli ? M.ipucuTedarikciAvans : M.ipucuTedarikci}</Ipucu>
       </div>
     </Modal>
   );

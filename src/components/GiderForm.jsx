@@ -9,10 +9,10 @@ import { turHaritasi, giderKalemDogrula, kiraHesapla, tutarCoz, personelMukerrer
 import { kurCoz, kurGirdisi, kurOnerisi, kurSapmaUyarisi, KUR_KAYNAK, ONERI_BUGUN_IBARESI, paraMetni, dovizMi } from "../lib/doviz";
 import { CUR_SYM } from "../lib/constants";
 import { Icon, Field, Input, Select, Btn, Modal, TutarInput } from "./ui";
-import { acikHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda } from "../lib/kasa";
+import { acikHesaplar, sonKullanilanHesap, sonKullanilanYontem, avansBorcuK, mahsupKapsamda, tedarikciAvanslari, mahsupKovalari } from "../lib/kasa";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, duzenlemeOdemeDurumu } from "../lib/formOdemesi";
 import { CIRO_YONTEMI } from "../lib/cek";
-import { OdemeGirisi, MAHSUP_KILITLI_HATASI } from "./gider/OdemeGirisi";
+import { OdemeGirisi, mahsupKilitliHatasi } from "./gider/OdemeGirisi";
 import { DavranisRozeti, tl2, OdemeSatirlari, STOPAJ_KDV_NOTU, STOPAJ_AYRI_KALEM_NOTU, TEVKIFAT_AYRI_KALEM_NOTU, TEVKIFAT_KDV_DAHIL_NOTU, TEVKIFAT_ALT_SINIR_NOTU, KisitAlani, KapsamAlani, EkOdemeSatirlari, hedefAdi, hedefBasligi, cokHedefliMi, tutarMetni } from "./gider/GiderAlanlari";
 import { Segment, HataMetni, Ipucu, KartBolum, UyariSeridi } from "./tasarim";
 
@@ -258,7 +258,12 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   const girisHedefleri = yeniKalem ? odemeHedefListesi : (duzenlemeDurumu?.hedefler || []);
   const girisKalemi = yeniKalem ? onizlemeKalem : canliKalem;
   const avansK = dav === DAVRANIS.PERSONEL && form.calisanId !== "" ? avansBorcuK(numId(form.calisanId), kalanHareketler, giderler) : 0;
-  const mahsupVar = odemeDegistirebilir && avansK > 0 && girisHedefleri.some(h => !h.pasif && h.kalanK > 0)
+  // Spec 0155 R9: tedarikçi kaleminde kalemin tedarikçisinin uygun kovaları (R28); silinmiş tedarikçide kip açılmaz (R7/3).
+  const mahsupTaraf = dav === DAVRANIS.PERSONEL ? "calisan" : "tedarikci";
+  const tedSecili = mahsupTaraf === "tedarikci" && form.tedarikciId !== "" && form.tedarikciId != null && tedarikciler.some(t => String(t.id) === String(form.tedarikciId) && !t.deletedAt);
+  const avansKovalari = useMemo(() => (tedSecili && girisKalemi ? mahsupKovalari(girisKalemi, tedarikciAvanslari(kalanHareketler, giderler).get(String(form.tedarikciId)) || []) : []),
+    [tedSecili, girisKalemi, kalanHareketler, giderler, form.tedarikciId]);
+  const mahsupVar = odemeDegistirebilir && (avansK > 0 || avansKovalari.length > 0) && girisHedefleri.some(h => !h.pasif && h.kalanK > 0)
     && mahsupKapsamda({ tarih: form.tarih }, { bugun: yerelBugun(), yururlukAy: giderAyarlari?.yururlukAy || null });
   const bolunmezNotu = personelBolunmez && personelTutarlari.resmi > 0 && personelTutarlari.elden > 0;
   const cekSatirlari = useMemo(() => (ciroYetkisi ? ciroCekleri(cekler, payments) : []), [ciroYetkisi, cekler, payments]);
@@ -270,7 +275,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
   };
   const iki = cokHedefliMi(girisKalemi || onizlemeKalem, dav); // spec 0054 R16
   const odemePlani = { tarih: giris.tarih, kip: mahsupVar ? giris.kip : "odeme", satirlar: giris.satirlar, mahsup: giris.mahsup, alacakliAd: alacakliAdi(), silinenler: [...silinenler] };
-  const odemeBaglami = { turMap, hesaplar, cekler, payments, hareketler: kalanHareketler, giderler, bugun: yerelBugun(), yururlukAy: giderAyarlari?.yururlukAy || null, hedefAdi: (h) => hedefAdi(h, dav, iki) };
+  const odemeBaglami = { turMap, hesaplar, cekler, payments, hareketler: kalanHareketler, giderler, bugun: yerelBugun(), yururlukAy: giderAyarlari?.yururlukAy || null, hedefAdi: (h) => hedefAdi(h, dav, iki), tedarikciler };
   // 0040 R8: ciro fark uyarısı motordan (ciroPlani) olduğu gibi, kayıttan önce de görünür.
   const ciroSecili = giris.kip !== "mahsup" && giris.satirlar.some(x => x.yontem === CIRO_YONTEMI && x.cekId != null);
   const ciroUyari = ciroSecili && girisKalemi ? odemeGirisiHazirla(odemeleriUygula([{ ...girisKalemi }], yeniKalem ? [] : kalanHareketler, turMap)[0], { ...odemeBaglami, ...odemePlani, kip: "odeme" }).uyari : null;
@@ -291,7 +296,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
     // Spec 0046 R17 + 0053 R18, R24, AC-22: ödeme girişi kayıttan ÖNCE doğrulanır (yeni kalemde geçici kimlikle, düzenlemede
     // kaydın kendisiyle); hata varsa kalem de kaydedilmez. Kayıt ödeme durumu taşımaz (0024 R3); Giderler aynı fonksiyonu
     // gerçek kalemle yeniden çağırır ve kalem, hareketler, silinenler ve çeki tek işleyicide yazar.
-    if (odemeDegistirebilir && odemePlani.kip === "mahsup" && giris.mahsupKilitli) { setOdemeHatalari({ genel: [MAHSUP_KILITLI_HATASI] }); return; } // spec 0064 R20
+    if (odemeDegistirebilir && odemePlani.kip === "mahsup" && giris.mahsupKilitli) { setOdemeHatalari({ genel: [mahsupKilitliHatasi(mahsupTaraf)] }); return; } // spec 0064 R20, 0155 R9/2
     const odemeVar = odemeDegistirebilir && (odemePlani.kip === "mahsup" ? String(giris.mahsup?.tutar ?? "").trim() !== "" : giris.satirlar.length > 0 || silinenler.size > 0);
     if (odemeVar) {
       const deneme = odemeleriUygula([{ ...kayit, id: yeniKalem ? "__yeni__" : kayit.id }], yeniKalem ? [] : kalanHareketler, turMap)[0];
@@ -601,7 +606,7 @@ export const GiderForm = ({ kalem, giderTurleri = [], tedarikciler = [], calisan
           <OdemeGirisi kapsam="form" kalem={yeniKalem ? null : canliKalem} hedefler={girisHedefleri} davranis={dav} turMap={turMap} giris={giris} setGiris={setGiris}
             hatalar={odemeHatalari} uyari={ciroUyari} hesaplar={uygunHesaplar} hesapSecimi={hesapSecimi} ciroYetkisi={ciroYetkisi} cekSatirlari={cekSatirlari} rates={rates} ratesErr={ratesErr}
             alacakliSerbest={alacakliSerbest} varsayilanYontem={varsayilanYontem} varsayilanHesap={varsayilanHesap} odemeYetkisi={odemeDegistirebilir}
-            mahsupVar={mahsupVar} avansK={avansK} hareketler={hareketler} kayitliGoster={!yeniKalem}
+            mahsupVar={mahsupVar} avansK={avansK} mahsupTaraf={mahsupTaraf} avansKovalari={avansKovalari} hareketler={hareketler} kayitliGoster={!yeniKalem}
             onSil={odemeDegistirebilir && !yeniKalem ? (h) => setSilinenler(s0 => new Set([...s0, String(h.id)])) : null}
             silinenler={silinenler} onSilGeriAl={(h) => setSilinenler(s0 => { const n = new Set(s0); n.delete(String(h.id)); return n; })}
             durum={yeniKalem ? null : duzenlemeDurumu} bolunmezNotu={!yeniKalem && bolunmezNotu} yolParasiVar={dav === DAVRANIS.PERSONEL && yolForm > 0} />

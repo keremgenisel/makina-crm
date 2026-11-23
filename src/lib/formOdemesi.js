@@ -181,21 +181,23 @@ export const hepsiniOde = (satirlar = [], hedefler = [], { yontem = "", hesapId:
 // R6, R7, R8, R12, R29; 0046 R17, R22, R25: girişi doğrular ve hareketleri üretir. Dönüş { hatalar, hareketler, cek, uyari };
 // hata varsa hareketler null (ya hep ya hiç, C3). hatalar = { satirlar: {[anahtar]: {alan: mesaj}}, hedefler: [], genel: [], mahsup: {} }.
 // bosAtla: tutarı boş satır sessizce atılır (pencere, 0041 R12); formda eklenen satırın boş tutarı "sıfırdan büyük olmalı".
+// Spec 0155 P2, R25: tedarikçi mahsubunun kovası ve (döviz avanstan lira kaleme) kendi kuru; çalışan mahsubunda alan yok.
+const mahsupKovaAlanlari = (m) => (m?.avansPb ? { avansPb: m.avansPb, kur: m.kur, kurKaynak: m.kurKaynak } : {});
 export const odemeGirisiHazirla = (kalem, {
   turMap, tarih, kip = "odeme", satirlar = [], mahsup = null, hesaplar = [], cekler = [], payments = [], hareketler = [], giderler = [],
   bugun = null, yururlukAy = null, alacakliAd = "", yeniCekId = "__yeni_cek__", bosAtla = false, hedefAdi = (h) => h,
-  duzenlenen = null,
+  duzenlenen = null, tedarikciler = [],
 } = {}) => {
   const hatalar = { satirlar: {}, hedefler: [], genel: [], mahsup: {} };
   const bos = { hatalar, hareketler: [], cek: null, uyari: null };
   const hataVar = () => hatalar.genel.length || hatalar.hedefler.length || Object.keys(hatalar.satirlar).length || Object.keys(hatalar.mahsup).length;
   if (!kalem) return { ...bos, hatalar: { ...hatalar, genel: ["Ödenecek kalem bulunamadı."] }, hareketler: null };
-  if (kip === "duzenle") return hareketDuzenlemeHazirla(kalem, { turMap, tarih, satirlar, mahsup, hesaplar, hareketler, giderler, bugun, yururlukAy, hedefAdi, duzenlenen });
+  if (kip === "duzenle") return hareketDuzenlemeHazirla(kalem, { turMap, tarih, satirlar, mahsup, hesaplar, hareketler, giderler, bugun, yururlukAy, hedefAdi, duzenlenen, tedarikciler });
   // R27: mahsup tek satırlık kip.
   if (kip === "mahsup") {
     if (!mahsup) return bos;
-    const r = mahsupDogrula({ tarih, tutar: mahsup.tutar, aciklama: mahsup.aciklama, taksitId: satirTaksitId(kalem, mahsup.hedef || HEDEF.ANA, mahsup.sira) },
-      { kalem, turMap, hareketler, giderler, bugun, yururlukAy });
+    const r = mahsupDogrula({ tarih, tutar: mahsup.tutar, aciklama: mahsup.aciklama, taksitId: satirTaksitId(kalem, mahsup.hedef || HEDEF.ANA, mahsup.sira), ...mahsupKovaAlanlari(mahsup) },
+      { kalem, turMap, hareketler, giderler, bugun, yururlukAy, tedarikciler });
     if (!r.kayit) return { hatalar: { ...hatalar, mahsup: r.hatalar }, hareketler: null, cek: null, uyari: null };
     return { hatalar, hareketler: [r.kayit], cek: null, uyari: null };
   }
@@ -286,7 +288,7 @@ export const CEK_YONTEMI_DUZENLEME_HATASI = "Çekli yöntem düzenlemede seçile
 // YENİDEN zenginleştirilir (ödeme kolu kalanı _odenen'den okur), mahsup koluna aynı küme doğrudan geçer. Doğrulayıcıların
 // imzası değişmez. Dönüş { hatalar, hareketler: null, guncellenen } (yeni hareket doğmaz, C5).
 const hareketDuzenlemeHazirla = (kalem, { turMap, tarih, satirlar = [], mahsup = null, hesaplar = [], hareketler = [], giderler = [], bugun = null,
-  yururlukAy = null, hedefAdi = (h) => h, duzenlenen = null }) => {
+  yururlukAy = null, hedefAdi = (h) => h, duzenlenen = null, tedarikciler = [] }) => {
   const hatalar = { satirlar: {}, hedefler: [], genel: [], mahsup: {} };
   const sonuc = (guncellenen) => ({ hatalar, hareketler: null, cek: null, uyari: null, guncellenen });
   if (!duzenlenen) { hatalar.genel.push("Düzenlenecek hareket bulunamadı."); return sonuc(null); }
@@ -295,10 +297,11 @@ const hareketDuzenlemeHazirla = (kalem, { turMap, tarih, satirlar = [], mahsup =
   const zengin = odemeleriUygula([kalem], haric, turMap)[0];
   if (duzenlenen.tur === "mahsup") {
     const m = mahsup || {};
-    const r = mahsupDogrula({ tarih, tutar: m.tutar, aciklama: m.aciklama, taksitId: satirTaksitId(zengin, m.hedef || HEDEF.ANA, m.sira) },
-      { kalem: zengin, turMap, hareketler: haric, giderler, bugun, yururlukAy });
+    const r = mahsupDogrula({ tarih, tutar: m.tutar, aciklama: m.aciklama, taksitId: satirTaksitId(zengin, m.hedef || HEDEF.ANA, m.sira), ...mahsupKovaAlanlari(m) },
+      { kalem: zengin, turMap, hareketler: haric, giderler, bugun, yururlukAy, tedarikciler });
     if (!r.kayit) { hatalar.mahsup = r.hatalar; return sonuc(null); }
-    return sonuc({ ...duzenlenen, ...r.kayit, id: duzenlenen.id });
+    // Spec 0155: döviz alanları tek yazıcıdan (`{ ...eski, ...yeni }` eski döviz alanını taşımasın; çalışan mahsubunda alan yok).
+    return sonuc(dovizAlanlariYaz({ ...duzenlenen, ...r.kayit, id: duzenlenen.id }, dovizAlanlariOf(r.kayit)));
   }
   const sat = satirlar[0] || {};
   if (!tarih) hatalar.genel.push("Ödeme tarihi girilmedi.");

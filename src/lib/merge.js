@@ -186,6 +186,8 @@ export function buildMergePlan(myData, serverData, { bilinenLogIdleri = null, ta
     ...(h.calisanId != null ? { calisanId: remapRef(maps.calisanlar, h.calisanId) } : {}),
     // Spec 0040: ciro hareketi çeke bağlı.
     ...(h.cekId != null ? { cekId: remapRef(maps.cekler, h.cekId) } : {}),
+    // Spec 0155 C11 (AC-42): tedarikçi avansı ve mahsubu tedarikçiye kimlikle bağlı.
+    ...(h.tedarikciId != null ? { tedarikciId: remapRef(maps.tedarikciler, h.tedarikciId) } : {}),
   }));
   // Spec 0040: çek, tahsilata kimlikle bağlı.
   // Spec 0049: bağsız çekte paymentId null kalır; bağsız alınan çekin müşterisi, verilen çekin banka hesabı ve alacaklısı

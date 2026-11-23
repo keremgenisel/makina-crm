@@ -166,7 +166,7 @@ export const Giderler = ({
     const dav = turMap.get(String(kalemKayit.turId))?.davranis || DAVRANIS.NORMAL;
     const iki = cokHedefliMi(zengin, dav); // spec 0054 R16
     return odemeGirisiHazirla(zengin, { turMap, hesaplar: kasaHesaplari || [], cekler, payments, hareketler: kalanHareketler, giderler: giderlerHam, bugun, yururlukAy,
-      ...plan, yeniCekId: uid(), hedefAdi: (h) => hedefAdiOf(h, dav, iki) });
+      ...plan, yeniCekId: uid(), hedefAdi: (h) => hedefAdiOf(h, dav, iki), tedarikciler });
   };
   const odemeleriYaz = (k, od, silinenler = []) => {
     const yazilan = odemeGirisiYaz({ hareketler: od?.hareketler || [], cek: od?.cek || null, silinenler }, { setHesapHareketleri, setCekler, uid });
@@ -407,7 +407,8 @@ export const Giderler = ({
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
           hesapHareketleri={hesapHareketleri} giderTurleri={giderTurleri} yururlukAy={yururlukAy} bugun={bugun} kasaHesaplari={kasaHesaplari}
-          rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} parts={parts} malzemeler={malzemeler} onKalemdeGoster={kalemdeGoster} />
+          rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} parts={parts} malzemeler={malzemeler} onKalemdeGoster={kalemdeGoster}
+          setHesapHareketleri={setHesapHareketleri} avansSilebilir={kasaYetki && canDo("avans")} aktifKullanici={aktifKullanici} />
       )}
 
       {giderKilidi && kilitKalemId != null ? (

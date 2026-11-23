@@ -20,11 +20,15 @@ export const HAREKET_COP_TUR = { odeme: "Ödeme", virman: "Virman", avans: "Avan
 // Spec 0151 R8/2 (AC-49): tutar isteğe bağlı para biriminde (döviz hesabın düzeltmesi); parametresiz çağrı bugünkü çıktı (TL).
 // Spec 0152 R15/2 (Karar 14, AC-48): döviz ödemede hesaptan çıkan döviz tutar, bozdurmada çıkan bacak; ikisi de kayıttaki para
 // birimiyle (hesap kalıcı silinmiş olsa da). Öteki hareketlerde çıktı birebir eski.
-export const hareketCopEtiketi = (h, paraBirimi = "TRY") => {
+// Spec 0155 R20, R20/2 (AC-36): bu madde 0078 R24'ü ve 0058 R21'i tedarikçi AVANSI için açıkça ters çevirir; tedarikçi adı
+// gizlilik kuralı değildir, avans satırı onu yazar (`tedarikciAdi`). Çalışan adı yasağı yerinde; ödeme satırı adsız kalır.
+// R22/2 (AC-47): döviz yüklemi türden bağımsız, döviz avans kendi para biriminde.
+export const hareketCopEtiketi = (h, paraBirimi = "TRY", { tedarikciAdi = null } = {}) => {
   const doviz = dovizOdemeMi(h);
   const tutar = doviz ? h.dovizTutar : h?.tutar;
   const pb = doviz || bozdurmaMi(h) ? hareketParaBirimi(h, { paraBirimi }) : paraBirimi || "TRY";
-  return [h?.tarih ? fmtTR(h.tarih) : "Tarihsiz", fmtCur(Number(tutar) || 0, pb)].join(" · ");
+  const ad = h?.tur === "avans" && h.tedarikciId != null && tedarikciAdi ? [tedarikciAdi] : [];
+  return [...ad, h?.tarih ? fmtTR(h.tarih) : "Tarihsiz", fmtCur(Number(tutar) || 0, pb)].join(" · ");
 };
 export const cekCopEtiketi = (c) => `${c?.banka || "—"} · ${c?.no || "—"}`;
 // Tanımın adı personel tanımında çalışanın adıdır; o yüzden personel tanımında yalnız tür adı yazılır.

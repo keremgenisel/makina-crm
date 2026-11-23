@@ -14832,6 +14832,26 @@
         "ekran": "kasa-0151-usd",
         "beklenen": "ayni"
       }
+    ],
+    "src/components/kasa/TedarikciAvanslari.jsx": [
+      {
+        "rapor": "docs/evidence/0155-piksel-raporu.json",
+        "ekran": "kasa-0155-tedarikci-avans",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0155 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0155-piksel-raporu.json",
+        "ekran": "kasa-0155-avans-formu",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0155 DoD"
+      },
+      {
+        "rapor": "docs/evidence/0155-piksel-raporu.json",
+        "ekran": "kasa-0155-geri-odeme",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0155 DoD"
+      }
     ]
   }
 }

@@ -1904,3 +1904,24 @@ describe("spec 0153: döviz kalem bugünkü izinlerle", () => {
     expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [od] }, izin(["gider_add"]), "user").ok).toBe(false);
   });
 });
+
+// ── Spec 0155 C5 (DoD): yeni izin yok; tedarikçi avansı ve geri ödemesi `avans` izni ve Kasa sekmesiyle, mahsubu `gider_odeme`
+// ile ve Kasa sekmesi istemeden yazılır (çalışan avansıyla aynı kurallar; sunucu tarafı tedarikçiyi ayırt etmez).
+describe("spec 0155: tedarikçi avansı ve mahsubu bugünkü izinlerle", () => {
+  const izin = (ids, tabs = ["dashboard", "gider", "finance", "kasa"]) => JSON.stringify({ tabs, giderActions: ids, customerActions: [] });
+  const av = { id: 94, tur: "avans", tarih: "2026-11-10", tutar: 5000, tedarikciId: 11, hesapId: 51 };
+  const geri = { id: 95, tur: "avans", yon: "giren", tarih: "2026-11-11", tutar: 1000, tedarikciId: 11, hesapId: 51 };
+  const dovizAv = { id: 96, tur: "avans", tarih: "2026-11-10", tutar: 4000, dovizTutar: 100, kur: 40, paraBirimi: "USD", tedarikciId: 11, hesapId: 53 };
+  const mh = { id: 97, tur: "mahsup", tarih: "2026-11-12", tutar: 2000, tedarikciId: 11, giderId: 7, taksitId: null, hesapId: null };
+  it("avans, geri ödeme ve döviz avans `avans` izni ve Kasa sekmesiyle yazılır; Kasa sekmesi ya da avans izni olmayan reddedilir", () => {
+    for (const m of [av, geri, dovizAv]) {
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [m] }, izin(["avans"]), "user").ok, m.id).toBe(true);
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [m] }, izin(["gider_odeme"]), "user").ok, m.id).toBe(false);
+      expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [m] }, izin(["avans"], ["dashboard", "gider", "finance"]), "user").ok, m.id).toBe(false);
+    }
+  });
+  it("mahsup gider_odeme ile ve Kasa sekmesi olmadan yazılır; izni olmayan reddedilir", () => {
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [mh] }, izin(["gider_odeme"], ["dashboard", "gider", "finance"]), "user").ok).toBe(true);
+    expect(eylemDenetimi({ hesapHareketleri: [] }, { hesapHareketleri: [mh] }, izin(["avans"]), "user").ok).toBe(false);
+  });
+});

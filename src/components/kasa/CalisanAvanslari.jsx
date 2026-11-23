@@ -1,7 +1,10 @@
 import { useState, useMemo } from "react";
-import { uid, today, fmtTR } from "../../lib/utils";
+import { uid, today, yerelBugun, fmtTR } from "../../lib/utils";
 import { tl } from "../../lib/gider";
-import { avansDogrula, avansBorclari, avansSilinebilirMi, avansDuzenlenebilirMi, avansEnAzMetni, calisanEkstresi, hesapAdiCoz, secilebilirHesaplar, HESAP_TUR_AD, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
+import { avansDogrula, avansBorclari, avansSilinebilirMi, avansDuzenlenebilirMi, avansEnAzMetni, calisanEkstresi, hesapAdiCoz, secilebilirHesaplar, acikHesaplar, HESAP_TUR_AD, KAPALI_HESAP_NEDENI,
+  AVANS_YON, avansParaBirimi, tedarikciAvansDuzenlenebilirMi, tedarikciAvansSinirMetni } from "../../lib/kasa";
+import { dovizAlanlariYaz, dovizAlanlariOf, kurOnerisi, kurGirdisi, KUR_KAYNAK, ONERI_BUGUN_IBARESI } from "../../lib/doviz";
+import { CUR_SYM } from "../../lib/constants";
 import { odemeGirisiYaz } from "../../lib/formOdemesi";
 import { logAction, hareketDuzenlemeKaydi } from "../../lib/audit";
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict, TutarInput } from "../ui";
@@ -19,22 +22,70 @@ import { EkstrePenceresi } from "../gider/EkstrePenceresi";
 // Spec 0073 C1, R2, R4, R6, R28: aynı form düzenleme kipinde (`hareket` verilir) açılır; çalışan değişmez, kayıt kimliği korunur.
 // Tutar sınırı avansDuzenlenebilirMi (yeni tutarla avans toplamı mahsupların altına düşemez); hareketler/giderler bunun içindir.
 const hamTutar = (t) => (t == null || t === "" ? "" : String(t).replace(".", ","));
-export const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose, hareket = null, hareketler = [], giderler = [] }) => {
+// Spec 0155 P5 (R1, R2, R5, R11, R22, AC-38): aynı form tedarikçi tarafında (`taraf="tedarikci"`) tedarikçi avansını ve geri
+// ödemesini (`yon="giren"`) girer ve düzenler. Döviz hesapta tutar hesabın para birimindedir ve kur sorulur (öneri günün kuru);
+// geri ödemede hesap zorunlu ve yalnız kovanın (paraBirimi) hesapları listelenir. Çalışan dalı aynen.
+export const TEDARIKCI_AVANS_METIN = Object.freeze({
+  baslikVer: "Tedarikçi Avansı Ver", baslikGeri: "Avans Geri Ödemesi", baslikDuzenle: "Avansı Düzenle", baslikGeriDuzenle: "Geri Ödemeyi Düzenle",
+  tedarikci: "Tedarikçi", tedarikciSec: "Tedarikçi seçin", silinmis: "Silinmiş tedarikçi", kur: (pb) => `Kur (1 ${pb} = ? TL)`,
+  ipucuVer: "Avans gider değildir; tedarikçinin sonraki faturasından mahsup edilir ya da tedarikçi geri öder.",
+  ipucuGeri: "Geri ödeme hesaba girer ve açık avansı azaltır.", ipucuDuzenle: "Tedarikçi değiştirilemez; başka tedarikçiye verilmişse avansı silip yeniden girin.",
+  hesapsizIpucu: "Hesap seçilmezse avans hiçbir bakiyeye girmez.",
+});
+const TA = TEDARIKCI_AVANS_METIN;
+export const AvansFormu = ({ calisanlar = [], hesaplar, onKaydet, onClose, hareket = null, hareketler = [], giderler = [],
+  taraf = "calisan", tedarikciler = [], yon = null, paraBirimi = null, ilkTedarikciId = "", rates = null, ratesErr = false }) => {
   const duzenle = !!hareket;
+  const ted = taraf === "tedarikci";
+  const giren = (duzenle ? hareket.yon : yon) === AVANS_YON.GIREN;
   const canli = calisanlar.filter(c => !c.deletedAt);
-  const uygun = secilebilirHesaplar(hesaplar, "TRY");
+  const canliTed = tedarikciler.filter(t => !t.deletedAt);
+  // Tedarikçi: çıkan avans bütün açık hesaplardan (TL ya da döviz, R5); geri ödeme ve düzenleme kovanın para biriminde.
+  const kovaPb = duzenle ? avansParaBirimi(hareket) : paraBirimi;
+  const uygun = !ted ? secilebilirHesaplar(hesaplar, "TRY") : (giren || duzenle) && kovaPb ? secilebilirHesaplar(hesaplar, kovaPb) : acikHesaplar(hesaplar);
   const [form, setForm] = useState(() => (duzenle
-    ? { calisanId: hareket.calisanId, tarih: hareket.tarih || "", tutar: hamTutar(hareket.tutar), hesapId: hareket.hesapId ?? "", yontem: hareket.yontem || "", aciklama: hareket.aciklama || "" }
-    : { calisanId: "", tarih: today(), tutar: "", hesapId: "", yontem: "", aciklama: "" }));
+    ? (ted
+      ? { tedarikciId: hareket.tedarikciId, tarih: hareket.tarih || "", tutar: hamTutar(avansParaBirimi(hareket) === "TRY" ? hareket.tutar : hareket.dovizTutar), hesapId: hareket.hesapId ?? "", yontem: hareket.yontem || "", aciklama: hareket.aciklama || "",
+        kur: hareket.kur != null ? kurGirdisi(hareket.kur) : "", kurKaynak: KUR_KAYNAK.TURETILEN }
+      : { calisanId: hareket.calisanId, tarih: hareket.tarih || "", tutar: hamTutar(hareket.tutar), hesapId: hareket.hesapId ?? "", yontem: hareket.yontem || "", aciklama: hareket.aciklama || "" })
+    : (ted ? { tedarikciId: ilkTedarikciId ?? "", tarih: today(), tutar: "", hesapId: "", yontem: "", aciklama: "", kur: "", kurKaynak: null }
+      : { calisanId: "", tarih: today(), tutar: "", hesapId: "", yontem: "", aciklama: "" })));
   const kapaliHesap = duzenle && hareket.hesapId != null && hesaplar.find(h => String(h.id) === String(hareket.hesapId))?.kapali;
   const [hatalar, setHatalar] = useState({});
   const set = (p) => setForm(f => ({ ...f, ...p }));
   // Spec 0064 R5, C7 (AC-25, AC-37): kilit SEÇİLEN çalışana bağlanır; seçim değişince eskisi bırakılır, yenisi alınır.
   // Çalışan seçilmemişken kimlik boştur (yeni kayıt sayılmaz, kilit alınmaz). Triyaj (bulgu 5): form çalışan seçili
   // AÇILMAZ; yoksa kimse seçmeden ilk çalışanın kilidi alınır, onun mahsubu ve Ayarlar düzenlemesi başkalarında kilitli görünürdü.
-  const { lockConflict: calisanKilidi, forceAcquire: calisanKilidiDevral } = useLock("calisan", form.calisanId === "" || form.calisanId == null ? null : form.calisanId);
+  const tarafId = ted ? form.tedarikciId : form.calisanId;
+  const kilitId = tarafId === "" || tarafId == null ? null : tarafId;
+  const cKilit = useLock("calisan", ted ? null : kilitId);
+  const tKilit = useLock("tedarikci", ted ? kilitId : null); // spec 0155: tedarikçi avansı tedarikçinin kilidi
+  const { lockConflict: calisanKilidi, forceAcquire: calisanKilidiDevral } = ted ? tKilit : cKilit;
+  const seciliHesap = hesaplar.find(h => String(h.id) === String(form.hesapId));
+  const hesapPb = seciliHesap?.paraBirimi || "TRY";
+  const hesapSec = (id) => {
+    const h = uygun.find(x => String(x.id) === String(id));
+    const pb = h?.paraBirimi || "TRY";
+    const o = pb !== "TRY" ? kurOnerisi(pb, rates, ratesErr) : { deger: null };
+    set({ hesapId: id === "" ? "" : h?.id ?? "", ...(ted ? (pb === "TRY" ? { kur: "", kurKaynak: null } : String(form.kur ?? "").trim() === "" && o.deger ? { kur: kurGirdisi(o.deger), kurKaynak: KUR_KAYNAK.ONERI } : {}) : {}) });
+  };
+  const kaydetTedarikci = () => {
+    const dogrulamaTed = duzenle
+      ? [...tedarikciler.filter(t => String(t.id) !== String(hareket.tedarikciId)), { ...(tedarikciler.find(t => String(t.id) === String(hareket.tedarikciId)) || { id: hareket.tedarikciId }), deletedAt: null }]
+      : tedarikciler;
+    const r = avansDogrula({ ...form, taraf: "tedarikci", yon: giren ? AVANS_YON.GIREN : null, id: hareket?.id }, { tedarikciler: dogrulamaTed, hesaplar, hareketler, giderler });
+    if (!r.kayit) { setHatalar(r.hatalar); return; }
+    if (duzenle) {
+      const d = tedarikciAvansDuzenlenebilirMi(hareket, avansParaBirimi(r.kayit) === "TRY" ? r.kayit.tutar : r.kayit.dovizTutar, hareketler, giderler);
+      if (!d.ok) { setHatalar({ tutar: tedarikciAvansSinirMetni(d) }); return; }
+      onKaydet(dovizAlanlariYaz({ ...hareket, ...r.kayit, id: hareket.id, tedarikciId: hareket.tedarikciId }, dovizAlanlariOf(r.kayit)));
+      return;
+    }
+    onKaydet(r.kayit);
+  };
   const kaydet = () => {
     if (calisanKilidi) return;
+    if (ted) { kaydetTedarikci(); return; }
     // Spec 0073 triyaj (bulgu 3): düzenlemede çalışan değişmez; silinmiş çalışanın duran avansı da düzeltilebilsin diye
     // silinmişlik denetimi o çalışan için atlanır (avansDogrula'nın imzası aynı; yeni avans kuralı değişmedi).
     const dogrulamaCalisanlari = duzenle
@@ -51,11 +102,23 @@ export const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose, hareket = 
     onKaydet(r.kayit);
   };
   return (
-    <Modal title={duzenle ? "Avansı Düzenle" : "Avans Ver"} onClose={onClose} wide
+    <Modal title={ted ? (duzenle ? (giren ? TA.baslikGeriDuzenle : TA.baslikDuzenle) : giren ? TA.baslikGeri : TA.baslikVer) : duzenle ? "Avansı Düzenle" : "Avans Ver"} onClose={onClose} wide
       footer={<div style={{ display: "flex", gap: 8 }}><Btn variant="ghost" onClick={onClose}>İptal</Btn><Btn onClick={kaydet} disabled={!!calisanKilidi}><Icon name="check" size={14} /> {duzenle ? "Değişiklikleri Kaydet" : "Avansı Kaydet"}</Btn></div>}>
       {calisanKilidi && <LockConflict lockedBy={calisanKilidi.lockedBy} lockedAt={calisanKilidi.lockedAt} onForce={calisanKilidiDevral} onCancel={onClose} />}
       {kapaliHesap && <div style={{ marginBottom: 12 }}><UyariSeridi aile="uyari" testId="kapali-hesap-notu" metin={KAPALI_HESAP_NEDENI} /></div>}
       <div data-testid="avans-formu" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+        {ted ? (
+        <div>
+          <Field label={TA.tedarikci}>
+            <Select aria-label={TA.tedarikci} value={form.tedarikciId ?? ""} disabled={duzenle || giren} onChange={e => set({ tedarikciId: canliTed.find(t => String(t.id) === e.target.value)?.id ?? "" })}>
+              {(duzenle || giren) && !canliTed.some(t => String(t.id) === String(form.tedarikciId)) && <option value={form.tedarikciId}>{tedarikciler.find(t => String(t.id) === String(form.tedarikciId))?.ad || TA.silinmis}</option>}
+              <option value="">{TA.tedarikciSec}</option>
+              {canliTed.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
+            </Select>
+          </Field>
+          <HataMetni>{hatalar.tedarikciId || hatalar.taraf}</HataMetni>
+        </div>
+        ) : (
         <div>
           <Field label="Çalışan">
             <Select value={form.calisanId} disabled={duzenle} onChange={e => set({ calisanId: canli.find(c => String(c.id) === e.target.value)?.id ?? "" })}>
@@ -66,23 +129,30 @@ export const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose, hareket = 
           </Field>
           <HataMetni>{hatalar.calisanId}</HataMetni>
         </div>
+        )}
         <div>
           <Field label="Tarih"><Input type="date" value={form.tarih} onChange={e => set({ tarih: e.target.value })} /></Field>
           <HataMetni>{hatalar.tarih}</HataMetni>
         </div>
         <div>
-          <Field label="Tutar"><TutarInput ariaLabel="Avans tutarı" value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hatalar.tutar} /></Field>
+          <Field label={ted && hesapPb !== "TRY" ? `Tutar (${hesapPb})` : "Tutar"}><TutarInput ariaLabel="Avans tutarı" {...(ted && hesapPb !== "TRY" ? { sym: CUR_SYM[hesapPb] || hesapPb } : {})} value={form.tutar} onChange={v => set({ tutar: v })} invalid={!!hatalar.tutar} /></Field>
           <HataMetni>{hatalar.tutar}</HataMetni>
         </div>
         <div>
           <Field label="Hesap">
-            <Select value={form.hesapId} onChange={e => set({ hesapId: e.target.value === "" ? "" : uygun.find(h => String(h.id) === e.target.value)?.id ?? "" })}>
+            <Select aria-label="Avans hesabı" value={form.hesapId} onChange={e => (ted ? hesapSec(e.target.value) : set({ hesapId: e.target.value === "" ? "" : uygun.find(h => String(h.id) === e.target.value)?.id ?? "" }))}>
               <option value="">Hesap belirtilmedi</option>
-              {uygun.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur})</option>)}
+              {uygun.map(h => <option key={h.id} value={h.id}>{h.ad} ({HESAP_TUR_AD[h.tur] || h.tur}{ted && (h.paraBirimi || "TRY") !== "TRY" ? ` · ${h.paraBirimi}` : ""})</option>)}
             </Select>
           </Field>
-          {hatalar.hesapId ? <HataMetni>{hatalar.hesapId}</HataMetni> : !form.hesapId ? <Ipucu>Hesap seçilmezse avans hiçbir bakiyeye girmez.</Ipucu> : null}
+          {hatalar.hesapId ? <HataMetni>{hatalar.hesapId}</HataMetni> : !form.hesapId && !giren ? <Ipucu>{TA.hesapsizIpucu}</Ipucu> : null}
         </div>
+        {ted && hesapPb !== "TRY" && (
+          <div>
+            <Field label={TA.kur(hesapPb)}><Input aria-label="Avans kuru" value={form.kur ?? ""} onChange={e => set({ kur: e.target.value, kurKaynak: KUR_KAYNAK.ELLE })} /></Field>
+            {hatalar.kur ? <HataMetni>{hatalar.kur}</HataMetni> : <Ipucu>{ONERI_BUGUN_IBARESI}</Ipucu>}
+          </div>
+        )}
         <div>
           <Field label="Ödeme yöntemi">
             <Select value={form.yontem} onChange={e => set({ yontem: e.target.value })}>
@@ -92,7 +162,7 @@ export const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose, hareket = 
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <Field label="Açıklama"><Input value={form.aciklama} onChange={e => set({ aciklama: e.target.value })} placeholder="İsteğe bağlı" /></Field>
-          <Ipucu>{duzenle ? "Çalışan değiştirilemez; başka çalışana verilmişse avansı silip yeniden girin." : "Avans gider değildir; maaş kalemi doğduğunda o kalemin ödeme penceresinden mahsup edilir."}</Ipucu>
+          <Ipucu>{ted ? (duzenle ? TA.ipucuDuzenle : giren ? TA.ipucuGeri : TA.ipucuVer) : duzenle ? "Çalışan değiştirilemez; başka çalışana verilmişse avansı silip yeniden girin." : "Avans gider değildir; maaş kalemi doğduğunda o kalemin ödeme penceresinden mahsup edilir."}</Ipucu>
         </div>
       </div>
     </Modal>
@@ -101,7 +171,7 @@ export const AvansFormu = ({ calisanlar, hesaplar, onKaydet, onClose, hareket = 
 
 export const CalisanAvanslari = ({
   calisanlar = [], hesapHareketleri = [], setHesapHareketleri = null, kasaHesaplari = [], giderler = [], giderTurleri = [],
-  yururlukAy = null, bugun = today(), canDo = () => true, serverPermissions = null, showToast = () => {}, aktifKullanici = "",
+  yururlukAy = null, bugun = yerelBugun(), canDo = () => true, serverPermissions = null, showToast = () => {}, aktifKullanici = "",
 }) => {
   // Spec 0064 R14 (AC-18): ekstreden avans silme anlık işlemdir; çalışan başkasının kilidindeyse reddedilir.
   const { baskasiKilitli } = useKilitListesi(aktifKullanici);

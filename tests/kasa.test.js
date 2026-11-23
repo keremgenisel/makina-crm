@@ -232,7 +232,9 @@ describe("Spec 0024 B: avans ve mahsup (R9–R11)", () => {
   });
   it("B2: mahsup yalnız personel kalemine; taksitli kalemde taksite bağlanır", () => {
     const normal = uygula([{ ...KALEM }], [])[0];
-    expect(mahsupDogrula({ tarih: "2026-09-25", tutar: "1" }, { kalem: normal, turMap, hareketler: [AVANS], giderler: [] }).hatalar.hedef).toBe("Avans yalnız personel kalemine mahsup edilir.");
+    // Spec 0155 ile (R6, R7): personel dışı kalem artık tedarikçi avansı yolundadır; çalışan avansı oraya mahsup edilemez
+    // (tedarikçisi yoksa tedarikçisiz kalem nedeni, kalemin tedarikçisinin açık avansı yoksa açık avans nedeni).
+    expect(mahsupDogrula({ tarih: "2026-09-25", tutar: "1" }, { kalem: { ...normal, tedarikciId: null }, turMap, hareketler: [AVANS], giderler: [] }).hatalar.hedef).toBe("Tedarikçisi seçilmemiş kaleme avans mahsubu yapılamaz.");
     const taksitli = kayit({ ...MAAS, taksitSayisi: 2, sonOdemeTarihi: "2026-09-30" });
     const k = uygula([{ ...taksitli, id: 5 }], [AVANS])[0];
     expect(mahsupDogrula({ tarih: "2026-09-25", tutar: "1" }, { kalem: k, turMap, hareketler: [AVANS], giderler: [MAAS] }).hatalar.hedef).toBe("Taksitli kalemde mahsup bir taksite bağlanır.");

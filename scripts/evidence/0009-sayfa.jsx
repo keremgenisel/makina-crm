@@ -49,6 +49,7 @@ import * as V159 from "../../tests/fixtures/0159-veri.js";
 import * as V150 from "../../tests/fixtures/0150-veri.js";
 import * as V148 from "../../tests/fixtures/0148-veri.js";
 import * as V156 from "../../tests/fixtures/0156-veri.js";
+import * as V155 from "../../tests/fixtures/0155-ekran.js";
 import { EkstrePenceresi as EkstrePenceresi156 } from "../../src/components/gider/EkstrePenceresi";
 import { tedarikciEkstresi as tedarikciEkstresi156, calisanEkstresi as calisanEkstresi156, hesapAdiCoz as hesapAdiCoz156 } from "../../src/lib/kasa";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
@@ -1089,6 +1090,20 @@ const MUSTERI_0149 = [
 const ekstre156 = (tur = "tedarikci", id = 11) => <EkstrePenceresi156 baslik={tur === "calisan" ? "Çalışan" : id === 11 ? "Sistem Civata" : "Boş Tedarik"} tur={tur}
   hesapla={(a) => (tur === "calisan" ? calisanEkstresi156 : tedarikciEkstresi156)(tur === "calisan" ? 21 : id, V156.secenek(a))}
   hesapAdi={(h) => hesapAdiCoz156(V156.HESAPLAR, h)} onAvansSil={tur === "calisan" ? bos : null} onKalemdeGoster={tur === "calisan" ? null : bos} onClose={bos} />;
+// Spec 0155: tedarikçi avansı (Kasa bölümü, form, Giderler'de mahsup, Tedarikler alacak satırı, iki yönlü ekstre, çöp satırı).
+const z155 = () => odemeleriUygula(V155.GIDERLER, V155.HAREKETLER, turHaritasi(V155.TUR));
+const kasa155 = () => <Kasa kasaHesaplari={V155.HESAP} setKasaHesaplari={bos} hesapHareketleri={V155.HAREKETLER} setHesapHareketleri={bos} payments={[]} customers={[]}
+  giderler={z155()} giderTurleri={V155.TUR} tedarikciler={V155.TED.filter(t => !t.deletedAt)} tumTedarikciler={V155.TED} calisanlar={[]} yururlukAy="2026-01" baslangicHesapId={1}
+  serverPermissions={null} showToast={bos} rates={{ usd: 41, eur: 45 }} ratesErr={false} />;
+function Gider155() {
+  const [giderler, setGiderler] = useState(V155.GIDERLER);
+  const [h, setH] = useState(V155.HAREKETLER);
+  const [ted, setTed] = useState(V155.TED);
+  return <Giderler giderler={giderler} setGiderler={setGiderler} giderTanimlari={[]} setGiderTanimlari={bos} giderTurleri={V155.TUR} tedarikciler={ted} setTedarikciler={setTed}
+    calisanlar={[]} standardModels={[]} customModels={[]} appSettings={{ giderAyarlari: { yururlukAy: "2026-01" } }} serverPermissions={null} showToast={bos}
+    kasaHesaplari={V155.HESAP} kasaYetki hesapHareketleri={h} setHesapHareketleri={setH} rates={{ usd: 41, eur: 45 }} ratesErr={false} cekler={[]} setCekler={bos} payments={[]}
+    satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} factory={{ name: "Altuntaş Makina" }} />;
+}
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
   // Spec 0081: Dönem Raporu'nun beş yan kutusu kapalı başlar (giderler-rapor kapalı hâldir); bir kutu açık ve hepsi açık hâl.
@@ -1655,6 +1670,21 @@ const EKRANLAR = {
   "giderler-0062-ekstre": [gider62(), ["Tedarikler ve Ekstre", "dugme:Ekstre"]],
   // Spec 0156 C10: sayfalama kalktığı için "giderler-0062-ekstre-sayfa2" silindi.
   "ekstre-0156-kapali": [ekstre156(), []],
+  "kasa-0155-tedarikci-avans": [kasa155(), ["kaydir:Tedarikçi avansları"]],
+  "kasa-0155-avans-formu": [kasa155(), ["dugme:Tedarikçi Avansı Ver", "sec:Tedarikçi=11", "sec:Avans hesabı=2", "doldur:Avans tutarı=500"]],
+  "kasa-0155-geri-odeme": [kasa155(), ["dugme:Geri ödeme gir"]],
+  "kasa-0155-ekstre": [<Gider155 />, ["Tedarikler ve Ekstre", "satirbaslik:Demir Bant>Ekstre", "etiket:18/09/2026 Avans", "etiket:25/09/2026 Avanstan mahsup"]],
+  "giderler-0155-mahsup": [<Gider155 />, ["satirbaslik:Rulman>Ödeme kaydet", "dugme:Avanstan mahsup", "sec:Avans para birimi=USD"]],
+  "giderler-0155-tedarikler": [<Gider155 />, ["Tedarikler ve Ekstre"]],
+  "giderler-0155-silme": [<Gider155 />, ["Tedarikler ve Ekstre", "satirbaslik:Demir Bant>Sil"]],
+  "cop-kutusu-0155": [<SettingsTrash rawCustomers={[]} rawServices={[]} rawPartSales={[]} rawPayments={[]} rawDealers={[]} rawStock={[]} rawNotes={[]}
+    rawKalipDefs={[]} rawParts={[]} rawCustomModels={[]} rawTeklifler={[]} rawFaturalar={[]} rawUretimFormlari={[]} rawGorusmeler={[]} rawDosyalar={[]}
+    setCustomers={bos} setServices={bos} setPartSales={bos} setPayments={bos} setDealers={bos} setStock={bos} setNotes={bos} setKalipDefs={bos}
+    setParts={bos} setCustomModels={bos} setTeklifler={bos} setFaturalar={bos} setUretimFormlari={bos} setGorusmeler={bos} setDosyalar={bos}
+    appSettings={{}} showToast={bos} giderYetki rawGiderler={V155.GIDERLER} setGiderler={bos} giderTurleri={V155.TUR}
+    rawTedarikciler={V155.TED} setTedarikciler={bos} rawUretimPartileri={[]} setUretimPartileri={bos} serverPermissions={null}
+    rawHesapHareketleri={[...V155.HAREKETLER, ...V155.COP]} setHesapHareketleri={bos} cekler={[]} setCekler={bos}
+    rawGiderTanimlari={[]} setGiderTanimlari={bos} setGiderTurleri={bos} rawKasaHesaplari={V155.HESAP} setKasaHesaplari={bos} kasaVeriYetki />, []],
   "ekstre-0156-normal-tevkifat": [ekstre156(), ["etiket:02/09/2026 Borç doğdu", "etiket:05/09/2026 Borç doğdu"]],
   "ekstre-0156-kira-doviz": [ekstre156(), ["etiket:01/09/2026 Borç doğdu", "etiket:10/09/2026 Borç doğdu"]],
   "ekstre-0156-kisitli-odenmemis": [ekstre156(), ["etiket:08/09/2026 Borç doğdu", "etiket:25/09/2026 Borç doğdu"]],
@@ -2114,6 +2144,15 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
       // aria-label'ı birebir eşleşen öğeye tıklar (onay kutusu gibi metinsiz denetimler; spec 0046).
       const hedef = document.querySelector(`[aria-label="${metin.slice(7)}"]`) || document.querySelector(`[data-ad="${metin.slice(7)}"]`); // spec 0156: ekstre satırı
       if (hedef) hedef.click(); else console.warn("etiketli öğe yok: " + metin);
+      await bekle(300);
+      continue;
+    }
+    if (metin.startsWith("satirbaslik:")) {
+      // Spec 0155: tablo satırının içindeki başlıklı (title) düğme: "satirbaslik:<satırda geçen metin>><title>".
+      const [satirMetni, baslik] = metin.slice(12).split(">");
+      const satir = [...document.querySelectorAll("tr")].find(t => t.textContent.includes(satirMetni));
+      const hedef = satir && [...satir.querySelectorAll("button")].find(e => e.title === baslik || e.textContent.trim() === baslik);
+      if (hedef) hedef.click(); else console.warn("satırda başlıklı düğme yok: " + metin);
       await bekle(300);
       continue;
     }

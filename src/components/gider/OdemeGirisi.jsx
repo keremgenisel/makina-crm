@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { fmtTR, parseMoney } from "../../lib/utils";
 import { tl, hedefOdemeleri, HEDEF, hedefDovizKipi } from "../../lib/gider";
-import { HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR, sonKullanilanHesap, DOVIZ_KALEM_HESAP_NEDENI, DOVIZ_KALEM_CEK_NEDENI } from "../../lib/kasa";
+import { mahsupVarsayilanK, avansParaBirimi, HESAP_TUR_AD, COKLU_ODEME_MAX_SATIR, sonKullanilanHesap, DOVIZ_KALEM_HESAP_NEDENI, DOVIZ_KALEM_CEK_NEDENI } from "../../lib/kasa";
 import { CIRO_YONTEMI, KENDI_CEK_YONTEMI } from "../../lib/cek";
 import { yontemKirilimi, hareketPaylari, hareketHedefPaylari, GOC_YONTEM_NOTU, taksitAdi as ortakTaksitAdi } from "../../lib/odemeYontemi";
 import { hepsiniOde, satirSiralariniEsle, ciroTutariK, CIRO_YALNIZ_ANA_NEDENI, CEK_YOK_NOTU, CEK_DAGITIM_NOTU, PLAN_HATASI_NOTU, TUR_DEGISTI_UYARISI } from "../../lib/formOdemesi";
@@ -9,7 +9,7 @@ import { PERSONEL_BOLUNMEZ_NEDENI, PERSONEL_EK_BOLUNMEZ_NEDENI } from "../../lib
 import { Btn, Field, Input, Select, ConfirmDialog, Icon, LockConflict } from "../ui";
 import { useLock } from "../../hooks/useLock";
 import { HataMetni, Ipucu, BolumBasligi, Segment, KartBolum, UyariSeridi } from "../tasarim";
-import { kurOnerisi, dovizSatirYamasi, dovizHesapYamasi, kurGirdisi, ONERI_BUGUN_IBARESI, CEK_DOVIZ_NEDENI, HESAP_YOK_NOTU, KUR_KAYNAK, paraMetni, kurMetni } from "../../lib/doviz";
+import { kurOnerisi, dovizSatirYamasi, dovizHesapYamasi, kurGirdisi, ONERI_BUGUN_IBARESI, CEK_DOVIZ_NEDENI, HESAP_YOK_NOTU, KUR_KAYNAK, paraMetni, kurMetni, kurCoz } from "../../lib/doviz";
 import { CUR_SYM } from "../../lib/constants";
 import { TutarInput, tl2, tutarMetni, ODEME_SECENEKLERI, hedefAdi, cokHedefliMi, hedefEtiketi } from "./GiderAlanlari";
 
@@ -39,11 +39,16 @@ const paraH = (h, k) => (h?.paraBirimi ? paraMetni(tl(k), h.paraBirimi) : para(k
 
 // Spec 0064 R20: mahsup kipinde çalışanın kilidi başkasındayken kayıt yapılmaz.
 export const MAHSUP_KILITLI_HATASI = "Bu çalışanın avansı başka bir kullanıcıda açık; mahsup kaydedilemez.";
+// Spec 0155 R9/2 (AC-60): kilit kalemin tarafına göre; metin iki ayrı sabit.
+export const MAHSUP_KILITLI_HATASI_TEDARIKCI = "Bu tedarikçinin avansı başka bir kullanıcıda açık; mahsup kaydedilemez.";
+export const mahsupKilitliHatasi = (taraf) => (taraf === "tedarikci" ? MAHSUP_KILITLI_HATASI_TEDARIKCI : MAHSUP_KILITLI_HATASI);
+export const MAHSUP_KOVA_ETIKETI = "Avans para birimi";
+export const mahsupSinirMetni = (acik, kalan) => `Açık avans ${acik}; kalan ${kalan}. İkisinin küçüğünü aşamaz; mahsup para hareketi değildir, hiçbir hesaba girmez.`;
 export const OdemeGirisi = ({
   kapsam = "pencere", kalem, hedefler = [], davranis, turMap, giris, setGiris, hatalar = null, uyari = null,
   hesaplar = [], hesapSecimi = false, ciroYetkisi = false, cekSatirlari = [], alacakliSerbest = false,
   varsayilanYontem = "", varsayilanHesap = "", odemeYetkisi = true,
-  mahsupVar = false, avansK = 0, yolParasiVar = null, hareketler = [], kayitliGoster = true, onSil = null, silinenler = null, onSilGeriAl = null,
+  mahsupVar = false, avansK = 0, mahsupTaraf = "calisan", avansKovalari = [], yolParasiVar = null, hareketler = [], kayitliGoster = true, onSil = null, silinenler = null, onSilGeriAl = null,
   durum = null, bolunmezNotu = false,
   // Spec 0073 C1: düzenleme kipi aynı editördür (tek satır, tür ve bağ değişmez, çek yöntemi yok, satır eklenmez); notlar
   // pencereden (göç hareketi, satırsız kalemin hedefi, kapalı hesap). onDuzenle: "Kayıtlı ödemeler" listesinde Düzenle (Q3).
@@ -69,7 +74,12 @@ export const OdemeGirisi = ({
   // Spec 0064 R20 (AC-26): mahsup bir çalışanın açık avansını tüketir; kalem kilidine (pencereyi açan ebeveyn) ek olarak
   // mahsup kipi açıkken çalışanın kilidi de alınır. Çakışmada mahsup alanı yerine LockConflict çizilir ve giriş
   // `mahsupKilitli` taşır; form ve pencere bu durumda mahsubu kaydetmez (MAHSUP_KILITLI_HATASI).
-  const { lockConflict: mahsupKilidi, forceAcquire: mahsupKilidiDevral } = useLock("calisan", mahsupKipi && kalem?.calisanId != null ? kalem.calisanId : null);
+  // Spec 0155 R9/2: tedarikçi kaleminde tedarikçinin kilidi.
+  const tedTaraf = mahsupTaraf === "tedarikci";
+  const tarafId = tedTaraf ? kalem?.tedarikciId : kalem?.calisanId;
+  const cMahsupKilit = useLock("calisan", !tedTaraf && mahsupKipi && tarafId != null ? tarafId : null);
+  const tMahsupKilit = useLock("tedarikci", tedTaraf && mahsupKipi && tarafId != null ? tarafId : null);
+  const { lockConflict: mahsupKilidi, forceAcquire: mahsupKilidiDevral } = tedTaraf ? tMahsupKilit : cMahsupKilit;
   // Boyamadan önce (senkron) yazılır: çakışma ekranı görünür olduğu anda kaydet düğmesi de işareti görür.
   useLayoutEffect(() => {
     const kilitli = !!(mahsupKipi && mahsupKilidi);
@@ -308,15 +318,42 @@ export const OdemeGirisi = ({
   // ── Mahsup (R27): tek satır ──
   const mahsup = giris.mahsup || {};
   // Spec 0074 R22: SGK personel kaleminin hedefi değildir (kendi kalemi; mahsup kipi orada çizilmez).
-  const mahsupHedefleri = cizilebilir.filter(h => h.kalanK > 0);
-  const mahsupYerleri = mahsupHedefleri.flatMap(h => (h.taksitli ? h.acikTaksitler.map(t => ({ deger: `${h.hedef}:${t.sira}`, hedef: h.hedef, sira: t.sira, ad: `${adOf(h.hedef)} ${t.sira}/${h.satirSayisi}. taksit · vade ${t.vade ? fmtTR(t.vade) : "girilmemiş"} · kalan ${para(t.kalanK)}` }))
-    : [{ deger: `${h.hedef}:`, hedef: h.hedef, sira: null, ad: `${adOf(h.hedef)} · kalan ${para(h.kalanK)}` }]));
+  // Spec 0155 R7/2 (AC-58): tedarikçi mahsubu yalnız ANA hedefi (ve onun taksitlerini) kapatır.
+  const mahsupHedefleri = cizilebilir.filter(h => h.kalanK > 0 && (!tedTaraf || h.hedef === HEDEF.ANA));
+  // Spec 0155 R8/2 (AC-59): tedarikçi tarafında kalan kalemin para biriminde (döviz kalemde döviz kalanı).
+  const yerParasi = (h, k) => (tedTaraf ? paraH(h, k) : para(k));
+  const hKalan = (h) => (tedTaraf ? hedefKalanK(h) : h.kalanK);
+  const tKalan = (h, t) => (tedTaraf ? taksitKalanK(h, t) : t.kalanK);
+  const mahsupYerleri = mahsupHedefleri.flatMap(h => (h.taksitli ? h.acikTaksitler.map(t => ({ deger: `${h.hedef}:${t.sira}`, hedef: h.hedef, sira: t.sira, ad: `${adOf(h.hedef)} ${t.sira}/${h.satirSayisi}. taksit · vade ${t.vade ? fmtTR(t.vade) : "girilmemiş"} · kalan ${yerParasi(h, tKalan(h, t))}` }))
+    : [{ deger: `${h.hedef}:`, hedef: h.hedef, sira: null, ad: `${adOf(h.hedef)} · kalan ${yerParasi(h, hKalan(h))}` }]));
   const mh = hatalar?.mahsup || {};
-  const yerKalan = (y) => { const h = mahsupHedefleri.find(x => x.hedef === y.hedef); return !h ? 0 : h.taksitli ? (h.acikTaksitler.find(t => Number(t.sira) === Number(y.sira))?.kalanK || 0) : h.kalanK; };
+  const yerKalan = (y) => { const h = mahsupHedefleri.find(x => x.hedef === y.hedef); return !h ? 0 : h.taksitli ? (tKalan(h, h.acikTaksitler.find(t => Number(t.sira) === Number(y.sira))) || 0) : hKalan(h); };
   const seciliYer = mahsupYerleri.find(y => y.hedef === (mahsup.hedef || HEDEF.ANA) && String(y.sira ?? "") === String(mahsup.sira ?? "")) || mahsupYerleri[0] || null;
-  // 0024 B1: mahsup tutarı yerin kalanı ile açık avansın küçüğüyle dolar.
-  const mahsupYerSec = (y) => setGiris(g => ({ ...g, mahsup: { ...g.mahsup, hedef: y.hedef, sira: y.sira, tutar: tutarOf(Math.min(yerKalan(y), avansK)) } }));
-  const kipSec = (k) => setGiris(g => ({ ...g, kip: k, ...(k === "mahsup" && seciliYer ? { mahsup: { ...g.mahsup, hedef: seciliYer.hedef, sira: seciliYer.sira, tutar: tutarOf(Math.min(yerKalan(seciliYer), avansK)) } } : {}) }));
+  // Spec 0155 P2, R25: kova (avansın para birimi) ve döviz avanstan lira kaleme mahsupta mahsubun kendi kuru.
+  const anaH = mahsupHedefleri.find(h => h.hedef === HEDEF.ANA);
+  const kalemPb = anaH?.paraBirimi || "TRY";
+  const kovaOf = (pb) => avansKovalari.find(kv => kv.paraBirimi === pb) || avansKovalari.find(kv => kv.paraBirimi === kalemPb) || avansKovalari[0] || null;
+  const kova = tedTaraf ? kovaOf(mahsup.avansPb) : null;
+  const kurluMahsup = tedTaraf && kova && kalemPb === "TRY" && kova.paraBirimi !== "TRY";
+  const acikK = tedTaraf ? (kova?.acikK || 0) : avansK;
+  // 0024 B1: mahsup tutarı yerin kalanı ile açık avansın küçüğüyle dolar; döviz avanstan lira kalemde kalan kurla avansın
+  // para birimine çevrilir (motor yardımcısı, ekranda çarpım yok).
+  const varsayilanTutar = (y, kv, kur) => {
+    const kalan = yerKalan(y);
+    if (!tedTaraf) return tutarOf(Math.min(kalan, avansK));
+    const kurluMu = kalemPb === "TRY" && !!kv && kv.paraBirimi !== "TRY";
+    return tutarOf(mahsupVarsayilanK({ kalanK: kalan, acikK: kv?.acikK || 0, kurluMu, kur: kurluMu ? kurCoz(kur, { kaynak: KUR_KAYNAK.ONERI }).deger : null }));
+  };
+  const kovaKuru = (kv) => (kalemPb === "TRY" && kv && kv.paraBirimi !== "TRY" ? (kurOnerisi(kv.paraBirimi, rates, ratesErr).deger ? kurGirdisi(kurOnerisi(kv.paraBirimi, rates, ratesErr).deger) : "") : "");
+  const kovaAlanlari = (kv) => (tedTaraf && kv ? { avansPb: kv.paraBirimi, kur: kovaKuru(kv), kurKaynak: KUR_KAYNAK.ONERI } : {});
+  const mahsupYerSec = (y) => setGiris(g => ({ ...g, mahsup: { ...g.mahsup, hedef: y.hedef, sira: y.sira, tutar: varsayilanTutar(y, kova, g.mahsup?.kur) } }));
+  const kovaSec = (pb) => setGiris(g => { const kv = kovaOf(pb); const a = kovaAlanlari(kv); return { ...g, mahsup: { ...g.mahsup, ...a, tutar: seciliYer ? varsayilanTutar(seciliYer, kv, a.kur) : "" } }; });
+  const kipSec = (k) => setGiris(g => {
+    if (!(k === "mahsup" && seciliYer)) return { ...g, kip: k };
+    const kv = tedTaraf ? kovaOf(g.mahsup?.avansPb) : null, a = kovaAlanlari(kv);
+    return { ...g, kip: k, mahsup: { ...g.mahsup, ...a, hedef: seciliYer.hedef, sira: seciliYer.sira, tutar: varsayilanTutar(seciliYer, kv, a.kur) } };
+  });
+  const mahsupBirimi = tedTaraf ? (kurluMahsup ? kova.paraBirimi : kalemPb) : "TRY";
 
   const govde = (
     <div data-testid="odeme-girisi">
@@ -364,12 +401,30 @@ export const OdemeGirisi = ({
               </Field>
             </div>
           )}
+          {tedTaraf && avansKovalari.length > 1 && !duzenleKipi && (
+            <div>
+              <Field label={MAHSUP_KOVA_ETIKETI}>
+                <Select aria-label={MAHSUP_KOVA_ETIKETI} value={kova?.paraBirimi || ""} onChange={e => kovaSec(e.target.value)}>
+                  {avansKovalari.map(kv => <option key={kv.paraBirimi} value={kv.paraBirimi}>{kv.paraBirimi} · açık {paraMetni(tl(kv.acikK), kv.paraBirimi)}</option>)}
+                </Select>
+              </Field>
+              <HataMetni>{mh.avansPb}</HataMetni>
+            </div>
+          )}
           {mh.hedef && <div style={{ gridColumn: "1 / -1" }}><HataMetni>{mh.hedef}</HataMetni></div>}
           {mh.tarih && <div style={{ gridColumn: "1 / -1" }}><HataMetni>{mh.tarih}</HataMetni></div>}
           <div>
-            <Field label="Tutar"><TutarInput ariaLabel="Ödeme tutarı" value={mahsup.tutar ?? ""} onChange={v => setGiris(g => ({ ...g, mahsup: { ...g.mahsup, tutar: v } }))} invalid={!!mh.tutar} /></Field>
-            {mh.tutar ? <HataMetni>{mh.tutar}</HataMetni> : <Ipucu>Kalan ile açık avansın küçüğünü aşamaz. Mahsup para hareketi değildir, hiçbir hesaba girmez.</Ipucu>}
+            <Field label={tedTaraf ? `Tutar (${mahsupBirimi})` : "Tutar"}><TutarInput ariaLabel="Ödeme tutarı" {...(mahsupBirimi !== "TRY" ? { sym: CUR_SYM[mahsupBirimi] || mahsupBirimi } : {})} value={mahsup.tutar ?? ""} onChange={v => setGiris(g => ({ ...g, mahsup: { ...g.mahsup, tutar: v } }))} invalid={!!mh.tutar} /></Field>
+            {mh.tutar ? <HataMetni>{mh.tutar}</HataMetni> : tedTaraf
+              ? <Ipucu><span data-testid="mahsup-sinir-ipucu">{mahsupSinirMetni(paraMetni(tl(acikK), kova?.paraBirimi || "TRY"), seciliYer ? paraMetni(tl(yerKalan(seciliYer)), kalemPb) : "—")}</span></Ipucu>
+              : <Ipucu>Kalan ile açık avansın küçüğünü aşamaz. Mahsup para hareketi değildir, hiçbir hesaba girmez.</Ipucu>}
           </div>
+          {kurluMahsup && (
+            <div>
+              <Field label={`Kur (1 ${kova.paraBirimi} = ? TL)`}><Input aria-label="Mahsup kuru" value={mahsup.kur ?? ""} onChange={e => setGiris(g => ({ ...g, mahsup: { ...g.mahsup, kur: e.target.value, kurKaynak: KUR_KAYNAK.ELLE } }))} /></Field>
+              {mh.kur ? <HataMetni>{mh.kur}</HataMetni> : <Ipucu>{ONERI_BUGUN_IBARESI}</Ipucu>}
+            </div>
+          )}
           <div style={{ gridColumn: "1 / -1" }}>
             <Field label="Açıklama"><Input value={mahsup.aciklama || ""} onChange={e => setGiris(g => ({ ...g, mahsup: { ...g.mahsup, aciklama: e.target.value } }))} placeholder="İsteğe bağlı" /></Field>
           </div>
@@ -466,11 +521,16 @@ export const duzenlemeGirisi = (h, kalem, hedefler) => {
   // Spec 0153 R13/2: döviz kalemin ANA hedefindeki ödemenin satır tutarı kendi döviz tutarıdır (kur elle sorulmaz).
   const kalemDoviz = h.dovizTutar != null && !!hedefDovizKipi(kalem, h.taksitId);
   const tutar = h.tamKapatir ? "" : tutarMetni(kalemDoviz ? h.dovizTutar : h.tutar);
+  // Spec 0155 triyaj (bulgu 1, R24, R25): tedarikçi mahsubu kendi kovasıyla açılır: avansın para birimi, döviz tutarı ve
+  // kayıtlı kuru (türetilmiş kaynak, çöpten geri almanın biçimi). Yoksa motor kovayı kalemin para birimi sanardı.
+  const avansPb = h.tur === "mahsup" && h.tedarikciId != null ? avansParaBirimi(h) : null;
+  const tedMahsup = avansPb ? { avansPb, tutar: tutarMetni(avansPb === "TRY" ? h.tutar : h.dovizTutar),
+    ...(avansPb !== "TRY" ? { kur: kurGirdisi(h.kur), kurKaynak: KUR_KAYNAK.TURETILEN } : {}) } : {};
   return { tarih: h.tarih || "", kip: h.tur === "mahsup" ? "mahsup" : "odeme",
     satirlar: [{ anahtar: "s0", hedef, sira: t?.sira ?? null, tutar, yontem: h.yontem || "", hesapId: h.hesapId ?? "", aciklama: h.aciklama || "",
       // Spec 0152 R14 (AC-13): döviz ödemenin kayıtlı kuru ve döviz tutarı aynen gelir (günün kuru okunmaz).
       ...(h.dovizTutar != null && !kalemDoviz ? { kur: kurGirdisi(h.kur), kurKaynak: KUR_KAYNAK.TURETILEN, dovizTutar: tutarMetni(h.dovizTutar) } : {}) }],
-    mahsup: { hedef, sira: t?.sira ?? null, tutar, aciklama: h.aciklama || "" }, alacakliAd: "", _kalemId: kalem?.id ?? null };
+    mahsup: { hedef, sira: t?.sira ?? null, tutar, aciklama: h.aciklama || "", ...tedMahsup }, alacakliAd: "", _kalemId: kalem?.id ?? null };
 };
 
 // Pencerenin ilk girişi: hedef verildiyse o hedefe, yoksa ilk açık hedefe tam kalanla bir satır (0024 R17: tutar = kalan).

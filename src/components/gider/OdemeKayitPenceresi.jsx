@@ -2,13 +2,13 @@ import { useState, useMemo } from "react";
 import { fmtTR, uid } from "../../lib/utils";
 import { odemeDurumu, odemeleriUygula, satirliMi, tl, HEDEF, DAVRANIS, dovizKalemMi, kalemParaBirimi } from "../../lib/gider";
 import { paraMetni } from "../../lib/doviz";
-import { mahsupKapsamda, avansBorcuK, acikHesaplar, sonKullanilanHesap, sonKullanilanYontem, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
+import { mahsupKapsamda, avansBorcuK, tedarikciAvanslari, mahsupKovalari, acikHesaplar, sonKullanilanHesap, sonKullanilanYontem, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
 import { CIRO_YONTEMI } from "../../lib/cek";
 import { formOdemeHedefleri, odemeGirisiHazirla, ciroCekleri, ciroAlacaklisi, GOC_DUZENLEME_NOTU } from "../../lib/formOdemesi";
 import { Btn, Modal, Icon } from "../ui";
 import { Ipucu } from "../tasarim";
 import { tl2, hedefAdi, cokHedefliMi } from "./GiderAlanlari";
-import { OdemeGirisi, ilkGiris, duzenlemeGirisi, MAHSUP_KILITLI_HATASI } from "./OdemeGirisi";
+import { OdemeGirisi, ilkGiris, duzenlemeGirisi, mahsupKilitliHatasi } from "./OdemeGirisi";
 
 // Spec 0073 R26 (Q4): satırsız çok hedefli kalemde ödemenin kapattığı bölüm ödeme sırasından türer (harekette hedef yok).
 export const SATIRSIZ_HEDEF_IPUCU = "Bu kalemde ödemenin kapattığı bölüm ödeme sırasından belirlenir.";
@@ -51,7 +51,12 @@ export const OdemeKayitPenceresi = ({
   const avansK = davranis === DAVRANIS.PERSONEL && kalem.calisanId != null ? avansBorcuK(kalem.calisanId, haricHareketler, giderler) : 0;
   // 0024 triyaj bulgu 2: kapsam dışı (gelecek tarihli / yürürlük öncesi) maaş kalemine mahsup kipi açılmaz. Düzenlemede kip
   // hareketin türüdür (R3).
-  const mahsupVar = duzenlenen ? duzenlenen.tur === "mahsup" : odemeYetkisi && avansK > 0 && kalanK > 0 && mahsupKapsamda(kalem, { bugun, yururlukAy });
+  // Spec 0155 R9, R7/3, R28: tedarikçi kaleminde tedarikçinin uygun kovaları; silinmiş tedarikçide kip açılmaz.
+  const mahsupTaraf = davranis === DAVRANIS.PERSONEL ? "calisan" : "tedarikci";
+  const tedarikciCanli = kalem.tedarikciId != null && tedarikciler.some(t => String(t.id) === String(kalem.tedarikciId) && !t.deletedAt);
+  const avansKovalari = useMemo(() => (mahsupTaraf === "tedarikci" && tedarikciCanli ? mahsupKovalari(kalemG, tedarikciAvanslari(haricHareketler, giderler).get(String(kalem.tedarikciId)) || []) : []),
+    [mahsupTaraf, tedarikciCanli, kalemG, haricHareketler, giderler, kalem.tedarikciId]);
+  const mahsupVar = duzenlenen ? duzenlenen.tur === "mahsup" : odemeYetkisi && (avansK > 0 || avansKovalari.length > 0) && kalanK > 0 && mahsupKapsamda(kalem, { bugun, yururlukAy });
   // Spec 0073 triyaj (bulgu 4): düzenlemede hareketin kendi hesabı kapalı da olsa listede kalır (seçili değer boş görünmesin;
   // VirmanFormu deseni); doğrulayıcı kapalı hesaba yazmayı yine reddeder (R27).
   const uygunHesaplar = useMemo(() => {
@@ -71,7 +76,7 @@ export const OdemeKayitPenceresi = ({
   const alacakliSerbest = alacakli.tur === "serbest";
   const alacakliAd = alacakli.tur === "calisan" ? (kalem.calisanAd || "") : alacakli.tur === "tedarikci" ? (tedarikciler.find(t => String(t.id) === String(kalem.tedarikciId))?.ad || "") : (giris.alacakliAd || "");
   const iki = cokHedefliMi(kalem, davranis); // spec 0054 R16
-  const baglam = { turMap, hesaplar, cekler, payments, hareketler, giderler, bugun, yururlukAy, alacakliAd, bosAtla: true, hedefAdi: (h) => hedefAdi(h, davranis, iki) };
+  const baglam = { turMap, hesaplar, cekler, payments, hareketler, giderler, bugun, yururlukAy, alacakliAd, bosAtla: true, hedefAdi: (h) => hedefAdi(h, davranis, iki), tedarikciler };
   // 0040 R8: ciro fark uyarısı kayıttan önce de görünür (motordan olduğu gibi).
   const ciroSecili = giris.kip !== "mahsup" && giris.satirlar.some(r => r.yontem === CIRO_YONTEMI && r.cekId != null);
   const ciroUyarisi = useMemo(() => (ciroSecili ? odemeGirisiHazirla(kalem, { ...baglam, tarih: giris.tarih, kip: "odeme", satirlar: giris.satirlar }).uyari : null),
@@ -85,7 +90,7 @@ export const OdemeKayitPenceresi = ({
     setGiris(duzenlemeGirisi(h, g, t ? hs.filter(x => x.hedef === t.hedef) : hs));
   };
   const kaydet = () => {
-    if (mahsupVar && giris.kip === "mahsup" && giris.mahsupKilitli) { setHatalar({ genel: [MAHSUP_KILITLI_HATASI] }); return; } // spec 0064 R20
+    if (mahsupVar && giris.kip === "mahsup" && giris.mahsupKilitli) { setHatalar({ genel: [mahsupKilitliHatasi(mahsupTaraf)] }); return; } // spec 0064 R20, 0155 R9/2
     if (duzenlenen) {
       const r = odemeGirisiHazirla(kalem, { ...baglam, tarih: giris.tarih, kip: "duzenle", duzenlenen, satirlar: giris.satirlar, mahsup: giris.mahsup });
       if (!r.guncellenen) { setHatalar(r.hatalar); return; }
@@ -122,12 +127,13 @@ export const OdemeKayitPenceresi = ({
             {formVar && <> · {hedefSecimi || hedefler.length === 1 ? "Bu hedefin kalanı" : "Kalan"}: <b>{hedefler.length === 1 && hedefler[0].paraBirimi ? paraMetni(tl(hedefler[0].dovizKalanK), hedefler[0].paraBirimi) : tl2(tl(kalanK))}</b></>}
           </div>
           {avansK > 0 && <div style={{ marginTop: 4 }} data-testid="acik-avans">{kalem.calisanAd || "Çalışan"} açık avansı: <b>{tl2(tl(avansK))}</b></div>}
+          {avansKovalari.length > 0 && <div style={{ marginTop: 4 }} data-testid="acik-avans">Tedarikçinin açık avansı: <b>{avansKovalari.map(kv => paraMetni(tl(kv.acikK), kv.paraBirimi)).join(" · ")}</b></div>}
         </div>
         {!formVar && <div style={{ marginBottom: 8 }}><Ipucu>{!odemeYetkisi ? "Ödeme kaydetme yetkiniz yok." : "Bu kalemin ödenecek kalanı yok."}</Ipucu></div>}
         <OdemeGirisi kapsam="pencere" kalem={kalem} hedefler={formVar ? hedefler : []} davranis={davranis} turMap={turMap} giris={giris} setGiris={setGiris}
           hatalar={hatalar} uyari={ciroUyarisi} hesaplar={uygunHesaplar} hesapSecimi={hesapSecimi} ciroYetkisi={ciroYetkisi} cekSatirlari={cekSatirlari}
           alacakliSerbest={alacakliSerbest} varsayilanYontem={varsayilanYontem} varsayilanHesap={varsayilanHesap} odemeYetkisi={formVar}
-          mahsupVar={mahsupVar} avansK={avansK} hareketler={hareketler} onSil={odemeYetkisi && !duzenlenen ? onSil : null}
+          mahsupVar={mahsupVar} avansK={avansK} mahsupTaraf={mahsupTaraf} avansKovalari={avansKovalari} hareketler={hareketler} onSil={odemeYetkisi && !duzenlenen ? onSil : null}
           duzenleKipi={!!duzenlenen} duzenlemeNotlari={duzenlemeNotlari} kayitliGoster={!duzenlenen}
           onDuzenle={odemeYetkisi && onDuzenle && !duzenlenen ? duzenlemeyeGec : null} rates={rates} ratesErr={ratesErr} />
       </div>

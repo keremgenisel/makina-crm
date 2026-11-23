@@ -248,6 +248,16 @@ describe("buildMergePlan: gider kaydı (spec 0001)", () => {
     expect(plan.adds.hesapHareketleri[0].calisanId).toBe(plan.maps.calisanlar.get(cid));
     expect(plan.adds.hesapHareketleri[0].calisanId).not.toBe(cid);
   });
+  it("spec 0155 C11 (AC-42): tedarikçi avansı ve mahsubunun tedarikciId'si yeniden atanan tedarikçi kimliğini izler", () => {
+    const tid = uid(), aid = uid(), mid = uid();
+    const my = blob({ tedarikciler: [{ id: tid, ad: "Benim tedarikçim" }], hesapHareketleri: [{ id: aid, tur: "avans", tarih: "2026-09-02", tutar: 100, tedarikciId: tid, hesapId: null },
+      { id: mid, tur: "mahsup", tarih: "2026-09-03", tutar: 50, tedarikciId: tid, giderId: null, hesapId: null }] });
+    const server = blob({ tedarikciler: [{ id: tid, ad: "Onun tedarikçisi" }], hesapHareketleri: [] });
+    const plan = buildMergePlan(my, server);
+    const yeni = plan.maps.tedarikciler.get(tid);
+    expect(yeni).not.toBe(tid);
+    expect(plan.adds.hesapHareketleri.map(h => h.tedarikciId)).toEqual([yeni, yeni]);
+  });
   it("spec 0023 C7: ek ödeme satırları kimliksiz, kalemle birlikte taşınır", () => {
     const ekOdemeler = [{ tur: "prim", aciklama: "A", resmiTutar: 100, eldenTutar: null }, { tur: "prim", aciklama: "B", resmiTutar: null, eldenTutar: 50 }];
     const my = blob({ giderTurleri: [{ id: 11, ad: "Personel", davranis: "personel" }], giderler: [{ id: 15, turId: 11, resmiTutar: 1000, ekOdemeler }] });

@@ -212,8 +212,10 @@ describe("Spec 0073 F: kapsam sınırları", () => {
     expect(s).toContain("export const odemeDogrula = (form, { kalem, turMap, hesaplar = [], ciro = false, kendiCek = false, yalnizTl = false } = {}) => {");
     expect(s).toContain("export const cokluOdemeDogrula = (form, { kalem, turMap, hesaplar = [], hedefAdi = (id) => (id == null ? \"Kalem\" : \"Taksit\") } = {}) => {");
     expect(s).toContain("export const virmanDogrula = (form, hesaplar = []) => {");
-    expect(s).toContain("export const mahsupDogrula = (form, { kalem, turMap, hareketler = [], giderler = [], bugun = null, yururlukAy = null } = {}) => {");
-    expect(s).toContain("export const avansDogrula = (form, { calisanlar = [], hesaplar = [] } = {}) => {");
+    // Spec 0155 ile (P10, R1): mahsupDogrula'ya isteğe bağlı `tedarikciler`, avansDogrula'ya tedarikçi dalının üç seçeneği
+    // eklendi; çalışan yolunun parametreleri aynı.
+    expect(s).toContain("export const mahsupDogrula = (form, { kalem, turMap, hareketler = [], giderler = [], bugun = null, yururlukAy = null, tedarikciler = [] } = {}) => {");
+    expect(s).toContain("export const avansDogrula = (form, { calisanlar = [], hesaplar = [], tedarikciler = [], hareketler = [], giderler = [] } = {}) => {");
   });
   it("AC-24: ekleme ve düzenleme aynı pencere ve aynı doğrulama fonksiyonu (kaynak taraması)", () => {
     const kasa = readFileSync("src/components/Kasa.jsx", "utf8");

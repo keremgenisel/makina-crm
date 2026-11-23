@@ -99,7 +99,10 @@ export const dovizAlanlariYaz = (kayit, alanlar = null) => {
   return r;
 };
 export const dovizAlanlariOf = (k) => Object.fromEntries(DOVIZ_ALANLARI.filter(a => k?.[a] != null).map(a => [a, k[a]]));
-export const dovizOdemeMi = (m) => m?.tur === "odeme" && m.dovizTutar != null;
+// Spec 0155 R22/2: "bu hareket dövizdir" yüklemi türden bağımsız (döviz ödeme, döviz avans, dövizli mahsup); bozdurma kendi
+// alanını (`karsiTutar`) taşır. Eski ad 0152 taramalarında geçtiği için aynı fonksiyon olarak yeniden dışa verilir.
+export const dovizHareketMi = (m) => !!m && m.tur !== "virman" && m.dovizTutar != null;
+export const dovizOdemeMi = dovizHareketMi;
 export const bozdurmaMi = (m) => m?.tur === "virman" && m.karsiTutar != null;
 
 // ── Metinler (R15/3, AC-49) ─────────────────────────────────────────────────────────────────────────────────────────────

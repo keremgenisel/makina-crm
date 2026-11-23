@@ -8,12 +8,20 @@ import { tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
 import { Rozet } from "./DonemRaporu";
 import { EkstrePenceresi } from "./EkstrePenceresi";
-import { tedarikciEkstresi, hesapAdiCoz } from "../../lib/kasa";
+import { tedarikciEkstresi, hesapAdiCoz, tedarikciAvanslari, avansliTedarikciler } from "../../lib/kasa";
+import { paraMetni } from "../../lib/doviz";
+import { tl } from "../../lib/gider";
+import { useKilitListesi } from "../../hooks/useKilitListesi";
+import { TedarikciAvansSilPenceresi } from "../kasa/TedarikciAvanslari";
 
 // Giderler › Tedarikçiler (spec 0001 R13, AC-40/44/45/46/62; plan K16). Ayarlar'da DEĞİL, bu sekmede
 // yönetilir: settings izni olan ama gider yetkisi olmayan kullanıcı listeyi görmesin (AC-48).
 // Spec 0068 R8: silme çöp kutusuna taşır (geri alınabilir); kullanımdaki tedarikçi (çöpteki kalemler ve tanımlar dahil)
 // bugünkü gibi silinemez. Liste canlı dizidir; yazım her zaman tam dizi üzerinde işlevsel güncelleyiciyle (C8).
+// Spec 0155 R16/2, AC-37, AC-65: alacak satırı ve silme metinleri.
+export const ALACAK_ETIKETI = "Alacak:";
+export const alacakCumlesi = (t) => `Bu tedarikçiden ${t} alacağımız var. Tedarikçi silinse bile alacak kapanmaz; avans Kasa › Tedarikçi avansları'nda "silinmiş" rozetiyle görünür.`;
+export const AVANSLI_SILME_NOTU = "Bu tedarikçinin avans kaydı var: tedarikçi çöpe taşınır ama kalıcı silinemez; avansı Kasa › Tedarikçi avansları'nda görünmeye devam eder.";
 const BOS = { id: null, ad: "", yetkili: "", telefon: "", eposta: "", vergiDairesi: "", vergiNo: "", adres: "", not: "" };
 // Spec 0096 R1, R2: hammadde tedarikçisi işareti (yalnız bu formdan konur, C7). Kapalıyken kayıtta alan hiç yoktur (C4).
 export const HAMMADDE_ISARET_ETIKETI = "Hammadde tedarikçisi";
@@ -34,6 +42,8 @@ export const kullanimMetni = (k) => {
 export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = [], giderTanimlari = [], rapor, canDo = () => true, showToast = () => {}, serverPermissions,
   // Spec 0024 B (R12, B6, B10, B11): tedarikçi ekstresi ve silme uyarısındaki kalan borç. giderler hareketlerden türetilmiş olabilir.
   hesapHareketleri = null, giderTurleri = [], yururlukAy = null, bugun = null, kasaHesaplari = [], malzemeler = [], onKalemdeGoster = null,
+  // Spec 0155 R15/8, R16/2 (AC-56, AC-63): ekstreden avans silme (avans izni ve Kasa) ve alacak satırı.
+  setHesapHareketleri = null, avansSilebilir = false, aktifKullanici = "",
   // Spec 0096 R13, R13/5: parça kırılımı da kullanımdır; HAM parça dizisi (çöpteki parçalar da sayılır).
   parts = [] }) => {
   const [form, setForm] = useState(null);
@@ -48,6 +58,11 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
   const kilitli = !!(tedKilidi && kilitId != null);
   const kilitKapat = () => { setForm(null); setSil(null); };
   const harcama = new Map((rapor?.tedarikciKirilimi?.satirlar || []).map(s => [String(s.tedarikciId), s]));
+  // Spec 0155 R16, R16/2, P9: alacak açık avans okuyucusundan (dönemden bağımsız), hareket bölümü varken.
+  const avansKovalari = useMemo(() => (Array.isArray(hesapHareketleri) ? tedarikciAvanslari(hesapHareketleri, giderler) : new Map()), [hesapHareketleri, giderler]);
+  const avansli = useMemo(() => avansliTedarikciler(hesapHareketleri || []), [hesapHareketleri]);
+  const { baskasiKilitli } = useKilitListesi(aktifKullanici);
+  const [avansSil, setAvansSil] = useState(null);
 
   const ac = (t) => { setHata(""); setForm(t ? { ...BOS, ...t } : { ...BOS }); };
   const kaydet = () => {
@@ -104,7 +119,8 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
                     <td style={{ padding: "10px 12px", fontSize: 12.5, color: "var(--n600, #475569)" }}>{[t.vergiDairesi, t.vergiNo].filter(Boolean).join(" · ") || "—"}</td>
                     <td style={{ padding: "10px 12px", fontSize: 12.5, color: "var(--n600, #475569)" }}>{kullanimMetni(k)}</td>
                     <td style={{ padding: "10px 12px", textAlign: "right" }}>{h?.harcama ? <b>{tl2(h.harcama)}</b> : "—"}</td>
-                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{h?.acikBorc ? <><b>{tl2(h.acikBorc)}</b>{h.vadesiGecti && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}</> : "—"}</td>
+                    <td style={{ padding: "10px 12px", textAlign: "right" }}>{h?.acikBorc ? <><b>{tl2(h.acikBorc)}</b>{h.vadesiGecti && <div style={{ marginTop: 4 }}><Rozet renk="kirmizi">Vadesi geçti</Rozet></div>}</> : "—"}
+                      {(() => { const l = (avansKovalari.get(String(t.id)) || []).filter(kv => kv.acikK > 0); return l.length ? <div data-testid="tedarikci-alacak" style={{ marginTop: 4, fontSize: 12, color: "var(--amb700, #b45309)" }}>{ALACAK_ETIKETI} {l.map(kv => paraMetni(tl(kv.acikK), kv.paraBirimi)).join(" · ")}</div> : null; })()}</td>
                     <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
                       {Array.isArray(hesapHareketleri) && <><Btn small variant="ghost" onClick={() => setEkstre(t)}>Ekstre</Btn>{" "}</>}
                       {canDo("tedarikci_edit") && <Btn small variant="ghost" onClick={() => ac(t)} title="Düzenle"><Icon name="edit" size={12} /></Btn>}{" "}
@@ -153,13 +169,17 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
               {/* Spec 0140 A-R5/3 (AC-61): kalem bağlı parçaların adları, en çok üç. */}
               <div data-testid="tedarikci-parca-adlari" style={{ marginTop: 4, color: "var(--n600, #475569)" }}>{korumaAdListesi(sil.k.kalemAdlari || [])}</div>
             </div>}
-            {(() => { const b = ekstreHesapla(sil.t).bakiye; return b > 0 ? <div data-testid="tedarikci-kalan-borc" style={{ marginTop: 8, color: "var(--red700, #b91c1c)", fontWeight: 700 }}>Bu tedarikçiye {tl2(b)} kalan borç var. Tedarikçi silinse bile borç kapanmaz; silinmiş tedarikçinin ekstresine erişilemez.</div> : null; })()}
+            {(() => { const b = ekstreHesapla(sil.t).bakiye; return b > 0 ? <div data-testid="tedarikci-kalan-borc" style={{ marginTop: 8, color: "var(--red700, #b91c1c)", fontWeight: 700 }}>Bu tedarikçiye {tl2(b)} kalan borç var. Tedarikçi silinse bile borç kapanmaz; silinmiş tedarikçinin ekstresine erişilemez.</div>
+              : b < 0 ? <div data-testid="tedarikci-alacak-cumlesi" style={{ marginTop: 8, color: "var(--amb700, #b45309)", fontWeight: 700 }}>{alacakCumlesi(tl2(-b))}</div> : null; })()}
           </div>
         </Modal>
       ) : (
-        <ConfirmDialog title="Tedarikçi silinsin mi?" message={`“${sil.t.ad}” çöp kutusuna taşınacak; Ayarlar › Çöp Kutusu'ndan geri alınabilir.`} onConfirm={silOnayla} onCancel={() => setSil(null)} />
+        <ConfirmDialog title="Tedarikçi silinsin mi?" message={`“${sil.t.ad}” çöp kutusuna taşınacak; Ayarlar › Çöp Kutusu'ndan geri alınabilir.${avansli.has(String(sil.t.id)) ? ` ${AVANSLI_SILME_NOTU}` : ""}`} onConfirm={silOnayla} onCancel={() => setSil(null)} />
       ))}
+      {avansSil && <TedarikciAvansSilPenceresi avans={avansSil} hareketler={hesapHareketleri || []} giderler={giderler} setHesapHareketleri={setHesapHareketleri}
+        tedarikciAdi={tedarikciler.find(t => String(t.id) === String(avansSil.tedarikciId))?.ad} serverPermissions={serverPermissions} showToast={showToast} baskasiKilitli={baskasiKilitli} onClose={() => setAvansSil(null)} />}
       {ekstre && <EkstrePenceresi tur="tedarikci" baslik={ekstre.ad} hesapAdi={hesapAdi} hesapla={(aralik) => ekstreHesapla(ekstre, aralik)}
+        onAvansSil={avansSilebilir && setHesapHareketleri ? setAvansSil : null}
         onKalemdeGoster={onKalemdeGoster ? (k) => { setEkstre(null); onKalemdeGoster(k, ekstre.ad); } : null} onClose={() => setEkstre(null)} />}
     </div>
   );

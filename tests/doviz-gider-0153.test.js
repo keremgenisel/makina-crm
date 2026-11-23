@@ -195,9 +195,12 @@ describe("Spec 0153: ödeme", () => {
     const g = odemeGirisiHazirla(k, { turMap, tarih: "2026-09-20", satirlar: [{ anahtar: "a", hedef: "ana", tutar: "100", yontem: "Çek (ciro)", cekId: 1 }], hesaplar: HESAPLAR, hareketler: [], giderler: [] });
     expect(g.hatalar.satirlar.a.cek).toBe(K.DOVIZ_KALEM_CEK_NEDENI);
   });
-  it("AC-25 / AC-53 / R21/2: döviz kaleme avans mahsubu bugünkü ret metniyle engellenir", () => {
+  // Spec 0155 ile (R6, R24): döviz kaleme tedarikçi avansından mahsup yapılabilir; açık avans yoksa (ya da kova yoksa) tutar
+  // açık avans nedeniyle reddedilir. Çalışan avansı yine yalnız personel kalemine (0155 C8).
+  it("AC-25 / AC-53 / R21/2 (spec 0155 ile): döviz kaleme açık avans olmadan mahsup reddedilir", () => {
     const r = K.mahsupDogrula({ tarih: "2026-09-20", tutar: "100" }, { kalem: zengin(kalem()), turMap, hareketler: [], giderler: [] });
-    expect(r.hatalar.hedef).toBe("Avans yalnız personel kalemine mahsup edilir.");
+    expect(r.kayit).toBeNull();
+    expect(r.hatalar.tutar).toMatch(/Açık avanstan fazla mahsup edilemez/);
   });
   it("AC-26 / AC-52 / R20/2: üç taksitli 1.200 USD kalemin taksitleri 400 USD; bir taksidin dövizle ödenmesi onu kapatır; garip kurda son taksit de kapanır", () => {
     const k = kalem({ taksitSayisi: 3, sonOdemeTarihi: "2026-10-01" });

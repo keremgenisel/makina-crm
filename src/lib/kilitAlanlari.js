@@ -32,7 +32,9 @@ export const KILIT_ALANLARI = {
   cek: { etiket: "Çek", pencereler: ["src/components/cek/CekPortfoyu.jsx", "src/components/cek/CiroPenceresi.jsx"] },
   // R3, R6, R25: hesap formu, hesap silme / taşıma, virmanın kaynak hesabı; R14 kapat / aç denetimi.
   kasa_hesap: { etiket: "Kasa hesabı", pencereler: ["src/components/Kasa.jsx", "src/components/kasa/HesapSilPenceresi.jsx", "src/components/kasa/BakiyeDuzeltPenceresi.jsx"] }, // spec 0151 R10/3
-  tedarikci: { etiket: "Tedarikçi", pencereler: ["src/components/gider/Tedarikciler.jsx"] },
+  // Spec 0155 C13 (AC-72): Tedarikçi avansları penceresi, avans formu (tedarikçi tarafı), mahsup kipini çizen ödeme girişi ve Kasa
+  // hareket listesi tedarikçinin kilidine bakar.
+  tedarikci: { etiket: "Tedarikçi", pencereler: ["src/components/gider/Tedarikciler.jsx", "src/components/kasa/TedarikciAvanslari.jsx", "src/components/kasa/CalisanAvanslari.jsx", "src/components/gider/OdemeGirisi.jsx", "src/components/Kasa.jsx"] },
   // Spec 0088 R32: Parti Hesabı planlanan adetleri kayıt anında partinin kilidine bakar.
   uretim_partisi: { etiket: "Üretim partisi", pencereler: ["src/components/gider/UretimPartileri.jsx", "src/components/maliyet/PartiHesabi.jsx"] },
   // R5, R20, R30: avans ver, avanstan mahsup, ekstreden avans silme, Ayarlar'da çalışan satırı.
@@ -72,7 +74,7 @@ export const KILITSIZ_DOSYALAR = {
   "src/components/stock/SiparisPenceresi.jsx": "salt okunur sipariş penceresi (spec 0140 B-R5, C4; 0134 C8/2 emsali): düzenlemeler geçicidir, hiçbir veri bölümüne yazmaz, kilit almaz",
   "src/components/gider/DonemRaporu.jsx": "salt okunur rapor görünümü",
   "src/components/gider/AcikKalemler.jsx": "salt okunur liste (spec 0061); \"Ödeme kaydet\" Giderler'in gider kilitli ödeme penceresini açar",
-  "src/components/gider/EkstrePenceresi.jsx": "salt okunur ekstre; avans silme çağıranın (CalisanAvanslari) anlık denetiminden geçer",
+  "src/components/gider/EkstrePenceresi.jsx": "salt okunur ekstre; avans silme çağıranın (CalisanAvanslari, TedarikciAvanslari) anlık denetiminden geçer",
   "src/components/gider/StopajDonemleri.jsx": "toplu stopaj ödemesi kayıt anında kalemlerin gider kilidine anlık bakar (spec 0084 R19); pencere kilit tutmaz",
   "src/components/gider/GiderAlanlari.jsx": "paylaşılan alanlar; pencereyi açan kilitler",
   "src/components/gider/GiderPerdesi.jsx": "bilgi sayfası",

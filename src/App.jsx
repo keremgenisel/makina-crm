@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { guncellemeHataMetni } from "./lib/guncellemeHatasi";
-import { sonTahsilatHesabi, kapsamDisiTemizle } from "./lib/kasa";
+import { sonTahsilatHesabi, kapsamDisiTemizle, avansliTedarikciler } from "./lib/kasa";
 import LOGO from "./assets/logo.avif?inline";
 import {
   DEFAULT_KDV_RATES, DEFAULT_KK_KOMISYONLARI, BACKUP_APP_TAG, BACKUP_SCHEMA_VERSION,
@@ -1135,7 +1135,7 @@ export default function App() {
       if (Array.isArray(data.calisanlar)) data.calisanlar = purgeOldTrash(data.calisanlar);
       if (Array.isArray(data.giderler)) data.giderler = purgeOldTrash(data.giderler);
       // Spec 0096 R13/2 (AC-37): parça hammadde kırılımında geçen tedarikçi otuz günlük temizlikte korunur (çek emsali).
-      if (Array.isArray(data.tedarikciler)) { const korunan = kalemdeGecenTedarikciler(data.parts, data.malzemeler); data.tedarikciler = purgeOldTrash(data.tedarikciler, undefined, t => korunan.has(String(t.id))); } // spec 0068 R11
+      if (Array.isArray(data.tedarikciler)) { const korunan = kalemdeGecenTedarikciler(data.parts, data.malzemeler); const avansli = avansliTedarikciler(data.hesapHareketleri || []); data.tedarikciler = purgeOldTrash(data.tedarikciler, undefined, t => korunan.has(String(t.id)) || avansli.has(String(t.id))); } // spec 0155 AC-67 // spec 0068 R11
       if (Array.isArray(data.uretimPartileri)) data.uretimPartileri = purgeOldTrash(data.uretimPartileri);
       // Spec 0132 C7, AC-20: bir parçanın (çöpteki dahil) malzeme satırında geçen malzeme otuz günlük temizlikte korunur.
       if (Array.isArray(data.malzemeler)) { const korunan = kullanilanMalzemeler(data.parts); data.malzemeler = purgeOldTrash(data.malzemeler, undefined, m => korunan.has(String(m.id))); }
@@ -1775,7 +1775,7 @@ export default function App() {
           cekler={kasaYetki ? ceklerBagli : []} setCekler={kasaYetki ? setCekler : null} payments={kasaYetki ? livePayments : []}
           giderKasaRaporVerisi={giderKasaRaporVerisi} />}
         {activeTab === "kasa"      && kasaYetki && <Kasa aktifKullanici={savedUsername} rates={rates} ratesErr={ratesErr} kasaHesaplari={canliKasaHesaplari} hamKasaHesaplari={kasaHesaplari} setKasaHesaplari={setKasaHesaplari} hesapHareketleri={canliHareketler} setHesapHareketleri={hareketYazici}
-          payments={livePayments} customers={liveCustomers} giderler={giderlerOdemeli} giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} serverPermissions={effectivePermissions} showToast={showToast}
+          payments={livePayments} customers={liveCustomers} giderler={giderlerOdemeli} giderTurleri={giderTurleri} tedarikciler={liveTedarikciler} tumTedarikciler={tedarikciler} serverPermissions={effectivePermissions} showToast={showToast}
           calisanlar={calisanlar} yururlukAy={appSettings.giderAyarlari?.yururlukAy || null}
           cekler={cekler} setCekler={setCekler} giderAyarlari={appSettings.giderAyarlari || {}}
           services={liveServices} setServices={setServices} partSales={livePartSales} setPartSales={setPartSales} yedekParcaSatislar={liveYedekParcaSatislar} setYedekParcaSatislar={setYedekParcaSatislar}
