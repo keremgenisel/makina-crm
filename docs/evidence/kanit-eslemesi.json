@@ -6743,6 +6743,35 @@
         "rapor": "docs/evidence/0016-taban-piksel-raporu.json",
         "ekran": "analiz-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0154-piksel-raporu.json",
+        "ekran": "analiz-onayar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0154 C8"
+      },
+      {
+        "rapor": "docs/evidence/0154-piksel-raporu.json",
+        "ekran": "analiz-0154-musteri",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0154 C8"
+      },
+      {
+        "rapor": "docs/evidence/0154-piksel-raporu.json",
+        "ekran": "analiz-0154-pencere",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0154 C8"
+      },
+      {
+        "rapor": "docs/evidence/0154-piksel-raporu.json",
+        "ekran": "analiz-0154-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0154 C8"
+      },
+      {
+        "rapor": "docs/evidence/0154-piksel-raporu.json",
+        "ekran": "analiz-bos",
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerAddEditForm.jsx": [

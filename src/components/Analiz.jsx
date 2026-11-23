@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { hesaplaAnaliz, BILINMEYEN_MODEL, trendModuSec } from "../lib/analiz";
-import { today, addMonthsToDateStr, sureBicimSaat, aramaKelimeleri, kelimelerEslesir } from "../lib/utils";
+import { hesaplaAnaliz, BILINMEYEN_MODEL, trendModuSec, MUSTERI_SATIR_TUR, MUSTERI_IBARE, HAREKET_KAYNAK } from "../lib/analiz";
+import { today, addMonthsToDateStr, sureBicimSaat, aramaKelimeleri, kelimelerEslesir, fmtTR } from "../lib/utils";
 import { Modal } from "./ui";
 import { Segment, KartBolum, BosDurum } from "./tasarim";
 
@@ -16,6 +16,19 @@ const ayEtiket = (ay) => { const [y, m] = ay.split("-").map(Number); return { ki
 const SERVIS = "var(--brand, #e85d1a)";
 const KARGO = "var(--blu500, #3b82f6)";
 const PALET = [SERVIS, KARGO, "var(--teal, #0d9488)", "#f59e0b", "#8b5cf6", "var(--n500, #64748b)"];
+
+// Spec 0154 R7/4: hareket kaynağının adı lejantın metnidir (tek tanım; lejant da bunu okur).
+const KAYNAK_AD = Object.freeze({ [HAREKET_KAYNAK.SERVIS]: "Serviste değişen", [HAREKET_KAYNAK.KARGO]: "Kargo satışı" });
+// Spec 0154 R1/2, R6/3, P5, P6 (AC-41, AC-52): Parça Kırılımı kutusunun metinleri.
+export const PARCA_KIRILIMI_METIN = Object.freeze({
+  baslik: "Parça Kırılımı",
+  aciklama: { model: "Seçilen parça en çok hangi modele gitti?", musteri: "Seçilen parça hangi makinalara takıldı?" },
+  segment: "Parça kırılımı görünümü",
+  gorunumler: [{ value: "model", label: "Model" }, { value: "musteri", label: "Müşteri" }],
+  pencere: "Parçanın Takıldığı Makinalar",
+  tarihsiz: "Tarihsiz", satisTarihi: "(satış tarihi)", adet: "adet",
+});
+const PK = PARCA_KIRILIMI_METIN;
 
 const S = {
   note: { fontSize: 12, color: "var(--n500, #64748b)", margin: "3px 0 14px" },
@@ -51,6 +64,36 @@ const ModelCubuk = ({ ad, adet, tam, bilinmeyen }) => (
     </span>
   </div>
 );
+
+// Spec 0154 R4/2, P3, P7 (AC-42): müşteri görünümünün satırı. Ad hücresi iki satırlı (firma; altında model · seri ya da
+// türün ibaresi), sağda adet, altında dolgu. Çözülemeyen satır "bilinmeyen" dilimi gibi gri ve taralı. Pencerede (genis)
+// altına hareket listesi her zaman açık çizilir (R7, R7/3).
+const hareketMetni = (h) => `${h.tarih ? fmtTR(h.tarih) : PK.tarihsiz}${h.tarih && h.kaynak === HAREKET_KAYNAK.KARGO ? ` ${PK.satisTarihi}` : ""}`;
+const MakinaCubuk = ({ satir: m, tam, genis = false }) => {
+  const cozulemeyen = m.tur === MUSTERI_SATIR_TUR.COZULEMEYEN;
+  const ikinci = m.tur === MUSTERI_SATIR_TUR.MAKINA ? `${m.model} · ${m.serialNo}` : cozulemeyen ? null : MUSTERI_IBARE[m.tur];
+  return (
+    <div data-testid="musteri-satiri" data-anahtar={m.anahtar} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 6 }}>
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: genis ? 13 : 12.5, fontWeight: 500, color: cozulemeyen ? "var(--n400, #94a3b8)" : "var(--n800, #1e293b)", fontStyle: cozulemeyen ? "italic" : "normal", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={m.ad}>{m.ad}</span>
+        {ikinci && <span data-testid="musteri-satiri-alt" style={{ display: "block", fontSize: 11, color: "var(--n500, #64748b)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={ikinci}>{ikinci}</span>}
+      </span>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--n900, #0f172a)", fontVariantNumeric: "tabular-nums" }}>{m.adet}</span>
+      <span style={{ gridColumn: "1 / -1", height: 8, background: "var(--n150, #f1f5f9)", borderRadius: 4, overflow: "hidden" }}>
+        <span style={{ display: "block", height: "100%", width: `${tam > 0 ? Math.min(100, Math.max(2, (m.adet / tam) * 100)) : 0}%`, borderRadius: 4, background: cozulemeyen ? "var(--n300, #cbd5e1)" : SERVIS, backgroundImage: cozulemeyen ? "repeating-linear-gradient(45deg, transparent 0 4px, rgba(255,255,255,.35) 4px 8px)" : "none" }} />
+      </span>
+      {genis && (
+        <ul data-testid="musteri-hareketleri" style={{ gridColumn: "1 / -1", listStyle: "none", margin: "2px 0 4px", padding: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          {m.hareketler.map(h => (
+            <li key={h.anahtar} data-testid="musteri-hareketi" style={{ fontSize: 11.5, color: "var(--n500, #64748b)", fontVariantNumeric: "tabular-nums" }}>
+              {hareketMetni(h)} · {KAYNAK_AD[h.kaynak]} · {h.adet} {PK.adet}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 const Donut = ({ dilimler }) => {
   const toplam = dilimler.reduce((s, d) => s + d.adet, 0);
@@ -154,7 +197,7 @@ const ParcaSecici = ({ parcalar, secili, onSec }) => {
 };
 
 // Panel liste limitleri (aç/kapa öncesi görünen adet).
-const LIMIT = { parca: 10, makina: 8, yogunluk: 6, teknisyen: 8, kalipAd: 8, kalipOlcu: 8, kalipModel: 8 };
+const LIMIT = { parca: 10, makina: 8, yogunluk: 6, teknisyen: 8, kalipAd: 8, kalipOlcu: 8, kalipModel: 8, musteri: 8 };
 
 // Kalıp kaynak renkleri (birleşik iki renkli çubuk): Extra satış vurgulu (brand), Standart nötr (mavi).
 const K_EXTRA = "var(--brand, #e85d1a)";
@@ -176,12 +219,14 @@ const KalipCubuk = ({ ad, standart = 0, extra = 0, tam }) => {
   );
 };
 
-export const Analiz = ({ customers = [], services = [], partSales = [], yedekParcaSatislar = [], parts = [], appSettings = {} }) => {
+export const Analiz = ({ customers = [], services = [], partSales = [], yedekParcaSatislar = [], parts = [], dealers = [], appSettings = {} }) => {
   const [preset, setPreset] = useState("tum"); // 'yil' | 'son12' | 'tum' | 'ozel' — açılışta tüm zamanlar
   const [ozelBas, setOzelBas] = useState("");
   const [ozelBit, setOzelBit] = useState("");
   const [seciliKey, setSeciliKey] = useState(null);
   const [modalKey, setModalKey] = useState(null); // "tümünü göster" ile ayrı pencerede açılan panel
+  // Spec 0154 R2, R3, R3/2: Parça Kırılımı görünümü; geçici, parça seçiminden ve tarih önayarından bağımsız.
+  const [gorunum, setGorunum] = useState("model");
   const ilk = (arr, k) => arr.slice(0, LIMIT[k]); // panelde gösterilen ilk N
 
   const aralik = useMemo(() => {
@@ -196,8 +241,8 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
   }, [preset, ozelBas, ozelBit]);
 
   const veri = useMemo(
-    () => hesaplaAnaliz({ customers, services, partSales, yedekParcaSatislar, parts, calismaSaatleri: appSettings.calismaSaatleri }, aralik),
-    [customers, services, partSales, yedekParcaSatislar, parts, appSettings.calismaSaatleri, aralik],
+    () => hesaplaAnaliz({ customers, services, partSales, yedekParcaSatislar, parts, dealers, calismaSaatleri: appSettings.calismaSaatleri }, aralik),
+    [customers, services, partSales, yedekParcaSatislar, parts, dealers, appSettings.calismaSaatleri, aralik],
   );
 
   const { ozet } = veri;
@@ -216,6 +261,9 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
   const kalipOlcuMax = veri.kalipOlcu[0]?.toplam || 0;
   const kalipModelMax = veri.kalipModel[0]?.toplam || 0;
   const modelToplam = secili ? secili.modeller.reduce((s, m) => s + m.adet, 0) : 0;
+  const musteriSatirlari = secili?.musteriler || [];
+  // Çubuğun ölçeği parçanın toplamı (ekran toplama yazmaz, C1); aşırı tahsiste satır toplamı aşabilir, çubuk %100'de durur.
+  const musteriTam = secili?.toplam || 0;
 
   const aralikBos = veri.parcalar.length === 0 && ozet.toplamServis === 0 && ozet.kalipToplam === 0 && ozet.standartToplam === 0;
 
@@ -280,8 +328,8 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
   );
   const parcaLejant = (
     <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: SERVIS }} /> Serviste değişen</span>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: KARGO }} /> Kargo satışı</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: SERVIS }} /> {KAYNAK_AD[HAREKET_KAYNAK.SERVIS]}</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: KARGO }} /> {KAYNAK_AD[HAREKET_KAYNAK.KARGO]}</span>
     </div>
   );
   const kalipLejant = (
@@ -298,6 +346,7 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
     teknisyen: { baslik: "Teknisyen Dökümü", arr: veri.teknisyenler, node: () => <div style={listeStil}>{veri.teknisyenler.map(teknisyenRow)}</div> },
     kalipAd: { baslik: "En Çok Kullanılan Kalıp", arr: veri.kalipAd, node: () => <>{kalipLejant}<div style={listeStil}>{veri.kalipAd.map(k => kalipRow(k, kalipAdMax))}</div></> },
     kalipOlcu: { baslik: "Kalıp Ölçüleri", arr: veri.kalipOlcu, node: () => <>{kalipLejant}<div style={listeStil}>{veri.kalipOlcu.map(k => kalipRow(k, kalipOlcuMax))}</div></> },
+    musteri: { baslik: PK.pencere, arr: musteriSatirlari, node: () => <div style={listeStil}>{musteriSatirlari.map(m => <MakinaCubuk key={m.anahtar} satir={m} tam={musteriTam} genis />)}</div> },
     kalipModel: { baslik: "Modele Göre Kalıp", arr: veri.kalipModel, node: () => <>{kalipLejant}<div style={listeStil}>{veri.kalipModel.map(k => kalipRow(k, kalipModelMax))}</div></> },
   };
   const acikModal = modalKey ? modalTanim[modalKey] : null;
@@ -352,20 +401,26 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
               </>
             )}
             <div style={{ display: "flex", gap: 16, marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--n150, #f1f5f9)" }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: SERVIS }} /> Serviste değişen</span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: KARGO }} /> Kargo satışı</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: SERVIS }} /> {KAYNAK_AD[HAREKET_KAYNAK.SERVIS]}</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--n500, #64748b)" }}><span style={{ width: 11, height: 11, borderRadius: 3, background: KARGO }} /> {KAYNAK_AD[HAREKET_KAYNAK.KARGO]}</span>
             </div>
           </KartBolum></section>
 
           {/* Parça → Model */}
           <section style={{ gridColumn: "span 5", minWidth: 0 }}>
-            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title="Parça → Model Kırılımı" style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}>
-            <p style={S.note}>Seçilen parça en çok hangi modele gitti?</p>
+            <KartBolum varyant="kart" baslikStili="baslik" baslikBosluk={8} title={PK.baslik} style={{ height: "100%", boxSizing: "border-box", minWidth: 0 }}
+              eylemler={<Segment kip="dugme" genislik="icerik" ariaLabel={PK.segment} options={PK.gorunumler} value={gorunum} onChange={setGorunum} />}>
+            <p style={S.note}>{PK.aciklama[gorunum]}</p>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
               <span style={{ fontSize: 12.5, color: "var(--n500, #64748b)", flexShrink: 0 }}>Parça:</span>
               <ParcaSecici parcalar={veri.parcalar} secili={secili} onSec={setSeciliKey} />
             </div>
-            {!secili ? <BosDurum testId="bos-analiz" baslik="Parça yok." /> : (
+            {!secili ? <BosDurum testId="bos-analiz" baslik="Parça yok." /> : gorunum === "musteri" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }} data-testid="musteri-kirilimi">
+                {ilk(musteriSatirlari, "musteri").map(m => <MakinaCubuk key={m.anahtar} satir={m} tam={musteriTam} />)}
+                <TumBtn toplam={musteriSatirlari.length} limit={LIMIT.musteri} onAc={() => setModalKey("musteri")} />
+              </div>
+            ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {secili.modeller.map(m => <ModelCubuk key={m.model} ad={m.model} adet={m.adet} tam={modelToplam} bilinmeyen={m.bilinmeyen} />)}
                 {secili.modeller.some(m => m.bilinmeyen) && (

@@ -54,7 +54,12 @@ const simdi = () => JSON.parse(JSON.stringify({
   disaAktarma: ICERIKSIZ.map(p => parcaDisaAktarmaSatiri(p).slice(0, 10)),
   modeller: modelMaliyetleri(MODELLER, 12345),
   rapor: hesaplaAylikRapor(VERI, "2026-06", { factoryName: "Altuntaş Makina", kdvRates, factory: { name: "Altuntaş Makina" } }),
-  analiz: hesaplaAnaliz({ ...VERI, parts: PARCALAR_HEPSI }, {}),
+  // Spec 0154 ile (C1/2, P10, AC-36): parça kaydına müşteri kırılımı (`musteriler`) eklendi; altın yenilenmez, alan
+  // `parcalar[]`'dan ve aynı kaydı gösteren `ozet.enCokParca`'dan ayıklanır.
+  analiz: (({ parcalar, ozet, ...a }) => {
+    const ayikla = (p) => (p ? (({ musteriler: _m, ...x }) => x)(p) : p);
+    return { ...a, parcalar: parcalar.map(ayikla), ozet: { ...ozet, enCokParca: ayikla(ozet.enCokParca) } };
+  })(hesaplaAnaliz({ ...VERI, parts: PARCALAR_HEPSI }, {})),
   finans: finansOzetiHesapla({ ...VERI, kdvRates }),
 }));
 

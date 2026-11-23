@@ -2,13 +2,29 @@
 // ADET bazlı: hiçbir metrik para/ciro içermez (kullanıcı kararı). Servis değişen parçaları +
 // kargo yedek parça satışlarını birleştirir, model/servis/teknisyen/kalıp kırılımlarını türetir.
 //
-// Girdi tek nesne: { customers, services, partSales, yedekParcaSatislar, parts, calismaSaatleri }
+// Girdi tek nesne: { customers, services, partSales, yedekParcaSatislar, parts, dealers, calismaSaatleri }
 // (hepsi silinmemiş/live diziler beklenir). Aralık ikinci arg: { baslangic, bitis } "YYYY-MM-DD"
 // (bitis DAHİL, ikisi de null → tüm zamanlar). Tarihsiz kayıt, aralık verildiyse dışarıda kalır.
 import { trLower, parcaAdi } from "./utils";
 import { servisSureleri } from "./servisAnaliz";
+// Spec 0154 C2, P11: alıcı adının tek okuma yolu. yedekParcaSatis.js'in içe aldığı modüllerin hiçbiri bu dosyayı almıyor (döngü
+// yok); motorun çıktısına para alanı girmez.
+import { aliciAd } from "./yedekParcaSatis";
 
 export const BILINMEYEN_MODEL = "Modeli bilinmeyen";
+
+// ── Spec 0154: parçanın müşteri (makina) kırılımı ─────────────────────────────────────────────────────────────────────
+// Satır türleri ve anahtar biçimleri (R12/2, P2): makina `m:<customerId>`, tahsis edilmemiş kargo `t:<alıcı>` (alıcı başına,
+// P1), serbest metinli tahsis `s:<metin>`, çözülemeyen hareketler `x`. Ekran anahtar üretmez.
+export const MUSTERI_SATIR_TUR = Object.freeze({ MAKINA: "makina", TAHSISSIZ: "tahsissiz", SERBEST: "serbest", COZULEMEYEN: "cozulemeyen" });
+// C7/2: satır ibareleri tek yerde. "(müşteri yok)" aliciAd'ın yedeğidir, buradaki çözülemeyen satır ibaresinden ayrıdır (C7/4).
+export const MUSTERI_IBARE = Object.freeze({ tahsissiz: "Tahsis edilmedi", serbest: "Sistemde olmayan makina", cozulemeyen: "Müşterisi bulunamayan hareketler" });
+export const HAREKET_KAYNAK = Object.freeze({ SERVIS: "servis", KARGO: "kargo" });
+const COZULEMEYEN_ANAHTAR = "x";
+// Triyaj: karşılaştırıcı modül düzeyinde bir kez kurulur (localeCompare(…, "tr", …) her çağrıda yeni karşılaştırıcı kuruyor,
+// müşteri kırılımı her parça için sıralandığı için motor 16 kat yavaşlamıştı).
+const KARSILASTIR = new Intl.Collator("tr", { numeric: true });
+const metinSirala = (a, b) => KARSILASTIR.compare(String(a ?? ""), String(b ?? ""));
 
 // Bir parça satırının anahtarı: partId varsa ona göre (servis + kargo aynı parçada birleşsin),
 // yoksa serbest metin ada göre (Türkçe-katlı). Böylece "Rulman 6204" hem serviste hem kargoda tek satır.
@@ -33,8 +49,19 @@ export const trendModuSec = (preset, baslangic, bitis) => {
   return "ay";
 };
 
+// R5, R5/2, R5/3: adet azalan, firma, model, seri, anahtar; yalnız çözülemeyen satır sonda. R7, R7/3, P5: hareketler tarih
+// azalan (tarihsiz sonda), eşit tarihte servis önce, sonra kayıt kimliği.
+const hareketSirala = (a, b) => {
+  if (!a.tarih !== !b.tarih) return a.tarih ? -1 : 1;
+  return ((b.tarih > a.tarih) - (b.tarih < a.tarih)) || ((a.kaynak === HAREKET_KAYNAK.SERVIS ? 0 : 1) - (b.kaynak === HAREKET_KAYNAK.SERVIS ? 0 : 1)) || metinSirala(a.kayitId, b.kayitId);
+};
+const musteriListesi = (harita) => [...harita.values()]
+  .map(({ hareketMap, ...x }) => ({ anahtar: x.anahtar, ad: x.ad, model: x.model, serialNo: x.serialNo, adet: x.adet, tur: x.tur, hareketler: [...hareketMap.values()].sort(hareketSirala) }))
+  .sort((a, b) => ((a.tur === MUSTERI_SATIR_TUR.COZULEMEYEN) - (b.tur === MUSTERI_SATIR_TUR.COZULEMEYEN)) || (b.adet - a.adet)
+    || metinSirala(a.ad, b.ad) || metinSirala(a.model, b.model) || metinSirala(a.serialNo, b.serialNo) || metinSirala(a.anahtar, b.anahtar));
+
 export function hesaplaAnaliz(
-  { customers = [], services = [], partSales = [], yedekParcaSatislar = [], parts = [], calismaSaatleri } = {},
+  { customers = [], services = [], partSales = [], yedekParcaSatislar = [], parts = [], dealers = [], calismaSaatleri } = {},
   { baslangic = null, bitis = null, trendModu = "ay" } = {},
 ) {
   const custById = new Map();
@@ -59,17 +86,17 @@ export function hesaplaAnaliz(
   const rYedek = yedekParcaSatislar.filter(s => araliktaMi(s.tarih));
   const rKalip = partSales.filter(p => p && p.tur === "Kalıp" && araliktaMi(p.tarih));
 
-  const makinaModeli = (id, serialNo) => {
-    const c = (id != null && custById.get(id)) || (serialNo ? custBySerial.get(serialNo) : null);
-    return c?.model || BILINMEYEN_MODEL;
-  };
+  // Spec 0154 R11, B3 (AC-37): tahsisin makinası tek çözümle: kimlik, kaydı bulunamazsa seri numarası. Model ve müşteri
+  // kırılımı aynı yardımcıyı okur, aynı hareket iki kutuda aynı makinaya yazılır.
+  const makinaCoz = (id, serialNo) => (id != null && custById.get(id)) || (serialNo ? custBySerial.get(serialNo) : null) || null;
+  const makinaModeli = (id, serialNo) => makinaCoz(id, serialNo)?.model || BILINMEYEN_MODEL;
 
   // ── Yedek parça toplamı (servis + kargo birleşik) + parça başına model kırılımı ──
   const parcaMap = new Map(); // key → {key, ad, servis, kargo, toplam, modeller:Map}
   const parcaGiris = (partId, ad) => {
     const key = parcaAnahtar(partId, ad);
     let e = parcaMap.get(key);
-    if (!e) { e = { key, ad: ad || "Parça", servis: 0, kargo: 0, toplam: 0, modeller: new Map() }; parcaMap.set(key, e); }
+    if (!e) { e = { key, ad: ad || "Parça", servis: 0, kargo: 0, toplam: 0, modeller: new Map(), musteriler: new Map() }; parcaMap.set(key, e); }
     if ((!e.ad || e.ad === "Parça") && ad) e.ad = ad;
     return e;
   };
@@ -78,15 +105,36 @@ export function hesaplaAnaliz(
     e.modeller.set(m, (e.modeller.get(m) || 0) + adet);
   };
 
+  // Spec 0154 (C1, R4–R13): müşteri haritası aynı iki döngüde dolar. Satır bir makinadır (müşteri kaydı); hareket kayıt
+  // başınadır (R7/2: aynı servisin iki satırı tek hareket).
+  const makinaSatiri = (c) => ({ anahtar: `m:${c.id}`, ad: c.name || "—", model: c.model || "—", serialNo: c.serialNo || "—", tur: MUSTERI_SATIR_TUR.MAKINA });
+  const cozulemeyenSatiri = () => ({ anahtar: COZULEMEYEN_ANAHTAR, ad: MUSTERI_IBARE.cozulemeyen, model: null, serialNo: null, tur: MUSTERI_SATIR_TUR.COZULEMEYEN });
+  const musteriEkle = (e, satir, kaynak, kayit, tarih, adet) => {
+    let x = e.musteriler.get(satir.anahtar);
+    if (!x) { x = { ...satir, adet: 0, hareketMap: new Map() }; e.musteriler.set(satir.anahtar, x); }
+    x.adet += adet;
+    const hk = `${kaynak}:${kayit}`;
+    const h = x.hareketMap.get(hk);
+    if (h) h.adet += adet; else x.hareketMap.set(hk, { anahtar: hk, kaynak, kayitId: kayit, tarih: tarih || "", adet });
+  };
+  // P1: tahsis edilmemiş satırın alıcısı (aliciAd'ın dal sırasıyla).
+  const tahsissizSatiri = (s) => {
+    const kimlik = s?.aliciTipi === "musteri" ? `musteri:${s.musteriId}` : s?.disFirma ? `dis:${trLower(String(s.disFirmaAd || "").trim())}` : `bayi:${s?.dealerId}`;
+    return { anahtar: `t:${kimlik}`, ad: aliciAd(s, dealers, customers), model: null, serialNo: null, tur: MUSTERI_SATIR_TUR.TAHSISSIZ };
+  };
+
   // Servis değişen parçaları
   for (const s of rServices) {
-    const model = custById.get(s.customerId)?.model || BILINMEYEN_MODEL;
+    const c = custById.get(s.customerId) || null;
+    const model = c?.model || BILINMEYEN_MODEL;
+    const satir = c ? makinaSatiri(c) : cozulemeyenSatiri();
     for (const p of (s.degisenParcalar || [])) {
       const adet = Number(p.miktar) > 0 ? Number(p.miktar) : 1;
       const ad = p.ad || parcaAdi(partsById.get(String(p.partId))) || "Parça";
       const e = parcaGiris(p.partId, ad);
       e.servis += adet; e.toplam += adet;
       modelEkle(e, model, adet);
+      musteriEkle(e, satir, HAREKET_KAYNAK.SERVIS, s.id, s.date, adet);
     }
   }
   // Kargo yedek parça satışları (+ tahsislere göre makina/model dağılımı)
@@ -102,9 +150,19 @@ export function hesaplaAnaliz(
       if (tadet <= 0) continue;
       tahsisEdilen += tadet;
       modelEkle(e, makinaModeli(t.customerId, t.serialNo), tadet);
+      // R11, R11/2: makina; çözülemezse serbest metin kendi satırı; o da boşsa çözülemeyen satırı.
+      const c = makinaCoz(t.customerId, t.serialNo);
+      const serbest = String(t.makinaSerbest || "").trim();
+      const satir = c ? makinaSatiri(c)
+        : serbest ? { anahtar: `s:${trLower(serbest)}`, ad: serbest, model: null, serialNo: null, tur: MUSTERI_SATIR_TUR.SERBEST }
+          : cozulemeyenSatiri();
+      musteriEkle(e, satir, HAREKET_KAYNAK.KARGO, s.id, s.tarih, tadet);
     }
     const kalan = adet - tahsisEdilen;
-    if (kalan > 0) modelEkle(e, BILINMEYEN_MODEL, kalan); // tahsis edilmemiş = modeli bilinmiyor
+    if (kalan > 0) {
+      modelEkle(e, BILINMEYEN_MODEL, kalan); // tahsis edilmemiş = modeli bilinmiyor
+      musteriEkle(e, tahsissizSatiri(s), HAREKET_KAYNAK.KARGO, s.id, s.tarih, kalan); // R12: her zaman ayrı satır
+    }
   }
 
   const parcalar = [...parcaMap.values()]
@@ -113,6 +171,7 @@ export function hesaplaAnaliz(
       // bilinmeyen dilimi en sona, gerisi adet azalan
       modeller: [...e.modeller].map(([model, adet]) => ({ model, adet, bilinmeyen: model === BILINMEYEN_MODEL }))
         .sort((a, b) => (a.bilinmeyen - b.bilinmeyen) || (b.adet - a.adet)),
+      musteriler: musteriListesi(e.musteriler),
     }))
     .sort((a, b) => b.toplam - a.toplam);
 

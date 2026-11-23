@@ -1,0 +1,111 @@
+{
+ "tum": [
+  {
+   "key": "p:7",
+   "modeller": [
+    {
+     "model": "AK100",
+     "adet": 7,
+     "bilinmeyen": false
+    },
+    {
+     "model": "AK120",
+     "adet": 3,
+     "bilinmeyen": false
+    },
+    {
+     "model": "AK200",
+     "adet": 2,
+     "bilinmeyen": false
+    },
+    {
+     "model": "Modeli bilinmeyen",
+     "adet": 14,
+     "bilinmeyen": true
+    }
+   ],
+   "servis": 10,
+   "kargo": 16,
+   "toplam": 26
+  },
+  {
+   "key": "p:8",
+   "modeller": [
+    {
+     "model": "AK100",
+     "adet": 2,
+     "bilinmeyen": false
+    },
+    {
+     "model": "AK120",
+     "adet": 1,
+     "bilinmeyen": false
+    }
+   ],
+   "servis": 1,
+   "kargo": 1,
+   "toplam": 2
+  },
+  {
+   "key": "n:serbest conta",
+   "modeller": [
+    {
+     "model": "AK200",
+     "adet": 1,
+     "bilinmeyen": false
+    }
+   ],
+   "servis": 1,
+   "kargo": 0,
+   "toplam": 1
+  }
+ ],
+ "aralik": [
+  {
+   "key": "p:7",
+   "modeller": [
+    {
+     "model": "AK100",
+     "adet": 4,
+     "bilinmeyen": false
+    },
+    {
+     "model": "AK120",
+     "adet": 3,
+     "bilinmeyen": false
+    },
+    {
+     "model": "AK200",
+     "adet": 1,
+     "bilinmeyen": false
+    },
+    {
+     "model": "Modeli bilinmeyen",
+     "adet": 10,
+     "bilinmeyen": true
+    }
+   ],
+   "servis": 6,
+   "kargo": 12,
+   "toplam": 18
+  },
+  {
+   "key": "p:8",
+   "modeller": [
+    {
+     "model": "AK120",
+     "adet": 1,
+     "bilinmeyen": false
+    }
+   ],
+   "servis": 1,
+   "kargo": 0,
+   "toplam": 1
+  }
+ ],
+ "ekran": {
+  "RULMAN ?": "Parça:RULMAN ? (26)▾AK1007AK1203AK2002Modeli bilinmeyen14“Modeli bilinmeyen” = tahsis edilmemiş / makinası bilinmeyen kargo satışları.",
+  "Kayış": "Parça:Kayış (2)▾AK1002AK1201",
+  "Serbest conta": "Parça:Serbest conta (1)▾AK2001"
+ }
+}
