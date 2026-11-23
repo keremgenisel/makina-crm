@@ -14835,22 +14835,19 @@
     ],
     "src/components/kasa/TedarikciAvanslari.jsx": [
       {
-        "rapor": "docs/evidence/0155-piksel-raporu.json",
+        "rapor": "docs/evidence/0155-taban-piksel-raporu.json",
         "ekran": "kasa-0155-tedarikci-avans",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0155 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0155-piksel-raporu.json",
+        "rapor": "docs/evidence/0155-taban-piksel-raporu.json",
         "ekran": "kasa-0155-avans-formu",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0155 DoD"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0155-piksel-raporu.json",
+        "rapor": "docs/evidence/0155-taban-piksel-raporu.json",
         "ekran": "kasa-0155-geri-odeme",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-23 · spec 0155 DoD"
+        "beklenen": "ayni"
       }
     ]
   }

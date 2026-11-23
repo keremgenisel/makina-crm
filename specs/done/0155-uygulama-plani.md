@@ -5,7 +5,7 @@
 | **Spec** | `specs/0155-tedarikci-avansi-ve-alacagi.md` (Onaylandı, 2026-11-23) |
 | **Onay** | Takım Yöneticisi, 2026-11-23 ("tum onerilerini kabul ediyorum, spece isle, plani yaz ve uygula") |
 | **Dal** | `feat/0155-tedarikci-avansi` (main `51783ca4` üstünde) |
-| **Durum** | Uygulandı; commit ve kapanış Takım Yöneticisinin talimatını bekliyor |
+| **Durum** | Tamamlandı (commit `9eb0577f`) |
 
 ## 1. Dosyalar
 
