@@ -199,8 +199,12 @@ export interface Part {
   tip?: string;
   resim?: string;
   deletedAt?: ISODate | null;
-  /** Spec 0087 R1: alış maliyeti, TL, KDV hariç (matrah); girilmemişse alan yok. fiyatTRY/USD/EUR satış fiyatıdır. */
+  /** Spec 0087 R1: alış maliyeti, KDV hariç (matrah); girilmemişse alan yok. fiyatTRY/USD/EUR satış fiyatıdır.
+   *  Spec 0157 R1/2: tutar parçanın kendi para birimindedir (`maliyetParaBirimi`; yoksa TL). */
   maliyet?: number;
+  /** Spec 0157 R1/2: elle maliyetin para birimi (yalnız dövizde: "USD" | "EUR") ve donmuş kuru ("1 birim = X TL"). */
+  maliyetParaBirimi?: string;
+  maliyetKuru?: number;
   /** Spec 0135: parçanın maliyet kalemleri (malzeme ve işlem). */
   maliyetKalemleri?: Array<MalzemeKalemi | IslemKalemi>;
 }
@@ -221,6 +225,9 @@ export interface IslemKalemi {
   ad: string;
   tedarikciId?: ID;
   tutar: number | null;
+  /** Spec 0157 R8: kalemin para birimi ve donmuş kuru (yalnız dövizde). */
+  paraBirimi?: string;
+  kur?: number;
 }
 
 /** Spec 0087: makina kiti satırı (stok düşümünün kaynağı, adetin tek kaynağı). */

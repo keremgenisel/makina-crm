@@ -212,10 +212,12 @@ const say = (desen, kokler = ["src"]) => Object.fromEntries(kokler.flatMap(tara)
 describe("Spec 0096: kaynak taramaları", () => {
   it("AC-32: parçanın maliyet alanını doğrudan okuyan yer yalnız tek okuma yolu; motorun satır içi ölçütü kalktı (istisnalar tam yollu, sayılı)", () => {
     expect(say(/\.maliyet\b/)).toEqual({
-      "src/lib/urunAgaci.js": 2, // tek okuma yolu (parcaMaliyetKurus) ve elle maliyetin form metni (elleMaliyetMetni)
+      // Spec 0157 ile (P3): elle maliyetin modül içi tek okuyucusu (`elleTutarVar`, `bugunkuKurus`, kardeş okuyucu) aynı dosyada; dört satır.
+      "src/lib/urunAgaci.js": 4, // tek okuma yolu (parcaMaliyetKurus) ve elle maliyetin form metni (elleMaliyetMetni)
       // FORM durumunun okunması (f.maliyet, form.maliyet, editForm.maliyet), kayıt değil. Spec 0135 ile 6: kip onayının doluluk
       // denetimi ve dokunulmamış kopyanın yerel nesnesindeki anahtar (maliyetAlanlari.maliyet) eklendi.
-      "src/components/PartManager.jsx": 6,
+      // Spec 0157 ile: dokunulmamış kopyadaki `maliyetAlanlari.maliyet` silmesi elle alan listesiyle döngüye girdi (5).
+      "src/components/PartManager.jsx": 5,
       "src/lib/makinaMaliyeti.js": 2, // stok partisi toplayıcısının yerel alanı (x.maliyet), parça kaydı değil
     });
     expect(kod("src/lib/makinaStandartMaliyet.js")).not.toMatch(/p\.maliyet|maliyet == null/);

@@ -10,7 +10,7 @@
 //   5. Malzeme kalemi olan parçanın SİPARİŞ adedi (× kalem adedi) her malzeme kaleminin kesit satırına gider .
 import { PARCA_BILGI_ALANLARI, bilgiDegeri } from "./parcaBilgi";
 import { trLower, totalMiktar } from "./utils";
-import { setMi, setIcerigiOf, kalemAdetiOf, parcaMaliyetKurus, setKatalogu } from "./urunAgaci";
+import { setMi, setIcerigiOf, kalemAdetiOf, parcaMaliyetKurus, setKatalogu, parcaDovizMaliyeti, islemKalemiTutari } from "./urunAgaci";
 import { BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./tutarGirdisi";
 import {
   BICIMLER, PARA_BIRIMLERI, dovizMi, bantSec, bantlarOf, fiyatKumesi, hamOlculer, hamKesit, malzemeOzeti,
@@ -432,11 +432,15 @@ const islemSatirlariKur = (kalemler, canliParca) => {
     for (const ik of islemKalemleri(p)) {
       if (eskiKatalogKalemi(ik)) continue;
       const tid = ik.tedarikciId == null || ik.tedarikciId === "" ? null : String(ik.tedarikciId);
-      const bos = ik.tutar == null || ik.tutar === "";
-      const birimK = bos ? null : kurus(ik.tutar);
+      // Spec 0157 R8/2 (AC-39): döviz kalemin satırı para birimini ve kendi tutarını da taşır (yalnız dövizde, C6/2); lira karşılığı
+      // donmuş kurla, çözülemeyen döviz kalem tutarsız ve nedenli.
+      const t = islemKalemiTutari(ik);
+      const birimK = t.birimK;
+      const tutarK = birimK == null || k.hata ? null : birimK * k.siparis;
       satirlar.push({ partId: k.partId, parca: k.ad, ad: String(ik.ad ?? "").trim(), tedarikciId: tid, siparis: k.siparis,
         duzenlendi: !!k.duzenlendi, hata: k.hata || null, sira: sira++,
-        birimK, tutarK: birimK == null || k.hata ? null : birimK * k.siparis, tutarNeden: bos ? ISLEM_TUTAR_YOK : null });
+        birimK, tutarK, tutarNeden: t.bos ? ISLEM_TUTAR_YOK : t.neden || null,
+        ...(t.paraBirimi ? { paraBirimi: t.paraBirimi, dovizTutarK: tutarK == null ? null : t.dovizBirimK * k.siparis } : {}) });
     }
   }
   return satirlar.sort((a, b) => a.ad.localeCompare(b.ad, "tr") || String(a.parca).localeCompare(String(b.parca), "tr") || a.sira - b.sira);
@@ -479,11 +483,16 @@ const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed,
     const tid = p.tedarikciId == null || p.tedarikciId === "" ? null : String(p.tedarikciId);
     if (!tid && k.malzemeli) { belirtilmemis.anasizMalzemeli++; continue; }
     const birimK = k.malzemeli ? null : parcaMaliyetKurus(p, undefined, setKat, malzemeKat);
+    // Spec 0157 R15, R15/2, C1/2, P9 (AC-24, AC-38): elle döviz maliyetli hazır parçanın tutarı kendi para biriminde de taşınır;
+    // lira tutarı tek okuma yolunun lira birimi × adet. Yeni anahtarlar yalnız dövizde (C6/2, AC-57). Kardeş okuyucuyu yalnız burası çağırır.
+    const dv = k.malzemeli ? null : parcaDovizMaliyeti(p);
     const satir = { partId: k.partId, ad: k.ad, set: k.set, ihtiyac: k.ihtiyac, stok: k.stok, oneri, siparis: k.siparis, duzenlendi: !!k.duzenlendi,
       kapali: !!k.kapali, hata: k.hata || null, malzemeli: k.malzemeli, olculer: k.olculer, birimK, ...k.bilgi, olcuSatirlari: olcuSatirlariOf(k.malzemeli, k.olculer, k.bilgi),
       tutarK: k.malzemeli || birimK == null ? null : birimK * k.siparis, tutarNeden: k.malzemeli ? MALZEMESI_ASAGIDA : birimK == null ? MALIYET_YOK : null };
+    if (dv) Object.assign(satir, { paraBirimi: dv.paraBirimi, dovizTutarK: satir.tutarK == null ? null : kurus(dv.tutar) * k.siparis });
     if (kesitNedenleri.has(k.partId)) satir.kesitNedenleri = kesitNedenleri.get(k.partId);
-    hazirMaliyet.set(k.partId, { birimK: satir.birimK, tutarK: satir.tutarK, tutarNeden: k.malzemeli ? null : satir.tutarNeden });
+    hazirMaliyet.set(k.partId, { birimK: satir.birimK, tutarK: satir.tutarK, tutarNeden: k.malzemeli ? null : satir.tutarNeden,
+      ...(dv ? { paraBirimi: satir.paraBirimi, dovizTutarK: satir.dovizTutarK } : {}) });
     if (!tid) belirtilmemis.parcalar.push(satir); else bolum(tid).hazirParcalar.push(satir);
   }
   for (const r of kesitSatirlari) {
@@ -617,6 +626,8 @@ const belgeBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, ham
     const tl = b.islemler.map(x => x.tutarK).filter(v => v != null);
     b.islemToplamK = tl.length ? tl.reduce((a, v) => a + v, 0) : null;
     b.islemTutarsizSayi = b.islemler.filter(x => x.tutarK == null).length;
+    // Spec 0157 R8/2 (AC-39): döviz işlem kalemi varken işlemler toplamı para birimi başına da verilir; genel toplam lira toplamından.
+    if (b.islemler.some(x => x.paraBirimi)) b.islemToplamlar = pbTopla(b.islemler.map(x => (x.paraBirimi ? { pb: x.paraBirimi, k: x.dovizTutarK } : { pb: "TRY", k: x.tutarK })));
   }
   for (const b of map.values()) {
     const basilan = new Set(b.satirlar.map(x => x.partId));
@@ -732,7 +743,9 @@ const belgeTutarlariKur = (b, kesitMap, hazirMaliyet) => {
     } else {
       const h = hazirMaliyet.get(x.partId) || { birimK: null, tutarK: null, tutarNeden: MALIYET_YOK };
       x.parcaTutarlari = []; x.birimK = h.birimK; x.tutarK = h.tutarK; x.tutarNeden = h.tutarK == null ? (h.tutarNeden || MALIYET_YOK) : null;
-      if (x.tutarK == null) tutarsiz++; else hazirTutarlar.push({ pb: "TRY", k: x.tutarK });
+      // Spec 0157 R15, P9 (AC-24, AC-25, AC-38): döviz hazır parça kendi para biriminde toplanır, lira toplamına lira tutarıyla girer.
+      if (h.paraBirimi) { x.paraBirimi = h.paraBirimi; x.dovizTutarK = h.dovizTutarK; }
+      if (x.tutarK == null) tutarsiz++; else hazirTutarlar.push(h.paraBirimi ? { pb: h.paraBirimi, k: h.dovizTutarK, liraK: x.tutarK } : { pb: "TRY", k: x.tutarK });
     }
   }
   // A-R6, A-R6/2, A-R6/3 (Karar 38): fark yalnız toplam paylardan büyükken; satır başına (bir satırın eksisi ötekinin artısını silmez).
@@ -744,7 +757,7 @@ const belgeTutarlariKur = (b, kesitMap, hazirMaliyet) => {
   // B-R7, B-R7/2, B-R7/3, B-R8, B-R8/2: toplam tablosu ve hazır parçalar; paylar toplama girmez.
   for (const r of b.toplam) if (r.tutarK == null) tutarsiz++;
   b.toplamlar = pbTopla([...b.toplam.map(r => ({ pb: r.paraBirimi, k: r.tutarK })), ...hazirTutarlar]);
-  const tl = [...b.toplam.map(r => r.tutarTLK), ...hazirTutarlar.map(h => h.k)].filter(v => v != null);
+  const tl = [...b.toplam.map(r => r.tutarTLK), ...hazirTutarlar.map(h => h.liraK ?? h.k)].filter(v => v != null);
   b.toplamTLK = tl.length ? tl.reduce((a, v) => a + v, 0) : null;
   b.dovizVar = b.toplamlar.some(t => t.pb !== "TRY");
   b.tutarsizSayi = tutarsiz;

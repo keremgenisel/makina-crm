@@ -1235,6 +1235,37 @@ check("yetim dosya atlandı, geçerli + bayi dosyası korundu", (() => {
   check("spec 0158 AC-71: boş alanın anahtarı gövdede yok", !("olcu" in p8) && !("hammaddeAdi" in p8) && !("cins" in p8));
 }
 
+// ── Spec 0157 R1/2, C7, C6/2 (AC-36, AC-42, AC-43): parçanın elle maliyetinin para birimi ve kuru kendi sütunlarında; lira parçada
+// iki anahtar gövdede yok (gövde spec öncesiyle birebir); işlem kaleminin para birimi ve kuru ile geçmiş satırının döviz alanları JSON içinde
+// aynen döner.
+{
+  const { GOVDE_GIRDISI } = require(path.join(root, "tests", "fixtures", "0097-govde-girdisi.cjs"));
+  const once = JSON.parse(fs.readFileSync(path.join(root, "tests", "fixtures", "0097-govde-once.json"), "utf8"));
+  const esit = (a, c) => JSON.stringify(a) === JSON.stringify(c);
+  dbmod.writeBlobToDb(structuredClone(GOVDE_GIRDISI));
+  check("spec 0157 AC-36: lira veride parçaların gövdesi spec öncesiyle birebir, iki anahtar yok", esit(dbmod.readBlobFromDb().parts, once.parts));
+  const girdi = structuredClone(GOVDE_GIRDISI);
+  Object.assign(girdi.parts[0], { maliyet: 120, maliyetParaBirimi: "USD", maliyetKuru: 50.370257,
+    maliyetGecmisi: [{ gecerli: "", kurus: 500000 }, { gecerli: "2026-11-01", kurus: 604443, dovizTutar: 120, kur: 50.370257, paraBirimi: "USD" }] });
+  Object.assign(girdi.parts[1], { maliyetParaBirimi: "", maliyetKuru: null, maliyetKalemleri: [{ tur: "islem", ad: "Kaplama", tutar: 33.33, paraBirimi: "EUR", kur: 41.1234 }, { tur: "islem", ad: "Büküm", tutar: 10 }] });
+  dbmod.writeBlobToDb(girdi);
+  const dbYol = dbmod.getDbPath();
+  dbmod.close();
+  const ham = new Database(dbYol);
+  const ps = ham.prepare(`SELECT id, maliyet, maliyetParaBirimi, maliyetKuru FROM parts`).all();
+  ham.close();
+  const r7 = ps.find(r => r.id === girdi.parts[0].id);
+  check("spec 0157 AC-36 / AC-42: para birimi TEXT, kur REAL sütunda; boş değer NULL", r7?.maliyetParaBirimi === "USD" && r7.maliyetKuru === 50.370257 && r7.maliyet === 120
+    && ps.filter(r => r.id !== r7.id).every(r => r.maliyetParaBirimi === null && r.maliyetKuru === null));
+  dbmod.migrateFromJsonIfNeeded();
+  const c = dbmod.readBlobFromDb();
+  const p0 = c.parts.find(p => p.id === girdi.parts[0].id); const p1 = c.parts.find(p => p.id === girdi.parts[1].id);
+  check("spec 0157 AC-42: döviz maliyet üç alanla geri gelir", p0?.maliyet === 120 && p0.maliyetParaBirimi === "USD" && p0.maliyetKuru === 50.370257);
+  check("spec 0157 AC-41: geçmiş satırının döviz alanları JSON'da aynen döner", esit(p0.maliyetGecmisi, girdi.parts[0].maliyetGecmisi));
+  check("spec 0157 AC-42: boş alanın anahtarı gövdede yok", !("maliyetParaBirimi" in p1) && !("maliyetKuru" in p1));
+  check("spec 0157 AC-43: işlem kaleminin para birimi ve kuru JSON'da aynen döner", esit(p1.maliyetKalemleri, girdi.parts[1].maliyetKalemleri));
+}
+
 fs.rmSync(tmpDir, { recursive: true, force: true });
 if (fail) { console.error(`${fail} kontrol BASARISIZ`); process.exit(1); }
 console.log("TUM KONTROLLER GECTI");

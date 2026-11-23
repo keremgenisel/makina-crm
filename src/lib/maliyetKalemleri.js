@@ -27,7 +27,9 @@ export const MALIYET_KALEM_SINIRI = 20;
 // R24, R24/2: kırılımdan türeyen işlem kaleminin adı sabittir; tedarikçinin adı kaleme ad olarak yazılmaz (gizlilik, C6/2).
 export const TURETILEN_KALEM_ADI = "Hammadde alımı";
 // R25, R25/2: kalem listesi dolu kayıtta silinen üç eski alan; parça kartının dokunulmamış kopya dalı da bu listeyi okur (Karar 40).
-export const ESKI_MALIYET_ANAHTARLARI = Object.freeze(["malzemeSatiri", "hammaddeler", "maliyet"]);
+// Spec 0157 P2, C7/3, R1/3 (AC-45, AC-46): elle maliyetin para birimi ve kuru da bu listededir: Hesapla kipinde kalem listesiyle
+// birlikte silinir, dokunulmamış elle dalda tutarla birlikte formdan gelir (form kayıtla açılır; tutar ile kur aynı kaynaktan).
+export const ESKI_MALIYET_ANAHTARLARI = Object.freeze(["malzemeSatiri", "hammaddeler", "maliyet", "maliyetParaBirimi", "maliyetKuru"]);
 export const KALEM_ANAHTARI = "maliyetKalemleri";
 
 const doluMu = (v) => v != null && v !== "";

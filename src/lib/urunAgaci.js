@@ -5,7 +5,8 @@
 // kaynağı kittir (R6); parça kartı ona ikinci bir giriş kapısıdır. İşaret ile kitin birlikte yazılması bu modülden geçer
 // (R15, AC-19): ekranlar "hangi model dizisi" dalı yazmaz, `kitleriGuncelle`'yi iki model dizisinin işlevsel
 // güncelleyicisinde çağırır (tam dizi; App ekranlara çöpü süzülmüş dizi verir, geri yazmak çöptekileri silerdi).
-import { tutarCoz, kurus } from "./gider";
+import { tutarCoz, kurus, dovizdenLiraK } from "./gider";
+import { dovizMi, kurCoz, KUR_KAYNAK, KUR_ONDALIK_EN_COK, kurGirdisi, paraMetni, kurMetni, kurOnerisi, kurSapmaUyarisi, ondalikYuvarla } from "./kur";
 import { tutarMetni } from "./tutarGirdisi";
 import { parseMoney, partFiyatForCurrency } from "./utils";
 import { gecerliGunMu, gunMetni, gecerlilikTarihiDogrula, tarihteGecerliIndeks } from "./gecerlilik";
@@ -15,8 +16,9 @@ import { maliyetKalemleriOf, KALEM_TUR, MALIYET_KALEM_SINIRI, eskiKatalogKalemi 
 export { gecerliGunMu, gunMetni, gecerlilikTarihiDogrula, TARIH_GECERSIZ_HATASI, TARIH_GELECEK_HATASI, tarihOnceHatasi, tarihSonraHatasi } from "./gecerlilik";
 
 // R1: maliyet TL'dir ve KDV hariçtir (matrah, 0076 R14). Alan KDV ayırmaz.
-export const MALIYET_ETIKETI = "Alış maliyeti (TL, KDV hariç)";
-export const MALIYET_IPUCU = "Parçanın bize geliş fiyatı, KDV hariç. Döviz bazlı tedarikte TL karşılığını girin. "
+export const MALIYET_ETIKETI = "Alış maliyeti (KDV hariç)";
+// Spec 0157 R12/2 (AC-58): etiket ve ipucu para biriminden bağımsız; döviz bazlı tedarikte tutar kendi para biriminde, kurla girilir.
+export const MALIYET_IPUCU = "Parçanın bize geliş fiyatı, KDV hariç, seçilen para biriminde; dövizde kur kayıtta donar ve lira karşılığı ondan hesaplanır. "
   + "Boş bırakılırsa \"girilmedi\" sayılır; ücretsiz gelen parça için 0 yazın.";
 export const EK_MALIYET_IPUCU = "Parça olmayan maliyetler (büküm, taşlama, kaplama, montaj işçiliği, kilo bazlı hammadde): "
   + "tutar bu modelden üretilen her makina içindir, TL ve KDV hariç. Makina kitine ve stok düşümüne girmez.";
@@ -37,6 +39,73 @@ export const maliyetMetni = (n) => (n == null || n === "" ? "—" : `${ikiHane.f
 // kalem tutar vermiyorsa sonuç null ("girilmedi"); zincir elle değere DÜŞMEZ (R27/2). Toplam ikinci kez yuvarlanmaz.
 // Kalem listesi boşsa maliyet elle girilen değerdir (0087).
 export const KALEM_ADET_UST = 1000;
+// ── Spec 0157: maliyetin para birimi ve donmuş kuru ───────────────────────────────────────────────────────────────────────
+// R1/2, R3, C4, C5, P1: elle maliyet (`maliyet` + `maliyetParaBirimi` + `maliyetKuru`) ve işlem kalemi (`tutar` + `paraBirimi` +
+// `kur`) aynı kuralla okunur. Para birimi boş ya da TRY lira; USD ve EUR döviz (kur kayıtta donar); tanınmayan değer "girilmedi"
+// (kayıt değişmez, göç yok). Lira karşılığının TEK çarpımı `gider.dovizdenLiraK` (C2/2), kalem başına bir kez kuruşa (R10).
+export const MALIYET_PARA_BIRIMLERI = Object.freeze(["TRY", "USD", "EUR"]);
+export const MALIYET_PB_ETIKETI = "Para birimi";
+export const maliyetKurEtiketi = (pb) => `Kur (1 ${pb} = ? TL)`;
+export const MALIYET_KUR_EKSIK_NEDENI = "Döviz maliyetin kuru girilmemiş; maliyet \"girilmedi\" sayılır. Kuru parça kartından girin.";
+export const MALIYET_PB_TANINMAYAN_NEDENI = "Maliyetin para birimi tanınmıyor; maliyet \"girilmedi\" sayılır. Para birimini parça kartından seçin.";
+export const GUNUN_KURU_DUGMESI = "Günün kurunu kullan";
+export const LIRA_KARSILIGI_ETIKETI = "Lira karşılığı";
+export const TANINMAYAN_PB_EKI = " (tanınmayan)";
+export const gununKuruIpucu = (kur) => `Günün kuru: ${kurMetni(kur)}`;
+const pbAyikla = (v) => (v == null ? "" : String(v).trim().toUpperCase());
+// Dönüş: null (lira) | { paraBirimi, kur (null = girilmemiş), taninmayan }.
+const dovizBilgisi = (pbHam, kurHam) => {
+  const pb = pbAyikla(pbHam);
+  if (!pb || pb === "TRY") return null;
+  if (!dovizMi(pb)) return { paraBirimi: pb, kur: null, taninmayan: true };
+  const kur = Number(kurHam);
+  return { paraBirimi: pb, kur: kurHam != null && kurHam !== "" && kur > 0 ? kur : null, taninmayan: false };
+};
+// Tutarın (kendi para birimi) lira kuruşu; döviz çözülemezse null (R7, R19, AC-16, AC-32; asla sıfır).
+const liraKurusu = (tutar, d) => (!d ? kurus(tutar) : d.taninmayan || d.kur == null ? null : dovizdenLiraK(tutar, d.kur));
+const elleTutarVar = (p) => !(p?.maliyet == null || p.maliyet === "");
+// Modül içi TEK okuyucu (P3): elle maliyetli parçanın (set değil, kalem listesi boş) döviz bilgisi. Dışarıya üç kapı: sipariş için
+// `parcaDovizMaliyeti`, liste için `parcaMaliyetListeMetni`, Excel için `excelMaliyetHucreleri`.
+const elleDoviz = (p) => (!p || !elleTutarVar(p) || setMi(p) || maliyetKalemleriOf(p).length ? null : dovizBilgisi(p.maliyetParaBirimi, p.maliyetKuru));
+const cozulenDoviz = (d) => !!d && !d.taninmayan && d.kur != null;
+// R15/2, C1/2 (AC-37): kardeş okuyucu. Parçanın kendi para birimindeki tutarı, para birimi ve kuru birlikte; yalnız çözülen elle
+// döviz maliyette dolu, lira, kalem listeli ve set parçada null. Lira karşılığı yine tek okuma yolundan. YALNIZ sipariş motoru çağırır.
+export const parcaDovizMaliyeti = (p) => { const d = elleDoviz(p); return cozulenDoviz(d) ? { tutar: Number(p.maliyet), paraBirimi: d.paraBirimi, kur: d.kur } : null; };
+// Geçmiş satırının döviz alanları (C4, R5/2): yalnız çözülen elle dövizde; P4: işlem kalemli parçada yok.
+const gecmisDovizi = (p) => { const d = parcaDovizMaliyeti(p); return d ? { dovizTutar: d.tutar, kur: d.kur, paraBirimi: d.paraBirimi } : null; };
+const dovizEsit = (a, b) => (a == null && b == null) || (!!a && !!b && a.dovizTutar === b.dovizTutar && a.kur === b.kur && a.paraBirimi === b.paraBirimi);
+// R2, R2/2, R6, P5 (AC-4, AC-5): para birimi değişince kur alanı. Dövize her geçişte (boştan, TL'den ya da öteki dövizden) günün
+// kuru öneri olarak yazılır (kaynağı öneri: altı ondalık); öneri yoksa alan boşalır ve nedeni `kurOnerisi`'nden okunur. TL'ye
+// geçişte kur silinir. Dönüş { kur, kurKaynak } ya da null (para birimi değişmedi).
+export const pbDegisimi = (eskiPb, yeniPb, rates, ratesErr) => {
+  const e = pbAyikla(eskiPb); const y = pbAyikla(yeniPb);
+  if ((e || "TRY") === (y || "TRY")) return null;
+  if (!dovizMi(y)) return { kur: "", kurKaynak: KUR_KAYNAK.ELLE };
+  const o = kurOnerisi(y, rates, ratesErr);
+  return o.deger ? { kur: kurGirdisi(o.deger), kurKaynak: KUR_KAYNAK.ONERI } : { kur: "", kurKaynak: KUR_KAYNAK.ELLE };
+};
+// R2/2, R2/4, R6 (AC-5, AC-48, AC-50): kur alanının durumu. `oneri` günün kuru (düğme ve ipucu yalnız alandaki değerden farklıyken),
+// `neden` öneri gelmediyse (çevrimdışı ya da henüz alınmadı), `sapma` engellemeyen uyarı (0153'ün tek sabiti).
+export const kurAlaniDurumu = (pb, kurMetin, kurKaynak, rates, ratesErr) => {
+  if (!dovizMi(pbAyikla(pb))) return null;
+  const o = kurOnerisi(pbAyikla(pb), rates, ratesErr);
+  const k = kurCoz(kurMetin, { kaynak: kurKaynak || KUR_KAYNAK.ELLE });
+  // Triyaj (bulgu 4): alana yazılan öneri altı ondalığa yuvarlanmıştır (`kurGirdisi`); karşılaştırma da yuvarlanmış öneriyle.
+  const oneri = o.deger ? ondalikYuvarla(o.deger, KUR_ONDALIK_EN_COK) : null;
+  return { oneri: oneri && (k.hata || k.deger !== oneri) ? o.deger : null, neden: o.neden, sapma: k.hata ? null : kurSapmaUyarisi(k.deger, o.deger) };
+};
+// Spec 0157 R8/2 (AC-39): işlem kaleminin birim tutarı (sipariş motoru okur; çevrim burada, C2). Lira birim kuruşu, dövizde ayrıca
+// para birimi ve kendi para birimindeki birim kuruşu; çözülemeyen döviz kalemde lira birim yok ve nedeni.
+export const islemKalemiTutari = (k) => {
+  if (k?.tutar == null || k.tutar === "") return { birimK: null, bos: true };
+  const d = dovizBilgisi(k.paraBirimi, k.kur);
+  if (!d) return { birimK: kurus(k.tutar) };
+  const birimK = liraKurusu(k.tutar, d);
+  return { birimK, paraBirimi: d.paraBirimi, dovizBirimK: kurus(k.tutar), ...(birimK == null ? { neden: d.taninmayan ? ISLEM_PB_TANINMAYAN : ISLEM_KUR_EKSIK } : {}) };
+};
+// R12, R12/3, R14: döviz tutarın metni ("$120,00 · kur 40 · 4.800,00 ₺"); lira tutar yalnız lira metni.
+export const dovizMaliyetMetni = (tutar, pb, kur, liraK) => `${paraMetni(tutar, pb)} · kur ${kurMetni(kur)} · ${maliyetMetniKurus(liraK)}`;
+
 // Triyaj (bulgu 3): malzeme kaleminin adedinin TEK okuyucusu (maliyet ve sipariş aynı kural); tam sayı değil ya da 1'den küçükse
 // null, yani kalem çözülemez (maliyet "girilmedi", siparişte eksik).
 export const kalemAdetiOf = (k) => { const n = Number(k?.adet ?? 1); return Number.isInteger(n) && n >= 1 ? n : null; };
@@ -55,23 +124,33 @@ export const maliyetKalemleriOzeti = (kalemler, malzemeKat, tarih) => {
       return { tur: k.tur, tutarK, birimK: oz.maliyetK, adet, ozet: oz, cozuldu: tutarK != null };
     }
     const bos = k.tutar == null || k.tutar === "";
-    return { tur: KALEM_TUR.ISLEM, tutarK: bos ? null : kurus(k.tutar), bos, cozuldu: true };
+    // Spec 0157 R8–R11, R12/3 (AC-14–AC-16, AC-59): döviz işlem kalemi donmuş kurla liraya çevrilir; yeni anahtarlar yalnız dövizde
+    // (C6/2). Kuru girilmemiş ya da para birimi tanınmayan dolu kalem çözülemez ve toplamı "girilmedi" yapar (asla sıfır);
+    // tutarı boş kalem bugünkü gibi toplam dışında kalır (R11).
+    const d = dovizBilgisi(k.paraBirimi, k.kur);
+    if (!d) return { tur: KALEM_TUR.ISLEM, tutarK: bos ? null : kurus(k.tutar), bos, cozuldu: true };
+    const ek = { paraBirimi: d.paraBirimi, ...(d.kur != null ? { kur: d.kur } : {}) };
+    if (bos) return { tur: KALEM_TUR.ISLEM, tutarK: null, bos, cozuldu: true, ...ek };
+    const tutarK = liraKurusu(k.tutar, d);
+    return { tur: KALEM_TUR.ISLEM, tutarK, bos, cozuldu: tutarK != null, ...ek, dovizTutarK: kurus(k.tutar), ...(tutarK == null ? { neden: d.taninmayan ? ISLEM_PB_TANINMAYAN : ISLEM_KUR_EKSIK } : {}) };
   });
   const malzemeEksik = satirlar.some(r => r.tur === KALEM_TUR.MALZEME && !r.cozuldu);
   const eskiKalem = satirlar.filter(r => r.eski).length;
+  const islemEksik = satirlar.filter(r => r.tur === KALEM_TUR.ISLEM && !r.eski && !r.cozuldu).length; // spec 0157 AC-16
   const katkili = satirlar.filter(r => r.tutarK != null);
-  const toplamK = !satirlar.length || malzemeEksik || eskiKalem || !katkili.length ? null : katkili.reduce((a, r) => a + r.tutarK, 0);
+  const toplamK = !satirlar.length || malzemeEksik || eskiKalem || islemEksik || !katkili.length ? null : katkili.reduce((a, r) => a + r.tutarK, 0);
   return {
-    satirlar, toplamK, eskiKalem,
+    satirlar, toplamK, eskiKalem, ...(islemEksik ? { islemEksik } : {}),
     malzeme: satirlar.filter(r => r.tur === KALEM_TUR.MALZEME).length, islem: satirlar.filter(r => r.tur === KALEM_TUR.ISLEM).length,
     bosIslem: satirlar.filter(r => r.tur === KALEM_TUR.ISLEM && r.bos).length,
   };
 };
-// Set dışı parçanın bugünkü çözülmüş maliyeti (kalem listesi ya da elle).
+// Set dışı parçanın bugünkü çözülmüş maliyeti (kalem listesi ya da elle). Spec 0157 R3, R7, R19: elle maliyet kendi para
+// birimindedir; dövizde lira karşılığı donmuş kurdan, kur ya da para birimi çözülemezse null.
 const bugunkuKurus = (p, malzemeKat) => {
   const kalemler = maliyetKalemleriOf(p);
   if (kalemler.length) return maliyetKalemleriOzeti(kalemler, malzemeKat).toplamK;
-  return p.maliyet == null || p.maliyet === "" ? null : kurus(p.maliyet);
+  return !elleTutarVar(p) ? null : liraKurusu(p.maliyet, dovizBilgisi(p.maliyetParaBirimi, p.maliyetKuru));
 };
 // Spec 0097 R2, R2/2, R2/4, R3/2: tarih aynı fonksiyonun ikinci parametresidir. Tarihsiz çağrı bugünkü çözülmüş maliyettir
 // (davranışı birebir eski, C4). Tarihli okuma `getKdvRateForDate` emsaliyle geçerlilik tarihi sorgu tarihinden büyük olmayan
@@ -137,8 +216,10 @@ export const setOzeti = (icerik, katalog, tarih, malzemeKat, fiyatOku = null) =>
 // R1/3: `parts[].maliyetGecmisi = [{ gecerli, kurus }]`, satır kimliği yok, eskiden yeniye sıralı; ilk kaydın `gecerli`'si
 // "" ("başlangıçtan beri"), diğerleri "YYYY-AA-GG"; `kurus` tamsayı ya da `null` ("girilmedi", R4/3). Birimi kuruştur, kardeş
 // `maliyet` alanı TL'dir; ikisi hiçbir yerde toplanmaz. C2: geçmişte saklanan kuruş 0096 C2'nin bilinçli istisnasıdır.
+// Spec 0157 C4/2 (AC-41): satırın döviz alanları (`dovizTutar`, `kur`, `paraBirimi`) korunur; yalnız doluyken (lira satır aynen).
 export const maliyetGecmisiOf = (p) => (Array.isArray(p?.maliyetGecmisi) ? p.maliyetGecmisi : [])
-  .map(x => ({ gecerli: x?.gecerli || "", kurus: x?.kurus == null ? null : x.kurus }))
+  .map(x => ({ gecerli: x?.gecerli || "", kurus: x?.kurus == null ? null : x.kurus,
+    ...(x?.dovizTutar != null ? { dovizTutar: x.dovizTutar } : {}), ...(x?.kur != null ? { kur: x.kur } : {}), ...(x?.paraBirimi ? { paraBirimi: x.paraBirimi } : {}) }))
   .sort((a, b) => (a.gecerli < b.gecerli ? -1 : a.gecerli > b.gecerli ? 1 : 0));
 
 // R5, R5/3, R8, R8/3: metinler (testler buradan okur).
@@ -160,7 +241,10 @@ export const GECMIS_BASLIGI = "Maliyet geçmişi";
 // Triyaj (bulgu 6, Karar 45): malzeme satırı kaldırılan parçada eski değer kayıttaki elle tutar DEĞİL, malzemeden çözülen bugünkü
 // maliyettir (`malzemeKat` ile); böylece geçişte geçmişe "o tarihe kadar malzeme maliyeti" satırı yazılır ve kapanmış partilerin
 // maliyeti değişmez. Liste verilmezse (ya da malzeme eksikse) eski değer bilinmez, kayıt yazılmaz (bilinen sınır).
-export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false, set = false, malzeme = false, malzemeKat = null } = {}) => {
+// Spec 0157 R5, R5/2, C9 (AC-10, AC-40): `yeniKayit` yeni kaydın kendisidir; tetikleyici üçlü anahtardır (döviz tutar, kur, lira
+// kuruş): elle döviz parçada tutar ile kur birlikte değişip lira aynı kalsa da kayıt düşer ve satır döviz alanlarını taşır. Lira
+// ve işlem kalemli parçada (P4) döviz anahtarı yoktur, karar bugünkü gibi lira kuruştan.
+export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = false, set = false, malzeme = false, malzemeKat = null, yeniKayit = null } = {}) => {
   const g = maliyetGecmisiOf(eski);
   if (!eski) return { gecmis: [], hata: null };
   if (set || malzeme) return { gecmis: g, hata: null };
@@ -168,25 +252,27 @@ export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = f
   // P5: karar kayıtta saklı son kuruştan değil, eski kaydın çözülmüş değerinden
   const eskiK = bugunkuKurus(eski, malzemeKat);
   const yeniK = cozulmusK == null ? null : cozulmusK;
-  // P5: son kayıt her yazımda bugünkü değere eşitlenir (karışık sürümde ayrışmış olabilir).
-  const taban = g.length ? [...g.slice(0, -1), { gecerli: g[g.length - 1].gecerli, kurus: eskiK }] : [];
-  if (yeniK === eskiK) {
+  const eskiD = gecmisDovizi(eski); const yeniD = yeniKayit ? gecmisDovizi(yeniKayit) : null;
+  // P5: son kayıt her yazımda bugünkü değere eşitlenir (karışık sürümde ayrışmış olabilir). Spec 0157: döviz alanlarıyla birlikte.
+  const taban = g.length ? [...g.slice(0, -1), { gecerli: g[g.length - 1].gecerli, kurus: eskiK, ...(eskiD || {}) }] : [];
+  if (yeniK === eskiK && dovizEsit(eskiD, yeniD)) {
     // R7, R7/2 (P3): tutar aynı; yalnız kullanıcı tarih alanını değiştirdiyse son kaydın tarihi düzeltilir.
     const son = taban[taban.length - 1];
     // Triyaj (bulgu 3): boşaltılmış tarih alanı tutar değişmiyorsa yok sayılır (maliyetle ilgisiz düzenleme engellenmesin).
     if (!tarihElle || !tarih || taban.length < 2 || !son.gecerli || tarih === son.gecerli) return { gecmis: g, hata: null };
     const hata = gecerlilikTarihiDogrula(tarih, bugun, taban[taban.length - 2].gecerli, { esitRed: true });
     if (hata) return { gecmis: g, hata };
-    return { gecmis: [...taban.slice(0, -1), { gecerli: tarih, kurus: eskiK }], hata: null };
+    return { gecmis: [...taban.slice(0, -1), { gecerli: tarih, kurus: eskiK, ...(eskiD || {}) }], hata: null };
   }
   // R21/2 (P1): geçmiş boşken ilk giriş ("girilmedi" → değer) başlangıçtan beri geçerlidir, kayıt yazılmaz.
   if (!taban.length && eskiK == null) return { gecmis: g, hata: null };
-  const dizi = taban.length ? taban : [{ gecerli: "", kurus: eskiK }]; // R21: eski değer "başlangıçtan beri"
+  const dizi = taban.length ? taban : [{ gecerli: "", kurus: eskiK, ...(eskiD || {}) }]; // R21: eski değer "başlangıçtan beri"
   const son = dizi[dizi.length - 1];
   const hata = gecerlilikTarihiDogrula(tarih, bugun, son.gecerli); // R6/3: tutar değişirken sınır son kayıt
   if (hata) return { gecmis: g, hata };
-  if (tarih === son.gecerli) return { gecmis: [...dizi.slice(0, -1), { gecerli: tarih, kurus: yeniK }], hata: null }; // R4/2, AC-7
-  return { gecmis: [...dizi, { gecerli: tarih, kurus: yeniK }], hata: null };
+  const yeniSatir = { gecerli: tarih, kurus: yeniK, ...(yeniD || {}) };
+  if (tarih === son.gecerli) return { gecmis: [...dizi.slice(0, -1), yeniSatir], hata: null }; // R4/2, AC-7
+  return { gecmis: [...dizi, yeniSatir], hata: null };
 };
 
 // C13 (triyaj bulgu 4): kayıt fonksiyonunun geçmiş adımı. `temel` yazılacak kaydın geçmişsiz hâli, `eski` güncelleyicinin içindeki
@@ -195,7 +281,7 @@ export const maliyetGecmisiYaz = (eski, cozulmusK, { tarih, bugun, tarihElle = f
 const malzemeKalemiVarMiYerel = (p) => maliyetKalemleriOf(p).some(k => k.tur === KALEM_TUR.MALZEME);
 export const gecmisliKayit = (temel, eski = null, ek = null) => {
   if (!eski || !ek) { const g = eski?.maliyetGecmisi || []; return { ...temel, ...(g.length ? { maliyetGecmisi: g } : {}) }; }
-  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel), malzeme: malzemeKalemiVarMiYerel(temel) });
+  const r = maliyetGecmisiYaz(eski, parcaMaliyetKurus(temel), { ...ek, set: setMi(temel), malzeme: malzemeKalemiVarMiYerel(temel), yeniKayit: temel });
   if (r.hata) return null;
   return { ...temel, ...(r.gecmis.length ? { maliyetGecmisi: r.gecmis } : {}) };
 };
@@ -205,8 +291,12 @@ export const gecmisliKayit = (temel, eski = null, ek = null) => {
 export const maliyetGecmisiSatirlari = (p) => {
   const g = maliyetGecmisiOf(p);
   return g.map((x, i) => {
-    const k = i === g.length - 1 ? bugunkuKurus(p) : x.kurus;
-    return { gecerli: x.gecerli, tarihMetni: x.gecerli ? gunMetni(x.gecerli) : BASLANGICTAN_BERI, tutarMetni: k == null ? GIRILMEDI_IBARESI : maliyetMetniKurus(k) };
+    const son = i === g.length - 1;
+    const k = son ? bugunkuKurus(p) : x.kurus;
+    // Spec 0157 R14 (AC-11): döviz satırı döviz tutarı, kuru ve lira karşılığını yazar; lira satırı bugünkü gibi.
+    const d = son ? gecmisDovizi(p) : x.dovizTutar != null && x.kur != null && x.paraBirimi ? x : null;
+    return { gecerli: x.gecerli, tarihMetni: x.gecerli ? gunMetni(x.gecerli) : BASLANGICTAN_BERI,
+      tutarMetni: k == null ? GIRILMEDI_IBARESI : d ? dovizMaliyetMetni(d.dovizTutar, d.paraBirimi, d.kur, k) : maliyetMetniKurus(k) };
   }).reverse();
 };
 // Spec 0087'nin adı korunur (çağıranlar değişmesin); spec 0096 C1 ile kırılımı da bilen ölçütün üstüne indi.
@@ -214,6 +304,67 @@ export const maliyetGirildiMi = parcaMaliyetiVar;
 // Plan P7: kuruştan biçimleyici (parça paneli makina maliyeti motorunu içe almaz). Girilmemiş "—", sıfır "0,00 ₺".
 export const maliyetMetniKurus = (k) => (k == null ? "—" : `${ikiHane.format(k / 100)} ₺`);
 export const parcaMaliyetMetni = (p, tarih, katalog, malzemeKat) => maliyetMetniKurus(parcaMaliyetKurus(p, tarih, katalog, malzemeKat));
+// Spec 0157 R13, R19/2, P3 (AC-18, AC-51): parça listesinin maliyet hücresi. Elle döviz parçada kendi tutarı ve lira karşılığı;
+// çözülemeyen döviz "—" (bugünkü "girilmedi" mekanizması, yeni rozet yok); öteki parçalarda bugünkü metin.
+export const parcaMaliyetListeMetni = (p, tarih, katalog, malzemeKat) => {
+  const d = parcaDovizMaliyeti(p);
+  const k = parcaMaliyetKurus(p, tarih, katalog, malzemeKat);
+  return d && k != null ? `${paraMetni(d.tutar, d.paraBirimi)} · ${maliyetMetniKurus(k)}` : maliyetMetniKurus(k);
+};
+// Spec 0157 R18, R18/4, P3 (AC-27, AC-54): Excel'in maliyet, para birimi ve kur hücreleri. Elle döviz parçada hücre parçanın kendi
+// para birimindeki tutardır, kur altı ondalığa kadar sayı; öteki parçalarda çözülmüş lira ve iki boş hücre (lira veride birebir).
+export const excelMaliyetHucreleri = (p, katalog, malzemeKat) => {
+  const d = parcaDovizMaliyeti(p);
+  if (d) return [d.tutar, d.paraBirimi, Number(kurGirdisi(d.kur).replace(",", "."))];
+  const k = parcaMaliyetKurus(p, undefined, katalog, malzemeKat);
+  return [k == null ? "" : k / 100, "", ""];
+};
+// Spec 0157 R2, R2/2, R6, C3/2, C7/3 (AC-6, AC-42, AC-52): elle maliyetin TEK yazıcısı ve doğrulaması. Tutar tutar ayrıştırıcısıyla,
+// kur kur ayrıştırıcısıyla (elle dört ondalık; öneriden ya da kayıttan gelen değer altı ondalık: `kurKaynak`). Üç alan her çağrıda
+// yeniden kurulur, para birimi ve kur yalnız dövizde yazılır; tutar boşsa hiçbiri yazılmaz. Dönüş { alanlar, hata, kurHata }.
+// Spec 0157 R18, R18/3, R18/5, P7 (AC-28–AC-31, AC-53, AC-55): Excel'in para birimi ve kur hücreleri. "TRY", "TL" ve boş lira;
+// USD ve EUR döviz, kur altı ondalığa kadar (türetilen kaynak: dışa aktarılan kur kendi dosyasından geri alınsın). Kur dolu ama
+// para birimi lira olan ve tanınmayan para birimi taşıyan hücre hata (maliyet yazılmaz). Dönüş { pb (lirada ""), kur, hata, dolu }.
+export const EXCEL_KUR_PB_BOS_HATASI = "kur yazılmış ama para birimi boş ya da TL; maliyet alınmadı.";
+export const excelPbTaninmayanHatasi = (pb) => `maliyetin para birimi tanınmıyor (${pb}); maliyet alınmadı.`;
+export const excelKurHatasi = (h) => `${h} Maliyet alınmadı.`;
+export const EXCEL_MALIYET_BOS_DOVIZ_HATASI = "maliyet hücresi boş; para birimi ve kur alınmadı.";
+// Triyaj (bulgu 3, P7): kalem listeli ve set parçanın maliyeti kendi para birimi taşımaz; satırdaki para birimi ve kur alınmaz, bildirilir.
+export const EXCEL_DOVIZ_KALEM_SET_HATASI = "bu parçanın maliyeti kalemlerinden ya da set içeriğinden geliyor; para birimi ve kur alınmadı.";
+export const excelMaliyetDovizi = (pbHam, kurHam) => {
+  const pb = pbAyikla(pbHam);
+  const kurDolu = !(kurHam == null || String(kurHam).trim() === "");
+  const dolu = !!pb || kurDolu;
+  if (!pb || pb === "TRY" || pb === "TL") return kurDolu ? { pb: "", kur: null, hata: EXCEL_KUR_PB_BOS_HATASI, dolu } : { pb: "", kur: null, hata: null, dolu };
+  if (!dovizMi(pb)) return { pb, kur: null, hata: excelPbTaninmayanHatasi(pb), dolu };
+  const k = kurCoz(typeof kurHam === "string" ? kurHam.trim() : kurHam, { kaynak: KUR_KAYNAK.TURETILEN });
+  // Triyaj (bulgu 1, AC-53): sayı olarak gelen hücre (formül, uzun ondalık) ondalık sınırına takılmaz; altı ondalığa yuvarlanır, yoksa
+  // dışa aktarmanın yazdığı altı ondalıklı kur bir sonraki turda kaydı değiştirip geçmişe satır yazardı.
+  return k.hata ? { pb, kur: null, hata: excelKurHatasi(k.hata), dolu } : { pb, kur: ondalikYuvarla(k.deger, KUR_ONDALIK_EN_COK), hata: null, dolu };
+};
+export const ELLE_PB_ANAHTARLARI = Object.freeze(["maliyetParaBirimi", "maliyetKuru"]);
+// Triyaj (bulgu 2, R19/2): tanınmayan para birimi kaydedilmez (`pbHata`; seçici onu "(tanınmayan)" ekiyle gösterir, TL sanılıp
+// kaydedilmesin). Triyaj (bulgu 1): `kayitliKur` verilir ve alandaki metin onun form metniyse kayıttaki kur aynen yazılır (form kuru
+// altı ondalığa yuvarlayarak açar; dokunulmadan kaydedilen parça kurunu ve geçmişini değiştirmesin).
+export const elleMaliyetDogrula = (tutarHam, pbHam, kurHam, kurKaynak = KUR_KAYNAK.ELLE, kayitliKur = null) => {
+  const d = parcaMaliyetDogrula(tutarHam);
+  if (d.hata) return { alanlar: {}, hata: d.hata, kurHata: null, pbHata: null };
+  const pb = pbAyikla(pbHam);
+  if (d.bos) return { alanlar: {}, hata: null, kurHata: null, pbHata: null };
+  if (!pb || pb === "TRY") return { alanlar: { maliyet: d.deger }, hata: null, kurHata: null, pbHata: null };
+  if (!dovizMi(pb)) return { alanlar: {}, hata: null, kurHata: null, pbHata: MALIYET_PB_TANINMAYAN_NEDENI };
+  if (kayitliKur > 0 && String(kurHam ?? "").trim() === kurGirdisi(kayitliKur)) return { alanlar: { maliyet: d.deger, maliyetParaBirimi: pb, maliyetKuru: kayitliKur }, hata: null, kurHata: null, pbHata: null };
+  const k = kurCoz(kurHam, { kaynak: kurKaynak || KUR_KAYNAK.ELLE });
+  if (k.hata) return { alanlar: {}, hata: null, kurHata: k.hata, pbHata: null };
+  return { alanlar: { maliyet: d.deger, maliyetParaBirimi: pb, maliyetKuru: k.deger }, hata: null, kurHata: null, pbHata: null };
+};
+// R19/2 (triyaj bulgu 2): kartın elle maliyet nedeni: tanınmayan para birimi ya da kuru girilmemiş döviz.
+export const elleMaliyetNedeni = (pb, kurMetin) => {
+  const p = pbAyikla(pb);
+  if (!p || p === "TRY") return null;
+  if (!dovizMi(p)) return MALIYET_PB_TANINMAYAN_NEDENI;
+  return String(kurMetin ?? "").trim() === "" ? MALIYET_KUR_EKSIK_NEDENI : null;
+};
 // Elle girilmiş maliyetin form metni (düzenleme açılışı; kayıttaki elle alanın tek okuyucusu, AC-32).
 export const elleMaliyetMetni = (p) => tutarMetni(p?.maliyet);
 
@@ -250,6 +401,9 @@ export const ISLEM_AD_HATASI = "İşlem adı boş olamaz.";
 export const ISLEM_TUTAR_SAYI_HATASI = "Tutar sayı olmalı.";
 export const ISLEM_TUTAR_NEGATIF_HATASI = "Tutar negatif olamaz.";
 export const ISLEM_TUTAR_UYARISI = "Tutar girilmedi; bu kalem toplama girmez.";
+export const ISLEM_KUR_EKSIK = "Döviz kalemin kuru girilmemiş; parçanın maliyeti \"girilmedi\" sayılır.";
+export const ISLEM_PB_TANINMAYAN = "Kalemin para birimi tanınmıyor; parçanın maliyeti \"girilmedi\" sayılır.";
+export const ISLEM_TUTAR_ETIKETI = "Tutar (KDV hariç)";
 // R13, R13/2 (AC-24, AC-25, AC-115): adedin ayrıştırıcısı setin içeriğindeki adetle aynı (yalnız rakam deseni, binlik ayracı yok);
 // iki ayrı metin: tam sayı olmayan değere setin metni, üst sınırı aşana kendi metni. Boş adet de tam sayı değildir.
 export const kalemAdediDogrula = (ham) => {
@@ -299,9 +453,17 @@ export const kalemlerDogrula = (formKalemler = []) => {
       const t = islemTutariDogrula(f.tutar);
       if (t.hata) h.tutar = t.hata;
       if (Object.keys(h).length) { hatalar[i] = h; satirlar[i] = null; return; }
+      // Spec 0157 R8, R2, C3/2 (AC-13, AC-43, AC-52): para birimi ve kur kalemin kendisinde; kur kur ayrıştırıcısıyla, yalnız
+      // dövizde ve tutar doluyken zorunlu. TL kalemde iki anahtar hiç yazılmaz.
+      const pb = pbAyikla(f.paraBirimi);
+      const doviz = !!pb && pb !== "TRY";
+      const k = doviz ? kurCoz(f.kur, { kaynak: f._kurKaynak || KUR_KAYNAK.ELLE }) : null;
+      if (k?.hata && !t.bos) { hatalar[i] = { kur: k.hata }; satirlar[i] = null; return; }
       if (t.bos) uyarilar[i] = ISLEM_TUTAR_UYARISI;
       const ted = f.tedarikciId == null ? "" : String(f.tedarikciId).trim();
-      satirlar[i] = { tur: KALEM_TUR.ISLEM, ad, ...(ted ? { tedarikciId: kimlikCoz(ted) } : {}), tutar: t.deger };
+      // Tutarı boş döviz kalem para birimini (ve geçerliyse kurunu) korur; toplam dışında kalır (R11).
+      const dovizAlanlari = doviz ? { paraBirimi: pb, ...(k && !k.hata ? { kur: k.deger } : {}) } : {};
+      satirlar[i] = { tur: KALEM_TUR.ISLEM, ad, ...(ted ? { tedarikciId: kimlikCoz(ted) } : {}), tutar: t.deger, ...dovizAlanlari };
       kayit.push(satirlar[i]);
     }
   });
@@ -331,7 +493,9 @@ export const kalemFormu = (k) => (eskiKatalogKalemi(k)
   ? { tur: KALEM_TUR.ISLEM, _anahtar: yeniKalemAnahtari(), _eskiKatalog: true, _eskiKalem: k, ad: ESKI_KALEM_ADI, tedarikciId: "", tutar: "" }
   : k?.tur === KALEM_TUR.MALZEME
   ? { tur: KALEM_TUR.MALZEME, _anahtar: yeniKalemAnahtari(), ...malzemeSatiriFormu(k), adet: k.adet == null ? "1" : String(k.adet) }
-  : { tur: KALEM_TUR.ISLEM, _anahtar: yeniKalemAnahtari(), ad: k?.ad ?? "", tedarikciId: k?.tedarikciId == null ? "" : String(k.tedarikciId), tutar: tutarMetni(k?.tutar) });
+  : { tur: KALEM_TUR.ISLEM, _anahtar: yeniKalemAnahtari(), ad: k?.ad ?? "", tedarikciId: k?.tedarikciId == null ? "" : String(k.tedarikciId), tutar: tutarMetni(k?.tutar),
+    // Spec 0157 R2/2, R8: kayıtlı para birimi ve kurla açılır; kayıttaki kur altı ondalık olabilir (kaynağı kayıt).
+    paraBirimi: k?.paraBirimi ? String(k.paraBirimi) : "", kur: kurGirdisi(k?.kur), _kurKaynak: k?.kur != null ? KUR_KAYNAK.TURETILEN : KUR_KAYNAK.ELLE });
 export const kalemleriFormu = (kalemler = []) => (kalemler || []).map(kalemFormu);
 export const bosMalzemeKalemi = () => ({ ...kalemFormu({ tur: KALEM_TUR.MALZEME }), malzemeId: "", adet: "1" });
 export const bosIslemKalemi = () => kalemFormu({ tur: KALEM_TUR.ISLEM });

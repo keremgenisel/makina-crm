@@ -2,10 +2,10 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import { PARCA_BILGI_ALANLARI, parcaBilgiYaz, parcaBilgiDegerleri, parcaBilgiHucreleri } from "../src/lib/parcaBilgi";
-import { PARCA_AKTARMA_BASLIKLARI, PARCA_SABLON_ORNEGI, MALIYET_PB_BASLIKLARI, MALIYET_PB_EXCEL_HATASI, parcaDisaAktarmaSatiri, parcaSatirlariniCoz, parcaIceAktarmaUygula } from "../src/lib/parcaAktarma";
+import { PARCA_AKTARMA_BASLIKLARI, PARCA_SABLON_ORNEGI, MALIYET_PB_BASLIKLARI, parcaDisaAktarmaSatiri, parcaSatirlariniCoz, parcaIceAktarmaUygula } from "../src/lib/parcaAktarma";
 import { parcaEslesmeNedeni } from "../src/components/GlobalSearch";
 import { aramaKelimeleri } from "../src/lib/utils";
-import { parcaMaliyetKurus, setKatalogu } from "../src/lib/urunAgaci";
+import { parcaMaliyetKurus, setKatalogu, EXCEL_MALIYET_BOS_DOVIZ_HATASI } from "../src/lib/urunAgaci";
 import { malzemeKatalogu } from "../src/lib/malzeme";
 import { parcaSatisFiyati, fiyatBaglamiKur } from "../src/lib/parcaFiyati";
 import * as S from "../src/lib/siparisIhtiyaci";
@@ -35,6 +35,7 @@ describe("Spec 0158 F: Excel", () => {
     expect(PARCA_AKTARMA_BASLIKLARI.slice(11)).toEqual(["Maliyet Para Birimi", "Maliyet Kuru", "Ölçü", "Hammadde", "Cins"]);
     expect(MALIYET_PB_BASLIKLARI).toEqual(["Maliyet Para Birimi", "Maliyet Kuru"]);
     expect(PARCA_SABLON_ORNEGI).toHaveLength(16);
+    expect(PARCA_SABLON_ORNEGI.slice(11, 13)).toEqual(["USD", "40"]); // spec 0157 ile (P6, AC-44)
     expect(parcaDisaAktarmaSatiri({ ad: "C", ...BILGI }).slice(11)).toEqual(["", "", "M8 × 40", "Paslanmaz A2", "DIN 933"]);
     expect(parcaDisaAktarmaSatiri({ ad: "R" }).slice(11)).toEqual(["", "", "", "", ""]);
   });
@@ -57,14 +58,16 @@ describe("Spec 0158 F: Excel", () => {
     const r = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI.slice(0, 11), ["Cıvata", "Bolt", "", "", "", "", "", "", "", "", ""]], [mevcut], 100, BUGUN);
     expect(parcaIceAktarmaUygula([mevcut], r.parts)[0]).toMatchObject({ ...BILGI, adEN: "Bolt" });
   });
-  it("AC-77 / P14: on ikinci ve on üçüncü sütun (spec 0157'nin) bu işte okunmaz", () => {
+  // Spec 0157 ile (R18/2, AC-44): 12–13. sütun artık okunur ve 0158'in "henüz okunmuyor" reddi kalktı. Maliyet hücresi boş satırda
+  // para birimi ve kur kaydı değiştirmez (P7); sütunların okunduğunun ölçümü 0157 testindedir.
+  it("AC-77 / P14 (spec 0157 ile): maliyet hücresi boşken iki sütun kaydı değiştirmez, alan adları satış fiyatıyla karışmaz", () => {
     const r = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, satir("Cıvata", [[11, "USD"], [12, "40"]])], [], 100, BUGUN);
     expect(Object.keys(r.parts[0])).not.toEqual(expect.arrayContaining(["paraBirimi"]));
     expect(JSON.stringify(r.parts[0])).not.toMatch(/:"USD"|:"40"/);
   });
-  it("AC-77 / P14 (triyaj bulgu 3): bu iki hücre doluysa sessizce yok sayılmaz, satır numarasıyla bildirilir; boşken bildirim yok", () => {
+  it("AC-77 / P14 (triyaj bulgu 3, spec 0157 ile): maliyetsiz satırda dolu iki hücre sessizce yok sayılmaz, satır numarasıyla bildirilir; boşken bildirim yok", () => {
     const r = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, satir("Cıvata", [[11, "USD"], [12, "38"]]), satir("Somun"), satir("Pul", [[12, "38"]])], [], 100, BUGUN);
-    expect(r.errors).toEqual([`Satır 2: ${MALIYET_PB_EXCEL_HATASI}`, `Satır 4: ${MALIYET_PB_EXCEL_HATASI}`]);
+    expect(r.errors).toEqual([`Satır 2: ${EXCEL_MALIYET_BOS_DOVIZ_HATASI}`, `Satır 4: ${EXCEL_MALIYET_BOS_DOVIZ_HATASI}`]);
     expect(r.parts.map(p => p.ad)).toEqual(["Cıvata", "Somun", "Pul"]); // satır atlanmaz, yalnız iki hücre alınmaz
     const disa = parcaSatirlariniCoz([PARCA_AKTARMA_BASLIKLARI, parcaDisaAktarmaSatiri({ id: 7, ad: "Cıvata", ...BILGI })], [{ id: 7, ad: "Cıvata", ...BILGI }], 100, BUGUN);
     expect(disa.errors).toEqual([]); // dışa aktarılan dosya geri yüklenince bildirim yok (iki sütun boş yazılır)

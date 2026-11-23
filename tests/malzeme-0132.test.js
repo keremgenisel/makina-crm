@@ -336,12 +336,15 @@ describe("Spec 0132: tek okuma yolu ve öncelik", () => {
     // Spec 0135 ile (R35, tuzak 5): geçmiş kapısı "en az bir malzeme kalemi var mı"; desen yeni kapıyı arar, iddia aynı.
     expect(u).toMatch(/malzeme: malzemeKalemiVarMiYerel\(temel\)/);
     const pm = kod("src/components/PartManager.jsx");
-    expect(pm).toMatch(/malzeme: maliyetKalemleriOf\(temel\)\.some\(x => x\.tur === KALEM_TUR\.MALZEME\) \}\)\.hata/);
-    expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat\)/);
+    // Spec 0157 ile (R5/2): geçmiş kararına yeni kayıt da geçer (üçlü tetikleyici); desen yeni imzayı arar, iddia aynı.
+    expect(pm).toMatch(/malzeme: maliyetKalemleriOf\(temel\)\.some\(x => x\.tur === KALEM_TUR\.MALZEME\), yeniKayit: temel \}\)\.hata/);
+    expect(pm).toMatch(/parcaMaliyetListeMetni\(k, undefined, katalog, malzemeKat\)/ /* spec 0157 ile (R13, P3): liste hücresinin metin kapısı, aynı dört parametre */);
     expect(pm).toMatch(/maliyetKaynagi\(p, undefined, katalog, malzemeKat\)/);
     expect(kod("src/lib/makinaStandartMaliyet.js")).toMatch(/parcaMaliyetKurus\(p, tarih, partMap, malzemeKat\)/);
     const a = kod("src/lib/parcaAktarma.js");
-    expect(a).toMatch(/parcaMaliyetKurus\(p, undefined, katalog, malzemeKat\)/);
+    // Spec 0157 ile (R18, P3): maliyet hücresi Excel kapısından (`excelMaliyetHucreleri`); kapı tek okuma yolunu aynı parametrelerle çağırır.
+    expect(a).toMatch(/excelMaliyetHucreleri\(p, katalog, malzemeKat\)/);
+    expect(kod("src/lib/urunAgaci.js")).toMatch(/parcaMaliyetKurus\(p, undefined, katalog, malzemeKat\)/);
     expect(a).toMatch(/set: setOlacak, malzeme: malzemeKalemiVarMi\(mevcut\)/); // spec 0135 ile
     // Spec 0133 ile: dördüncü parametre fiyat ayarları (maliyete bağlı parçanın TL hücresi türetilmiş fiyat, R16).
     expect(kod("src/components/settings/SettingsExport.jsx")).toMatch(/parcaDisaAktarmaSatiri\(p, katalog, malzemeKat, appSettings\?\.fiyatAyarlari\)/);

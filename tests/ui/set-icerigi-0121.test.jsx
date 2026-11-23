@@ -269,7 +269,8 @@ describe("Spec 0121: kaynak taramaları (C1, R2/2, R2/3)", () => {
     // Spec 0132 ile (C1/2): dördüncü parametre malzeme haritasıdır; desenler yeni imzayı arar, iddia (katalog geçer) aynı.
     expect(pm).toMatch(/maliyetGirildiMi\(p, undefined, katalog, malzemeKat\)/);
     expect(pm).toMatch(/maliyetGirildiMi\(k, undefined, katalog, malzemeKat\)/);
-    expect(pm).toMatch(/parcaMaliyetMetni\(k, undefined, katalog, malzemeKat\)/);
+    // Spec 0157 ile (R13, P3): liste hücresi döviz parçada kendi tutarını da yazan metin kapısından; aynı dört parametre.
+    expect(pm).toMatch(/parcaMaliyetListeMetni\(k, undefined, katalog, malzemeKat\)/);
     // Spec 0135 ile (R39): liste hücresinde kırılımın ikinci çağrısı kalktı (tek kalem ibaresi); iki çağrı da katalogla.
     expect(pm.match(/maliyetKaynagi\([^)]*katalog, malzemeKat\)/g).length).toBeGreaterThanOrEqual(2);
     expect(pm).toMatch(/set: setMi\(temel\)/);

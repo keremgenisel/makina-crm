@@ -6,7 +6,7 @@ import { trLower } from "./utils";
 import { kurus } from "./gider";
 import { parcaMaliyetDogrula, parcaMaliyetKurus, KALEM_EXCEL_HATASI, maliyetGecmisiYaz, gecerliGunMu, setMi, setKatalogu, SET_EXCEL_HATASI,
   setIcerigiOf, setIcerigiDogrula, setteGecenParcalar, icerenSetAdlariHaritasi, setIcerigiHucresi, setIcerigiHucresiParcala, setIcerigiParcasiCoz, setIcerigiExcelHatasi,
-  SET_BILESEN_BULUNAMADI, SET_ICERIGI_BASLIGI, SET_ICERIGI_ORNEGI } from "./urunAgaci";
+  SET_BILESEN_BULUNAMADI, SET_ICERIGI_BASLIGI, SET_ICERIGI_ORNEGI, excelMaliyetHucreleri, excelMaliyetDovizi, EXCEL_MALIYET_BOS_DOVIZ_HATASI, EXCEL_DOVIZ_KALEM_SET_HATASI, ELLE_PB_ANAHTARLARI } from "./urunAgaci";
 import { malzemeKatalogu } from "./malzeme";
 import { kalemVarMi, malzemeKalemiVarMi } from "./maliyetKalemleri";
 import { maliyeteBagliMi, parcaSatisFiyati, fiyatAyariOf } from "./parcaFiyati";
@@ -16,8 +16,7 @@ import { PARCA_BILGI_ALANLARI, bilgiDegeri, parcaBilgiHucreleri } from "./parcaB
 export const MALIYET_PB_BASLIKLARI = Object.freeze(["Maliyet Para Birimi", "Maliyet Kuru"]);
 const BILGI_ILK_SUTUN = 13; // 0 tabanlı: on dördüncü sütun
 const MALIYET_PB_ILK_SUTUN = 11; // 0 tabanlı: on ikinci sütun
-// Triyaj (bulgu 3): 12–13. sütun spec 0157 gelene kadar okunmaz; dolu hücre sessizce yok sayılmasın diye satır numarasıyla bildirilir.
-export const MALIYET_PB_EXCEL_HATASI = "Maliyet Para Birimi ve Maliyet Kuru sütunları henüz okunmuyor, bu hücreler alınmadı.";
+// Spec 0157 R18/2 (AC-44): 12–13. sütun okunur; spec 0158'in "henüz okunmuyor" reddi kalktı.
 export const FIYAT_EXCEL_HATASI = "bu parçanın fiyatı maliyetten türüyor, Excel'deki fiyat alınmadı.";
 
 export const PARCA_AKTARMA_BASLIKLARI = ["Yedek Parça Adı (TR)", "Adı (EN)", "Kod", "Tip", "Tanım (TR)", "Tanım (EN)", "Fiyat (TL)", "Fiyat (USD)", "Fiyat (EUR)",
@@ -28,7 +27,8 @@ export const PARCA_AKTARMA_BASLIKLARI = ["Yedek Parça Adı (TR)", "Adı (EN)", 
   // Spec 0158 R35, R35/2 (P14, AC-48, AC-77): son beş sütunun sırası sabit. 12–13 spec 0157'nin (maliyet para birimi, kur;
   // bu işte boş yazılır ve okunmaz), 14–16 parçanın bilgi alanları.
   ...MALIYET_PB_BASLIKLARI, ...PARCA_BILGI_ALANLARI.map(a => a.etiket)];
-export const PARCA_SABLON_ORNEGI = ["Örnek Parça", "Example Part", "PRC-001", "Standart", "Parça açıklaması", "Part description", "250", "", "", "120,50", SET_ICERIGI_ORNEGI, "", "", ...PARCA_BILGI_ALANLARI.map(a => a.ornek.replace(/^Örn: /, ""))];
+// Spec 0157 P6 (AC-44): örnek satır iki hücreye örnek değer yazar; örnek maliyet 120,50 USD, kur 40.
+export const PARCA_SABLON_ORNEGI = ["Örnek Parça", "Example Part", "PRC-001", "Standart", "Parça açıklaması", "Part description", "250", "", "", "120,50", SET_ICERIGI_ORNEGI, "USD", "40", ...PARCA_BILGI_ALANLARI.map(a => a.ornek.replace(/^Örn: /, ""))];
 // Spec 0124 R5/3 (Karar 4): dosyada yinelenen ad (boş ad emsali).
 export const YINELENEN_AD_HATASI = "Bu ad dosyada daha önce geçti, satır atlandı.";
 
@@ -40,14 +40,18 @@ export const MALIYET_BELIRSIZ_HATASI = "Maliyet belirsiz (nokta binlik mi ondal�
 // Spec 0121 R12/2 (AC-50): setin hücresi çözülmüş maliyeti taşır; katalog (`setKatalogu`) çağıranda bir kez kurulur ve geçirilir.
 // Katalog verilmezse set hücresi boş kalır (C2); içerik Excel'e hiç girmez (X10).
 // Spec 0132 R21 (AC-72): malzeme satırlı parçanın hücresi çözülmüş maliyeti taşır; `malzemeKat` çağıranda bir kez kurulur.
-const maliyetHucresi = (p, katalog, malzemeKat) => { const k = parcaMaliyetKurus(p, undefined, katalog, malzemeKat); return k == null ? "" : k / 100; };
+// Spec 0157 R18, R18/4, P3 (AC-27, AC-54): maliyet, para birimi ve kur hücreleri tek kapıdan (`excelMaliyetHucreleri`); burada
+// para birimi okunmaz ve çevrim yazılmaz. Lira, kalem listeli ve set parçada hücre çözülmüş lira ve iki boş hücre (birebir eski).
 // Spec 0124 R3, R3/3: on birinci hücre içerik (ad canlı katalogdan); katalog verilmezse boş.
 // Spec 0133 R18 (AC-42, AC-43): dördüncü parametre fiyat ayarı; maliyete bağlı parçanın TL hücresi yürürlükteki (türetilmiş)
 // fiyattır, elle sabit parçada girilen değer birebir (kıyas, C4). Döviz hücreleri elle.
 const tlHucresi = (p, katalog, malzemeKat, fiyatAyarlari) => (maliyeteBagliMi(p)
   ? parcaSatisFiyati(p, "TRY", { setKat: katalog, malzemeKat, ayar: fiyatAyariOf(fiyatAyarlari) }).deger : (p.fiyatTRY ?? ""));
-export const parcaDisaAktarmaSatiri = (p, katalog, malzemeKat, fiyatAyarlari = null) => [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", tlHucresi(p, katalog, malzemeKat, fiyatAyarlari), p.fiyatUSD ?? "", p.fiyatEUR ?? "", maliyetHucresi(p, katalog, malzemeKat),
-  setIcerigiHucresi(p, katalog), "", "", ...PARCA_BILGI_ALANLARI.map(a => bilgiDegeri(p[a.alan]))]; // spec 0158 R36
+export const parcaDisaAktarmaSatiri = (p, katalog, malzemeKat, fiyatAyarlari = null) => {
+  const [maliyet, pb, kur] = excelMaliyetHucreleri(p, katalog, malzemeKat);
+  return [p.ad, p.adEN ?? "", p.kod ?? "", p.tip ?? "Standart", p.tanim ?? "", p.tanimEN ?? "", tlHucresi(p, katalog, malzemeKat, fiyatAyarlari), p.fiyatUSD ?? "", p.fiyatEUR ?? "", maliyet,
+    setIcerigiHucresi(p, katalog), pb, kur, ...PARCA_BILGI_ALANLARI.map(a => bilgiDegeri(p[a.alan]))]; // spec 0158 R36
+};
 
 // Satırlar (ilk satır başlık) → kayıt dizisi. `idBaslangic` yeni parçaların kimlik tabanıdır (ekranda Date.now()).
 // Spec 0097 R20, R20/2 (plan P11): `bugun` (yerel gün, YYYY-AA-GG) zorunludur ve varsayılanı yoktur; modül saat okumaz.
@@ -55,6 +59,12 @@ export const parcaDisaAktarmaSatiri = (p, katalog, malzemeKat, fiyatAyarlari = n
 // Spec 0132 R21 (AC-73): beşinci parametre malzeme listesi; malzeme satırlı parçanın hücresi karşılaştırma için çözülür.
 // Spec 0133 R19, R19/2 (AC-44, AC-75, AC-76): altıncı parametre fiyat ayarı. Maliyete bağlı parçanın TL hücresi kayda yazılmaz
 // (kayıttaki değer korunur); bildirim yalnız dosyadaki değer yürürlükteki fiyattan farklıysa, satır numarasıyla.
+// Spec 0157 C7/3: içe aktarmanın elle maliyet alanları. Döviz satırında üç alan; lira satırında maliyet ve (kayıtlı kayıt dövizse)
+// para birimi ile kurun silinme işareti (`undefined`; `parcaIceAktarmaUygula` siler). Lira kayıtta yeni anahtar doğmaz (C6/2).
+const elleAlanlari = (deger, dv, mevcut = null) => (dv?.pb
+  ? { maliyet: deger, maliyetParaBirimi: dv.pb, maliyetKuru: dv.kur }
+  : { maliyet: deger, ...(ELLE_PB_ANAHTARLARI.some(a => mevcut && a in mevcut) ? Object.fromEntries(ELLE_PB_ANAHTARLARI.map(a => [a, undefined])) : {}) });
+const elleUygula = (p, alanlar) => { const y = { ...p, ...alanlar }; for (const a of ELLE_PB_ANAHTARLARI) if (y[a] === undefined) delete y[a]; return y; };
 export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), bugun, malzemeler = null, fiyatAyarlari = null) => {
   if (!gecerliGunMu(bugun)) throw new Error("parcaSatirlariniCoz: bugun (YYYY-AA-GG) gerekli");
   const malzemeKat = malzemeler ? malzemeKatalogu(malzemeler) : null;
@@ -173,9 +183,10 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
   const dosyaMaliyeti = new Map();
   satirlar.forEach(({ r, cell, mevcut, id }) => {
     const { m } = maliyetCoz(r, cell);
-    if (!m.bos && !m.hata && !setMi(mevcut) && !gecerli.has(id) && !(mevcut && kalemVarMi(mevcut))) dosyaMaliyeti.set(id, m.deger);
+    const dv = excelMaliyetDovizi(cell(MALIYET_PB_ILK_SUTUN), r[MALIYET_PB_ILK_SUTUN + 1]);
+    if (!m.bos && !m.hata && !dv.hata && !setMi(mevcut) && !gecerli.has(id) && !(mevcut && kalemVarMi(mevcut))) dosyaMaliyeti.set(id, elleAlanlari(m.deger, dv));
   });
-  const sonucKatalog = setKatalogu(katalogKur(kabul).map(p => (dosyaMaliyeti.has(p.id) ? { ...p, maliyet: dosyaMaliyeti.get(p.id) } : p)));
+  const sonucKatalog = setKatalogu(katalogKur(kabul).map(p => (dosyaMaliyeti.has(p.id) ? elleUygula(p, dosyaMaliyeti.get(p.id)) : p)));
   satirlar.forEach(({ r, idx, cell, ad, mevcut, id }) => {
     if (ret.has(id)) errors.push(ret.get(id));
     const yeniIcerik = gecerli.get(id);
@@ -215,12 +226,19 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
       const dosya = tutarCoz(cell(6)); // Excel sayıyı "4082.69" biçiminde verir; tutarCoz noktayı ondalık okur
       if (yurur === "" || dosya.gecersiz || Math.round(dosya.deger * 100) !== Math.round(Number(yurur) * 100)) errors.push(`Satır ${idx + 2}: ${FIYAT_EXCEL_HATASI}`);
     }
-    if (MALIYET_PB_BASLIKLARI.some((_, i) => cell(MALIYET_PB_ILK_SUTUN + i) !== "")) errors.push(`Satır ${idx + 2}: ${MALIYET_PB_EXCEL_HATASI}`);
+    // Spec 0157 R18, R18/5, P7 (AC-28–AC-31, AC-55): elle maliyetli satırda para birimi ve kur. Hatalı hücrede maliyet yazılmaz ve
+    // neden satır numarasıyla bildirilir; maliyet hücresi boşken dolu para birimi ya da kur kaydı değiştirmez, bildirilir.
+    const elleYol = !setOlacak && !(mevcut && kalemVarMi(mevcut));
+    const dv = excelMaliyetDovizi(cell(MALIYET_PB_ILK_SUTUN), r[MALIYET_PB_ILK_SUTUN + 1]);
+    if (elleYol && !m.hata && m.bos && dv.dolu) errors.push(`Satır ${idx + 2}: ${EXCEL_MALIYET_BOS_DOVIZ_HATASI}`);
+    else if (elleYol && !m.hata && !m.bos && dv.hata) errors.push(`Satır ${idx + 2}: ${dv.hata}`);
+    else if (!elleYol && dv.dolu) errors.push(`Satır ${idx + 2}: ${EXCEL_DOVIZ_KALEM_SET_HATASI}`); // triyaj (bulgu 3)
     if (mevcut) guncellenenler++; else yeniler++;
-    const maliyetAlani = m.bos || m.hata || kalemli || setli ? {} : { maliyet: m.deger };
+    const maliyetAlani = m.bos || m.hata || kalemli || setli || (elleYol && dv.hata) ? {} : elleAlanlari(m.deger, dv, mevcut);
     // R20, R4: geçmiş mevcut kayıttan türer; değer değişmiyorsa geçmiş alanı hiç yazılmaz (uygulama kolu eskisini korur).
     // Spec 0124 R9/2: `set` kapısı dosyadan gelen yeni hâle göre.
-    const gecmisKarari = mevcut ? maliyetGecmisiYaz(mevcut, parcaMaliyetKurus({ ...mevcut, ...maliyetAlani }), { tarih: bugun, bugun, set: setOlacak, malzeme: malzemeKalemiVarMi(mevcut) }) : null;
+    const yeniKayit = elleUygula(mevcut || {}, maliyetAlani);
+    const gecmisKarari = mevcut ? maliyetGecmisiYaz(mevcut, parcaMaliyetKurus(yeniKayit), { tarih: bugun, bugun, set: setOlacak, malzeme: malzemeKalemiVarMi(mevcut), yeniKayit }) : null;
     const gecmisAlani = gecmisKarari && !gecmisKarari.hata && JSON.stringify(gecmisKarari.gecmis) !== JSON.stringify(mevcut.maliyetGecmisi || [])
       ? { maliyetGecmisi: gecmisKarari.gecmis } : {};
     if (gecmisKarari?.hata) errors.push(`Satır ${idx + 2}: ${gecmisKarari.hata} Maliyet alınmadı.`);
@@ -249,7 +267,7 @@ export const parcaSatirlariniCoz = (rows, parts = [], idBaslangic = Date.now(), 
 export const parcaIceAktarmaUygula = (p, impParts) => {
   const guncelMap = new Map();
   impParts.forEach(x => { const { _mevcut, ...clean } = x; guncelMap.set(x.id, clean); });
-  const updated = p.map(x => guncelMap.has(x.id) ? { ...x, ...guncelMap.get(x.id) } : x);
+  const updated = p.map(x => guncelMap.has(x.id) ? elleUygula(x, guncelMap.get(x.id)) : x); // spec 0157: silinme işareti uygulanır
   const existingIds = new Set(p.map(x => x.id));
   const yeniler = impParts.filter(x => !existingIds.has(x.id)).map(x => { const { _mevcut, ...clean } = x; return clean; });
   return [...yeniler, ...updated];

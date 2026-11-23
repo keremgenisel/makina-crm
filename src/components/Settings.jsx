@@ -290,6 +290,8 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
             // Spec 0096 C11 (plan P1): tedarikçi listesi parça paneline gider yetkisiyle kapatılarak verilir; App'ten gelen dizi
             // ham ve kapısız kalır çünkü aynı dizi yedeğe gidiyor (App'te kapatılsa yetkisiz kullanıcının yedeği boş liste taşırdı).
             tedarikciler={giderYetki ? tedarikciler : []} giderYetki={giderYetki} malzemeler={malzemeler} rawMalzemeler={rawMalzemeler ?? malzemeler} fiyatAyarlari={appSettings?.fiyatAyarlari} serverPermissions={serverPermissions} factory={factory}
+            // Spec 0157 R2/3 (AC-49): günün kuru parça paneline de iner (öneri, çevrimdışı nedeni, sapma uyarısı).
+            rates={rates} ratesErr={ratesErr}
             // Spec 0140 B-R1, B-R4/2 (AC-71): sipariş penceresi; tedarikçi dizisi KAPISIZ (para sütunları pencerede gider yetkisiyle kapanır).
             siparisVeri={{ parts, hamParts: rawParts, partStock, malzemeler, tedarikciler, hamTedarikciler: tedarikciler, standardModels, customModels, uretimPartileri, appSettings, factory }} />
         </KartBolum>

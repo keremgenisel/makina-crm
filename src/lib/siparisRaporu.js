@@ -92,7 +92,7 @@ const tutarHucresi = (k, pb, neden) => (k != null ? esc(pbTutarMetni(k, pb)) : n
 // maliyet × adet (TL); birim fiyat basılmaz.
 const parcaFiyatHucreleri = (x) => (x.malzemeKalemli
   ? [`${x.parcaTutarlari?.length ? esc(pbToplamMetni(x.parcaTutarlari)) : ""}${x.tutarNeden ? kucuk(esc(x.tutarNeden)) : ""}`]
-  : [tutarHucresi(x.tutarK, "TRY", x.tutarNeden)]);
+  : [x.paraBirimi ? tutarHucresi(x.dovizTutarK, x.paraBirimi, x.tutarNeden) : tutarHucresi(x.tutarK, "TRY", x.tutarNeden)]); // spec 0157 R15 (AC-24)
 // 2026-11-15 isteği: boydan sipariş edilen parçada hücre kesit başına "n boy (… mm)" yazar, altında parça adedi (iki nüshada da).
 // Spec 0158 R16–R22, R19/2, P2–P5: motorun `siparisSatirlari` dizisi varsa ölçü başına bir satır (boy / boş / kesilecek adet / parça
 // adedi) ve altında açıklama; yoksa 0144'ün kuralı aynen.
@@ -145,9 +145,12 @@ const islemTablosu = (b, fiyatli) => {
   if (!b.islemler?.length) return "";
   const rows = b.islemler.map(x => {
     const satir = [`${esc(x.parca)}${x.duzenlendi ? ELLE_ISARETI : ""}`, esc(x.ad), n(x.siparis)]; // işaret parça tablosundaki gibi adın yanında
-    return fiyatli ? [...satir, tutarHucresi(x.tutarK, "TRY", x.tutarNeden)] : satir;
+    // Spec 0157 R8/2 (AC-39): döviz işlem kalemi kendi para biriminde.
+    return fiyatli ? [...satir, x.paraBirimi ? tutarHucresi(x.dovizTutarK, x.paraBirimi, x.tutarNeden) : tutarHucresi(x.tutarK, "TRY", x.tutarNeden)] : satir;
   });
-  const toplam = fiyatli ? `<div data-islem-toplami style="font-size:11px;margin-top:6px;"><b>${esc(ISLEMLER_TOPLAMI)}:</b> ${esc(tlMetni(b.islemToplamK))}${
+  // Spec 0157 R8/2 (AC-39): döviz işlem kalemi varken toplam para birimi başına, yanında kayıtlı kurla lira karşılığı (genel toplam ondan).
+  const toplamMetni = b.islemToplamlar ? `${pbToplamMetni(b.islemToplamlar)}${b.islemToplamK != null ? ` · kayıtlı kurla ${tlMetni(b.islemToplamK)}` : ""}` : tlMetni(b.islemToplamK);
+  const toplam = fiyatli ? `<div data-islem-toplami style="font-size:11px;margin-top:6px;"><b>${esc(ISLEMLER_TOPLAMI)}:</b> ${esc(toplamMetni)}${
     b.islemTutarsizSayi ? ` · ${esc(tutarsizMetni(b.islemTutarsizSayi))}` : ""}</div>` : "";
   return `<div data-islemler>${detayTablo(esc(ISLEMLER_BASLIGI), belgeSutunlari({ fiyatli }).islem, rows, HIZA)}${toplam}</div>`;
 };

@@ -192,6 +192,14 @@ check("temiz kurulumda appSettings krediKartiKomisyonlari kolonu oluştu", (() =
   check("spec 0158 AC-55: temiz kurulumda bilgi sütunları var ve yazıldı", h === null && p?.olcu === "M8 × 40" && p.hammaddeAdi === "Paslanmaz" && p.cins === "DIN 933");
 }
 
+// Spec 0157 AC-36: temiz kurulumda parçanın maliyet para birimi ve kuru ilk oturumda yazılır.
+{
+  let h = null;
+  try { dbmod.writeBlobToDb({ parts: [{ id: 43, ad: "İthal rulman", models: [], maliyet: 120, maliyetParaBirimi: "USD", maliyetKuru: 40 }] }); } catch (e) { h = e; }
+  const p = dbmod.readBlobFromDb().parts.find(x => x.id === 43);
+  check("spec 0157 AC-36: temiz kurulumda iki sütun var ve yazıldı", h === null && p?.maliyetParaBirimi === "USD" && p.maliyetKuru === 40 && p.maliyet === 120);
+}
+
 // Spec 0096: temiz kurulumda tedarikçinin hammadde işareti ve parçanın hammadde kırılımı ilk oturumda yazılır.
 {
   let h = null;
