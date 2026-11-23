@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0159-alim-kalemi.md` (Onaylandı, 2026-11-23) |
+| **Spec** | `specs/done/0159-alim-kalemi.md` (Onaylandı, 2026-11-23) |
 | **Onay** | Takım Yöneticisi, 2026-11-23 ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula") |
 | **Dal** | `feat/0159-alim-kalemi` (main `42caac58` üstünde) |
-| **Durum** | Uygulandı; commit ve kapanış Takım Yöneticisinin talimatını bekliyor |
+| **Durum** | Tamamlandı (commit `bd83fe09`) |
 
 ## 1. Dosyalar
 

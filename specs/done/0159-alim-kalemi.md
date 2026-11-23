@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-23) |
+| **Durum** | Tamamlandı (commit `bd83fe09`, 2026-11-23) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
-| **Revizyon** | 3 (2026-11-23 plan turu: P1–P9; plan `specs/0159-uygulama-plani.md`) |
+| **Revizyon** | 3 (2026-11-23 plan turu: P1–P9; plan `specs/done/0159-uygulama-plani.md`) |
 | **QA turu** | 2026-11-23: 21 bulgu (4 Bloklayıcı / 11 Önemli / 6 Küçük), hepsi onaylandı |
 | **Düzeltilen iddialar** | 2 (sipariş tarafının hazır olduğu, 0157'nin henüz kabul edilmediği) |
 | **Etkilenen alanlar** | Parça kartının maliyet bölümü (`MaliyetKalemleriAlani.jsx`, `PartManager`), kalem metin sabitleri (`urunAgaci.js`, `maliyetKalemleri.js`), sipariş motoru ve belgesi (`siparisIhtiyaci.js`, `siparisRaporu.js`, `stock/SiparisPenceresi.jsx`), maliyet geçmişi karar motoru, `gider/Tedarikciler.jsx` ipucusu |
