@@ -5,6 +5,7 @@ import { turHaritasi, ayOf } from "../lib/gider";
 import {
   aramaSorgusu, kalemEslesmesi, kalemBasligi, kalemMeta, tedarikciEslesmesi, tanimEslesmesi,
   partiEslesmesi, hesapEslesmesi, hesapMeta, cekEslesmesi, cekMeta,
+  kalemFiltresiOf,
 } from "../lib/aramaGider";
 import { aliciAd } from "./stock/TahsisModal";
 import { tamirListesi } from "../lib/kalipTamiri";
@@ -190,7 +191,7 @@ export const GlobalSearch = ({ customers = [], teklifler = [], dealers = [], sto
       // gider tarihinin ayı, süzgeç kaydın kendi metni (açıklama, yoksa tedarikçi adı, yoksa tür).
       giderler: ({ kayit: k, neden }) => {
         const tedAd = tedMap.get(String(k.tedarikciId))?.ad || "";
-        const kalemFiltresi = k.aciklama ? { ara: k.aciklama } : tedAd ? { ara: tedAd } : { tur: String(k.turId ?? "") };
+        const kalemFiltresi = kalemFiltresiOf(k, tedAd);
         return { uid: `gk${k.id}`, baslik: kalemBasligi(k, turMap), meta: nokta(kalemMeta(k, { turMap, tedMap })), ekstra: neden,
           onOpen: () => pick(onGoGider, { gorunum: "rapor", ay: k.tarih ? ayOf(k.tarih) : null, kalemFiltresi }) };
       },

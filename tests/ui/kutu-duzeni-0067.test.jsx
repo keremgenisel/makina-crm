@@ -77,10 +77,11 @@ describe("Spec 0067 A: Dönem Raporu'nun kutu sırası (R1–R5)", () => {
     // Spec 0080 R11 ile güncellendi: Gider Kalemleri sayfalanmadığı için sayfa sıfırlama anahtarı `donemAnahtari` artık
     // geçmez (yalnız Makina ve Model görünümüne gider). Diğer props aynı.
     // Spec 0090 R10 ile güncellendi: atama sütunu kalktığı için stock, customers, standardModels, customModels geçmez.
+    // Spec 0156 C6/2 ile güncellendi: ilk süzgeç ekstrenin "Kalemde göster"inden de gelir (Giderler'in kendi durumu).
     const g = oku("src/components/Giderler.jsx");
     expect(g).toContain(`<KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} baslangicFiltre={baslangicKalemFiltresi} />`);
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} baslangicFiltre={yerelKalemFiltresi ?? baslangicKalemFiltresi} />`);
     render(<GiderH />);
     expect(screen.getByText("Toplam gider").parentElement.textContent).toMatch(/1\.000 ₺/);
     expect(within(screen.getByTestId("borc-ozeti")).getByText("Demir Bant")).toBeTruthy();

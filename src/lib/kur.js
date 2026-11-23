@@ -43,6 +43,8 @@ export const dovizKurusu = (tlK, kur) => (kur > 0 ? Math.round(tlK / kur) : 0);
 export const karsiKurusu = (cikanK, kur) => (kur > 0 ? Math.round(cikanK * kur) : 0);
 export const kurTuret = (payK, paydaK) => (payK > 0 && paydaK > 0 ? yuvarla(payK / paydaK, KUR_ONDALIK_EN_COK) : null);
 export const paraMetni = (n, pb = "TRY") => `${CUR_SYM[pb] || `${pb} `}${Number(n || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// Spec 0156 triyaj (bulgu 3): "1 USD = 40,00 TL" kur satırının tek biçimleyicisi (gider kalemi ve ekstre ayrıntısı).
+export const kurSatiriMetni = (pb, kur) => `1 ${pb} = ${kurMetni(kur)} TL`;
 export const kurMetni = (kur) => Number(kur || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: KUR_ONDALIK_EN_COK });
 
 // Spec 0153 R2/2, P10: günün kurundan yüzde elliden fazla sapan kur engellemeyen uyarı doğurur; günün kuru yoksa uyarı yok.

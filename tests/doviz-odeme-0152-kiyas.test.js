@@ -3,6 +3,7 @@
 // USD, hesapsız ödeme ve avans, ciro, çek). Kayıt gövdesinin kıyası (AC-26) `scripts/tests/db-roundtrip.cjs`'te.
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect } from "vitest";
+import { ayiklaEkstre0156 } from "./fixtures/0156-ayikla.js";
 import fs from "node:fs";
 import * as K from "../src/lib/kasa";
 import { hareketCopEtiketi } from "../src/lib/copKutusu";
@@ -31,8 +32,9 @@ const uret = () => {
     zengin: json(zengin),
     borc: json(borcOzeti(zengin, { turler, tedarikciler, yururlukAy: "2026-01" }, "2026-09-30")),
     acik: json(acikKalemler(zengin, { turler, tedarikciler, yururlukAy: "2026-01" }, "2026-09-30")),
-    ekstreT: json(K.tedarikciEkstresi(11, o)),
-    ekstreC: json(K.calisanEkstresi(21, o)),
+    // Spec 0156 ile (C2/2): ekstrenin koşulsuz yeni alanları ayıklanır (tests/fixtures/0156-ayikla.js); altın yenilenmedi.
+    ekstreT: json(ayiklaEkstre0156(K.tedarikciEkstresi(11, o))),
+    ekstreC: json(ayiklaEkstre0156(K.calisanEkstresi(21, o))),
     yontem: json([...yontemKirilimlari(zengin, H, turMap).entries()]),
     tasima: HESAPLAR.map(h => { const p = K.hesapTasimaPlani(h, H, veri, HESAPLAR); return [h.id, p.detay, p.uygunHedefler.map(x => x.id), p.nedenler]; }),
     cop: H.map(m => [m.id, hareketCopEtiketi(m)]),

@@ -8,7 +8,7 @@ import { tl2 } from "./GiderAlanlari";
 import { HataMetni, Ipucu } from "../tasarim";
 import { Rozet } from "./DonemRaporu";
 import { EkstrePenceresi } from "./EkstrePenceresi";
-import { tedarikciEkstresi } from "../../lib/kasa";
+import { tedarikciEkstresi, hesapAdiCoz } from "../../lib/kasa";
 
 // Giderler › Tedarikçiler (spec 0001 R13, AC-40/44/45/46/62; plan K16). Ayarlar'da DEĞİL, bu sekmede
 // yönetilir: settings izni olan ama gider yetkisi olmayan kullanıcı listeyi görmesin (AC-48).
@@ -33,13 +33,13 @@ export const kullanimMetni = (k) => {
 
 export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = [], giderTanimlari = [], rapor, canDo = () => true, showToast = () => {}, serverPermissions,
   // Spec 0024 B (R12, B6, B10, B11): tedarikçi ekstresi ve silme uyarısındaki kalan borç. giderler hareketlerden türetilmiş olabilir.
-  hesapHareketleri = null, giderTurleri = [], yururlukAy = null, bugun = null, kasaHesaplari = [], malzemeler = [],
+  hesapHareketleri = null, giderTurleri = [], yururlukAy = null, bugun = null, kasaHesaplari = [], malzemeler = [], onKalemdeGoster = null,
   // Spec 0096 R13, R13/5: parça kırılımı da kullanımdır; HAM parça dizisi (çöpteki parçalar da sayılır).
   parts = [] }) => {
   const [form, setForm] = useState(null);
   const [ekstre, setEkstre] = useState(null);
   const ekstreHesapla = (t, aralik = null) => tedarikciEkstresi(t.id, { giderler, hareketler: hesapHareketleri || [], turler: giderTurleri, yururlukAy, bugun, aralik });
-  const hesapAdi = (id) => { const h = kasaHesaplari.find(x => String(x.id) === String(id)); return h ? h.ad : id == null ? "Hesap belirtilmedi" : "Silinmiş hesap"; };
+  const hesapAdi = (id) => hesapAdiCoz(kasaHesaplari, id); // spec 0156 R5/3 (P3)
   const [hata, setHata] = useState("");
   const [sil, setSil] = useState(null);
   // Spec 0064 R4: tedarikçi formu ve silme penceresi aynı tedarikçinin kilidini paylaşır (yeni tedarikçide kilit yok).
@@ -159,7 +159,8 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
       ) : (
         <ConfirmDialog title="Tedarikçi silinsin mi?" message={`“${sil.t.ad}” çöp kutusuna taşınacak; Ayarlar › Çöp Kutusu'ndan geri alınabilir.`} onConfirm={silOnayla} onCancel={() => setSil(null)} />
       ))}
-      {ekstre && <EkstrePenceresi tur="tedarikci" baslik={ekstre.ad} hesapAdi={hesapAdi} hesapla={(aralik) => ekstreHesapla(ekstre, aralik)} onClose={() => setEkstre(null)} />}
+      {ekstre && <EkstrePenceresi tur="tedarikci" baslik={ekstre.ad} hesapAdi={hesapAdi} hesapla={(aralik) => ekstreHesapla(ekstre, aralik)}
+        onKalemdeGoster={onKalemdeGoster ? (k) => { setEkstre(null); onKalemdeGoster(k, ekstre.ad); } : null} onClose={() => setEkstre(null)} />}
     </div>
   );
 };

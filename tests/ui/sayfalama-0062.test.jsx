@@ -16,6 +16,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 beforeEach(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-10-02T10:00:00")); });
 
 const gun = (n) => `2026-09-${String(n).padStart(2, "0")}`;
+const fmt = (iso) => iso.split("-").reverse().join("/"); // spec 0156 ile
 const sonraki = (kap) => fireEvent.click(within(kap).getByText("Sonraki ›"));
 const aktif = (kap) => kap.querySelector(".page-num--active")?.textContent ?? null;
 const cubukYok = (kap) => expect(within(kap).queryByText("Sonraki ›")).toBeNull();
@@ -235,23 +236,20 @@ describe("Spec 0062: Açık kalemler (R10, R13, R32)", () => {
 
 // ── Pencereler: ekstre ve hatırlatma ──
 describe("Spec 0062: pencere içi listeler (R8, R9, R30, R31, R32)", () => {
-  it("AC-9 / AC-23 / AC-33 / AC-43: ekstre 5 satırlık sayfalanır, eskiden yeniye; devir yalnız 1. sayfada; son bakiye ve devir sayfadan bağımsız; tarih aralığı 1. sayfaya döndürür", () => {
-    const satirlar = Array.from({ length: 12 }, (_, i) => ({ tarih: gun(i + 1), tur: "borc", kalem: { aciklama: `Fatura ${i + 1}`, tarih: gun(i + 1) }, etkiK: 10000, bakiyeK: 50000 + 10000 * (i + 1) }));
+  // Spec 0156 ile (R10, R11, C5; AC-20, AC-21): ekstre sayfalanmaz; bütün satırlar tek listede, devir en üstte bir kez. Son
+  // bakiye ve devir motorun sonucundan (R12); sıra eskiden yeniye kalır.
+  it("AC-9 / AC-23 / AC-33 / AC-43 (spec 0156 ile ters çevrildi): ekstre tek listede, eskiden yeniye; devir en üstte; son bakiye motordan", () => {
+    const satirlar = Array.from({ length: 12 }, (_, i) => ({ anahtar: `borc:${i + 1}:`, tarih: gun(i + 1), tur: "borc", kalem: { id: i + 1, aciklama: `Fatura ${i + 1}`, tarih: gun(i + 1) }, etkiK: 10000, bakiyeK: 50000 + 10000 * (i + 1) }));
     const hesapla = (a) => ({ satirlar, devirK: a.bas ? 50000 : null, bakiyeK: 170000 });
     render(<EkstrePenceresi baslik="Demir Bant" tur="tedarikci" hesapla={hesapla} onClose={vi.fn()} />);
     const kap = screen.getByTestId("ekstre-penceresi");
-    const tarihler = () => within(kap).getAllByTestId("ekstre-satiri").map(s => s.textContent.slice(0, 10));
-    expect(tarihler()).toEqual(["01/09/2026", "02/09/2026", "03/09/2026", "04/09/2026", "05/09/2026"]);
+    const tarihler = () => within(kap).getAllByTestId("ekstre-satiri").map(s => s.textContent.replace(/^[▸▾]/, "").slice(0, 10));
+    expect(tarihler()).toEqual(Array.from({ length: 12 }, (_, i) => fmt(gun(i + 1))));
+    expect(within(kap).queryByText(/Sonraki ›/)).toBeNull();
     const ozet = screen.getByTestId("ekstre-ozet").textContent;
     expect(ozet).toMatch(/1\.700/);
-    const tarihAlanlari = kap.querySelectorAll('input[type="date"]');
-    sonraki(kap);
-    fireEvent.change(tarihAlanlari[0], { target: { value: "2026-08-01" } });
-    expect(aktif(kap)).toBe("1");
-    expect(within(kap).getByTestId("ekstre-devir")).toBeTruthy();
-    sonraki(kap);
-    expect(within(kap).queryByTestId("ekstre-devir")).toBeNull();
-    expect(tarihler()).toEqual(["06/09/2026", "07/09/2026", "08/09/2026", "09/09/2026", "10/09/2026"]);
+    fireEvent.change(kap.querySelectorAll('input[type="date"]')[0], { target: { value: "2026-08-01" } });
+    expect(within(kap).getAllByTestId("ekstre-devir")).toHaveLength(1);
     expect(screen.getByTestId("ekstre-ozet").textContent).toBe(ozet);
   });
   it("AC-10 / AC-44: hatırlatma penceresi bölüm başına 5 satırlık ayrı sayfalanır; personel grubu tek satır", () => {

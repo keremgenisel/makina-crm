@@ -10,7 +10,7 @@ import { kartTahsilEdildiMi } from "./krediKarti";
 import { satisTahsilatKalemleri, paraBirimiUyumluMu, SATIS_KAYNAK, SATIS_KAYNAK_AD } from "./satisTahsilat";
 import { aliciAd } from "./yedekParcaSatis";
 import { hareketPaylari, hareketHedefPaylari } from "./odemeYontemi";
-import { tutarCoz, kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula, hedefDovizKipi, dovizKalemMi, DOVIZ_LIRA_SIFIR_HATASI } from "./gider";
+import { tutarCoz, kurus, tl, satirliMi, odemeHedefKalaniK, davranisOf, odemeHedefleri, turHaritasi, maasKurus, ekOdemeKurus, sgkDavranisiMi, DAVRANIS, HEDEF, odemeleriUygula, hedefDovizKipi, dovizKalemMi, DOVIZ_LIRA_SIFIR_HATASI, kalemVergiKirilimi } from "./gider";
 // Spec 0070 R28, 0074 R22: SGK kalemine avans mahsubu yapılamaz (tek metin; avans çalışanın borcu, SGK kurumun alacağı).
 export const SGK_MAHSUP_HATASI = "SGK kalemine avans mahsubu yapılamaz; SGK kuruma ödenir.";
 
@@ -857,6 +857,21 @@ const araliga = (satirlar, aralik) => {
   return { devirK: bas ? devirK : null, satirlar: ic, bakiyeK: son, bakiye: tl(son) };
 };
 
+// Spec 0156 R1/2: satırın deterministik kimliği (açık ayrıntı aralık süzgecinde yerinde kalır; çizim anahtarı da budur).
+const satirAnahtari = (s) => `${s.tur}:${s.kalem?.id ?? ""}:${s.hareket?.id ?? ""}`;
+const anahtarla = (satirlar) => { for (const s of satirlar) s.anahtar = satirAnahtari(s); return satirlar; };
+// Spec 0156 R5/3 (P3): ekstre ayrıntısının hesap adı. Hesap listesi boşsa (Kasa yetkisi yok) boş dize: ayrıntı satırı çizmez,
+// gerçek hesaba "Silinmiş hesap" denmez. İki bileşendeki kopyanın tek yeri.
+export const HESAP_BELIRTILMEDI = "Hesap belirtilmedi";
+export const SILINMIS_HESAP = "Silinmiş hesap";
+export const hesapAdiCoz = (hesaplar, id) => {
+  const liste = Array.isArray(hesaplar) ? hesaplar : [];
+  if (!liste.length) return "";
+  if (id == null || id === "") return HESAP_BELIRTILMEDI;
+  const h = liste.find(x => String(x.id) === String(id));
+  return h ? h.ad : SILINMIS_HESAP;
+};
+
 // R12, AC-16: tedarikçi ekstresi. Borç = kalemin ana hedef tutarı (KDV dâhil; kirada kiraya verene giden kısım).
 export const tedarikciEkstresi = (tedarikciId, { giderler = [], hareketler = [], turler = [], yururlukAy = null, bugun = null, aralik = null } = {}) => {
   const turMap = turHaritasi(turler);
@@ -868,10 +883,15 @@ export const tedarikciEkstresi = (tedarikciId, { giderler = [], hareketler = [],
     if (dav === DAVRANIS.PERSONEL) continue;
     const toplamK = anaHedef(k, dav).toplamK;
     if (toplamK <= 0) continue;
-    satirlar.push({ tarih: k.tarih, sira: 0, tur: "borc", kalem: k, etkiK: toplamK, tutarK: toplamK });
-    for (const p of anaPaylari(k, hareketler, turMap)) satirlar.push({ tarih: p.hareket.tarih || k.tarih, sira: 1, tur: "odeme", kalem: k, hareket: p.hareket, etkiK: -p.payK, tutarK: p.payK, goc: p.hareket.kaynak === "goc" });
+    // Spec 0156 R2, R4/2 (C2/2): ayrıntının vergi kırılımı, kalemin BÜTÜN ana hedef ödemeleri ve kalanı aralık süzmesinden önce
+    // ve koşulsuz yazılır; ödeme payları döngüde zaten hesaplanıyor (ek hesap yok).
+    const paylar = anaPaylari(k, hareketler, turMap);
+    // P8: satırın davranışı (kapanış etiketi ve taksit adı kalemin kendi hedef adıyla; pencere tür listesi almaz, R4/2).
+    satirlar.push({ tarih: k.tarih, sira: 0, tur: "borc", kalem: k, etkiK: toplamK, tutarK: toplamK,
+      vergi: kalemVergiKirilimi(k, dav), odemeler: paylar, kalanK: anaHedef(k, dav).kalanK, davranis: dav });
+    for (const p of paylar) satirlar.push({ tarih: p.hareket.tarih || k.tarih, sira: 1, tur: "odeme", kalem: k, hareket: p.hareket, etkiK: -p.payK, tutarK: p.payK, goc: p.hareket.kaynak === "goc", davranis: dav });
   }
-  return araliga(sirala(satirlar), aralik);
+  return araliga(anahtarla(sirala(satirlar)), aralik);
 };
 
 // R13, AC-17, B8: çalışan ekstresi, tek net sütun: + çalışana borcumuz, − çalışandan alacağımız. Maaş kalemi borç doğurur,
@@ -887,7 +907,9 @@ export const calisanEkstresi = (calisanId, { giderler = [], hareketler = [], tur
     // Spec 0074 R21: SGK personel kaleminin hedefi değildir; ekstre 0070 öncesindeki sade hâlinde.
     const toplamK = odemeHedefleri(k, DAVRANIS.PERSONEL).reduce((a, h) => a + h.toplamK, 0);
     satirlar.push({ tarih: k.tarih, sira: 0, tur: "maas", kalem: k, etkiK: toplamK, tutarK: toplamK,
-      kirilim: { resmiK: kurus(k.resmiTutar), eldenK: kurus(k.eldenTutar), ekK: ekOdemeKurus(k), maasK: maasKurus(k) } });
+      // Spec 0156 triyaj (bulgu 1): yol parası (0070 R8, elden tarafında) satırın tutarında; ayrıntı onu kendi satırıyla yazar.
+      // Yalnız doluyken yazılır (yol parasız kalemin kırılımı spec öncesiyle aynı).
+      kirilim: { resmiK: kurus(k.resmiTutar), eldenK: kurus(k.eldenTutar), ekK: ekOdemeKurus(k), maasK: maasKurus(k), ...(kurus(k.yolParasi) > 0 ? { yolK: kurus(k.yolParasi) } : {}) } });
     const hedefMap = hareketHedefPaylari(k, hareketler, turMap);
     for (const p of hareketPaylari(k, hareketler, turMap)) {
       const mahsup = p.hareket.tur === "mahsup";
@@ -901,6 +923,6 @@ export const calisanEkstresi = (calisanId, { giderler = [], hareketler = [], tur
   for (const m of hareketler || []) if (m && m.tur === "avans" && idEsit(m.calisanId, calisanId)) {
     satirlar.push({ tarih: m.tarih, sira: 2, tur: "avans", hareket: m, etkiK: -kurus(m.tutar), tutarK: kurus(m.tutar) });
   }
-  const r = araliga(sirala(satirlar), aralik);
+  const r = araliga(anahtarla(sirala(satirlar)), aralik);
   return { ...r, avansBorcK: avansBorcuK(calisanId, hareketler, giderler) };
 };

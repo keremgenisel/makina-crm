@@ -85,7 +85,7 @@ export const BolumBasligi = ({ children, bosluk, ust }) => (
 // Spec 0081 R14: katlanan başlık klavyeyle açılır ve durumunu bildirir. Başlık <button>'a çevrilmez (içinde <div>'ler var,
 // düğmenin tarayıcı varsayılanları yerleşimi kaydırır); mevcut öğe düğme rolü, odak, aria-expanded ve Enter/Space alır.
 // İki başlık yolu (kart ve ayar varyantı) bu tek yardımcıyı kullanır.
-const katlanirBaslik = (acikMi, degis) => ({
+export const katlanirBaslik = (acikMi, degis) => ({
   role: "button", tabIndex: 0, "aria-expanded": acikMi,
   onKeyDown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); degis(); } },
 });

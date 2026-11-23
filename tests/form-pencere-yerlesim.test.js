@@ -24,5 +24,11 @@ describe("Form pencereleri (Electron altında gerçek yerleşim)", () => {
     if (r.status !== 0) { console.error("STDOUT:\n" + r.stdout); console.error("STDERR:\n" + r.stderr); }
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("TUM KONTROLLER GECTI");
+    // Spec 0156 (AC-25, AC-50, AC-53): ekstre ölçümleri iki genişlikte de koştu.
+    for (const g of [1280, 1024]) {
+      expect(r.stdout).toContain(`PASS  ekstre @${g}px: elli satır tek listede, sayfalama çubuğu yok (AC-25)`);
+      expect(r.stdout).toContain(`PASS  ekstre @${g}px: "Kalemde göster" düğmesi hücresinde kesilmeden (AC-50)`);
+      expect(r.stdout).toContain(`PASS  ekstre (aralık) @${g}px: aralık süzgeci listeyi süzer ve devir bir kez çizilir (AC-53)`);
+    }
   }, 180000);
 });

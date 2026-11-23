@@ -21,7 +21,13 @@ const olc = `(() => {
     alt: { top: ar.top, bottom: ar.bottom, sonCocuk: alt !== icerik, dugme: !!kaydet },
     belgeTasma: document.documentElement.scrollWidth > innerWidth + 1,
     satir: document.querySelectorAll('[aria-label^="Ödeme tutarı"]').length,
-    ekstreSatir: document.querySelectorAll('[data-testid="ekstre-satiri"]').length,
+    ekstreSatir: document.querySelectorAll('[data-testid="ekstre-satiri"]').length, ekstreDevir: document.querySelectorAll('[data-testid="ekstre-devir"]').length,
+    // Spec 0156 AC-50: ilk satırın düğme hücresi ve Açıklama hücresi
+    // Triyaj (bulgu 2): düğme hücresi rol taşıyan beş hücrelik öğenin kardeşi (aynı ızgara satırı, subgrid).
+    ekstreHucre: (() => { const s = document.querySelector('[data-testid="ekstre-satiri"]'); if (!s) return null; const h = s.children, satir = s.parentElement, e = satir.querySelector('[data-testid="ekstre-satir-eylem"]');
+      const d = e.querySelector("button"), dr = d && d.getBoundingClientRect(), hr = e.getBoundingClientRect(), w = (x) => x.getBoundingClientRect().width;
+      return { dugmeKesik: !d || d.scrollWidth > d.clientWidth + 1 || dr.right > hr.right + 0.5 || dr.left < hr.left - 0.5, aciklama: w(h[2]), satir: w(satir),
+        digerleri: [0, 1, 3, 4].reduce((t, i) => t + w(h[i]), 0) + w(e), icindeDugme: !!s.querySelector("button") }; })(),
     sayfalama: [...document.querySelectorAll("button")].some(b => b.textContent.includes("Sonraki ›")), ciroKalem: document.querySelectorAll('[data-testid="ciro-kalemi"]').length };
 })()`;
 
@@ -40,6 +46,8 @@ async function senaryo(html, p, genislik, yukseklik, hazirla = null) {
   return s;
 }
 // Ödeme penceresine dokuz satır daha ekle (en çok 10, 0041); her tıklama ayrı (React güncellemesi araya girsin).
+// Spec 0156 AC-53: aralık süzgeci başlangıç alanına React'ın dinlediği input olayıyla yazılır.
+const aralikYaz = { tekrar: 1, adim: `(() => { const i = document.querySelector('input[type="date"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "2026-05-01"); i.dispatchEvent(new Event("input", { bubbles: true })); })()` };
 const onSatir = { tekrar: 9, adim: `(() => { const b = [...document.querySelectorAll("button")].find(x => /Başka yöntemle satır ekle/.test(x.textContent)); if (b && !b.disabled) b.click(); })()` };
 
 app.on("window-all-closed", () => {});
@@ -47,18 +55,28 @@ app.whenReady().then(async () => {
   const html = process.argv.find(a => a.endsWith(".html"));
   try {
     for (const genislik of [1280, 1024]) {
-      for (const [p, hazirla] of [["gider", null], ["cek", null], ["odeme", onSatir], ["ekstre", null], ["ciro", null]]) {
+      for (const [p, hazirla] of [["gider", null], ["cek", null], ["odeme", onSatir], ["ekstre", null], ["ekstre", aralikYaz], ["ciro", null]]) {
         const s = await senaryo(html, p, genislik, 800, hazirla);
-        const ad = `${p} @${genislik}px`;
+        const ad = `${p}${hazirla === aralikYaz ? " (aralık)" : ""} @${genislik}px`;
+        const sinir = p === "ekstre" ? 1080 : 900; // spec 0156 C4/2: geniş tablo penceresi
         if (!s) { check(`${ad}: pencere çizildi`, false); continue; }
-        check(`${ad}: pencere en çok 900 px ve ekrana sığıyor`, s.kap.width <= 900.5 && s.kap.left >= -0.5 && s.kap.right <= s.pencere.w + 0.5, JSON.stringify(s.kap));
+        check(`${ad}: pencere en çok ${sinir} px ve ekrana sığıyor`, s.kap.width <= sinir + 0.5 && s.kap.left >= -0.5 && s.kap.right <= s.pencere.w + 0.5, JSON.stringify(s.kap));
         check(`${ad}: sayfada yatay kaydırma yok (AC-7)`, !s.belgeTasma);
         check(`${ad}: pencerenin içinde yatay taşma yok (AC-7)`, !s.icerTasma);
         check(`${ad}: pencere ekranın yüksekliğine sığıyor (94vh)`, s.kap.top >= -0.5 && s.kap.bottom <= s.pencere.h + 0.5 && s.kap.bottom - s.kap.top <= s.pencere.h * 0.94 + 1, JSON.stringify(s.kap));
         check(`${ad}: alt düğme satırı pencerenin altında ve ekranda (AC-3)`, s.alt.sonCocuk && s.alt.dugme && s.alt.bottom <= s.pencere.h + 0.5 && s.alt.bottom <= s.kap.bottom + 0.5, JSON.stringify(s.alt));
         if (p === "gider" && genislik === 1280) check(`${ad}: pencere tam 900 px (geniş sınıf)`, Math.abs(s.kap.width - 900) < 1, `${s.kap.width}`);
-        // Spec 0062 R31 ile güncellendi: ekstre pencere içi liste olarak 5 satırla sayfalanır (sekiz satırlık veri iki sayfa).
-        if (p === "ekstre") check(`${ad}: ekstre tablosu satırlarıyla ve sayfalama çubuğuyla çizildi`, s.ekstreSatir === 5 && s.sayfalama, `satır: ${s.ekstreSatir}, çubuk: ${s.sayfalama}`);
+        // Spec 0156 ile (C5/2, AC-25, AC-50, AC-53): ekstre sayfalanmaz; elli satır tek listede, liste pencerenin içinde kayar,
+        // belge taşmaz; düğme hücresi kesilmez, Açıklama kalan genişliği alır; aralık süzgeci listeyi süzer ve devri çizer.
+        if (p === "ekstre" && !hazirla) {
+          check(`${ad}: elli satır tek listede, sayfalama çubuğu yok (AC-25)`, s.ekstreSatir === 50 && !s.sayfalama, `satır: ${s.ekstreSatir}, çubuk: ${s.sayfalama}`);
+          check(`${ad}: liste pencerenin içinde kayıyor (AC-25)`, s.icerikVar && s.icerikKayar);
+          if (genislik === 1280) check(`${ad}: pencere tam 1080 px (AC-19)`, Math.abs(s.kap.width - 1080) < 1, `${s.kap.width}`);
+          check(`${ad}: "Kalemde göster" düğmesi hücresinde kesilmeden (AC-50)`, s.ekstreHucre && !s.ekstreHucre.dugmeKesik, JSON.stringify(s.ekstreHucre));
+          check(`${ad}: rol taşıyan satır öğesinde düğme yok, düğme kardeş hücrede (triyaj bulgu 2)`, s.ekstreHucre && !s.ekstreHucre.icindeDugme, JSON.stringify(s.ekstreHucre));
+          check(`${ad}: Açıklama sütunu kalan genişliği alıyor (AC-50)`, s.ekstreHucre && s.ekstreHucre.aciklama >= 200 && Math.abs(s.ekstreHucre.satir - s.ekstreHucre.digerleri - s.ekstreHucre.aciklama - 50) < 2, JSON.stringify(s.ekstreHucre));
+        }
+        if (p === "ekstre" && hazirla) check(`${ad}: aralık süzgeci listeyi süzer ve devir bir kez çizilir (AC-53)`, s.ekstreSatir > 0 && s.ekstreSatir < 50 && s.ekstreDevir === 1, `satır: ${s.ekstreSatir}, devir: ${s.ekstreDevir}`);
         if (p === "ciro") check(`${ad}: dağıtım ızgarası kalemleriyle çizildi`, s.ciroKalem === 4, `kalem: ${s.ciroKalem}`);
         if (p === "odeme") {
           check(`${ad}: on ödeme satırı çizildi`, s.satir === 10, `satır: ${s.satir}`);

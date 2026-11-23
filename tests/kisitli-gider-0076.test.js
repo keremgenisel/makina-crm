@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { ayikla } from "./fixtures/0082-olu-anahtar";
 import { describe, it, expect } from "vitest";
+import { ayiklaEkstre0156 } from "./fixtures/0156-ayikla.js";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -197,7 +198,9 @@ describe("Spec 0076 fatura ve ödeme tarafı değişmez (R16, R17)", () => {
     expect(ayikla(borcOzeti(g, veri, bugun))).toEqual(ayikla(borcOzeti(b, veri, bugun)));
     expect(ayikla(odemeHatirlatmalari(g, veri, bugun))).toEqual(ayikla(odemeHatirlatmalari(b, veri, bugun)));
     expect(ayikla(acikKalemler(g, veri, bugun))).toEqual(ayikla(acikKalemler(b, veri, bugun)));
-    expect(ayikla(tedarikciEkstresi(11, { giderler: g, turler: TURLER, bugun }))).toEqual(ayikla(tedarikciEkstresi(11, { giderler: b, turler: TURLER, bugun })));
+    // Spec 0156 ile: ekstrenin borç satırı vergi kırılımını taşır (indirilemeyen KDV kısıtlı kalemde dolu, bilinçli); kırılım
+    // ayıklanınca satırlar, tutarlar ve bakiyeler birebir. Kırılımın kendisi tests/ekstre-detayi-0156.test.js AC-8.
+    expect(ayikla(ayiklaEkstre0156(tedarikciEkstresi(11, { giderler: g, turler: TURLER, bugun })))).toEqual(ayikla(ayiklaEkstre0156(tedarikciEkstresi(11, { giderler: b, turler: TURLER, bugun }))));
     expect(acikKalemler(g, veri, bugun).toplamK).toBe(K(1200));
     expect(borcOzeti(g, veri, bugun).toplam).toBe(1200);
   });

@@ -63,19 +63,20 @@ describe("Spec 0062 R27: usePagination", () => {
 // Hangi liste hangi dosyada, hangi boyutla (R11, R12, R26; plan §3). Spec 0080 R9: Gider Kalemleri (DonemRaporu.jsx) ve
 // Tedarikçiler (Tedarikciler.jsx) tablodan çıktı, sayfalanmazlar; useFilteredList yasakları tests/sayfalama-kalkar-0080.test.js'te.
 // Spec 0089 ile (C7 0062 R11, R12; 0089 AC-26): Makina Kârlılığı ve Makina ve Model dosyalarıyla kalktı; beş dosya, dokuz çağrı.
+// Spec 0156 ile (C5, AC-33): ekstre penceresi tablodan çıktı, sayfalanmaz; dört dosya, dokuz çağrı. Kalan listeler aynı.
 const LISTELER = [
   ["src/components/Kasa.jsx", 10, 4],
   ["src/components/cek/CekPortfoyu.jsx", 10, 2],
   ["src/components/gider/AcikKalemler.jsx", 10, 1],
-  ["src/components/gider/EkstrePenceresi.jsx", 5, 1],
   ["src/components/gider/OdemeHatirlatma.jsx", 5, 2], // spec 0092 ile (R25): üçüncü bölüm (kapsam bitişi) kendi sayfasıyla
 ];
 const KLASORLER = ["src/components/gider", "src/components/kasa", "src/components/cek"];
 
 describe("Spec 0062: kaynak taramaları", () => {
-  it("AC-12 / AC-26 / AC-39 (spec 0080 AC-11): listeler paylaşılan kanca ve Pagination ile sayfalanır, kalan beş dosyada on çağrı (spec 0089 ile; spec 0092 ile kapsam bölümü); useFilteredList yok (R26)", () => {
-    expect(LISTELER).toHaveLength(5);
-    expect(LISTELER.reduce((t, [, , n]) => t + n, 0)).toBe(10);
+  it("AC-12 / AC-26 / AC-39 (spec 0080 AC-11): listeler paylaşılan kanca ve Pagination ile sayfalanır, kalan dört dosyada dokuz çağrı (spec 0089 ile; spec 0092 ile kapsam bölümü; spec 0156 ile ekstre çıktı); useFilteredList yok (R26)", () => {
+    expect(LISTELER).toHaveLength(4);
+    expect(LISTELER.reduce((t, [, , n]) => t + n, 0)).toBe(9);
+    expect(oku("src/components/gider/EkstrePenceresi.jsx")).not.toMatch(/usePagination|<Pagination/); // spec 0156 R10
     for (const f of ["src/components/gider/MakinaKarliligi.jsx", "src/components/gider/MakinaModelGorunumu.jsx"]) expect(existsSync(resolve(kok, f)), f).toBe(false);
     for (const [f, , adet] of LISTELER) {
       const s = oku(f);

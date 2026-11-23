@@ -28,7 +28,6 @@ describe("Spec 0050: Sınıf 1 pencereleri tek geniş boyutta (bileşen)", () =>
     ["Gider formu (kira)", () => <GiderForm kalem={{ ...KALEM, turId: 1 }} giderTurleri={TURLER} onSave={vi.fn()} onCancel={vi.fn()} />],
     ["Ödeme Kaydet", () => <OdemeKayitPenceresi kalem={KALEM} davranis="normal" turAd="Hammadde" turMap={turMap} hareketler={[]} hesaplar={[]} odemeYetkisi bugun="2026-09-30" onKaydet={vi.fn()} onSil={vi.fn()} onClose={vi.fn()} />],
     ["Ödeme Planı", () => <OdemePlaniPenceresi kalem={{ ...KALEM, taksitler: [{ id: 1, hedef: "ana", sira: 1, vade: "2026-09-30", tutar: 5000 }] }} davranis="normal" onClose={vi.fn()} />],
-    ["Ekstre", () => <EkstrePenceresi baslik="X" tur="tedarikci" hesapla={() => ({ satirlar: [], sonBakiyeK: 0 })} onClose={vi.fn()} />],
     ["Çeki Ciro Et", () => <CiroPenceresi satir={{ cek: { id: 1, no: "1", banka: "Z" }, tutarK: 100000, currency: "TRY", vade: "" }} giderTurleri={TURLER} onKaydet={vi.fn()} onClose={vi.fn()} />],
     ["Kendi Çekimizi Yaz", () => <CiroPenceresi kip="kendi" giderTurleri={TURLER} onKaydet={vi.fn()} onClose={vi.fn()} />],
     ["Portföye Çek Ekle", () => <CekEklePenceresi onKaydet={vi.fn()} onClose={vi.fn()} />],
@@ -75,7 +74,7 @@ const SINIF1 = [
   ["src/components/gider/OdemeKayitPenceresi.jsx", '"Ödeme Kaydet"'], ["src/components/kasa/CalisanAvanslari.jsx", '"Avans Ver"'],
   ["src/components/cek/CiroPenceresi.jsx", '"Kendi Çekimizi Yaz"'], ["src/components/cek/CekEklePenceresi.jsx", 'title="Portföye Çek Ekle"'],
   ["src/components/gider/Tedarikciler.jsx", '"Yeni Tedarikçi"'], ["src/components/gider/UretimPartileri.jsx", '"Yeni Üretim Partisi"'],
-  ["src/components/gider/OdemePlaniPenceresi.jsx", 'title="Ödeme Planı"'], ["src/components/gider/EkstrePenceresi.jsx", 'Ekstresi`}'],
+  ["src/components/gider/OdemePlaniPenceresi.jsx", 'title="Ödeme Planı"'],
   ["src/components/gider/StopajDonemleri.jsx", 'title="Kira stopajı beyan dönemleri"'], // spec 0084 R25/2
   ["src/components/stock/SetHazirlaPenceresi.jsx", "title={PENCERE_BASLIGI(set?.ad)}"], // spec 0121 R24/2 (AC-55)
 ];
@@ -93,6 +92,12 @@ describe("Spec 0050: boyut tek yerde (kaynak taraması)", () => {
   });
   it("AC-14: Sınıf 2 pencereleri (Verilen ve Alınan Çek Durumu/Geçmişi) bugünkü boyutunda", () => {
     for (const [f, b, w] of SINIF2) expect(acilis(f, b), b).toContain(`maxWidth={${w}}`);
+  });
+  // Spec 0156 ile (C4, C4/2, AC-19, AC-33): ekstre Sınıf 1 listesinden çıktı, geniş tablo penceresi (1080) olarak kendi satırında.
+  it("Spec 0156 AC-19: ekstre penceresi 1080 piksel (maxWidth değeri), yükseklik wide'ın 94vh'i", () => {
+    expect(acilis("src/components/gider/EkstrePenceresi.jsx", "M.baslikCalisan : M.baslikTedarikci")).toMatch(/\bwide maxWidth=\{1080\}/);
+    render(<EkstrePenceresi baslik="X" tur="tedarikci" hesapla={() => ({ satirlar: [], devirK: null, bakiyeK: 0 })} onClose={vi.fn()} />);
+    expect(boyut()).toEqual({ w: "1080px", h: "94vh" });
   });
   it("AC-23 / X6: müşteri detay modalının genişliği değişmedi", () => {
     expect(readFileSync("src/components/customers/CustomerDetailModal.jsx", "utf-8")).toContain("<Modal wide maxWidth={1080} title={detailView.name}");

@@ -72,6 +72,9 @@ const ilk = (adaylar) => {
   return null;
 };
 
+// Spec 0156 R15/2 (0026 R18): kaleme süzerek açarken süzgecin dolduğu metin: açıklama, yoksa tedarikçi adı, yoksa tür
+// süzgeci. Genel arama ve ekstrenin "Kalemde göster"i bu tek fonksiyonu çağırır.
+export const kalemFiltresiOf = (k, tedarikciAdi = "") => (k?.aciklama ? { ara: k.aciklama } : tedarikciAdi ? { ara: tedarikciAdi } : { tur: String(k?.turId ?? "") });
 export const kalemBasligi = (k, turMap) => k.aciklama || turMap?.get(String(k.turId))?.ad || "Gider";
 
 // Yürürlük öncesi tarihli kalem hiçbir hesaba ve listeye girmez (borç özeti, Dönem Raporu); tıklanınca görünmeyeceği

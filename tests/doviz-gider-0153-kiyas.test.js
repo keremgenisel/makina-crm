@@ -3,6 +3,7 @@
 // Kayıt gövdesinin kıyası (AC-33) `scripts/tests/db-roundtrip.cjs`'te.
 process.env.TZ = "Europe/Istanbul";
 import { describe, it, expect } from "vitest";
+import { ayiklaEkstre0156 } from "./fixtures/0156-ayikla.js";
 import fs from "node:fs";
 import * as K from "../src/lib/kasa";
 import { giderKasaRaporu, buildGiderKasaRaporuHtml } from "../src/lib/giderRaporu";
@@ -35,7 +36,8 @@ const uret = () => {
     borc: json(borcOzeti(zengin, o, "2026-09-30")),
     acik: json(acikKalemler(zengin, o, "2026-09-30")),
     hatirlatma: json(odemeHatirlatmalari(zengin, o, "2026-09-30")),
-    ekstre: json(K.tedarikciEkstresi(11, { giderler: GIDERLER, hareketler: H, turler, yururlukAy: "2026-01", bugun: "2026-09-30" })),
+    // Spec 0156 ile (C2/2): ekstrenin koşulsuz yeni alanları ayıklanır (tests/fixtures/0156-ayikla.js); altın yenilenmedi.
+    ekstre: json(ayiklaEkstre0156(K.tedarikciEkstresi(11, { giderler: GIDERLER, hareketler: H, turler, yururlukAy: "2026-01", bugun: "2026-09-30" }))),
     rapor: json(hesaplaGiderRaporu({ giderler: zengin, turler, tedarikciler, yururlukAy: "2026-01" }, { baslangic: "2026-09-01", bitis: "2026-09-30" }, { bugun: "2026-09-30" })),
     arama: json([sorgu("3.000"), sorgu("Vida"), sorgu("12.000")]),
     ciro: json(ciroAdaylari(zengin, { tur: "tedarikci", id: 13 }, turMap)),

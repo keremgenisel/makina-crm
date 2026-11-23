@@ -172,6 +172,13 @@ export const taksitAdi = (kalem, taksitId, davranis) => {
   const n = kalem.taksitler.filter(x => (x.hedef || HEDEF.ANA) === h).length;
   return `${hedefAdi(h, davranis, cokHedefliMi(kalem, davranis))}${n > 1 ? ` ${r.sira}/${n}. taksit` : ""}`;
 };
+// Spec 0156 triyaj (bulgu 3, R5/2): taksidin adı yalnız hedefi birden çok satırlıysa; tek satırlı hedefte ad sabit hedef adıdır
+// ve yazılmaz (null). "Taksitli hedef" ölçütü tek yerde.
+export const taksitliHedefMi = (kalem, taksitId) => {
+  const r = (kalem?.taksitler || []).find(x => String(x.id) === String(taksitId));
+  return !!r && kalem.taksitler.filter(x => (x.hedef || HEDEF.ANA) === (r.hedef || HEDEF.ANA)).length > 1;
+};
+export const taksitNumarasiAdi = (kalem, taksitId, davranis) => (taksitliHedefMi(kalem, taksitId) ? taksitAdi(kalem, taksitId, davranis) : null);
 export const hedefEtiketi = (kalem, davranis, paylar, tutarBicimi = (payK) => tl2(tl(payK))) => {
   if (!kalem || !paylar?.length || !cokHedefliMi(kalem, davranis)) return null;
   if (paylar.length === 1) return hedefAdi(paylar[0].hedef, davranis, true);

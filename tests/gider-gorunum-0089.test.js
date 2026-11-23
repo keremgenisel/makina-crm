@@ -73,9 +73,10 @@ describe("Spec 0089: kaldırılan yüzey (R2, R2/2, R4, R5)", () => {
     for (const f of KALKAN_DOSYA) expect(Object.keys(KILITSIZ_DOSYALAR)).not.toContain(f);
     expect(oku("src/lib/kilitAlanlari.js")).not.toMatch(new RegExp(KALKAN.join("|")));
   });
-  it("AC-26: sayfalanan liste tablosu beş dosya, dokuz çağrı (tests/sayfalama-0062.test.js)", () => {
+  // Spec 0156 ile (C5): ekstre penceresi de tablodan çıktı; dört dosya, dokuz çağrı.
+  it("AC-26: sayfalanan liste tablosu dört dosya, dokuz çağrı (spec 0156 ile; tests/sayfalama-0062.test.js)", () => {
     const t = oku("tests/sayfalama-0062.test.js");
-    expect(t).toMatch(/expect\(LISTELER\)\.toHaveLength\(5\);/);
+    expect(t).toMatch(/expect\(LISTELER\)\.toHaveLength\(4\);/);
     expect(t).not.toMatch(/"src\/components\/gider\/(MakinaKarliligi|MakinaModelGorunumu)\.jsx", 10/);
   });
 });

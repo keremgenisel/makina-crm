@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { uid, fmtTR, withDeleted, copuKoru } from "../lib/utils";
+import { kalemFiltresiOf } from "../lib/aramaGider";
 import { useBugun } from "../hooks/useBugun";
 import { odemeHatirlatmalari, hatirlatmaEsigi } from "../lib/odemeHatirlatma";
 import { makeCanDo } from "../lib/permissions";
@@ -98,6 +99,14 @@ export const Giderler = ({
   // Spec 0061 R1, R20, R30 (C9): açık kalemler kipi ödeme süzgecinin değeri DEĞİL, ayrı bir durumdur; yalnız Dönem Raporu'nda,
   // hatırlatma kipiyle birbirini dışlar, kaydedilmez.
   const [acikKalemlerSecili, setAcikKalemlerSecili] = useState(false);
+  // Spec 0156 R14/2, C6/2: ekstrenin "Kalemde göster"i süzgeci Giderler'in kendi durumuna yazar ve beş durumu birlikte kurar
+  // (görünüm, dönem kipi, ay, açık kalemler ve hatırlatma kipleri kapalı); kalem listesi yalnız rapor görünümünde çizildiği
+  // için Tedarikler'den dönüşte taze kurulur ve süzgeci ilk değer olarak alır (App'e prop ya da key bumpı yok).
+  const [yerelKalemFiltresi, setYerelKalemFiltresi] = useState(null);
+  const kalemdeGoster = (k, tedarikciAdi) => {
+    setYerelKalemFiltresi(kalemFiltresiOf(k, tedarikciAdi));
+    setMod("ay"); setAy(ayOf(k.tarih)); setAcikKalemlerSecili(false); setOdemeFiltre(""); setGorunum("rapor");
+  };
   const acikKalemlerModu = gorunum === "rapor" && acikKalemlerSecili && !hatirlatmaModu;
   const donemsizKip = hatirlatmaModu || acikKalemlerModu;
   const hatirlatmaKalemleri = useMemo(() => giderler.filter(k => hatirlatma.kalemIdleri.has(String(k.id))), [giderler, hatirlatma]);
@@ -376,7 +385,7 @@ export const Giderler = ({
                     ve kırılım kartları sonra (açık kalemler kipinin sırası). KalemListesi props'u değişmedi (R16). */}
                 <KalemListesi kalemler={rapor.kalemler} giderTurleri={giderTurleri} tedarikciler={tedarikciler} bugun={bugun} canDo={canDo}
                   onDuzenle={(k) => setForm({ kalemId: k.id })} onSil={setSilinecek} onOdendi={odemeGirisi ? odendiDegistir : null} onOdemePlani={(k) => setPlanKalemId(k.id)} onHedefDegistir={odemeGirisi ? hedefDegistir : null}
-                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} baslangicFiltre={baslangicKalemFiltresi} />
+                  odemeFiltre={odemeFiltre} onOdemeFiltre={setOdemeFiltre} hatirlatma={hatirlatma} yontemKirilimlari={kirilimlar} baslangicFiltre={yerelKalemFiltresi ?? baslangicKalemFiltresi} />
                 <BorcOzeti ozet={borc} />
                 {/* Spec 0081 R4, R15: yan kutular kapalı başlar (katlanir; durum kartın kendi iç durumu, saklanmaz); spec 0090 R7, R9 ile
                     Makina Maliyeti Kovaları kalktı, dört kutu kaldı. Tür ve KDV
@@ -398,7 +407,7 @@ export const Giderler = ({
       {gorunum === "tedarikci" && (
         <Tedarikciler tedarikciler={tedarikciler} setTedarikciler={setTedarikciler} giderler={giderler} giderTanimlari={giderTanimlari}
           hesapHareketleri={hesapHareketleri} giderTurleri={giderTurleri} yururlukAy={yururlukAy} bugun={bugun} kasaHesaplari={kasaHesaplari}
-          rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} parts={parts} malzemeler={malzemeler} />
+          rapor={rapor && !rapor.yururlukOncesi ? rapor : null} canDo={canDo} showToast={showToast} serverPermissions={serverPermissions} parts={parts} malzemeler={malzemeler} onKalemdeGoster={kalemdeGoster} />
       )}
 
       {giderKilidi && kilitKalemId != null ? (

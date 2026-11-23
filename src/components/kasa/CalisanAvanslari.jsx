@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { uid, today, fmtTR } from "../../lib/utils";
 import { tl } from "../../lib/gider";
-import { avansDogrula, avansBorclari, avansSilinebilirMi, avansDuzenlenebilirMi, avansEnAzMetni, calisanEkstresi, secilebilirHesaplar, HESAP_TUR_AD, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
+import { avansDogrula, avansBorclari, avansSilinebilirMi, avansDuzenlenebilirMi, avansEnAzMetni, calisanEkstresi, hesapAdiCoz, secilebilirHesaplar, HESAP_TUR_AD, KAPALI_HESAP_NEDENI } from "../../lib/kasa";
 import { odemeGirisiYaz } from "../../lib/formOdemesi";
 import { logAction, hareketDuzenlemeKaydi } from "../../lib/audit";
 import { Icon, Btn, Field, Input, Select, Modal, ConfirmDialog, LockConflict, TutarInput } from "../ui";
@@ -114,7 +114,7 @@ export const CalisanAvanslari = ({
   const satirlar = calisanlar.filter(c => !c.deletedAt || borclar.has(String(c.id)))
     .sort((a, b) => (a.deletedAt ? 1 : 0) - (b.deletedAt ? 1 : 0) || String(a.ad).localeCompare(String(b.ad), "tr"));
   const yazabilir = canDo("avans") && !!setHesapHareketleri;
-  const hesapAdi = (id) => { const h = kasaHesaplari.find(x => String(x.id) === String(id)); return h ? h.ad : id == null ? "Hesap belirtilmedi" : "Silinmiş hesap"; };
+  const hesapAdi = (id) => hesapAdiCoz(kasaHesaplari, id); // spec 0156 R5/3 (P3)
   const avansKaydet = (kayit) => {
     const yeni = { ...kayit, id: uid() };
     setHesapHareketleri(p => [...p, yeni]);

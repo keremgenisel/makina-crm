@@ -6,7 +6,7 @@
 // "aşım" üretirdi. Dışarı TL (kuruş / 100) döner.
 import { kalemTedarikciIdleri } from "./maliyetKalemleri";
 import { trLower, getKdvRateForDate, uid as varsayilanUid } from "./utils";
-import { kurCoz, KUR_KAYNAK, dovizKurusu, karsiKurusu, paraMetni, kurMetni } from "./kur"; // spec 0153 C9/2: yaprak modül
+import { kurCoz, KUR_KAYNAK, dovizKurusu, karsiKurusu, paraMetni, kurSatiriMetni } from "./kur"; // spec 0153 C9/2: yaprak modül
 
 // Spec 0074 R1: SGK, kira ve personel gibi kilitli bir davranıştır (tek ANA hedefli kalem; KDV, tedarikçi ve atama yok).
 export const DAVRANIS = { NORMAL: "normal", KIRA: "kira", PERSONEL: "personel", SGK: "sgk" };
@@ -84,7 +84,7 @@ export const dovizdenLiraK = (dovizTutar, kur) => karsiKurusu(kurus(dovizTutar),
 export const kalemDovizKurusu = (k, liraK) => (dovizKalemMi(k) ? dovizKurusu(liraK, Number(k.kur)) : liraK);
 // Kalemin para birimindeki metin (R8). TL kalemde boş döner: TL kalemin bugünkü metinleri değişmez (C7).
 export const kalemDovizMetni = (k, liraK) => (dovizKalemMi(k) ? paraMetni(tl(kalemDovizKurusu(k, liraK)), kalemParaBirimi(k)) : "");
-export const kalemKurMetni = (k) => (dovizKalemMi(k) ? `1 ${kalemParaBirimi(k)} = ${kurMetni(k.kur)} TL` : "");
+export const kalemKurMetni = (k) => (dovizKalemMi(k) ? kurSatiriMetni(kalemParaBirimi(k), k.kur) : "");
 // Kalemin kendi döviz tutarı (KDV hariç, R1/2) metni; TL kalemde boş.
 export const kalemDovizTutarMetni = (k) => (dovizKalemMi(k) ? paraMetni(k.dovizTutar, kalemParaBirimi(k)) : "");
 // R7/2 (Karar 15): "ödeme almış kalem" ölçütü tektir: zenginleştirilmiş kalemde kapanan tutar sıfırdan büyükse (kaleme bağlı
@@ -325,6 +325,19 @@ export const kalemStopaj = (k, dav = DAVRANIS.NORMAL) => tl(stopajKurus(k, dav))
 // dairesi hedefi); ikisi bağımsız hesaplanır, ANA hedef ve bütün tüketiciler bu satırdan beslenir.
 const odenecekKurus = (k, dav) => kalemKurus(k, dav) - stopajKurus(k, dav) - tevkifatKurus(k, dav) + kdvKurus(k, dav);
 export const odenecekTutar = (k, dav = DAVRANIS.NORMAL) => tl(odenecekKurus(k, dav));
+// Spec 0156 C1/2, R2: ekstre ayrıntısının TEK vergi okuyucusu. Kuruş alanları ve oranlar birlikte; içi bu modülün bugünkü
+// fonksiyonlarını çağırır, kendi çarpımını yazmaz (modül içi kuruş fonksiyonları dışa verilmez, TL sarmalayıcıları kuruş
+// yürüyen ekstreye çevrim gerektirirdi). Oran yalnız tutarı sıfırdan büyükse anlamlıdır; satır çizme ölçütü tutardır (R3/2).
+export const kalemVergiKirilimi = (k, dav = DAVRANIS.NORMAL) => {
+  const tevkifatK = tevkifatKurus(k, dav), stopajK = stopajKurus(k, dav);
+  return {
+    kira: dav === DAVRANIS.KIRA,
+    matrahK: kalemKurus(k, dav), kdvK: kdvKurus(k, dav), kdvOrani: kdvliMi(dav) ? Number(k?.kdvOrani) || 0 : 0,
+    tevkifatK, tevkifatPay: tevkifatK > 0 ? Number(k.tevkifatPay) : null, tevkifatPayda: tevkifatK > 0 ? Number(k.tevkifatPayda) : null,
+    stopajK, stopajOrani: stopajK > 0 ? Number(k.stopajOrani) || 0 : null, netK: kalemKurus(k, dav) - stopajK, // kira köprüsünün "Net" ara satırı
+    indirilemeyenK: kisitHesabi(k, dav).indirilemeyenK, odenecekK: odenecekKurus(k, dav),
+  };
+};
 
 export const vadesiGectiMi = (k, bugun) => !k?.odendi && !!k?.sonOdemeTarihi && k.sonOdemeTarihi < bugun;
 // ── Taksit ve ödeme hedefleri (spec 0021, plan T1–T12) ────────────────────────

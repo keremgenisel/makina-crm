@@ -8,11 +8,11 @@
 import { tutarCoz } from "./gider";
 import { KUR_ALINMADI, KUR_CEVRIMDISI, dovizMi, kurOnerisi, ONERI_BUGUN_IBARESI, KUR_KAYNAK, KUR_ONDALIK_ELLE, KUR_ONDALIK_EN_COK,
   KUR_BOS_HATASI, KUR_SAYI_HATASI, KUR_POZITIF_HATASI, kurOndalikHatasi, kurCoz, kurGirdisi, dovizKurusu, karsiKurusu, kurTuret,
-  paraMetni, kurMetni, kurSapmaUyarisi, ondalikYuvarla as yuvarla } from "./kur";
+  paraMetni, kurMetni, kurSatiriMetni, kurSapmaUyarisi, ondalikYuvarla as yuvarla } from "./kur";
 // Spec 0153 C9/2: kur ilkelleri yaprak modülde (kur.js); 0152'nin adlarıyla buradan da dışa verilir.
 export { KUR_ALINMADI, KUR_CEVRIMDISI, dovizMi, kurOnerisi, ONERI_BUGUN_IBARESI, KUR_KAYNAK, KUR_ONDALIK_ELLE, KUR_ONDALIK_EN_COK,
   KUR_BOS_HATASI, KUR_SAYI_HATASI, KUR_POZITIF_HATASI, kurOndalikHatasi, kurCoz, kurGirdisi, dovizKurusu, karsiKurusu, kurTuret,
-  paraMetni, kurMetni, kurSapmaUyarisi };
+  paraMetni, kurMetni, kurSatiriMetni, kurSapmaUyarisi };
 
 export const IKI_DOVIZ_NEDENI = "İki döviz hesap arasında günün kuru önerilmez; kuru (1 çıkan birim kaç giren birim) elle yazın.";
 // R10/3, Karar 7: bozdurmada kur "1 çıkan birim = X giren birim". TL'ye bozdurmada günün kuru, TL'den dövize tersi (altı

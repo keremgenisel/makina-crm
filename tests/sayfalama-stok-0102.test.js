@@ -62,7 +62,7 @@ describe("Spec 0102: Makina Stoğu'nun kaynağı (R1, R1/2, R3, C1–C4/2)", () 
     const s = oku("docs/tasarim-sozlugu.md");
     const b = s.slice(s.indexOf("## Sayfalama (spec 0062)"), s.indexOf("## Bilinen borç"));
     const maddeler = b.split("\n").filter(l => l.startsWith("- **İstisna"));
-    expect(maddeler.map(l => /spec (\d+)/.exec(l)[1])).toEqual(["0080", "0084", "0102"]);
+    expect(maddeler.map(l => /spec (\d+)/.exec(l)[1])).toEqual(["0080", "0084", "0102", "0156"]); // spec 0156 ile dördüncü madde
     const madde = b.slice(b.indexOf("- **İstisna (spec 0102)"));
     expect(madde).toMatch(/Makina Stoğu/);
     expect(madde).toMatch(/sayım listesi/);
@@ -118,10 +118,11 @@ describe("Spec 0102: değişmeyenler (R16–R18, Karar 27)", () => {
     const k = oku(TAB);
     for (const l of k.split("\n").filter(l => l.includes("R15/4"))) expect(l).toMatch(/spec 0102 ile düştü/);
   });
-  it("triyaj (bulgu 4): CLAUDE.md'nin 0062 satırı LISTELER tablosunun çağrı sayısını (on) yazar", () => {
+  // Spec 0156 ile (C5): ekstre penceresi tablodan çıktı; dört dosya, dokuz çağrı.
+  it("triyaj (bulgu 4): CLAUDE.md'nin 0062 satırı LISTELER tablosunun çağrı sayısını (dokuz, spec 0156 ile) yazar", () => {
     const c = oku("CLAUDE.md");
-    expect(c).toMatch(/tabloda beş dosya, on çağrı kaldı/);
-    expect(c).not.toMatch(/dokuz çağrı/);
-    expect(oku("tests/sayfalama-0062.test.js")).toMatch(/toBe\(10\)/);
+    expect(c).toMatch(/tabloda dört dosya, dokuz çağrı kaldı/);
+    expect(c).not.toMatch(/beş dosya, on çağrı/);
+    expect(oku("tests/sayfalama-0062.test.js")).toMatch(/toBe\(9\)/);
   });
 });

@@ -48,6 +48,9 @@ import * as V157 from "../../tests/fixtures/0157-veri.js";
 import * as V159 from "../../tests/fixtures/0159-veri.js";
 import * as V150 from "../../tests/fixtures/0150-veri.js";
 import * as V148 from "../../tests/fixtures/0148-veri.js";
+import * as V156 from "../../tests/fixtures/0156-veri.js";
+import { EkstrePenceresi as EkstrePenceresi156 } from "../../src/components/gider/EkstrePenceresi";
+import { tedarikciEkstresi as tedarikciEkstresi156, calisanEkstresi as calisanEkstresi156, hesapAdiCoz as hesapAdiCoz156 } from "../../src/lib/kasa";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml as siparisRaporuHtml0142 } from "../../src/lib/siparisRaporu";
 import { OdemeKayitPenceresi } from "../../src/components/gider/OdemeKayitPenceresi";
@@ -1082,6 +1085,10 @@ const MUSTERI_0149 = [
   { id: 14913, name: "LEZZET DÜNYASI", city: "İstanbul", country: "Türkiye", phone: "0216 777", model: "AK120", serialNo: "S-14913", installDate: "2026-05-01" },
 ];
 
+// Spec 0156: ekstre penceresi kendi verisiyle (tests/fixtures/0156-veri.js); satırlar erişilebilir adlarıyla açılır.
+const ekstre156 = (tur = "tedarikci", id = 11) => <EkstrePenceresi156 baslik={tur === "calisan" ? "Çalışan" : id === 11 ? "Sistem Civata" : "Boş Tedarik"} tur={tur}
+  hesapla={(a) => (tur === "calisan" ? calisanEkstresi156 : tedarikciEkstresi156)(tur === "calisan" ? 21 : id, V156.secenek(a))}
+  hesapAdi={(h) => hesapAdiCoz156(V156.HESAPLAR, h)} onAvansSil={tur === "calisan" ? bos : null} onKalemdeGoster={tur === "calisan" ? null : bos} onClose={bos} />;
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
   // Spec 0081: Dönem Raporu'nun beş yan kutusu kapalı başlar (giderler-rapor kapalı hâldir); bir kutu açık ve hepsi açık hâl.
@@ -1646,7 +1653,14 @@ const EKRANLAR = {
   "giderler-0062-acik-kalemler": [gider62(), ["dugme:Açık kalemler (tüm dönemler)", "kaydir:Taraf"]],
   "giderler-0062-acik-kalemler-sayfa2": [gider62(), [...sayfa2(["dugme:Açık kalemler (tüm dönemler)"]), "kaydir:Gider tarihi"]],
   "giderler-0062-ekstre": [gider62(), ["Tedarikler ve Ekstre", "dugme:Ekstre"]],
-  "giderler-0062-ekstre-sayfa2": [gider62(), sayfa2(["Tedarikler ve Ekstre", "dugme:Ekstre"])],
+  // Spec 0156 C10: sayfalama kalktığı için "giderler-0062-ekstre-sayfa2" silindi.
+  "ekstre-0156-kapali": [ekstre156(), []],
+  "ekstre-0156-normal-tevkifat": [ekstre156(), ["etiket:02/09/2026 Borç doğdu", "etiket:05/09/2026 Borç doğdu"]],
+  "ekstre-0156-kira-doviz": [ekstre156(), ["etiket:01/09/2026 Borç doğdu", "etiket:10/09/2026 Borç doğdu"]],
+  "ekstre-0156-kisitli-odenmemis": [ekstre156(), ["etiket:08/09/2026 Borç doğdu", "etiket:25/09/2026 Borç doğdu"]],
+  "ekstre-0156-odeme": [ekstre156(), ["etiket:22/09/2026 Ödeme", "etiket:12/10/2026 Ödeme"]],
+  "ekstre-0156-calisan": [ekstre156("calisan"), ["etiket:30/09/2026 Maaş", "etiket:08/09/2026 Avans"]],
+  "ekstre-0156-bos": [ekstre156("tedarikci", 12), []],
   // Spec 0068: Çöp Kutusu satırları ve kalıcı silme bilgi satırı, İşlem Geçmişi parti etiketi, çek raporu, iki silme penceresi.
   "ayarlar-0068-trash": [ayarlar("trash", { tedarikciler: COP_TED, uretimPartileri: COP_PARTI, setUretimPartileri: bos }), []],
   "ayarlar-0068-auditlog": [ayarlar("auditlog"), []],
@@ -2098,7 +2112,7 @@ createRoot(document.getElementById("root")).render(UYGULAMA ? cizim : <div style
     }
     if (metin.startsWith("etiket:")) {
       // aria-label'ı birebir eşleşen öğeye tıklar (onay kutusu gibi metinsiz denetimler; spec 0046).
-      const hedef = document.querySelector(`[aria-label="${metin.slice(7)}"]`);
+      const hedef = document.querySelector(`[aria-label="${metin.slice(7)}"]`) || document.querySelector(`[data-ad="${metin.slice(7)}"]`); // spec 0156: ekstre satırı
       if (hedef) hedef.click(); else console.warn("etiketli öğe yok: " + metin);
       await bekle(300);
       continue;

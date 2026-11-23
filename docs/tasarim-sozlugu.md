@@ -58,7 +58,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
   bileşene yalnız görünür seçenekler gider.
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
-**Örnek:** `src/components/Giderler.jsx:299`
+**Örnek:** `src/components/Giderler.jsx:308`
 **Örnek:** `src/components/Documents.jsx:1137`
 **Örnek:** `src/components/Customers.jsx:532` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:63` (sekme kipi)
@@ -192,7 +192,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
   kullanıcıya gösterilmez; hangi ekranda hangi düğme olacağı ürün kararıdır.
 - Form içindeki boş satır listeleri (Evrak formunun satırları gibi): formun kendi işidir.
 
-**Örnek:** `src/components/Giderler.jsx:366`
+**Örnek:** `src/components/Giderler.jsx:375`
 **Örnek:** `src/components/Customers.jsx:567` (iki durum, sabit açıklama, spec 0016 R6)
 **Örnek:** `src/components/Documents.jsx:885` (ayrımlı ekran, yalnız başlık)
 
@@ -219,7 +219,7 @@ nedeninin önüne geçiyorsa **bölümüyle birlikte** sayfa sonuna alınabilir.
 sırası korunur ve şeridin metni yerine göre yeniden yazılmaz. Örnek: Kasa › Hesaplar'da deneme dönemi şeridi ve hesapsız
 notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avanslarının altında durur; kullanıcı Kasa'ya bakiyeler için gelir.
 
-**Örnek:** `src/components/Giderler.jsx:333`
+**Örnek:** `src/components/Giderler.jsx:342`
 **Örnek:** `src/components/Kasa.jsx:681` (sayfa sonundaki şerit, spec 0083)
 **Örnek:** `src/components/stock/PartStokTab.jsx:158` (hata ailesi)
 
@@ -305,8 +305,12 @@ ekranda kendiliğinden küçülür (`width: 100%`), içerik pencerenin içinde k
 
 - **Sınıf 1, geniş (`wide`, `maxWidth`/`maxHeight` verilmez):** veri girme ve tablo pencereleri. Gider formu (yeni ve
   düzenle, kira dahil), Ödeme Kaydet, Avans Ver, Virman, Kasa hesap formu, Çeki Ciro Et ve Kendi Çekimizi Yaz, Portföye
-  Çek Ekle, Tedarikçi formu, Üretim Partisi formu, Ödeme Planı, Tedarikçi/Çalışan Ekstresi. Yeni bir veri girme ya da
-  tablo penceresi de bu sınıfta açılır.
+  Çek Ekle, Tedarikçi formu, Üretim Partisi formu, Ödeme Planı. Yeni bir veri girme penceresi de bu sınıfta açılır; çok
+  sütunlu tablo penceresi geniş tablo sınıfında açılır (spec 0156 C4/3).
+- **Geniş tablo penceresi (spec 0156, `wide maxWidth={1080}`):** satırları açılan ve altıdan çok sütunlu tablo taşıyan
+  pencere. Bugün Tedarikçi/Çalışan Ekstresi. 1080 uygulamada var olan sayıdır (müşteri detayı); pencere ölçüleri envanteri
+  üçte kalır (520 dar, 900 `wide`, 1080 geniş tablo ve detay; bayi detayının 760'ı kendi istisnasıyla). Yeni bir ölçü
+  açılmaz.
 - **Sınıf 2, kendi küçük boyutunda:** onay (`ConfirmDialog`), "silinemez" ve tek düğmeli bilgi pencereleri; Çek Durumu
   ve Çek Geçmişi (alınan ve verilen); bir iki alanlık kısa pencereler (Tahsilat Hesap penceresi,
   varsayılan 520). Bunları genişletmek boş alan üretir.
@@ -372,6 +376,10 @@ sayfalanır; elle pager yazılmaz.
   süzgeçler `useFilteredList`'ten gelmeye devam eder; ekran kancadan sayfa dilimi yerine tam kümeyi okur. Yavaşlama
   görülürse sayfalama ayrı bir spec'le geri gelir. Stok'un öteki alt sekmeleri sayfalı kalır; `LISTELER` tablosuna kayıt
   eklenmez (0084 C6 ile aynı neden).
+- **İstisna (spec 0156 C5):** **Tedarikçi/Çalışan Ekstresi** penceresinin listesi sayfalanmaz: satırlar açılan ayrıntı
+  taşır, muhasebe tedarikçinin ekstresiyle satır satır karşılaştırır ve devreden bakiye listenin en üstünde bir kez durur.
+  Ayrıntılar varsayılan kapalı olduğu için yük satır sayısıyla doğrusaldır (üç yüz satır jsdom ölçümü,
+  `tests/ui/ekstre-detayi-0156.test.jsx`).
 
 ## Bilinen borç
 
