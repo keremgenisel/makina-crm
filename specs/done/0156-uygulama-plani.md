@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0156-ekstre-detayi.md` (Onaylandı, 2026-11-23) |
+| **Spec** | `specs/done/0156-ekstre-detayi.md` (Onaylandı, 2026-11-23) |
 | **Onay** | Takım Yöneticisi, 2026-11-23 ("tum onerilerini kabul ediyorum, spece isle, plani yaz ve uygula") |
 | **Dal** | `feat/0156-ekstre-detayi` (main `15b45e22` üstünde) |
-| **Durum** | Uygulandı; commit ve kapanış Takım Yöneticisinin talimatını bekliyor |
+| **Durum** | Tamamlandı (commit `8750301d`) |
 
 ## 1. Dosyalar
 

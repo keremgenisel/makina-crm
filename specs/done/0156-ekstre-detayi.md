@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-23) |
-| **Revizyon** | 3 (2026-11-23 plan turu: P1–P7; plan `specs/0156-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (commit `8750301d`, 2026-11-23) |
+| **Revizyon** | 3 (2026-11-23 plan turu: P1–P7; plan `specs/done/0156-uygulama-plani.md`) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **QA turu** | 2026-11-23: 28 bulgu (4 Bloklayıcı / 14 Önemli / 10 Küçük), hepsi onaylandı |
