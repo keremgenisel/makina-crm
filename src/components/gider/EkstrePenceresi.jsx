@@ -136,12 +136,14 @@ export const EkstrePenceresi = ({ baslik, tur, silinmis = false, hesapla, hesapA
     ? (e.bakiyeK >= 0 ? `${M.calisanaBorc} ${para(e.bakiyeK)}` : `${M.calisandanAlacak} ${para(-e.bakiyeK)}`)
     : avansli ? (e.bakiyeK >= 0 ? `${M.tedarikciyeBorc} ${para(e.bakiyeK)}` : `${M.tedarikcidenAlacak} ${para(-e.bakiyeK)}`)
       : `${M.kalanBorc} ${para(e.bakiyeK)}`;
+  // Etiket kendi genişliğini alır (max-content), değer kalan genişlikte sağa yaslı kırılır: uzun değer (açıklama, kalem adı)
+  // eskiden `auto` sütunla etiketi sıfıra indirip üstüne biniyordu.
   const satirCiz = ({ etiket, deger, isaret, ibare, kapanis }, i) => (
-    <div key={i} data-testid={kapanis ? "ayrinti-kapanis" : "ayrinti-satir"} style={{ display: "grid", gridTemplateColumns: "18px minmax(0, 1fr) auto", gap: 8, padding: "2px 0",
+    <div key={i} data-testid={kapanis ? "ayrinti-kapanis" : "ayrinti-satir"} style={{ display: "grid", gridTemplateColumns: "18px max-content minmax(0, 1fr)", gap: 8, padding: "2px 0",
       borderTop: kapanis ? "1px solid var(--n200, #e2e8f0)" : undefined, fontWeight: kapanis ? 700 : 400 }}>
       <span aria-hidden="true" style={{ color: "var(--n500, #64748b)" }}>{isaret || ""}</span>
       <span>{etiket}{ibare && <span style={{ color: "var(--n500, #64748b)", fontSize: 11.5 }}> · {ibare}</span>}</span>
-      <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{deger}</span>
+      <span style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", overflowWrap: "anywhere", minWidth: 0 }}>{deger}</span>
     </div>
   );
   const ayrintiCiz = (s, a) => (

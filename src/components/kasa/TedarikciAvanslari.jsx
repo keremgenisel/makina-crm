@@ -109,7 +109,7 @@ export const TedarikciAvanslari = ({
       {ekstreTed && (
         <EkstrePenceresi tur="tedarikci" baslik={ekstreTed.ad} silinmis={!!ekstreTed.deletedAt} hesapAdi={hesapAdi}
           hesapla={(aralik) => tedarikciEkstresi(ekstreTed.id, { giderler, hareketler: hesapHareketleri, turler: giderTurleri, yururlukAy, bugun, aralik })}
-          onAvansSil={yazabilir ? setSilinecek : null} onClose={() => setEkstreId(null)} />
+          onAvansSil={yazabilir ? setSilinecek : null} onClose={() => { if (silinecek) return; setEkstreId(null); }} />
       )}
       {silinecek && <TedarikciAvansSilPenceresi avans={silinecek} hareketler={hesapHareketleri} giderler={giderler} setHesapHareketleri={setHesapHareketleri}
         tedarikciAdi={tedById.get(String(silinecek.tedarikciId))?.ad} serverPermissions={serverPermissions} showToast={showToast} baskasiKilitli={baskasiKilitli} onClose={() => setSilinecek(null)} />}

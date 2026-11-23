@@ -234,7 +234,7 @@ export const CalisanAvanslari = ({
       {ekstreCalisani && (
         <EkstrePenceresi tur="calisan" baslik={ekstreCalisani.ad} silinmis={!!ekstreCalisani.deletedAt} hesapAdi={hesapAdi}
           hesapla={(aralik) => calisanEkstresi(ekstreCalisani.id, { giderler, hareketler: hesapHareketleri, turler: giderTurleri, yururlukAy, bugun, aralik })}
-          onAvansSil={yazabilir ? setSilinecek : null} onClose={() => setEkstreId(null)} />
+          onAvansSil={yazabilir ? setSilinecek : null} onClose={() => { if (silinecek) return; setEkstreId(null); }} />
       )}
       {silinecek && !silKontrol.ok && (
         // Triyaj bulgu 1: mahsup edilmiş avans silinirse mahsup arkasında avans kalmaz; önce mahsup silinmeli.

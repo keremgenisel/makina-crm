@@ -176,11 +176,13 @@ export const Tedarikciler = ({ tedarikciler = [], setTedarikciler, giderler = []
       ) : (
         <ConfirmDialog title="Tedarikçi silinsin mi?" message={`“${sil.t.ad}” çöp kutusuna taşınacak; Ayarlar › Çöp Kutusu'ndan geri alınabilir.${avansli.has(String(sil.t.id)) ? ` ${AVANSLI_SILME_NOTU}` : ""}`} onConfirm={silOnayla} onCancel={() => setSil(null)} />
       ))}
-      {avansSil && <TedarikciAvansSilPenceresi avans={avansSil} hareketler={hesapHareketleri || []} giderler={giderler} setHesapHareketleri={setHesapHareketleri}
-        tedarikciAdi={tedarikciler.find(t => String(t.id) === String(avansSil.tedarikciId))?.ad} serverPermissions={serverPermissions} showToast={showToast} baskasiKilitli={baskasiKilitli} onClose={() => setAvansSil(null)} />}
+      {/* Avans silme penceresi ekstrenin ÜSTÜNDE açılır: aynı katmandaki pencerelerde sonra çizilen üstte durur (eskiden önce
+          çiziliyordu ve uyarı ancak ekstre kapanınca görünüyordu). Açıkken ekstre Escape ile kapanmaz (0126 iç içe pencere deseni). */}
       {ekstre && <EkstrePenceresi tur="tedarikci" baslik={ekstre.ad} hesapAdi={hesapAdi} hesapla={(aralik) => ekstreHesapla(ekstre, aralik)}
         onAvansSil={avansSilebilir && setHesapHareketleri ? setAvansSil : null}
-        onKalemdeGoster={onKalemdeGoster ? (k) => { setEkstre(null); onKalemdeGoster(k, ekstre.ad); } : null} onClose={() => setEkstre(null)} />}
+        onKalemdeGoster={onKalemdeGoster ? (k) => { setEkstre(null); onKalemdeGoster(k, ekstre.ad); } : null} onClose={() => { if (avansSil) return; setEkstre(null); }} />}
+      {avansSil && <TedarikciAvansSilPenceresi avans={avansSil} hareketler={hesapHareketleri || []} giderler={giderler} setHesapHareketleri={setHesapHareketleri}
+        tedarikciAdi={tedarikciler.find(t => String(t.id) === String(avansSil.tedarikciId))?.ad} serverPermissions={serverPermissions} showToast={showToast} baskasiKilitli={baskasiKilitli} onClose={() => setAvansSil(null)} />}
     </div>
   );
 };

@@ -169,6 +169,31 @@ describe("Spec 0155: Tedarikler ve ekstre", () => {
   });
 });
 
+// 2026-11-23 Takım Yöneticisi bildirimi: ekstreden "Avansı sil" denince "Avans silinemez" uyarısı ekstrenin ARKASINDA açılıyor,
+// ancak ekstre kapatılınca görünüyordu (aynı katmandaki pencerelerde sonra çizilen üstte durur). Uyarı ekstreden sonra çizilir;
+// açıkken Escape yalnız uyarıyı kapatır, ekstre açık kalır.
+describe("Tedarikçi ekstresinden avans silme: pencere ekstrenin üstünde", () => {
+  const MAHSUP = { id: 82, tur: "mahsup", tarih: "2026-09-20", tutar: 5000, tedarikciId: 11, giderId: 6, taksitId: null, hesapId: null };
+  const ac = () => {
+    render(<GH h0={[TL_AVANS, MAHSUP]} />);
+    tedarikler();
+    fireEvent.click(within(tedSatiri("Demir Bant")).getByText("Ekstre"));
+    fireEvent.click(within(screen.getByTestId("ekstre-penceresi")).getByTitle("Avansı sil"));
+  };
+  const sonra = (a, b) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+  it("'Avans silinemez' uyarısı ekstre açıkken onun ardından (üstünde) çizilir", () => {
+    ac();
+    const uyari = screen.getByTestId("tedarikci-avans-silinemez");
+    expect(sonra(screen.getByTestId("ekstre-penceresi"), uyari)).toBe(true);
+  });
+  it("uyarı açıkken Escape ekstreyi kapatmaz; uyarı kapanınca ekstre yerinde", () => {
+    ac();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByTestId("ekstre-penceresi")).toBeTruthy();
+    expect(screen.queryByTestId("tedarikci-avans-silinemez")).toBeNull();
+  });
+});
+
 describe("Spec 0155: Çöp Kutusu", () => {
   const bos = [], noop = () => {};
   function TH({ hareketler: h0, tedarikciler: t0, showToast = noop, onTed }) {

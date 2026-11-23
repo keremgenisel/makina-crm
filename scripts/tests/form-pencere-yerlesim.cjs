@@ -28,6 +28,14 @@ const olc = `(() => {
       const d = e.querySelector("button"), dr = d && d.getBoundingClientRect(), hr = e.getBoundingClientRect(), w = (x) => x.getBoundingClientRect().width;
       return { dugmeKesik: !d || d.scrollWidth > d.clientWidth + 1 || dr.right > hr.right + 0.5 || dr.left < hr.left - 0.5, aciklama: w(h[2]), satir: w(satir),
         digerleri: [0, 1, 3, 4].reduce((t, i) => t + w(h[i]), 0) + w(e), icindeDugme: !!s.querySelector("button") }; })(),
+    // 2026-11-23 bildirimi: ayrıntı satırında uzun değer (kalem adı, açıklama) etiketin üstüne biniyordu. Her açık ayrıntı
+    // satırında etiket ile değer yatayda çakışmamalı ve değer satırın içinde kalmalı.
+    ayrinti: [...document.querySelectorAll('[data-testid="ayrinti-satir"], [data-testid="ayrinti-kapanis"]')].map(d => {
+      // Kutu değil yazının kendisi ölçülür: eski düzende etiket kutusu sıfır genişlikte kalıyor, yazı kutudan taşıyordu.
+      const yazi = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+      const [, et, de] = d.children, er = yazi(et), vr = yazi(de), dr = d.getBoundingClientRect();
+      return { etiket: et.textContent, cakisma: er.right > vr.left + 0.5, tasma: vr.right > dr.right + 0.5 || vr.left < dr.left - 0.5, uzun: de.textContent.length > 60 };
+    }),
     sayfalama: [...document.querySelectorAll("button")].some(b => b.textContent.includes("Sonraki ›")), ciroKalem: document.querySelectorAll('[data-testid="ciro-kalemi"]').length };
 })()`;
 
@@ -48,6 +56,8 @@ async function senaryo(html, p, genislik, yukseklik, hazirla = null) {
 // Ödeme penceresine dokuz satır daha ekle (en çok 10, 0041); her tıklama ayrı (React güncellemesi araya girsin).
 // Spec 0156 AC-53: aralık süzgeci başlangıç alanına React'ın dinlediği input olayıyla yazılır.
 const aralikYaz = { tekrar: 1, adim: `(() => { const i = document.querySelector('input[type="date"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(i, "2026-05-01"); i.dispatchEvent(new Event("input", { bubbles: true })); })()` };
+// İkinci satır (ilk kalemin ödemesi) açılır: "Kalem" satırının değeri uzun açıklamadır.
+const ayrintiAc = { tekrar: 1, adim: `(() => { const s = document.querySelectorAll('[data-testid="ekstre-satiri"]')[1]; s && s.click(); })()` };
 const onSatir = { tekrar: 9, adim: `(() => { const b = [...document.querySelectorAll("button")].find(x => /Başka yöntemle satır ekle/.test(x.textContent)); if (b && !b.disabled) b.click(); })()` };
 
 app.on("window-all-closed", () => {});
@@ -55,9 +65,9 @@ app.whenReady().then(async () => {
   const html = process.argv.find(a => a.endsWith(".html"));
   try {
     for (const genislik of [1280, 1024]) {
-      for (const [p, hazirla] of [["gider", null], ["cek", null], ["odeme", onSatir], ["ekstre", null], ["ekstre", aralikYaz], ["ciro", null]]) {
+      for (const [p, hazirla] of [["gider", null], ["cek", null], ["odeme", onSatir], ["ekstre", null], ["ekstre", aralikYaz], ["ekstre", ayrintiAc], ["ciro", null]]) {
         const s = await senaryo(html, p, genislik, 800, hazirla);
-        const ad = `${p}${hazirla === aralikYaz ? " (aralık)" : ""} @${genislik}px`;
+        const ad = `${p}${hazirla === aralikYaz ? " (aralık)" : hazirla === ayrintiAc ? " (ayrıntı)" : ""} @${genislik}px`;
         const sinir = p === "ekstre" ? 1080 : 900; // spec 0156 C4/2: geniş tablo penceresi
         if (!s) { check(`${ad}: pencere çizildi`, false); continue; }
         check(`${ad}: pencere en çok ${sinir} px ve ekrana sığıyor`, s.kap.width <= sinir + 0.5 && s.kap.left >= -0.5 && s.kap.right <= s.pencere.w + 0.5, JSON.stringify(s.kap));
@@ -76,7 +86,11 @@ app.whenReady().then(async () => {
           check(`${ad}: rol taşıyan satır öğesinde düğme yok, düğme kardeş hücrede (triyaj bulgu 2)`, s.ekstreHucre && !s.ekstreHucre.icindeDugme, JSON.stringify(s.ekstreHucre));
           check(`${ad}: Açıklama sütunu kalan genişliği alıyor (AC-50)`, s.ekstreHucre && s.ekstreHucre.aciklama >= 200 && Math.abs(s.ekstreHucre.satir - s.ekstreHucre.digerleri - s.ekstreHucre.aciklama - 50) < 2, JSON.stringify(s.ekstreHucre));
         }
-        if (p === "ekstre" && hazirla) check(`${ad}: aralık süzgeci listeyi süzer ve devir bir kez çizilir (AC-53)`, s.ekstreSatir > 0 && s.ekstreSatir < 50 && s.ekstreDevir === 1, `satır: ${s.ekstreSatir}, devir: ${s.ekstreDevir}`);
+        if (p === "ekstre" && hazirla === ayrintiAc) {
+          check(`${ad}: ayrıntı açıldı ve uzun değerli satır var`, s.ayrinti.length > 0 && s.ayrinti.some(a => a.uzun), JSON.stringify(s.ayrinti));
+          check(`${ad}: ayrıntı satırında etiket ile değer çakışmıyor, değer satırın içinde (2026-11-23 bildirimi)`, s.ayrinti.every(a => !a.cakisma && !a.tasma), JSON.stringify(s.ayrinti.filter(a => a.cakisma || a.tasma)));
+        }
+        if (p === "ekstre" && hazirla === aralikYaz) check(`${ad}: aralık süzgeci listeyi süzer ve devir bir kez çizilir (AC-53)`, s.ekstreSatir > 0 && s.ekstreSatir < 50 && s.ekstreDevir === 1, `satır: ${s.ekstreSatir}, devir: ${s.ekstreDevir}`);
         if (p === "ciro") check(`${ad}: dağıtım ızgarası kalemleriyle çizildi`, s.ciroKalem === 4, `kalem: ${s.ciroKalem}`);
         if (p === "odeme") {
           check(`${ad}: on ödeme satırı çizildi`, s.satir === 10, `satır: ${s.satir}`);
