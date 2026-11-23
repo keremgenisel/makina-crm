@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0154-parca-musteri-kirilimi.md` (revizyon 3, plan kararları P1–P11) |
-| **Durum** | Uygulandı; commit ve kapanış Takım Yöneticisinin talimatını bekliyor |
+| **Spec** | `specs/done/0154-parca-musteri-kirilimi.md` (revizyon 3, plan kararları P1–P11) |
+| **Durum** | Tamamlandı (commit `23bc4b98`) |
 | **Dal** | `feat/0154-parca-musteri-kirilimi` (taban `d3fa0cda`) |
 
 ## 1. Dosyalar

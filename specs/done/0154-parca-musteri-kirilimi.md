@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (Takım Yöneticisi, 2026-11-23) |
+| **Durum** | Tamamlandı (commit `23bc4b98`, 2026-11-23) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Revizyon** | 3 (2026-11-23 plan turu: P1–P11) |
