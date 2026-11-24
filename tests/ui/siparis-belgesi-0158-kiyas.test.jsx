@@ -19,6 +19,7 @@ import * as DOLU from "../fixtures/0158-dolu.js";
 vi.mock("../../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
 afterEach(() => cleanup());
 
+// 2026-11-24: Fiyat Ayarları Ayarlar › Uygulama grubundan Katalog grubuna taşındı; altın eski menü yolunu taşır, metin çevrilerek okunur.
 const DOSYA = "tests/fixtures/0158-once.json";
 const AYIKLA = "../fixtures/0158-ayikla.js";
 const ayiklaYukle = () => import(/* @vite-ignore */ AYIKLA);
@@ -53,7 +54,7 @@ describe("Spec 0158 kıyas", () => {
   it("AC-53 / AC-63 / AC-72 / AC-80 / AC-38: dokunulmamış veride motor, pencere, liste ve Excel birebir; belgenin tek farkı boş Ölçü sütunu", async () => {
     const s = uret();
     if (process.env.YAZ_0158 === "1") { fs.writeFileSync(DOSYA, JSON.stringify(s) + "\n"); return; }
-    const a = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
+    const a = JSON.parse(fs.readFileSync(DOSYA, "utf8").replaceAll("Uygulama › Fiyat Ayarları", "Katalog › Fiyat Ayarları"));
     const { ayiklaMotor0158, ayiklaBelge0158, ayiklaExcel0158 } = await ayiklaYukle();
     expect(ayiklaMotor0158(s.motor)).toEqual(a.motor);
     // Spec 0159 ile (R7/2, C7/3): ekranın yeniden adlandırılan metinleri (seçicinin nedeni, kalem ibareleri) eski adlara çevrilir.
@@ -74,7 +75,7 @@ describe("Spec 0158 kıyas", () => {
   // Triyaj (bulgu 4, C9/2, AC-63): dokunulmamış ama kodu girilmiş katalogda ilk baskıda Kod sütunu da çıkar (R7); ikinci bilinçli fark
   // yalnız budur: Kod sütunu düşülünce belge yine altınla birebir.
   it("AC-63 / C9/2 (kodlu katalog): belgenin ikinci farkı Kod sütunudur; o sütun düşülünce altınla birebir", async () => {
-    const a = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
+    const a = JSON.parse(fs.readFileSync(DOSYA, "utf8").replaceAll("Uygulama › Fiyat Ayarları", "Katalog › Fiyat Ayarları"));
     const { ayiklaBelge0158 } = await ayiklaYukle();
     const ilk = PARCALAR.find(p => p.maliyetKalemleri?.length);
     const [v, sec, ops] = SENARYOLAR().odakli;

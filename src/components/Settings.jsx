@@ -52,12 +52,12 @@ import { SettingsGider } from "./settings/SettingsGider";
 // "Evrak & Süreçler" (KDV/evrak/takip) olarak bölündü. Görünürlük öğe id'sine göre süzülür
 // (visibleGroups), grup adından bağımsız — öğeleri taşımak izinleri etkilemez.
 const SETTINGS_GROUPS = [
-  { grup: "Uygulama", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "musteri", label: "Müşteri Görünümü", icon: "customers" }, { id: "fiyat", label: "Fiyat Ayarları", icon: "parts" }, { id: "cinssira", label: "Cins Sıralaması", icon: "parts" }, { id: "servispano", label: "Servis ve Kargo Panosu", icon: "service" }] },
+  { grup: "Uygulama", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "musteri", label: "Müşteri Görünümü", icon: "customers" }, { id: "servispano", label: "Servis ve Kargo Panosu", icon: "service" }] },
   { grup: "Firma", items: [{ id: "company", label: "Firma Bilgileri", icon: "machine" }, { id: "calisanlar", label: "Firma Çalışanları", icon: "customers" }] },
   { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "securitystatus", label: "Güvenlik Durumu", icon: "lock" }] },
   { grup: "Sunucu", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
   { grup: "Entegrasyonlar", items: [{ id: "eposta", label: "E-posta Ayarları", icon: "mail" }, { id: "mailsablon", label: "E-posta Şablonları", icon: "mail" }, { id: "sentmail", label: "Gönderilen E-postalar", icon: "mail" }] },
-  { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }, { id: "malzemeler", label: "Malzemeler", icon: "box" }] },
+  { grup: "Katalog", items: [{ id: "models", label: "Makina Modelleri", icon: "machine" }, { id: "kaliplar", label: "Kalıp Modelleri", icon: "box" }, { id: "yedekparca", label: "Parça/Yedek Parça", icon: "parts" }, { id: "parcatipi", label: "Parça Tipleri", icon: "parts" }, { id: "malzemeler", label: "Malzemeler", icon: "box" }, { id: "cinssira", label: "Cins Sıralaması", icon: "parts" }, { id: "fiyat", label: "Fiyat Ayarları", icon: "parts" }] }, // 2026-11-24 kullanıcı isteği: Uygulama grubundan Katalog'a
   // Gider kaydı (spec 0001): grup yalnız gider yetkisi (Giderler sekmesi görünen kullanıcı) olanlara
   // görünür (plan K7). Tedarikçi Ayarlar'da DEĞİL, Giderler sekmesinde yaşar (R13).
   { grup: "Giderler", items: [{ id: "gidertur", label: "Gider Türleri", icon: "gider" }, { id: "gidertanim", label: "Tekrarlayan Giderler", icon: "gider" }, { id: "giderayar", label: "Gider Ayarları", icon: "gider" }] },

@@ -64,7 +64,7 @@ export const fiyatBaglamiKur = ({ parts = [], malzemeler = [], fiyatAyarlari = n
 
 // ── Nedenler (R11, R11/2, AC-85: tek sabit kümesi) ──────────────────────────────────────────────────────────────────────
 export const NEDEN_MALIYET_YOK = "Maliyeti girilmediği için fiyat türetilemedi.";
-export const NEDEN_KAT_YOK = "Varsayılan kâr katı girilmediği için fiyat türetilemedi (Ayarlar › Uygulama › Fiyat Ayarları).";
+export const NEDEN_KAT_YOK = "Varsayılan kâr katı girilmediği için fiyat türetilemedi (Ayarlar › Katalog › Fiyat Ayarları).";
 export const DOVIZ_NOTU = "Dolar ve euro fiyatı maliyetten türetilmez, elle girilir: maliyet TL'dir ve bir parçanın tek bir kuru yoktur.";
 export const TURETILEMEDI = "fiyat türetilemedi";
 
@@ -128,6 +128,6 @@ export const topluKipMetni = (n, kip) => `Listedeki ${n} parçayı ${kip === KIP
 export const maliyetsizUyariMetni = (n) => `${n} parçanın maliyeti girilmemiş; maliyete bağlanınca fiyatları boş görünür ve nedeni yazar.`;
 // Triyaj (bulgu 1): varsayılan kat boşken toplu "maliyete bağla" pasif ve nedenli (ayar boş doğar, R6/2; ilk gün bütün fiyatlar
 // boşalırdı). Kendi katı olan parça tek tek, kartından bağlanabilir.
-export const TOPLU_KAT_YOK_NEDENI = "Varsayılan kâr katı girilmeden toplu bağlama yapılamaz (Ayarlar › Uygulama › Fiyat Ayarları); kendi katı olan parça kartından bağlanabilir.";
+export const TOPLU_KAT_YOK_NEDENI = "Varsayılan kâr katı girilmeden toplu bağlama yapılamaz (Ayarlar › Katalog › Fiyat Ayarları); kendi katı olan parça kartından bağlanabilir.";
 export const katsizUyariMetni = (n) => `${n} parçanın kendi katı yok ve varsayılan kat girilmemiş; fiyatları boş görünür.`;
 export const farkMetni = (elle, turetilen) => `Elle girilen ${elle} ₺, türetilen ${turetilen}.`;

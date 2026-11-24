@@ -16,6 +16,7 @@ import { MALZEMELER, TABLOLU_MALZEMELER, PARCALAR, MODELLER, TARIHLER, FIYAT_AYA
 import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
 const ayikla0142v0143 = (x) => ayikla0143(ayikla0142(x));
 
+// 2026-11-24: Fiyat Ayarları Ayarlar › Uygulama grubundan Katalog grubuna taşındı; altın eski menü yolunu taşır, metin çevrilerek okunur.
 const DOSYA = "tests/fixtures/0139-once.json";
 const siparis = (malzemeler) => siparisIhtiyaci({ modeller: MODELLER.standardModels, satirlar: [{ model: "AK100_DS", adet: "70" }],
   parts: PARCALAR, partStock: [], malzemeler, tedarikciler: [] });
@@ -43,7 +44,7 @@ describe("Spec 0139 C1: tablosuz veride çıktılar spec öncesiyle aynı", () =
   it("AC-1 / AC-18: ağırlık, maliyet, fiyat, dışa aktarma, model maliyeti, parti hesabı, sipariş birebir", () => {
     const s = ciktilar(MALZEMELER);
     if (process.env.YAZ_0139 === "1") { fs.writeFileSync(DOSYA, JSON.stringify(s, null, 1) + "\n"); return; }
-    expect(ayikla0142v0143(ayikla0141(ayikla(s)))).toEqual(ayikla0142v0143(ayikla0141(ayikla(JSON.parse(fs.readFileSync(DOSYA, "utf8")))))); // spec 0141 ile
+    expect(ayikla0142v0143(ayikla0141(ayikla(s)))).toEqual(ayikla0142v0143(ayikla0141(ayikla(JSON.parse(fs.readFileSync(DOSYA, "utf8").replaceAll("Uygulama › Fiyat Ayarları", "Katalog › Fiyat Ayarları")))))); // spec 0141 ile
   });
   // Spec 0143 ile (Risk 6): işaretsiz satırda boy adedi artık yok; iddia işaretli (boydan sipariş) kaleme taşındı. Kilogram fire
   // (çap bandı tablosu) işaretli satırın boy adedini ve sipariş kilosunu değiştirmez (0143 B-R4, AC-15).

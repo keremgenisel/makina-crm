@@ -3,7 +3,7 @@ import { Btn, Field, Input } from "../ui";
 import { KartBolum, HataMetni, Ipucu, UyariSeridi, Segment } from "../tasarim";
 import { katDogrula, katMetni, fiyatAyariOf, YUVARLAMA_SECENEKLERI, ONERILEN_KAT, ZARAR_UYARISI } from "../../lib/parcaFiyati";
 
-// Spec 0133 R6, R6/2, R8, R8/2, R8/3, R20, R21, C7/2 (AC-8, AC-15, AC-66, AC-67, AC-81–AC-84): Ayarlar › Uygulama › Fiyat Ayarları.
+// Spec 0133 R6, R6/2, R8, R8/2, R8/3, R20, R21, C7/2 (AC-8, AC-15, AC-66, AC-67, AC-81–AC-84): Ayarlar › Katalog › Fiyat Ayarları.
 // Varsayılan kâr katı ve yuvarlama `appSettings.fiyatAyarlari`'na yazılır (Karar 33); parça kayıtlarına hiçbir şey yazılmaz (C8).
 // Panel Ayarlar kilit listesindedir (`AYAR_KILITLI.fiyat`). Ayar boş doğar; 2,77 yalnız öneridir.
 export const FIYAT_AYAR_IPUCU = "Bu ayar bütün maliyete bağlı parçaların fiyatını birlikte değiştirir; elle sabit parçalara ve kayıtlı teklif, servis ve satışlara dokunmaz.";

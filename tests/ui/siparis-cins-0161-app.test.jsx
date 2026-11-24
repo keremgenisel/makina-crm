@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Spec 0161 gerçek App (AC-20, AC-54, C5): Ayarlar › Uygulama › Cins Sıralaması'nda kaydedilen liste kayıt gövdesine `cinsSirasi` düz
+// Spec 0161 gerçek App (AC-20, AC-54, C5): Ayarlar › Katalog › Cins Sıralaması'nda kaydedilen liste kayıt gövdesine `cinsSirasi` düz
 // dizisi olarak girer; boşaltılınca anahtar gövdede yoktur; listeyi taşıyan yüklemeden sonra anahtarsız yenileme listeyi kaldırır ve
 // sonraki kayıt eski listeyi geri yazmaz (0091 yükleme yolu dersi).
 process.env.TZ = "Europe/Istanbul";
@@ -23,7 +23,8 @@ const baslat = async ({ yuklemeler }) => {
   return { kayitlar };
 };
 const menu = (ad) => fireEvent.click(screen.getAllByText(ad).find(e => e.closest("nav")));
-const panel = () => { menu("Ayarlar"); fireEvent.click(screen.getByRole("button", { name: "Cins Sıralaması" })); };
+// 2026-11-24: panel Katalog grubunda (akordeon kapalı açılır).
+const panel = () => { menu("Ayarlar"); fireEvent.click(screen.getByRole("button", { name: /Katalog/ })); fireEvent.click(screen.getByRole("button", { name: "Cins Sıralaması" })); };
 const ekle = (c) => { fireEvent.change(screen.getByLabelText("Eklenecek cins"), { target: { value: c } }); fireEvent.click(screen.getByRole("button", { name: "Ekle" })); };
 
 describe("Spec 0161: gerçek App", () => {

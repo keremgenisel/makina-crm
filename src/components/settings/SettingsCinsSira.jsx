@@ -3,7 +3,7 @@ import { Btn, Field, Input, Icon } from "../ui";
 import { KartBolum, HataMetni, Ipucu, BosDurum } from "../tasarim";
 import { cinsSirasiOf, cinsSirasiDogrula, CINS_SIRA_EN_COK_SATIR, CINS_SIRA_EN_COK_KARAKTER, CINS_SIRA_SATIR_HATASI, CINS_SIRA_KARAKTER_HATASI } from "../../lib/siparisIhtiyaci";
 
-// Spec 0161 R3, R3/2–R3/7, P5, P6 (AC-14–AC-19, AC-42–AC-44, AC-50): Ayarlar › Uygulama › Cins Sıralaması. Sipariş listesinde cins
+// Spec 0161 R3, R3/2–R3/7, P5, P6 (AC-14–AC-19, AC-42–AC-44, AC-50): Ayarlar › Katalog › Cins Sıralaması. Sipariş listesinde cins
 // bloklarının öncelik sırası `appSettings.cinsSirasi`'ye (düz dizi) yazılır; boşalınca `undefined` (anahtar silinmez, 0091 R24/4).
 // Panel yerel taslak tutar, tek "Kaydet" ile yazar; sıra yukarı ve aşağı düğmeleriyle değişir. Kilit `AYAR_KILITLI.cinssira`.
 // Eylem izni yoktur: Ayarlar sekmesi olan kullanıcının işidir (C6).

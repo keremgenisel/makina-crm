@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Spec 0161: sipariş penceresinde cins blokları (gerçek SiparisPenceresi), Ayarlar › Uygulama › Cins Sıralaması paneli (gerçek
+// Spec 0161: sipariş penceresinde cins blokları (gerçek SiparisPenceresi), Ayarlar › Katalog › Cins Sıralaması paneli (gerçek
 // Settings), kilit, özelleştirilmiş kullanıcı ve yedekten geri yükleme. Test adları AC-<n> taşır.
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
@@ -62,8 +62,12 @@ const ekle = (c) => { fireEvent.change(screen.getByLabelText(CINS_EKLE_ETIKETI),
 const kaydet = () => fireEvent.click(screen.getByRole("button", { name: "Kaydet" }));
 
 describe("Spec 0161: Cins Sıralaması paneli", () => {
-  it("AC-44: panel Ayarlar › Uygulama grubunda, kimliği cinssira ve adı 'Cins Sıralaması'", () => {
-    render(<Ayarlar initialTab="app" />);
+  // 2026-11-24 kullanıcı isteği: panel Uygulama grubundan Katalog grubuna, Malzemeler'in hemen arkasına taşındı (Fiyat Ayarları onun arkasında).
+  it("AC-44: panel Ayarlar › Katalog grubunda Malzemeler'den sonra, ardından Fiyat Ayarları; kimliği cinssira", () => {
+    render(<Ayarlar initialTab="malzemeler" />);
+    const adlar = [...document.querySelectorAll("button")].map(b => b.textContent.trim());
+    const i = adlar.indexOf("Malzemeler");
+    expect(adlar.slice(i, i + 3)).toEqual(["Malzemeler", "Cins Sıralaması", "Fiyat Ayarları"]);
     fireEvent.click(screen.getByText("Cins Sıralaması"));
     expect(screen.getByTestId("cins-sira-ipucu")).toBeTruthy();
   });
@@ -143,10 +147,10 @@ describe("Spec 0161: Cins Sıralaması paneli", () => {
     expect(screen.queryByText("Cins Sıralaması")).toBeNull();
   });
   it("AC-51: Ayarlar bölümleri özelleştirilmiş kullanıcı yeni paneli görmez; kutu işaretlenince görür (bilinen sınır)", () => {
-    const { unmount } = render(<Ayarlar initialTab="app" serverPermissions={{ role: "user", permissions: JSON.stringify({ tabs: ["settings"], settings: ["app", "musteri", "fiyat"] }) }} />);
+    const { unmount } = render(<Ayarlar initialTab="malzemeler" serverPermissions={{ role: "user", permissions: JSON.stringify({ tabs: ["settings"], settings: ["malzemeler", "musteri", "fiyat"] }) }} />);
     expect(screen.queryByText("Cins Sıralaması")).toBeNull();
     unmount();
-    render(<Ayarlar initialTab="app" serverPermissions={{ role: "user", permissions: JSON.stringify({ tabs: ["settings"], settings: ["app", "musteri", "fiyat", "cinssira"] }) }} />);
+    render(<Ayarlar initialTab="malzemeler" serverPermissions={{ role: "user", permissions: JSON.stringify({ tabs: ["settings"], settings: ["malzemeler", "musteri", "fiyat", "cinssira"] }) }} />);
     expect(screen.getByText("Cins Sıralaması")).toBeTruthy();
   });
 });
