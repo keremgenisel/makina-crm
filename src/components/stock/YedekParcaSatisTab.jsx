@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { grupKimlikleri, today, yerelBugun, fmtTR, fmtCur, parseMoney, parcaAdi, totalMiktar, aramaKelimeleri, kelimelerEslesir, yedekParcaBedeli, isYedekParcaBorcluMu, satisUcretsizMi, UCRETSIZ_IBARESI, tahsilEdilecekKdv, satisKdvBolumu } from "../../lib/utils";
 import { DEFAULT_KDV_RATES } from "../../lib/constants";
-import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict } from "../ui";
+import { Icon, Btn, Input, Pagination, ConfirmDialog, Modal, LockConflict, AramaAltSatir } from "../ui";
 import { Segment, BosDurum } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { useKilitListesi } from "../../hooks/useKilitListesi";
@@ -17,6 +17,7 @@ import { logAction } from "../../lib/audit";
 import { tahsilatHesapDurumu, SATIS_KAYNAK, tahsilatGunuYaz, tahsilatGunuNedeni } from "../../lib/satisTahsilat";
 import { TahsilatHesapPenceresi, uyumluHesapId } from "../kasa/TahsilatHesap";
 import { ihracRozetGosterilirMi } from "../../lib/ihracKayitli";
+import { parcaAramaSatiri } from "../../lib/parcaBilgi";
 import { IhracKayitliRozeti } from "../IhracKayitliOzet";
 
 // Satışın makina-bağ durumu (bekliyor / kısmi / tam).
@@ -260,6 +261,8 @@ export const YedekParcaSatisTab = ({ fiyatBaglami = null,
                   {satisTevkifatRozeti(s, fmtCur(b.tevkifat, s.currency || "TRY"))}
                 </span>) : null; })()}
             </div>
+            {/* Kullanıcı isteği 2026-11-24: parçanın kodu, ölçüsü, hammaddesi ve cinsi adın altında (arama sonucuyla aynı alt satır). */}
+            <AramaAltSatir>{parcaAramaSatiri(part)}</AramaAltSatir>
             <div style={{ fontSize: 11.5, color: "var(--n400, #94a3b8)", marginTop: 2 }}>
               {fmtTR(s.tarih)}{s.kargoDurum ? ` · 📦 ${s.kargoDurum}` : ""}{s.kargoTakipNo ? ` · ${s.kargoFirma || "Kargo"} ${s.kargoTakipNo}` : ""}
             </div>

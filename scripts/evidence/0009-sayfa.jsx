@@ -1013,6 +1013,9 @@ function SiparisBelgesi0161() {
   const html = siparisRaporuHtml0142(siparisIhtiyaci0142(V161.veri(), { tedarikciOdakli: true, cinsSirasi: ["Rulman", "Keçe"] }), { bugun: "2026-11-24", factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Kış Partisi" });
   return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
 }
+// Kullanıcı isteği 2026-11-24: yedek parçanın kodu, ölçüsü, hammaddesi ve cinsi dört yerde adın altında (arama sonucuyla aynı alt satır).
+const PARCA_ALT = [{ id: 7, ad: "KALIP RULMANI PASLANMAZ", kod: "625 2RS", olcu: "5x16", cins: "Rulman", fiyatTRY: "190" }];
+const YP_ALT = [{ id: 9701, aliciTipi: "bayi", dealerId: 3, partId: 7, miktar: 1, birimFiyat: 190, currency: "TRY", tarih: "2026-11-24", kargoDurum: "Hazırlanıyor", tahsisler: [] }];
 const servis0115 = (ek, tipler = TIP_0115) => <FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" customers={V115.CUSTOMERS} parts={PARCA_0115} partTypeDefs={tipler}
   ilk={{ ...V115.SERVICES[0], ...ek }} />;
 // Spec 0120 R17/2: kalıp işi işaretli tipi olmayan parça tipi listesi (süzme uygulanmaz, neden cümlesi).
@@ -1865,6 +1868,14 @@ const EKRANLAR = {
   "ayarlar-cinssira": [ayarlar("cinssira", { appSettings: { ...AYAR, cinsSirasi: ["Rulman", "Keçe", "Cıvata"] } }), []],
   "ayarlar-cinssira-bos": [ayarlar("cinssira"), []],
   "kilit-cins-sira": [ayarlar("cinssira"), []],
+  "parca-alt-satir-stok": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={PARCA_ALT}
+    dealers={DEALERS} yedekParcaSatislar={YP_ALT} defaultSubTab="yedeksatis" showToast={bos} />, []],
+  "parca-alt-satir-servis": [<FormEkrani Bilesen={ServiceForm} title="Yeni Servis Talebi" parts={PARCA_ALT}
+    ilk={{ customerId: "", date: "2026-11-24", currency: "TRY", type: "Bakım", repairPlace: "Yerinde Onarım", degisenParcalar: [{ partId: "7", ad: "KALIP RULMANI PASLANMAZ", miktar: 1, fiyat: "190" }] }} />, ["kaydir:Seçilen Parçalar (1)"]],
+  "parca-alt-satir-yedek": [<FormEkrani Bilesen={YedekParcaSatisForm} title="Yedek Parça Satışı" parts={PARCA_ALT}
+    ilk={{ aliciTipi: "bayi", dealerId: 3, currency: "TRY", tarih: "2026-11-24", satirlar: [{ partId: "7", miktar: "1", birimFiyat: "190" }] }} />, []],
+  "parca-alt-satir-pano": [<ServisPanosu services={[]} setServices={bos} customers={MUSTERILER} dealers={DEALERS} parts={PARCA_ALT} calisanlar={CAL}
+    yedekParcaSatislar={YP_ALT} setYedekParcaSatislar={bos} kargoYetki factory={{ name: "Altuntaş Makina" }} />, []],
   "evrak-0126-kalip-pencere": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "etiket:Kalıp seç"]],
   "ayarlar-kaliplar-0125-suzgec": [ayarlar("kaliplar", { kalipDefs: KALIP_0125, katalogAcilis: { panel: "kaliplar", ara: "Burger 120", no: 1 } }), []],
   // Spec 0071: KDV dâhil giriş (normal, yuvarlama farkı, brüt kira, net kira ipucu), tanım formu, "Tutar girilmedi" rozeti ve süzgeci.

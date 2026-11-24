@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { CUR_SYM, SERVICE_TYPES, REPAIR_PLACES, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, yerelBugun, aramaKelimeleri, kelimelerEslesir, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, isAltuntasServisi, addMonthsToDateStr, fmtZamanTam, servisParcaSatirTutari, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { formSatisFiyati } from "../lib/parcaFiyati";
-import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields, AramaAltSatir } from "./ui";
 import { HataMetni, Ipucu, Segment } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
@@ -446,6 +446,8 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], fiyat
                 <div key={i} style={{ display: "grid", gridTemplateColumns: cols, gap: 8, alignItems: "center", marginBottom: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: isDisTedarik ? "var(--brand, #e85d1a)" : itemColor, display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ad}</span>
+                    {/* Kullanıcı isteği 2026-11-24: kodu, ölçüsü, hammaddesi ve cinsi adın altında (arama sonucuyla aynı alt satır). */}
+                    {hasPartId && <AramaAltSatir kirp>{parcaAramaSatiri(parts.find(x => String(x.id) === String(p.partId)))}</AramaAltSatir>}
                     {hasPartId && <SetIcerikSatiri part={parts.find(x => String(x.id) === String(p.partId))} parts={parts} />}
                     {!parcaUcretsizMi && (parseInt(p.miktar) || 1) > 1 && parseMoney(p.fiyat) > 0 && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: "var(--n400, #94a3b8)" }}>

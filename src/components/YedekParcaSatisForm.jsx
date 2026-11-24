@@ -1,7 +1,7 @@
 import { CUR_SYM, DEFAULT_KDV_RATES, ODEME_YONTEMLERI } from "../lib/constants";
 import { today, yerelBugun, fmtCur, parseMoney, calcKDV, getKdvRateForDate, parcaAdi, totalMiktar, tahsilEdilecekKdv, tahsilKdvOrani } from "../lib/utils";
 import { formSatisFiyati } from "../lib/parcaFiyati";
-import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields } from "./ui";
+import { Icon, Field, Input, Select, MoneyInput, Btn, Modal, SearchPick, CountryCityFields, AramaAltSatir } from "./ui";
 import { Ipucu, Segment, UyariSeridi, HataMetni } from "./tasarim";
 import { KartTaksitAlani, KartYansitmaOzeti } from "./KartTaksitAlani";
 import { SatisTevkifatAlani, SatisTevkifatOzetSatirlari } from "./SatisTevkifatAlani";
@@ -178,7 +178,9 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
           {selectedPart ? (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, background: "var(--n100, #f8fafc)" }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--n900, #0f172a)" }}>{parcaAdi(selectedPart)}{selectedPart.kod ? ` · ${selectedPart.kod}` : ""}</div>
+                {/* Kullanıcı isteği 2026-11-24: kod addan çıktı, kod, ölçü, hammadde ve cins adın altında (arama sonucuyla aynı alt satır). */}
+                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--n900, #0f172a)" }}>{parcaAdi(selectedPart)}</div>
+                <AramaAltSatir>{parcaAramaSatiri(selectedPart)}</AramaAltSatir>
                 <div style={{ fontSize: 11.5, color: stok != null && stok < miktar ? "var(--red600, #dc2626)" : "var(--n500, #64748b)", marginTop: 2 }}>
                   Stok: {stok ?? "—"}{stok != null && miktar > 0 && stok < miktar ? " · yetersiz!" : ""}
                 </div>
@@ -216,7 +218,8 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                       {part ? (
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, padding: "8px 10px", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 6, background: "var(--surface, #fff)" }}>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, fontSize: 12.5, color: "var(--n900, #0f172a)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{parcaAdi(part)}{part.kod ? ` · ${part.kod}` : ""}</div>
+                            <div style={{ fontWeight: 700, fontSize: 12.5, color: "var(--n900, #0f172a)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{parcaAdi(part)}</div>
+                            <AramaAltSatir kirp>{parcaAramaSatiri(part)}</AramaAltSatir>
                             <div style={{ fontSize: 11, color: rStok != null && rStok < rMiktar ? "var(--red600, #dc2626)" : "var(--n500, #64748b)", marginTop: 1 }}>Stok: {rStok ?? "—"}{rStok != null && rMiktar > 0 && rStok < rMiktar ? " · yetersiz!" : ""}</div>
                             <SetIcerikSatiri part={part} parts={parts} />
                           </div>

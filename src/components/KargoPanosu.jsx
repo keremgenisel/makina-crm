@@ -1,7 +1,8 @@
 import { fmtCur, parseMoney, parcaAdi, fmtTR, satisFirmaGoster, yedekParcaBedeli, satisUcretsizMi, UCRETSIZ_IBARESI } from "../lib/utils";
-import { Btn, Modal, Input, Icon } from "./ui";
+import { Btn, Modal, Input, Icon, AramaAltSatir } from "./ui";
 import { aliciAd } from "./stock/TahsisModal";
 import { logAction } from "../lib/audit";
+import { parcaAramaSatiri } from "../lib/parcaBilgi";
 import { yedekParcaEtiketYazdir, kalipEtiketYazdir } from "../lib/printTemplates";
 
 // Bayiye/müşteriye yedek parça (kargo) satışları artık Servis Panosu'nun kendi sütunlarında servis
@@ -52,7 +53,9 @@ export const KargoKart = ({ s, dealers = [], parts = [], customers = [], calisan
           <div key={g.id}>
             {kalip
               ? (g.ad || "(kalıp)") + (g.olcu ? ` · ${g.olcu}` : "")
-              : <>{parcaAdi((parts || []).find(p => String(p.id) === String(g.partId))) || "(parça)"} · <strong>{g.miktar} adet</strong></>}
+              : <>{parcaAdi((parts || []).find(p => String(p.id) === String(g.partId))) || "(parça)"} · <strong>{g.miktar} adet</strong>
+                {/* Kullanıcı isteği 2026-11-24: kodu, ölçüsü, hammaddesi ve cinsi adın altında (arama sonucuyla aynı alt satır). */}
+                <AramaAltSatir>{parcaAramaSatiri((parts || []).find(p => String(p.id) === String(g.partId)))}</AramaAltSatir></>}
           </div>
         ))}
       </div>
@@ -177,7 +180,8 @@ export const KargoDetayModal = ({ grup, setYedekParcaSatislar = null, setPartSal
                 <div style={{ fontSize: 12.5, color: "var(--n700, #334155)", fontWeight: 600 }}>
                   {kalip
                     ? <>{s.ad || "(kalıp)"}{s.olcu ? ` · ${s.olcu}` : ""} · {fmtCur(parseMoney(s.ucret), s.currency || "TRY")}{satisFirmaGoster(s) ? ` · Satış: ${satisFirmaGoster(s)}` : ""}</>
-                    : <>{partAd(s) || "(parça)"} · <strong>{s.miktar} adet</strong> · {satisUcretsizMi(s) ? UCRETSIZ_IBARESI : fmtCur(yedekParcaBedeli(s), s.currency || "TRY")}</>}
+                    : <>{partAd(s) || "(parça)"} · <strong>{s.miktar} adet</strong> · {satisUcretsizMi(s) ? UCRETSIZ_IBARESI : fmtCur(yedekParcaBedeli(s), s.currency || "TRY")}
+                      <AramaAltSatir>{parcaAramaSatiri((parts || []).find(p => String(p.id) === String(s.partId)))}</AramaAltSatir></>}
                 </div>
               </div>
             );
