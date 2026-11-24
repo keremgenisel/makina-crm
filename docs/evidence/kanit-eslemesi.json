@@ -6785,10 +6785,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0162-piksel-raporu.json",
+        "rapor": "docs/evidence/0162-taban-piksel-raporu.json",
         "ekran": "analiz-0162-birlesik",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0162 C8"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerAddEditForm.jsx": [

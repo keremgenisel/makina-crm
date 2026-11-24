@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-11-24, plan turu) |
+| **Durum** | Tamamlandı (commit `11a234ce`; plan `specs/done/0162-uygulama-plani.md`) |
 | **Revizyon** | 3 (2026-11-24 plan turu: P1–P6) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
@@ -199,7 +199,7 @@ HEAD `808ac151`. Kod ölçümleri bağımsız olarak doğrulandı; canlı veri �
 
 ### Plan turunda verilen kararlar (2026-11-24)
 
-Takım Yöneticisi planın bütün önerilerini onayladı ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula"). Plan `specs/0162-uygulama-plani.md`.
+Takım Yöneticisi planın bütün önerilerini onayladı ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula"). Plan `specs/done/0162-uygulama-plani.md`.
 
 - **P1 (satırın adının kaynağı, sıradan bağımsız).** Bir satıra hem kimliği çözülen hem ada göre birleşen hareket düşebilir. Kural: satırda kimliği çözülen ve kendi adını taşıyan hareket varsa onun adı kalır (birden çoksa ilk görülen); yalnız ada göre birleşen hareketler varsa ad katalog adıdır; ada göre birleşen hareket kimlikli hareketin koyduğu adı ezmez, kimlikli hareket yer tutucuyu ve katalog adını ezer — *neden:* R3/2'yi (0160 AC-54'ün "Eski Cıvata Adı") ve AC-20'nin sıradan bağımsızlığını birlikte sağlar.
 - **P1/2 (triyaj bulgu 1, 2026-11-24).** P1'in "kimlikli hareket katalog adını ezer" yarısı **yalnız ada göre birleşmeyle açılmış satıra** uygulanır. Satırı kimlik yolu açtıysa (adsız kimlikli hareketin katalogdan gelen gösterim adı dahil) ad kuralı spec öncesiyle aynıdır: ilk görülen ad kalır, yalnız yer tutucu ezilir. Böylece ada göre çözülecek hareket olmayan veride çıktı birebir eskidir (AC-14) ve R3/2 korunur; sıradan bağımsızlık (AC-20) yalnız birleşen satırda gerekir ve orada sürer. Yan etki (iyileşme): yalnız boşluktan oluşan kayıt adı artık ad sayılmaz, gösterim katalog adına düşer.

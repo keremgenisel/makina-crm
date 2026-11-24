@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0162-analizde-ayni-parca-tek-satir.md` (Onaylandı, 2026-11-24) |
+| **Spec** | `specs/done/0162-analizde-ayni-parca-tek-satir.md` (Onaylandı, 2026-11-24) |
 | **Onay** | Takım Yöneticisi, 2026-11-24 ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula") |
 | **Dal** | `feat/0162-analiz-tek-satir` (main `808ac151` üstünde) |
-| **Durum** | Uygulandı (commit bekliyor) |
+| **Durum** | Tamamlandı (commit `11a234ce`) |
 
 ## 1. Dosyalar
 
@@ -20,7 +20,7 @@
 
 ## 3. Kararlar
 
-Spec'te P1–P6 (plan turu).
+Spec'te P1–P6 (plan turu), P1/2 (triyaj).
 
 ## 4. Kriter ↔ test
 
