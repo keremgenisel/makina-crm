@@ -12,6 +12,7 @@ import { TahsilatHesapAlani, tahsilatOnSecim, FormTahsilatGunu } from "./kasa/Ta
 import { tahsilatHesapDurumu, SATIS_KAYNAK, tahsilatGunuFormHatasi, tahsilatGunuIsareti } from "../lib/satisTahsilat";
 import { KalipAtolyeAlani } from "./KalipAtolyeAlani";
 import { kutuAcikMi, parcaSuzgeci, KALIP_ISI_BAYRAGI, TUM_PARCALAR, PARCA_SUZGEC_IBARESI, PARCA_SUZGEC_NEDENI } from "../lib/kalipTamiri";
+import { parcaAramaDegerleri, parcaAramaSatiri } from "../lib/parcaBilgi";
 import { SetIcerikSatiri } from "./stock/SetRozeti";
 
 // Servis ekleme/düzenleme formu — Services.jsx ve Customers.jsx (müşteri detayından
@@ -411,7 +412,7 @@ export const ServiceForm = ({ title, form, setForm, customers, parts = [], fiyat
             )}
             {parcaKumesi.suzuluMu && <div data-testid="parca-suzgec-ibaresi"><Ipucu>{PARCA_SUZGEC_IBARESI}</Ipucu></div>}
             {kalipKutusu && !parcaKumesi.suzulebilir && <div data-testid="parca-suzgec-neden"><Ipucu>{PARCA_SUZGEC_NEDENI}</Ipucu></div>}
-            <SearchPick items={parcaKumesi.liste} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..."
+            <SearchPick items={parcaKumesi.liste} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ara..." aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri}
               onPick={p => setForm(prev => ({ ...prev, degisenParcalar: [...(prev.degisenParcalar || []), { partId: String(p.id), ad: p.ad, adEN: p.adEN || "", miktar: 1, fiyat: formSatisFiyati(p, prev.currency || "TRY", fiyatBaglami), disTedarik: false }] }))} />
           </div>
         )}

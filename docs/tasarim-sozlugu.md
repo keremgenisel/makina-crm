@@ -59,7 +59,7 @@ ekranların alt sekmeleri (`kip="sekme"`), tarih ön ayarları (özel aralığı
 - `sekme` kipini süzgeç için, `dugme` kipini gezinme için kullanmayın; ekran okuyucu yanlış model kurar.
 
 **Örnek:** `src/components/Giderler.jsx:308`
-**Örnek:** `src/components/Documents.jsx:1137`
+**Örnek:** `src/components/Documents.jsx:1138`
 **Örnek:** `src/components/Customers.jsx:532` (düğme kipi, içerik genişliği, sayı rozeti)
 **Örnek:** `src/components/Stock.jsx:63` (sekme kipi)
 **Örnek:** `src/components/Notes.jsx:132` (düğme kipi, eşit genişlik)
@@ -143,7 +143,7 @@ Spec 0016 ile:
 
 **Örnek:** `src/components/settings/SettingsCompany.jsx:109` (ayar, katlanabilir)
 **Örnek:** `src/components/settings/SettingsKKKomisyon.jsx:54` (ayar, geniş)
-**Örnek:** `src/components/Documents.jsx:1132` (kart, etiket başlık)
+**Örnek:** `src/components/Documents.jsx:1133` (kart, etiket başlık)
 **Örnek:** `src/components/gider/DonemRaporu.jsx:44` (kart, başlık + alt satır)
 **Örnek:** `src/components/SimpleDealers.jsx:378` (başlıksız liste kabı)
 **Örnek:** `src/components/SimpleDealers.jsx:564` (detay bölümü, başlık)
@@ -194,7 +194,7 @@ girilmemiş bir dönem seçildiyse; **arama ya da süzgeç sonucu boşsa da** (s
 
 **Örnek:** `src/components/Giderler.jsx:375`
 **Örnek:** `src/components/Customers.jsx:567` (iki durum, sabit açıklama, spec 0016 R6)
-**Örnek:** `src/components/Documents.jsx:885` (ayrımlı ekran, yalnız başlık)
+**Örnek:** `src/components/Documents.jsx:886` (ayrımlı ekran, yalnız başlık)
 
 ## UyariSeridi
 
@@ -221,7 +221,7 @@ notu, hesabı belirtilmemiş kayıtlar bloğuyla birlikte Çalışan avansların
 
 **Örnek:** `src/components/Giderler.jsx:342`
 **Örnek:** `src/components/Kasa.jsx:693` (sayfa sonundaki şerit, spec 0083)
-**Örnek:** `src/components/stock/PartStokTab.jsx:158` (hata ailesi)
+**Örnek:** `src/components/stock/PartStokTab.jsx:159` (hata ailesi)
 
 ### Serbest içerik (spec 0011)
 
@@ -343,6 +343,10 @@ Bir listeden birden çok kayıt seçtirilen yerde `tasarim.jsx` `CokluSecim` kul
 "<ad> araması". Seçim boşken ne olduğunu çağıran `bosMetni` ile söyler (sipariş listesinde "bütün tedarikçiler"). Tek seçim
 için açılır liste ya da `Segment`; arama gerekip tek seçim olan yerde `SearchPick` kullanılır.
 **Örnek:** `src/components/stock/SiparisPenceresi.jsx:158`
+
+## Arama sonucu alt satırı (spec 0160)
+
+Parça aranan kutuların sonuç satırı iki satırlıdır: üstte ad (Evrak'ta set eki dahil), altında `ui.jsx` `AramaAltSatir` ile parçanın kod, ölçü, hammadde ve cinsi (punto 11, `n500`, üst boşluk 2, " · " ayracı; boşsa hiç çizilmez). `SearchPick` bunu isteğe bağlı `getAlt(item)` ile, `SearchSelect` seçeneğin `alt` anahtarıyla çizer; verilmezse satırın HTML'i birebir eskidir. Arama panellerinde satır sarar, Analiz'in seçicisinde tek satıra kırpılır (`kirp`). Üç bilgi satırı biçimi bilinçli olarak ayrıdır ve birleştirilmez: katalog listesi ölçü, hammadde, cins (kod kendi sütununda); sipariş penceresi hammadde, cins; arama sonucu kod, ölçü, hammadde, cins. Alan listesi tek yerde: `lib/parcaBilgi.js` `parcaAramaDegerleri` / `parcaAramaSatiri`.
 
 ## Sayfalama (spec 0062)
 

@@ -71,7 +71,8 @@ describe("Spec 0120 kaynak taramaları", () => {
     expect(SFK).toContain("<SearchPick items={parcaKumesi.liste}");
     expect(oku("src/components/ModelsManager.jsx")).toContain("<SearchPick items={parts.filter(p => p.models?.includes(mForm.model))}");
     const ps = oku("src/components/stock/PartStokTab.jsx");
-    expect(ps).toContain("options={parts.map(p => ({ value: String(p.id), label: p.ad }))}");
+    // Spec 0160 ile (C1/3): seçenek nesnesi iki isteğe bağlı anahtar taşır; katalog yine tam `parts`.
+    expect(ps).toContain("options={parts.map(p => ({ value: String(p.id), label: p.ad, ara: parcaAramaDegerleri(p), alt: parcaAramaSatiri(p) }))}");
     expect(ps).not.toMatch(/\bitems=/);
     expect(oku("src/components/Analiz.jsx")).not.toMatch(/SearchPick|\bitems=/);
     const sayilar = readdirSync("src/components", { recursive: true }).filter(f => /\.jsx$/.test(f))
@@ -114,11 +115,13 @@ describe("Spec 0120 kaynak taramaları", () => {
   });
   it("AC-29, R16: SearchPick imzası aynı; ServiceForm'un çağrısı yalnız bugünkü prop'ları geçirir", () => {
     expect(oku("src/components/ui.jsx")).toContain(
-      'export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı." }) => {');
+      // Spec 0160 ile (C1/2): iki isteğe bağlı parametre.
+      'export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı.", aramaDegerleri, getAlt }) => {');
     const i = SF.indexOf("<SearchPick items={parcaKumesi.liste}");
     const cagri = SF.slice(i, SF.indexOf("/>", SF.indexOf("disTedarik: false", i)) + 2);
     const proplar = [...cagri.matchAll(/\s([a-zA-Z]+)=\{|\s([a-zA-Z]+)="/g)].map(m => m[1] || m[2]);
-    expect(proplar.sort()).toEqual(["getKey", "getLabel", "items", "onPick", "placeholder"]);
+    // Spec 0160 ile (C1/2, R1/2 kutu 3): `aramaDegerleri` ve `getAlt` eklendi; süzgecin kümesi (`items`) aynı.
+    expect(proplar.sort()).toEqual(["aramaDegerleri", "getAlt", "getKey", "getLabel", "items", "onPick", "placeholder"]);
   });
   it("AC-30: köprünün yazılabilir listesi ve partTypeDefs satırı değişmedi", () => {
     const sp = oku("src/components/ServisPencere.jsx");

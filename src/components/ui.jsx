@@ -159,7 +159,14 @@ export const PickOrType = ({ value, onChange, options = [], placeholder = "" }) 
 // öğeye tıklamak onu hemen seçer/ekler, kısa bir "eklendi" onayı gösterir ve paneli kapatır — yeniden
 // eklemek için input'a tekrar tıklanması gerekir (her seçim ayrı, kapanan bir işlem). 150+ öğelik
 // kataloglarda (örn. yedek parça listesi) formun büyümeden kullanılabilmesi için bu davranış önemli.
-export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı." }) => {
+// Spec 0160 R2/6, P3: arama sonucu satırının alt satırı tek yerde (0158'in bilgi satırının ölçüleri). `kirp` tek satıra kırpar
+// (Analiz'in seçicisi, R2/5). Metin boşsa hiç çizilmez.
+export const AramaAltSatir = ({ children, kirp = false }) => (children ? (
+  <div data-testid="arama-alt-satir" style={{ fontSize: 11, fontWeight: 400, color: "var(--n500, #64748b)", marginTop: 2, ...(kirp ? { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } : {}) }}>{children}</div>
+) : null);
+// Spec 0160 C1/2, C3: `aramaDegerleri(item)` eşleşme değerleri (etiketle birlikte aranır, arama daralmaz), `getAlt(item)` alt satır
+// metni. İkisi isteğe bağlı; verilmezse ya da alt satır boşsa satırın HTML'i birebir eskidir (P4).
+export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı.", aramaDegerleri, getAlt }) => {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(null);
@@ -167,7 +174,7 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
   // limit (8) bazı öğelerin (örn. 150 parçalık listede 8'den sonrası) hiç görünmemesine yol açıyordu.
   // Spec 0149 R8/2: kelimeler render başına bir kez (eskiden sorgu kayıt başına normalleştiriliyordu).
   const kelimeler = aramaKelimeleri(q);
-  const filtered = kelimeler.length ? items.filter(it => kelimelerEslesir(kelimeler, [getLabel(it)])) : items;
+  const filtered = kelimeler.length ? items.filter(it => kelimelerEslesir(kelimeler, [getLabel(it), ...(aramaDegerleri ? aramaDegerleri(it) : [])])) : items;
   const pick = (it) => {
     onPick(it);
     setQ("");
@@ -190,7 +197,7 @@ export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey 
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "var(--surface, #ffffff)", border: "1px solid var(--n200, #e2e8f0)", borderRadius: 8, overflow: "hidden", maxHeight: 220, overflowY: "auto", boxShadow: "0 10px 28px rgba(0,0,0,.14)" }}>
           {filtered.map(it => (
             <div key={getKey(it)} onMouseDown={e => { e.preventDefault(); pick(it); }} className="sp-option">
-              {getLabel(it)}
+              {(() => { const alt = getAlt ? getAlt(it) : ""; return alt ? <><div>{getLabel(it)}</div><AramaAltSatir>{alt}</AramaAltSatir></> : getLabel(it); })()}
             </div>
           ))}
           {filtered.length === 0 && (
@@ -305,7 +312,8 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
   // Arama varsa tümünde filtrele; boşken initialLimit verilmişse yalnızca ilk N'i göster (uzun listeler
   // baştan aşağı taşmasın, gerisi aramayla bulunur).
   const kelimeler = aramaKelimeleri(q); // spec 0149 R8/2
-  const matched = kelimeler.length ? options.filter(o => kelimelerEslesir(kelimeler, [o.label])) : options;
+  // Spec 0160 C1/3: seçeneğin isteğe bağlı `ara` (eşleşme değerleri) ve `alt` (alt satır) anahtarları; yoksa birebir eski.
+  const matched = kelimeler.length ? options.filter(o => kelimelerEslesir(kelimeler, [o.label, ...(o.ara || [])])) : options;
   const filtered = (!kelimeler.length && initialLimit > 0) ? matched.slice(0, initialLimit) : matched;
   const gizliSayisi = matched.length - filtered.length;
   const secili = options.find(o => o.value === value);
@@ -335,7 +343,7 @@ export const SearchSelect = ({ value, onChange, options = [], placeholder = "Se�
               <button key={o.value} type="button"
                 onClick={() => { onChange(o.value); setOpen(false); }}
                 className={`ss-option${o.value === value ? " ss-option--selected" : ""}`}>
-                {o.label}
+                {o.alt ? <><div>{o.label}</div><AramaAltSatir>{o.alt}</AramaAltSatir></> : o.label}
               </button>
             ))}
             {gizliSayisi > 0 && (

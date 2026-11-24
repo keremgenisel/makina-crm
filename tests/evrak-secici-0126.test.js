@@ -64,7 +64,8 @@ describe("Spec 0126: kaynak taramaları", () => {
 
   it("AC-11: ui.jsx'in SearchPick ve Modal imzaları, belge alan listeleri değişmedi; izin ve sunucu dosyaları işi anmaz", () => {
     const ui = kod("src/components/ui.jsx");
-    expect(ui).toContain('export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı." }) => {');
+    // Spec 0160 ile (C1/2): iki isteğe bağlı parametre eklendi.
+    expect(ui).toContain('export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı.", aramaDegerleri, getAlt }) => {');
     expect(ui).toContain("export const Modal = ({ title, onClose, children, footer, wide, maxWidth, maxHeight, overflowVisible }) => {");
     expect(ui).toMatch(/\{getLabel\(it\)\}/);
     const d = kod(DOC);
@@ -84,10 +85,11 @@ describe("Spec 0126: kaynak taramaları", () => {
     expect(p).toMatch(/<Modal\b[^>]*>\s*<div ref=\{kap\} data-testid="kalem-sec-penceresi">\s*<SearchPick\b[\s\S]*?\/>\s*<\/div>\s*<\/Modal>/);
   });
 
-  it("AC-21: set eki SetRozeti'nden; Documents ve pencere urunAgaci adını anmaz (0087 AC-6); parça etiketi ad · kod", () => {
+  // Spec 0160 ile (R2, AC-44): parça etiketi ad + set eki, kod alt satıra indi.
+  it("AC-21: set eki SetRozeti'nden; Documents ve pencere urunAgaci adını anmaz (0087 AC-6); parça etiketi ad + set eki (spec 0160 ile)", () => {
     for (const f of [DOC, PEN]) expect(kod(f), f).not.toMatch(/urunAgaci/);
     expect(kod("src/components/stock/SetRozeti.jsx")).toMatch(/export const setEtiketEki = \(part\) =>/);
-    expect(yorumsuz(DOC)).toContain('getLabel={p => `${p.ad || ""}${p.kod ? " · " + p.kod : ""}${setEtiketEki(p)}`}');
+    expect(yorumsuz(DOC)).toContain('getLabel={p => `${p.ad || ""}${setEtiketEki(p)}`} getKey={p => p.id} aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri}');
   });
 
   it("R3/6: belge formunun kapatma işleyicisi seçim penceresi açıkken çalışmaz", () => {

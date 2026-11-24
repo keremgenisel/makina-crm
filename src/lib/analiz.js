@@ -96,7 +96,8 @@ export function hesaplaAnaliz(
   const parcaGiris = (partId, ad) => {
     const key = parcaAnahtar(partId, ad);
     let e = parcaMap.get(key);
-    if (!e) { e = { key, ad: ad || "Parça", servis: 0, kargo: 0, toplam: 0, modeller: new Map(), musteriler: new Map() }; parcaMap.set(key, e); }
+    // Spec 0160 R4/5, C5: parçanın kimliği ham (ilk görülen) değeriyle, kimliksiz satırda null; bilgi alanları motorda okunmaz.
+    if (!e) { e = { key, partId: (partId != null && partId !== "") ? partId : null, ad: ad || "Parça", servis: 0, kargo: 0, toplam: 0, modeller: new Map(), musteriler: new Map() }; parcaMap.set(key, e); }
     if ((!e.ad || e.ad === "Parça") && ad) e.ad = ad;
     return e;
   };
@@ -167,7 +168,7 @@ export function hesaplaAnaliz(
 
   const parcalar = [...parcaMap.values()]
     .map(e => ({
-      key: e.key, ad: e.ad, servis: e.servis, kargo: e.kargo, toplam: e.toplam,
+      key: e.key, partId: e.partId, ad: e.ad, servis: e.servis, kargo: e.kargo, toplam: e.toplam,
       // bilinmeyen dilimi en sona, gerisi adet azalan
       modeller: [...e.modeller].map(([model, adet]) => ({ model, adet, bilinmeyen: model === BILINMEYEN_MODEL }))
         .sort((a, b) => (a.bilinmeyen - b.bilinmeyen) || (b.adet - a.adet)),

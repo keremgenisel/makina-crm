@@ -24,3 +24,14 @@ export const parcaBilgiHucreleri = (hucreler, mevcut) => {
   AL.forEach(({ alan }, i) => { const t = bilgiDegeri(hucreler[i]) || bilgiDegeri(mevcut?.[alan]); if (t) g[alan] = t; });
   return g;
 };
+
+// Spec 0160 (C1, C1/4): parça aramasının tek alan listesi. Arama altı alanı kapsar (R1), alt satır dördünü yazar (R1/6, R2/2).
+// `parcaBilgisi` adı kullanılmaz (sipariş motorunda tek okuyucu, 0158'in sayılı taraması).
+// R1, R2/3: ad, İngilizce ad, kod, ölçü, hammadde, cins; kırpılmış ve yalnız dolular.
+export const parcaAramaDegerleri = (p) => [p?.ad, p?.adEN, p?.kod, ...AL.map(a => p?.[a.alan])].map(bilgiDegeri).filter(Boolean);
+// R2, R2/2, R2/3: alt satır kod, ölçü, hammadde, cins sırasıyla, nokta ayracıyla; hiçbiri dolu değilse boş metin.
+export const parcaAramaSatiri = (p) => [bilgiDegeri(p?.kod), ...parcaBilgiDegerleri(p)].filter(Boolean).join(" · ");
+// Spec 0160 P2 (R1/5): genel aramanın neden satırının iki listesi; başlık kümesi ad, İngilizce ad, kod (ham), neden alanları
+// [arama adı, değer] çiftleri (ham). Çıktı spec öncesiyle birebir.
+export const parcaNedenBasliklari = (p) => [p.ad, p.adEN, p.kod];
+export const parcaNedenAlanlari = (p) => AL.map(a => [a.arama, p[a.alan]]);

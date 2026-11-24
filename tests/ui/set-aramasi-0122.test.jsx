@@ -45,9 +45,11 @@ const kaydet = () => fireEvent.click(screen.getByRole("button", { name: /Kaydet/
 const kayit = (id) => durum.parts.find(p => p.id === id);
 const kutu = () => within(screen.getByTestId("set-icerigi")).getByPlaceholderText(SET_BILESEN_ARA);
 const secenekler = () => [...document.querySelectorAll(".sp-option")];
-const panel = () => { fireEvent.focus(kutu()); return secenekler().map(e => e.textContent); };
-const yaz = (q) => { fireEvent.focus(kutu()); fireEvent.change(kutu(), { target: { value: q } }); return secenekler().map(e => e.textContent); };
-const sec = (ad, n = 0) => { fireEvent.focus(kutu()); fireEvent.mouseDown(secenekler().filter(e => e.textContent === ad)[n]); };
+// Spec 0160 ile (R2): bilgisi dolu parçanın satırı iki satırlıdır (üstte ad, altta kod ve bilgiler); ad üst satırdan okunur.
+const adOf = (e) => e.firstElementChild?.textContent ?? e.textContent;
+const panel = () => { fireEvent.focus(kutu()); return secenekler().map(adOf); };
+const yaz = (q) => { fireEvent.focus(kutu()); fireEvent.change(kutu(), { target: { value: q } }); return secenekler().map(adOf); };
+const sec = (ad, n = 0) => { fireEvent.focus(kutu()); fireEvent.mouseDown(secenekler().filter(e => adOf(e) === ad)[n]); };
 const satirSayisi = () => screen.queryAllByTestId("set-bilesen-satiri").length;
 // Kayış düzenlenirken beklenen aday kümesi (katalog sırası; içerikli set, çöpteki ve kendisi hariç).
 const KAYIS_ADAYLARI = ["Rulman", "Pul", "ISITICI REZİSTANS", "Şaft"];
@@ -68,12 +70,16 @@ describe("Spec 0122 A: arama seçicisi (R1, R1/2, R1/3, R6, R6/2)", () => {
     for (const q of ["şaft", "saft", "ŞAFT"]) expect(yaz(q), q).toEqual(["Şaft"]);
     expect(yaz("rul")).toEqual(["Rulman"]);
   });
-  it("R3 / X3 (triyaj bulgu 2): kodu olan adayın panel metni birebir adıdır; kodla aranmaz", () => {
+  // Spec 0160 ile (R1, R2, AC-18): kod artık aranır ve alt satırda yazılır; üst metin yine yalnız ad (0122 R3'ün "kodla aranmaz"
+  // yarısı ters çevrildi, "panel metni adıdır" yarısı üst satır için sürer).
+  it("R3 / X3 (triyaj bulgu 2, spec 0160 ile): kodu olan adayın üst metni birebir adıdır; kod alt satırda ve kodla aranır", () => {
     render(<Katalog />);
     duzenle("Kayış");
     expect(panel()).toContain("Rulman");
     expect(panel().some(x => x.includes("R-6204"))).toBe(false);
-    expect(yaz("R-6204")).toEqual([]);
+    const rul = secenekler().find(e => adOf(e) === "Rulman");
+    expect(within(rul).getByTestId("arama-alt-satir").textContent).toBe("R-6204");
+    expect(yaz("R-6204")).toEqual(["Rulman"]);
   });
   it("AC-3: tıklanan parça satır olur, adedi '1' gelir ve panel kapanır", () => {
     render(<Katalog />);
@@ -226,11 +232,12 @@ describe("Spec 0122: kaynak taramaları", () => {
   const SEKIZ = [
     ["src/components/YedekParcaSatisForm.jsx", ": <SearchPick items={customers} getLabel={c => `${c.name}${c.serialNo ? \" · \" + c.serialNo : \"\"}`} getKey={c => c.id} placeholder=\"Firma / model / seri no ara...\""],
     ["src/components/YedekParcaSatisForm.jsx", "<SearchPick items={[{ id: \"__diger__\", name: \"➕ Diğer (anlaşmasız firma)\" }, ...bayiler]}"],
-    ["src/components/YedekParcaSatisForm.jsx", ": <SearchPick items={parts} getLabel={p => `${parcaAdi(p)}${p.kod ? \" · \" + p.kod : \"\"}`} getKey={p => p.id} placeholder=\"Parça ara...\""],
-    ["src/components/YedekParcaSatisForm.jsx", "<SearchPick items={parts} getLabel={p => `${parcaAdi(p)}${p.kod ? \" · \" + p.kod : \"\"}`} getKey={p => p.id} placeholder=\"Parça ara...\" onPick={p => parcaSec(i, p)} />"],
-    ["src/components/ServiceForm.jsx", "<SearchPick items={parcaKumesi.liste} getLabel={p => p.ad} getKey={p => p.id} placeholder=\"Parça ara...\""],
+    // Spec 0160 ile (R2, C1/2, AC-66): parça çağrıları etiketten kodu çıkardı ve iki isteğe bağlı alanı geçirir.
+    ["src/components/YedekParcaSatisForm.jsx", ": <SearchPick items={parts} getLabel={p => parcaAdi(p)} getKey={p => p.id} placeholder=\"Parça ara...\" aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri}"],
+    ["src/components/YedekParcaSatisForm.jsx", "<SearchPick items={parts} getLabel={p => parcaAdi(p)} getKey={p => p.id} placeholder=\"Parça ara...\" aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri} onPick={p => parcaSec(i, p)} />"],
+    ["src/components/ServiceForm.jsx", "<SearchPick items={parcaKumesi.liste} getLabel={p => p.ad} getKey={p => p.id} placeholder=\"Parça ara...\" aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri}"],
     ["src/components/PartSaleForm.jsx", "<SearchPick items={kalipDefs} getLabel={d => d.ad} getKey={d => d.id} placeholder=\"Kalıp ara...\" onPick={d => kalipSec(i, d)} />"],
-    ["src/components/ModelsManager.jsx", "<SearchPick items={parts.filter(p => p.models?.includes(mForm.model))} getLabel={p => p.ad} getKey={p => p.id} placeholder=\"Parça ekle...\""],
+    ["src/components/ModelsManager.jsx", "<SearchPick items={parts.filter(p => p.models?.includes(mForm.model))} getLabel={p => p.ad} getKey={p => p.id} placeholder=\"Parça ekle...\" aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri}"],
     ["src/components/stock/TahsisModal.jsx", "<SearchPick items={customers} getLabel={c => `${c.name}${c.serialNo ? \" · \" + c.serialNo : \"\"}`} getKey={c => c.id}"],
   ];
   it("AC-14 / AC-25: öteki sekiz çağrı birebir aynı, toplam dokuz çağrı altı dosya, PartManager'da tek; SearchPick imzası değişmedi ve etiket taşımaz", () => {
@@ -244,7 +251,8 @@ describe("Spec 0122: kaynak taramaları", () => {
     expect(otekiler.map(c => c.join(" ")).sort()).toEqual(SEKIZ.map(c => c.join(" ")).sort());
     expect(cagrilar.filter(c => c[0].endsWith("PartManager.jsx"))).toHaveLength(1);
     const ui = ham("src/components/ui.jsx");
-    expect(ui).toContain('export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı." }) => {');
+    // Spec 0160 ile (C1/2, AC-66): iki isteğe bağlı parametre (`aramaDegerleri`, `getAlt`); gövdede `aria-label` yasağı sürer.
+    expect(ui).toContain('export const SearchPick = ({ items, onPick, getLabel = (x) => String(x), getKey = (x) => getLabel(x), placeholder = "Ara...", emptyText = "Bulunamadı.", aramaDegerleri, getAlt }) => {');
     const a = ui.indexOf("export const SearchPick"); const govde = ui.slice(a, ui.indexOf("\nexport ", a + 10));
     expect(govde).not.toMatch(/aria-label/);
   });

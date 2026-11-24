@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { parcaAdi, parseMoney, fmtCur } from "../lib/utils";
+import { parcaAdi, parseMoney, fmtCur, kelimelerEslesir } from "../lib/utils";
 import { CUR_SYM, tipRenk } from "../lib/constants";
 import { Icon, Field, Input, MoneyInput, Btn, Modal, ConfirmDialog, Pagination, ImageUpload, Select, SearchPick } from "./ui";
 import { HataMetni, Ipucu, UyariSeridi, BolumBasligi, Segment } from "./tasarim";
@@ -26,7 +26,7 @@ import { KIT_ADET_IPUCU, KITTEN_DUSECEK_IPUCU, maliyetGirildiMi,
 import { KUR_KAYNAK, kurGirdisi } from "../lib/doviz"; // bileşenler kur ilkellerini doviz.js üzerinden alır (0153 taraması)
 import { useBugun } from "../hooks/useBugun";
 import { SetRozeti } from "./stock/SetRozeti";
-import { PARCA_BILGI_ALANLARI, parcaBilgiYaz, parcaBilgiDegerleri } from "../lib/parcaBilgi";
+import { PARCA_BILGI_ALANLARI, parcaBilgiYaz, parcaBilgiDegerleri, parcaAramaDegerleri, parcaAramaSatiri } from "../lib/parcaBilgi";
 import { useSimpleDefList } from "../hooks/useSimpleDefList";
 import { useFilteredList } from "../hooks/useFilteredList";
 
@@ -179,7 +179,7 @@ const SetIcerigiAlani = ({ satirlar = [], setSatirlar, kendiId = null, parts = [
       )}
       {/* Spec 0122 R1/3, R5/2: tam genişlik, sabit konum (önünde koşullu öğe yok; SearchPick yazılmış metni iç durumunda tutar). */}
       <div>
-        <SearchPick items={adaylar} getLabel={p => p.ad} getKey={p => p.id} placeholder={SET_BILESEN_ARA}
+        <SearchPick items={adaylar} getLabel={p => p.ad} getKey={p => p.id} placeholder={SET_BILESEN_ARA} aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri}
           onPick={p => setSatirlar([...satirlar, { partId: String(p.id), miktar: "1" }])} />
       </div>
       {genel && <div style={{ marginTop: 6 }}><UyariSeridi aile="hata" testId="set-icerigi-genel">{genel}</UyariSeridi></div>}
@@ -415,7 +415,7 @@ export const PartManager = ({ parts = [], setParts, showToast = () => {}, setSer
     if (suzgec === SUZGEC_GIRILMEMIS) return h.length === 0;
     return h.includes(suzgec);
   };
-  const { search, setSearch, page, setPage, filtered, paged } = useFilteredList(parts, { searchFields: ["ad"], filterFn: suzgecFn, perPage: PER_PAGE, baslangicArama }); // spec 0125 R5/2
+  const { search, setSearch, page, setPage, filtered, paged } = useFilteredList(parts, { searchFn: (p, sorgu) => kelimelerEslesir(sorgu.kelimeler, parcaAramaDegerleri(p)), filterFn: suzgecFn, perPage: PER_PAGE, baslangicArama }); // spec 0125 R5/2, spec 0160 R1, C9
   const setSuzgec = (v) => { setSuzgecRaw(v); setPage(1); };
   const setKipSuzgec = (v) => { setKipSuzgecRaw(v); setPage(1); };
   const kipSayisi = (k) => parts.filter(p => fiyatKipiOf(p) === k).length;

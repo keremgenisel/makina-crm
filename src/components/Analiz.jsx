@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { hesaplaAnaliz, BILINMEYEN_MODEL, trendModuSec, MUSTERI_SATIR_TUR, MUSTERI_IBARE, HAREKET_KAYNAK } from "../lib/analiz";
 import { today, addMonthsToDateStr, sureBicimSaat, aramaKelimeleri, kelimelerEslesir, fmtTR } from "../lib/utils";
-import { Modal } from "./ui";
+import { Modal, AramaAltSatir } from "./ui";
+import { parcaAramaDegerleri, parcaAramaSatiri } from "../lib/parcaBilgi";
 import { Segment, KartBolum, BosDurum } from "./tasarim";
 
 // ── Analiz sekmesi ────────────────────────────────────────────────────────────
@@ -154,11 +155,15 @@ const TumBtn = ({ toplam, limit, onAc }) => {
 
 // Aramalı parça seçici (combobox). Çok parça olunca select zor; tıklayınca arama kutusu + ~10 satırlık
 // kaydırmalı liste açılır. Dışarı tıklayınca kapanır (şeffaf tam-ekran katman).
-const ParcaSecici = ({ parcalar, secili, onSec }) => {
+// Spec 0160 R4–R4/5, P8: kod, ölçü, hammadde ve cins parçanın katalog kaydından (`katalog`, `String(id)` → canlı kayıt) okunur.
+// Kataloğu çözülemeyen satır (kimliksiz, çöpteki ya da bulunamayan parça) yalnız adıyla aranır ve alt satır almaz (R4/2).
+// Arama değerleri satırın kendi adı ile katalog kaydının altı alanının birleşimi (R4/3).
+const ParcaSecici = ({ parcalar, secili, onSec, katalog }) => {
   const [acik, setAcik] = useState(false);
   const [ara, setAra] = useState("");
+  const kayitOf = (p) => (p.partId != null ? katalog?.get(String(p.partId)) : undefined);
   const kelimeler = aramaKelimeleri(ara); // spec 0149
-  const liste = kelimeler.length ? parcalar.filter(p => kelimelerEslesir(kelimeler, [p.ad])) : parcalar;
+  const liste = kelimeler.length ? parcalar.filter(p => { const k = kayitOf(p); return kelimelerEslesir(kelimeler, [p.ad, ...(k ? parcaAramaDegerleri(k) : [])]); }) : parcalar;
   const kapat = () => { setAcik(false); setAra(""); };
   return (
     <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
@@ -180,10 +185,15 @@ const ParcaSecici = ({ parcalar, secili, onSec }) => {
                 <div style={{ padding: "16px", textAlign: "center", fontSize: 12.5, color: "var(--n400, #94a3b8)" }}>Sonuç yok.</div>
               ) : liste.map(p => {
                 const secim = p.key === secili?.key;
+                const k = kayitOf(p);
                 return (
                   <button key={p.key} onClick={() => { onSec(p.key); kapat(); }}
                     style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 12px", border: "none", borderLeft: `3px solid ${secim ? "var(--brand, #e85d1a)" : "transparent"}`, background: secim ? "var(--ambBg3, #fff7ed)" : "none", cursor: "pointer", textAlign: "left", font: "inherit" }}>
-                    <span style={{ fontSize: 13, color: secim ? "var(--orTx, #c2410c)" : "var(--n800, #1e293b)", fontWeight: secim ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.ad}</span>
+                    {/* Spec 0160 R4/4, R2/5 (AC-52, AC-56): ad kendi öğesinde ve ilk sırada, alt satır kardeşi; ikisi de tek satıra kırpılır. */}
+                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                      <span style={{ fontSize: 13, color: secim ? "var(--orTx, #c2410c)" : "var(--n800, #1e293b)", fontWeight: secim ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.ad}</span>
+                      <AramaAltSatir kirp>{k ? parcaAramaSatiri(k) : ""}</AramaAltSatir>
+                    </div>
                     <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--n400, #94a3b8)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{p.toplam}</span>
                   </button>
                 );
@@ -228,6 +238,8 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
   // Spec 0154 R2, R3, R3/2: Parça Kırılımı görünümü; geçici, parça seçiminden ve tarih önayarından bağımsız.
   const [gorunum, setGorunum] = useState("model");
   const ilk = (arr, k) => arr.slice(0, LIMIT[k]); // panelde gösterilen ilk N
+  // Spec 0160 P8: parça seçicisinin kataloğu, canlı parçalardan bir kez.
+  const parcaKatalogu = useMemo(() => new Map(parts.map(p => [String(p.id), p])), [parts]);
 
   const aralik = useMemo(() => {
     const bugun = today();
@@ -413,7 +425,7 @@ export const Analiz = ({ customers = [], services = [], partSales = [], yedekPar
             <p style={S.note}>{PK.aciklama[gorunum]}</p>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
               <span style={{ fontSize: 12.5, color: "var(--n500, #64748b)", flexShrink: 0 }}>Parça:</span>
-              <ParcaSecici parcalar={veri.parcalar} secili={secili} onSec={setSeciliKey} />
+              <ParcaSecici parcalar={veri.parcalar} secili={secili} onSec={setSeciliKey} katalog={parcaKatalogu} />
             </div>
             {!secili ? <BosDurum testId="bos-analiz" baslik="Parça yok." /> : gorunum === "musteri" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }} data-testid="musteri-kirilimi">

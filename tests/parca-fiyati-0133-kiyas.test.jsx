@@ -20,6 +20,7 @@ import { PARCALAR, MALZEMELER } from "./fixtures/0133-veri.js";
 import { kalemMetniEski } from "./fixtures/0135-ayikla.js"; // spec 0135 ile: kaynak ibaresi kalem diline geçti (R39)
 
 vi.mock("../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
+import { aramaAltSatirlariniSil } from "./fixtures/0160-ayikla";
 import { ayiklaMotor0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P11): Excel'in son beş sütunu ve motorun yeni anahtarları düşer
 beforeAll(() => { Element.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
@@ -43,6 +44,7 @@ const stokMetni = () => {
   const partStock = PARCALAR.map((p, i) => ({ id: i + 1, partId: p.id, miktar: 5 }));
   render(<PartStokTab parts={PARCALAR} partStock={partStock} setPartStock={vi.fn()} partStockLog={[]} setPartStockLog={vi.fn()} showToast={vi.fn()}
     appSettings={{ pinnedPartIds: PARCALAR.map(p => String(p.id)) }} />);
+  aramaAltSatirlariniSil(); // spec 0160 ile (R3, AC-27): Parça Stoğu hücresinin alt satırı bilinçli fark, ayıklanır
   const r = { satirlar: [...document.querySelectorAll("tbody tr")].map(tr => tr.textContent), govde: document.body.textContent }; cleanup(); return r;
 };
 const evrakFiyati = (p, currency) => {

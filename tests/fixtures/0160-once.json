@@ -1,0 +1,294 @@
+{
+ "katalog": {
+  "rulman": [
+   "Rulman 6204",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01"
+  ],
+  "kay": [
+   "Kayış"
+  ],
+  "pim": [
+   "Pim"
+  ],
+  "cıvata somun": [],
+  "": [
+   "Rulman 6204",
+   "Kayış",
+   "Pim",
+   "Cıvata",
+   "Somun",
+   "Saplama",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "takım": [
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "ak100": [],
+  "yok-böyle": []
+ },
+ "stok": {
+  "rulman": [
+   "Rulman 6204",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01"
+  ],
+  "kay": [
+   "Kayış"
+  ],
+  "pim": [
+   "Pim"
+  ],
+  "cıvata somun": [],
+  "": [
+   "Rulman 6204",
+   "Kayış",
+   "Pim",
+   "Cıvata",
+   "Somun",
+   "Saplama",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "takım": [
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "ak100": [
+   "Rulman 6204",
+   "Kayış"
+  ],
+  "yok-böyle": []
+ },
+ "stokSecici": {
+  "rulman": {
+   "adlar": [
+    "Rulman 6204",
+    "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01"
+   ],
+   "metin": false
+  },
+  "kay": {
+   "adlar": [
+    "Kayış"
+   ],
+   "metin": false
+  },
+  "pim": {
+   "adlar": [
+    "Pim"
+   ],
+   "metin": false
+  },
+  "cıvata somun": {
+   "adlar": [],
+   "metin": false
+  },
+  "": {
+   "adlar": [
+    "Rulman 6204",
+    "Kayış",
+    "Pim",
+    "Cıvata",
+    "Somun",
+    "Saplama",
+    "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+    "Dişli Takımı"
+   ],
+   "metin": false
+  },
+  "takım": {
+   "adlar": [
+    "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+    "Dişli Takımı"
+   ],
+   "metin": false
+  },
+  "ak100": {
+   "adlar": [],
+   "metin": false
+  },
+  "yok-böyle": {
+   "adlar": [],
+   "metin": false
+  }
+ },
+ "analiz": {
+  "rulman": [
+   "Rulman 6204"
+  ],
+  "kay": [
+   "Kayış"
+  ],
+  "pim": [],
+  "cıvata somun": [],
+  "": [
+   "Rulman 6204",
+   "Serbest conta",
+   "Kayış",
+   "Eski Mil",
+   "Eski Cıvata Adı"
+  ],
+  "takım": [],
+  "ak100": [],
+  "yok-böyle": []
+ },
+ "servis": {
+  "rulman": [
+   "Rulman 6204",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01"
+  ],
+  "kay": [
+   "Kayış"
+  ],
+  "pim": [
+   "Pim"
+  ],
+  "cıvata somun": [],
+  "": [
+   "Rulman 6204",
+   "Kayış",
+   "Pim",
+   "Cıvata",
+   "Somun",
+   "Saplama",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "takım": [
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "ak100": [],
+  "yok-böyle": []
+ },
+ "yedek": {
+  "rulman": [
+   "Rulman 6204",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01"
+  ],
+  "kay": [
+   "Kayış"
+  ],
+  "pim": [
+   "Pim"
+  ],
+  "cıvata somun": [],
+  "": [
+   "Rulman 6204",
+   "Kayış",
+   "Pim",
+   "Cıvata",
+   "Somun",
+   "Saplama",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "takım": [
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "ak100": [],
+  "yok-böyle": []
+ },
+ "evrak": {
+  "rulman": [
+   "Rulman 6204",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01"
+  ],
+  "kay": [
+   "Kayış"
+  ],
+  "pim": [
+   "Pim"
+  ],
+  "cıvata somun": [],
+  "": [
+   "Rulman 6204",
+   "Kayış",
+   "Pim",
+   "Cıvata",
+   "Somun",
+   "Saplama",
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "takım": [
+   "100_AYNA MAHRUTİ DİŞLİSİ TAKIM PASLANMAZ ÇELİK GÖVDELİ YÜKSEK DEVİRLİ ÇİFT RULMANLI ÖZEL İMALAT UZUN ÖMÜRLÜ SERVİS PARÇASI MODEL SERİSİ A01",
+   "Dişli Takımı"
+  ],
+  "ak100": [],
+  "yok-böyle": []
+ },
+ "kayit": {
+  "servis": [
+   {
+    "partId": "1",
+    "ad": "Rulman 6204",
+    "adEN": "Bearing",
+    "miktar": 1,
+    "fiyat": "500",
+    "disTedarik": false
+   }
+  ],
+  "yedekCoklu": [
+   {
+    "partId": "2",
+    "miktar": "",
+    "birimFiyat": "300"
+   }
+  ],
+  "yedekTek": {
+   "partId": "5",
+   "birimFiyat": "3"
+  },
+  "setBileseni": [
+   {
+    "partId": 1,
+    "miktar": 1
+   }
+  ],
+  "modelKiti": [
+   {
+    "partId": "2",
+    "ad": "Kayış",
+    "miktar": 1
+   }
+  ]
+ },
+ "bos": {
+  "katalog": "Henüz yedek parça tanımı yok.",
+  "stok": "Henüz yedek parça tanımı yok.Ayarlar → Yedek Parça'dan ekleyin.",
+  "servis": null,
+  "yedekTek": "Tanımlı yedek parça yok.",
+  "evrak": {
+   "secenek": 0,
+   "bos": true
+  },
+  "bilesen": {
+   "secenek": 0,
+   "bos": true
+  },
+  "modelKiti": {
+   "kitAlani": null,
+   "panel": null
+  },
+  "yedekCoklu": {
+   "yok": "Tanımlı yedek parça yok.",
+   "panel": null
+  },
+  "stokSecici": {
+   "secenek": 0,
+   "bos": "Sonuç bulunamadı."
+  },
+  "analiz": {
+   "secici": false,
+   "bos": [
+    "Seçili tarih aralığında analiz edilecek servis, yedek parça veya kalıp kaydı yok.",
+    "Bu aralıkta kalıp yok.",
+    "Bu aralıkta kalıp yok.",
+    "Bu aralıkta kalıp yok."
+   ]
+  }
+ }
+}

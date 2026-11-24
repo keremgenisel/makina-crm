@@ -51,6 +51,7 @@ import * as V148 from "../../tests/fixtures/0148-veri.js";
 import * as V156 from "../../tests/fixtures/0156-veri.js";
 import * as V155 from "../../tests/fixtures/0155-ekran.js";
 import * as V154 from "../../tests/fixtures/0154-veri.js";
+import * as V160 from "../../tests/fixtures/0160-veri.js";
 import { EkstrePenceresi as EkstrePenceresi156 } from "../../src/components/gider/EkstrePenceresi";
 import { tedarikciEkstresi as tedarikciEkstresi156, calisanEkstresi as calisanEkstresi156, hesapAdiCoz as hesapAdiCoz156 } from "../../src/lib/kasa";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
@@ -994,6 +995,15 @@ function Pano0115({ ilk = SERVIS_0115, ...props }) {
     yedekParcaSatislar={[]} setYedekParcaSatislar={bos} dosyalar={[]} setDosyalar={bos} uretimFormlari={[FORM_0115]} setUretimFormlari={bos} uretimYetki partTypeDefs={TIP_0115} {...props} />;
 }
 const pano0115 = (props) => <Pano0115 {...props} />;
+// Spec 0160 C10, AC-61: parça arama kutuları bilgi alanları dolu fikstürle (tests/fixtures/0160-veri.js; uzun adlı, bilgisi boş ve
+// tek alanlı parçalar dahil); sonuç satırı iki satırlı.
+const P160 = V160.canli(V160.PARCALAR);
+const MODEL_0160 = [{ model: "AK100", defaultParcalar: [] }];
+const stok0160 = (o = {}) => stokBos("parca", { parts: P160, rawParts: P160, partStock: P160.map((p, i) => ({ id: i + 1, partId: p.id, miktar: 5 })), ...o });
+const servis0160 = () => <FormEkrani Bilesen={ServiceForm} title="Yeni Servis Talebi" parts={P160}
+  ilk={{ customerId: "", date: "2026-09-20", currency: "TRY", degisenParcalar: [], type: "Bakım", repairPlace: "Yerinde Onarım" }} />;
+const yedek0160 = () => <FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı" parts={P160}
+  ilk={{ aliciTipi: "bayi", dealerId: 3, currency: "TRY", tarih: "2026-09-20", satirlar: [{ partId: "", miktar: "", birimFiyat: "" }] }} />;
 const servis0115 = (ek, tipler = TIP_0115) => <FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" customers={V115.CUSTOMERS} parts={PARCA_0115} partTypeDefs={tipler}
   ilk={{ ...V115.SERVICES[0], ...ek }} />;
 // Spec 0120 R17/2: kalıp işi işaretli tipi olmayan parça tipi listesi (süzme uygulanmaz, neden cümlesi).
@@ -1823,6 +1833,19 @@ const EKRANLAR = {
   "evrak-0126-satirlar": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "kaydir:Ürün / Hizmet Satırları"]],
   "evrak-0126-parca-pencere": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "etiket:Parça seç"]],
   "evrak-0126-parca-arama": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "etiket:Parça seç", "odak:Parça ara...=dişli"]],
+  // Spec 0160 C10, AC-61: on kutunun sonuç satırı (kod, ölçü, hammadde, cins alt satırda), bilgisi boş parça, uzun ad, boş sonuç, boş kurulum.
+  "parca-arama-0160-katalog": [ayarlar("yedekparca", { parts: P160, rawParts: P160 }), []],
+  "parca-arama-0160-katalog-ara": [ayarlar("yedekparca", { parts: P160, rawParts: P160 }), ["doldur:Yedek parça ara...=5x16"]],
+  "parca-arama-0160-stok-liste": [stok0160(), []],
+  "parca-arama-0160-stok-secici": [stok0160(), ["dugme:Stoğa Parça Ekle", "~Parça seçin..."]],
+  "parca-arama-0160-servis": [servis0160(), ["odak:Parça ara...=r"]],
+  "parca-arama-0160-yedek": [yedek0160(), ["odak:Parça ara...=625"]],
+  "parca-arama-0160-evrak": [<EvrakEkrani teklif={T_0126} katalog={{ parts: P160, kalipDefs: KALIP_0125 }} />, ["2026-00001", "etiket:Parça seç", "odak:Parça ara...=takım"]],
+  "parca-arama-0160-bilesen": [ayarlar("yedekparca", { parts: P160, rawParts: P160 }), ["baslik:Düzenle", "kaydir:Setin içeriği", "odak:Bileşen ara...=a"]],
+  "parca-arama-0160-model": [ayarlar("models", { parts: P160, standardModels: MODEL_0160 }), ["baslik:Düzenle", "odak:Parça ekle...=a"]],
+  "parca-arama-0160-analiz": [<Analiz {...V160.ANALIZ_VERI} parts={P160} dealers={[]} appSettings={{}} />, ["etiket:Parça seç"]],
+  "parca-arama-0160-bos-sonuc": [servis0160(), ["odak:Parça ara...=zzzz"]],
+  "parca-arama-0160-bos-kurulum": [stokBos("parca"), []],
   "evrak-0126-kalip-pencere": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "etiket:Kalıp seç"]],
   "ayarlar-kaliplar-0125-suzgec": [ayarlar("kaliplar", { kalipDefs: KALIP_0125, katalogAcilis: { panel: "kaliplar", ara: "Burger 120", no: 1 } }), []],
   // Spec 0071: KDV dâhil giriş (normal, yuvarlama farkı, brüt kira, net kira ipucu), tanım formu, "Tutar girilmedi" rozeti ve süzgeci.

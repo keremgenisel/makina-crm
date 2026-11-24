@@ -29,7 +29,11 @@ function H({ t0, onState, parts = PARCALAR, kalipDefs = KALIPLAR }) {
 }
 const ac = () => fireEvent.click(screen.getByText("2026-00001").closest("tr"));
 const pencere = () => screen.queryByTestId("kalem-sec-penceresi");
-const secenekler = () => [...document.querySelectorAll(".sp-option")].map(o => o.textContent);
+// Spec 0160 ile (R2): bilgisi dolu parçanın satırı iki satırlı; "üst metin | alt satır" biçiminde okunur (alt satır yoksa yalnız üst).
+const secenekler = () => [...document.querySelectorAll(".sp-option")].map(o => {
+  const alt = o.querySelector('[data-testid="arama-alt-satir"]')?.textContent;
+  return alt ? `${o.firstElementChild.textContent} | ${alt}` : o.textContent;
+});
 const sec = (bas) => {
   const o = [...document.querySelectorAll(".sp-option")].find(x => x.textContent.startsWith(bas));
   fireEvent.mouseDown(o);
@@ -59,7 +63,7 @@ describe("Spec 0126: seçim penceresi", () => {
     ac();
     fireEvent.click(screen.getByLabelText("Parça seç"));
     fireEvent.change(screen.getByPlaceholderText("Parça ara..."), { target: { value: "rul" } });
-    expect(secenekler()).toEqual(["Rulman · R-7"]);
+    expect(secenekler()).toEqual(["Rulman | R-7"]); // spec 0160 ile: kod alt satırda
     sec("Rulman");
     expect(pencere()).toBeNull();
     expect(screen.getByTestId("secili-parca").textContent).toBe("Rulman");
@@ -134,10 +138,10 @@ describe("Spec 0126: set tanınır", () => {
     render(<H t0={belge([parcaSatiri("r1", "")])} />);
     ac();
     fireEvent.click(screen.getByLabelText("Parça seç"));
-    expect(secenekler()).toEqual(["Rulman · R-7", "Bıçak Seti · BS-1 · SET · 2 bileşen", "Bıçak · B-9"]);
+    expect(secenekler()).toEqual(["Rulman | R-7", "Bıçak Seti · SET · 2 bileşen | BS-1", "Bıçak | B-9"]); // spec 0160 ile (AC-17, AC-44)
     expect(within(pencere()).queryByTestId("set-rozeti")).toBeNull();
     fireEvent.change(screen.getByPlaceholderText("Parça ara..."), { target: { value: "bs-1" } });
-    expect(secenekler()).toEqual(["Bıçak Seti · BS-1 · SET · 2 bileşen"]);
+    expect(secenekler()).toEqual(["Bıçak Seti · SET · 2 bileşen | BS-1"]);
   });
 
   it("AC-6: set seçilince içerik satırı parça hücresinde; yeni <tr> yok, rowSpan aynı", () => {

@@ -11,6 +11,7 @@ import { kaynakEski } from "./fixtures/0135-ayikla.js"; // spec 0135 ile: kaynak
 import { modelMaliyetleri } from "../src/lib/makinaStandartMaliyet";
 import { hesaplaAylikRapor } from "../src/lib/aylikRapor";
 import { hesaplaAnaliz } from "../src/lib/analiz";
+import { partIdAyikla } from "./fixtures/0160-ayikla";
 import { finansOzetiHesapla } from "../src/components/settings/SettingsExport";
 
 const ONCE = "tests/fixtures/0121-once.json";
@@ -57,7 +58,8 @@ const simdi = () => JSON.parse(JSON.stringify({
   // Spec 0154 ile (C1/2, P10, AC-36): parça kaydına müşteri kırılımı (`musteriler`) eklendi; altın yenilenmez, alan
   // `parcalar[]`'dan ve aynı kaydı gösteren `ozet.enCokParca`'dan ayıklanır.
   analiz: (({ parcalar, ozet, ...a }) => {
-    const ayikla = (p) => (p ? (({ musteriler: _m, ...x }) => x)(p) : p);
+    // Spec 0160 ile (AC-36, R4/5): parça satırına `partId` eklendi; aynı yerlerden ayıklanır.
+    const ayikla = (p) => partIdAyikla(p ? (({ musteriler: _m, ...x }) => x)(p) : p);
     return { ...a, parcalar: parcalar.map(ayikla), ozet: { ...ozet, enCokParca: ayikla(ozet.enCokParca) } };
   })(hesaplaAnaliz({ ...VERI, parts: PARCALAR_HEPSI }, {})),
   finans: finansOzetiHesapla({ ...VERI, kdvRates }),

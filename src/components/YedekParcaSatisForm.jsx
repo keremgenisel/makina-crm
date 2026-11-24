@@ -11,6 +11,7 @@ import { satisTevkifatFormOzeti, kartTabanKaydi, kartTabaniEskiMi } from "../lib
 import { TahsilatHesapAlani, tahsilatOnSecim, FormTahsilatGunu } from "./kasa/TahsilatHesap";
 import { tahsilatHesapDurumu, SATIS_KAYNAK, tahsilatGunuFormHatasi, tahsilatGunuIsareti } from "../lib/satisTahsilat";
 import { garantiDurumu, GARANTI_UYARISI, KARISIK_PARTI_UYARISI } from "../lib/yedekParcaSatis";
+import { parcaAramaDegerleri, parcaAramaSatiri } from "../lib/parcaBilgi";
 import { SetIcerikSatiri } from "./stock/SetRozeti";
 
 // Bayiye yedek parça (kargo) satışı ekleme/düzenleme formu. Bir kayıt = bir parça kalemi (partId +
@@ -187,7 +188,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
           ) : (
             parts.length === 0
               ? <div style={{ fontSize: 12, color: "var(--red600, #dc2626)" }}>Tanımlı yedek parça yok. Ayarlar → Katalog → Yedek Parçalar'dan ekleyin.</div>
-              : <SearchPick items={parts} getLabel={p => `${parcaAdi(p)}${p.kod ? " · " + p.kod : ""}`} getKey={p => p.id} placeholder="Parça ara..."
+              : <SearchPick items={parts} getLabel={p => parcaAdi(p)} getKey={p => p.id} placeholder="Parça ara..." aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri}
                   onPick={p => setForm(prev => ({ ...prev, partId: String(p.id), birimFiyat: prev.birimFiyat || formSatisFiyati(p, prev.currency || "TRY", fiyatBaglami) || "" }))} />
           )}
         </Field>
@@ -222,7 +223,7 @@ export const YedekParcaSatisForm = ({ title, form, setForm, dealers = [], custom
                           <button type="button" onClick={() => setSatir(i, "partId", "")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--n400, #94a3b8)", flexShrink: 0 }}><Icon name="close" size={13} /></button>
                         </div>
                       ) : (
-                        <SearchPick items={parts} getLabel={p => `${parcaAdi(p)}${p.kod ? " · " + p.kod : ""}`} getKey={p => p.id} placeholder="Parça ara..." onPick={p => parcaSec(i, p)} />
+                        <SearchPick items={parts} getLabel={p => parcaAdi(p)} getKey={p => p.id} placeholder="Parça ara..." aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri} onPick={p => parcaSec(i, p)} />
                       )}
                     </div>
                     <Input type="number" min="1" value={s.miktar ?? ""} onChange={e => setSatir(i, "miktar", e.target.value)} placeholder="Adet" />

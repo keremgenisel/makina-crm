@@ -7,13 +7,14 @@ import { Modal, SearchPick } from "../ui";
 // açılır (Modal gövdesi overflowY:auto ile paneli kırpardı); SearchPick gövdenin tek öğesidir. Açılınca kutu odak alır ve
 // liste açık gelir (SearchPick'e autoFocus eklemek ui.jsx'e dokunmak olurdu). "eklendi" onayı pencere kapandığı için
 // görünmez (C5).
-export const KalemSecPenceresi = ({ baslik, items, getLabel, getKey, placeholder, onPick, onClose }) => {
+// Spec 0160 C1/2: parça çağrısı `aramaDegerleri` ve `getAlt` geçirir, kalıp çağrısı geçirmez (birebir eski).
+export const KalemSecPenceresi = ({ baslik, items, getLabel, getKey, placeholder, onPick, onClose, aramaDegerleri, getAlt }) => {
   const kap = useRef(null);
   useEffect(() => { kap.current?.querySelector("input")?.focus(); }, []);
   return (
     <Modal title={baslik} onClose={onClose} maxWidth={600} overflowVisible>
       <div ref={kap} data-testid="kalem-sec-penceresi">
-        <SearchPick items={items} getLabel={getLabel} getKey={getKey} placeholder={placeholder}
+        <SearchPick items={items} getLabel={getLabel} getKey={getKey} placeholder={placeholder} aramaDegerleri={aramaDegerleri} getAlt={getAlt}
           onPick={(kayit) => { onPick(kayit); onClose(); }} />
       </div>
     </Modal>

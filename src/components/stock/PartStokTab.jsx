@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { today, fmtTR, uid, mergeAndUpdate, totalMiktar, kelimelerEslesir } from "../../lib/utils";
 import { logAction } from "../../lib/audit";
 import { useFilteredList } from "../../hooks/useFilteredList";
-import { Icon, Field, Input, Btn, Modal, Pagination, LockConflict, SearchSelect } from "../ui";
+import { Icon, Field, Input, Btn, Modal, Pagination, LockConflict, SearchSelect, AramaAltSatir } from "../ui";
 import { HataMetni, KartBolum, BosDurum, UyariSeridi } from "../tasarim";
 import { useLock } from "../../hooks/useLock";
 import { StokHareketleriPenceresi } from "./StokHareketleriPenceresi";
@@ -12,6 +12,7 @@ import { SetHazirlaPenceresi } from "./SetHazirlaPenceresi";
 import { SetParcalaPenceresi } from "./SetParcalaPenceresi";
 import { SetRozeti, setBilesenSayisi } from "./SetRozeti";
 import { SET_HAZIRLA_DUGMESI, SET_PARCALA_DUGMESI } from "../../lib/setUretimi";
+import { parcaAramaDegerleri, parcaAramaSatiri } from "../../lib/parcaBilgi";
 import { parcaSatisFiyati, turetilmisFiyatSayisi } from "../../lib/parcaFiyati";
 
 // Spec 0133 R10, AC-17, AC-69: listedeki ve pano kartındaki fiyat tek okuma yolundan. Elle sabit parçada ve dövizde bugünkü tam sayı
@@ -68,7 +69,7 @@ export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, 
   [pinnedPartIds, rows]);
 
   const { search, setSearch, page, setPage, filtered: filteredRows, paged: pagedRows } = useFilteredList(rows, {
-    searchFn: (r, sorgu) => kelimelerEslesir(sorgu.kelimeler, [r.part.ad, ...(r.part.models || [])]), // spec 0149 R8/3
+    searchFn: (r, sorgu) => kelimelerEslesir(sorgu.kelimeler, [...parcaAramaDegerleri(r.part), ...(r.part.models || [])]), // spec 0149 R8/3, spec 0160 R1, R1/4
     perPage: PER_PAGE,
   });
 
@@ -196,6 +197,8 @@ export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, 
                   onMouseLeave={e => e.currentTarget.style.background = rowBg(miktar) ?? ""}>
                   <td style={{ padding: "10px 14px", fontWeight: 700, fontSize: 13, color: rowColor(miktar) }}>
                     {part.ad}
+                    {/* Spec 0160 R3, P7: adın altında arama sonucunun alt satırı (kod, ölçü, hammadde, cins); sütun sayısı değişmez. */}
+                    <AramaAltSatir>{parcaAramaSatiri(part)}</AramaAltSatir>
                     {/* Spec 0121 R24, R24/2: set Yedek Parça hücresinde adın altında rozetle tanınır (sütun sayısı değişmez). */}
                     {setBilesenSayisi(part) > 0 && <SetRozeti n={setBilesenSayisi(part)} />}
                   </td>
@@ -276,7 +279,7 @@ export const PartStokTab = ({ parts = [], rawParts = null, fiyatBaglami = null, 
                 <SearchSelect
                   value={form.partId ? String(form.partId) : ""}
                   onChange={val => setForm(p => ({ ...p, partId: val }))}
-                  options={parts.map(p => ({ value: String(p.id), label: p.ad }))}
+                  options={parts.map(p => ({ value: String(p.id), label: p.ad, ara: parcaAramaDegerleri(p), alt: parcaAramaSatiri(p) }))} /* spec 0160 R1/2 (10), C1/3 */
                   placeholder="Parça seçin..." searchPlaceholder="Parça ara..." initialLimit={10} />
                 <HataMetni>{!form.partId ? "Parça seçilmedi" : ""}</HataMetni>
               </Field>

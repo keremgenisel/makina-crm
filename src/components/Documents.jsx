@@ -17,6 +17,7 @@ import { buildPrintHtml, buildFaturaHtml } from "../lib/printTemplates";
 import { FaturaFormModal } from "./documents/FaturaFormModal";
 import { KalemSecPenceresi } from "./documents/KalemSecPenceresi";
 import { SetIcerikSatiri, setEtiketEki, PARCA_YER_TUTUCU } from "./stock/SetRozeti";
+import { parcaAramaDegerleri, parcaAramaSatiri } from "../lib/parcaBilgi";
 import { fiyatBaglamiKur, parcaSatisFiyati } from "../lib/parcaFiyati";
 
 const PER_PAGE = 15;
@@ -1576,7 +1577,7 @@ export const Documents = ({
           placeholder="Kalıp ara..." onPick={pencereSecimi} onClose={() => setSecim(null)} />
       ) : (
         <KalemSecPenceresi baslik="Parça Kataloğundan Seç" items={parts}
-          getLabel={p => `${p.ad || ""}${p.kod ? " · " + p.kod : ""}${setEtiketEki(p)}`} getKey={p => p.id}
+          getLabel={p => `${p.ad || ""}${setEtiketEki(p)}`} getKey={p => p.id} aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri} /* spec 0160 R2, C8/2 */
           placeholder="Parça ara..." onPick={pencereSecimi} onClose={() => setSecim(null)} />
       ))}
     </div>

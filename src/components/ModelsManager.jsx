@@ -7,6 +7,7 @@ import { tutarMetni } from "../lib/tutarGirdisi";
 import { kilitRedMesaji } from "../lib/kilitAlanlari";
 import { EK_MALIYET_IPUCU, ekMaliyetDogrula, kitAdediDogrula, kitAdetMetni, partiAdediCevir, modelAdiParcalardaTasi, modelAdiParcalaraDokunurMu } from "../lib/urunAgaci";
 import { useFilteredList } from "../hooks/useFilteredList";
+import { parcaAramaDegerleri, parcaAramaSatiri } from "../lib/parcaBilgi";
 import { uretimdeMi, uretimIsaretiDegistir, uretimIsaretiTasi, uretimIsaretiDusur } from "../lib/uretimdekiModeller";
 
 const PER_PAGE = 10;
@@ -267,7 +268,7 @@ export const ModelsManager = ({ standardModels, setStandardModels, customModels,
               <div style={{ fontSize: 12, color: "var(--n500, #64748b)", marginBottom: 8 }}>
                 Stoka yeni makina eklerken "Kiti Uygula" ile bu liste otomatik dolar.
               </div>
-              <SearchPick items={parts.filter(p => p.models?.includes(mForm.model))} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ekle..."
+              <SearchPick items={parts.filter(p => p.models?.includes(mForm.model))} getLabel={p => p.ad} getKey={p => p.id} placeholder="Parça ekle..." aramaDegerleri={parcaAramaDegerleri} getAlt={parcaAramaSatiri}
                 onPick={p => setMForm(prev => {
                   const existing = (prev.defaultParcalar || []).find(x => String(x.partId) === String(p.id));
                   if (existing) return prev;
