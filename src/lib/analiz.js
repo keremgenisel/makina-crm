@@ -71,8 +71,34 @@ export function hesaplaAnaliz(
     if (c.id != null) custById.set(c.id, c);
     if (c.serialNo && !custBySerial.has(c.serialNo)) custBySerial.set(c.serialNo, c);
   }
-  const partsById = new Map();
-  for (const p of parts) if (p && p.id != null) partsById.set(String(p.id), p);
+  // Spec 0162 C2, C2/2, C5, P2 (AC-8, AC-15, AC-38): katalog tek geçişte okunur, her kaydın adı bir kez. `adById` bütün kayıtları
+  // taşır (gösterim; çöpteki parçanın kimliğini taşıyan hareket onun adını okumaya devam eder), canlı ad haritası yalnız çöpte
+  // olmayanları (eşleşme; çöp süzmesini motor yapar). Aynı katlanmış ada inen iki canlı kayıt "belirsiz"dir (R1/3).
+  const adById = new Map();
+  const canliKimlik = new Set();
+  const adHaritasi = new Map(); // trLower(kırpılmış ad) → kayıt; belirsizde null
+  for (const p of parts) {
+    if (!p || p.id == null) continue;
+    const ad = parcaAdi(p);
+    adById.set(String(p.id), ad);
+    if (p.deletedAt) continue;
+    canliKimlik.add(String(p.id));
+    const k = trLower(String(ad ?? "").trim());
+    if (!k) continue;
+    adHaritasi.set(k, adHaritasi.has(k) ? null : { id: p.id, ad });
+  }
+  // Spec 0162 C1, R1–R1/8, R3 (AC-1–AC-10, AC-19–AC-25, AC-30): parça satırının tek kararı. Kimlik canlı katalogda varsa satır
+  // kimliğin satırıdır (ad aranmaz). Yoksa kaydın KENDİ adı (gösterim adı ve yer tutucular değil, R1/5) kırpılıp Türkçe küçük harfe
+  // indirilerek canlı katalogdaki tek kayıtla birebir eşleşirse o kaydın satırına katılır (anahtar `p:<id>`, `partId` kaydın ham
+  // id'si, ad katalog adı). Eşleşme yoksa hiçbir şey değişmez (bugünkü anahtar, partId ve ad, R1/6). Aksan katlanmaz (C3).
+  const parcaCoz = (partId, kayitAdi, gosterim) => {
+    const kimlikVar = partId != null && partId !== "";
+    if (kimlikVar && canliKimlik.has(String(partId))) return { key: parcaAnahtar(partId, gosterim), partId, ad: gosterim, kaynak: "kimlik" };
+    const k = trLower(String(kayitAdi ?? "").trim());
+    const hedef = k ? adHaritasi.get(k) : null;
+    if (hedef) return { key: parcaAnahtar(hedef.id, hedef.ad), partId: hedef.id, ad: hedef.ad, kaynak: "ad" };
+    return { key: parcaAnahtar(partId, gosterim), partId: kimlikVar ? partId : null, ad: gosterim, kaynak: kimlikVar ? "kimlik" : "yok" };
+  };
 
   // Aralık testi: aralık yoksa hep true; varsa tarih dolu VE sınırlar içinde olmalı (string karşılaştırma).
   const araliktaMi = (d) =>
@@ -93,12 +119,18 @@ export function hesaplaAnaliz(
 
   // ── Yedek parça toplamı (servis + kargo birleşik) + parça başına model kırılımı ──
   const parcaMap = new Map(); // key → {key, ad, servis, kargo, toplam, modeller:Map}
-  const parcaGiris = (partId, ad) => {
-    const key = parcaAnahtar(partId, ad);
+  // Spec 0162 P1 (triyaj bulgu 1 ile daraltıldı; AC-10, AC-14, AC-20, AC-21): ada göre birleşen hareket satırı açarsa adı katalog
+  // adıdır ve sonra gelen, kendi adını taşıyan kimlikli hareket onu ezer (sıradan bağımsızlık); ada göre birleşen hareket kimlikli
+  // hareketin koyduğu adı ezmez. Satırı kimlik yolu açtıysa ad kuralı spec öncesiyle aynıdır (ilk görülen ad, yalnız yer tutucu
+  // ezilir; R3/2): ada göre çözülecek hareket olmayan veride çıktı birebir eskidir. `kayitAdli`: hareket kendi adını taşıyor mu.
+  const parcaGiris = (cozum, kayitAdli) => {
+    const { key, partId, ad, kaynak } = cozum;
     let e = parcaMap.get(key);
     // Spec 0160 R4/5, C5: parçanın kimliği ham (ilk görülen) değeriyle, kimliksiz satırda null; bilgi alanları motorda okunmaz.
-    if (!e) { e = { key, partId: (partId != null && partId !== "") ? partId : null, ad: ad || "Parça", servis: 0, kargo: 0, toplam: 0, modeller: new Map(), musteriler: new Map() }; parcaMap.set(key, e); }
-    if ((!e.ad || e.ad === "Parça") && ad) e.ad = ad;
+    if (!e) { e = { key, partId: partId ?? null, ad: ad || "Parça", servis: 0, kargo: 0, toplam: 0, modeller: new Map(), musteriler: new Map(), _adaGore: kaynak === "ad" }; parcaMap.set(key, e); return e; }
+    if (e.partId == null && partId != null) e.partId = partId; // R1/7, AC-20
+    if (kaynak !== "ad" && kayitAdli && e._adaGore) { e.ad = ad; e._adaGore = false; }
+    else if ((!e.ad || e.ad === "Parça") && ad) e.ad = ad;
     return e;
   };
   const modelEkle = (e, model, adet) => {
@@ -131,8 +163,11 @@ export function hesaplaAnaliz(
     const satir = c ? makinaSatiri(c) : cozulemeyenSatiri();
     for (const p of (s.degisenParcalar || [])) {
       const adet = Number(p.miktar) > 0 ? Number(p.miktar) : 1;
-      const ad = p.ad || parcaAdi(partsById.get(String(p.partId))) || "Parça";
-      const e = parcaGiris(p.partId, ad);
+      // Spec 0162 R7 (AC-27): düz metin satırın adı metnin kendisi (`parcaAdi`); partId nesne satırdan.
+      const kayitAdi = String(parcaAdi(p) || "").trim() ? parcaAdi(p) : "";
+      const pid = typeof p === "object" && p ? p.partId : undefined;
+      const ad = kayitAdi || adById.get(String(pid)) || "Parça";
+      const e = parcaGiris(parcaCoz(pid, kayitAdi, ad), !!kayitAdi);
       e.servis += adet; e.toplam += adet;
       modelEkle(e, model, adet);
       musteriEkle(e, satir, HAREKET_KAYNAK.SERVIS, s.id, s.date, adet);
@@ -142,8 +177,9 @@ export function hesaplaAnaliz(
   for (const s of rYedek) {
     const adet = Number(s.miktar) || 0;
     if (adet <= 0) continue;
-    const ad = parcaAdi(partsById.get(String(s.partId))) || "Yedek parça";
-    const e = parcaGiris(s.partId, ad);
+    // Spec 0162 R2, R1/5 (AC-9, AC-23): kargonun kayıtta adı yok; yer tutucu eşleşmeye girmez.
+    const ad = adById.get(String(s.partId)) || "Yedek parça";
+    const e = parcaGiris(parcaCoz(s.partId, "", ad), false);
     e.kargo += adet; e.toplam += adet;
     let tahsisEdilen = 0;
     for (const t of (s.tahsisler || [])) {

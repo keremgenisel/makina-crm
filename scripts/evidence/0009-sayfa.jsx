@@ -53,6 +53,7 @@ import * as V155 from "../../tests/fixtures/0155-ekran.js";
 import * as V154 from "../../tests/fixtures/0154-veri.js";
 import * as V160 from "../../tests/fixtures/0160-veri.js";
 import * as V161 from "../../tests/fixtures/0161-veri.js";
+import * as V162 from "../../tests/fixtures/0162-veri.js";
 import { EkstrePenceresi as EkstrePenceresi156 } from "../../src/components/gider/EkstrePenceresi";
 import { tedarikciEkstresi as tedarikciEkstresi156, calisanEkstresi as calisanEkstresi156, hesapAdiCoz as hesapAdiCoz156 } from "../../src/lib/kasa";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
@@ -1162,6 +1163,8 @@ const EKRANLAR = {
   // Spec 0154: Parça Kırılımı kutusunun Müşteri görünümü, "Parçanın Takıldığı Makinalar" penceresi ve boş durumu.
   "analiz-0154-musteri": [<Analiz {...V154.VERI} dealers={V154.DEALERS} appSettings={{}} />, ["dugme:Müşteri"]],
   "analiz-0154-pencere": [<Analiz {...V154.VERI} dealers={V154.DEALERS} appSettings={{}} />, ["dugme:Müşteri", "dugme:Tümünü göster (11) ↗"]],
+  // Spec 0162 C8, P6: aynı parçanın kimlikli ve kimliksiz hareketleri seçicide tek satır (koduyla ölçüsü alt satırda).
+  "analiz-0162-birlesik": [<Analiz {...V162.VERI} parts={V162.PARTS.filter(p => !p.deletedAt)} appSettings={{}} />, ["etiket:Parça seç"]],
   "analiz-0154-bos": [<Analiz customers={V154.CUSTOMERS} services={[{ id: 1, customerId: 1, date: "2026-01-01", degisenParcalar: [] }]} partSales={[]} yedekParcaSatislar={[]} parts={[]} dealers={[]} appSettings={{}} />, ["dugme:Müşteri"]],
   // Spec 0015: formlar.
   "musteri-formu": [<Customers customers={MUSTERI_LISTE} setCustomers={bos} partSales={[]} services={[]} payments={[]} stock={[]} setStock={bos} />, ["~Yeni Müşteri"]],

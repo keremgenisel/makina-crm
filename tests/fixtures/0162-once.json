@@ -1,0 +1,678 @@
+{
+ "tum": {
+  "ozet": {
+   "parcaToplam": 15,
+   "parcaServisToplam": 11,
+   "parcaKargoToplam": 4,
+   "toplamServis": 5,
+   "makinaSayisi": 2,
+   "enCokParca": {
+    "key": "p:10",
+    "partId": 10,
+    "ad": "100_ÖN KESTAMİD KAM",
+    "servis": 5,
+    "kargo": 4,
+    "toplam": 9,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 5,
+      "bilinmeyen": false
+     },
+     {
+      "model": "AK120",
+      "adet": 4,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:1",
+      "ad": "EGE ÇİFTLİK",
+      "model": "AK100",
+      "serialNo": "S-1",
+      "adet": 5,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:101",
+        "kaynak": "servis",
+        "kayitId": 101,
+        "tarih": "2026-03-01",
+        "adet": 5
+       }
+      ]
+     },
+     {
+      "anahtar": "m:2",
+      "ad": "BİRTAT",
+      "model": "AK120",
+      "serialNo": "S-2",
+      "adet": 4,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "kargo:201",
+        "kaynak": "kargo",
+        "kayitId": 201,
+        "tarih": "2026-04-01",
+        "adet": 4
+       }
+      ]
+     }
+    ]
+   },
+   "enCokServisliMakina": {
+    "customerId": 1,
+    "adet": 4,
+    "name": "EGE ÇİFTLİK",
+    "model": "AK100",
+    "serialNo": "S-1"
+   },
+   "kalipToplam": 0,
+   "standartToplam": 0,
+   "kalipGenelToplam": 0
+  },
+  "parcalar": [
+   {
+    "key": "p:10",
+    "partId": 10,
+    "ad": "100_ÖN KESTAMİD KAM",
+    "servis": 5,
+    "kargo": 4,
+    "toplam": 9,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 5,
+      "bilinmeyen": false
+     },
+     {
+      "model": "AK120",
+      "adet": 4,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:1",
+      "ad": "EGE ÇİFTLİK",
+      "model": "AK100",
+      "serialNo": "S-1",
+      "adet": 5,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:101",
+        "kaynak": "servis",
+        "kayitId": 101,
+        "tarih": "2026-03-01",
+        "adet": 5
+       }
+      ]
+     },
+     {
+      "anahtar": "m:2",
+      "ad": "BİRTAT",
+      "model": "AK120",
+      "serialNo": "S-2",
+      "adet": 4,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "kargo:201",
+        "kaynak": "kargo",
+        "kayitId": 201,
+        "tarih": "2026-04-01",
+        "adet": 4
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "key": "p:20",
+    "partId": 20,
+    "ad": "Kayış",
+    "servis": 3,
+    "kargo": 0,
+    "toplam": 3,
+    "modeller": [
+     {
+      "model": "AK120",
+      "adet": 2,
+      "bilinmeyen": false
+     },
+     {
+      "model": "AK100",
+      "adet": 1,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:2",
+      "ad": "BİRTAT",
+      "model": "AK120",
+      "serialNo": "S-2",
+      "adet": 2,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:131",
+        "kaynak": "servis",
+        "kayitId": 131,
+        "tarih": "2026-03-21",
+        "adet": 2
+       }
+      ]
+     },
+     {
+      "anahtar": "m:1",
+      "ad": "EGE ÇİFTLİK",
+      "model": "AK100",
+      "serialNo": "S-1",
+      "adet": 1,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:130",
+        "kaynak": "servis",
+        "kayitId": 130,
+        "tarih": "2026-03-20",
+        "adet": 1
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "key": "p:12",
+    "partId": 12,
+    "ad": "Keçe (eski)",
+    "servis": 2,
+    "kargo": 0,
+    "toplam": 2,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 2,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:1",
+      "ad": "EGE ÇİFTLİK",
+      "model": "AK100",
+      "serialNo": "S-1",
+      "adet": 2,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:132",
+        "kaynak": "servis",
+        "kayitId": 132,
+        "tarih": "2026-03-22",
+        "adet": 2
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "key": "p:11",
+    "partId": 11,
+    "ad": "Kayış",
+    "servis": 1,
+    "kargo": 0,
+    "toplam": 1,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 1,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:1",
+      "ad": "EGE ÇİFTLİK",
+      "model": "AK100",
+      "serialNo": "S-1",
+      "adet": 1,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:118",
+        "kaynak": "servis",
+        "kayitId": 118,
+        "tarih": "2026-03-18",
+        "adet": 1
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "enCokServisliMakinalar": [
+   {
+    "customerId": 1,
+    "adet": 4,
+    "name": "EGE ÇİFTLİK",
+    "model": "AK100",
+    "serialNo": "S-1"
+   },
+   {
+    "customerId": 2,
+    "adet": 1,
+    "name": "BİRTAT",
+    "model": "AK120",
+    "serialNo": "S-2"
+   }
+  ],
+  "modelYogunlugu": [
+   {
+    "model": "AK100",
+    "servis": 4,
+    "makina": 1,
+    "oran": 4
+   },
+   {
+    "model": "AK120",
+    "servis": 1,
+    "makina": 1,
+    "oran": 1
+   }
+  ],
+  "servisTipleri": [
+   {
+    "ad": "Belirtilmemiş",
+    "adet": 5
+   }
+  ],
+  "onarimYerleri": [
+   {
+    "ad": "Yerinde Onarım",
+    "adet": 5
+   }
+  ],
+  "teknisyenler": [
+   {
+    "ad": "Atanmamış",
+    "adet": 5,
+    "ortIsclikDk": null
+   }
+  ],
+  "trend": [
+   {
+    "donem": "2025-04",
+    "adet": 0
+   },
+   {
+    "donem": "2025-05",
+    "adet": 0
+   },
+   {
+    "donem": "2025-06",
+    "adet": 0
+   },
+   {
+    "donem": "2025-07",
+    "adet": 0
+   },
+   {
+    "donem": "2025-08",
+    "adet": 0
+   },
+   {
+    "donem": "2025-09",
+    "adet": 0
+   },
+   {
+    "donem": "2025-10",
+    "adet": 0
+   },
+   {
+    "donem": "2025-11",
+    "adet": 0
+   },
+   {
+    "donem": "2025-12",
+    "adet": 0
+   },
+   {
+    "donem": "2026-01",
+    "adet": 0
+   },
+   {
+    "donem": "2026-02",
+    "adet": 0
+   },
+   {
+    "donem": "2026-03",
+    "adet": 5
+   }
+  ],
+  "trendBirim": "ay",
+  "kalipAd": [],
+  "kalipOlcu": [],
+  "kalipModel": []
+ },
+ "aralik": {
+  "ozet": {
+   "parcaToplam": 10,
+   "parcaServisToplam": 6,
+   "parcaKargoToplam": 4,
+   "toplamServis": 4,
+   "makinaSayisi": 2,
+   "enCokParca": {
+    "key": "p:10",
+    "partId": 10,
+    "ad": "100_ÖN KESTAMİD KAM",
+    "servis": 0,
+    "kargo": 4,
+    "toplam": 4,
+    "modeller": [
+     {
+      "model": "AK120",
+      "adet": 4,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:2",
+      "ad": "BİRTAT",
+      "model": "AK120",
+      "serialNo": "S-2",
+      "adet": 4,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "kargo:201",
+        "kaynak": "kargo",
+        "kayitId": 201,
+        "tarih": "2026-04-01",
+        "adet": 4
+       }
+      ]
+     }
+    ]
+   },
+   "enCokServisliMakina": {
+    "customerId": 1,
+    "adet": 3,
+    "name": "EGE ÇİFTLİK",
+    "model": "AK100",
+    "serialNo": "S-1"
+   },
+   "kalipToplam": 0,
+   "standartToplam": 0,
+   "kalipGenelToplam": 0
+  },
+  "parcalar": [
+   {
+    "key": "p:10",
+    "partId": 10,
+    "ad": "100_ÖN KESTAMİD KAM",
+    "servis": 0,
+    "kargo": 4,
+    "toplam": 4,
+    "modeller": [
+     {
+      "model": "AK120",
+      "adet": 4,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:2",
+      "ad": "BİRTAT",
+      "model": "AK120",
+      "serialNo": "S-2",
+      "adet": 4,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "kargo:201",
+        "kaynak": "kargo",
+        "kayitId": 201,
+        "tarih": "2026-04-01",
+        "adet": 4
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "key": "p:20",
+    "partId": 20,
+    "ad": "Kayış",
+    "servis": 3,
+    "kargo": 0,
+    "toplam": 3,
+    "modeller": [
+     {
+      "model": "AK120",
+      "adet": 2,
+      "bilinmeyen": false
+     },
+     {
+      "model": "AK100",
+      "adet": 1,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:2",
+      "ad": "BİRTAT",
+      "model": "AK120",
+      "serialNo": "S-2",
+      "adet": 2,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:131",
+        "kaynak": "servis",
+        "kayitId": 131,
+        "tarih": "2026-03-21",
+        "adet": 2
+       }
+      ]
+     },
+     {
+      "anahtar": "m:1",
+      "ad": "EGE ÇİFTLİK",
+      "model": "AK100",
+      "serialNo": "S-1",
+      "adet": 1,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:130",
+        "kaynak": "servis",
+        "kayitId": 130,
+        "tarih": "2026-03-20",
+        "adet": 1
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "key": "p:12",
+    "partId": 12,
+    "ad": "Keçe (eski)",
+    "servis": 2,
+    "kargo": 0,
+    "toplam": 2,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 2,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:1",
+      "ad": "EGE ÇİFTLİK",
+      "model": "AK100",
+      "serialNo": "S-1",
+      "adet": 2,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:132",
+        "kaynak": "servis",
+        "kayitId": 132,
+        "tarih": "2026-03-22",
+        "adet": 2
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "key": "p:11",
+    "partId": 11,
+    "ad": "Kayış",
+    "servis": 1,
+    "kargo": 0,
+    "toplam": 1,
+    "modeller": [
+     {
+      "model": "AK100",
+      "adet": 1,
+      "bilinmeyen": false
+     }
+    ],
+    "musteriler": [
+     {
+      "anahtar": "m:1",
+      "ad": "EGE ÇİFTLİK",
+      "model": "AK100",
+      "serialNo": "S-1",
+      "adet": 1,
+      "tur": "makina",
+      "hareketler": [
+       {
+        "anahtar": "servis:118",
+        "kaynak": "servis",
+        "kayitId": 118,
+        "tarih": "2026-03-18",
+        "adet": 1
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "enCokServisliMakinalar": [
+   {
+    "customerId": 1,
+    "adet": 3,
+    "name": "EGE ÇİFTLİK",
+    "model": "AK100",
+    "serialNo": "S-1"
+   },
+   {
+    "customerId": 2,
+    "adet": 1,
+    "name": "BİRTAT",
+    "model": "AK120",
+    "serialNo": "S-2"
+   }
+  ],
+  "modelYogunlugu": [
+   {
+    "model": "AK100",
+    "servis": 3,
+    "makina": 1,
+    "oran": 3
+   },
+   {
+    "model": "AK120",
+    "servis": 1,
+    "makina": 1,
+    "oran": 1
+   }
+  ],
+  "servisTipleri": [
+   {
+    "ad": "Belirtilmemiş",
+    "adet": 4
+   }
+  ],
+  "onarimYerleri": [
+   {
+    "ad": "Yerinde Onarım",
+    "adet": 4
+   }
+  ],
+  "teknisyenler": [
+   {
+    "ad": "Atanmamış",
+    "adet": 4,
+    "ortIsclikDk": null
+   }
+  ],
+  "trend": [
+   {
+    "donem": "2025-05",
+    "adet": 0
+   },
+   {
+    "donem": "2025-06",
+    "adet": 0
+   },
+   {
+    "donem": "2025-07",
+    "adet": 0
+   },
+   {
+    "donem": "2025-08",
+    "adet": 0
+   },
+   {
+    "donem": "2025-09",
+    "adet": 0
+   },
+   {
+    "donem": "2025-10",
+    "adet": 0
+   },
+   {
+    "donem": "2025-11",
+    "adet": 0
+   },
+   {
+    "donem": "2025-12",
+    "adet": 0
+   },
+   {
+    "donem": "2026-01",
+    "adet": 0
+   },
+   {
+    "donem": "2026-02",
+    "adet": 0
+   },
+   {
+    "donem": "2026-03",
+    "adet": 4
+   },
+   {
+    "donem": "2026-04",
+    "adet": 0
+   }
+  ],
+  "trendBirim": "ay",
+  "kalipAd": [],
+  "kalipOlcu": [],
+  "kalipModel": []
+ }
+}
