@@ -1,0 +1,152 @@
+[
+  {
+    "ad": "ayarlar-fiyat-0133-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-fiyat-0133-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-fiyat-0133-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-fiyat-0133-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-fiyat-0133-hata-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-fiyat-0133-hata-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-fiyat-0133-zarar-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Kâr katı 1'den küçük: türetilen fiyat maliyetin altında kalır (zararın"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-fiyat-0133-zarar-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Kâr katı 1'den küçük: türetilen fiyat maliyetin altında kalır (zararın"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-pencere-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 13 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-pencere-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 13 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-oncelik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-oncelik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-alfabetik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-alfabetik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-cinssiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-cinssiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-belge-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-belge-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-cinssira-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-cinssira-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-cinssira-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "ayarlar-cinssira-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-cins-sira-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "kilit-cins-sira-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

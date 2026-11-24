@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0161-siparis-listesinde-cins-sirasi.md` (Onaylandı, 2026-11-24) |
+| **Spec** | `specs/done/0161-siparis-listesinde-cins-sirasi.md` (Onaylandı, 2026-11-24) |
 | **Onay** | Takım Yöneticisi, 2026-11-24 ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula") |
 | **Dal** | `feat/0161-cins-sirasi` (main `cacceb92` üstünde) |
-| **Durum** | Uygulandı (commit bekliyor) |
+| **Durum** | Tamamlandı (commit `041adea5`) |
 
 ## 1. Dosyalar
 

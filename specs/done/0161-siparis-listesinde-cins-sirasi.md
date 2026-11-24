@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-11-24, plan turu) |
+| **Durum** | Tamamlandı (commit `041adea5`; plan `specs/done/0161-uygulama-plani.md`) |
 | **Revizyon** | 3 (2026-11-24 plan turu: P1–P10) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
@@ -205,7 +205,7 @@ Bütün ölçümler `cacceb92` üzerinde yapıldı. Motor ölçümleri (B, C, D)
 
 ### Plan turunda verilen kararlar (2026-11-24)
 
-Takım Yöneticisi planın bütün önerilerini onayladı ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula"). Plan `specs/0161-uygulama-plani.md`.
+Takım Yöneticisi planın bütün önerilerini onayladı ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula"). Plan `specs/done/0161-uygulama-plani.md`.
 
 - **P1 (spec'in kaçırdığı kanıt ekranı).** Ölçüm V'nin aksine `siparis-0158-pencere` ekranı `0158-dolu.js` ile çiziliyor ve orada id 4'ün cinsi dolu; pencere sırası `1,4,5,8,14`'ten `4,1,5,8,14`'e döner. Ekran onaylı `degisti` kaydıyla işlenir — *neden:* bilinçli değişim, ölçülmezse kapanışta kanıt testi düşer.
 - **P2 (AC-53'ün ölçümü).** Gerçek eski sunucu koşturulamaz. İki parça: `serverAuth`'ta alan haritadan çıkarılmış hâl (eski sunucu) `AYAR_VARSAYILAN_SEKMELER`'e (`settings`) düşer, Ayarlar sekmesi olan kullanıcı 403 almaz ve başka alan etkilenmez; "liste düşer" yarısı `db.cjs` INSERT'inin sütunları tek tek sayması ve App yükleme yolunun alanı açıkça okuması üzerinden kaynak taramasıyla.
