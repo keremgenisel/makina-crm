@@ -28,6 +28,7 @@ export const Icon = ({ name, size = 16 }) => {
     maliyet:    "M6 3h12v18H6zM9 7h6M9 11h1M12 11h1M15 11h0M9 14h1M12 14h1M9 17h1M12 17h1M15 14v3",
     mali:       "M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3M21 11h-5a2 2 0 0 0 0 4h5z", // spec 0043: Mali İşler grubu (cüzdan)
     chevronDown:  "M6 9l6 6 6-6",
+    chevronUp:    "M6 15l6-6 6 6", // spec 0161: Cins Sıralaması satırını yukarı taşır
     chevronRight: "M9 6l6 6-6 6",
     expand:     "M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3",
     globe:      "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M2.5 9h19 M2.5 15h19 M12 2a15 15 0 0 1 0 20 M12 2a15 15 0 0 0 0 20",

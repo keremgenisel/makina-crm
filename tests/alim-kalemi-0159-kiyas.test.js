@@ -10,6 +10,7 @@ import { maliyetKalemleriOf } from "../src/lib/maliyetKalemleri";
 import * as S from "../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml } from "../src/lib/siparisRaporu";
 import { PARCALAR, MALZEMELER, BUGUN, FACTORY, R62_PARCALAR, veri } from "./fixtures/0159-veri.js";
+import { cinsSirasiUygula } from "./fixtures/0161-ayikla.js";
 import { ayiklaMotor0159, ayiklaBelge0159, ayiklaAd0159 } from "./fixtures/0159-ayikla.js";
 
 const DOSYA = "tests/fixtures/0159-once.json";
@@ -39,7 +40,9 @@ describe("Spec 0159 kıyas", () => {
     const a = JSON.parse(fs.readFileSync(DOSYA, "utf8"));
     expect(s.parca).toEqual(a.parca);
     expect(s.gecmisKarari).toEqual(a.gecmisKarari);
-    expect(ayiklaMotor0159(s.siparis, R62_PARCALAR)).toEqual(ayiklaMotor0159(a.siparis, R62_PARCALAR));
+    // Spec 0161 ile (P11, AC-34): bu veri 0157 üzerinden 0158'in dolu verisinden türer (cins dolu); pencerenin bilinçli sıra farkı eski
+    // altına yeni kural uygulanarak ayıklanır, altın yenilenmedi.
+    expect(ayiklaMotor0159(s.siparis, R62_PARCALAR)).toEqual(ayiklaMotor0159(cinsSirasiUygula(a.siparis), R62_PARCALAR));
     expect(ayiklaAd0159(s.belge.fiyatsiz)).toBe(ayiklaAd0159(a.belge.fiyatsiz));
     expect(ayiklaBelge0159(s.belge.fiyatli, R62_ADLARI)).toBe(ayiklaBelge0159(a.belge.fiyatli, R62_ADLARI));
     // Ayıklama boş değil: fiyatlı belgede en az bir bölüm karşılaştırılıyor ve etkilenen parçalar gerçekten var.

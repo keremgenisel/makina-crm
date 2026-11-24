@@ -21,7 +21,7 @@ import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/se
 import { MERGE_KEYS } from "../src/lib/merge";
 import { KILIT_ALANLARI } from "../src/lib/kilitAlanlari";
 // Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
-import { yeniAlanlariAyikla } from "./fixtures/0133-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır
+import { yeniAlanlariAyikla } from "./fixtures/0161-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır /* spec 0161 ile: 0161 ayar alanı da ayıklanır (AC-46) */
 // Spec 0097 ile (R20/2, plan P11): içe aktarma yerel günü zorunlu parametre olarak alır.
 const BUGUN = "2026-10-20";
 

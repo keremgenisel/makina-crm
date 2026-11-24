@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge";
 // Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
-import { yeniAlanlariAyikla } from "./fixtures/0133-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır
+import { yeniAlanlariAyikla } from "./fixtures/0161-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır /* spec 0161 ile: 0161 ayar alanı da ayıklanır (AC-46) */
 
 const kod = (f) => readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map(l => l.replace(/(^|[^:"'`])\/\/.*$/, "$1")).join("\n");
 const tara = (d) => readdirSync(d).flatMap(e => { const p = `${d}/${e}`; return statSync(p).isDirectory() ? tara(p) : /\.(jsx?|cjs|mjs)$/.test(e) ? [p] : []; });

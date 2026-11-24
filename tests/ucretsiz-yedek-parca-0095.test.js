@@ -17,7 +17,7 @@ import { ucretsizUygula, yedekParcaRec, yedekParcaGuncelle, yeniYedekParcaSatisC
 import { BLOB_SECTIONS, EYLEM_IDLERI, AYAR_ALAN_SEKMELERI } from "../electron/serverAuth.cjs";
 import { MERGE_KEYS } from "../src/lib/merge";
 // Spec 0132 ile (C5): malzeme bölümü bilinçli yeni bölümdür; bekçi onu ayıklayıp aynı iddiayı sürdürür.
-import { yeniAlanlariAyikla } from "./fixtures/0133-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır
+import { yeniAlanlariAyikla } from "./fixtures/0161-yeni-ayar"; // spec 0133 ile: 0132 bölümü ve 0133 ayar alanı ayıklanır /* spec 0161 ile: 0161 ayar alanı da ayıklanır (AC-46) */
 
 const KDV = [{ from: "2000-01-01", rate: 20 }];
 const FAB = { name: "Altuntaş Makina" };

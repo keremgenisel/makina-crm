@@ -14114,6 +14114,30 @@
         "rapor": "docs/evidence/0133-taban-piksel-raporu.json",
         "ekran": "ayarlar-fiyat-0133-zarar",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "ayarlar-fiyat-0133",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "ayarlar-fiyat-0133-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "ayarlar-fiyat-0133-hata",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "ayarlar-fiyat-0133-zarar",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
       }
     ],
     "src/components/MaliyetKalemleriAlani.jsx": [
@@ -14917,6 +14941,24 @@
         "rapor": "docs/evidence/0158-taban-piksel-raporu.json",
         "ekran": "siparis-0158-pencere",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "siparis-0158-pencere",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "siparis-0161-oncelik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "siparis-0161-alfabetik",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
       }
     ],
     "src/components/customers/detail/KalipDurumlari.jsx": [
@@ -14973,6 +15015,26 @@
         "rapor": "docs/evidence/0155-taban-piksel-raporu.json",
         "ekran": "kasa-0155-geri-odeme",
         "beklenen": "ayni"
+      }
+    ],
+    "src/components/settings/SettingsCinsSira.jsx": [
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "ayarlar-cinssira",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "ayarlar-cinssira-bos",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
+      },
+      {
+        "rapor": "docs/evidence/0161-piksel-raporu.json",
+        "ekran": "kilit-cins-sira",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0161 C10"
       }
     ]
   }

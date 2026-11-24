@@ -52,6 +52,7 @@ import * as V156 from "../../tests/fixtures/0156-veri.js";
 import * as V155 from "../../tests/fixtures/0155-ekran.js";
 import * as V154 from "../../tests/fixtures/0154-veri.js";
 import * as V160 from "../../tests/fixtures/0160-veri.js";
+import * as V161 from "../../tests/fixtures/0161-veri.js";
 import { EkstrePenceresi as EkstrePenceresi156 } from "../../src/components/gider/EkstrePenceresi";
 import { tedarikciEkstresi as tedarikciEkstresi156, calisanEkstresi as calisanEkstresi156, hesapAdiCoz as hesapAdiCoz156 } from "../../src/lib/kasa";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
@@ -169,7 +170,7 @@ if (ekran.startsWith("servis-pencere-0129-")) {
 // Spec 0064 R34: kilitli ekranlar. Görüntü aracı ikinci kullanıcıyı simüle edemez; kilit köprüsü sahte kurulur ve listelenen
 // alanlar (ayar panelinde panel kimliğiyle) başka kullanıcının ("ayse") elindedir. Yalnız "kilit-*" ekranlarında.
 if (ekran.startsWith("kilit-")) {
-  const KILITLI = { "kilit-toplu-yedek-parca": ["yedek_parca:9601"], "kilit-gider-formu": ["gider"], "kilit-odeme-penceresi": ["gider"], "kilit-katalog-paneli": ["ayar:models"], "kilit-cop-kutusu": ["ayar:trash"], "kilit-geri-yukleme": [], "kilit-set-parcala": ["partstock"] }[ekran] || [];
+  const KILITLI = { "kilit-toplu-yedek-parca": ["yedek_parca:9601"], "kilit-gider-formu": ["gider"], "kilit-odeme-penceresi": ["gider"], "kilit-katalog-paneli": ["ayar:models"], "kilit-cop-kutusu": ["ayar:trash"], "kilit-geri-yukleme": [], "kilit-set-parcala": ["partstock"], "kilit-cins-sira": ["ayar:cinssira"] }[ekran] || [];
   const kilitli = (t, id) => KILITLI.includes(t) || KILITLI.includes(`${t}:${id}`);
   window.crmLocks = {
     acquire: async (t, id, force) => (kilitli(t, id) && !force ? { ok: false, lockedBy: "ayse", lockedAt: "2026-09-23T09:55:00" } : { ok: true }),
@@ -857,10 +858,10 @@ const maliyetEkrani = (o, adimlar = []) => [<MaliyetEkrani {...o} />, adimlar];
 // hazır parçadır ve Ana tedarikçisi Beta Metal'dir; Somun tedarikçisiz kalır (belirtilmemiş bölümü).
 const PARTI_0134 = [{ id: 9, ad: "Güz Partisi", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { AK100_DS: 70 } }];
 const PARCA_0140 = F34.veri().parts.map(p => (p.id === 42 ? { ...p, tedarikciId: 13 } : p));
-function SiparisEkrani({ modeller = [F34.AK100], partiler = PARTI_0134, parts = PARCA_0140, malzemeler = [F34.P304], tedarikciler = F34.TED, hamTed = null, stok = [{ id: 1, partId: 42, miktar: 100 }] }) {
+function SiparisEkrani({ modeller = [F34.AK100], partiler = PARTI_0134, parts = PARCA_0140, malzemeler = [F34.P304], tedarikciler = F34.TED, hamTed = null, stok = [{ id: 1, partId: 42, miktar: 100 }], ayar = {} }) {
   // Spec 0142 ile: pencere `giderYetki` almaz (para hiç çizilmez).
   return <SiparisPenceresi bugun="2026-11-09" onClose={bos} veri={{ parts, partStock: stok, malzemeler, tedarikciler, hamTedarikciler: hamTed || tedarikciler,
-    standardModels: modeller, customModels: [], uretimPartileri: partiler, appSettings: {}, factory: { name: "Altuntaş Makina", city: "Konya" } }} />;
+    standardModels: modeller, customModels: [], uretimPartileri: partiler, appSettings: ayar, factory: { name: "Altuntaş Makina", city: "Konya" } }} />;
 }
 // Spec 0142: parça odaklı belge ve pencerenin Ölçü sütunları; veri tests/fixtures/0142-veri.js (motor, belge ve ekran testleriyle aynı).
 const siparis0142 = () => <SiparisEkrani modeller={V142.MODELLER.standardModels} parts={V142.PARCALAR} malzemeler={V142.MALZEMELER} tedarikciler={V142.TEDARIKCILER} stok={[]} />;
@@ -1004,6 +1005,13 @@ const servis0160 = () => <FormEkrani Bilesen={ServiceForm} title="Yeni Servis Ta
   ilk={{ customerId: "", date: "2026-09-20", currency: "TRY", degisenParcalar: [], type: "Bakım", repairPlace: "Yerinde Onarım" }} />;
 const yedek0160 = () => <FormEkrani Bilesen={YedekParcaSatisForm} title="Yeni Yedek Parça Satışı" parts={P160}
   ilk={{ aliciTipi: "bayi", dealerId: 3, currency: "TRY", tarih: "2026-09-20", satirlar: [{ partId: "", miktar: "", birimFiyat: "" }] }} />;
+// Spec 0161 C10, DoD: sipariş penceresinde ve belgede cins blokları (tests/fixtures/0161-veri.js), Cins Sıralaması paneli ve kilidi.
+const PARTI_0161 = [{ id: 961, ad: "Kış Partisi", baslangicAy: "2026-11", bitisAy: null, planlananAdetler: { AK: 10 } }];
+const siparis0161 = (ayar = {}, parts = V161.PARCALAR) => <SiparisEkrani modeller={V161.kit(parts)} partiler={PARTI_0161} parts={parts} malzemeler={V161.MALZEMELER} tedarikciler={V161.TEDARIKCILER} stok={[]} ayar={ayar} />;
+function SiparisBelgesi0161() {
+  const html = siparisRaporuHtml0142(siparisIhtiyaci0142(V161.veri(), { tedarikciOdakli: true, cinsSirasi: ["Rulman", "Keçe"] }), { bugun: "2026-11-24", factory: { name: "Altuntaş Makina", city: "Konya" }, partiAd: "Kış Partisi" });
+  return <div style={{ background: "#fff", color: "#0f172a", minHeight: "100vh" }} dangerouslySetInnerHTML={{ __html: html }} />;
+}
 const servis0115 = (ek, tipler = TIP_0115) => <FormEkrani Bilesen={ServiceForm} title="Servis Talebini Düzenle" customers={V115.CUSTOMERS} parts={PARCA_0115} partTypeDefs={tipler}
   ilk={{ ...V115.SERVICES[0], ...ek }} />;
 // Spec 0120 R17/2: kalıp işi işaretli tipi olmayan parça tipi listesi (süzme uygulanmaz, neden cümlesi).
@@ -1846,6 +1854,14 @@ const EKRANLAR = {
   "parca-arama-0160-analiz": [<Analiz {...V160.ANALIZ_VERI} parts={P160} dealers={[]} appSettings={{}} />, ["etiket:Parça seç"]],
   "parca-arama-0160-bos-sonuc": [servis0160(), ["odak:Parça ara...=zzzz"]],
   "parca-arama-0160-bos-kurulum": [stokBos("parca"), []],
+  // Spec 0161: öncelikli blok, alfabetik bloklar, cinsi boş liste, belge, panel (dolu, boş) ve kilit.
+  "siparis-0161-oncelik": [siparis0161({ cinsSirasi: ["Rulman", "Keçe"] }), []],
+  "siparis-0161-alfabetik": [siparis0161({}), []],
+  "siparis-0161-cinssiz": [siparis0161({}, V161.cinssiz()), []],
+  "siparis-0161-belge": [<SiparisBelgesi0161 />, []],
+  "ayarlar-cinssira": [ayarlar("cinssira", { appSettings: { ...AYAR, cinsSirasi: ["Rulman", "Keçe", "Cıvata"] } }), []],
+  "ayarlar-cinssira-bos": [ayarlar("cinssira"), []],
+  "kilit-cins-sira": [ayarlar("cinssira"), []],
   "evrak-0126-kalip-pencere": [<EvrakEkrani teklif={T_0126} katalog={KATALOG_0126} />, ["2026-00001", "etiket:Kalıp seç"]],
   "ayarlar-kaliplar-0125-suzgec": [ayarlar("kaliplar", { kalipDefs: KALIP_0125, katalogAcilis: { panel: "kaliplar", ara: "Burger 120", no: 1 } }), []],
   // Spec 0071: KDV dâhil giriş (normal, yuvarlama farkı, brüt kira, net kira ipucu), tanım formu, "Tutar girilmedi" rozeti ve süzgeci.

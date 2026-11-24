@@ -1259,7 +1259,7 @@ export default function App() {
       // Spec 0091 triyajı (bulgu 1): boş listede okunan gövdede anahtar hiç yoktur (R24/2); spread yokluğu taşımadığı için
       // bellekteki eski liste kalır, sonraki kayıt onu geri yazar (Ayarlar sekmesi olmayan kullanıcıda her kayıt 403 alır).
       // Bu yüzden alan gövdeden AÇIKÇA alınır: yoksa undefined.
-      setAppSettings(s => ({ ...s, ...disAppSettingsSuz(data.appSettings), ...(data.appSettings ? { [URETIM_ALANI]: data.appSettings[URETIM_ALANI], fiyatAyarlari: data.appSettings.fiyatAyarlari } : {}), kdvRates, krediKartiKomisyonlari }));
+      setAppSettings(s => ({ ...s, ...disAppSettingsSuz(data.appSettings), ...(data.appSettings ? { [URETIM_ALANI]: data.appSettings[URETIM_ALANI], fiyatAyarlari: data.appSettings.fiyatAyarlari, cinsSirasi: data.appSettings.cinsSirasi } : {}), kdvRates, krediKartiKomisyonlari }));
       if (typeof data.nextId === "number") setIdCounter(data.nextId);
       if (typeof data.dataVersion === "number") dataVersionRef.current = data.dataVersion;
       return data; // çakışma birleştirmesi (mergeLocalIntoReloaded) sunucu verisini buradan alır

@@ -204,8 +204,49 @@ export const HAM_IHTIYAC_IBARESI = "Ham ihtiyaç ile İhtiyaç yalnız setten pa
 // metinlerle gelir ve burada doğrulanır: { parca: { [partId]: { adet, kapali } }, kesit: { [anahtar]: { deger, kapali } } };
 // sıra D-R4/2: (1) bugünkü hesap, (2) set düzenlemesi, (3) patlatma düzenlenmiş adetle, (4) bileşenler, (5) parça düzenlemesi,
 // (6) kesitler son adetlerden. `secilenTedarikciler` (C-R2): boş ya da yoksa bütün tedarikçiler.
+// Spec 0161 (C1, C2, C2/2, P4): cins sıralamasının tek kuralı ve ayarın tek okuma yolu. Sıralama satırın kendi (motorun kırptığı)
+// `cins` değerini okur, parça kaydını okumaz. Anahtar kırpılmış ve Türkçe küçük harfe indirilmiş değerdir (R1/4, R1/8); blok sırası:
+// öncelik listesindekiler listedeki sırayla, sonra öteki dolu cinsler anahtara göre alfabetik, en sonda cinsi boşlar (R1/2).
+// Kararlıdır (C3): eşit sayılan satırların gelen sırası korunur. Kopya döner.
+export const CINS_SIRA_EN_COK_SATIR = 100;
+export const CINS_SIRA_EN_COK_KARAKTER = 100;
+export const CINS_SIRA_SATIR_HATASI = `En çok ${CINS_SIRA_EN_COK_SATIR} cins yazılabilir.`;
+export const CINS_SIRA_KARAKTER_HATASI = `Cins en çok ${CINS_SIRA_EN_COK_KARAKTER} karakter olabilir.`;
+const cinsAnahtari = (v) => trLower(String(v ?? "").trim());
+// R3, R3/6: ayarın tek okuma yolu; dizi değilse boş liste, okuma kırpmaz (saklı uzun liste olduğu gibi işler).
+// Ayar yokken her çağrıda aynı boş dizi döner (pencerenin bağımlılığı her çizimde değişmesin, R3/8).
+const BOS_CINS_SIRASI = Object.freeze([]);
+export const cinsSirasiOf = (appSettings) => (Array.isArray(appSettings?.cinsSirasi) ? appSettings.cinsSirasi : BOS_CINS_SIRASI);
+// R3/3, R3/6 (AC-17, AC-18, AC-43, AC-50): giriş kuralı. Satırlar kırpılır, boşlar atılır, aynı cins (harf büyüklüğü dahil) bir kez
+// tutulur (ilk yazım); 100 satırdan ya da 100 karakterden uzun satır reddedilir.
+export const cinsSirasiDogrula = (satirlar) => {
+  const liste = []; const gorulen = new Set();
+  for (const ham of Array.isArray(satirlar) ? satirlar : []) {
+    const t = String(ham ?? "").trim();
+    if (!t) continue;
+    if (t.length > CINS_SIRA_EN_COK_KARAKTER) return { hata: CINS_SIRA_KARAKTER_HATASI };
+    const k = cinsAnahtari(t);
+    if (gorulen.has(k)) continue;
+    gorulen.add(k); liste.push(t);
+  }
+  if (liste.length > CINS_SIRA_EN_COK_SATIR) return { hata: CINS_SIRA_SATIR_HATASI };
+  return { liste };
+};
+export const cinseGoreSirala = (satirlar, cinsSirasi = []) => {
+  const oncelik = new Map();
+  for (const c of Array.isArray(cinsSirasi) ? cinsSirasi : []) { const k = cinsAnahtari(c); if (k && !oncelik.has(k)) oncelik.set(k, oncelik.size); }
+  const n = oncelik.size;
+  const derece = (k) => (!k ? n + 1 : oncelik.has(k) ? oncelik.get(k) : n);
+  return [...satirlar].map(x => ({ x, k: cinsAnahtari(x.cins) })).sort((a, b) => {
+    const da = derece(a.k), db = derece(b.k);
+    if (da !== db) return da - db;
+    return da === n ? a.k.localeCompare(b.k, "tr") : 0;
+  }).map(e => e.x);
+};
+
 export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
-  const { tedarikciOdakli = false, duzenleme = null, secilenTedarikciler = null } = secenek || {};
+  // Spec 0161 C2, R1/7: öncelik listesi seçenek olarak gelir (varsayılan boş); sıralama koşulsuzdur, seçenek yalnız listeyi taşır.
+  const { tedarikciOdakli = false, duzenleme = null, secilenTedarikciler = null, cinsSirasi = [] } = secenek || {};
   const duzParca = duzenleme?.parca || {}; const duzKesit = duzenleme?.kesit || {};
   // Parça düzenlemesi: geçerli adet ya da kapatma; geçersiz adet düzenleme sayılmaz, hatası kaydedilir (D-R9).
   const parcaDuzenle = (k) => {
@@ -413,7 +454,7 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
     bos: gecerli.length === 0,
   };
   if (!tedarikciOdakli) return sonuc;
-  sonuc.tedarikciBolumleri = tedarikciBolumleriKur({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, malzemeKat, secilenTedarikciler });
+  sonuc.tedarikciBolumleri = tedarikciBolumleriKur({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, malzemeKat, secilenTedarikciler, cinsSirasi });
   return sonuc;
 };
 
@@ -452,7 +493,7 @@ const islemSatirlariKur = (kalemler, canliParca) => {
 // Hazır parça satırı (karar 34, 40): patlatılan set satır açmaz; öneri ya da düzenleme varsa satır (kapatılan ve sıfıra çekilen satır
 // geri açılabilsin diye görünür, belgeye girmez). Tutar yalnız malzemesiz parçada: bugünkü maliyet × adet (C-R5/2). Ana tedarikçisiz
 // malzemesiz parça "belirtilmemiş"e, Ana tedarikçisiz malzemeli parça yalnız sayılır (karar 33).
-const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, malzemeKat, secilenTedarikciler }) => {
+const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, malzemeKat, secilenTedarikciler, cinsSirasi = [] }) => {
   const setKat = setKatalogu([...canliParca.values()]);
   const secim = Array.isArray(secilenTedarikciler) && secilenTedarikciler.length ? new Set(secilenTedarikciler.map(String)) : null;
   const bolumler = new Map();
@@ -517,6 +558,10 @@ const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed,
     if (x.hata) continue;
     if (!x.tedarikciId) belirtilmemis.islemler.push(x); else bolum(x.tedarikciId).islemler.push(x);
   }
+  // Spec 0161 R1/6, R1/3, C1 (AC-1–AC-7, AC-31, AC-36, AC-39): pencerenin iki parça tablosu (tedarikçi bölümü ve "Tedarikçi
+  // belirtilmemiş" kutusu) cinse göre bloklanır; blok içi ekleme (kit) sırası kararlı sıralamayla korunur, satıra alan eklenmez.
+  for (const b of bolumler.values()) b.hazirParcalar = cinseGoreSirala(b.hazirParcalar, cinsSirasi);
+  belirtilmemis.parcalar = cinseGoreSirala(belirtilmemis.parcalar, cinsSirasi);
   for (const b of bolumler.values()) {
     const tutarlar = [...b.hazirParcalar.filter(x => !x.kapali && x.siparis > 0).map(x => x.tutarK), ...b.malzemeler.filter(x => !x.kapali).map(x => x.tutarTLK)].filter(x => x != null);
     b.tutarTLK = tutarlar.length ? tutarlar.reduce((a, x) => a + x, 0) : null;
@@ -531,7 +576,7 @@ const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed,
     + [...gorunenBelirtilmemis.parcalar, ...gorunenBelirtilmemis.kesitler].reduce((t, x) => t + satirHata(x), 0)
     + [...kalemler.values()].filter(k => k.set && k.hata && !gorunenBolumler.some(b => b.hazirParcalar.some(x => x.partId === k.partId))
       && !gorunenBelirtilmemis.parcalar.some(x => x.partId === k.partId)).length;
-  const tumBelge = belgeBolumleriKur({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, hazirMaliyet, islemSatirlari });
+  const tumBelge = belgeBolumleriKur({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, hazirMaliyet, islemSatirlari, cinsSirasi });
   const belge = secim ? tumBelge.filter(b => secim.has(b.tedarikciId)) : tumBelge;
   // Triyaj (bulgu 1): pencerenin bölümlemesi (Ana tedarikçi) ile belgeninki (malzemenin firması) bilerek farklı; pencerede bu bölümün
   // belgesine girmeyen ama başka bir bölümün belgesinde basılan satır nerede basıldığını söyler. Seçim dışındaki bölüm ayrıca yazılır.
@@ -570,7 +615,7 @@ const tedarikciBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed,
 // Ana tedarikçisi de yoksa girmez. B-R1/3: süzgeç parça satırıdır (kapalı değil, hatasız, sipariş > 0). B-R6, B-R6/2, B-R6/3: önce
 // malzemeyle yerleşen parçalar (o bölümdeki ilk ölçünün malzeme adı, kesit sayıları, parça adı), sonra kalanlar kit sırasında.
 // B-R7/2: toplam bölümün kesit satırlarından (kapalı, hatalı ve sıfır olanlar hariç). B-R1/4: parça ya da toplam satırı olan bölüm basılır.
-const belgeBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, hazirMaliyet = new Map(), islemSatirlari = [] }) => {
+const belgeBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, hamTed, hazirMaliyet = new Map(), islemSatirlari = [], cinsSirasi = [] }) => {
   const map = new Map();
   const al = (tid) => {
     if (!map.has(tid)) {
@@ -662,6 +707,9 @@ const belgeBolumleriKur = ({ kalemler, canliParca, kesitSatirlari, canliTed, ham
     b.gruplar = [...gruplar.values()].sort((a, c) => TUR_SIRA[a.tur] - TUR_SIRA[c.tur]
       || String(a.baslik || "").localeCompare(String(c.baslik || ""), "tr") || String(a.malzemeId ?? "").localeCompare(String(c.malzemeId ?? "")));
     for (const g of b.gruplar) g.satirlar.sort((a, c) => (g.tur === GRUP_TURU.HAMMADDE ? kesitKiyas(a, c) || String(a.ad).localeCompare(String(c.ad), "tr") : a.kitSira - c.kitSira));
+    // Spec 0161 R1/9, R1/5, R4 (AC-8, AC-37, AC-38): cins blokları grubun İÇİNDE, grup sıralamasının hemen ardından; kararlı sıralama
+    // bugünkü sırayı (kesit sonra ad, kit sırası) blok içi ikinci ölçüt olarak korur. Düz liste yine gruplardan türer.
+    for (const g of b.gruplar) g.satirlar = cinseGoreSirala(g.satirlar, cinsSirasi);
     // Spec 0158 R10, R11, C1 (AC-16–AC-19): grup tablosunda hiçbir satırda dolu olmayan sütun o tabloda çizilmez; karar motorda.
     for (const g of b.gruplar) g.sutunlar = grupSutunlari(g.satirlar);
     b.satirlar = b.gruplar.flatMap(g => g.satirlar); // sıra grupların sırası; ibare ve basılabilirlik bu düz listeyi okur (C7)

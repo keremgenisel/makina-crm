@@ -16,6 +16,7 @@ import { parcaDisaAktarmaSatiri, parcaSatirlariniCoz, PARCA_AKTARMA_BASLIKLARI }
 import * as S from "../../src/lib/siparisIhtiyaci";
 import { siparisRaporuHtml } from "../../src/lib/siparisRaporu";
 import { PartManager } from "../../src/components/PartManager";
+import { cinsSirasiUygula } from "../fixtures/0161-ayikla.js";
 import { PARCALAR, MALZEMELER, MODELLER, TEDARIKCILER, FIYAT_AYARLARI, PARTI, BUGUN, FACTORY, veri } from "../fixtures/0157-veri.js";
 
 vi.mock("../../src/lib/audit", async (orig) => ({ ...(await orig()), logAction: () => {} }));
@@ -99,7 +100,8 @@ describe("Spec 0157 kıyas (lira veri)", () => {
     expect(r62.map(x => x.ad)).toEqual(["Fason parça"]);
     const ids = r62.map(x => x.partId); const adlar = r62.map(x => x.ad);
     for (const k of Object.keys(a).filter(k => !["siparis", "belge"].includes(k))) expect(s[k], k).toEqual(a[k]);
-    expect(ayiklaMotor0159(s.siparis, ids)).toEqual(ayiklaMotor0159(a.siparis, ids));
+    // Spec 0161 ile (AC-34): pencerenin cins sırası bilinçli fark; eski altına yeni kural uygulanır (altın yenilenmedi).
+    expect(ayiklaMotor0159(s.siparis, ids)).toEqual(ayiklaMotor0159(cinsSirasiUygula(a.siparis), ids));
     expect(ayiklaAd0159(s.belge.fiyatsiz)).toBe(ayiklaAd0159(a.belge.fiyatsiz));
     expect(ayiklaBelge0159(s.belge.fiyatli, adlar)).toBe(ayiklaBelge0159(a.belge.fiyatli, adlar));
     expect(Object.keys(s).sort()).toEqual(Object.keys(a).sort());

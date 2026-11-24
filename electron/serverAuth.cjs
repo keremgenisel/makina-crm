@@ -170,6 +170,7 @@ const AYAR_ALAN_SEKMELERI = {
   giderAyarlari:  ["settings"], // Ayarlar > Giderler > Gider Ayarları + Firma Çalışanları varsayılan resmi maliyet
   maliyetAyarlari: ["settings", "maliyet"], // spec 0088 R29: Makina Maliyeti › Hesap Ayarları (dönem, varsayılan adet)
   fiyatAyarlari: ["settings"], // spec 0133 R21, C7/2: Ayarlar › Uygulama › Fiyat Ayarları (varsayılan kâr katı, yuvarlama); açıkça yazıldı, eylem izni yok
+  cinsSirasi: ["settings"], // spec 0161 R3, C6: Ayarlar › Uygulama › Cins Sıralaması (sipariş listesinin cins öncelik listesi); açıkça yazıldı, eylem izni yok
   uretimdeOlmayanModeller: ["settings"], // spec 0091 C4: Ayarlar > Katalog > Makina Modelleri ("Üretimde"); haritada olmasa da AYAR_VARSAYILAN_SEKMELER aynısını verirdi
 };
 // Hiçbir sekmeye ait olmayan alanlar: otomatik yedekleme her istemcide App.jsx'te çalışır ve

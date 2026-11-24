@@ -8,7 +8,7 @@ import { uretimdeSuzulmusModeller } from "../../lib/uretimdekiModeller";
 import { useBugun } from "../../hooks/useBugun";
 import { parcaBilgiDegerleri } from "../../lib/parcaBilgi";
 import {
-  siparisIhtiyaci, partidenSatirlar, hataliSatirMetni, KIT_BOS_METNI, KESISIM_UYARISI, STOK_UYARISI, PARTI_PLAN_YOK,
+  siparisIhtiyaci, cinsSirasiOf, partidenSatirlar, hataliSatirMetni, KIT_BOS_METNI, KESISIM_UYARISI, STOK_UYARISI, PARTI_PLAN_YOK,
   adetMetni as sayi, OLCU_BASLIGI, OLCU_GIRILMEMIS, tedarikciSecenekleri, bosDurumNedeni,
   TEDARIKCI_BELIRTILMEMIS, anasizParcaMetni, anasizMalzemeliMetni, HAMMADDE_SUZGEC_NEDENI, GECICI_DUZENLEME,
   satirsizSecilenMetni, duzenlemeSayiMetni, SILINMIS_TEDARIKCI_BELGE, ISLEMLER_BASLIGI, tedarikcisizIslemMetni, KESIM_IBARESI,
@@ -72,9 +72,11 @@ export const SiparisPenceresi = ({ veri = {}, bugun: bugunProp = null, onClose }
     setSatirlar(p ? partidenSatirlar(p, modeller).satirlar : []);
   };
   const secenekler = useMemo(() => tedarikciSecenekleri({ tedarikciler, parts, malzemeler }).map(t => ({ id: String(t.id), ad: t.ad })), [tedarikciler, parts, malzemeler]);
+  // Spec 0161 C2, R3/8 (AC-28, AC-41): öncelik listesi tek okuma yolundan motora seçenek olarak; bağımlılık türetilmiş listedir.
+  const cinsSirasi = cinsSirasiOf(appSettings);
   const sonuc = useMemo(() => siparisIhtiyaci({ modeller, satirlar, parts, hamParts, partStock, malzemeler, tedarikciler, hamTedarikciler },
-    { tedarikciOdakli: true, duzenleme: duzen, secilenTedarikciler: secim }),
-  [modeller, satirlar, parts, hamParts, partStock, malzemeler, tedarikciler, hamTedarikciler, duzen, secim]);
+    { tedarikciOdakli: true, duzenleme: duzen, secilenTedarikciler: secim, cinsSirasi }),
+  [modeller, satirlar, parts, hamParts, partStock, malzemeler, tedarikciler, hamTedarikciler, duzen, secim, cinsSirasi]);
   const tb = sonuc.tedarikciBolumleri;
   const yaz = (i, alan, v) => setSatirlar(p => p.map((s, j) => (j === i ? { ...s, [alan]: v } : s)));
   // B-R7, C9: seçici üretim işaretinden süzülür; satırın kendi modeli işaretten çıkmış olsa da korunur (AC-68).

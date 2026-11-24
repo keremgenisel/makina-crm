@@ -348,6 +348,10 @@ için açılır liste ya da `Segment`; arama gerekip tek seçim olan yerde `Sear
 
 Parça aranan kutuların sonuç satırı iki satırlıdır: üstte ad (Evrak'ta set eki dahil), altında `ui.jsx` `AramaAltSatir` ile parçanın kod, ölçü, hammadde ve cinsi (punto 11, `n500`, üst boşluk 2, " · " ayracı; boşsa hiç çizilmez). `SearchPick` bunu isteğe bağlı `getAlt(item)` ile, `SearchSelect` seçeneğin `alt` anahtarıyla çizer; verilmezse satırın HTML'i birebir eskidir. Arama panellerinde satır sarar, Analiz'in seçicisinde tek satıra kırpılır (`kirp`). Üç bilgi satırı biçimi bilinçli olarak ayrıdır ve birleştirilmez: katalog listesi ölçü, hammadde, cins (kod kendi sütununda); sipariş penceresi hammadde, cins; arama sonucu kod, ölçü, hammadde, cins. Alan listesi tek yerde: `lib/parcaBilgi.js` `parcaAramaDegerleri` / `parcaAramaSatiri`.
 
+## Sıralı liste düzenleme (spec 0161)
+
+Kullanıcının sırasını belirlediği kısa listeler (Ayarlar › Uygulama › Cins Sıralaması) sürükle bırak değil satır başına üç düğmeyle düzenlenir: yukarı taşı, aşağı taşı, kaldır (`Btn small variant="ghost"`, erişilebilir ad `"<öğe>: yukarı taşı"`; ilk satırda yukarı, son satırda aşağı pasif). Ekleme satırı listenin altında metin kutusu ve "Ekle"; değişiklik taslaktır, tek "Kaydet" ile yazılır. Boş liste `BosDurum`. Sürükle bırak yalnız panoda kalır (erişilebilirliği ve testi zor).
+
 ## Sayfalama (spec 0062)
 
 Tanım gereği büyüyen her liste paylaşılan `Pagination` (`ui.jsx`) ve `usePagination` / `useFilteredList` kancalarıyla

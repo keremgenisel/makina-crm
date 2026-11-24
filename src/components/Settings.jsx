@@ -12,6 +12,7 @@ import { URETIM_ISARETI_IPUCU } from "../lib/uretimdekiModeller";
 import { SettingsApp } from "./settings/SettingsApp";
 import { SettingsMusteri } from "./settings/SettingsMusteri";
 import { SettingsFiyat } from "./settings/SettingsFiyat";
+import { SettingsCinsSira } from "./settings/SettingsCinsSira";
 import { SettingsServisPanosu } from "./settings/SettingsServisPanosu";
 import { SettingsBackup } from "./settings/SettingsBackup";
 import { SettingsSecurity } from "./settings/SettingsSecurity";
@@ -51,7 +52,7 @@ import { SettingsGider } from "./settings/SettingsGider";
 // "Evrak & Süreçler" (KDV/evrak/takip) olarak bölündü. Görünürlük öğe id'sine göre süzülür
 // (visibleGroups), grup adından bağımsız — öğeleri taşımak izinleri etkilemez.
 const SETTINGS_GROUPS = [
-  { grup: "Uygulama", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "musteri", label: "Müşteri Görünümü", icon: "customers" }, { id: "fiyat", label: "Fiyat Ayarları", icon: "parts" }, { id: "servispano", label: "Servis ve Kargo Panosu", icon: "service" }] },
+  { grup: "Uygulama", items: [{ id: "app", label: "Uygulama", icon: "settings" }, { id: "musteri", label: "Müşteri Görünümü", icon: "customers" }, { id: "fiyat", label: "Fiyat Ayarları", icon: "parts" }, { id: "cinssira", label: "Cins Sıralaması", icon: "parts" }, { id: "servispano", label: "Servis ve Kargo Panosu", icon: "service" }] },
   { grup: "Firma", items: [{ id: "company", label: "Firma Bilgileri", icon: "machine" }, { id: "calisanlar", label: "Firma Çalışanları", icon: "customers" }] },
   { grup: "Güvenlik", items: [{ id: "security", label: "Uygulama Şifresi", icon: "lock" }, { id: "securitystatus", label: "Güvenlik Durumu", icon: "lock" }] },
   { grup: "Sunucu", items: [{ id: "server", label: "Sunucu Bağlantısı", icon: "settings" }, { id: "securitylog", label: "Kullanıcı Geçmişi", icon: "lock" }, { id: "auditlog", label: "İşlem Geçmişi", icon: "notes" }] },
@@ -214,6 +215,7 @@ export const Settings = ({ katalogAcilis = null, aktifKullanici = "", customers,
       {settingsTab === "app" && <SettingsApp version={version} flash={flash} appUpd={appUpd} onCheckUpdate={onCheckUpdate} onStartUpdate={onStartUpdate} />}
       {settingsTab === "musteri" && <SettingsMusteri appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
       {settingsTab === "fiyat" && <SettingsFiyat appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
+      {settingsTab === "cinssira" && <SettingsCinsSira appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} /> /* spec 0161 R3/7 */}
       {settingsTab === "servispano" && <SettingsServisPanosu appSettings={appSettings} setAppSettings={setAppSettings} flash={flash} />}
 
       {settingsTab === "company" && <SettingsCompany factory={factory} setFactory={setFactory} appSettings={appSettings} setAppSettings={setAppSettings} setCustomers={setCustomers} setServices={setServices} flash={flash} />}
