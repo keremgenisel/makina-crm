@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-11-24, plan turu) |
+| **Durum** | Tamamlandı (commit `b2a2819b`; plan `specs/done/0160-uygulama-plani.md`) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |
 | **Revizyon** | 3 (2026-11-24 plan turu: P1–P12) |
@@ -227,7 +227,7 @@ Hepsi HEAD `b5536882`'de, bu depo üzerinde ölçüldü.
 
 ### Plan turunda verilen kararlar (2026-11-24)
 
-Takım Yöneticisi planın bütün önerilerini onayladı ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula"). Plan `specs/0160-uygulama-plani.md`.
+Takım Yöneticisi planın bütün önerilerini onayladı ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula"). Plan `specs/done/0160-uygulama-plani.md`.
 
 - **P1 (AC-37'nin taraması).** "Altı alanın adı yalnız `lib/parcaBilgi.js`'te geçer" harfiyen ölçülemez (`ad`, `kod`, `olcu` uygulamanın her yerinde, kalıp ölçüsü, Kod sütunu ve 0158'in kart alanları dahil). Tarama amaca daraltılır: (a) on kutunun dosyası ve `GlobalSearch.jsx` yardımcıyı çağırır; (b) bu dosyalarda arama ifadesi taşıyan satırlar (`kelimelerEslesir(`, `esles(`, `aramaDegerleri=`, `getAlt=`, `ara:`, `alt:`) alan adını doğrudan okumaz; (c) `GlobalSearch.jsx`'te `.adEN` ve `PARCA_BILGI_ALANLARI` hiç geçmez. Gerekçeli tek istisna Analiz'in motor satırının adı (R4/3) — *neden:* harfiyen tarama yazılamaz, daraltılmış tarama "tek liste" amacını tam ölçer.
 - **P2 (neden satırının listeleri).** Genel aramanın neden satırının başlık kümesi ve neden alanları da `parcaBilgi.js`'e iki yardımcı olarak taşınır (`parcaNedenBasliklari`, `parcaNedenAlanlari`); `nedenAlani`/`nedenMetni` çağrısı `GlobalSearch`'te kalır (yaprak modül `utils`'i içe alamaz). Çıktı birebir aynı (AC-35) — *neden:* R1/5 ve AC-48 alan listesinin genel aramada yazılmamasını istiyor.

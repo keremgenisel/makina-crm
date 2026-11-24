@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0160-parca-arama-kod-olcu-cins.md` (Onaylandı, 2026-11-24) |
+| **Spec** | `specs/done/0160-parca-arama-kod-olcu-cins.md` (Onaylandı, 2026-11-24) |
 | **Onay** | Takım Yöneticisi, 2026-11-24 ("tum onerilerini onayliyorum, spece isle, plani yaz ve uygula") |
 | **Dal** | `feat/0160-parca-arama` (main `b5536882` üstünde) |
-| **Durum** | Uygulandı (commit bekliyor) |
+| **Durum** | Tamamlandı (commit `b2a2819b`) |
 
 ## 1. Dosyalar
 

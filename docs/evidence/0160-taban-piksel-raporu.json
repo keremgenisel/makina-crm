@@ -1,0 +1,272 @@
+[
+  {
+    "ad": "katalog-parca-0122-panel-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "katalog-parca-0122-panel-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-set-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-set-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-eksik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)",
+      "Stokta yetmeyen bileşenler: Mahruti dişli, Rulman 6204. Set yine hazır"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-hazirla-eksik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "2 parça tükendi",
+      "1 parçada stok azaldı (5 veya altı)",
+      "Stokta yetmeyen bileşenler: Mahruti dişli, Rulman 6204. Set yine hazır"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-hareket-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0121-hareket-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0130-parcala-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0130-parcala-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0130-hareket-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-stok-0130-hareket-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "1 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "evrak-0126-parca-arama-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "evrak-0126-parca-arama-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-katalog-aydinlik.png",
+    "boyut": "2880x1886",
+    "seritler": [
+      "6 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-katalog-karanlik.png",
+    "boyut": "2880x1886",
+    "seritler": [
+      "6 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-katalog-ara-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "6 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-katalog-ara-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "6 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-stok-liste-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "8 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-stok-liste-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "8 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-stok-secici-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "8 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-stok-secici-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "8 parçada stok azaldı (5 veya altı)"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-servis-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-servis-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-yedek-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-yedek-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-evrak-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-evrak-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-bilesen-aydinlik.png",
+    "boyut": "2880x1886",
+    "seritler": [
+      "6 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-bilesen-karanlik.png",
+    "boyut": "2880x1886",
+    "seritler": [
+      "6 parçanın alış maliyeti girilmedi; makina maliyeti hesabı bu parçalar"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-model-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-model-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-analiz-aydinlik.png",
+    "boyut": "2880x3298",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-analiz-karanlik.png",
+    "boyut": "2880x3298",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-bos-sonuc-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-bos-sonuc-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-bos-kurulum-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "parca-arama-0160-bos-kurulum-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

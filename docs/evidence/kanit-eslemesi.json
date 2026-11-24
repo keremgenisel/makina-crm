@@ -102,16 +102,14 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "evrak-0126-parca-arama",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-evrak",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/GiderForm.jsx": [
@@ -6782,10 +6780,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-analiz",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/customers/CustomerAddEditForm.jsx": [
@@ -7453,13 +7450,12 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-servis",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-bos-sonuc",
         "beklenen": "ayni"
       }
@@ -7657,10 +7653,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-yedek",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/stock/MakinaStokTab.jsx": [
@@ -7922,55 +7917,47 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-set",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-hazirla",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-hazirla-eksik",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-stok-0121-hareket",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-stok-0130-parcala",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-stok-0130-hareket",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-stok-liste",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-stok-secici",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-bos-kurulum",
         "beklenen": "ayni"
       }
@@ -8104,10 +8091,9 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-model",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/KalipManager.jsx": [
@@ -9777,27 +9763,24 @@
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "katalog-parca-0122-panel",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-katalog",
         "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-katalog-ara",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       },
       {
-        "rapor": "docs/evidence/0160-piksel-raporu.json",
+        "rapor": "docs/evidence/0160-taban-piksel-raporu.json",
         "ekran": "parca-arama-0160-bilesen",
-        "beklenen": "degisti",
-        "onay": "Takım Yöneticisi · 2026-11-24 · spec 0160 C10"
+        "beklenen": "ayni"
       }
     ],
     "src/components/PartTypeManager.jsx": [
