@@ -12,7 +12,7 @@ import { kurus, tl, ayEkle, ayOf, ayinSonGunu, hesaplaGiderRaporu, turHaritasi, 
 import { partiAylari, canliPartiler, kapanisMaliyetiOf, DONDURULMAMIS_SATIR_NEDENI } from "./uretimPartisi";
 import { makinaListesi, satisKurBilgisi, katDegeriDogrula, URETIM_KAYNAK } from "./makinaMaliyeti";
 import { gercekSatisBedeli, trLower } from "./utils";
-import { parcaMaliyetKurus, gecerliGunMu, setMi, setIcerigiOf } from "./urunAgaci";
+import { parcaMaliyetKurus, gecerliGunMu, setMi, setIcerigiOf, kitCozucuKur } from "./urunAgaci";
 import { malzemeKatalogu } from "./malzeme";
 
 // ── Rol ──────────────────────────────────────────────────────────────────────
@@ -204,16 +204,17 @@ const oneriKurus = (toplamK, katsayi) => (Number(katsayi) > 0 ? Math.round(topla
 // bugünkü (Model Maliyetleri, C4). Parça kaydının çöp durumu tarihlenmez (C7): çöpteki parça haritada yok, tarihli okumada da eksik.
 // Spec 0132 R16/4, C1/2: `malzemeKat` (malzeme listesinin haritası) malzeme satırlı parçanın birim maliyetini çözer.
 export const modelMaliyeti = (model, partMap, payK = 0, tarih, malzemeKat) => {
-  const kit = (model.defaultParcalar || []).map(r => {
-    const p = partMap.get(String(r.partId));
+  // Spec 0163 R5, P1: kit satırları tek çözücüden (yetim satır adla çözülür ya da düşer); imza beş parametre (AC-39).
+  const cozulmus = kitCozucuKur(partMap)(model.defaultParcalar || []);
+  const kit = cozulmus.map(({ satir: r, partId, parca: p }) => {
     const adet = Number(r.miktar) || 0;
     if (!p) return { partId: r.partId, ad: r.ad || "", adet, birimK: null, satirK: 0, eksik: true, neden: "parcaYok" };
     // Spec 0096 C1 (AC-19): birim maliyet parçanın tek okuma yolundan (hammadde kırılımı varsa onun toplamı, kuruş).
     // Spec 0121 R9/2: harita (canlı parçalar) aynı zamanda setin kataloğudur; setin birim maliyeti bileşenlerinden.
     const birimK = parcaMaliyetKurus(p, tarih, partMap, malzemeKat);
-    if (birimK == null) return { partId: r.partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
+    if (birimK == null) return { partId, ad: p.ad, adet, birimK: null, satirK: 0, eksik: true, neden: "maliyetYok" };
     // Spec 0134 Karar 34: ondalık kitte satır kuruşa yuvarlanır (tam sayı kitte çarpım zaten tam sayı, çıktı birebir aynı).
-    return { partId: r.partId, ad: p.ad, adet, birimK, satirK: Math.round(birimK * adet), eksik: false, neden: null };
+    return { partId, ad: p.ad, adet, birimK, satirK: Math.round(birimK * adet), eksik: false, neden: null };
   });
   const ek = (model.ekMaliyetler || []).map(k => ({ ad: k.ad, tutarK: kurus(k.tutar) }));
   const direktK = kit.reduce((a, r) => a + r.satirK, 0) + ek.reduce((a, k) => a + k.tutarK, 0);
@@ -221,9 +222,9 @@ export const modelMaliyeti = (model, partMap, payK = 0, tarih, malzemeKat) => {
   const katsayi = Number(model.karKatsayisi) > 0 ? Number(model.karKatsayisi) : null;
   // Spec 0121 R32/2 (AC-46): kitte hem set hem o setin bileşeni varsa aynı parça iki kez sayılır; bilgi olarak döner, hesap
   // bugünkü kuralla kalır (X11). Kesişim yoksa anahtar hiç yazılmaz (spec öncesi çıktı birebir, AC-14).
-  const kitIdleri = new Set((model.defaultParcalar || []).map(r => String(r.partId)));
-  const setKesisimleri = (model.defaultParcalar || []).flatMap(r => {
-    const p = partMap.get(String(r.partId));
+  // Spec 0163 R3/2, R9: kimlik kümesi çözülmüş kimliklerden; düşen yetim satır kümeye girmez.
+  const kitIdleri = new Set(cozulmus.map(x => String(x.partId)));
+  const setKesisimleri = cozulmus.flatMap(({ parca: p }) => {
     if (!p || !setMi(p)) return [];
     return setIcerigiOf(p).filter(b => kitIdleri.has(String(b.partId)))
       .map(b => ({ setAd: p.ad, bilesenAd: partMap.get(String(b.partId))?.ad || String(b.partId) }));

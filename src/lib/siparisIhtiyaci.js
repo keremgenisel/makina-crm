@@ -10,7 +10,7 @@
 //   5. Malzeme kalemi olan parçanın SİPARİŞ adedi (× kalem adedi) her malzeme kaleminin kesit satırına gider .
 import { PARCA_BILGI_ALANLARI, bilgiDegeri } from "./parcaBilgi";
 import { trLower, totalMiktar } from "./utils";
-import { setMi, setIcerigiOf, kalemAdetiOf, parcaMaliyetKurus, setKatalogu, parcaDovizMaliyeti, islemKalemiTutari, ALIM_ISLEM } from "./urunAgaci";
+import { setMi, setIcerigiOf, kitCozucuKur, kalemAdetiOf, parcaMaliyetKurus, setKatalogu, parcaDovizMaliyeti, islemKalemiTutari, ALIM_ISLEM } from "./urunAgaci";
 import { BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./tutarGirdisi";
 import {
   BICIMLER, PARA_BIRIMLERI, dovizMi, bantSec, bantlarOf, fiyatKumesi, hamOlculer, hamKesit, malzemeOzeti,
@@ -290,14 +290,17 @@ export const siparisIhtiyaci = (veri = {}, secenek = undefined) => {
 
   const kitBos = [];
   const kesisimler = [];
+  // Spec 0163 R5, R1/6, P4: kit satırları tek çözücüden, yalnız canlı katalogla; adet filtresi çözücüden sonra aynen.
+  const kitCoz = kitCozucuKur(canliParca);
   for (const s of gecerli) {
-    const kit = s.kayit.defaultParcalar || [];
-    if (!kit.length) { kitBos.push(s.model); continue; }
-    const kitIdleri = new Set(kit.map(r => String(r.partId)));
-    for (const r of kit) {
+    const hamKit = s.kayit.defaultParcalar || [];
+    if (!hamKit.length) { kitBos.push(s.model); continue; }
+    const kit = kitCoz(hamKit);
+    const kitIdleri = new Set(kit.map(x => String(x.partId))); // R3/2
+    for (const { satir: r, partId } of kit) {
       const miktar = Number(r.miktar) || 0;
       if (!(miktar > 0)) continue;
-      const k = kalem(r.partId, r.ad);
+      const k = kalem(partId, r.ad);
       kaynakEkle(k, "kit", s.model);
       if (k.silinmis) continue; // AC-24, AC-104: ihtiyaç üretmez, eksik sayılır
       const ham = s.adet * miktar;

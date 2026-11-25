@@ -54,6 +54,8 @@ import * as V154 from "../../tests/fixtures/0154-veri.js";
 import * as V160 from "../../tests/fixtures/0160-veri.js";
 import * as V161 from "../../tests/fixtures/0161-veri.js";
 import * as V162 from "../../tests/fixtures/0162-veri.js";
+import * as V163 from "../../tests/fixtures/0163-veri.js";
+import { MakinaStokTab } from "../../src/components/stock/MakinaStokTab";
 import { EkstrePenceresi as EkstrePenceresi156 } from "../../src/components/gider/EkstrePenceresi";
 import { tedarikciEkstresi as tedarikciEkstresi156, calisanEkstresi as calisanEkstresi156, hesapAdiCoz as hesapAdiCoz156 } from "../../src/lib/kasa";
 import { siparisIhtiyaci as siparisIhtiyaci0142 } from "../../src/lib/siparisIhtiyaci";
@@ -1127,6 +1129,20 @@ function Gider155() {
     kasaHesaplari={V155.HESAP} kasaYetki hesapHareketleri={h} setHesapHareketleri={setH} rates={{ usd: 41, eur: 45 }} ratesErr={false} cekler={[]} setCekler={bos} payments={[]}
     satisVerisi={{ customers: [], services: [], partSales: [], payments: [], teklifler: [], dealers: [], yedekParcaSatislar: [] }} factory={{ name: "Altuntaş Makina" }} />;
 }
+// Spec 0163: kitte yetim kalan parça satırı. Veri tests/fixtures/0163-veri.js (motor ve ekran testleriyle aynı).
+function Maliyet0163() {
+  return <MakinaMaliyeti aktifKullanici="kerem" giderler={[]} giderTurleri={[]} setGiderTurleri={bos} tedarikciler={[]} stock={[]} customers={[]}
+    partStockLog={[]} parts={V163.PARCALAR} malzemeler={V163.MALZEMELER} standardModels={[V163.SWP_DSC]} customModels={[V163.SWP_DS, V163.AK_TEK]} setStandardModels={bos} setCustomModels={bos}
+    uretimPartileri={[]} setUretimPartileri={bos} appSettings={{}} setAppSettings={bos} rates={{}} tumMusteriler={[]} serverPermissions={null} showToast={bos} />;
+}
+const siparis0163 = () => <SiparisPenceresi bugun="2026-11-25" onClose={bos} veri={{ parts: V163.CANLI, hamParts: V163.PARCALAR, partStock: [{ partId: 202, miktar: 5 }],
+  malzemeler: V163.MALZEMELER, tedarikciler: V163.TEDARIKCILER, hamTedarikciler: V163.TEDARIKCILER, standardModels: [V163.SWP_DSC], customModels: [V163.SWP_DS],
+  uretimPartileri: [{ id: 801, ad: "Güz", baslangicAy: "2026-09", bitisAy: null, planlananAdetler: { SWP140_DSC: 10, SWP140_DS: 6 } }], appSettings: {}, factory: { name: "Altuntaş Makina" } }} />;
+function Stok0163() {
+  const [stock, setStock] = useState([]);
+  const model = { model: "SWP140_DSC", defaultParcalar: [...V163.SWP_DSC.defaultParcalar, { partId: "9001", ad: "rulman yatağı", miktar: 2 }] };
+  return <MakinaStokTab stock={stock} setStock={setStock} models={[model]} showToast={bos} parts={V163.CANLI} partStock={[]} setPartStock={bos} partStockLog={[]} setPartStockLog={bos} />;
+}
 const EKRANLAR = {
   "giderler-rapor": [<GiderEkrani />, []],
   // Spec 0081: Dönem Raporu'nun beş yan kutusu kapalı başlar (giderler-rapor kapalı hâldir); bir kutu açık ve hepsi açık hâl.
@@ -1868,6 +1884,9 @@ const EKRANLAR = {
   "ayarlar-cinssira": [ayarlar("cinssira", { appSettings: { ...AYAR, cinsSirasi: ["Rulman", "Keçe", "Cıvata"] } }), []],
   "ayarlar-cinssira-bos": [ayarlar("cinssira"), []],
   "kilit-cins-sira": [ayarlar("cinssira"), []],
+  "maliyet-0163-yetim": [<Maliyet0163 />, ["dugme:SWP140_DSC", "dugme:AK_TEK"]],
+  "siparis-0163-yetim": [siparis0163(), []],
+  "stok-0163-kiti-uygula": [<Stok0163 />, ["dugme:Stoğa Makina Ekle", "sec:Makina Modeli=SWP140_DSC", "dugme:Kiti Uygula"]],
   "parca-alt-satir-stok": [<Stock factory={{ name: "Altuntaş Makina" }} stock={[]} setStock={bos} customers={MUSTERILER} setCustomers={bos} parts={PARCA_ALT}
     dealers={DEALERS} yedekParcaSatislar={YP_ALT} defaultSubTab="yedeksatis" showToast={bos} />, []],
   "parca-alt-satir-servis": [<FormEkrani Bilesen={ServiceForm} title="Yeni Servis Talebi" parts={PARCA_ALT}

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { ALTUNMAK_MODELS } from "../../lib/constants";
 import { logAction, snapshotOnceki } from "../../lib/audit";
 import { today, fmtTR, uid, bumpId, withDeleted, mergeAndUpdate, totalMiktar, stokKirparakDus, fmtKalipCapi, kalipCapiYaz } from "../../lib/utils";
-import { kitStokAdedi } from "../../lib/urunAgaci";
+import { kitStokAdedi, kitCozucuKur } from "../../lib/urunAgaci";
 import { netGeriEklenmis, netDusumleri, stokGeriAl, netDusumAyni } from "../../lib/stokHareketi";
 import { useFilteredList } from "../../hooks/useFilteredList";
 import { Icon, Field, Input, Select, Btn, Modal, ConfirmDialog, LockConflict, KalipCapiFields } from "../ui";
@@ -56,10 +56,13 @@ export const MakinaStokTab = ({ stock, setStock, models = ALTUNMAK_MODELS, showT
 
   const modelParts = useMemo(() => parts.filter(p => (p.models || []).includes(form.model)), [parts, form.model]);
   const availableParts = (!form.model || showAllParts || modelParts.length === 0) ? parts : modelParts;
+  // Spec 0163 R5/2, R5/3, P5: "Kiti Uygula"nın listesi ve sayısı çözülmüş kit satırlarından (yetim satır adla çözülür ya da düşer);
+  // çözücü canlı katalogla (`parts`, Ölçüm W) bir kez kurulur. Kayıtlı `parcalar` ve `deductParts` dokunulmaz.
+  const kitCoz = useMemo(() => kitCozucuKur(new Map((parts || []).filter(p => !p.deletedAt).map(p => [String(p.id), p]))), [parts]);
   const selectedModelKit = useMemo(() => {
     if (!form.model) return [];
-    return models.find(m => m.model === form.model)?.defaultParcalar || [];
-  }, [form.model, models]);
+    return kitCoz(models.find(m => m.model === form.model)?.defaultParcalar || []).map(x => ({ ...x.satir, partId: x.partId }));
+  }, [form.model, models, kitCoz]);
   const updateParcaRow = (i, key, val) => setForm(p => ({ ...p, parcalar: p.parcalar.map((r, idx) => idx === i ? { ...r, [key]: val } : r) }));
   const removeParcaRow = (i) => setForm(p => ({ ...p, parcalar: p.parcalar.filter((_, idx) => idx !== i) }));
 

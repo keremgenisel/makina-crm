@@ -1,0 +1,918 @@
+{
+ "olcum2": [
+  {
+   "model": "SWP140_DSC",
+   "kit": [
+    {
+     "partId": "1793807177673",
+     "ad": "Kalıp mili",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    },
+    {
+     "partId": "1784817123366",
+     "ad": "Kalıp mili",
+     "adet": 1,
+     "birimK": 188497,
+     "satirK": 188497,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "202",
+     "ad": "Keçe 40",
+     "adet": 2,
+     "birimK": 300,
+     "satirK": 600,
+     "eksik": false,
+     "neden": null
+    }
+   ],
+   "ek": [],
+   "kitBos": false,
+   "eksikSayisi": 1,
+   "direktK": 189097,
+   "payK": 1000,
+   "toplamK": 190097,
+   "katsayi": null,
+   "oneriK": null,
+   "kalipListeK": null
+  },
+  {
+   "model": "SWP140_DS",
+   "kit": [
+    {
+     "partId": "1793807177673",
+     "ad": "KALIP MİLİ ",
+     "adet": 1,
+     "birimK": null,
+     "satirK": 0,
+     "eksik": true,
+     "neden": "parcaYok"
+    },
+    {
+     "partId": "1784817123366",
+     "ad": "Kalıp mili",
+     "adet": 1,
+     "birimK": 188497,
+     "satirK": 188497,
+     "eksik": false,
+     "neden": null
+    },
+    {
+     "partId": "210",
+     "ad": "Somun",
+     "adet": 4,
+     "birimK": 200,
+     "satirK": 800,
+     "eksik": false,
+     "neden": null
+    }
+   ],
+   "ek": [],
+   "kitBos": false,
+   "eksikSayisi": 1,
+   "direktK": 189297,
+   "payK": 1000,
+   "toplamK": 190297,
+   "katsayi": null,
+   "oneriK": null,
+   "kalipListeK": null
+  }
+ ],
+ "siparisOlcum2": {
+  "satirlar": [
+   {
+    "model": "SWP140_DSC",
+    "adet": 10,
+    "hata": null
+   },
+   {
+    "model": "SWP140_DS",
+    "adet": 6,
+    "hata": null
+   }
+  ],
+  "hataliSayi": 0,
+  "gecerliSayi": 2,
+  "kitBos": [],
+  "kesisimler": [],
+  "parcalar": [
+   {
+    "partId": "1793807177673",
+    "ad": "Kalıp mili",
+    "silinmis": true,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "SWP140_DSC"
+     },
+     {
+      "tur": "kit",
+      "metin": "SWP140_DS"
+     }
+    ],
+    "iki": false,
+    "ham": null,
+    "ihtiyac": null,
+    "stok": null,
+    "siparis": null,
+    "malzemeli": false,
+    "olculer": []
+   },
+   {
+    "partId": "1784817123366",
+    "ad": "Kalıp mili",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "SWP140_DSC"
+     },
+     {
+      "tur": "kit",
+      "metin": "SWP140_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 16,
+    "ihtiyac": 16,
+    "stok": 0,
+    "siparis": 16,
+    "malzemeli": true,
+    "olculer": [
+     {
+      "malzemeId": "601",
+      "malzemeAd": "Paslanmaz",
+      "tedarikciId": "21",
+      "anahtar": "601|kilo||mil|70",
+      "bicim": "mil",
+      "kesit": [
+       70
+      ],
+      "boy": 155,
+      "adet": 1,
+      "eksik": false,
+      "metin": "Ø70 × 155 mm"
+     }
+    ]
+   },
+   {
+    "partId": "202",
+    "ad": "Keçe 40",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "SWP140_DSC"
+     }
+    ],
+    "iki": false,
+    "ham": 20,
+    "ihtiyac": 20,
+    "stok": 5,
+    "siparis": 15,
+    "malzemeli": false,
+    "olculer": []
+   },
+   {
+    "partId": "210",
+    "ad": "Somun",
+    "silinmis": false,
+    "set": false,
+    "patlatildi": false,
+    "setNeden": null,
+    "kaynaklar": [
+     {
+      "tur": "kit",
+      "metin": "SWP140_DS"
+     }
+    ],
+    "iki": false,
+    "ham": 24,
+    "ihtiyac": 24,
+    "stok": 0,
+    "siparis": 24,
+    "malzemeli": false,
+    "olculer": []
+   }
+  ],
+  "kesitler": [
+   {
+    "anahtar": "601|kilo||mil|70",
+    "malzemeId": "601",
+    "malzemeAd": "Paslanmaz",
+    "tedarikciId": 21,
+    "bicim": "mil",
+    "boydanSiparis": false,
+    "cubukBoyu": null,
+    "kesit": [
+     70
+    ],
+    "kesitMetni": "Ø70",
+    "paraBirimi": "USD",
+    "kur": 40,
+    "parcalar": [
+     {
+      "partId": "1784817123366",
+      "ad": "Kalıp mili",
+      "adet": 16,
+      "hamKg": 4.71242825029286,
+      "fireliKg": 4.71242825029286,
+      "fire": 0,
+      "ekFireKg": 0,
+      "kesimBoyu": 155
+     }
+    ],
+    "netKg": 75.39885200468576,
+    "fireKg": 0,
+    "siparisKg": 75.39885200468576,
+    "tamKg": null,
+    "boyAdedi": null,
+    "boyNeden": null,
+    "fireUyarisi": null,
+    "asgariFark": null,
+    "fiyat": 10,
+    "bant": null,
+    "tutar": 753.9885200468576,
+    "tutarK": 75399,
+    "tutarTLK": 3015954,
+    "tutarNeden": null
+   }
+  ],
+  "malzemeGruplari": [
+   {
+    "malzemeId": "601",
+    "ad": "Paslanmaz",
+    "paraBirimi": "USD",
+    "tedarikciId": 21,
+    "kesitler": [
+     {
+      "anahtar": "601|kilo||mil|70",
+      "malzemeId": "601",
+      "malzemeAd": "Paslanmaz",
+      "tedarikciId": 21,
+      "bicim": "mil",
+      "boydanSiparis": false,
+      "cubukBoyu": null,
+      "kesit": [
+       70
+      ],
+      "kesitMetni": "Ø70",
+      "paraBirimi": "USD",
+      "kur": 40,
+      "parcalar": [
+       {
+        "partId": "1784817123366",
+        "ad": "Kalıp mili",
+        "adet": 16,
+        "hamKg": 4.71242825029286,
+        "fireliKg": 4.71242825029286,
+        "fire": 0,
+        "ekFireKg": 0,
+        "kesimBoyu": 155
+       }
+      ],
+      "netKg": 75.39885200468576,
+      "fireKg": 0,
+      "siparisKg": 75.39885200468576,
+      "tamKg": null,
+      "boyAdedi": null,
+      "boyNeden": null,
+      "fireUyarisi": null,
+      "asgariFark": null,
+      "fiyat": 10,
+      "bant": null,
+      "tutar": 753.9885200468576,
+      "tutarK": 75399,
+      "tutarTLK": 3015954,
+      "tutarNeden": null
+     }
+    ],
+    "netKg": 75.39885200468576,
+    "siparisKg": 75.39885200468576,
+    "tutarTLK": 3015954,
+    "tutarsiz": 0
+   }
+  ],
+  "tedarikciGruplari": [
+   {
+    "tedarikciId": "21",
+    "ad": "İkizler Paslanmaz",
+    "silinmis": false,
+    "yok": false,
+    "malzemeler": [
+     {
+      "malzemeId": "601",
+      "ad": "Paslanmaz",
+      "paraBirimi": "USD",
+      "tedarikciId": 21,
+      "kesitler": [
+       {
+        "anahtar": "601|kilo||mil|70",
+        "malzemeId": "601",
+        "malzemeAd": "Paslanmaz",
+        "tedarikciId": 21,
+        "bicim": "mil",
+        "boydanSiparis": false,
+        "cubukBoyu": null,
+        "kesit": [
+         70
+        ],
+        "kesitMetni": "Ø70",
+        "paraBirimi": "USD",
+        "kur": 40,
+        "parcalar": [
+         {
+          "partId": "1784817123366",
+          "ad": "Kalıp mili",
+          "adet": 16,
+          "hamKg": 4.71242825029286,
+          "fireliKg": 4.71242825029286,
+          "fire": 0,
+          "ekFireKg": 0,
+          "kesimBoyu": 155
+         }
+        ],
+        "netKg": 75.39885200468576,
+        "fireKg": 0,
+        "siparisKg": 75.39885200468576,
+        "tamKg": null,
+        "boyAdedi": null,
+        "boyNeden": null,
+        "fireUyarisi": null,
+        "asgariFark": null,
+        "fiyat": 10,
+        "bant": null,
+        "tutar": 753.9885200468576,
+        "tutarK": 75399,
+        "tutarTLK": 3015954,
+        "tutarNeden": null
+       }
+      ],
+      "netKg": 75.39885200468576,
+      "siparisKg": 75.39885200468576,
+      "tutarTLK": 3015954,
+      "tutarsiz": 0
+     }
+    ],
+    "tutarTLK": 3015954
+   }
+  ],
+  "eksik": {
+   "parca": 1,
+   "malzeme": 0
+  },
+  "hazirSayi": 2,
+  "stokUyarisi": null,
+  "toplamTLK": 3015954,
+  "bos": false,
+  "tedarikciBolumleri": {
+   "bolumler": [
+    {
+     "tedarikciId": "22",
+     "ad": "Aksu CNC",
+     "silinmis": false,
+     "hazirParcalar": [
+      {
+       "partId": "1784817123366",
+       "ad": "Kalıp mili",
+       "set": false,
+       "ihtiyac": 16,
+       "stok": 0,
+       "oneri": 16,
+       "siparis": 16,
+       "duzenlendi": false,
+       "kapali": false,
+       "hata": null,
+       "malzemeli": true,
+       "olculer": [
+        {
+         "malzemeId": "601",
+         "malzemeAd": "Paslanmaz",
+         "tedarikciId": "21",
+         "anahtar": "601|kilo||mil|70",
+         "bicim": "mil",
+         "kesit": [
+          70
+         ],
+         "boy": 155,
+         "adet": 1,
+         "eksik": false,
+         "metin": "Ø70 × 155 mm"
+        }
+       ],
+       "birimK": null,
+       "olcuSatirlari": [
+        "Ø70 × 155 mm"
+       ],
+       "tutarK": null,
+       "tutarNeden": "malzemesi aşağıda",
+       "belgeYeri": "Belgede İkizler Paslanmaz bölümünde basılır."
+      },
+      {
+       "partId": "202",
+       "ad": "Keçe 40",
+       "set": false,
+       "ihtiyac": 20,
+       "stok": 5,
+       "oneri": 15,
+       "siparis": 15,
+       "duzenlendi": false,
+       "kapali": false,
+       "hata": null,
+       "malzemeli": false,
+       "olculer": [],
+       "birimK": 300,
+       "olcuSatirlari": [],
+       "tutarK": 4500,
+       "tutarNeden": null
+      },
+      {
+       "partId": "210",
+       "ad": "Somun",
+       "set": false,
+       "ihtiyac": 24,
+       "stok": 0,
+       "oneri": 24,
+       "siparis": 24,
+       "duzenlendi": false,
+       "kapali": false,
+       "hata": null,
+       "malzemeli": false,
+       "olculer": [],
+       "birimK": 200,
+       "olcuSatirlari": [],
+       "tutarK": 4800,
+       "tutarNeden": null
+      }
+     ],
+     "malzemeler": [],
+     "islemler": [],
+     "tutarTLK": 9300
+    },
+    {
+     "tedarikciId": "21",
+     "ad": "İkizler Paslanmaz",
+     "silinmis": false,
+     "hazirParcalar": [],
+     "malzemeler": [
+      {
+       "anahtar": "601|kilo||mil|70",
+       "malzemeId": "601",
+       "malzemeAd": "Paslanmaz",
+       "tedarikciId": 21,
+       "bicim": "mil",
+       "boydanSiparis": false,
+       "cubukBoyu": null,
+       "kesit": [
+        70
+       ],
+       "kesitMetni": "Ø70",
+       "paraBirimi": "USD",
+       "kur": 40,
+       "parcalar": [
+        {
+         "partId": "1784817123366",
+         "ad": "Kalıp mili",
+         "adet": 16,
+         "hamKg": 4.71242825029286,
+         "fireliKg": 4.71242825029286,
+         "fire": 0,
+         "ekFireKg": 0,
+         "kesimBoyu": 155
+        }
+       ],
+       "netKg": 75.39885200468576,
+       "fireKg": 0,
+       "siparisKg": 75.39885200468576,
+       "tamKg": null,
+       "boyAdedi": null,
+       "boyNeden": null,
+       "fireUyarisi": null,
+       "asgariFark": null,
+       "fiyat": 10,
+       "bant": null,
+       "tutar": 753.9885200468576,
+       "tutarK": 75399,
+       "tutarTLK": 3015954,
+       "tutarNeden": null
+      }
+     ],
+     "islemler": [],
+     "tutarTLK": 3015954
+    }
+   ],
+   "belirtilmemis": {
+    "parcalar": [],
+    "kesitler": [],
+    "anasizMalzemeli": 0,
+    "islemler": []
+   },
+   "belge": [
+    {
+     "tedarikciId": "22",
+     "ad": "Aksu CNC",
+     "silinmis": false,
+     "satirlar": [
+      {
+       "partId": "202",
+       "ad": "Keçe 40",
+       "siparis": 15,
+       "duzenlendi": false,
+       "kitSira": 1,
+       "malzemeKalemli": false,
+       "malzemeli": false,
+       "olculer": [],
+       "olcuSatirlari": [],
+       "malzemeAdlari": [],
+       "grup": {
+        "tur": "hazir",
+        "malzemeId": null,
+        "ad": "Hazır parçalar"
+       },
+       "malzemeSatirlari": [],
+       "boySiparisleri": [],
+       "boyKalemiVar": false,
+       "parcaTutarlari": [],
+       "birimK": 300,
+       "tutarK": 4500,
+       "tutarNeden": null
+      },
+      {
+       "partId": "210",
+       "ad": "Somun",
+       "siparis": 24,
+       "duzenlendi": false,
+       "kitSira": 2,
+       "malzemeKalemli": false,
+       "malzemeli": false,
+       "olculer": [],
+       "olcuSatirlari": [],
+       "malzemeAdlari": [],
+       "grup": {
+        "tur": "hazir",
+        "malzemeId": null,
+        "ad": "Hazır parçalar"
+       },
+       "malzemeSatirlari": [],
+       "boySiparisleri": [],
+       "boyKalemiVar": false,
+       "parcaTutarlari": [],
+       "birimK": 200,
+       "tutarK": 4800,
+       "tutarNeden": null
+      }
+     ],
+     "toplam": [],
+     "islemler": [],
+     "kapaliKesitVar": false,
+     "hataSayisi": 0,
+     "hataliParcalar": [],
+     "islemToplamK": null,
+     "islemTutarsizSayi": 0,
+     "gruplar": [
+      {
+       "tur": "hazir",
+       "malzemeId": null,
+       "baslik": "Hazır parçalar",
+       "satirlar": [
+        {
+         "partId": "202",
+         "ad": "Keçe 40",
+         "siparis": 15,
+         "duzenlendi": false,
+         "kitSira": 1,
+         "malzemeKalemli": false,
+         "malzemeli": false,
+         "olculer": [],
+         "olcuSatirlari": [],
+         "malzemeAdlari": [],
+         "grup": {
+          "tur": "hazir",
+          "malzemeId": null,
+          "ad": "Hazır parçalar"
+         },
+         "malzemeSatirlari": [],
+         "boySiparisleri": [],
+         "boyKalemiVar": false,
+         "parcaTutarlari": [],
+         "birimK": 300,
+         "tutarK": 4500,
+         "tutarNeden": null
+        },
+        {
+         "partId": "210",
+         "ad": "Somun",
+         "siparis": 24,
+         "duzenlendi": false,
+         "kitSira": 2,
+         "malzemeKalemli": false,
+         "malzemeli": false,
+         "olculer": [],
+         "olcuSatirlari": [],
+         "malzemeAdlari": [],
+         "grup": {
+          "tur": "hazir",
+          "malzemeId": null,
+          "ad": "Hazır parçalar"
+         },
+         "malzemeSatirlari": [],
+         "boySiparisleri": [],
+         "boyKalemiVar": false,
+         "parcaTutarlari": [],
+         "birimK": 200,
+         "tutarK": 4800,
+         "tutarNeden": null
+        }
+       ],
+       "sutunlar": {
+        "kod": false,
+        "olcu": false,
+        "hammaddeAdi": false,
+        "cins": false
+       }
+      }
+     ],
+     "payFarkKg": 0,
+     "payFarkVar": false,
+     "siparisFarklari": [],
+     "toplamlar": [
+      {
+       "pb": "TRY",
+       "k": 9300
+      }
+     ],
+     "toplamTLK": 9300,
+     "dovizVar": false,
+     "tutarsizSayi": 0,
+     "genelTutarsizSayi": 0,
+     "genelToplamK": null
+    },
+    {
+     "tedarikciId": "21",
+     "ad": "İkizler Paslanmaz",
+     "silinmis": false,
+     "satirlar": [
+      {
+       "partId": "1784817123366",
+       "ad": "Kalıp mili",
+       "siparis": 16,
+       "duzenlendi": false,
+       "kitSira": 0,
+       "malzemeKalemli": true,
+       "malzemeli": true,
+       "olculer": [
+        {
+         "malzemeId": "601",
+         "malzemeAd": "Paslanmaz",
+         "tedarikciId": "21",
+         "anahtar": "601|kilo||mil|70",
+         "bicim": "mil",
+         "kesit": [
+          70
+         ],
+         "boy": 155,
+         "adet": 1,
+         "eksik": false,
+         "metin": "Ø70 × 155 mm"
+        }
+       ],
+       "olcuSatirlari": [
+        "Ø70 × 155 mm"
+       ],
+       "malzemeAdlari": [
+        "Paslanmaz"
+       ],
+       "grup": {
+        "tur": "hammadde",
+        "malzemeId": "601",
+        "ad": "Paslanmaz"
+       },
+       "malzemeSatirlari": [
+        {
+         "anahtar": "601|kilo||mil|70",
+         "malzemeAd": "Paslanmaz",
+         "kesitMetni": "Ø70",
+         "paraBirimi": "USD",
+         "tedarikcisiz": false,
+         "cubukBoyu": null,
+         "boydan": false,
+         "kapali": false,
+         "tek": true,
+         "elle": false,
+         "kesirliBoy": null,
+         "payKg": 75.39885200468576,
+         "fiyat": 10,
+         "tutarK": 75399,
+         "tutarTLK": 3015954,
+         "tutarNeden": null
+        }
+       ],
+       "boySiparisleri": [],
+       "boyKalemiVar": false,
+       "parcaTutarlari": [
+        {
+         "pb": "USD",
+         "k": 75399
+        }
+       ],
+       "birimK": null,
+       "tutarK": null,
+       "tutarNeden": null
+      }
+     ],
+     "toplam": [
+      {
+       "anahtar": "601|kilo||mil|70",
+       "malzemeId": "601",
+       "malzemeAd": "Paslanmaz",
+       "tedarikciId": 21,
+       "bicim": "mil",
+       "boydanSiparis": false,
+       "cubukBoyu": null,
+       "kesit": [
+        70
+       ],
+       "kesitMetni": "Ø70",
+       "paraBirimi": "USD",
+       "kur": 40,
+       "parcalar": [
+        {
+         "partId": "1784817123366",
+         "ad": "Kalıp mili",
+         "adet": 16,
+         "hamKg": 4.71242825029286,
+         "fireliKg": 4.71242825029286,
+         "fire": 0,
+         "ekFireKg": 0,
+         "kesimBoyu": 155
+        }
+       ],
+       "netKg": 75.39885200468576,
+       "fireKg": 0,
+       "siparisKg": 75.39885200468576,
+       "tamKg": null,
+       "boyAdedi": null,
+       "boyNeden": null,
+       "fireUyarisi": null,
+       "asgariFark": null,
+       "fiyat": 10,
+       "bant": null,
+       "tutar": 753.9885200468576,
+       "tutarK": 75399,
+       "tutarTLK": 3015954,
+       "tutarNeden": null
+      }
+     ],
+     "islemler": [],
+     "kapaliKesitVar": false,
+     "hataSayisi": 0,
+     "hataliParcalar": [],
+     "islemToplamK": null,
+     "islemTutarsizSayi": 0,
+     "gruplar": [
+      {
+       "tur": "hammadde",
+       "malzemeId": "601",
+       "baslik": "Paslanmaz",
+       "satirlar": [
+        {
+         "partId": "1784817123366",
+         "ad": "Kalıp mili",
+         "siparis": 16,
+         "duzenlendi": false,
+         "kitSira": 0,
+         "malzemeKalemli": true,
+         "malzemeli": true,
+         "olculer": [
+          {
+           "malzemeId": "601",
+           "malzemeAd": "Paslanmaz",
+           "tedarikciId": "21",
+           "anahtar": "601|kilo||mil|70",
+           "bicim": "mil",
+           "kesit": [
+            70
+           ],
+           "boy": 155,
+           "adet": 1,
+           "eksik": false,
+           "metin": "Ø70 × 155 mm"
+          }
+         ],
+         "olcuSatirlari": [
+          "Ø70 × 155 mm"
+         ],
+         "malzemeAdlari": [
+          "Paslanmaz"
+         ],
+         "grup": {
+          "tur": "hammadde",
+          "malzemeId": "601",
+          "ad": "Paslanmaz"
+         },
+         "malzemeSatirlari": [
+          {
+           "anahtar": "601|kilo||mil|70",
+           "malzemeAd": "Paslanmaz",
+           "kesitMetni": "Ø70",
+           "paraBirimi": "USD",
+           "tedarikcisiz": false,
+           "cubukBoyu": null,
+           "boydan": false,
+           "kapali": false,
+           "tek": true,
+           "elle": false,
+           "kesirliBoy": null,
+           "payKg": 75.39885200468576,
+           "fiyat": 10,
+           "tutarK": 75399,
+           "tutarTLK": 3015954,
+           "tutarNeden": null
+          }
+         ],
+         "boySiparisleri": [],
+         "boyKalemiVar": false,
+         "parcaTutarlari": [
+          {
+           "pb": "USD",
+           "k": 75399
+          }
+         ],
+         "birimK": null,
+         "tutarK": null,
+         "tutarNeden": null
+        }
+       ],
+       "sutunlar": {
+        "kod": false,
+        "olcu": true,
+        "hammaddeAdi": false,
+        "cins": false
+       }
+      }
+     ],
+     "payFarkKg": 0,
+     "payFarkVar": false,
+     "siparisFarklari": [],
+     "toplamlar": [
+      {
+       "pb": "USD",
+       "k": 75399
+      }
+     ],
+     "toplamTLK": 3015954,
+     "dovizVar": true,
+     "tutarsizSayi": 0,
+     "genelTutarsizSayi": 0,
+     "genelToplamK": null
+    }
+   ],
+   "gizliHatalar": [],
+   "secimVar": false,
+   "satirsizSecilen": [],
+   "duzen": {
+    "duzenlenen": 0,
+    "kapatilan": 0,
+    "hata": 0,
+    "gorunenHata": 0
+   },
+   "parcaDurumu": {
+    "202": {
+     "oneri": 15,
+     "siparis": 15,
+     "duzenlendi": false,
+     "kapali": false,
+     "hata": null
+    },
+    "210": {
+     "oneri": 24,
+     "siparis": 24,
+     "duzenlendi": false,
+     "kapali": false,
+     "hata": null
+    },
+    "1784817123366": {
+     "oneri": 16,
+     "siparis": 16,
+     "duzenlendi": false,
+     "kapali": false,
+     "hata": null
+    }
+   }
+  }
+ }
+}

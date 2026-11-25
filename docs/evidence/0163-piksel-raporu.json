@@ -1,0 +1,1262 @@
+[
+  {
+    "ad": "maliyet-uretim-partileri-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-uretim-partileri-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-pencere-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-pencere-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-malzemeler-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "adimUyarilari": [
+      "kaydırılamadı: kaydirgenis:Malzeme · kesit"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-malzemeler-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "adimUyarilari": [
+      "kaydırılamadı: kaydirgenis:Malzeme · kesit"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-duzenlendi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-duzenlendi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-hatali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-hatali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-tek-tedarikci-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-tek-tedarikci-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-belirtilmemis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-belirtilmemis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-parca-ihtiyaci-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "adimUyarilari": [
+      "tıklanamadı: ~Parça ihtiyacı",
+      "kaydırılamadı: kaydir:Parça ihtiyacı"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-parca-ihtiyaci-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "adimUyarilari": [
+      "tıklanamadı: ~Parça ihtiyacı",
+      "kaydırılamadı: kaydir:Parça ihtiyacı"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-yetkisiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-yetkisiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-pencere-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-pencere-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-bolum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-bolum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-olcu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "adimUyarilari": [
+      "tıklanamadı: ~Parça ihtiyacı",
+      "kaydırılamadı: kaydir:Parça ihtiyacı"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-olcu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 16 parçanın yalnız 0 t"
+    ],
+    "adimUyarilari": [
+      "tıklanamadı: ~Parça ihtiyacı",
+      "kaydırılamadı: kaydir:Parça ihtiyacı"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-belge-aydinlik.png",
+    "boyut": "2880x2130",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0142-belge-karanlik.png",
+    "boyut": "2880x2130",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0143-pencere-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 2 parçanın yalnız 0 ta"
+    ],
+    "adimUyarilari": [
+      "kaydırılamadı: kaydirgenis:Malzeme · kesit"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0143-pencere-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 2 parçanın yalnız 0 ta"
+    ],
+    "adimUyarilari": [
+      "kaydırılamadı: kaydirgenis:Malzeme · kesit"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0143-belge-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0143-belge-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-soru-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 29 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-soru-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Lama hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Elle hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayn",
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 29 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-fiyatsiz-aydinlik.png",
+    "boyut": "2880x3372",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-fiyatsiz-karanlik.png",
+    "boyut": "2880x3372",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-pencere-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Hazır C hem kitte hem Patlatılan set setinin içinde geçiyor; adet iki "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-pencere-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Hazır C hem kitte hem Patlatılan set setinin içinde geçiyor; adet iki "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-tek-tedarikci-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Hazır C hem kitte hem Patlatılan set setinin içinde geçiyor; adet iki "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-tek-tedarikci-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Hazır C hem kitte hem Patlatılan set setinin içinde geçiyor; adet iki "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-belirtilmemis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Hazır C hem kitte hem Patlatılan set setinin içinde geçiyor; adet iki "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-belirtilmemis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Hazır C hem kitte hem Patlatılan set setinin içinde geçiyor; adet iki "
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-belge-fiyatsiz-aydinlik.png",
+    "boyut": "2880x2140",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-belge-fiyatsiz-karanlik.png",
+    "boyut": "2880x2140",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-belge-fiyatli-aydinlik.png",
+    "boyut": "2880x2580",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0150-belge-fiyatli-karanlik.png",
+    "boyut": "2880x2580",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-fiyatli-aydinlik.png",
+    "boyut": "2880x3848",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-fiyatli-karanlik.png",
+    "boyut": "2880x3848",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-duzenleme-aydinlik.png",
+    "boyut": "2880x3904",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0144-belge-duzenleme-karanlik.png",
+    "boyut": "2880x3904",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-belge-fiyatsiz-aydinlik.png",
+    "boyut": "2880x3372",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-belge-fiyatsiz-karanlik.png",
+    "boyut": "2880x3372",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-belge-fiyatli-aydinlik.png",
+    "boyut": "2880x3848",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-belge-fiyatli-karanlik.png",
+    "boyut": "2880x3848",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-cok-hammadde-aydinlik.png",
+    "boyut": "2880x3372",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-cok-hammadde-karanlik.png",
+    "boyut": "2880x3372",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-hazir-aydinlik.png",
+    "boyut": "2880x3372",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0147-hazir-karanlik.png",
+    "boyut": "2880x3372",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-belge-fiyatsiz-aydinlik.png",
+    "boyut": "2880x2476",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-belge-fiyatsiz-karanlik.png",
+    "boyut": "2880x2476",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-belge-fiyatli-aydinlik.png",
+    "boyut": "2880x3018",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-belge-fiyatli-karanlik.png",
+    "boyut": "2880x3018",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-kesim-aydinlik.png",
+    "boyut": "2880x2476",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-kesim-karanlik.png",
+    "boyut": "2880x2476",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-genel-toplam-aydinlik.png",
+    "boyut": "2880x3018",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-genel-toplam-karanlik.png",
+    "boyut": "2880x3018",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-pencere-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 13 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0158-pencere-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 13 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0157-belge-fiyatli-aydinlik.png",
+    "boyut": "2880x3214",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0157-belge-fiyatli-karanlik.png",
+    "boyut": "2880x3214",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0157-belge-islem-aydinlik.png",
+    "boyut": "2880x3214",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0157-belge-islem-karanlik.png",
+    "boyut": "2880x3214",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0159-belge-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0159-belge-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-model-hatali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Partinin planlanan adetlerinde katalogda bulunamayan model hesaba girm",
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-model-hatali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Partinin planlanan adetlerinde katalogda bulunamayan model hesaba girm",
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-silinmis-tedarikci-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "adimUyarilari": [
+      "kaydırılamadı: kaydir:Eski Döküm"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0140-silinmis-tedarikci-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Pul hem kitte hem Bağlantı seti setinin içinde geçiyor; adet iki kayna"
+    ],
+    "adimUyarilari": [
+      "kaydırılamadı: kaydir:Eski Döküm"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0089-parti-degisim-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0089-parti-degisim-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0090-parti-neden-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0090-parti-neden-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-uretim-partisi-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-uretim-partisi-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-dokum-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-dokum-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-katsayi-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-katsayi-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-bos-rol-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-bos-rol-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-bos-ayar-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-bos-ayar-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-kapali-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-kapali-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-acik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-uretimde-acik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-isaret-bilgi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-isaret-bilgi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-isaret-uyari-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-isaret-uyari-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-bos-uretimde-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-modeller-bos-uretimde-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Bu parti maliyet dondurmasından önce kapandı; rakamlar bugünkü veriyle"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Bu parti maliyet dondurmasından önce kapandı; rakamlar bugünkü veriyle"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0097-parti-tarihli-aydinlik.png",
+    "boyut": "2880x1874",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Bu parti maliyet dondurmasından önce kapandı; rakamlar bugünkü veriyle"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0097-parti-tarihli-karanlik.png",
+    "boyut": "2880x1874",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Bu parti maliyet dondurmasından önce kapandı; rakamlar bugünkü veriyle"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-partiler-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-partiler-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-partiler-donmus-sapmasiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-partiler-donmus-sapmasiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-partiler-dondurulmadi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-partiler-dondurulmadi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-parti-donmus-aydinlik.png",
+    "boyut": "2880x2162",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Rakamlar 02.04.2026 kapanışında donduruldu."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-parti-donmus-karanlik.png",
+    "boyut": "2880x2162",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Rakamlar 02.04.2026 kapanışında donduruldu."
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-parti-dondurulmadi-aydinlik.png",
+    "boyut": "2880x1908",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Bu parti maliyet dondurmasından önce kapandı; rakamlar bugünkü veriyle"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-parti-dondurulmadi-karanlik.png",
+    "boyut": "2880x1908",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Bu parti maliyet dondurmasından önce kapandı; rakamlar bugünkü veriyle"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-acma-onayi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-acma-onayi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-gelecek-bitis-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0136-gelecek-bitis-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0097-parti-acik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0097-parti-acik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0097-parti-baslamadi-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0097-parti-baslamadi-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-planli-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-planli-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-plan-formu-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-plan-formu-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-parti-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0093-plan-suzulmus-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0093-plan-suzulmus-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0093-plan-gizli-adet-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0093-plan-gizli-adet-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0093-plan-bos-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0093-plan-bos-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il",
+      "Planlanan adeti olan ama bulunamayan model: ESKI_AD (4). Model yeniden"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-aydinlik.png",
+    "boyut": "2880x1940",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-karanlik.png",
+    "boyut": "2880x1940",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-oneri-aydinlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-oneri-karanlik.png",
+    "boyut": "2880x1834",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-hata-aydinlik.png",
+    "boyut": "2880x1838",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-hata-karanlik.png",
+    "boyut": "2880x1838",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-rol-uyari-aydinlik.png",
+    "boyut": "2880x1940",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-ayarlar-rol-uyari-karanlik.png",
+    "boyut": "2880x1940",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "stok-makina-parti-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-makina-parti-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0092-pay-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0092-pay-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0092-partiler-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0092-partiler-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-oncelik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-oncelik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-alfabetik-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-alfabetik-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-cinssiz-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-cinssiz-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Parça stoğu sayılmamış görünüyor: hesapta geçen 14 parçanın yalnız 0 t"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-belge-aydinlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0161-belge-karanlik.png",
+    "boyut": "2880x1896",
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0163-yetim-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 203936
+  },
+  {
+    "ad": "maliyet-0163-yetim-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 203731
+  },
+  {
+    "ad": "siparis-0163-yetim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 12626
+  },
+  {
+    "ad": "siparis-0163-yetim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 12582
+  },
+  {
+    "ad": "stok-0163-kiti-uygula-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 75593
+  },
+  {
+    "ad": "stok-0163-kiti-uygula-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 75664
+  }
+]

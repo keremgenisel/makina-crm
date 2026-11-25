@@ -7803,6 +7803,12 @@
         "rapor": "docs/evidence/0102-piksel-raporu.json",
         "ekran": "stok-bos",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0163-piksel-raporu.json",
+        "ekran": "stok-0163-kiti-uygula",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-25 · spec 0163 P7"
       }
     ],
     "src/components/stock/PartStokTab.jsx": [
@@ -13083,6 +13089,12 @@
         "rapor": "docs/evidence/0121-piksel-raporu.json",
         "ekran": "maliyet-modeller-uretimde-acik",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0163-piksel-raporu.json",
+        "ekran": "maliyet-0163-yetim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-25 · spec 0163 P7"
       }
     ],
     "src/components/maliyet/PartiHesabi.jsx": [
@@ -14957,6 +14969,12 @@
         "rapor": "docs/evidence/0161-taban-piksel-raporu.json",
         "ekran": "siparis-0161-alfabetik",
         "beklenen": "ayni"
+      },
+      {
+        "rapor": "docs/evidence/0163-piksel-raporu.json",
+        "ekran": "siparis-0163-yetim",
+        "beklenen": "degisti",
+        "onay": "Takım Yöneticisi · 2026-11-25 · spec 0163 P7"
       }
     ],
     "src/components/customers/detail/KalipDurumlari.jsx": [

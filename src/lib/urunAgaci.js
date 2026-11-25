@@ -8,7 +8,7 @@
 import { tutarCoz, kurus, dovizdenLiraK } from "./gider";
 import { dovizMi, kurCoz, KUR_KAYNAK, KUR_ONDALIK_EN_COK, kurGirdisi, paraMetni, kurMetni, kurOnerisi, kurSapmaUyarisi, ondalikYuvarla } from "./kur";
 import { tutarMetni } from "./tutarGirdisi";
-import { parseMoney, partFiyatForCurrency } from "./utils";
+import { parseMoney, partFiyatForCurrency, trLower } from "./utils";
 import { gecerliGunMu, gunMetni, gecerlilikTarihiDogrula, tarihteGecerliIndeks } from "./gecerlilik";
 import { malzemeOzeti, malzemeSatiriDogrula, malzemeSatiriFormu, BELIRSIZ_DESEN, BELIRSIZ_HATASI } from "./malzeme";
 import { maliyetKalemleriOf, KALEM_TUR, MALIYET_KALEM_SINIRI, eskiKatalogKalemi } from "./maliyetKalemleri";
@@ -642,6 +642,50 @@ export const ekMaliyetDogrula = (satirlar = []) => {
 };
 
 const ayniParca = (row, partId) => String(row?.partId) === String(partId);
+
+// Spec 0163 (C1, C1/2, R1–R3/2, P1–P4): kit satırının parçasını okuma anında çözen TEK yer. `partMap` canlı katalog haritasıdır
+// (`String(id)` → parça; çöptekiler yok, R1/6). Ad haritası katalogdan tek geçişte kurulur ve harita nesnesine `WeakMap` ile bağlanır
+// (P1): aynı katalog için ikinci kez kurulmaz, `modelMaliyeti`'nin imzası büyümez (AC-39). Dönen fonksiyon bir modelin kit satırlarını
+// alır, çözülmüş satırları verir: `{ satir, partId, parca, kaynak: "kimlik" | "ad" | "yok", hamPartId }`.
+//  - Kimlik önce (R1/5); bulunamazsa ad kopyası kırpılıp `trLower` ile birebir (R1/2: aksan, iç boşluk, kısmi, adEN, kod yok).
+//  - Aynı katlanmış ada inen iki canlı parça ya da boş ad: çözülmez (R1/3, R1/4).
+//  - Ada göre çözülen satır, aynı parça kitte kimlikle çözülmüşse (sırası ne olursa olsun, P3) ya da daha önce adla çözülmüşse (R2/5)
+//    DÜŞER. Kardeş ölçütü ham satırın varlığıdır, adedine bakılmaz (R2/4, P4). Düşen satır kayıtta aynen kalır (R2/2).
+//  - Kimlikle çözülen satırın `partId`'si ham değerdir (P2: yetimsiz veride çıktı birebir), adla çözülenin `String(p.id)`'dir.
+// Önbellek harita nesnesinin kimliğine bağlıdır: harita kurulduktan sonra DEĞİŞTİRİLMEZ (set yapılırsa ad dizini bayat kalır).
+// Bugünkü çağıranlar (parcaHaritasi, sipariş motorunun canliParca'sı, MakinaStokTab'ın useMemo'su) haritayı her seferinde yeni kurar.
+const KIT_COZUCU_ONBELLEK = new WeakMap();
+const kitAdAnahtari = (ad) => trLower(String(ad ?? "").trim());
+export const kitCozucuKur = (partMap) => {
+  if (KIT_COZUCU_ONBELLEK.has(partMap)) return KIT_COZUCU_ONBELLEK.get(partMap);
+  const adlar = new Map();
+  for (const p of partMap.values()) {
+    const k = kitAdAnahtari(p.ad);
+    if (!k) continue;
+    adlar.set(k, adlar.has(k) ? null : p); // R1/3: belirsiz ad null
+  }
+  const coz = (kit = []) => {
+    const ilk = (kit || []).map(satir => {
+      const kimlikli = satir?.partId == null || satir.partId === "" ? null : partMap.get(String(satir.partId));
+      if (kimlikli) return { satir, partId: satir.partId, parca: kimlikli, kaynak: "kimlik", hamPartId: satir.partId };
+      const k = kitAdAnahtari(satir?.ad);
+      const p = k ? adlar.get(k) : null;
+      if (p) return { satir, partId: String(p.id), parca: p, kaynak: "ad", hamPartId: satir.partId };
+      return { satir, partId: satir?.partId, parca: null, kaynak: "yok", hamPartId: satir?.partId };
+    });
+    const kimlikIdleri = new Set(ilk.filter(x => x.kaynak === "kimlik").map(x => String(x.parca.id)));
+    const adIdleri = new Set();
+    return ilk.filter(x => {
+      if (x.kaynak !== "ad") return true;
+      const id = String(x.parca.id);
+      if (kimlikIdleri.has(id) || adIdleri.has(id)) return false;
+      adIdleri.add(id);
+      return true;
+    });
+  };
+  KIT_COZUCU_ONBELLEK.set(partMap, coz);
+  return coz;
+};
 
 // AC-11: parça kartı adedi kitten okur. Çıktı { modelAdı: adet } (yalnız kitinde bu parça olan modeller).
 export const parcaKitAdetleri = (partId, modelDizileri = []) => {

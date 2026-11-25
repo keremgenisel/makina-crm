@@ -35,7 +35,11 @@ const uret = () => {
   const baglam = fiyatBaglamiKur({ parts: PARCALAR, malzemeler: MALZEMELER, fiyatAyarlari: FIYAT_AYARLARI });
   const zamli = { ...M304, kiloFiyati: 3.4, boyFiyati: 900 };
   const sip = siparisIhtiyaci({ modeller: [...MODELLER.standardModels], satirlar: [{ model: "AK100", adet: "10" }], parts: PARCALAR, partStock: PART_STOCK, malzemeler: MALZEMELER, tedarikciler: TEDARIKCILER });
-  const pkat = { parts: PARCALAR, malzemeler: MALZEMELER, standardModels: MODELLER.standardModels, customModels: V36.OZEL };
+  // Spec 0163 ile (TY kararı 2026-11-25): 0097'nin OZ kiti kimliği "1", adı "Rulman" olan satırı taşıyor; 0135 kataloğunda 1 yok ama
+  // 74 numaralı "Rulman" var, yani bu veride kazara kardeşsiz bir yetim satır duruyordu ve 0163 onu "Rulman"a bağlar. Bu test dış
+  // işlemin testidir: satırın ad kopyası katalogda eşi olmayan bir ada çevrilir, satır spec öncesindeki gibi yetim kalır, altın değişmez.
+  const OZEL_YETIM = V36.OZEL.map(m => ({ ...m, defaultParcalar: m.defaultParcalar.map(r => ({ ...r, ad: `${r.ad} (0097 kataloğu)` })) }));
+  const pkat = { parts: PARCALAR, malzemeler: MALZEMELER, standardModels: MODELLER.standardModels, customModels: OZEL_YETIM };
   const v = V36.veri({ parts: PARCALAR, malzemeler: MALZEMELER });
   const pay = partiGenelPaylari(v, V36.BUGUN);
   const modeller = modelMaliyetleri({ ...pkat }, 65000);
