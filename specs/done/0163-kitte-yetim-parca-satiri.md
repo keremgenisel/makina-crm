@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Durum** | Onaylandı (2026-11-25, plan turu; plan `specs/0163-uygulama-plani.md`) |
+| **Durum** | Tamamlandı (commit `ff692569`; plan `specs/done/0163-uygulama-plani.md`) |
 | **Revizyon** | 2 (2026-11-25 QA turu) |
 | **Sahip** | Analist (yazım) |
 | **Onaylayan** | Takım Yöneticisi |

@@ -1,0 +1,38 @@
+[
+  {
+    "ad": "maliyet-0163-yetim-aydinlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "maliyet-0163-yetim-karanlik.png",
+    "boyut": "2880x1800",
+    "seritler": [
+      "Bugünkü tür rolü, varsayılan adet ve dönem yalnız Model Maliyetleri il"
+    ],
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0163-yetim-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "siparis-0163-yetim-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-0163-kiti-uygula-aydinlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  },
+  {
+    "ad": "stok-0163-kiti-uygula-karanlik.png",
+    "boyut": "2880x1800",
+    "piksel": 0
+  }
+]

@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Spec** | `specs/0163-kitte-yetim-parca-satiri.md` (Onaylandı, plan turu P1–P8) |
-| **Durum** | Uygulandı (commit bekliyor) |
+| **Spec** | `specs/done/0163-kitte-yetim-parca-satiri.md` (Onaylandı, plan turu P1–P8) |
+| **Durum** | Tamamlandı (commit `ff692569`) |
 | **Dal** | `feat/0163-kit-yetim` (main `7bde5211` üstünde) |
 
 ## 1. Dosyalar
