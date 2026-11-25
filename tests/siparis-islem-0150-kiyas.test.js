@@ -7,7 +7,9 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import * as S from "../src/lib/siparisIhtiyaci";
-import { siparisRaporuHtml } from "../src/lib/siparisRaporu";
+import { siparisRaporuHtml as _siparisRaporuHtml } from "../src/lib/siparisRaporu";
+import { sayfaStiliniAyikla } from "./fixtures/sayfa-stil-ayikla";
+const siparisRaporuHtml = (...a) => sayfaStiliniAyikla(_siparisRaporuHtml(...a)); // 2026-11-25: @page satırı ayıklanır
 import { veri, islemsiz, PARCALAR } from "./fixtures/0150-veri.js";
 import { ayiklaBelge0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P10)
 import { ayiklaAd0159, ayiklaBelge0159 } from "./fixtures/0159-ayikla.js"; // spec 0159 ile (R6/2, R6/3, P3, P4)

@@ -8,7 +8,9 @@ import * as U from "../src/lib/urunAgaci";
 import { malzemeKatalogu } from "../src/lib/malzeme";
 import { maliyetKalemleriOf } from "../src/lib/maliyetKalemleri";
 import * as S from "../src/lib/siparisIhtiyaci";
-import { siparisRaporuHtml } from "../src/lib/siparisRaporu";
+import { siparisRaporuHtml as _siparisRaporuHtml } from "../src/lib/siparisRaporu";
+import { sayfaStiliniAyikla } from "./fixtures/sayfa-stil-ayikla";
+const siparisRaporuHtml = (...a) => sayfaStiliniAyikla(_siparisRaporuHtml(...a)); // 2026-11-25: @page satırı ayıklanır
 import { PARCALAR, MALZEMELER, BUGUN, FACTORY, R62_PARCALAR, veri } from "./fixtures/0159-veri.js";
 import { cinsSirasiUygula } from "./fixtures/0161-ayikla.js";
 import { ayiklaMotor0159, ayiklaBelge0159, ayiklaAd0159 } from "./fixtures/0159-ayikla.js";

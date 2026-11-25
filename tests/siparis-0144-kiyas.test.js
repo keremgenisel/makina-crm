@@ -7,11 +7,12 @@ import * as R from "../src/lib/siparisRaporu";
 import { SENARYOLAR, BUGUN, FACTORY } from "./fixtures/0144-veri.js";
 import { ayikla0144, MALZEME_SATIRI, TOPLAM_TABLOSU } from "./fixtures/0144-ayikla.js";
 import { ayikla0147 } from "./fixtures/0147-ayikla.js";
+import { sayfaStiliniAyikla } from "./fixtures/sayfa-stil-ayikla";
 import { ayiklaBelge0158 } from "./fixtures/0158-ayikla.js"; // spec 0158 ile (C9/3, P10): yeni sütun kuralları ve kesilecek adet geri alınır
 
 const DOSYA = "tests/fixtures/0144-belge-once.json";
 const uret = () => Object.fromEntries(Object.entries(SENARYOLAR()).map(([ad, [v, sec, ops]]) =>
-  [ad, R.siparisRaporuHtml(S.siparisIhtiyaci(v, sec), { bugun: BUGUN, factory: FACTORY, ...ops })]));
+  [ad, sayfaStiliniAyikla(R.siparisRaporuHtml(S.siparisIhtiyaci(v, sec), { bugun: BUGUN, factory: FACTORY, ...ops })) /* 2026-11-25: @page satırı */]));
 
 describe("Spec 0144 kıyas (C4)", () => {
   it("AC-42: malzeme satırları ayıklanınca fiyatsız nüsha spec öncesi belgeyle birebir aynı", () => {

@@ -7,7 +7,9 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import * as S from "../../src/lib/siparisIhtiyaci";
-import { siparisRaporuHtml } from "../../src/lib/siparisRaporu";
+import { siparisRaporuHtml as _siparisRaporuHtml } from "../../src/lib/siparisRaporu";
+import { sayfaStiliniAyikla } from "../fixtures/sayfa-stil-ayikla";
+const siparisRaporuHtml = (...a) => sayfaStiliniAyikla(_siparisRaporuHtml(...a)); // 2026-11-25: @page satırı ayıklanır
 import { SiparisPenceresi } from "../../src/components/stock/SiparisPenceresi";
 import { PartManager } from "../../src/components/PartManager";
 import { PARCA_AKTARMA_BASLIKLARI, parcaDisaAktarmaSatiri } from "../../src/lib/parcaAktarma";

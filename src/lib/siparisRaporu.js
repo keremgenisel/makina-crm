@@ -63,6 +63,10 @@ export const sutunSinifi = (basliklar) => `sk-${basliklar.map(h => KISA[h]).join
 // böyle bir tablo varsa gövde kenar dolgusuyla birlikte 780 piksele genişler. Yalnız bu belgenin ek stilinde (C6).
 export const GENIS_ESIK = 6;
 export const UST_HIZA_STIL = ".siparis-bolum .siparis-ust td{vertical-align:top;}"; // R19: ölçü ve adet satırları aynı hizada
+// Kullanıcı isteği 2026-11-25: PDF kaydı ve önizleme sıfır kenar boşluğuyla basar (electron/ipc/system.cjs); tedarikçi bölümü yeni
+// sayfadan başladığı için ikinci ve sonraki sayfalar kâğıdın en üstüne dayanıyordu, yazıcı orayı basmayabilir. Her sayfaya üst ve alt
+// boşluk (Chromium @page kenar boşluğunu PDF'e de uygular, Electron'da ölçüldü). Yalnız bu belge; öteki çıktılar değişmez.
+export const SAYFA_STIL = "@page{size:A4;margin:15mm 0 12mm 0;}";
 export const GENIS_STIL = "body{max-width:748px;}.siparis-bolum .siparis-genis td{font-size:9.5px !important;padding:2px 6px 2px 0 !important;overflow-wrap:anywhere;}.siparis-bolum .siparis-genis th{padding:3px 6px 3px 0 !important;}";
 export const ELLE_ISARETI = " (elle)";
 export const ELLE_NOTU = "\"(elle)\" işaretli satırın adedi ya da kilosu öneriden değiştirildi.";
@@ -181,7 +185,7 @@ export const siparisRaporuHtml = (sonuc, { bugun, factory = null, partiAd = null
     // Spec 0150 R3/2: elle düzenlenmiş parçanın işlem satırı da notu doğurur (işlem başka bölümde basılabilir).
     b.satirlar.some(x => x.duzenlendi || x.boySiparisleri?.some(y => y.elle)) || b.siparisFarklari?.some(f => f.elle) || b.islemler?.some(x => x.duzenlendi) ? not(esc(ELLE_NOTU)) : ""].join(""))}
 </div>`).join("");
-  return `${belgeAcilis({ title: SIPARIS_RAPOR_BASLIGI, baslik: SIPARIS_RAPOR_BASLIGI.toLocaleUpperCase("tr-TR"), ust: fiyatli ? `${girdi} · ${FIYATLI_NUSHA}` : girdi, donem: gun(bugun), factory, ekStil: GRUP_TABLO_STILI(fiyatli, kumeler, gruplar.some(g => g.ustHiza)) })}
+  return `${belgeAcilis({ title: SIPARIS_RAPOR_BASLIGI, baslik: SIPARIS_RAPOR_BASLIGI.toLocaleUpperCase("tr-TR"), ust: fiyatli ? `${girdi} · ${FIYATLI_NUSHA}` : girdi, donem: gun(bugun), factory, ekStil: SAYFA_STIL + GRUP_TABLO_STILI(fiyatli, kumeler, gruplar.some(g => g.ustHiza)) })}
   ${bolum("MODELLER", "", modeller)}
   ${bolumler}
 </body></html>`;

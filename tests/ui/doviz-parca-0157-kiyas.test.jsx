@@ -14,7 +14,9 @@ import { parcaSatisFiyati, fiyatBaglamiKur } from "../../src/lib/parcaFiyati";
 import { modelMaliyetleri, partiHesabi } from "../../src/lib/makinaStandartMaliyet";
 import { parcaDisaAktarmaSatiri, parcaSatirlariniCoz, PARCA_AKTARMA_BASLIKLARI } from "../../src/lib/parcaAktarma";
 import * as S from "../../src/lib/siparisIhtiyaci";
-import { siparisRaporuHtml } from "../../src/lib/siparisRaporu";
+import { siparisRaporuHtml as _siparisRaporuHtml } from "../../src/lib/siparisRaporu";
+import { sayfaStiliniAyikla } from "../fixtures/sayfa-stil-ayikla";
+const siparisRaporuHtml = (...a) => sayfaStiliniAyikla(_siparisRaporuHtml(...a)); // 2026-11-25: @page satırı ayıklanır
 import { PartManager } from "../../src/components/PartManager";
 import { cinsSirasiUygula } from "../fixtures/0161-ayikla.js";
 import { PARCALAR, MALZEMELER, MODELLER, TEDARIKCILER, FIYAT_AYARLARI, PARTI, BUGUN, FACTORY, veri } from "../fixtures/0157-veri.js";
